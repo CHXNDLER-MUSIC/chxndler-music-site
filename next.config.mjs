@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   images: { remotePatterns: [{ protocol: 'https', hostname: 'images.unsplash.com' }] },
-  // allow deploy even if there are type/ESLint issues while we iterate
+  // allow deployment even if Next thinks there are TypeScript/ESLint issues
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true }
 };
