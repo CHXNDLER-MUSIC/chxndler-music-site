@@ -31,6 +31,7 @@ export default function Page() {
     { name: "YouTube",   href: "https://www.youtube.com/@chxndler_music",   color: BRAND.pink, icon: IconYouTube },
   ];
 
+  // Track links (simple for now)
   const tracks = [
     { title: "GAME BOY HEART (ゲームボーイの心)", url: "https://open.spotify.com/track/5VypE0QkaggJemaNG6sMsF" },
     { title: "KID FOREVER (永遠の子供)",          url: "https://open.spotify.com/track/5X27jqHBvMBsDvvFixeZdN" },
@@ -46,7 +47,7 @@ export default function Page() {
     { title: "OCEAN GIRL",                        url: "https://open.spotify.com/album/37niwECG0TJMuYFQdrJE3y?si=S_Btj1hMRU-RsnsVL2PBmQ" },
   ];
 
-  // Reusable button component
+  // Reusable button
   const Button = ({ href, label, Icon, color }) => (
     <a
       href={href}
@@ -62,7 +63,7 @@ export default function Page() {
       <span
         className="inline-flex h-5 w-5 items-center justify-center rounded-full"
         style={{ color }}
-        aria-hidden
+        aria-hidden="true"
       >
         <Icon />
       </span>
@@ -70,15 +71,15 @@ export default function Page() {
       <span
         className="ml-1 opacity-70 transition group-hover:opacity-100"
         style={{ color: BRAND.yellow }}
-        aria-hidden
+        aria-hidden="true"
       >
         ↗
       </span>
-      {/* hover glow */}
+      {/* subtle hover glow */}
       <span
         className="pointer-events-none absolute inset-0 -z-10 rounded-full opacity-0 blur-xl transition group-hover:opacity-40"
         style={{ background: BRAND.yellow + "33" }}
-        aria-hidden
+        aria-hidden="true"
       />
     </a>
   );
@@ -109,7 +110,7 @@ export default function Page() {
         </div>
       </header>
 
-      {/* Tracks grid */}
+      {/* Tracks */}
       <section className="grid gap-4 sm:grid-cols-2">
         {tracks.map((t, i) => (
           <a
@@ -138,10 +139,9 @@ export default function Page() {
 /* ---------------- Icons (inline SVG, no packages) ---------------- */
 
 function IconSpotify() {
-  // circle with three curved lines (simple, recognizable)
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-      <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.15" />
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" opacity="0.15" />
       <path d="M6 9.5c4-1 8-.8 11 1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" fill="none" />
       <path d="M6.5 12c3.4-.7 6.7-.4 9.5 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none" />
       <path d="M7 14.3c2.5-.4 5-.2 7 .8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" fill="none" />
@@ -150,9 +150,8 @@ function IconSpotify() {
 }
 
 function IconAppleMusic() {
-  // beamed music note
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
       <path d="M15 4v9.2a3.2 3.2 0 1 1-1.5-2.7V7.5l-5 1.2v6.5a3.2 3.2 0 1 1-1.5-2.7V6.6L15 4z" />
     </svg>
   );
@@ -160,7 +159,7 @@ function IconAppleMusic() {
 
 function IconInstagram() {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
       <rect x="4" y="4" width="16" height="16" rx="4" />
       <circle cx="12" cy="12" r="4" />
       <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none" />
@@ -169,18 +168,16 @@ function IconInstagram() {
 }
 
 function IconTikTok() {
-  // simple musical note with slight offset tail
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
       <path d="M14 4v9.2a3.6 3.6 0 1 1-2-3.2V7.2c2 .8 3.8 1.2 6 1.2V11c-2.2 0-4-.5-6-1.3V4z" />
     </svg>
   );
 }
 
 function IconFacebook() {
-  // simple 'f' in a circle
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
       <circle cx="12" cy="12" r="10" />
       <path d="M13 8h2V6h-2c-1.7 0-3 1.3-3 3v2H8v2h2v5h2v-5h2l.5-2H12V9c0-.6.4-1 1-1z" fill="currentColor" stroke="none" />
     </svg>
@@ -188,9 +185,8 @@ function IconFacebook() {
 }
 
 function IconYouTube() {
-  // play triangle inside rounded rectangle
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
       <rect x="3" y="7" width="18" height="10" rx="3" opacity="0.2" />
       <path d="M10 9.5v5l5-2.5-5-2.5z" />
     </svg>
