@@ -1,4 +1,14 @@
 export default function Page() {
+  // --- UPDATE THESE WITH YOUR REAL PROFILES ---
+  const socials = [
+    { name: "Spotify",   href: "https://open.spotify.com/artist/YOUR_ID" },
+    { name: "Instagram", href: "https://instagram.com/YOUR_HANDLE" },
+    { name: "TikTok",    href: "https://tiktok.com/@YOUR_HANDLE" },
+    { name: "YouTube",   href: "https://youtube.com/@YOUR_HANDLE" },
+    // { name: "X / Twitter", href: "https://x.com/YOUR_HANDLE" }, // optional
+    // { name: "SoundCloud", href: "https://soundcloud.com/YOUR_HANDLE" }, // optional
+  ];
+
   const tracks = [
     { title: "GAME BOY HEART (ゲームボーイの心)", url: "https://open.spotify.com/track/5VypE0QkaggJemaNG6sMsF" },
     { title: "KID FOREVER (永遠の子供)",          url: "https://open.spotify.com/track/5X27jqHBvMBsDvvFixeZdN" },
@@ -16,24 +26,44 @@ export default function Page() {
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-16">
-      <header className="mb-10">
+      <header className="mb-8">
         <h1 className="text-4xl font-extrabold md:text-6xl">CHXNDLER • Heartverse</h1>
         <p className="mt-3 max-w-prose text-white/80">
-          Minimal site is live. We’ll add email sign-up, previews, and socials next.
+          Minimal site is live. We’ll add email sign-up, previews, and more soon.
         </p>
+
+        {/* Social buttons */}
+        <nav aria-label="Follow CHXNDLER" className="mt-5 flex flex-wrap gap-3">
+          {socials.map((s) => (
+            <a
+              key={s.name}
+              href={s.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-medium
+                         text-white/90 backdrop-blur transition hover:bg-white/10 hover:text-white"
+            >
+              {s.name} <span aria-hidden>↗</span>
+            </a>
+          ))}
+        </nav>
       </header>
 
+      {/* Tracks grid */}
       <section className="grid gap-4 sm:grid-cols-2">
         {tracks.map((t, i) => (
           <a
             key={i}
-            className="group rounded-2xl border border-white/15 bg-white/5 p-5 backdrop-blur hover:bg-white/10 transition"
+            className="group rounded-2xl border border-white/15 bg-white/5 p-5 backdrop-blur
+                       transition hover:bg-white/10"
             href={t.url}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
           >
             <div className="text-lg font-semibold">{t.title}</div>
-            <div className="mt-2 text-sm text-white/70">Open on Spotify →</div>
+            <div className="mt-2 text-sm text-white/70 group-hover:text-white/90">
+              Open on Spotify →
+            </div>
           </a>
         ))}
       </section>
