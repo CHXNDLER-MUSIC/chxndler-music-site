@@ -1,1 +1,23 @@
+[
+  {
+    "id": "baby",
+    "title": "BABY",
+    "artist": "CHXNDLER",
+    "cover": "/art/baby.png",
+    "audio": "/art/baby.mp3",
+    "youtube": "https://youtu.be/RqBs_MYhM6c",
+    "spotify": "https://open.spotify.com/track/xxxxx",
+    "apple": "https://music.apple.com/us/album/xxxxx"
+  },
+  {
+    "id": "ocean-girl",
+    "title": "OCEAN GIRL",
+    "artist": "CHXNDLER",
+    "cover": "/art/ocean-girl.png",
+    "audio": "/art/ocean-girl.mp3",
+    "youtube": "https://youtu.be/GKfczFiNLn0",
+    "spotify": "https://open.spotify.com/track/yyyyy",
+    "apple": "https://music.apple.com/us/album/yyyyy"
+  }
+]
 
