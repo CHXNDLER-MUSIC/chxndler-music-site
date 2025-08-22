@@ -8,7 +8,7 @@ export const metadata = {
     template: "%s | CHXNDLER",
   },
   description:
-    "Official site of CHXNDLER. Listen on Spotify & Apple Music and follow on Instagram, TikTok, Facebook, and YouTube.",
+    "Official site of CHXNDLER. Listen on Spotify & Apple Music and follow on Instagram, TikTok, and YouTube.",
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
@@ -16,16 +16,10 @@ export const metadata = {
     siteName: "CHXNDLER",
     title: "CHXNDLER",
     description:
-      "Listen on Spotify & Apple Music and follow across socials.",
-    // no images needed — /opengraph-image will be used automatically
+      "Listen on Spotify & Apple Music and follow on Instagram, TikTok, and YouTube.",
+    // No static images needed — /opengraph-image is used automatically
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "CHXNDLER",
-    description:
-      "Listen on Spotify & Apple Music and follow across socials.",
-    // no images needed — /opengraph-image will be used automatically
-  },
+  // No twitter section at all
   icons: {
     icon: "/favicon.ico",            // optional: /public/favicon.ico
     apple: "/apple-touch-icon.png",  // optional: 180x180
