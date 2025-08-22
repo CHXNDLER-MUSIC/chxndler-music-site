@@ -1,20 +1,16 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState, useEffect } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Html, OrbitControls, useTexture } from "@react-three/drei";
+import * as THREE from "three";
 import { motion, AnimatePresence } from "framer-motion";
 import { Play, Pause, Volume2, ChevronLeft, ChevronRight, Send } from "lucide-react";
 
-/* =========================
-   CHXNDLER Cockpit v5
-   - 16:9 frame (hotspots never drift)
-   - 3D-transformed “left console” with glowing social icons
-   - 3D-transformed “center screen” HUD with hologram carousel (3 songs)
-   - Embedded player (play/pause, progress, volume)
-   - Join-the-Aliens in the right panel (posts to /api/join)
-   ========================= */
+/** ========= ASSETS ========= */
+const COCKPIT_TEX = "/cockpit/cockpit.png";
 
-const COCKPIT_SRC = "/cockpit/cockpit.png";
-
+/** ========= SONGS ========= */
 const STATIONS = [
   {
     id: "ocean-girl",
@@ -24,9 +20,9 @@ const STATIONS = [
     links: {
       spotify: "https://open.spotify.com/album/37niwECG0TJMuYFQdrJE3y?si=S_Btj1hMRU-RsnsVL2PBmQ",
       apple: "https://music.apple.com/us/album/ocean-girl/1829503198?i=1829503199",
-      youtube: "https://youtu.be/GKfczFiNLn0",
+      youtube: "https://youtu.be/GKfczFiNLn0"
     },
-    theme: { base: "#79c7ff", glow: "#bde6ff", fx: "waves" },
+    theme: { base: "#79c7ff", glow: "#bde6ff", fx: "waves" }
   },
   {
     id: "ocean-girl-acoustic",
@@ -36,9 +32,9 @@ const STATIONS = [
     links: {
       spotify: "https://open.spotify.com/track/62KREyqgAQxmq3zqCT7oMh?si=506cf1906fac4275",
       apple: "https://music.apple.com/us/album/ocean-girl-acoustic/1830685266?i=1830685267",
-      youtube: "https://youtu.be/NsL3WC6L3fw",
+      youtube: "https://youtu.be/NsL3WC6L3fw"
     },
-    theme: { base: "#9ad6ff", glow: "#e6fbff", fx: "waves" },
+    theme: { base: "#9ad6ff", glow: "#e6fbff", fx: "waves" }
   },
   {
     id: "ocean-girl-remix",
@@ -48,42 +44,27 @@ const STATIONS = [
     links: {
       spotify: "https://open.spotify.com/track/1wbgLONY1GsBZC5XW4MUzu?si=ff27a874552948c4",
       apple: "https://music.apple.com/us/album/ocean-girl-remix-single/1830764323",
-      youtube: "https://youtu.be/oGiRQCARek4",
+      youtube: "https://youtu.be/oGiRQCARek4"
     },
-    theme: { base: "#3b2f5a", glow: "#b47cff", fx: "lightning" },
-  },
+    theme: { base: "#3b2f5a", glow: "#b47cff", fx: "lightning" }
+  }
 ];
 
-// 16:9 frame mapping. We don’t use raw pixels; everything is percentages so it scales perfectly.
-const MAP = {
-  FRAME: { w: "min(100vw, 177.78vh)", h: "calc(min(100vw, 177.78vh) * 9 / 16)" },
+/** ========= HELPERS ========= */
+function timeFmt(s) {
+  if (!isFinite(s)) return "0:00";
+  const m = Math.floor(s / 60);
+  const ss = Math.floor(s % 60).toString().padStart(2, "0");
+  return `${m}:${ss}`;
+}
+const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
 
-  // ----- LEFT CONSOLE PANEL (angled) -----
-  LEFT_PANEL: {
-    // approximate region covering the vertical social stack on your art
-    left: "10.5%", top: "34%", width: "12.5%", height: "44%",
-    // 3D tilt to match plastic bezel
-    transform: "perspective(900px) rotateY(-18deg) rotateX(2deg) skewY(-2deg)",
-  },
-
-  // ----- CENTER SCREEN (main HUD) -----
-  CENTER_HUD: {
-    left: "25%", top: "18%", width: "50%", height: "20%",
-    transform: "perspective(900px) rotateX(2deg)",
-  },
-
-  // ----- RIGHT PANEL (Join form) -----
-  RIGHT_PANEL: {
-    right: "9%", top: "32%", width: "23%", minWidth: 280,
-    transform: "perspective(900px) rotateY(9deg) rotateX(1deg)",
-  },
-};
-
+/** ========= MAIN PAGE ========= */
 export default function Page() {
   const [index, setIndex] = useState(0);
   const station = STATIONS[index];
 
-  /** ---------- audio ---------- */
+  // ----- audio -----
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [vol, setVol] = useState(0.9);
@@ -92,12 +73,11 @@ export default function Page() {
   const [tryIdx, setTryIdx] = useState(0);
 
   const audioSrcs = useMemo(() => {
-    const s = station?.file || "";
-    const base = s || `/tracks/${station?.id}.mp3`;
-    const g = [base];
-    if (!s.endsWith(".mp3")) g.push(base.replace(/\.[^.]+$/, ".mp3"));
-    g.push(base.replace(/\.[^.]+$/, ".m4a"), base.replace(/\.[^.]+$/, ".wav"));
-    return Array.from(new Set(g));
+    const file = station.file || `/tracks/${station.id}.mp3`;
+    const list = [file];
+    if (!file.endsWith(".mp3")) list.push(file.replace(/\.[^.]+$/, ".mp3"));
+    list.push(file.replace(/\.[^.]+$/, ".m4a"), file.replace(/\.[^.]+$/, ".wav"));
+    return Array.from(new Set(list));
   }, [station]);
 
   useEffect(() => {
@@ -130,58 +110,56 @@ export default function Page() {
     setDuration(a.duration || 0);
   };
   const seek = (t) => {
-    const a = audioRef.current; if (!a) return;
-    a.currentTime = t; setProgress(t);
+    const a = audioRef.current;
+    if (!a) return;
+    a.currentTime = clamp(t, 0, a.duration || 0);
+    setProgress(a.currentTime);
   };
   const togglePlay = async () => {
-    const a = audioRef.current; if (!a) return;
-    if (a.paused) { try { await a.play(); setIsPlaying(true); } catch {} }
-    else { a.pause(); setIsPlaying(false); }
+    const a = audioRef.current;
+    if (!a) return;
+    if (a.paused) {
+      try {
+        await a.play();
+        setIsPlaying(true);
+      } catch {}
+    } else {
+      a.pause();
+      setIsPlaying(false);
+    }
   };
-
   const next = () => setIndex((i) => (i + 1) % STATIONS.length);
   const prev = () => setIndex((i) => (i - 1 + STATIONS.length) % STATIONS.length);
 
   return (
-    <div className="min-h-screen w-full bg-black text-white overflow-hidden relative">
-      <SpaceWorld theme={station.theme} playing={isPlaying} />
+    <div className="min-h-screen w-full bg-black text-white">
+      <Canvas
+        frameloop="always"
+        camera={{ position: [0, 0, 13.5], fov: 50 }}
+        style={{ position: "fixed", inset: 0 }}
+      >
+        <color attach="background" args={["#000"]} />
+        <SpaceWorld theme={station.theme} playing={isPlaying} />
+        <CockpitScene
+          station={station}
+          index={index}
+          isPlaying={isPlaying}
+          togglePlay={togglePlay}
+          progress={progress}
+          duration={duration}
+          seek={seek}
+          vol={vol}
+          setVol={setVol}
+          prev={prev}
+          next={next}
+        />
+        {/* Lock camera to a tiny idle sway for immersion */}
+        <CameraSway />
+        {/* No user orbiting – feels like you’re seated */}
+        <OrbitControls enabled={false} />
+      </Canvas>
 
-      {/* ===== 16:9 FRAME ===== */}
-      <div className="absolute inset-0 z-10 flex items-center justify-center">
-        <div className="relative" style={{ width: MAP.FRAME.w, height: MAP.FRAME.h }}>
-          {/* Cockpit art (non-interactive) */}
-          <img
-            src={COCKPIT_SRC}
-            alt="Cockpit"
-            className="absolute inset-0 h-full w-full object-cover select-none"
-            style={{ pointerEvents: "none" }}
-            draggable={false}
-          />
-
-          {/* LEFT CONSOLE: 3D panel with glowing social buttons */}
-          <LeftConsole3D rect={MAP.LEFT_PANEL} />
-
-          {/* CENTER HUD: hologram carousel + player fully embedded */}
-          <CenterHUD3D
-            rect={MAP.CENTER_HUD}
-            station={station}
-            index={index}
-            next={next}
-            prev={prev}
-            isPlaying={isPlaying}
-            togglePlay={togglePlay}
-            progress={progress}
-            duration={duration}
-            seek={seek}
-            vol={vol}
-            setVol={setVol}
-          />
-
-          {/* RIGHT PANEL: signup form */}
-          <JoinAliens3D rect={MAP.RIGHT_PANEL} />
-        </div>
-      </div>
-
+      {/* hidden audio element */}
       <audio
         ref={audioRef}
         hidden
@@ -193,76 +171,77 @@ export default function Page() {
   );
 }
 
-/* =============== LEFT CONSOLE (3D) =============== */
+/** ========= CAMERA SWAY ========= */
+function CameraSway() {
+  const { camera } = useThree();
+  const t = useRef(0);
+  useFrame((_, delta) => {
+    t.current += delta;
+    camera.position.x = Math.sin(t.current * 0.3) * 0.1;
+    camera.position.y = Math.cos(t.current * 0.25) * 0.06;
+    camera.lookAt(0, 0, 0);
+  });
+  return null;
+}
 
-function LeftConsole3D({ rect }) {
-  const socials = {
-    instagram: "https://instagram.com/chxndler_music",
-    tiktok: "https://tiktok.com/@chxndler_music",
-    youtube: "https://youtube.com/@CHXNDLER_MUSIC",
-  };
-
-  const Btn = ({ href, svg, glow, topPct }) => (
-    <a
-      href={href}
-      target="_blank"
-      className="absolute left-1/2 -translate-x-1/2 rounded-xl flex items-center justify-center"
-      style={{
-        top: topPct,
-        width: "42%",
-        height: "22%",
-        boxShadow: `0 0 22px ${glow}99, inset 0 0 16px ${glow}44`,
-        border: "1px solid rgba(255,255,255,0.18)",
-        background:
-          "radial-gradient(circle at 35% 30%, rgba(255,255,255,.08), rgba(0,0,0,.25))",
-        backdropFilter: "blur(3px)",
-      }}
-      aria-label="social"
-    >
-      {svg}
-    </a>
-  );
-
+/** ========= SPACE BACKGROUND ========= */
+function SpaceWorld({ theme, playing }) {
+  const speed = playing ? 1.2 : 0.5;
   return (
-    <div
-      className="absolute"
-      style={{
-        left: rect.left, top: rect.top, width: rect.width, height: rect.height,
-        transform: rect.transform, transformOrigin: "50% 50%",
-      }}
-    >
-      <div className="relative h-full w-full">
-        <Btn
-          href={socials.instagram}
-          topPct="8%"
-          glow="#FC54AF"
-          svg={<SVGInstagram />}
-        />
-        <Btn
-          href={socials.tiktok}
-          topPct="39%"
-          glow="#FFFFFF"
-          svg={<SVGTikTok />}
-        />
-        <Btn
-          href={socials.youtube}
-          topPct="70%"
-          glow="#FF0000"
-          svg={<SVGYouTube />}
-        />
-      </div>
-    </div>
+    <group>
+      <StarsLayer tint={`${theme.glow}AA`} scale={1} speed={speed} />
+      <StarsLayer tint={`${theme.base}88`} scale={1.6} speed={speed * 1.6} />
+      {theme.fx === "waves" && <OceanFX color={theme.glow} />}
+      {theme.fx === "lightning" && <LightningFX color={theme.glow} />}
+    </group>
+  );
+}
+function StarsLayer({ tint = "#ffffff88", speed = 1, scale = 1 }) {
+  const geo = useMemo(() => new THREE.SphereGeometry(60, 32, 32), []);
+  const mat = useMemo(
+    () =>
+      new THREE.MeshBasicMaterial({
+        color: new THREE.Color(tint),
+        side: THREE.BackSide
+      }),
+    [tint]
+  );
+  const ref = useRef();
+  useFrame((_, d) => {
+    if (ref.current) ref.current.rotation.y += (0.01 * d * speed) / scale;
+  });
+  return <mesh ref={ref} geometry={geo} material={mat} scale={scale} />;
+}
+function OceanFX({ color }) {
+  const mat = useMemo(
+    () => new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(0.2), transparent: true, opacity: 0.15 }),
+    [color]
+  );
+  return (
+    <mesh position={[0, -2.6, -5]} rotation={[-Math.PI / 2.1, 0, 0]}>
+      <planeGeometry args={[30, 8]} />
+      <meshBasicMaterial attach="material" {...mat} />
+    </mesh>
+  );
+}
+function LightningFX({ color }) {
+  const ref = useRef();
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    if (ref.current) ref.current.material.opacity = (Math.sin(t * 5.3) + 1.2) * 0.12;
+  });
+  return (
+    <mesh ref={ref} position={[2, 1.5, -4]}>
+      <sphereGeometry args={[1.5, 16, 16]} />
+      <meshBasicMaterial color={color} transparent opacity={0.1} />
+    </mesh>
   );
 }
 
-/* =============== CENTER HUD (3D) =============== */
-
-function CenterHUD3D({
-  rect,
+/** ========= COCKPIT + PANELS ========= */
+function CockpitScene({
   station,
   index,
-  next,
-  prev,
   isPlaying,
   togglePlay,
   progress,
@@ -270,87 +249,212 @@ function CenterHUD3D({
   seek,
   vol,
   setVol,
+  prev,
+  next
 }) {
+  // big background plane textured with cockpit
+  const tex = useTexture(COCKPIT_TEX);
+  tex.anisotropy = 8;
+
   return (
-    <div
-      className="absolute"
+    <group>
+      {/* Cockpit base: 16 x 9 units (matches 16:9) */}
+      <mesh position={[0, 0, 0]}>
+        <planeGeometry args={[16, 9]} />
+        <meshBasicMaterial map={tex} toneMapped={false} />
+      </mesh>
+
+      {/* Left console plane (angled) for social stack */}
+      <PanelPlane
+        position={[-5.6, -0.3, 0.1]}
+        rotation={[0.02, -0.33, -0.02]}
+        size={[2.2, 3.5]}
+      >
+        <LeftConsoleUI />
+      </PanelPlane>
+
+      {/* Center HUD plane (slightly tilted) */}
+      <PanelPlane position={[0, 1.55, 0.1]} rotation={[0.08, 0, 0]} size={[7.8, 2.2]}>
+        <HudUI
+          station={station}
+          index={index}
+          isPlaying={isPlaying}
+          togglePlay={togglePlay}
+          progress={progress}
+          duration={duration}
+          seek={seek}
+          vol={vol}
+          setVol={setVol}
+          prev={prev}
+          next={next}
+        />
+      </PanelPlane>
+
+      {/* Optional: right join form could also be embedded; we keep it flat Html at a tilted spot */}
+      <PanelPlane position={[6.0, 0.8, 0.1]} rotation={[0.03, 0.14, 0]} size={[3.8, 2.7]}>
+        <JoinAliensUI />
+      </PanelPlane>
+    </group>
+  );
+}
+
+function PanelPlane({ position, rotation, size, children }) {
+  const [w, h] = size;
+  return (
+    <group position={position} rotation={rotation}>
+      <mesh visible={false}>
+        <planeGeometry args={[w, h]} />
+        <meshBasicMaterial transparent opacity={0} />
+      </mesh>
+      <Html
+        transform
+        occlude
+        distanceFactor={6}
+        style={{ width: `${w * 40}px`, height: `${h * 40}px` }} // DOM pixels scaled from world units
+      >
+        {children}
+      </Html>
+    </group>
+  );
+}
+
+/** ========= UI BLOCKS ========= */
+
+function LeftConsoleUI() {
+  const Btn = ({ href, glow, children, top }) => (
+    <a
+      href={href}
+      target="_blank"
+      className="absolute left-1/2 -translate-x-1/2 rounded-xl flex items-center justify-center"
       style={{
-        left: rect.left, top: rect.top, width: rect.width, height: rect.height,
-        transform: rect.transform, transformOrigin: "50% 50%",
+        top,
+        width: "44%",
+        height: "22%",
+        boxShadow: `0 0 22px ${glow}99, inset 0 0 16px ${glow}44`,
+        border: "1px solid rgba(255,255,255,0.18)",
+        background: "radial-gradient(circle at 35% 30%, rgba(255,255,255,.08), rgba(0,0,0,.25))",
+        backdropFilter: "blur(3px)"
       }}
     >
-      <div
-        className="h-full w-full rounded-2xl border grid"
-        style={{
-          borderColor: "rgba(255,255,255,0.16)",
-          background: "rgba(10,15,20,0.50)",
-          boxShadow:
-            "0 0 44px rgba(56,182,255,.20), inset 0 0 36px rgba(255,255,255,.05)",
-          backdropFilter: "blur(10px)",
-          gridTemplateColumns: "auto 1fr auto",
-          columnGap: "10px",
-          alignItems: "center",
-          padding: "10px",
-        }}
-      >
-        {/* Hologram cover carousel (left) */}
-        <HoloCarousel index={index} station={station} onPrev={prev} onNext={next} />
+      {children}
+    </a>
+  );
 
-        {/* Middle column: title + progress + volume + music icons */}
-        <div className="min-w-0 overflow-hidden">
-          <div
-            className="text-[16px] md:text-[18px] font-semibold truncate"
-            style={{ textShadow: "0 0 10px rgba(189,230,255,.6)" }}
-            title={station.title}
-          >
-            {station.title}
-          </div>
-
-          <ProgressRow progress={progress} duration={duration} seek={seek} />
-
-          <div className="mt-1 flex items-center gap-3">
-            <div className="hidden md:flex items-center gap-2">
-              <Volume2 className="opacity-70" />
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.01}
-                value={vol}
-                onChange={(e) => setVol(parseFloat(e.target.value))}
-                className="w-32 accent-blue-500"
-              />
-            </div>
-
-            <div className="ml-auto flex items-center gap-2">
-              <IconPill href={station.links?.spotify} glow="#1DB954">
-                <SVGSpotify />
-              </IconPill>
-              <IconPill href={station.links?.apple} glow="#FFFFFF">
-                <SVGAudioApple />
-              </IconPill>
-              <IconPill href={station.links?.youtube} glow="#FF0000">
-                <SVGYouTube />
-              </IconPill>
-            </div>
-          </div>
-        </div>
-
-        {/* Right column: play/pause */}
-        <button
-          onClick={togglePlay}
-          className="rounded-full border border-white/30 p-2 hover:bg-white/10"
-          title={isPlaying ? "Pause" : "Play"}
-        >
-          {isPlaying ? <Pause /> : <Play />}
-        </button>
-      </div>
+  return (
+    <div className="relative h-full w-full select-none">
+      <Btn href="https://instagram.com/chxndler_music" glow="#FC54AF" top="8%">
+        <SVGInstagram />
+      </Btn>
+      <Btn href="https://tiktok.com/@chxndler_music" glow="#FFFFFF" top="39%">
+        <SVGTikTok />
+      </Btn>
+      <Btn href="https://youtube.com/@CHXNDLER_MUSIC" glow="#FF0000" top="70%">
+        <SVGYouTube />
+      </Btn>
     </div>
   );
 }
 
-function HoloCarousel({ index, station, onPrev, onNext }) {
-  // Visual only; actual audio switching happens via the page’s index state
+function HudUI({
+  station,
+  isPlaying,
+  togglePlay,
+  progress,
+  duration,
+  seek,
+  vol,
+  setVol,
+  prev,
+  next
+}) {
+  return (
+    <div
+      className="h-full w-full rounded-2xl border grid"
+      style={{
+        borderColor: "rgba(255,255,255,0.16)",
+        background: "rgba(10,15,20,0.50)",
+        boxShadow: "0 0 44px rgba(56,182,255,.20), inset 0 0 36px rgba(255,255,255,.05)",
+        backdropFilter: "blur(10px)",
+        gridTemplateColumns: "auto 1fr auto",
+        columnGap: "10px",
+        alignItems: "center",
+        padding: "10px"
+      }}
+    >
+      {/* Hologram cover + carousel */}
+      <CoverCarousel station={station} onPrev={prev} onNext={next} />
+
+      {/* Middle: title + progress + volume + streaming icons */}
+      <div className="min-w-0 overflow-hidden">
+        <div
+          className="text-[16px] md:text-[18px] font-semibold truncate"
+          style={{ textShadow: "0 0 10px rgba(189,230,255,.6)" }}
+          title={station.title}
+        >
+          {station.title}
+        </div>
+
+        <div className="mt-1 flex items-center gap-2 text-[11px] opacity-85">
+          <span className="tabular-nums w-10 text-right">{timeFmt(progress)}</span>
+          <input
+            type="range"
+            min={0}
+            max={duration || 0}
+            step={0.01}
+            value={progress}
+            onChange={(e) => seek(parseFloat(e.target.value))}
+            className="flex-1 accent-yellow-400"
+          />
+          <span className="tabular-nums w-10">{timeFmt(duration)}</span>
+        </div>
+
+        <div className="mt-1 flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-2">
+            <Volume2 className="opacity-70" />
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={vol}
+              onChange={(e) => setVol(parseFloat(e.target.value))}
+              className="w-32 accent-blue-500"
+            />
+          </div>
+
+          <div className="ml-auto flex items-center gap-2">
+            {station.links?.spotify && (
+              <IconPill href={station.links.spotify} glow="#1DB954">
+                <SVGSpotify />
+              </IconPill>
+            )}
+            {station.links?.apple && (
+              <IconPill href={station.links.apple} glow="#FFFFFF">
+                <SVGAudioApple />
+              </IconPill>
+            )}
+            {station.links?.youtube && (
+              <IconPill href={station.links.youtube} glow="#FF0000">
+                <SVGYouTube />
+              </IconPill>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Play / Pause */}
+      <button
+        onClick={togglePlay}
+        className="rounded-full border border-white/30 p-2 hover:bg-white/10"
+        title={isPlaying ? "Pause" : "Play"}
+      >
+        {isPlaying ? <Pause /> : <Play />}
+      </button>
+    </div>
+  );
+}
+
+function CoverCarousel({ station, onPrev, onNext }) {
   return (
     <div className="relative mr-2 h-16 w-16 md:h-20 md:w-20">
       <div
@@ -358,16 +462,13 @@ function HoloCarousel({ index, station, onPrev, onNext }) {
         style={{
           borderColor: "rgba(255,255,255,0.25)",
           background: "rgba(255,255,255,0.06)",
-          boxShadow:
-            "inset 0 0 18px rgba(56,182,255,.25), 0 0 18px rgba(252,84,175,.25)",
+          boxShadow: "inset 0 0 18px rgba(56,182,255,.25), 0 0 18px rgba(252,84,175,.25)",
           transform: "perspective(700px) rotateX(6deg)",
-          transformOrigin: "50% 100%",
+          transformOrigin: "50% 100%"
         }}
       >
-        <HoloCover candidates={station.cover} title={station.title} />
+        <CoverImage candidates={station.cover} title={station.title} />
       </div>
-
-      {/* prev / next arrows floating as hologram controls */}
       <button
         onClick={onPrev}
         className="absolute -left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 border border-white/30 p-1 hover:bg-white/20"
@@ -386,9 +487,10 @@ function HoloCarousel({ index, station, onPrev, onNext }) {
   );
 }
 
-function HoloCover({ candidates, title }) {
+function CoverImage({ candidates = [], title }) {
+  // Fix for “cover not showing”: we iterate all candidates and fallback
   const [i, setI] = useState(0);
-  const src = candidates?.[i];
+  const src = candidates[i];
   if (!src) return null;
   return (
     <AnimatePresence mode="wait">
@@ -400,7 +502,7 @@ function HoloCover({ candidates, title }) {
         initial={{ opacity: 0, filter: "blur(6px)" }}
         animate={{ opacity: 1, filter: "blur(0px)" }}
         exit={{ opacity: 0, filter: "blur(6px)" }}
-        onError={() => setI((i + 1) % (candidates?.length || 1))}
+        onError={() => setI((i + 1) % (candidates.length || 1))}
         transition={{ duration: 0.35 }}
       />
     </AnimatePresence>
@@ -417,7 +519,7 @@ function IconPill({ href, glow, children }) {
       style={{
         borderColor: "rgba(255,255,255,0.18)",
         background: "rgba(255,255,255,0.08)",
-        boxShadow: `0 0 18px ${glow}88, inset 0 0 14px ${glow}33`,
+        boxShadow: `0 0 18px ${glow}88, inset 0 0 14px ${glow}33`
       }}
       aria-label="music-link"
     >
@@ -426,33 +528,8 @@ function IconPill({ href, glow, children }) {
   );
 }
 
-function ProgressRow({ progress, duration, seek }) {
-  const fmt = (s) => {
-    if (!isFinite(s)) return "0:00";
-    const m = Math.floor(s / 60);
-    const ss = Math.floor(s % 60).toString().padStart(2, "0");
-    return `${m}:${ss}`;
-  };
-  return (
-    <div className="mt-1 flex items-center gap-2 text-[11px] opacity-85">
-      <span className="tabular-nums w-10 text-right">{fmt(progress)}</span>
-      <input
-        type="range"
-        min={0}
-        max={duration || 0}
-        step={0.01}
-        value={progress}
-        onChange={(e) => seek(parseFloat(e.target.value))}
-        className="flex-1 accent-yellow-400"
-      />
-      <span className="tabular-nums w-10">{fmt(duration)}</span>
-    </div>
-  );
-}
-
-/* =============== RIGHT PANEL (3D) =============== */
-
-function JoinAliens3D({ rect }) {
+/** ======= JOIN (embedded, posts to /api/join) ======= */
+function JoinAliensUI() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [status, setStatus] = useState("idle");
@@ -461,158 +538,76 @@ function JoinAliens3D({ rect }) {
   async function submit(e) {
     e.preventDefault();
     setMsg("");
-    if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
-      setMsg("Enter a valid email.");
-      return;
-    }
+    const ok = /^\S+@\S+\.\S+$/.test(email);
+    if (!ok) return setMsg("Enter a valid email.");
     setStatus("sending");
     try {
       const r = await fetch("/api/join", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email, phone }),
+        body: JSON.stringify({ email, phone })
       });
-      const j = await r.json();
+      const j = await r.json().catch(() => ({}));
       if (!r.ok || j?.ok === false) throw new Error(j?.error || "Failed");
       setStatus("ok");
       setMsg("Thanks! You’re on the list. 👽");
       setEmail(""); setPhone("");
     } catch (err) {
-      setStatus("err"); setMsg(String(err?.message || err || "Something went wrong"));
+      setStatus("err");
+      setMsg(String(err?.message || err));
     }
   }
 
   return (
     <div
-      className="absolute"
+      className="rounded-2xl border p-3 md:p-4"
       style={{
-        right: rect.right, top: rect.top, width: rect.width, minWidth: rect.minWidth,
-        transform: rect.transform, transformOrigin: "50% 50%",
+        borderColor: "rgba(255,255,255,0.15)",
+        background: "rgba(10,15,20,0.45)",
+        backdropFilter: "blur(10px)",
+        boxShadow: "0 0 40px rgba(252,84,175,.25), inset 0 0 36px rgba(56,182,255,.18)"
       }}
     >
-      <div
-        className="rounded-2xl border p-3 md:p-4"
-        style={{
-          borderColor: "rgba(255,255,255,0.15)",
-          background: "rgba(10,15,20,0.45)",
-          backdropFilter: "blur(10px)",
-          boxShadow: "0 0 40px rgba(252,84,175,.25), inset 0 0 36px rgba(56,182,255,.18)",
-        }}
-      >
-        <div className="text-xs uppercase tracking-wider opacity-70 mb-1">
-          Join the Aliens
-        </div>
-        <form onSubmit={submit} className="flex flex-col gap-2">
-          <input
-            type="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="rounded-xl bg-black/40 px-3 py-2 outline-none placeholder:text-white/40"
-            required
-          />
-          <input
-            type="tel"
-            placeholder="phone (optional)"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="rounded-xl bg-black/40 px-3 py-2 outline-none placeholder:text-white/40"
-          />
-          <button
-            disabled={status === "sending"}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/90 px-3 py-2 text-black hover:bg-white disabled:opacity-70"
-            type="submit"
-          >
-            {status === "sending" ? "Sending…" : <> <Send size={14}/> Join </>}
-          </button>
-          {msg && (
-            <div className={`text-xs mt-1 ${status === "err" ? "text-red-300" : "text-green-300"}`}>
-              {msg}
-            </div>
-          )}
-        </form>
+      <div className="text-xs uppercase tracking-wider opacity-70 mb-1">
+        Join the Aliens
       </div>
+      <form onSubmit={submit} className="flex flex-col gap-2">
+        <input
+          type="email"
+          placeholder="you@example.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="rounded-xl bg-black/40 px-3 py-2 outline-none placeholder:text-white/40"
+          required
+        />
+        <input
+          type="tel"
+          placeholder="phone (optional)"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          className="rounded-xl bg-black/40 px-3 py-2 outline-none placeholder:text-white/40"
+        />
+        <button
+          disabled={status === "sending"}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/90 px-3 py-2 text-black hover:bg-white disabled:opacity-70"
+          type="submit"
+        >
+          {status === "sending" ? "Sending…" : <> <Send size={14}/> Join </>}
+        </button>
+        {msg && (
+          <div className={`text-xs mt-1 ${status === "err" ? "text-red-300" : "text-green-300"}`}>
+            {msg}
+          </div>
+        )}
+      </form>
     </div>
   );
 }
 
-/* =============== Background space =============== */
-
-function SpaceWorld({ theme, playing }) {
-  const speed = playing ? 1.2 : 0.5;
-  return (
-    <div className="absolute inset-0 -z-10">
-      <StarLayer blur={0} speed={speed} tint={`${theme.glow}88`} />
-      <StarLayer blur={0.3} speed={speed * 1.6} tint={`${theme.base}66`} />
-      <div
-        className="absolute inset-0"
-        style={{
-          background: `radial-gradient(circle at 70% 30%, ${theme.glow}11, transparent 40%),
-                       radial-gradient(circle at 20% 70%, ${theme.base}11, transparent 40%)`,
-        }}
-      />
-      {theme.fx === "waves" && <OceanFX />}
-      {theme.fx === "lightning" && <LightningFX color={theme.glow} />}
-    </div>
-  );
-}
-function StarLayer({ blur = 0, speed = 1, tint = "#fff8" }) {
-  const style = {
-    position: "absolute",
-    inset: 0,
-    backgroundRepeat: "repeat",
-    pointerEvents: "none",
-    backgroundImage: `radial-gradient(${tint} 1px, transparent 1px)`,
-    backgroundSize: "3px 3px",
-    filter: `blur(${blur}px)`,
-    animation: `starMove ${20 / Math.max(speed, 0.1)}s linear infinite`,
-  };
-  return (
-    <div style={style}>
-      <style>{`@keyframes starMove{from{transform:translateY(0)}to{transform:translateY(30%)}}`}</style>
-    </div>
-  );
-}
-function OceanFX() {
-  return (
-    <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-      <style>{`@keyframes waveMove{0%{transform:translateX(-20%)}100%{transform:translateX(20%)}}`}</style>
-      <div
-        style={{
-          position: "absolute",
-          bottom: "11%", left: 0, right: 0, height: "14%",
-          background:
-            "repeating-linear-gradient(to right, rgba(255,255,255,0.08), rgba(255,255,255,0.08) 10px, transparent 10px, transparent 20px)",
-          opacity: 0.5, filter: "blur(1px)", animation: "waveMove 6s linear infinite",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          bottom: "6%", left: 0, right: 0, height: "10%",
-          background:
-            "repeating-linear-gradient(to right, rgba(255,255,255,0.05), rgba(255,255,255,0.05) 12px, transparent 12px, transparent 24px)",
-          opacity: 0.4, filter: "blur(1px)", animation: "waveMove 8s linear infinite reverse",
-        }}
-      />
-    </div>
-  );
-}
-function LightningFX({ color }) {
-  return (
-    <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-      <style>{`@keyframes flash{0%,97%,100%{opacity:0} 98%{opacity:.6} 99%{opacity:.2}}`}</style>
-      <div style={{ position: "absolute", inset: 0, background: `radial-gradient(circle at 40% 30%, ${color}33, transparent 40%)`, animation: "flash 4s infinite" }} />
-      <div style={{ position: "absolute", inset: 0, background: `radial-gradient(circle at 70% 60%, ${color}22, transparent 45%)`, animation: "flash 7s 1.5s infinite" }} />
-    </div>
-  );
-}
-
-/* =============== Inline SVG icons (no external assets) =============== */
-
+/** ========= SVG ICONS ========= */
 function SVGInstagram() {
   return (
-    <svg viewBox="0 0 24 24" width="24" height="24" fill="none">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
       <rect x="3" y="3" width="18" height="18" rx="5" stroke="white" opacity=".9" />
       <circle cx="12" cy="12" r="4.5" stroke="white" opacity=".9" />
       <circle cx="17.5" cy="6.5" r="1.2" fill="white" />
@@ -621,7 +616,7 @@ function SVGInstagram() {
 }
 function SVGTikTok() {
   return (
-    <svg viewBox="0 0 24 24" width="24" height="24" fill="white">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="white">
       <path d="M14 3v6.2a4.8 4.8 0 1 1-3.9-1.9V9a2.9 2.9 0 1 0 2.9 2.9V3h1z" />
       <path d="M15 3.5c.8 2.1 2.4 3.6 4.5 4v2c-1.9-.2-3.5-1-4.5-2.1V3.5z" />
     </svg>
@@ -629,7 +624,7 @@ function SVGTikTok() {
 }
 function SVGYouTube() {
   return (
-    <svg viewBox="0 0 24 24" width="26" height="26" fill="white">
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="white">
       <path d="M23 12s0-3.4-.4-4.9c-.2-.8-.8-1.5-1.6-1.7C19 5 12 5 12 5s-7 0-9 .4c-.8.2-1.4.9-1.6 1.7C1 8.6 1 12 1 12s0 3.4.4 4.9c.2.8.8 1.5 1.6 1.7C5 19 12 19 12 19s7 0 9-.4c.8-.2 1.4-.9 1.6-1.7.4-1.5.4-4.9.4-4.9z" />
       <path d="M10 15l5-3-5-3v6z" fill="black" />
     </svg>
