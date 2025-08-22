@@ -1,12 +1,15 @@
 // app/opengraph-image.jsx
 import { ImageResponse } from "next/og";
 
+// 1200×630 Open Graph image
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const runtime = "edge";
 
 export default function OGImage() {
-  const bg = "linear-gradient(135deg, #0b0719 0%, #2b0f3a 50%, #120a1f 100%)";
+  // Brand colors
+  const BLUE = "#38B6FF";
+  const PINK = "#FC54AF";
+  const YELLOW = "#F2EF1D";
 
   return new ImageResponse(
     (
@@ -17,7 +20,8 @@ export default function OGImage() {
           display: "flex",
           position: "relative",
           color: "#fff",
-          background: bg,
+          background:
+            "linear-gradient(135deg, #0b0719 0%, #2b0f3a 50%, #120a1f 100%)",
           fontFamily:
             'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial',
         }}
@@ -28,7 +32,8 @@ export default function OGImage() {
             position: "absolute",
             inset: 0,
             background:
-              "radial-gradient(600px 400px at 15% 20%, rgba(56,182,255,0.25), transparent 60%), radial-gradient(600px 400px at 85% 80%, rgba(252,84,175,0.25), transparent 60%)",
+              `radial-gradient(600px 400px at 15% 20%, ${BLUE}40, transparent 60%),
+               radial-gradient(600px 400px at 85% 80%, ${PINK}40, transparent 60%)`,
           }}
         />
 
@@ -38,7 +43,7 @@ export default function OGImage() {
             position: "absolute",
             inset: 0,
             background:
-              "radial-gradient(1px 1px at 10% 30%, rgba(255,255,255,0.6), transparent 40%), radial-gradient(1px 1px at 30% 70%, rgba(255,255,255,0.5), transparent 40%), radial-gradient(1px 1px at 60% 40%, rgba(255,255,255,0.5), transparent 40%), radial-gradient(1px 1px at 80% 60%, rgba(255,255,255,0.4), transparent 40%)",
+              "radial-gradient(1px 1px at 10% 30%, rgba(255,255,255,0.8), transparent 40%), radial-gradient(1px 1px at 30% 70%, rgba(255,255,255,0.7), transparent 40%), radial-gradient(1px 1px at 60% 40%, rgba(255,255,255,0.7), transparent 40%), radial-gradient(1px 1px at 80% 60%, rgba(255,255,255,0.6), transparent 40%)",
           }}
         />
 
@@ -64,24 +69,24 @@ export default function OGImage() {
           </div>
 
           <div style={{ fontSize: 28, opacity: 0.9 }}>
-            Listen • Follow • CHXNDLER
+            Listen • Follow • Enter the Heartverse
           </div>
 
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 8 }}>
-            {Chip({ label: "Spotify", color: "#38B6FF" })}
-            {Chip({ label: "Apple Music", color: "#38B6FF" })}
-            {Chip({ label: "Instagram", color: "#FC54AF" })}
-            {Chip({ label: "TikTok", color: "#FC54AF" })}
-            {Chip({ label: "YouTube", color: "#FC54AF" })}
+            {Chip({ label: "Spotify", color: BLUE })}
+            {Chip({ label: "Apple Music", color: BLUE })}
+            {Chip({ label: "Instagram", color: PINK })}
+            {Chip({ label: "TikTok", color: PINK })}
+            {Chip({ label: "YouTube", color: PINK })}
           </div>
 
-          <div style={{ marginTop: 40, fontSize: 26, color: "#F2EF1D" }}>
+          <div style={{ marginTop: 40, fontSize: 26, color: YELLOW }}>
             chxndler-music.com
           </div>
         </div>
       </div>
     ),
-    { width: size.width, height: size.height }
+    size
   );
 }
 
