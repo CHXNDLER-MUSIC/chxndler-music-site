@@ -6,6 +6,8 @@ export const contentType = "image/png";
 export const runtime = "edge";
 
 export default function OGImage() {
+  const bg = "linear-gradient(135deg, #0b0719 0%, #2b0f3a 50%, #120a1f 100%)";
+
   return new ImageResponse(
     (
       <div
@@ -15,13 +17,12 @@ export default function OGImage() {
           display: "flex",
           position: "relative",
           color: "#fff",
-          background:
-            "linear-gradient(135deg, #0b0719 0%, #2b0f3a 50%, #120a1f 100%)",
+          background: bg,
           fontFamily:
             'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial',
         }}
       >
-        {/* Brand glows */}
+        {/* brand glows */}
         <div
           style={{
             position: "absolute",
@@ -31,7 +32,7 @@ export default function OGImage() {
           }}
         />
 
-        {/* A few subtle stars */}
+        {/* tiny stars */}
         <div
           style={{
             position: "absolute",
@@ -80,7 +81,7 @@ export default function OGImage() {
         </div>
       </div>
     ),
-    size
+    { width: size.width, height: size.height }
   );
 }
 
