@@ -2,5 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Dark, cinematic base */
 :root { color-scheme: dark; }
-body { background: black; }
+html, body, #__next { height: 100%; }
+body { margin: 0; background: black; overflow: hidden; font-feature-settings: "ss01" on, "cv01" on; }
+
+/* Text rendering */
+body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+/* Remove tap highlight on mobile */
+* { -webkit-tap-highlight-color: transparent; }
