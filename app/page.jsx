@@ -5,11 +5,11 @@ import { motion } from "framer-motion";
 import { Play, Pause, Volume2, Radio, Send } from "lucide-react";
 
 /**
- * Minimal Cockpit MVP (fixed to OCEAN GIRL)
+ * CHXNDLER — Cockpit MVP (fixed to OCEAN GIRL)
  * Required public files (case-sensitive):
  *   /cockpit/cockpit.png
  *   /tracks/ocean-girl.mp3
- *   /cover/ocean-girl.png  (or .jpg)
+ *   /cover/ocean-girl.png   (jpg fallback tried automatically)
  */
 
 const COCKPIT_SRC = "/cockpit/cockpit.png";
@@ -28,10 +28,9 @@ const STATION = {
   },
 };
 
-const slug = (s) =>
-  s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-
+// ===== page =====
 export default function Home() {
+  // --- audio state ---
   const [isPlaying, setIsPlaying] = useState(false);
   const [vol, setVol] = useState(0.9);
   const [progress, setProgress] = useState(0);
@@ -39,16 +38,17 @@ export default function Home() {
   const [tryIndex, setTryIndex] = useState(0);
   const audioRef = useRef(null);
 
-  const coverSrcs = useMemo(() => {
-    const s = slug(STATION.title);
-    return [`/cover/${s}.png`, `/cover/${s}.jpg`];
-  }, []);
-  const audioSrcs = useMemo(() => {
-    const s = slug(STATION.title);
-    return [STATION.file, `/tracks/${s}.mp3`, `/tracks/${s}.m4a`, `/tracks/${s}.wav`];
-  }, []);
+  // explicit cover (reliable) with jpg fallback
+  const coverSrcs = useMemo(
+    () => ["/cover/ocean-girl.png", "/cover/ocean-girl.jpg"],
+    []
+  );
 
-  // load first audio candidate
+  const audioSrcs = useMemo(
+    () => [STATION.file, "/tracks/ocean-girl.mp3", "/tracks/ocean-girl.m4a"],
+    []
+  );
+
   useEffect(() => {
     const a = audioRef.current;
     if (!a) return;
@@ -58,7 +58,6 @@ export default function Home() {
     a.volume = vol;
   }, [audioSrcs, vol]);
 
-  // if an error occurs, try next source
   useEffect(() => {
     const a = audioRef.current;
     if (!a || !audioSrcs[tryIndex]) return;
@@ -103,93 +102,26 @@ export default function Home() {
 
   return (
     <div className="min-h-screen w-full bg-black text-white overflow-hidden">
+      {/* moving starfield + subtle ocean vibe */}
       <SpaceWorld playing={isPlaying} theme={STATION.planet} />
 
       {/* Static cockpit overlay */}
-      <div className="pointer-events-none absolute inset-0 z-10">
-        <img
-          src={COCKPIT_SRC}
-          alt="Cockpit"
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-          }}
-        />
-      </div>
+      <img
+        src={COCKPIT_SRC}
+        alt="Cockpit"
+        className="pointer-events-none absolute inset-0 z-10 h-full w-full object-cover"
+      />
 
-      {/* Left: per-track buttons */}
-      <div className="fixed left-4 top-1/2 z-30 -translate-y-1/2 flex flex-col gap-2">
-        <a
-          href={STATION.links.spotify}
-          target="_blank"
-          className="rounded-full px-3 py-2 text-xs font-semibold"
-          style={{
-            background: "rgba(255,255,255,0.06)",
-            boxShadow:
-              "0 0 16px #1DB95466, inset 0 0 10px #1DB95422",
-            border: "1px solid rgba(255,255,255,0.12)",
-          }}
-        >
-          Spotify
-        </a>
-        <a
-          href={STATION.links.apple}
-          target="_blank"
-          className="rounded-full px-3 py-2 text-xs font-semibold"
-          style={{
-            background: "rgba(255,255,255,0.06)",
-            boxShadow: "0 0 16px #ffffff66, inset 0 0 10px #ffffff22",
-            border: "1px solid rgba(255,255,255,0.12)",
-          }}
-        >
-          Apple Music
-        </a>
-        <a
-          href={STATION.links.youtube}
-          target="_blank"
-          className="rounded-full px-3 py-2 text-xs font-semibold"
-          style={{
-            background: "rgba(255,255,255,0.06)",
-            boxShadow: "0 0 16px #FF000066, inset 0 0 10px #FF000022",
-            border: "1px solid rgba(255,255,255,0.12)",
-          }}
-        >
-          YouTube MV
-        </a>
-      </div>
+      {/* CLICKABLE HOTSPOTS MAPPED ON COCKPIT IMAGE */}
+      <CockpitHotspots />
 
-      {/* Right: Join the Aliens */}
-      <div className="fixed right-6 top-[38%] z-30 -translate-y-1/2 w-64 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-        <div className="text-xs uppercase tracking-wider opacity-70 mb-1">
-          Join the Aliens
-        </div>
-        <form onSubmit={(e) => e.preventDefault()} className="flex flex-col gap-2">
-          <input
-            type="email"
-            placeholder="you@example.com"
-            className="rounded-xl bg-black/40 px-3 py-2 outline-none placeholder:text-white/40"
-          />
-          <input
-            type="tel"
-            placeholder="phone (optional)"
-            className="rounded-xl bg-black/40 px-3 py-2 outline-none placeholder:text-white/40"
-          />
-          <button
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/90 px-3 py-2 text-black hover:bg-white"
-            type="submit"
-          >
-            <Send size={14} /> Join
-          </button>
-        </form>
-      </div>
+      {/* Embedded Join form INSIDE the right display */}
+      <JoinAliensEmbedded />
 
       {/* Player panel */}
-      <div className="relative z-20 mx-auto mt-6 w-[95%] max-w-3xl rounded-2xl border border-white/10 bg-white/5 p-4 md:p-6 backdrop-blur">
+      <div className="relative z-20 mx-auto mt-4 w-[95%] max-w-3xl rounded-2xl border border-white/10 bg-white/5 p-4 md:p-6 backdrop-blur">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-          {/* Title & quick links */}
+          {/* Title + quick links (music) */}
           <div className="col-span-1">
             <div className="flex items-center gap-2 mb-2">
               <Radio className="opacity-70" />
@@ -198,6 +130,29 @@ export default function Home() {
               </div>
             </div>
             <div className="text-lg font-semibold">{STATION.title}</div>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+              <a
+                target="_blank"
+                href={STATION.links.spotify}
+                className="rounded-lg border border-white/10 bg-white/10 px-3 py-2 hover:bg-white/20"
+              >
+                Spotify
+              </a>
+              <a
+                target="_blank"
+                href={STATION.links.apple}
+                className="rounded-lg border border-white/10 bg-white/10 px-3 py-2 hover:bg-white/20"
+              >
+                Apple Music
+              </a>
+              <a
+                target="_blank"
+                href={STATION.links.youtube}
+                className="rounded-lg border border-white/10 bg-white/10 px-3 py-2 hover:bg-white/20"
+              >
+                YouTube (MV)
+              </a>
+            </div>
           </div>
 
           {/* Transport */}
@@ -248,9 +203,10 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Floating cover hologram */}
+      {/* Cover art hologram (reliable explicit path + auto-hide on error) */}
       <CoverArtHolo candidates={coverSrcs} title={STATION.title} />
 
+      {/* Audio */}
       <audio
         ref={audioRef}
         hidden
@@ -264,8 +220,107 @@ export default function Home() {
   );
 }
 
-/* ---------- background & holo ---------- */
+/* ---------- cockpit hotspots (instagram / tiktok / youtube) ---------- */
+/* These are clickable, positioned zones that sit above the cockpit art. */
+/* Percentages are tuned for the image you provided and scale responsively. */
+function CockpitHotspots() {
+  // social destinations
+  const socials = {
+    instagram: "https://instagram.com/chxndler_music",
+    tiktok: "https://tiktok.com/@chxndler_music",
+    youtube: "https://youtube.com/@CHXNDLER_MUSIC",
+  };
+  return (
+    <div className="absolute inset-0 z-30 pointer-events-none">
+      {/* Instagram button (left column top) */}
+      <a
+        href={socials.instagram}
+        target="_blank"
+        className="absolute pointer-events-auto"
+        style={{
+          left: "6.8%",
+          top: "37.5%",
+          width: "6.8%",
+          height: "12.2%",
+          borderRadius: "12px",
+        }}
+        aria-label="Instagram"
+      />
+      {/* TikTok button (left column middle) */}
+      <a
+        href={socials.tiktok}
+        target="_blank"
+        className="absolute pointer-events-auto"
+        style={{
+          left: "7.2%",
+          top: "53.6%",
+          width: "6.2%",
+          height: "12.0%",
+          borderRadius: "12px",
+        }}
+        aria-label="TikTok"
+      />
+      {/* YouTube button (left column bottom) */}
+      <a
+        href={socials.youtube}
+        target="_blank"
+        className="absolute pointer-events-auto"
+        style={{
+          left: "7.0%",
+          top: "69.7%",
+          width: "6.5%",
+          height: "12.5%",
+          borderRadius: "12px",
+        }}
+        aria-label="YouTube"
+      />
+    </div>
+  );
+}
 
+/* ---------- embedded “Join the Aliens” inside the right display ---------- */
+function JoinAliensEmbedded() {
+  // This positions the form over the right dashboard screen area.
+  return (
+    <div
+      className="absolute z-20"
+      style={{
+        // tuned for the cockpit.png proportions; scales with viewport
+        right: "9.2%",
+        top: "34.5%",
+        width: "22.5%",
+        minWidth: 260,
+      }}
+    >
+      <div className="rounded-2xl border border-white/10 bg-black/40 p-4 backdrop-blur-sm">
+        <div className="text-xs uppercase tracking-wider opacity-70 mb-1">
+          Join the Aliens
+        </div>
+        <form onSubmit={(e) => e.preventDefault()} className="flex flex-col gap-2">
+          <input
+            type="email"
+            placeholder="you@example.com"
+            className="rounded-xl bg-black/40 px-3 py-2 outline-none placeholder:text-white/40"
+            required
+          />
+          <input
+            type="tel"
+            placeholder="phone (optional)"
+            className="rounded-xl bg-black/40 px-3 py-2 outline-none placeholder:text-white/40"
+          />
+          <button
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/90 px-3 py-2 text-black hover:bg-white"
+            type="submit"
+          >
+            <Send size={14} /> Join
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- background & cover hologram ---------- */
 function SpaceWorld({ theme, playing }) {
   const speed = playing ? 1.2 : 0.5;
   return (
@@ -311,23 +366,29 @@ function EnvFX({ type, color }) {
   return null;
 }
 function CoverArtHolo({ candidates, title }) {
-  const [i, setI] = useState(0);
-  const src = candidates[i];
+  const [idx, setIdx] = useState(0);
+  const src = candidates[idx];
   if (!src) return null;
+
   return (
     <motion.div
-      className="fixed bottom-28 left-1/2 z-30 -translate-x-1/2"
-      animate={{ y: [0, -10, 0] }}
+      className="fixed z-30"
+      style={{
+        left: "50%",
+        top: "38%", // sits just below the “OCEAN GIRL” dashboard title
+        transform: "translateX(-50%)",
+      }}
+      animate={{ y: [0, -8, 0] }}
       transition={{ repeat: Infinity, duration: 4 }}
     >
       <div
-        className="relative h-40 w-40 overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-1 backdrop-blur"
+        className="relative h-36 w-36 overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-1 backdrop-blur"
         style={{ boxShadow: "0 0 40px rgba(252,84,175,.35)" }}
       >
         <img
           src={src}
           alt={title}
-          onError={() => setI((i + 1) % candidates.length)}
+          onError={() => setIdx((idx + 1) % candidates.length)}
           className="h-full w-full rounded-xl object-cover"
         />
         <div
@@ -335,7 +396,6 @@ function CoverArtHolo({ candidates, title }) {
           style={{ boxShadow: "inset 0 0 40px rgba(56,182,255,.25)" }}
         />
       </div>
-      <div className="mt-2 text-center text-xs opacity-80">{title}</div>
     </motion.div>
   );
 }
