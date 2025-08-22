@@ -64,7 +64,7 @@ export default function OGImage() {
           </div>
 
           <div style={{ fontSize: 28, opacity: 0.9 }}>
-            Listen • Follow • Enter the Heartverse
+            Listen • Follow • CHXNDLER
           </div>
 
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 8 }}>
