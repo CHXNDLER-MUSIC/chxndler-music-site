@@ -1,4 +1,8 @@
 // app/page.jsx
+"use client";
+
+import { useEffect, useRef } from "react";
+
 export default function Page() {
   // Brand colors
   const BRAND = {
@@ -47,7 +51,7 @@ export default function Page() {
     { title: "OCEAN GIRL",                        url: "https://open.spotify.com/album/37niwECG0TJMuYFQdrJE3y?si=S_Btj1hMRU-RsnsVL2PBmQ" },
   ];
 
-  // Reusable button
+  // Reusable button (with hover/press animations)
   const Button = ({ href, label, Icon, color }) => (
     <a
       href={href}
@@ -55,10 +59,14 @@ export default function Page() {
       rel="noopener noreferrer"
       className="group relative inline-flex items-center gap-2 rounded-full border border-white/20
                  bg-white/5 px-4 py-2 text-sm font-medium text-white/90 backdrop-blur
-                 transition hover:bg-white/10 hover:text-white"
+                 transition-all duration-200 ease-out hover:-translate-y-0.5 active:translate-y-0
+                 active:scale-95 hover:bg-white/10 hover:text-white focus-visible:outline-none
+                 focus-visible:ring-2 focus-visible:ring-offset-0"
       style={{
-        boxShadow: `inset 0 0 0 1px ${color}55, 0 0 18px ${color}26`,
+        boxShadow: `inset 0 0 0 1px ${color}55, 0 10px 28px -14px ${color}66`,
+        '--tw-ring-color': BRAND.yellow,
       }}
+      aria-label={label}
     >
       <span
         className="inline-flex h-5 w-5 items-center justify-center rounded-full"
@@ -75,6 +83,7 @@ export default function Page() {
       >
         ↗
       </span>
+
       {/* subtle hover glow */}
       <span
         className="pointer-events-none absolute inset-0 -z-10 rounded-full opacity-0 blur-xl transition group-hover:opacity-40"
@@ -84,55 +93,165 @@ export default function Page() {
     </a>
   );
 
+  // helper to cycle accent colors for track cards
+  const accents = [BRAND.pink, BRAND.blue, BRAND.yellow];
+
   return (
-    <main className="mx-auto max-w-5xl px-4 py-16">
-      <header className="mb-8">
-        <h1 className="text-4xl font-extrabold md:text-6xl">CHXNDLER</h1>
+    <div className="relative">
+      {/* Starfield sits behind all content */}
+      <Starfield colors={[BRAND.pink, BRAND.blue, "#ffffff"]} />
 
-        {/* LISTEN */}
-        <div className="mt-6">
-          <h2 className="mb-2 text-sm uppercase tracking-widest text-white/60">Listen</h2>
-          <nav className="flex flex-wrap gap-3">
-            {listen.map((s) => (
-              <Button key={s.name} href={s.href} label={s.name} Icon={s.icon} color={s.color} />
-            ))}
-          </nav>
-        </div>
+      <main className="relative z-10 mx-auto max-w-5xl px-4 py-16">
+        <header className="mb-8">
+          <h1 className="text-4xl font-extrabold md:text-6xl">CHXNDLER</h1>
 
-        {/* FOLLOW */}
-        <div className="mt-6">
-          <h2 className="mb-2 text-sm uppercase tracking-widest text-white/60">Follow Me</h2>
-          <nav className="flex flex-wrap gap-3">
-            {follow.map((s) => (
-              <Button key={s.name} href={s.href} label={s.name} Icon={s.icon} color={s.color} />
-            ))}
-          </nav>
-        </div>
-      </header>
+          {/* LISTEN */}
+          <div className="mt-6">
+            <h2 className="mb-2 text-sm uppercase tracking-widest text-white/60">Listen</h2>
+            <nav className="flex flex-wrap gap-3">
+              {listen.map((s) => (
+                <Button key={s.name} href={s.href} label={s.name} Icon={s.icon} color={s.color} />
+              ))}
+            </nav>
+          </div>
 
-      {/* Tracks */}
-      <section className="grid gap-4 sm:grid-cols-2">
-        {tracks.map((t, i) => (
-          <a
-            key={i}
-            className="group rounded-2xl border border-white/15 bg-white/5 p-5 backdrop-blur
-                       transition hover:bg-white/10"
-            href={t.url}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <div className="text-lg font-semibold">{t.title}</div>
-            <div className="mt-2 text-sm text-white/70 group-hover:text-white/90">
-              Open on Spotify →
-            </div>
-          </a>
-        ))}
-      </section>
+          {/* FOLLOW */}
+          <div className="mt-6">
+            <h2 className="mb-2 text-sm uppercase tracking-widest text-white/60">Follow Me</h2>
+            <nav className="flex flex-wrap gap-3">
+              {follow.map((s) => (
+                <Button key={s.name} href={s.href} label={s.name} Icon={s.icon} color={s.color} />
+              ))}
+            </nav>
+          </div>
+        </header>
 
-      <footer className="mt-16 border-t border-white/10 pt-6 text-center text-white/60">
-        © {new Date().getFullYear()} CHXNDLER
-      </footer>
-    </main>
+        {/* Tracks (gradient border + hover lift/press) */}
+        <section className="grid gap-4 sm:grid-cols-2">
+          {tracks.map((t, i) => {
+            const a = accents[i % accents.length];
+            const b = accents[(i + 1) % accents.length];
+            return (
+              <div
+                key={i}
+                className="rounded-2xl p-[1px] transition-all duration-200 ease-out hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
+                style={{
+                  background: `linear-gradient(135deg, ${a}66, ${b}33)`,
+                  boxShadow: `0 10px 28px -16px ${a}55`,
+                }}
+              >
+                <a
+                  className="block rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur transition-colors hover:bg-white/10"
+                  href={t.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <div className="text-lg font-semibold">{t.title}</div>
+                  <div className="mt-2 text-sm text-white/70">
+                    Open on Spotify →
+                  </div>
+                </a>
+              </div>
+            );
+          })}
+        </section>
+
+        <footer className="mt-16 border-t border-white/10 pt-6 text-center text-white/60">
+          © {new Date().getFullYear()} CHXNDLER
+        </footer>
+      </main>
+    </div>
+  );
+}
+
+/* ---------------- Starfield (Canvas, no packages) ---------------- */
+
+function Starfield({ colors = ["#ffffff"], count = 180, speed = 0.06 }) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d", { alpha: true });
+
+    let w, h, dpr, stars, raf;
+    const rand = (min, max) => Math.random() * (max - min) + min;
+    const pick = (arr) => arr[(Math.random() * arr.length) | 0];
+
+    function resize() {
+      dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+      w = window.innerWidth;
+      h = window.innerHeight;
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      canvas.style.width = w + "px";
+      canvas.style.height = h + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      init();
+    }
+
+    function init() {
+      stars = new Array(count).fill(0).map(() => {
+        const r = rand(0.6, 1.6);
+        return {
+          x: rand(0, w),
+          y: rand(0, h),
+          r,
+          vy: rand(speed * 0.5, speed * 2), // gentle drift downward
+          vx: rand(-speed, speed) * 0.3,    // slight sideways drift
+          color: Math.random() < 0.2 ? pick(colors) : "#ffffff",
+          t: rand(0, Math.PI * 2),          // phase for twinkle
+          tw: rand(0.002, 0.006),           // twinkle speed
+        };
+      });
+    }
+
+    function frame() {
+      ctx.clearRect(0, 0, w, h);
+
+      for (let s of stars) {
+        // update
+        s.t += s.tw;
+        s.y += s.vy;
+        s.x += s.vx;
+
+        // wrap
+        if (s.y > h + 5) { s.y = -5; s.x = rand(0, w); }
+        if (s.x > w + 5) s.x = -5;
+        if (s.x < -5) s.x = w + 5;
+
+        // draw
+        const twinkle = 0.5 + 0.5 * Math.sin(s.t); // 0..1
+        ctx.globalAlpha = 0.35 + twinkle * 0.65;   // 0.35..1.0
+        ctx.fillStyle = s.color;
+        ctx.shadowColor = s.color;
+        ctx.shadowBlur = 6 * twinkle;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
+      raf = requestAnimationFrame(frame);
+    }
+
+    resize();
+    window.addEventListener("resize", resize);
+    raf = requestAnimationFrame(frame);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", resize);
+    };
+  }, [colors, count, speed]);
+
+  return (
+    <canvas
+      ref={ref}
+      className="pointer-events-none fixed inset-0 z-0"
+      aria-hidden="true"
+    />
   );
 }
 
