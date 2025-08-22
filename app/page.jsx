@@ -1,313 +1,381 @@
 // app/page.jsx
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+
+/**
+ * CHXNDLER • Starship POV
+ * - Arrow keys or WASD to fly (Up/W = thrust, Left/Right = turn, Down/S = brake)
+ * - E (or Enter) to Dock/Undock when near a planet
+ * - Each planet = a song; docking opens Spotify embed + tints the UI
+ *
+ * No external libs. Pure Canvas + DOM overlay.
+ */
 
 export default function Page() {
-  // Brand colors
-  const BRAND = {
-    yellow: "#F2EF1D",
-    pink:   "#FC54AF",
-    blue:   "#38B6FF",
-  };
+  // Brand
+  const BRAND = { yellow: "#F2EF1D", pink: "#FC54AF", blue: "#38B6FF" };
 
-  // --- LISTEN (streaming) ---
-  const listen = [
-    {
-      name: "Spotify",
-      href: "https://open.spotify.com/artist/6O2eoUA8ZWY0lwjsa3E3Yo?si=Qfg-xrMVSEu6wTvuJqs9eQ",
-      color: BRAND.blue,
-      icon: IconSpotify,
-    },
-    {
-      name: "Apple Music",
-      href: "https://music.apple.com/us/artist/chxndler/1660901437",
-      color: BRAND.blue,
-      icon: IconAppleMusic,
-    },
+  // Song planets (fixed coords in a 6000×6000 world)
+  const PLANETS = [
+    P({ title: "GAME BOY HEART (ゲームボーイの心)", id: "5VypE0QkaggJemaNG6sMsF", type: "track", color: BRAND.blue,   x: 450,  y: -900, r: 70 }),
+    P({ title: "KID FOREVER (永遠の子供)",          id: "5X27jqHBvMBsDvvFixeZdN", type: "track", color: BRAND.pink,   x: -1100, y: -600, r: 65 }),
+    P({ title: "BRAIN FREEZE",                      id: "5ou8AyA71rLFK6Ysxr2CpT", type: "track", color: BRAND.yellow, x: 1200, y: 200,  r: 75 }),
+    P({ title: "WE’RE JUST FRIENDS (mickey jas Remix)", id: "28wYsy2LrfVUT5glavy7hJ", type: "track", color: "#c084fc", x: -900, y: 900, r: 70 }),
+    P({ title: "BE MY BEE",                         id: "12iLygYksfcZ3nv6NkrnEr", type: "track", color: "#60a5fa", x: 200,  y: 1500, r: 60 }),
+    P({ title: "WE’RE JUST FRIENDS",                id: "2IffMAupdw2alpsISKFs8y", type: "track", color: "#f59e0b", x: 1900, y: -200, r: 70 }),
+    P({ title: "PARIS",                             id: "2luPTqZK9w5fJ30T4rLZut", type: "track", color: "#34d399", x: -1900, y: 300,  r: 65 }),
+    P({ title: "POKÉMON",                           id: "7uzO8MyTy8402703kP2Xuk", type: "track", color: "#ef4444", x: 100,  y: -1800, r: 60 }),
+    P({ title: "ALIEN (House Party)",               id: "0b5y0gHMf3wLYX69B8S6g4", type: "track", color: "#22d3ee", x: -1700, y: -1400, r: 65 }),
+    P({ title: "WE’RE JUST FRIENDS (DMVRCO Remix)", id: "1WfJUtDFUiz0rUdlGfLQBA", type: "track", color: "#f472b6", x: 1700, y: 1400, r: 60 }),
+    P({ title: "BABY",                              id: "3UEVjChARWDbY4ruOIbIl3", type: "track", color: "#a3e635", x: -300, y: 600,  r: 55 }),
+    P({ title: "OCEAN GIRL",                        id: "37niwECG0TJMuYFQdrJE3y", type: "album", color: "#60f",     x: 0,    y: 0,    r: 80 }),
   ];
 
-  // --- FOLLOW (social) ---
-  const follow = [
-    { name: "Instagram", href: "https://www.instagram.com/chxndler_music/", color: BRAND.pink, icon: IconInstagram },
-    { name: "TikTok",    href: "https://www.tiktok.com/@chxndler_music",    color: BRAND.pink, icon: IconTikTok },
-    { name: "Facebook",  href: "https://www.facebook.com/CHXNDLEROfficial", color: BRAND.pink, icon: IconFacebook },
-    { name: "YouTube",   href: "https://www.youtube.com/@chxndler_music",   color: BRAND.pink, icon: IconYouTube },
-  ];
+  // Canvas + sim state
+  const canvasRef = useRef(null);
+  const [hudTint, setHudTint] = useState("#ffffff");
+  const [dock, setDock] = useState(null); // { planet }
+  const keys = useRef({});
+  const ship = useRef({
+    x: -2200, y: -300, // start far away so you fly to planets
+    a: 0,              // angle (radians)
+    vx: 0, vy: 0,
+    thrust: 0.12,
+    turn: 0.045,
+    friction: 0.985,
+    maxSpeed: 5.5,
+  });
 
-  // Track links (simple for now)
-  const tracks = [
-    { title: "GAME BOY HEART (ゲームボーイの心)", url: "https://open.spotify.com/track/5VypE0QkaggJemaNG6sMsF" },
-    { title: "KID FOREVER (永遠の子供)",          url: "https://open.spotify.com/track/5X27jqHBvMBsDvvFixeZdN" },
-    { title: "BRAIN FREEZE",                      url: "https://open.spotify.com/track/5ou8AyA71rLFK6Ysxr2CpT" },
-    { title: "WE’RE JUST FRIENDS (mickey jas Remix)", url: "https://open.spotify.com/track/28wYsy2LrfVUT5glavy7hJ" },
-    { title: "BE MY BEE",                         url: "https://open.spotify.com/track/12iLygYksfcZ3nv6NkrnEr" },
-    { title: "WE’RE JUST FRIENDS",                url: "https://open.spotify.com/track/2IffMAupdw2alpsISKFs8y" },
-    { title: "PARIS",                             url: "https://open.spotify.com/track/2luPTqZK9w5fJ30T4rLZut" },
-    { title: "POKÉMON",                           url: "https://open.spotify.com/track/7uzO8MyTy8402703kP2Xuk" },
-    { title: "ALIEN (House Party)",               url: "https://open.spotify.com/track/0b5y0gHMf3wLYX69B8S6g4" },
-    { title: "WE’RE JUST FRIENDS (DMVRCO Remix)", url: "https://open.spotify.com/track/1WfJUtDFUiz0rUdlGfLQBA" },
-    { title: "BABY",                              url: "https://open.spotify.com/track/3UEVjChARWDbY4ruOIbIl3" },
-    { title: "OCEAN GIRL",                        url: "https://open.spotify.com/album/37niwECG0TJMuYFQdrJE3y?si=S_Btj1hMRU-RsnsVL2PBmQ" },
-  ];
+  // Parallax star layers
+  const starsRef = useRef({ back: [], mid: [], fore: [] });
+  const WORLD = 6000;
 
-  // Reusable button (with hover/press animations)
-  const Button = ({ href, label, Icon, color }) => (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group relative inline-flex items-center gap-2 rounded-full border border-white/20
-                 bg-white/5 px-4 py-2 text-sm font-medium text-white/90 backdrop-blur
-                 transition-all duration-200 ease-out hover:-translate-y-0.5 active:translate-y-0
-                 active:scale-95 hover:bg-white/10 hover:text-white focus-visible:outline-none
-                 focus-visible:ring-2 focus-visible:ring-offset-0"
-      style={{
-        boxShadow: `inset 0 0 0 1px ${color}55, 0 10px 28px -14px ${color}66`,
-        '--tw-ring-color': BRAND.yellow,
-      }}
-      aria-label={label}
-    >
-      <span
-        className="inline-flex h-5 w-5 items-center justify-center rounded-full"
-        style={{ color }}
-        aria-hidden="true"
-      >
-        <Icon />
-      </span>
-      <span>{label}</span>
-      <span
-        className="ml-1 opacity-70 transition group-hover:opacity-100"
-        style={{ color: BRAND.yellow }}
-        aria-hidden="true"
-      >
-        ↗
-      </span>
+  // Keyboard input
+  useEffect(() => {
+    const down = (e) => (keys.current[e.key.toLowerCase()] = true);
+    const up =   (e) => (keys.current[e.key.toLowerCase()] = false);
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); };
+  }, []);
 
-      {/* subtle hover glow */}
-      <span
-        className="pointer-events-none absolute inset-0 -z-10 rounded-full opacity-0 blur-xl transition group-hover:opacity-40"
-        style={{ background: BRAND.yellow + "33" }}
-        aria-hidden="true"
-      />
-    </a>
-  );
+  // Init stars once
+  useEffect(() => {
+    const mk = (n, spread = WORLD) => Array.from({ length: n }, () => ({
+      x: rand(-spread, spread),
+      y: rand(-spread, spread),
+      r: rand(0.6, 1.8),
+      o: rand(0.25, 0.9)
+    }));
+    starsRef.current = {
+      back: mk(400, WORLD * 1.6),
+      mid:  mk(260, WORLD * 1.2),
+      fore: mk(160, WORLD * 0.9),
+    };
+  }, []);
 
-  // helper to cycle accent colors for track cards
-  const accents = [BRAND.pink, BRAND.blue, BRAND.yellow];
+  // Main draw loop
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    let w = 0, h = 0, dpr = 1, raf;
 
+    const resize = () => {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = canvas.clientWidth;
+      h = canvas.clientHeight;
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    const draw = () => {
+      // Physics
+      const s = ship.current;
+      const K = keys.current;
+      const forward = K["w"] || K["arrowup"];
+      const left    = K["a"] || K["arrowleft"];
+      const right   = K["d"] || K["arrowright"];
+      const back    = K["s"] || K["arrowdown"];
+      const engage  = K["e"] || K["enter"];
+
+      if (!dock) {
+        if (left)  s.a -= s.turn;
+        if (right) s.a += s.turn;
+
+        const ax = Math.cos(s.a) * s.thrust;
+        const ay = Math.sin(s.a) * s.thrust;
+        if (forward) { s.vx += ax; s.vy += ay; }
+        if (back)    { s.vx -= ax * 0.6; s.vy -= ay * 0.6; }
+
+        // clamp speed
+        const sp = Math.hypot(s.vx, s.vy);
+        if (sp > s.maxSpeed) {
+          s.vx = (s.vx / sp) * s.maxSpeed;
+          s.vy = (s.vy / sp) * s.maxSpeed;
+        }
+
+        s.vx *= s.friction;
+        s.vy *= s.friction;
+        s.x  += s.vx;
+        s.y  += s.vy;
+      }
+
+      // Clear
+      ctx.clearRect(0, 0, w, h);
+
+      // Space gradient backdrop (subtle)
+      const grad = ctx.createLinearGradient(0, 0, w, h);
+      grad.addColorStop(0, "#0b0719");
+      grad.addColorStop(0.5, "#2b0f3a");
+      grad.addColorStop(1, "#120a1f");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+
+      // Parallax stars
+      drawStarsLayer(ctx, starsRef.current.back, s, w, h, 0.2, "rgba(255,255,255,0.45)");
+      drawStarsLayer(ctx, starsRef.current.mid,  s, w, h, 0.45, "rgba(255,255,255,0.75)");
+      drawStarsLayer(ctx, starsRef.current.fore, s, w, h, 0.8,  "rgba(255,255,255,1.0)");
+
+      // Planets
+      let nearest = null;
+      let minDist = Infinity;
+      for (const p of PLANETS) {
+        const sx = w / 2 + (p.x - s.x);
+        const sy = h / 2 + (p.y - s.y);
+
+        // Glow
+        const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, p.r * 2.2);
+        g.addColorStop(0, addAlpha(p.color, 0.85));
+        g.addColorStop(1, addAlpha(p.color, 0.05));
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(sx, sy, p.r * 2.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Body
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(sx, sy, p.r, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Rim
+        ctx.strokeStyle = addAlpha("#ffffff", 0.25);
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(sx, sy, p.r + 1, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Name (fade with distance)
+        const d = Math.hypot(p.x - s.x, p.y - s.y);
+        const alpha = clamp(1 - d / 1200, 0, 1);
+        if (alpha > 0) {
+          ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+          ctx.font = "14px system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial";
+          ctx.textAlign = "center";
+          ctx.fillText(p.title, sx, sy - p.r - 10);
+        }
+
+        if (d < minDist) { minDist = d; nearest = p; }
+      }
+
+      // HUD: nearest planet & docking
+      let canDock = false;
+      if (nearest) {
+        const d = Math.hypot(nearest.x - s.x, nearest.y - s.y);
+        canDock = d < nearest.r + 120;
+        // tint HUD toward nearest planet color
+        setHudTint(nearest.color);
+        if (canDock && engage) {
+          // toggle dock
+          if (!dock) setDock({ planet: nearest });
+        }
+      }
+
+      // If docked and user hits E/Enter, undock
+      if (dock && engage) {
+        setDock(null);
+      }
+
+      // Cockpit reticle (center)
+      ctx.strokeStyle = addAlpha(hudTint, 0.8);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(w / 2, h / 2, 14, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(w / 2 - 22, h / 2); ctx.lineTo(w / 2 + 22, h / 2);
+      ctx.moveTo(w / 2, h / 2 - 22); ctx.lineTo(w / 2, h / 2 + 22);
+      ctx.stroke();
+
+      // Heading indicator
+      const nose = {
+        x: w / 2 + Math.cos(s.a) * 32,
+        y: h / 2 + Math.sin(s.a) * 32,
+      };
+      ctx.fillStyle = addAlpha(hudTint, 0.9);
+      ctx.beginPath();
+      ctx.arc(nose.x, nose.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      raf = requestAnimationFrame(draw);
+    };
+
+    raf = requestAnimationFrame(draw);
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
+  }, [dock]); // redraw loop continues; dock in deps to capture toggle
+
+  // Dock panel (Spotify embed) + HUD overlay
+  const active = dock?.planet ?? null;
   return (
-    <div className="relative">
-      {/* Starfield sits behind all content */}
-      <Starfield colors={[BRAND.pink, BRAND.blue, "#ffffff"]} />
+    <div className="fixed inset-0">
+      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
 
-      <main className="relative z-10 mx-auto max-w-5xl px-4 py-16">
-        <header className="mb-8">
-          <h1 className="text-4xl font-extrabold md:text-6xl">CHXNDLER</h1>
+      {/* HUD overlays */}
+      <CockpitHud tint={hudTint} docked={!!active} />
 
-          {/* LISTEN */}
-          <div className="mt-6">
-            <h2 className="mb-2 text-sm uppercase tracking-widest text-white/60">Listen</h2>
-            <nav className="flex flex-wrap gap-3">
-              {listen.map((s) => (
-                <Button key={s.name} href={s.href} label={s.name} Icon={s.icon} color={s.color} />
-              ))}
-            </nav>
-          </div>
+      {/* Dock panel */}
+      {active && (
+        <DockPanel planet={active} onClose={() => setDock(null)} />
+      )}
 
-          {/* FOLLOW */}
-          <div className="mt-6">
-            <h2 className="mb-2 text-sm uppercase tracking-widest text-white/60">Follow Me</h2>
-            <nav className="flex flex-wrap gap-3">
-              {follow.map((s) => (
-                <Button key={s.name} href={s.href} label={s.name} Icon={s.icon} color={s.color} />
-              ))}
-            </nav>
-          </div>
-        </header>
-
-        {/* Tracks (gradient border + hover lift/press) */}
-        <section className="grid gap-4 sm:grid-cols-2">
-          {tracks.map((t, i) => {
-            const a = accents[i % accents.length];
-            const b = accents[(i + 1) % accents.length];
-            return (
-              <div
-                key={i}
-                className="rounded-2xl p-[1px] transition-all duration-200 ease-out hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
-                style={{
-                  background: `linear-gradient(135deg, ${a}66, ${b}33)`,
-                  boxShadow: `0 10px 28px -16px ${a}55`,
-                }}
-              >
-                <a
-                  className="block rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur transition-colors hover:bg-white/10"
-                  href={t.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <div className="text-lg font-semibold">{t.title}</div>
-                  <div className="mt-2 text-sm text-white/70">
-                    Open on Spotify →
-                  </div>
-                </a>
-              </div>
-            );
-          })}
-        </section>
-
-        <footer className="mt-16 border-t border-white/10 pt-6 text-center text-white/60">
-          © {new Date().getFullYear()} CHXNDLER
-        </footer>
-      </main>
+      {/* Minimal help text */}
+      {!active && (
+        <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 text-center text-white/80 text-xs md:text-sm">
+          <div>W/↑ = Thrust • A/← & D/→ = Turn • S/↓ = Brake</div>
+          <div className="mt-1">Press <span className="text-white">E</span> or <span className="text-white">Enter</span> to Dock when close</div>
+        </div>
+      )}
     </div>
   );
 }
 
-/* ---------------- Starfield (Canvas, no packages) ---------------- */
+/* ----------------------- Components ----------------------- */
 
-function Starfield({ colors = ["#ffffff"], count = 180, speed = 0.06 }) {
-  const ref = useRef(null);
-
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d", { alpha: true });
-
-    let w, h, dpr, stars, raf;
-    const rand = (min, max) => Math.random() * (max - min) + min;
-    const pick = (arr) => arr[(Math.random() * arr.length) | 0];
-
-    function resize() {
-      dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
-      w = window.innerWidth;
-      h = window.innerHeight;
-      canvas.width = Math.floor(w * dpr);
-      canvas.height = Math.floor(h * dpr);
-      canvas.style.width = w + "px";
-      canvas.style.height = h + "px";
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      init();
-    }
-
-    function init() {
-      stars = new Array(count).fill(0).map(() => {
-        const r = rand(0.6, 1.6);
-        return {
-          x: rand(0, w),
-          y: rand(0, h),
-          r,
-          vy: rand(speed * 0.5, speed * 2), // gentle drift downward
-          vx: rand(-speed, speed) * 0.3,    // slight sideways drift
-          color: Math.random() < 0.2 ? pick(colors) : "#ffffff",
-          t: rand(0, Math.PI * 2),          // phase for twinkle
-          tw: rand(0.002, 0.006),           // twinkle speed
-        };
-      });
-    }
-
-    function frame() {
-      ctx.clearRect(0, 0, w, h);
-
-      for (let s of stars) {
-        // update
-        s.t += s.tw;
-        s.y += s.vy;
-        s.x += s.vx;
-
-        // wrap
-        if (s.y > h + 5) { s.y = -5; s.x = rand(0, w); }
-        if (s.x > w + 5) s.x = -5;
-        if (s.x < -5) s.x = w + 5;
-
-        // draw
-        const twinkle = 0.5 + 0.5 * Math.sin(s.t); // 0..1
-        ctx.globalAlpha = 0.35 + twinkle * 0.65;   // 0.35..1.0
-        ctx.fillStyle = s.color;
-        ctx.shadowColor = s.color;
-        ctx.shadowBlur = 6 * twinkle;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      ctx.shadowBlur = 0;
-      ctx.globalAlpha = 1;
-      raf = requestAnimationFrame(frame);
-    }
-
-    resize();
-    window.addEventListener("resize", resize);
-    raf = requestAnimationFrame(frame);
-
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", resize);
-    };
-  }, [colors, count, speed]);
-
+function CockpitHud({ tint = "#ffffff", docked }) {
   return (
-    <canvas
-      ref={ref}
-      className="pointer-events-none fixed inset-0 z-0"
-      aria-hidden="true"
-    />
+    <div className="pointer-events-none absolute inset-0">
+      {/* Top instrument bar */}
+      <div
+        className="absolute left-0 right-0 top-0 h-20 md:h-24"
+        style={{
+          background:
+            "linear-gradient(to bottom, rgba(0,0,0,0.65), rgba(0,0,0,0.0))",
+          boxShadow: `0 20px 60px -30px ${addAlpha(tint, 0.8)}`,
+          borderBottom: "1px solid rgba(255,255,255,0.08)",
+        }}
+      />
+      {/* Bottom instrument bar */}
+      <div
+        className="absolute left-0 right-0 bottom-0 h-24 md:h-28"
+        style={{
+          background:
+            "linear-gradient(to top, rgba(0,0,0,0.65), rgba(0,0,0,0.0))",
+          boxShadow: `0 -20px 60px -30px ${addAlpha(tint, 0.8)}`,
+          borderTop: "1px solid rgba(255,255,255,0.08)",
+        }}
+      />
+
+      {/* Status light */}
+      <div
+        className="absolute right-4 top-4 text-xs md:text-sm rounded-full px-3 py-1"
+        style={{
+          background: addAlpha(tint, 0.15),
+          border: "1px solid rgba(255,255,255,0.15)",
+          color: "#fff",
+        }}
+      >
+        {docked ? "Docked" : "Cruise"}
+      </div>
+    </div>
   );
 }
 
-/* ---------------- Icons (inline SVG, no packages) ---------------- */
+function DockPanel({ planet, onClose }) {
+  const tint = planet.color;
+  // Spotify embed URL
+  const embed =
+    planet.type === "album"
+      ? `https://open.spotify.com/embed/album/${planet.id}`
+      : `https://open.spotify.com/embed/track/${planet.id}`;
 
-function IconSpotify() {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
-      <circle cx="12" cy="12" r="10" opacity="0.15" />
-      <path d="M6 9.5c4-1 8-.8 11 1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" fill="none" />
-      <path d="M6.5 12c3.4-.7 6.7-.4 9.5 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none" />
-      <path d="M7 14.3c2.5-.4 5-.2 7 .8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" fill="none" />
-    </svg>
+    <div className="absolute left-1/2 bottom-6 w-[92vw] max-w-3xl -translate-x-1/2">
+      <div
+        className="rounded-2xl border p-4 md:p-5 backdrop-blur"
+        style={{
+          background: "rgba(0,0,0,0.55)",
+          borderColor: "rgba(255,255,255,0.15)",
+          boxShadow: `0 20px 60px -24px ${addAlpha(tint, 0.8)}, inset 0 0 0 1px ${addAlpha(
+            tint,
+            0.35
+          )}`,
+        }}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-lg md:text-xl font-semibold text-white">
+            {planet.title}
+          </div>
+          <button
+            onClick={onClose}
+            className="pointer-events-auto rounded-md border border-white/20 bg-white/5 px-3 py-1.5 text-sm text-white hover:bg-white/10"
+          >
+            Undock
+          </button>
+        </div>
+
+        <div className="mt-3 rounded-lg overflow-hidden border border-white/10">
+          <iframe
+            title={planet.title}
+            src={embed}
+            width="100%"
+            height="152"
+            frameBorder="0"
+            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
+            loading="lazy"
+            style={{ background: "rgba(0,0,0,0.2)" }}
+          />
+        </div>
+
+        <div className="mt-3 text-xs md:text-sm text-white/70">
+          Tip: If autoplay is blocked, press play in the Spotify panel.
+        </div>
+      </div>
+    </div>
   );
 }
 
-function IconAppleMusic() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
-      <path d="M15 4v9.2a3.2 3.2 0 1 1-1.5-2.7V7.5l-5 1.2v6.5a3.2 3.2 0 1 1-1.5-2.7V6.6L15 4z" />
-    </svg>
-  );
-}
+/* ----------------------- Helpers ----------------------- */
 
-function IconInstagram() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-      <rect x="4" y="4" width="16" height="16" rx="4" />
-      <circle cx="12" cy="12" r="4" />
-      <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none" />
-    </svg>
-  );
+function P({ title, id, type, color, x, y, r }) {
+  return { title, id, type, color, x, y, r };
 }
-
-function IconTikTok() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
-      <path d="M14 4v9.2a3.6 3.6 0 1 1-2-3.2V7.2c2 .8 3.8 1.2 6 1.2V11c-2.2 0-4-.5-6-1.3V4z" />
-    </svg>
-  );
+function rand(min, max) { return Math.random() * (max - min) + min; }
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function addAlpha(hex, a = 1) {
+  // hex like #rrggbb
+  const h = hex.replace("#", "");
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  return `rgba(${r},${g},${b},${a})`;
 }
-
-function IconFacebook() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-      <circle cx="12" cy="12" r="10" />
-      <path d="M13 8h2V6h-2c-1.7 0-3 1.3-3 3v2H8v2h2v5h2v-5h2l.5-2H12V9c0-.6.4-1 1-1z" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-
-function IconYouTube() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
-      <rect x="3" y="7" width="18" height="10" rx="3" opacity="0.2" />
-      <path d="M10 9.5v5l5-2.5-5-2.5z" />
-    </svg>
-  );
+function drawStarsLayer(ctx, arr, ship, w, h, parallax, color) {
+  ctx.fillStyle = color;
+  for (const s of arr) {
+    const sx = w / 2 + (s.x - ship.x) * parallax;
+    const sy = h / 2 + (s.y - ship.y) * parallax;
+    // wrap stars to avoid gaps as we travel
+    let x = ((sx % (w + 200)) + (w + 200)) % (w + 200) - 100;
+    let y = ((sy % (h + 200)) + (h + 200)) % (h + 200) - 100;
+    ctx.globalAlpha = s.o;
+    ctx.beginPath();
+    ctx.arc(x, y, s.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
 }
