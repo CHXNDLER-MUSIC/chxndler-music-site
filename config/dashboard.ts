@@ -1,10 +1,10 @@
 export const DASHBOARD = {
-  // Right rail (social buttons)
-  socialDock: { top: 68, left: 64, width: 26, height: 10 },
+  /* Left rail (social buttons) — tweak as needed */
+  socialDock: { top: 28, left: 3.5, width: 12, height: 44 },
 
-  // Center console (media/player)
-  mediaDock: { top: 79, left: 33, width: 34, height: 12 },
+  /* Center console (player) */
+  mediaDock:  { top: 33, left: 28, width: 44, height: 16 },
 
-  // Left bay (Join the Aliens box)
-  joinBox: { top: 69.5, left: 8, width: 24, height: 13 },
+  /* Right bay (Join the Aliens) */
+  joinBox:    { top: 34, left: 72, width: 22, height: 26 },
 };
