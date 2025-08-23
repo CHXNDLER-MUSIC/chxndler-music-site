@@ -64,3 +64,16 @@ body {
   clip-path: ellipse(65% 45% at 50% 52%);
 }
 
+/* Soft glow + pulse (for buttons/frames) */
+.glow { box-shadow: 0 0 12px currentColor, inset 0 0 6px currentColor; }
+.cockpit-glow { box-shadow: 0 0 18px currentColor, inset 0 0 8px currentColor; }
+.pulse-soft { animation: pulse-soft 2.4s ease-in-out infinite; }
+@keyframes pulse-soft { 0%,100% { opacity: .9; filter: brightness(1);} 50% { opacity:1; filter: brightness(1.12);} }
+
+/* Windshield fallback shape (since no PNG mask yet) */
+.windshield-clip { clip-path: ellipse(65% 45% at 50% 52%); }
+
+/* Optional: helper to outline slots while aligning */
+/* .debug-slot { outline: 1px dashed rgba(255,255,255,.35); } */
+
+
