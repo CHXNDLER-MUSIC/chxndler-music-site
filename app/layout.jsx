@@ -13,7 +13,7 @@ const orbitron = Orbitron({
   display: "swap",
 });
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }) {
   const gaId = process.env.NEXT_PUBLIC_GA_ID;            // e.g., G-XXXXXXX
   const mpId = process.env.NEXT_PUBLIC_META_PIXEL_ID;    // e.g., 1234567890
 
@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* GA4 (optional) */}
         {gaId ? (
           <>
-            <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}></script>
+            <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} />
             <script
               dangerouslySetInnerHTML={{
                 __html: `
@@ -57,8 +57,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           />
         ) : null}
       </head>
-      <body className={orbitron.variable + " font-sans"}>
+      <body className={`${orbitron.variable} font-sans`}>
         {children}
+
         {/* Meta Pixel <noscript> */}
         {mpId ? (
           <noscript>
