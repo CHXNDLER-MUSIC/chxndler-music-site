@@ -1,40 +1,41 @@
-// app/layout.jsx
-import "./globals.css";
-
 export const metadata = {
-  metadataBase: new URL("https://chxndler-music.com"),
-  title: {
-    default: "CHXNDLER",
-    template: "%s | CHXNDLER",
-  },
-  description:
-    "Official site of CHXNDLER. Listen on Spotify & Apple Music and follow on Instagram, TikTok, and YouTube.",
-  alternates: { canonical: "/" },
-  openGraph: {
-    type: "website",
-    url: "https://chxndler-music.com/",
-    siteName: "CHXNDLER",
-    title: "CHXNDLER",
-    description:
-      "Listen on Spotify & Apple Music and follow on Instagram, TikTok, and YouTube.",
-    // No static images needed — /opengraph-image is used automatically
-  },
-  // No twitter section at all
-  icons: {
-    icon: "/favicon.ico",            // optional: /public/favicon.ico
-    apple: "/apple-touch-icon.png",  // optional: 180x180
-  },
-  robots: { index: true, follow: true },
-  themeColor: "#0b0719",
-  authors: [{ name: "CHXNDLER" }],
+  title: "CHXNDLER — Cockpit",
+  description: "Pilot the cockpit, switch channels, and drift through space.",
 };
 
-export default function RootLayout({ children }) {
+import "./globals.css";
+import { Orbitron } from "next/font/google";
+
+const orbitron = Orbitron({
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+  variable: "--font-orbitron",
+  display: "swap",
+});
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const gaId = process.env.NEXT_PUBLIC_GA_ID; // optional GA4
+
   return (
     <html lang="en">
-      <body className="min-h-screen bg-gradient-to-b from-[#0b0719] via-[#2b0f3a] to-[#120a1f] text-white antialiased">
-        {children}
-      </body>
+      <head>
+        {gaId ? (
+          <>
+            <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}></script>
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `
+                  window.dataLayer = window.dataLayer || [];
+                  function gtag(){dataLayer.push(arguments);}
+                  gtag('js', new Date());
+                  gtag('config', '${gaId}');
+                `,
+              }}
+            />
+          </>
+        ) : null}
+      </head>
+      <body className={orbitron.variable + " font-sans"}>{children}</body>
     </html>
   );
 }
