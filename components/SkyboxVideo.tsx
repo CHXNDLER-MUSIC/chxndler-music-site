@@ -5,16 +5,15 @@ export default function SkyboxVideo({
   src,
   poster,
   brightness = 0.95,
-  useClipFallback = false,
 }: {
   src: string;
   poster?: string;
   brightness?: number;
-  useClipFallback?: boolean;
 }) {
   return (
     <div className="fixed inset-0 -z-10 flex items-center justify-center pointer-events-none">
-      <div className={`${useClipFallback ? "windshield-clip" : "windshield-mask"} h-full w-full`}>
+      {/* Using clip-path fallback because no windshield-mask.png exists yet */}
+      <div className="windshield-clip h-full w-full">
         <video
           src={src}
           poster={poster}
