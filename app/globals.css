@@ -2,87 +2,57 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Dark, cinematic base */
-:root { color-scheme: dark; }
-html, body, #__next { height: 100%; }
-body { margin: 0; background: black; overflow: hidden; font-feature-settings: "ss01" on, "cv01" on; }
-
-/* Text rendering */
-body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-
-/* Remove tap highlight on mobile */
+:root { --font-orbitron: system-ui; }
+html, body { height: 100%; background:#000; color:#fff; }
 * { -webkit-tap-highlight-color: transparent; }
+.font-sans { font-family: var(--font-orbitron), system-ui, -apple-system, Segoe UI, Roboto, Inter, Helvetica, Arial, sans-serif; }
 
-:root {
-  --sky-url: url(/cockpit/skies/ocean.webp);
-}
-
-body {
-  background-image: var(--sky-url);
+/* Cockpit background (frame stays fixed; sky video shows “through” windshield) */
+.cockpit-bg{
+  background-image: url("/cockpit/cockpit.jpg");
   background-size: cover;
-  background-attachment: fixed;
   background-position: center;
-  background-color: #000;
 }
 
-/* Subtle cockpit glow/pulse without heavy blurs */
-.glow {
-  box-shadow: 0 0 12px currentColor, inset 0 0 6px currentColor;
-}
-.pulse-soft {
-  animation: pulse-soft 2.4s ease-in-out infinite;
-}
-@keyframes pulse-soft {
-  0%, 100% { opacity: 0.9; filter: brightness(1); }
-  50%      { opacity: 1;   filter: brightness(1.12); }
-}
-/* === Cockpit glow + pulse === */
-.glow { box-shadow: 0 0 12px currentColor, inset 0 0 6px currentColor; }
-.cockpit-glow { box-shadow: 0 0 18px currentColor, inset 0 0 8px currentColor; }
+/* Glow + pulse tokens */
+.glow { box-shadow: 0 0 12px rgba(255,255,255,.55), inset 0 0 6px rgba(255,255,255,.35); }
+.cockpit-glow { box-shadow: 0 0 24px rgba(255,255,255,.55), inset 0 0 12px rgba(255,255,255,.25); }
 .pulse-soft { animation: pulse-soft 2.4s ease-in-out infinite; }
-@keyframes pulse-soft { 0%,100% { opacity: .9; filter: brightness(1);} 50% { opacity:1; filter: brightness(1.12);} }
+@keyframes pulse-soft { 0%,100%{opacity:.9;filter:brightness(1)} 50%{opacity:1;filter:brightness(1.12)} }
 
-/* === Windshield masking === */
-/* Put a PNG silhouette at /public/cockpit/windshield-mask.png (transparent center) */
+/* Windshield: prefer PNG mask if present; fallback to oval clip-path */
 .windshield-mask{
   -webkit-mask-image: url("/cockpit/windshield-mask.png");
   mask-image: url("/cockpit/windshield-mask.png");
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-size: contain;
-  mask-size: contain;
-  -webkit-mask-position: center;
-  mask-position: center;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-size: contain;     mask-size: contain;
+  -webkit-mask-position: center;  mask-position: center;
 }
-/* Fallback shape if you don't have the PNG yet */
-.windshield-clip{ clip-path: ellipse(65% 45% at 50% 52%); }
-
-/* === Debug: visualize slot boxes (toggle class 'debug-slot') === */
-.debug-slot { outline: 1px dashed rgba(255,255,255,.35); }
-/* Fallback clip-path so video only shows through "windshield-like" ellipse */
-.windshield-clip {
-  clip-path: ellipse(65% 45% at 50% 52%);
-}
-
-/* Soft glow + pulse (for buttons/frames) */
-.glow { box-shadow: 0 0 12px currentColor, inset 0 0 6px currentColor; }
-.cockpit-glow { box-shadow: 0 0 18px currentColor, inset 0 0 8px currentColor; }
-.pulse-soft { animation: pulse-soft 2.4s ease-in-out infinite; }
-@keyframes pulse-soft { 0%,100% { opacity: .9; filter: brightness(1);} 50% { opacity:1; filter: brightness(1.12);} }
-
-/* Windshield fallback shape (since no PNG mask yet) */
 .windshield-clip { clip-path: ellipse(65% 45% at 50% 52%); }
 
-/* Optional: helper to outline slots while aligning */
-/* .debug-slot { outline: 1px dashed rgba(255,255,255,.35); } */
+/* Shared HUD tokens */
+.hud-card{ @apply rounded-2xl bg-black/35 backdrop-blur-md p-3 glow; }
+.hud-btn{ @apply rounded-xl px-3 py-2 bg-black/35 backdrop-blur-md glow hover:scale-[1.04] transition uppercase tracking-wide text-[0.8rem]; }
+.hud-chip{ @apply rounded-lg px-2 py-1 bg-white/10 text-xs; }
 
-/* --- Glow + pulse for cockpit UI --- */
-.glow { box-shadow: 0 0 12px currentColor, inset 0 0 6px currentColor; }
-.cockpit-glow { box-shadow: 0 0 18px currentColor, inset 0 0 8px currentColor; }
-.pulse-soft { animation: pulse-soft 2.4s ease-in-out infinite; }
-@keyframes pulse-soft { 0%,100% { opacity: .9; filter: brightness(1);} 50% { opacity:1; filter: brightness(1.12);} }
+/* Channel dial */
+.dial{
+  width: 64px; height: 64px; border-radius: 9999px;
+  background: radial-gradient(50% 50% at 50% 50%, #222 0%, #111 60%, #0a0a0a 100%);
+  box-shadow: inset 0 12px 22px rgba(255,255,255,.06), inset 0 -10px 18px rgba(0,0,0,.7), 0 0 14px rgba(255,255,255,.15);
+  position: relative; cursor: grab;
+}
+.dial:active { cursor: grabbing; }
+.dial-pointer{ position:absolute; left:50%; top:8px; width:4px; height:16px; border-radius:2px; background:#fff; transform-origin:50% 24px; }
 
-/* --- If you are using a cockpit background image, keep it BELOW the video (z-0) --- */
-/* Example usage in your page/container (not CSS): a wrapper with className "relative z-0 bg-[url('/cockpit/cockpit.jpg')] bg-cover" */
-
-
+/* Warp flash on sky change */
+.warp-flash{
+  position: fixed; inset: 0; z-index: 20; pointer-events: none;
+  background: radial-gradient(circle at center, rgba(255,255,255,.95), rgba(255,255,255,0) 55%);
+  animation: warp 520ms ease-out;
+}
+@keyframes warp {
+  0%   { opacity: 0; transform: scale(0.9); filter: blur(2px); }
+  30%  { opacity: 1; transform: scale(1);   filter: blur(0); }
+  100% { opacity: 0; transform: scale(1.4); filter: blur(6px); }
+}
