@@ -1,27 +1,27 @@
 "use client";
 
-import CockpitDashboard from "@/app/components/CockpitDashboard";
-import FastAudioBus from "@/app/components/FastAudioBus";
-import PerfHints from "@/app/components/PerfHints";
-import SkyboxVideo from "@/app/components/SkyboxVideo";
-import { tracks } from "@/config/tracks";
+import CockpitDashboard from "./components/CockpitDashboard";
+import FastAudioBus from "./components/FastAudioBus";
+import PerfHints from "./components/PerfHints";
+import SkyboxVideo from "./components/SkyboxVideo";
+import { tracks } from "../config/tracks";
 
 export default function Page() {
-  // for now just load the first track in config
+  // load the first track for now (update with state/switcher later)
   const currentTrack = tracks[0];
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
-      {/* 🌌 Background video (outside cockpit) */}
+      {/* Background video outside the cockpit */}
       <SkyboxVideo src={currentTrack.bgVideo} poster={currentTrack.poster} />
 
-      {/* 🚀 Cockpit HUD + hologram + rails */}
+      {/* Cockpit UI (rails + hologram) */}
       <CockpitDashboard track={currentTrack} />
 
-      {/* 🎵 Global audio bus / HUD controls */}
+      {/* Global audio controls */}
       <FastAudioBus track={currentTrack} />
 
-      {/* ⚡ Perf hints for low-end devices */}
+      {/* Perf tweaks for low-end devices */}
       <PerfHints />
     </main>
   );
