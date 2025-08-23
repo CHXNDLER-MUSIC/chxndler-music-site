@@ -24,3 +24,15 @@ body {
   background-position: center;
   background-color: #000;
 }
+
+/* Subtle cockpit glow/pulse without heavy blurs */
+.glow {
+  box-shadow: 0 0 12px currentColor, inset 0 0 6px currentColor;
+}
+.pulse-soft {
+  animation: pulse-soft 2.4s ease-in-out infinite;
+}
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.9; filter: brightness(1); }
+  50%      { opacity: 1;   filter: brightness(1.12); }
+}
