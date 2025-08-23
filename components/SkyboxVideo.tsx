@@ -1,43 +1,32 @@
 "use client";
-import { useEffect, useRef } from "react";
+import React from "react";
 
-type Props = {
-  src: string;          // e.g. "/cockpit/skies/videos/ocean.webm"
-  poster?: string;      // e.g. "/cockpit/skies/ocean.webp"
-  className?: string;
-};
-
-export default function SkyboxVideo({ src, poster, className }: Props) {
-  const ref = useRef<HTMLVideoElement | null>(null);
-
-  useEffect(() => {
-    const v = ref.current;
-    if (!v || !src) return;
-    if (v.currentSrc.endsWith(src)) return;
-    v.src = src;
-    v.currentTime = 0;
-    const tryPlay = async () => {
-      try { await v.play(); }
-      catch {
-        const onInteract = () => { v.play().catch(() => {}); window.removeEventListener("click", onInteract); window.removeEventListener("touchstart", onInteract); };
-        window.addEventListener("click", onInteract, { once: true });
-        window.addEventListener("touchstart", onInteract, { once: true });
-      }
-    };
-    tryPlay();
-  }, [src]);
-
+export default function SkyboxVideo({
+  src,
+  poster,
+  brightness = 0.95,
+  useClipFallback = false,
+}: {
+  src: string;
+  poster?: string;
+  brightness?: number;
+  useClipFallback?: boolean;
+}) {
   return (
-    <video
-      ref={ref}
-      id="skybox-video"
-      className={`fixed inset-0 w-full h-full object-cover -z-10 ${className ?? ""}`}
-      src={src}
-      poster={poster}
-      autoPlay
-      muted
-      loop
-      playsInline
-    />
+    <div className="fixed inset-0 -z-10 flex items-center justify-center pointer-events-none">
+      <div className={`${useClipFallback ? "windshield-clip" : "windshield-mask"} h-full w-full`}>
+        <video
+          src={src}
+          poster={poster}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          className="h-full w-full object-cover"
+          style={{ filter: `brightness(${brightness})` }}
+        />
+      </div>
+    </div>
   );
 }
