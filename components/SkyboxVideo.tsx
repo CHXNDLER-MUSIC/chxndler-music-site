@@ -1,25 +1,19 @@
 "use client";
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 
-type Props = {
-  src: string;
-  poster?: string;
-  brightness?: number; // 0..1
-};
-
-export default function SkyboxVideo({ src, poster, brightness = 0.95 }: Props) {
-  const vRef = useRef<HTMLVideoElement | null>(null);
+/**
+ * Shows a looping sky video, clipped to a windshield-like oval.
+ * Looks for assets in /public/skies: ocean-girl.webm (preferred) and ocean-girl.mp4
+ */
+export default function SkyboxVideo({ brightness = 0.95 }: { brightness?: number }) {
   const [ready, setReady] = useState(false);
 
   return (
-    // NOTE: z-10 so it's ABOVE any background image but BELOW HUD (which uses z>=30)
+    // z-10 keeps video above any static cockpit background image but under HUD slots
     <div className="fixed inset-0 z-10 pointer-events-none flex items-center justify-center">
-      {/* Using clip-path fallback since you don't have a windshield PNG mask yet */}
-      <div className="windshield-clip h-full w-full">
+      {/* Using clip-path fallback (no PNG mask required) */}
+      <div style={{ clipPath: "ellipse(65% 45% at 50% 52%)" }} className="h-full w-full">
         <video
-          ref={vRef}
-          src={src}
-          poster={poster}
           autoPlay
           muted
           loop
@@ -27,11 +21,12 @@ export default function SkyboxVideo({ src, poster, brightness = 0.95 }: Props) {
           preload="auto"
           onLoadedData={() => setReady(true)}
           className="h-full w-full object-cover transition-opacity duration-500"
-          style={{
-            filter: `brightness(${brightness})`,
-            opacity: ready ? 1 : 0, // prevent “black flash” before first frame
-          }}
-        />
+          style={{ opacity: ready ? 1 : 0, filter: `brightness(${brightness})` }}
+        >
+          {/* Try WEBM first, then MP4 as fallback */}
+          <source src="/skies/ocean-girl.webm" type="video/webm" />
+          <source src="/skies/ocean-girl.mp4" type="video/mp4" />
+        </video>
       </div>
     </div>
   );
