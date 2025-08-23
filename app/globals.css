@@ -76,4 +76,13 @@ body {
 /* Optional: helper to outline slots while aligning */
 /* .debug-slot { outline: 1px dashed rgba(255,255,255,.35); } */
 
+/* --- Glow + pulse for cockpit UI --- */
+.glow { box-shadow: 0 0 12px currentColor, inset 0 0 6px currentColor; }
+.cockpit-glow { box-shadow: 0 0 18px currentColor, inset 0 0 8px currentColor; }
+.pulse-soft { animation: pulse-soft 2.4s ease-in-out infinite; }
+@keyframes pulse-soft { 0%,100% { opacity: .9; filter: brightness(1);} 50% { opacity:1; filter: brightness(1.12);} }
+
+/* --- If you are using a cockpit background image, keep it BELOW the video (z-0) --- */
+/* Example usage in your page/container (not CSS): a wrapper with className "relative z-0 bg-[url('/cockpit/cockpit.jpg')] bg-cover" */
+
 
