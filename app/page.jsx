@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import SkyboxVideo from "@/components/SkyboxVideo";      // uses clip-path fallback (no PNG mask needed)
-import { DASHBOARD } from "@/config/dashboard";          // slot positions you can tweak
+import SkyboxVideo from "@/components/SkyboxVideo";
+import { DASHBOARD } from "@/config/dashboard";
 import { Slot } from "@/components/Slot";
 import SocialDock from "@/components/SocialDock";
 import MediaDockFrame from "@/components/MediaDockFrame";
@@ -10,24 +10,21 @@ import JoinAliensBox from "@/components/JoinAliensBox";
 
 export default function Page() {
   return (
+    // Keep the page background simple so the video layer is obvious
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
-      {/* SKY video — hardcoded path; make sure file exists at /public/skies/ocean-girl.mp4 */}
-      <SkyboxVideo
-        src="/skies/ocean-girl.mp4"
-        poster=""               // optional poster (leave empty if none)
-        brightness={0.95}       // tweak to match your cockpit lighting
-      />
+      {/* SKY video sits ABOVE background but BELOW HUD (z-10 inside the component) */}
+      <SkyboxVideo src="/skies/ocean-girl.mp4" brightness={0.95} />
 
-      {/* SLOT MOUNTS — set debug={true} temporarily to outline the rectangles */}
-      <Slot rect={DASHBOARD.socialDock} debug={false}>
+      {/* HUD slots (z >= 30 via Slot) */}
+      <Slot rect={DASHBOARD.socialDock}>
         <SocialDock />
       </Slot>
 
-      <Slot rect={DASHBOARD.mediaDock} debug={false}>
+      <Slot rect={DASHBOARD.mediaDock}>
         <MediaDockFrame />
       </Slot>
 
-      <Slot rect={DASHBOARD.joinBox} debug={false}>
+      <Slot rect={DASHBOARD.joinBox}>
         <JoinAliensBox />
       </Slot>
     </main>
