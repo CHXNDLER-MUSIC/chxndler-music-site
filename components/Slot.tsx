@@ -8,13 +8,11 @@ export function Slot({
   children,
   className = "",
   z = 30,
-  debug = false,
 }: {
   rect: Rect;
   children: React.ReactNode;
   className?: string;
   z?: number;
-  debug?: boolean;
 }) {
   const style: React.CSSProperties = {
     position: "fixed",
@@ -25,7 +23,7 @@ export function Slot({
     zIndex: z,
   };
   return (
-    <div style={style} className={`${debug ? "debug-slot" : ""} ${className}`}>
+    <div style={style} className={`pointer-events-auto ${className}`}>
       {children}
     </div>
   );
