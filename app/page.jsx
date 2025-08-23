@@ -1,48 +1,59 @@
 "use client";
 
-import { useState } from "react";
-
-import CockpitDashboard from "@/components/CockpitDashboard";
-import FastAudioBus from "@/components/FastAudioBus";
-import PerfHints from "@/components/PerfHints";
+import { useMemo, useState } from "react";
 import SkyboxVideo from "@/components/SkyboxVideo";
-import { tracks } from "@/config/tracks";
+import { tracks } from "@/config/tracks";          // your song list
+import { getSkyForSlug } from "@/config/skies";    // if you use per-song skies
+import { DASHBOARD } from "@/config/dashboard";
+import { Slot } from "@/components/Slot";
+import SocialDock from "@/components/SocialDock";
+import MediaDockFrame from "@/components/MediaDockFrame";
+import JoinAliensBox from "@/components/JoinAliensBox";
 
 export default function Page() {
-  // pick first track by default; swap via dropdown
   const [idx, setIdx] = useState(0);
-  const currentTrack = tracks[idx]; // expects { title, bgVideo, poster, src, ... }
+  const current = tracks[idx];
+
+  const sky = useMemo(() => {
+    if (current?.slug) return getSkyForSlug(current.slug);
+    return { video: current?.bgVideo, poster: current?.poster, brightness: 0.95 };
+  }, [current]);
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
-      {/* SKY LAYER */}
-      <SkyboxVideo src={currentTrack.bgVideo} poster={currentTrack.poster} />
+      {/* SKY only through windshield (useClipFallback=true until you add PNG mask) */}
+      <SkyboxVideo
+        src={sky?.video || current?.bgVideo}
+        poster={sky?.poster || current?.poster}
+        brightness={sky?.brightness ?? 0.95}
+        useClipFallback={true}
+      />
 
-      {/* QUICK TRACK SWITCHER (fast + light) */}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-20 bg-black/40 backdrop-blur-md rounded-xl px-3 py-2">
-        <label className="sr-only" htmlFor="track">Track</label>
+      {/* Temporary switcher for quick testing */}
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-black/40 backdrop-blur-md rounded-xl px-3 py-2">
         <select
-          id="track"
           value={idx}
           onChange={(e) => setIdx(Number(e.target.value))}
           className="bg-transparent outline-none"
         >
           {tracks.map((t, i) => (
-            <option key={t.slug ?? t.title ?? i} value={i}>
-              {t.title ?? `Track ${i + 1}`}
-            </option>
+            <option key={t.slug ?? i} value={i}>{t.title ?? `Track ${i + 1}`}</option>
           ))}
         </select>
       </div>
 
-      {/* COCKPIT UI (consumes the selected track) */}
-      <CockpitDashboard track={currentTrack} />
+      {/* SLOT MOUNTS — add debug={true} to outline boxes while you nudge values */}
+      <Slot rect={DASHBOARD.socialDock} debug={false}>
+        <SocialDock />
+      </Slot>
 
-      {/* GLOBAL AUDIO (consumes the selected track) */}
-      <FastAudioBus track={currentTrack} />
+      <Slot rect={DASHBOARD.mediaDock} debug={false}>
+        <MediaDockFrame />
+      </Slot>
 
-      {/* PERF TOGGLES / DEBUG */}
-      <PerfHints />
+      <Slot rect={DASHBOARD.joinBox} debug={false}>
+        <JoinAliensBox />
+      </Slot>
     </main>
   );
 }
