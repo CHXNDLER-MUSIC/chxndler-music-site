@@ -1,55 +1,53 @@
-function JoinAliens() {
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const form = e.target;
-    const email = form.email.value;
-    const phone = form.phone.value;
+// BRAND (unchanged)
+const BRAND = { yellow: "#F2EF1D", pink: "#FC54AF", blue: "#38B6FF" };
 
-    try {
-      const res = await fetch(process.env.NEXT_PUBLIC_SHEET_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, phone }),
-      });
+// PATHS — uses your real file names
+const PATHS = {
+  cockpit: "/cockpit/cockpit.png",              // you currently have cockpit.png
+  spaceDefault: "/cockpit/ocean-girl.png",      // placeholder bg (you have this)
+  logos: {
+    // you can swap these later for SVGs if you add them
+    instagram: "/logo/CHXNDLER_Logo.png",       // temp icon until you add social SVGs
+    tiktok: "/logo/CHXNDLER_Logo.png",
+    youtube: "/logo/CHXNDLER_Logo.png",
+    spotify: "/logo/CHXNDLER_Logo.png",
+    apple: "/logo/CHXNDLER_Logo.png",
+  },
+};
 
-      // If your script is set to public, you can safely read JSON:
-      // const data = await res.json();
-      // if (!data.ok) throw new Error(data.error || "Unknown error");
+// PLAYLIST — maps to /public/tracks + /public/cover
+const PLAYLIST = [
+  {
+    id: "ocean-girl",
+    title: "OCEAN GIRL",
+    src: "/tracks/ocean-girl.mp3",
+    cover: "/cover/ocean-girl-cover.png",
+    backdrop: "/cockpit/ocean-girl.png",       // optional bg tint per track
+  },
+  {
+    id: "ocean-girl-acoustic",
+    title: "OCEAN GIRL — Acoustic",
+    src: "/tracks/ocean-girl-acoustic.mp3",
+    cover: "/cover/ocean-girl-acoustic-cover.png",
+    backdrop: "/cockpit/ocean-girl-acoustic.png",
+  },
+  {
+    id: "ocean-girl-remix",
+    title: "OCEAN GIRL — Remix",
+    src: "/tracks/ocean-girl-remix.mp3",
+    cover: "/cover/ocean-girl-remix-cover.png",
+    backdrop: "/cockpit/ocean-girl-remix.png",
+  },
+];
 
-      alert("🚀 Thanks — you’re on the Alien list!");
-      form.reset();
-    } catch (err) {
-      console.error(err);
-      alert("❌ Couldn’t submit. Try again in a bit.");
-    }
-  };
+// Social links you want
+const LINKS = {
+  instagram: "https://instagram.com/CHXNDLER_MUSIC",
+  tiktok: "https://tiktok.com/@CHXNDLER_MUSIC",
+  youtube: "https://youtube.com/@CHXNDLER_MUSIC",
+  spotify: "https://open.spotify.com/artist/0", // update when ready
+  apple: "https://music.apple.com/artist/0",
+};
 
-  return (
-    <div className="absolute right-[12%] top-[42%] z-30 w-64 rounded-2xl border border-white/10 bg-black/70 p-4 backdrop-blur">
-      <div className="text-xs uppercase tracking-wider opacity-70 mb-1">
-        Join the Aliens
-      </div>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-        <input
-          name="email"
-          type="email"
-          placeholder="you@example.com"
-          required
-          className="rounded-xl bg-black/40 px-3 py-2 outline-none placeholder:text-white/40"
-        />
-        <input
-          name="phone"
-          type="tel"
-          placeholder="phone (optional)"
-          className="rounded-xl bg-black/40 px-3 py-2 outline-none placeholder:text-white/40"
-        />
-        <button
-          type="submit"
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/90 px-3 py-2 text-black hover:bg-white"
-        >
-          🚀 Join
-        </button>
-      </form>
-    </div>
-  );
-}
+// Google Apps Script web app endpoint (when you have it)
+const FORMSCRIPT_URL = "https://script.google.com/macros/s/REPLACE/exec";
