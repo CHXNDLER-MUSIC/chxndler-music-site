@@ -23,7 +23,6 @@ export default function MediaDock({ onSkyChange, onPlayingChange, wrapChannels =
   const tracks = ALL;
   const cur = tracks[idx];
 
-  // detents
   const STEP = useMemo(() => 360 / Math.max(tracks.length, 1), [tracks.length]);
   const [angle, setAngle] = useState(idx * STEP);
 
@@ -40,7 +39,7 @@ export default function MediaDock({ onSkyChange, onPlayingChange, wrapChannels =
     }, 0);
   }, [startSignal]); // eslint-disable-line
 
-  // load on index change; update sky; resume if already playing
+  // load on index change; update sky; resume if playing
   useEffect(() => {
     const a = audioRef.current; if (!a) return;
     a.load();
@@ -49,20 +48,12 @@ export default function MediaDock({ onSkyChange, onPlayingChange, wrapChannels =
     onSkyChange(s.webm, s.mp4, s.key);
     setAngle(normalize(idx * STEP));
     gaTrack("track_change", { title: cur.title, slug: cur.slug, idx });
-    detent(); // play detent SFX
+    detent(); // detent SFX
   }, [idx]); // eslint-disable-line
 
-  // SFX helpers
-  function uiClick() {
-    const a = uiClickRef.current; if (!a) return;
-    a.currentTime = 0; a.volume = 0.5; a.play().catch(()=>{});
-  }
-  function detent() {
-    const d = detentRef.current; if (!d) return;
-    d.currentTime = 0; d.volume = 0.6; d.play().catch(()=>{});
-  }
+  function uiClick() { const a = uiClickRef.current; if (!a) return; a.currentTime = 0; a.volume = 0.5; a.play().catch(()=>{}); }
+  function detent()  { const d = detentRef.current; if (!d) return; d.currentTime = 0; d.volume = 0.6; d.play().catch(()=>{}); }
 
-  // actions
   function prev() { uiClick(); setIdx((p) => wrapChannels ? (p - 1 + tracks.length) % tracks.length : Math.max(0, p - 1)); }
   function next() { uiClick(); setIdx((p) => wrapChannels ? (p + 1) % tracks.length : Math.min(tracks.length - 1, p + 1)); }
   function toggle() {
@@ -72,7 +63,6 @@ export default function MediaDock({ onSkyChange, onPlayingChange, wrapChannels =
     else { a.pause(); setPlaying(false); gaTrack("pause", { slug: cur.slug }); }
   }
 
-  // keyboard
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") prev();
@@ -86,14 +76,11 @@ export default function MediaDock({ onSkyChange, onPlayingChange, wrapChannels =
     return () => window.removeEventListener("keydown", onKey);
   }, [tracks.length]);
 
-  // dial input (wheel + drag -> snap)
   function onWheel(e: React.WheelEvent) {
     if (e.deltaY > 0) next(); else prev();
     setAngle((v) => normalize(v + (e.deltaY > 0 ? STEP : -STEP)));
   }
-  function onPointerDown(e: React.PointerEvent) {
-    (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
-  }
+  function onPointerDown(e: React.PointerEvent) { (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId); }
   function onPointerMove(e: React.PointerEvent) {
     if (!(e.buttons & 1)) return;
     const el = dialRef.current; if (!el) return;
@@ -105,26 +92,37 @@ export default function MediaDock({ onSkyChange, onPlayingChange, wrapChannels =
     if (snappedIndex !== idx) setIdx(snappedIndex);
     setAngle(snappedAngle);
   }
-  function onPointerUp(e: React.PointerEvent) {
-    (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId);
-    setAngle(normalize(idx * STEP));
-  }
+  function onPointerUp(e: React.PointerEvent) { (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId); setAngle(normalize(idx * STEP)); }
 
-  // mobile swipe on the whole card
+  // mobile swipe
   const touchStart = useRef<{x:number;y:number}|null>(null);
-  function onTouchStart(e: React.TouchEvent) {
-    const t = e.touches[0];
-    touchStart.current = { x: t.clientX, y: t.clientY };
-  }
+  function onTouchStart(e: React.TouchEvent) { const t = e.touches[0]; touchStart.current = { x: t.clientX, y: t.clientY }; }
   function onTouchEnd(e: React.TouchEvent) {
     const s = touchStart.current; if (!s) return;
     const t = e.changedTouches[0];
-    const dx = t.clientX - s.x;
-    const dy = t.clientY - s.y;
+    const dx = t.clientX - s.x, dy = t.clientY - s.y;
     touchStart.current = null;
     if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
     if (dx < 0) next(); else prev();
   }
+
+  // ALBUM ART PLACEHOLDER (auto, no file needed)
+  const placeholder = useMemo(() => {
+    const title = encodeURIComponent(cur.title);
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='512' height='512'>
+      <defs>
+        <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
+          <stop stop-color='#0b0f1a' offset='0'/>
+          <stop stop-color='#1a2240' offset='1'/>
+        </linearGradient>
+      </defs>
+      <rect width='100%' height='100%' fill='url(#g)'/>
+      <circle cx='50%' cy='50%' r='180' fill='none' stroke='rgba(255,255,255,.25)' stroke-width='6'/>
+      <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'
+            fill='white' font-size='28' font-family='Orbitron, sans-serif'>${title}</text>
+    </svg>`;
+    return `data:image/svg+xml;utf8,${svg}`;
+  }, [cur.title]);
 
   return (
     <div className="hud-card h-full w-full" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} aria-label="Media dock">
@@ -133,7 +131,7 @@ export default function MediaDock({ onSkyChange, onPlayingChange, wrapChannels =
           src={cur.cover}
           alt={cur.title}
           className="h-16 w-16 rounded-xl object-cover border border-white/15"
-          onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/covers/_default.jpg"; }}
+          onError={(e) => { (e.currentTarget as HTMLImageElement).src = placeholder; }}
         />
         <div className="flex-1">
           <div className="text-sm opacity-90">{cur.title}</div>
