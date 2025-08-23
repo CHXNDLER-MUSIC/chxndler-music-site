@@ -3,14 +3,13 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 
 /*
-  CHXNDLER Cockpit - single file v1.5 (safe build)
-  - ASCII only
-  - No template strings inside JSX
-  - No arbitrary [] Tailwind classes
-  - Uses <img> for backgrounds instead of backgroundImage strings
+  CHXNDLER Cockpit - single file v1.6 (PostCSS-safe)
+  - No Tailwind arbitrary [] classes
+  - No template strings in JSX
+  - Uses inline styles for any custom values (top, width, perspective)
 */
 
-const COCKPIT_BUILD = "Cockpit v1.5 - page.jsx active";
+const COCKPIT_BUILD = "Cockpit v1.6 - page.jsx active";
 if (typeof window !== "undefined") {
   console.log("[COCKPIT]", COCKPIT_BUILD);
   window.COCKPIT_BUILD = COCKPIT_BUILD;
@@ -76,4 +75,10 @@ const LINKS = {
   apple: "https://music.apple.com/artist/0",
 };
 
-con
+const GlowButton = React.memo(function GlowButton(props) {
+  const { href, label } = props;
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferre
