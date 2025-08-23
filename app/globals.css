@@ -59,4 +59,8 @@ body {
 
 /* === Debug: visualize slot boxes (toggle class 'debug-slot') === */
 .debug-slot { outline: 1px dashed rgba(255,255,255,.35); }
+/* Fallback clip-path so video only shows through "windshield-like" ellipse */
+.windshield-clip {
+  clip-path: ellipse(65% 45% at 50% 52%);
+}
 
