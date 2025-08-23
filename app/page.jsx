@@ -8,15 +8,19 @@ function JoinAliens() {
     try {
       const res = await fetch(process.env.NEXT_PUBLIC_SHEET_URL, {
         method: "POST",
-        mode: "no-cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, phone }),
       });
-      alert("✅ Thanks Alien — you’ve joined the crew!");
+
+      // If your script is set to public, you can safely read JSON:
+      // const data = await res.json();
+      // if (!data.ok) throw new Error(data.error || "Unknown error");
+
+      alert("🚀 Thanks — you’re on the Alien list!");
       form.reset();
     } catch (err) {
       console.error(err);
-      alert("❌ Something went wrong. Try again!");
+      alert("❌ Couldn’t submit. Try again in a bit.");
     }
   };
 
