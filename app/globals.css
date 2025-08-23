@@ -12,3 +12,15 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
 
 /* Remove tap highlight on mobile */
 * { -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --sky-url: url(/cockpit/skies/ocean.webp);
+}
+
+body {
+  background-image: var(--sky-url);
+  background-size: cover;
+  background-attachment: fixed;
+  background-position: center;
+  background-color: #000;
+}
