@@ -1,21 +1,38 @@
+// Central registry for songs used by MediaDock + the cockpit HUD
 export type Track = {
-  id: string;
-  title: string;
-  file: string;
-  cover: string;
-  element: "WATER" | "HEART" | "MOON" | "FIRE" | "DARKNESS" | "LIGHTNING";
-  bgVideo: string;
-  poster?: string;
+  slug: string;               // e.g., "ocean-girl"
+  title: string;              // "OCEAN GIRL"
+  artist?: string;            // "CHXNDLER"
+  src: string;                // "/tracks/ocean-girl.m4a"
+  cover?: string;             // "/cover/ocean-girl.webp"
+  bpm?: number;
+  key?: string;
 };
 
-export const tracks: Track[] = [
+export const TRACKS: Track[] = [
   {
-    id: "ocean-girl",
+    slug: "ocean-girl",
     title: "OCEAN GIRL",
-    file: "/tracks/ocean-girl.mp3",
+    artist: "CHXNDLER",
+    src: "/tracks/ocean-girl.m4a",
     cover: "/cover/ocean-girl.webp",
-    element: "WATER",
-    bgVideo: "/cockpit/skies/ocean-girl.mp4",
-    poster: "/cockpit/skies/ocean-girl.webp"
-  }
+    bpm: 95,
+    key: "C Maj",
+  },
+  {
+    slug: "ocean-girl-acoustic",
+    title: "OCEAN GIRL (Acoustic)",
+    artist: "CHXNDLER",
+    src: "/tracks/ocean-girl-acoustic.m4a",
+    cover: "/cover/ocean-girl-acoustic.webp",
+  },
+  {
+    slug: "ocean-girl-remix",
+    title: "OCEAN GIRL (Remix)",
+    artist: "CHXNDLER",
+    src: "/tracks/ocean-girl-remix.m4a",
+    cover: "/cover/ocean-girl-remix.webp",
+  },
 ];
+
+export const TRACK_BY_SLUG = Object.fromEntries(TRACKS.map(t => [t.slug, t]));
