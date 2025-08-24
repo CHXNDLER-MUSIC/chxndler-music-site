@@ -4,8 +4,8 @@ export type Track = {
   title: string;
   spotify?: string;
   apple?: string;
-  src?: string;         // if omitted, we use /audio/<slug>.mp3
-  cover?: string;       // if omitted, we use /covers/<slug>.jpg
+  src?: string;         // defaults to /tracks/<slug>.mp3
+  cover?: string;       // defaults to /cover/<slug>-cover.png
   type?: string;        // default "audio/mpeg"
   subtitle?: string;    // optional label
   slug?: string;        // auto-filled; falls back to track-<n> if needed
@@ -36,8 +36,11 @@ export const tracks = RAW.map((t, idx) => {
     ...t,
     slug: base,
     type: "audio/mpeg",
-    src:  t.src   ?? `/audio/${base}.mp3`,
-    cover:t.cover ?? `/covers/${base}.jpg`,
+    // Match existing asset locations under /public
+    // audio: /public/tracks/<slug>.mp3
+    // cover: /public/cover/<slug>-cover.png
+    src:  t.src   ?? `/tracks/${base}.mp3`,
+    cover:t.cover ?? `/cover/${base}-cover.png`,
     subtitle: `Channel ${idx + 1}`,
   };
 });

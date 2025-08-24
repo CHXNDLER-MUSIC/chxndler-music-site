@@ -156,12 +156,13 @@ export default function MediaDock({ onSkyChange, onPlayingChange, wrapChannels =
 
       <audio ref={audioRef} controls className="w-full mt-2" preload="metadata">
         <source src={cur.src} type={cur.type ?? "audio/mpeg"} />
-        <source src="/skies/_intro-galaxy.mp4" type="audio/mp4" />
+        {/* Fallback to a known local track */}
+        <source src="/tracks/ocean-girl.mp3" type="audio/mpeg" />
       </audio>
 
-      {/* SFX */}
-      <audio ref={uiClickRef}  src="/ui/click.mp3"   preload="auto" />
-      <audio ref={detentRef}   src="/ui/detent.mp3"  preload="auto" />
+      {/* SFX: reuse an existing asset to avoid 404; you can provide distinct files in /public/ui */}
+      <audio ref={uiClickRef}  src="/tracks/launch.MP3" preload="auto" />
+      <audio ref={detentRef}   src="/tracks/launch.MP3" preload="auto" />
     </div>
   );
 }

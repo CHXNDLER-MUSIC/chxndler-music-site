@@ -32,7 +32,8 @@ export default function StartMusic({ show, onStart }: { show: boolean; onStart: 
           </button>
         </div>
       </div>
-      <audio ref={sfxRef} src="/ui/launch.mp3" preload="auto" />
+      {/* Using existing asset to avoid 404; place your own at /public/ui/launch.mp3 if desired */}
+      <audio ref={sfxRef} src="/tracks/launch.MP3" preload="auto" />
     </>
   );
 }
