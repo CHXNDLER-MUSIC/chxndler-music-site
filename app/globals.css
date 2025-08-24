@@ -56,3 +56,16 @@ html, body { height: 100%; background:#000; color:#fff; }
   30%  { opacity: 1; transform: scale(1);   filter: blur(0); }
   100% { opacity: 0; transform: scale(1.4); filter: blur(6px); }
 }
+
+/* --- Glow + pulse --- */
+.glow { box-shadow: 0 0 12px currentColor, inset 0 0 6px currentColor; }
+.cockpit-glow { box-shadow: 0 0 18px currentColor, inset 0 0 8px currentColor; }
+.pulse-soft { animation: pulse-soft 2.4s ease-in-out infinite; }
+@keyframes pulse-soft { 0%,100% { opacity:.9; filter:brightness(1);} 50% { opacity:1; filter:brightness(1.12);} }
+
+/* --- Windshield fallback (oval) until you have PNG mask --- */
+.windshield-clip { clip-path: ellipse(65% 45% at 50% 52%); }
+
+/* Turn on while aligning slots */
+.debug-slot { outline: 1px dashed rgba(255,255,255,.35); }
+
