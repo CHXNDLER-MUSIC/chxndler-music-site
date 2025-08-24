@@ -6,17 +6,14 @@ import { DASHBOARD } from "@/config/dashboard";
 import { Slot } from "@/components/Slot";
 import SocialDock from "@/components/SocialDock";
 import MediaDockFrame from "@/components/MediaDockFrame";
-import JoinAliensBox from "@/components/JoinAliensBox";
+// import JoinAliensBox from "@/components/JoinAliensBox"; // TEMP disabled
 
 export default function Page() {
-  const DEBUG = false; // set true to outline slot rectangles
-
+  const DEBUG = false;
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
-      {/* SKY video inside windshield (oval fallback) */}
       <SkyboxVideo brightness={0.95} />
 
-      {/* HUD slots (always above video) */}
       <Slot rect={DASHBOARD.socialDock} debug={DEBUG}>
         <SocialDock />
       </Slot>
@@ -25,9 +22,9 @@ export default function Page() {
         <MediaDockFrame />
       </Slot>
 
-      <Slot rect={DASHBOARD.joinBox} debug={DEBUG}>
+      {/* <Slot rect={DASHBOARD.joinBox} debug={DEBUG}>
         <JoinAliensBox />
-      </Slot>
+      </Slot> */}
     </main>
   );
 }
