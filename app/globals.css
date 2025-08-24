@@ -69,3 +69,18 @@ html, body { height: 100%; background:#000; color:#fff; }
 /* Turn on while aligning slots */
 .debug-slot { outline: 1px dashed rgba(255,255,255,.35); }
 
+/* Use the SVG mask to reveal the video only through the windshield */
+.windshield-mask {
+  -webkit-mask-image: url("/cockpit/windshield-mask.svg");
+  mask-image: url("/cockpit/windshield-mask.svg");
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+/* Keep the oval fallback available if you want to compare */
+.windshield-clip { clip-path: ellipse(65% 45% at 50% 52%); }
+
