@@ -13,7 +13,6 @@ export default function JoinAliens() {
     try {
       // TODO: replace with your real endpoint if you have one
       // await fetch("/api/join", { method: "POST", body: JSON.stringify({ email, phone }) });
-
       await new Promise((r) => setTimeout(r, 400));
       setEmail("");
       setPhone("");
@@ -29,7 +28,6 @@ export default function JoinAliens() {
       {/* Email */}
       <label className="sr-only" htmlFor="join-email">Email</label>
       <div className="flex items-center gap-2 rounded-xl bg-black/35 backdrop-blur-md px-3 py-2 glow">
-        {/* mail icon */}
         <svg aria-hidden="true" className="h-4 w-4 opacity-80" viewBox="0 0 24 24" fill="currentColor">
           <path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Zm0 4-8 5L4 8V6l8 5 8-5v2Z" />
         </svg>
@@ -47,7 +45,6 @@ export default function JoinAliens() {
       {/* Phone (optional) */}
       <label className="sr-only" htmlFor="join-phone">Phone (optional)</label>
       <div className="flex items-center gap-2 rounded-xl bg-black/35 backdrop-blur-md px-3 py-2 glow">
-        {/* phone icon */}
         <svg aria-hidden="true" className="h-4 w-4 opacity-80" viewBox="0 0 24 24" fill="currentColor">
           <path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1.1-.2c1.2.4 2.5.7 3.8.7a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C11.6 21 3 12.4 3 2a1 1 0 0 1 1-1h3.3a1 1 0 0 1 1 1c0 1.3.2 2.6.7 3.8a1 1 0 0 1-.2 1.1l-2.2 2.2Z" />
         </svg>
