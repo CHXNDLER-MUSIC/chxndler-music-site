@@ -2,14 +2,49 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { --font-orbitron: system-ui; }
+/* Local fonts (place files in /public/fonts) */
+/* Inter — optional local files; will fallback to system if missing */
+@font-face {
+  font-family: 'InterLocal';
+  src:
+    local('Inter'),
+    url('/fonts/inter/Inter-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'InterLocal';
+  src:
+    local('Inter Bold'),
+    local('Inter-Bold'),
+    url('/fonts/inter/Inter-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'InterLocal';
+  src:
+    local('Inter ExtraBold'),
+    local('Inter-ExtraBold'),
+    url('/fonts/inter/Inter-ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+/* Orbitron — optional local files for accent headings */
+@font-face { font-family: 'OrbitronLocal'; src: url('/fonts/orbitron-400.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'OrbitronLocal'; src: url('/fonts/orbitron-600.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: 'OrbitronLocal'; src: url('/fonts/orbitron-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
+:root { --font-orbitron: OrbitronLocal; }
 html, body { height: 100%; background:#000; color:#fff; }
 * { -webkit-tap-highlight-color: transparent; }
-.font-sans { font-family: var(--font-orbitron), system-ui, -apple-system, Segoe UI, Roboto, Inter, Helvetica, Arial, sans-serif; }
+.font-sans { font-family: InterLocal, OrbitronLocal, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
 
 /* Cockpit background (frame stays fixed; sky video shows “through” windshield) */
 .cockpit-bg{
-  background-image: url("/cockpit/cockpit.jpg");
+  background-image: url("/cockpit/cockpit.png");
   background-size: cover;
   background-position: center;
 }
@@ -20,20 +55,45 @@ html, body { height: 100%; background:#000; color:#fff; }
 .pulse-soft { animation: pulse-soft 2.4s ease-in-out infinite; }
 @keyframes pulse-soft { 0%,100%{opacity:.9;filter:brightness(1)} 50%{opacity:1;filter:brightness(1.12)} }
 
-/* Windshield: prefer PNG mask if present; fallback to oval clip-path */
-.windshield-mask{
-  -webkit-mask-image: url("/cockpit/windshield-mask.png");
-  mask-image: url("/cockpit/windshield-mask.png");
-  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: contain;     mask-size: contain;
-  -webkit-mask-position: center;  mask-position: center;
-}
-.windshield-clip { clip-path: ellipse(65% 45% at 50% 52%); }
+/* Windshield mask disabled: render full sky */
 
 /* Shared HUD tokens */
 .hud-card{ @apply rounded-2xl bg-black/35 backdrop-blur-md p-3 glow; }
 .hud-btn{ @apply rounded-xl px-3 py-2 bg-black/35 backdrop-blur-md glow hover:scale-[1.04] transition uppercase tracking-wide text-[0.8rem]; }
 .hud-chip{ @apply rounded-lg px-2 py-1 bg-white/10 text-xs; }
+
+/* Center console HUD shape: tuned radii and subtle rim to match cutout */
+.console-hud{
+  position: relative;
+  /* Clean rectangular shell; HUD glass overlay provides the decorative cuts */
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,.18);
+  box-shadow:
+    0 18px 34px rgba(0,0,0,.55),             /* drop to seat into console */
+    inset 0 1px 0 rgba(255,255,255,.18),     /* top bevel */
+    inset 0 -10px 24px rgba(0,0,0,.65);      /* inner shade */
+  /* Contain inner visuals so they don’t spill past frame */
+  overflow: hidden;
+}
+
+/* Desktop: slightly deeper right-side concave and wider top taper */
+@media (min-width: 1024px) {
+  .console-hud{
+    /* No special clipping on desktop; HUDPanel handles beveled frame */
+  }
+}
+
+/* Small screens: reduce scoops so content isn’t clipped */
+@media (max-width: 640px) {
+  .console-hud{
+    /* Keep it simple on small screens too */
+  }
+}
+.console-hud:before{ /* glossy top highlight to match console reflections */
+  content:""; position:absolute; left:10%; right:10%; top:6%; height:22%; border-radius:9999px;
+  background: linear-gradient(180deg, rgba(255,255,255,.5), rgba(255,255,255,0));
+  filter: blur(1px); opacity:.7; pointer-events:none;
+}
 
 /* Channel dial */
 .dial{
@@ -47,14 +107,19 @@ html, body { height: 100%; background:#000; color:#fff; }
 
 /* Warp flash on sky change */
 .warp-flash{
-  position: fixed; inset: 0; z-index: 20; pointer-events: none;
-  background: radial-gradient(circle at center, rgba(255,255,255,.95), rgba(255,255,255,0) 55%);
-  animation: warp 520ms ease-out;
+  position: fixed; inset: 0; pointer-events: none;
+  /* Multi-layer neon burst */
+  background:
+    radial-gradient(circle at center, rgba(255,255,255,.98), rgba(255,255,255,.55) 22%, rgba(255,255,255,0) 60%),
+    radial-gradient(circle at center, rgba(252,84,175,.35), rgba(252,84,175,0) 68%),
+    radial-gradient(circle at center, rgba(56,182,255,.32), rgba(56,182,255,0) 70%),
+    radial-gradient(circle at center, rgba(242,239,29,.25), rgba(242,239,29,0) 74%);
+  animation: warp 800ms ease-out;
 }
 @keyframes warp {
-  0%   { opacity: 0; transform: scale(0.9); filter: blur(2px); }
-  30%  { opacity: 1; transform: scale(1);   filter: blur(0); }
-  100% { opacity: 0; transform: scale(1.4); filter: blur(6px); }
+  0%   { opacity: 0; transform: scale(0.8); filter: blur(2px) saturate(1) brightness(1); }
+  25%  { opacity: 1; transform: scale(1.0); filter: blur(0)   saturate(1.1) brightness(1.05); }
+  100% { opacity: 0; transform: scale(1.9); filter: blur(10px) saturate(1.25) brightness(1.1); }
 }
 
 /* --- Glow + pulse --- */
@@ -69,18 +134,5 @@ html, body { height: 100%; background:#000; color:#fff; }
 /* Turn on while aligning slots */
 .debug-slot { outline: 1px dashed rgba(255,255,255,.35); }
 
-/* Use the SVG mask to reveal the video only through the windshield */
-.windshield-mask {
-  -webkit-mask-image: url("/cockpit/windshield-mask.svg");
-  mask-image: url("/cockpit/windshield-mask.svg");
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-size: contain;
-  mask-size: contain;
-  -webkit-mask-position: center;
-  mask-position: center;
-}
-
-/* Keep the oval fallback available if you want to compare */
-.windshield-clip { clip-path: ellipse(65% 45% at 50% 52%); }
-
+/* Mask CSS removed; keeping optional clip class commented for reference */
+/* .windshield-clip { clip-path: ellipse(65% 45% at 50% 52%); } */

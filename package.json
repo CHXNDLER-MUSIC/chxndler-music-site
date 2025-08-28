@@ -6,13 +6,19 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:openai": "node test.mjs",
+    "gen:hud": "node scripts/generateHudImage.mjs \"${HUD_SONG_TITLE:-OCEAN GIRL}\" \"${HUD_ONE_LINER:-Love flows back like the tide.}\" ${HUD_SIZE:-1920x1080} ${HUD_COVER:-} ${HUD_SLUG:-}",
+    "gen:hud:cover": "node scripts/generateHudImage.mjs \"${HUD_SONG_TITLE:-OCEAN GIRL}\" \"${HUD_ONE_LINER:-Love flows back like the tide.}\" ${HUD_SIZE:-1920x1080} ${HUD_COVER:-public/cover/ocean-girl-cover.png} ${HUD_SLUG:-ocean-girl}"
   },
   "dependencies": {
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.15.16",
     "framer-motion": "^11.2.10",
-    "next": "14.2.5",
+    "next": "14.2.32",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "three": "^0.159.0"
   },
   "devDependencies": {
     "@types/node": "24.3.0",

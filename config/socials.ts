@@ -17,9 +17,9 @@ export type SocialItem = {
 };
 
 export const SOCIALS: SocialItem[] = [
-  { id: "Instagram", href: "https://instagram.com/your-handle" },
-  { id: "TikTok",    href: "https://tiktok.com/@your-handle" },
-  { id: "YouTube",   href: "https://youtube.com/@your-handle" },
+  { id: "Instagram", href: "https://www.instagram.com/chxndler_music/" },
+  { id: "TikTok",    href: "https://www.tiktok.com/@chxndler_music" },
+  { id: "YouTube",   href: "https://www.youtube.com/@chxndler_music" },
 ];
 
 // keep a default export too, so either import style works

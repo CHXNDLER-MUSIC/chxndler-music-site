@@ -1,0 +1,32 @@
+/* Hologram glow + panel styling */
+.holo-panel {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.2));
+  border: 1px solid rgba(61, 245, 255, 0.28);
+  box-shadow:
+    0 0 40px rgba(61, 245, 255, 0.18),
+    inset 0 0 0 1px rgba(61, 245, 255, 0.15);
+}
+.holo-inset {
+  box-shadow: inset 0 0 0 1px rgba(61,245,255,0.2), 0 0 30px rgba(61,245,255,0.16);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.drop-shadow-cyan { filter: drop-shadow(0 0 12px rgba(61,245,255,0.7)); }
+.scanlines {
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(255,255,255,0.06) 0px,
+    rgba(255,255,255,0.06) 1px,
+    rgba(0,0,0,0) 2px,
+    rgba(0,0,0,0) 4px
+  );
+  mix-blend-mode: screen; opacity: 0.18; pointer-events: none;
+}
+.custom-scroll::-webkit-scrollbar { width: 8px; }
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(61,245,255,0.5), rgba(61,245,255,0.15));
+  border-radius: 6px;
+}
+.custom-scroll { scrollbar-color: rgba(61,245,255,0.4) transparent; scrollbar-width: thin; }
+

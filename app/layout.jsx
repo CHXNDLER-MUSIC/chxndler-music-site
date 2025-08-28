@@ -4,14 +4,7 @@ export const metadata = {
 };
 
 import "./globals.css";
-import { Orbitron } from "next/font/google";
-
-const orbitron = Orbitron({
-  subsets: ["latin"],
-  weight: ["400", "600", "700"],
-  variable: "--font-orbitron",
-  display: "swap",
-});
+// Use a local font via @font-face in globals.css to avoid network fetches.
 
 export default function RootLayout({ children }) {
   const gaId = process.env.NEXT_PUBLIC_GA_ID;            // e.g., G-XXXXXXX
@@ -20,6 +13,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         {/* GA4 (optional) */}
         {gaId ? (
           <>
@@ -57,7 +51,7 @@ export default function RootLayout({ children }) {
           />
         ) : null}
       </head>
-      <body className={`${orbitron.variable} font-sans`}>
+      <body className={`font-sans`}>
         {children}
 
         {/* Meta Pixel <noscript> */}

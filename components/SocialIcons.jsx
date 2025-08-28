@@ -1,4 +1,5 @@
-import React from "react";
+"use client";
+import React, { useRef, useCallback } from "react";
 
 const Icon = {
   Instagram: ({ size=18 }) => (
@@ -20,44 +21,154 @@ const Icon = {
   ),
 };
 
-function IconButton({ title, href, style, children }) {
+function IconButton({ title, href, children, color = "#38B6FF", onClickFX, onHoverFX }) {
   return (
-    <a href={href} target="_blank" rel="noreferrer" title={title} className="ck-icon-btn" style={style}
-       onMouseDown={(e)=>e.currentTarget.style.transform="scale(0.96)"} onMouseUp={(e)=>e.currentTarget.style.transform="none"}>
-      {children}
+    <>
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        title={title}
+        className="ck-icon-btn"
+        style={{ "--btn-color": color }}
+        onMouseEnter={() => { if (onHoverFX) onHoverFX(); }}
+        onMouseDown={(e)=>{ if(onClickFX) onClickFX(); e.currentTarget.style.transform = "translateY(1px) scale(0.985)"; }}
+        onMouseUp={(e)=>{ e.currentTarget.style.transform = "none"; }}
+      >
+        <span className="logo-glow">{children}</span>
+      </a>
       <style jsx>{`
         .ck-icon-btn {
-          position:absolute; z-index:6; display:inline-flex; align-items:center; justify-content:center;
-          border-radius:14px; color:#e8f1ff;
-          background:rgba(28,34,48,.55);
-          border:1px solid rgba(255,255,255,.16);
-          box-shadow:0 12px 28px rgba(0,0,0,.40), inset 0 0 14px rgba(56,182,255,.16), 0 0 18px rgba(252,84,175,.12);
-          backdrop-filter:blur(6px); transition:box-shadow .18s, background .18s, transform .12s;
+          position:relative; display:grid; place-items:center; width:100%; height:100%;
+          border-radius:16px; color:#e8f1ff;
+          /* Black, tactile surface */
+          background:
+            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.08), rgba(255,255,255,0) 42%),
+            linear-gradient(180deg, #0b0b0b, #000 64%);
+          /* Neutral bevel + rim */
+          border:1px solid rgba(255,255,255,.18);
+          box-shadow:
+            0 18px 36px rgba(0,0,0,.65),          /* drop */
+            inset 0 2px 0 rgba(255,255,255,.22),  /* top bevel */
+            inset 0 -6px 14px rgba(0,0,0,.8);     /* bottom shade */
+          backdrop-filter:blur(8px);
+          -webkit-backdrop-filter:blur(8px);
+          transition: box-shadow .2s ease, background .2s ease, transform .12s ease, filter .18s ease;
+          cursor:pointer;
         }
-        .ck-icon-btn:hover{ background:rgba(255,255,255,.22); box-shadow:0 14px 38px rgba(0,0,0,.46), 0 0 22px rgba(56,182,255,.24); }
+        .ck-icon-btn:before{ /* outer rim glow very subtle to fuse with console */
+          content:""; position:absolute; inset:-2px; border-radius:20px;
+          box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset, 0 10px 30px rgba(0,0,0,.65), 0 0 0 1px rgba(0,255,255,.06);
+          pointer-events:none;
+        }
+        .ck-icon-btn:after{ /* glossy top highlight */
+          content:""; position:absolute; left:10%; right:10%; top:6%; height:26%; border-radius:9999px;
+          background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0));
+          filter: blur(1px); opacity:.85; pointer-events:none;
+        }
+        .logo-glow{
+          display:inline-flex; align-items:center; justify-content:center;
+          color: var(--btn-color);
+          filter:
+            drop-shadow(0 0 12px var(--btn-color))
+            drop-shadow(0 0 28px var(--btn-color));
+          transition: filter .2s ease, transform .25s ease;
+          will-change: filter, transform;
+          animation: pulseGlow 2.8s ease-in-out infinite;
+        }
+        .ck-icon-btn:hover .logo-glow{
+          filter:
+            drop-shadow(0 0 16px var(--btn-color))
+            drop-shadow(0 0 36px var(--btn-color))
+            drop-shadow(0 0 64px var(--btn-color));
+          transform: scale(1.04);
+        }
+        @keyframes pulseGlow {
+          0%, 100% { filter: brightness(1.1) saturate(1.2) drop-shadow(0 0 12px var(--btn-color)) drop-shadow(0 0 28px var(--btn-color)); transform: scale(1); }
+          50% { filter: brightness(1.3) saturate(1.4) drop-shadow(0 0 16px var(--btn-color)) drop-shadow(0 0 36px var(--btn-color)); transform: scale(1.03); }
+        }
       `}</style>
-    </a>
+    </>
   );
 }
 
-export default function SocialIcons({ LINKS, POS }) {
+export default function SocialIcons({ LINKS, POS, trackLinks }) {
   const s = POS.console;
   const size = s.sizePx;
+  // single column alignment: all share the same X
   const left = `calc(${s.xVw}vw - ${size/2}px)`;
+  // We'll build a dynamic column, stacking items using base/spacing if available
+  const hasStack = typeof s.baseYVh === 'number' && typeof s.spacingVh === 'number';
+  const BASE = s.tilt || "perspective(1100px) rotateX(32deg) rotateY(-8deg)";
+  const iconSize = Math.round(size * 0.56); // logo fills more of the button
+  const clickRef = useRef(null);
+  const hoverRef = useRef(null);
+  const playClick = useCallback(() => {
+    const a = clickRef.current; if (!a) return;
+    a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{});
+  }, []);
+  const playHover = useCallback(() => {
+    const a = hoverRef.current; if (!a) return;
+    a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{});
+  }, []);
+  // per-brand glow color
+  const colorFor = (name) => {
+    const n = String(name).toLowerCase();
+    if (n.includes("insta")) return "#FC54AF"; // pink
+    if (n.includes("tiktok")) return "#38B6FF"; // cyan
+    if (n.includes("tube") || n.includes("youtube")) return "#FF3B30"; // red
+    if (n.includes("spotify")) return "#1DB954"; // spotify green
+    if (n.includes("apple")) return "#FF3B30"; // apple red
+    return "#8BC6FF";
+  };
+
+  const items = [
+    { key: 'instagram', title: 'Instagram', href: LINKS.instagram, color: colorFor('instagram'), icon: <Icon.Instagram size={iconSize} /> },
+    { key: 'tiktok',    title: 'TikTok',    href: LINKS.tiktok,    color: colorFor('tiktok'),    icon: <Icon.TikTok size={iconSize} /> },
+    { key: 'youtube',   title: 'YouTube',   href: LINKS.youtube,   color: colorFor('youtube'),   icon: <Icon.YouTube size={iconSize} /> },
+  ];
+
   return (
     <>
-      <IconButton title="Instagram" href={LINKS.instagram}
-        style={{ left, top:`calc(${s.igYVh}vh - ${size/2}px)`, width:size, height:size }}>
-        <Icon.Instagram size={22} />
-      </IconButton>
-      <IconButton title="TikTok" href={LINKS.tiktok}
-        style={{ left, top:`calc(${s.ttYVh}vh - ${size/2}px)`, width:size, height:size }}>
-        <Icon.TikTok size={22} />
-      </IconButton>
-      <IconButton title="YouTube" href={LINKS.youtube}
-        style={{ left, top:`calc(${s.ytYVh}vh - ${size/2}px)`, width:size, height:size }}>
-        <Icon.YouTube size={22} />
-      </IconButton>
+      {items.map((it, i) => {
+        const top = hasStack ? `calc(${s.baseYVh + s.spacingVh * i}vh - ${size/2}px)` : `calc(${[s.igYVh, s.ttYVh, s.ytYVh, s.appleYVh, s.spotifyYVh][i]}vh - ${size/2}px)`;
+        const offsetPx = it.key === 'youtube' ? 16 : 0; // nudge YouTube left
+        const leftCSS = `calc(${s.xVw}vw - ${size/2 + offsetPx}px)`;
+        return (
+          <div key={it.key} className="ck-icon-wrap" style={{ left: leftCSS, top, width:size, height:size, transform: BASE }}>
+            <span className="deck" aria-hidden />
+            <span className="socket" aria-hidden />
+            <IconButton title={it.title} href={it.href} color={it.color} onClickFX={playClick} onHoverFX={playHover}>
+              {it.icon}
+            </IconButton>
+          </div>
+        );
+      })}
+
+      <style jsx>{`
+        .ck-icon-wrap{ position:absolute; z-index:40; pointer-events:auto; transform-origin:center; }
+        .ck-icon-wrap .deck{ position:absolute; left:-12px; right:-12px; bottom:-10px; height:24px; border-radius:9999px; pointer-events:none;
+          background: radial-gradient(60% 60% at 50% 40%, rgba(25,227,255,.22), rgba(25,227,255,0) 70%);
+          filter: blur(8px); opacity:.85; mix-blend-mode:screen;
+        }
+        .ck-icon-wrap .socket{ position:absolute; inset:-10px; border-radius:22px; pointer-events:none; }
+        /* Recessed socket creates the integrated-in-console look */
+        .ck-icon-wrap .socket{
+          background:
+            radial-gradient(140% 130% at 50% 8%, rgba(255,255,255,.08), rgba(255,255,255,0) 38%),
+            radial-gradient(100% 140% at 50% 120%, rgba(0,0,0,.85), rgba(0,0,0,0) 60%);
+          box-shadow:
+            0 22px 48px rgba(0,0,0,.9),           /* drop to seat into console */
+            inset 0 0 26px rgba(0,0,0,.92),       /* deeper inner recess */
+            inset 0 2px 0 rgba(255,255,255,.08);  /* top rim catchlight */
+        }
+      `}</style>
+      {/* Play hover/click sounds */}
+      <audio ref={clickRef} src="/audio/join-alien.mp3" preload="auto" />
+      <audio ref={hoverRef} preload="auto">
+        <source src="/audio/hover.mp3" type="audio/mpeg" />
+        <source src="/audio/song-select.mp3" type="audio/mpeg" />
+      </audio>
     </>
   );
 }

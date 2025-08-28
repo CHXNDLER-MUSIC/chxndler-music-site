@@ -5,7 +5,7 @@ import SkyboxVideo from "@/components/SkyboxVideo";
 import { DASHBOARD } from "@/config/dashboard";
 import { Slot } from "@/components/Slot";
 import SocialDock from "@/components/SocialDock";
-import MediaDockFrame from "@/components/MediaDockFrame";
+import MediaDock from "@/components/MediaDock";
 import JoinAliensBox from "@/components/JoinAliensBox";
 
 export default function Page() {
@@ -20,7 +20,7 @@ export default function Page() {
       </Slot>
 
       <Slot rect={DASHBOARD.mediaDock}>
-        <MediaDockFrame />
+        <MediaDock onSkyChange={() => {}} onPlayingChange={() => {}} />
       </Slot>
 
       <Slot rect={DASHBOARD.joinBox}>

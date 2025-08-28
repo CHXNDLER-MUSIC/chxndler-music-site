@@ -18,8 +18,8 @@ function ControlButton({ onClick, children, title }) {
           background:${T.colors.surface};color:${T.colors.text};
           border:1px solid ${T.colors.borderHud};
           box-shadow:${T.shadow.deepHud},${T.shadow.innerHud};
-          padding:6px 10px;margin:0 3px;
-          font-size:13px;cursor:pointer;
+          padding:10px 16px;margin:0 5px;
+          font-size:16px;cursor:pointer;
           transition:background .2s,box-shadow .2s,transform .12s;
         }
         .ck-btn:hover {
@@ -101,8 +101,8 @@ export default function CockpitHUD({
           font-weight:600;font-size:15px;margin-bottom:8px;
         }
         .ck-main {
-          display:flex;align-items:center;justify-content:center;
-          gap:12px;margin-bottom:10px;
+          display:flex;align-items:center;justify-content:flex-start;
+          gap:12px;margin-bottom:10px;width:100%;
         }
         .ck-cover {
           width:${T.sizes.cover.w}px;
@@ -112,7 +112,10 @@ export default function CockpitHUD({
           box-shadow:${T.shadow.innerPrimary},${T.shadow.rimAccent};
         }
         .ck-controls {
-          display:flex;align-items:center;justify-content:center;
+          display:flex;align-items:center;justify-content:flex-end;
+          margin-left:auto;
+          transform:perspective(800px) rotateX(8deg);
+          will-change:transform;
         }
         .ck-progress {
           height:4px;background:${T.colors.progressTrack};

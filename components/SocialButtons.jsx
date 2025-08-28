@@ -4,21 +4,21 @@ export default function SocialButtons() {
   const buttons = [
     {
       id: "instagram",
-      href: "https://instagram.com/chxndler_music",
+      href: "https://www.instagram.com/chxndler_music/",
       color: "#FC54AF",
       pos: "top-[26%] left-[6%] rotate-2", // adjust for perfect alignment
       icon: "📸",
     },
     {
       id: "tiktok",
-      href: "https://tiktok.com/@chxndler_music",
+      href: "https://www.tiktok.com/@chxndler_music",
       color: "#ffffff",
       pos: "top-[38%] left-[6%] -rotate-1",
       icon: "🎵",
     },
     {
       id: "youtube",
-      href: "https://youtube.com/@CHXNDLER_MUSIC",
+      href: "https://www.youtube.com/@chxndler_music",
       color: "#FF0000",
       pos: "top-[50%] left-[6%] rotate-1",
       icon: "▶️",

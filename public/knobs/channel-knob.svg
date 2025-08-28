@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 220 220">
+  <defs>
+    <radialGradient id="g0" cx="50%" cy="45%" r="60%">
+      <stop offset="0%" stop-color="#fff4a8" stop-opacity="0.8"/>
+      <stop offset="55%" stop-color="#ffe26a" stop-opacity="0.55"/>
+      <stop offset="80%" stop-color="#ffc800" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#0a0a0a" stop-opacity="1"/>
+    </radialGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffe26a"/>
+      <stop offset="100%" stop-color="#ffca2e"/>
+    </linearGradient>
+  </defs>
+  <!-- Outer soft shadow -->
+  <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="blur"/>
+    <feOffset dy="8" result="off"/>
+    <feMerge>
+      <feMergeNode in="off"/>
+      <feMergeNode in="SourceGraphic"/>
+    </feMerge>
+  </filter>
+
+  <!-- Base disc with warm yellow glow and dark core -->
+  <g filter="url(#soft)">
+    <circle cx="110" cy="110" r="100" fill="url(#g0)"/>
+    <!-- Metallic ring -->
+    <circle cx="110" cy="110" r="86" fill="none" stroke="url(#ring)" stroke-width="10"/>
+    <!-- Inner cap -->
+    <circle cx="110" cy="110" r="64" fill="#121212"/>
+    <!-- Small highlight -->
+    <ellipse cx="95" cy="88" rx="18" ry="10" fill="#ffffff" opacity="0.25"/>
+  </g>
+</svg>
+

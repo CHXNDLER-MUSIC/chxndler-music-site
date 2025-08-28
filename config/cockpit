@@ -1,0 +1,91 @@
+// Central config for FAST edits (positions, playlist, links, paths)
+export const BUILD_TAG = "Cockpit v3.2 — integrated";
+
+export const PATHS = {
+  cockpit: "/cockpit/cockpit.png",
+  fallbackBackdrop: "/cockpit/ocean-girl.png",
+  logoFallback: "/logo/CHXNDLER_Logo.png",
+};
+
+export const PLAYLIST = [
+  {
+    id: "ocean-girl",
+    title: "OCEAN GIRL",
+    src: "/tracks/ocean-girl.mp3",
+    cover: "/cover/ocean-girl-cover.png",
+    backdrop: "/cockpit/ocean-girl.png",
+  },
+  {
+    id: "ocean-girl-acoustic",
+    title: "OCEAN GIRL — Acoustic",
+    src: "/tracks/ocean-girl-acoustic.mp3",
+    cover: "/cover/ocean-girl-acoustic-cover.png",
+    backdrop: "/cockpit/ocean-girl-acoustic.png",
+  },
+  {
+    id: "ocean-girl-remix",
+    title: "OCEAN GIRL — Remix",
+    src: "/tracks/ocean-girl-remix.mp3",
+    cover: "/cover/ocean-girl-remix-cover.png",
+    backdrop: "/cockpit/ocean-girl-remix.png",
+  },
+];
+
+export const LINKS = {
+  // Updated to current handles (lowercase, canonical URLs)
+  instagram: "https://www.instagram.com/chxndler_music/",
+  tiktok: "https://www.tiktok.com/@chxndler_music",
+  youtube: "https://www.youtube.com/@chxndler_music",
+  spotify: "https://open.spotify.com/artist/0",
+  apple: "https://music.apple.com/artist/0",
+};
+
+/* Positions for HUD + left console icons (tweak freely) */
+export const POS = {
+  hud: {
+    topVh: 28,   // move HUD up/down so it sits on the center screen
+    widthVw: 46, // % of viewport width
+    maxPx: 740,  // clamp on wide screens
+  },
+  console: {
+    // Column X for left console icons
+    xVw: 13.6,    // moved right to embed deeper in oval
+    // Optional stacking controls (if present, overrides ig/tt/yt Y)
+    baseYVh: 62.0,   // starting Y (vh) for top button — moved further down
+    spacingVh: 14.0, // vertical spacing between buttons (spread out more)
+    // Fallback individual centers (used if base/spacing not provided)
+    igYVh: 42.0,
+    ttYVh: 58.0,
+    ytYVh: 74.0,
+    sizePx: 76,   // diameter of glow buttons (larger presence)
+  },
+  stream: {
+    // Middle console streaming buttons (Spotify + Apple)
+    xVw: 24.0,   // slightly more left
+    yVh: 66.0,   // moved up so Spotify sits higher
+    sizePx: 76,
+    gapPx: 22,
+    vertical: true, // stack Spotify above Apple
+    tilt: "perspective(1200px) rotateX(18deg)",
+  },
+  dial: {
+    // Station dial overlay near the steering wheel (≈2 o'clock)
+    leftVw: 66.0,
+    topVh: 66.0,
+    sizePx: 96,
+    tilt: "perspective(1100px) rotateX(10deg)",
+  },
+  wheel: {
+    // Approximate steering wheel overlay positions (tweak as needed)
+    // Values are in viewport percentages for easy scaling
+    // Center horizontally by default so the wheel video aligns from the start
+    logo: { topVh: 66, leftVw: 50, sizePx: 72 },
+    // Play button: slightly more to the right of the wheel
+    play: { topVh: 70, leftVw: 66, sizePx: 64 },
+    // Optional video overlay tuning for /cockpit/wheel.mp4
+    // Increase scale substantially to make the wheel much larger
+    // Lower the wheel video so it sits further down and stays flat
+    // Nudge wheel mp4 slightly back up
+    video: { scale: 9.2, offsetVh: -10, offsetVw: 0, centerHoriz: true, debug: false },
+  },
+};

@@ -65,6 +65,11 @@ export default function MediaDock({ onSkyChange, onPlayingChange, wrapChannels =
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Ignore when typing in a field so numbers don't change channel
+      try {
+        const ae = (document.activeElement as HTMLElement | null);
+        if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || (ae as any).isContentEditable)) return;
+      } catch {}
       if (e.key === "ArrowLeft") prev();
       else if (e.key === "ArrowRight") next();
       else if (e.key === " ") { e.preventDefault(); toggle(); }
@@ -154,7 +159,7 @@ export default function MediaDock({ onSkyChange, onPlayingChange, wrapChannels =
         <button onClick={next}  className="hud-chip" aria-label="Next">▶</button>
       </div>
 
-      <audio ref={audioRef} controls className="w-full mt-2" preload="metadata">
+      <audio ref={audioRef} controls className="w-full mt-2" preload="metadata" loop>
         <source src={cur.src} type={cur.type ?? "audio/mpeg"} />
         {/* Fallback to a known local track */}
         <source src="/tracks/ocean-girl.mp3" type="audio/mpeg" />

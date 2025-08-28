@@ -1,8 +1,0 @@
-<!-- /public/cockpit/windshield-mask.svg -->
-<!-- White = visible area; transparent = hidden. Adjust rx/ry/cx/cy to fit your cockpit. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
-  <!-- Optional: a tiny transparent background to ensure full-canvas size -->
-  <rect width="1920" height="1080" fill="none"></rect>
-  <!-- Ellipse roughly matching the windshield. Tweak these numbers to fit perfectly. -->
-  <ellipse cx="960" cy="560" rx="800" ry="460" fill="#ffffff"></ellipse>
-</svg>

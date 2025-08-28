@@ -17,10 +17,9 @@ export default function OG() {
           width: "100%",
           height: "100%",
           color: "white",
-          background: "linear-gradient(135deg, #0b0b1f, #1b1230)",
+          backgroundColor: "#0b0b1f",
           fontSize: 64,
           fontWeight: 700,
-          letterSpacing: -1,
         }}
       >
         CHXNDLER — Starship
