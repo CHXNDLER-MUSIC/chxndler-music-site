@@ -24,7 +24,7 @@ export default function FastAudioBus({ track }: { track?: Track }) {
   }, [active, audio]);
 
   // progress loop
-  const raf = useRef<number>();
+  const raf = useRef<number | null>(null);
   useEffect(() => {
     const loop = () => {
       if (!audio.paused && audio.duration) setProgress(audio.currentTime / audio.duration);

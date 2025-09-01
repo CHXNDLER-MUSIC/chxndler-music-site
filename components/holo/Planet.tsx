@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Group, Mesh, AdditiveBlending, Color, DataTexture, RGBAFormat, UnsignedByteType, RepeatWrapping, Vector2, Texture, TextureLoader } from "three";
+import { Group, Mesh, AdditiveBlending, Color, DataTexture, RGBAFormat, UnsignedByteType, RepeatWrapping, Vector2, Vector3, Texture, TextureLoader, MathUtils } from "three";
 import { useFrame } from "@react-three/fiber";
 import HoloMaterial from "@/components/HoloMaterial";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import type { Song } from "@/data/songs";
+import { usePlanetLayout } from "@/lib/planetLayout";
+import { registerPlanet, unregisterPlanet } from "@/lib/planetRegistry";
 // Html labels removed; titles will render in HUD top-left overlay
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -36,6 +38,10 @@ export default function Planet({
   const angleRef = useRef(Math.random() * Math.PI * 2);
   const orbitRadiusRef = useRef(song.planet.orbitRadius);
   const scaleRef = useRef(song.planet.radius * BASE_SCALE);
+  const phaseOffsetRef = useRef(0);
+  const phaseTargetRef = useRef(0);
+  const worldPosRef = useRef(new Vector3());
+  const [depthFactor, setDepthFactor] = useState(1.0);
 
   const { mainId, hoverId } = usePlayerStore((s) => ({ mainId: s.mainId, hoverId: s.hoverId }));
   // Compute color first to avoid TDZ when referenced below
@@ -83,6 +89,34 @@ export default function Planet({
   const scaleTarget = isMain
     ? base * MAIN_MULT * mainSizeJitter
     : (isHover ? base * ORBIT_MULT * HOVER_MULT : base * ORBIT_MULT) * satelliteSizeJitter;
+
+  // Layout fields (concentric rings + golden-angle)
+  const layout = usePlanetLayout(song.id);
+  const layoutOrbit = layout?.orbitRadius ?? orbitTarget;
+  const layoutTiltDeg = layout?.tiltDeg ?? (song.planet.tilt * (180 / Math.PI));
+  const layoutEcc = layout?.ecc ?? 0.0;
+  const layoutAngle0 = layout?.angle0 ?? angleRef.current;
+
+  // Element-based tweaks (non-destructive): radius/speed/wobble/scale tinting done as computed fields
+  const element = (song as any)?.planet?.element as ("water"|"fire"|"lightning"|"heart"|"moon"|"magic"|"darkness"|undefined);
+  const radiusMul = element === "water" ? 1.04 : element === "fire" ? 0.96 : 1.0;
+  const speedMul = element === "water" ? 0.92 : element === "fire" ? 1.08 : element === "lightning" ? 1.10 : 1.0;
+  const wobbleExtra = element === "lightning" ? 0.01 : 0.0;
+  const scaleMul = element === "heart" ? 1.06 : 1.0;
+
+  // Register with global overlap manager (screen-space separation)
+  useEffect(() => {
+    const ringIndex = layout?.ringIndex ?? 0;
+    const getWorldPosition = () => {
+      if (groupRef.current) groupRef.current.getWorldPosition(worldPosRef.current);
+      return worldPosRef.current;
+    };
+    const getAngle = () => (layoutAngle0 + angleRef.current + phaseOffsetRef.current);
+    const addPhase = (delta: number) => { phaseTargetRef.current += delta; };
+    registerPlanet({ id: song.id, ringIndex, getWorldPosition, getAngle, addPhase });
+    return () => unregisterPlanet(song.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [song.id, layout?.ringIndex, layoutAngle0]);
 
   // color and ringColor now defined above
 
@@ -220,34 +254,63 @@ export default function Planet({
     const lerpSlow = 1 - Math.exp(-d / 0.6);
     const orbitLerp = isHover ? lerpFast : (isMain ? (1 - Math.exp(-d / 0.5)) : lerpSlow);
     const scaleLerp = isHover ? lerpFast : (isMain ? (1 - Math.exp(-d / 0.5)) : lerpSlow);
-    orbitRadiusRef.current = lerp(orbitRadiusRef.current, orbitTarget, orbitLerp);
-    scaleRef.current = lerp(scaleRef.current, scaleTarget, scaleLerp);
 
-    angleRef.current += speedTarget * d;
+    // Respect computed layout + element tweaks (non-destructive)
+    const targetR = (isMain ? 0 : layoutOrbit) * radiusMul;
+    orbitRadiusRef.current = lerp(orbitRadiusRef.current, targetR, orbitLerp);
+    const layoutScale = (layout?.scale ?? 1) * scaleMul;
+    scaleRef.current = lerp(scaleRef.current, scaleTarget * layoutScale, scaleLerp);
 
-    const r = orbitRadiusRef.current;
-    const theta = angleRef.current;
-    const x = Math.cos(theta) * r;
-    const z = Math.sin(theta) * r;
-    const y = 0;
+    // Angular velocity from existing orbitSpeed
+    angleRef.current += (speedTarget * speedMul) * d;
+
+    // Elliptical orbit + wobble + tilt
+    const a = orbitRadiusRef.current;
+    const b = a * (1.0 - layoutEcc);
+    const t = state.clock.elapsedTime;
+    // damp phase target into offset (gentle)
+    const phaseDamp = 1 - Math.exp(-d / 0.5);
+    phaseOffsetRef.current += (phaseTargetRef.current - phaseOffsetRef.current) * phaseDamp;
+    const theta = (layoutAngle0 + angleRef.current + phaseOffsetRef.current);
+    let x = a * Math.cos(theta);
+    let z = b * Math.sin(theta);
+    const hoverWobble = isHover && !isMain ? 0.005 : 0.0;
+    x += (0.02 + wobbleExtra + hoverWobble) * Math.sin(t * 0.9 + (idHash % 17));
+    z += (0.02 + wobbleExtra + hoverWobble) * Math.sin(t * 1.1 + (idHash % 31));
+    const tilt = MathUtils.degToRad(layoutTiltDeg || 0);
+    const zt = z * Math.cos(tilt);
+    const yt = z * Math.sin(tilt);
 
     if (groupRef.current) {
-      groupRef.current.position.set(x, y, z);
-      groupRef.current.rotation.x = song.planet.tilt;
+      groupRef.current.position.set(x, yt, zt);
+      groupRef.current.rotation.x = tilt;
     }
+    // Depth readability: compute a camera-relative factor once per frame
+    let depthLocal = depthFactor;
+    if (groupRef.current && (state as any).camera) {
+      const cam = (state as any).camera as any;
+      const v = worldPosRef.current.clone();
+      groupRef.current.getWorldPosition(v);
+      const ndc = v.clone().project(cam);
+      const tZ = Math.min(1, Math.max(0, (ndc.z + 1) / 2));
+      depthLocal = 1.0 - 0.15 * tZ;
+    }
+
     if (meshRef.current) {
       const rotSpeed = isHover ? 1.6 : (isMain ? 0.9 : 0.8);
       meshRef.current.rotation.y += rotSpeed * d;
-      // Subtle oscillating pulse on hover
+      // Subtle oscillating pulse on hover (+heart pulse)
       const hPulse = isHover ? 1 + 0.03 * Math.sin(state.clock.elapsedTime * 6) : 1;
-      const finalScale = scaleRef.current * hPulse;
+      const heartPulse = element === 'heart' ? (1 + 0.06 * Math.sin(state.clock.elapsedTime * 2.4)) : 1.0;
+      const finalScale = scaleRef.current * hPulse * heartPulse;
       meshRef.current.scale.setScalar(finalScale);
-      const ePulse = isMain
-        ? 0.9 + 0.6 * Math.sin(state.clock.elapsedTime * 4)
-        : isHover
-          ? 0.7 + 0.35 * Math.sin(state.clock.elapsedTime * 7)
-          : 0.08;
-      (meshRef.current.material as any).emissiveIntensity = (isMain ? 0.7 : 0.42) + ePulse;
+      const m: any = (meshRef.current.material as any);
+      if (m && typeof m.opacity === 'number') m.opacity = (isMain ? 0.62 : 0.52) * depthLocal;
+      (m as any).clearcoat = 0.25;
+    }
+    // Throttled state update to refresh HoloMaterial uniforms for depth
+    if (Number.isFinite(depthLocal) && Math.abs(depthLocal - depthFactor) > 0.03) {
+      setDepthFactor(depthLocal);
     }
     // Slow-moving cloud layer for parallax realism
     if (cloudsRef.current) {
@@ -257,7 +320,10 @@ export default function Planet({
       outlineRef.current.rotation.z += 0.1 * d;
       const mat: any = (outlineRef.current as any).material;
       if (mat && typeof mat.opacity === "number") {
-        mat.opacity = isHover ? 0.5 + 0.15 * Math.sin(state.clock.elapsedTime * 6) : 0.25;
+        const depthFactor = (groupRef.current?.position?.z ?? 0) >= 0 ? 1.0 : 0.85;
+        const base = isHover ? 0.6 : 0.25;
+        const osc = isHover ? 0.18 * Math.sin(state.clock.elapsedTime * 6) : 0.0;
+        mat.opacity = (base + osc) * depthFactor;
       }
     }
 
@@ -274,6 +340,19 @@ export default function Planet({
         if (m && typeof m.opacity === 'number') m.opacity = 0.18 + 0.06 * Math.sin(t * 1.8);
         sprinkleRef.current.scale.setScalar(scaleRef.current * 2.3);
       }
+    }
+
+    // Lightweight overlap avoidance (phase nudge)
+    if (!isMain && layout) {
+      const ideal = (layout.ringIndex * 0.37) % (Math.PI * 2);
+      const baseTheta = layoutAngle0 + angleRef.current;
+      const diff = Math.atan2(Math.sin(baseTheta - ideal), Math.cos(baseTheta - ideal));
+      const tooClose = Math.abs(diff) < 0.06;
+      const targetPhase = tooClose ? (diff > 0 ? phaseOffsetRef.current + 0.01 : phaseOffsetRef.current - 0.01) : 0;
+      const phaseLerp = 1 - Math.exp(-d / 0.4);
+      phaseOffsetRef.current += (targetPhase - phaseOffsetRef.current) * phaseLerp;
+      if (phaseOffsetRef.current > Math.PI) phaseOffsetRef.current -= Math.PI * 2;
+      if (phaseOffsetRef.current < -Math.PI) phaseOffsetRef.current += Math.PI * 2;
     }
   });
 
@@ -363,10 +442,11 @@ export default function Planet({
         <HoloMaterial
           baseColor={baseColor}
           glowColor={innerColor}
-          scanIntensity={isMain ? 0.3 : 0.24}
-          fresnelPower={isMain ? 2.6 : 2.2}
-          brighten={1.35}
-          alpha={isMain ? 0.18 : 0.12}
+          scanIntensity={isMain ? 0.3 : (isHover ? 0.28 : 0.24)}
+          fresnelPower={(isMain ? 2.6 : 2.2) * (element === 'darkness' ? 1.12 : 1.0)}
+          brighten={isMain ? 1.35 : (isHover ? 1.45 : 1.35)}
+          alpha={(isMain ? 0.18 : (isHover ? 0.18 : 0.12)) * (element === 'darkness' ? 0.9 : 1.0)}
+          depthFactor={depthFactor}
         />
       </mesh>
 

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Secret scanning pre-commit hook
+
+exec bash scripts/secret-scan.sh
+

@@ -42,11 +42,15 @@ export default function SongList({ height = 420, rowHeight = 64 }: { height?: nu
     const idx = songs.findIndex(s => s.id === (previewId ?? selectedId ?? songs[0].id));
     if (e.key === "ArrowDown") {
       const next = Math.min(songs.length - 1, idx + 1);
-      setPreview(songs[next].id); centerOn(next);
+      setPreview(songs[next].id);
+      setSelected(songs[next].id); // auto-play on Down
+      centerOn(next);
       e.preventDefault();
     } else if (e.key === "ArrowUp") {
       const prev = Math.max(0, idx - 1);
-      setPreview(songs[prev].id); centerOn(prev);
+      setPreview(songs[prev].id);
+      setSelected(songs[prev].id); // auto-play on Up
+      centerOn(prev);
       e.preventDefault();
     } else if (e.key === "Enter") {
       if (idx >= 0) { setSelected(songs[idx].id); centerOn(idx); }
@@ -95,4 +99,3 @@ export default function SongList({ height = 420, rowHeight = 64 }: { height?: nu
     </div>
   );
 }
-

@@ -43,6 +43,16 @@
     ".next/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "components/**/* 2.tsx",
+    "components/**/* 2.jsx",
+    "components/**/* 2.ts",
+    "components/**/* 2.js",
+    "app/**/* 2.tsx",
+    "app/**/* 2.jsx",
+    "app/**/* 2.ts",
+    "app/**/* 2.js",
+    "config/**/* 2.ts",
+    "config/**/* 2.js"
   ]
 }

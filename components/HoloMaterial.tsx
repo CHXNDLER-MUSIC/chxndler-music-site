@@ -14,8 +14,9 @@ export default function HoloMaterial({
   fresnelPower = 2.2,
   brighten = 1.1,
   alpha = 0.5,
+  depthFactor = 1.0,
 }: any) {
-  const mat = useRef<any>();
+  const mat = useRef<any>(null);
   useFrame((_, dt) => {
     if (mat.current) mat.current.uniforms.uTime.value += dt;
   });
@@ -27,10 +28,10 @@ export default function HoloMaterial({
       uGlowColor: { value: new Color(glowColor) },
       uScanIntensity: { value: scanIntensity },
       uFresnelPower: { value: fresnelPower },
-      uBrighten: { value: brighten },
-      uAlpha: { value: alpha },
+      uBrighten: { value: (brighten as number) * (depthFactor as number) },
+      uAlpha: { value: (alpha as number) * (depthFactor as number) },
     }),
-    [baseColor, glowColor, scanIntensity, fresnelPower, brighten, alpha]
+    [baseColor, glowColor, scanIntensity, fresnelPower, brighten, alpha, depthFactor]
   );
 
   // @ts-ignore

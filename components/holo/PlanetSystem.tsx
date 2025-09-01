@@ -2,10 +2,13 @@
 
 import React, { useEffect } from "react";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
-import { AdditiveBlending } from "three";
+import { AdditiveBlending, Group as ThreeGroup } from "three";
 import { Html, OrbitControls, Environment } from "@react-three/drei";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import Planet from "@/components/holo/Planet";
+import { usePlanetLayout, computePlanetLayout } from "@/lib/planetLayout";
+import ReactDOM from "react-dom";
+import { getEntriesByRing } from "@/lib/planetRegistry";
 
 function InvalidateOnState() {
   const invalidate = useThree((s) => s.invalidate);
@@ -50,7 +53,8 @@ export default function PlanetSystem() {
 
         {/* Very shallow tilt for near-horizontal horizon line */}
         {/* Render the full system: satellites first, focus planet last; previous main becomes a moon */}
-        <group rotation={[0.08, -0.04, 0]} position={[0, 0.35, 0]}>
+        <SystemGroup>
+          <OrbitGuides />
           {(() => {
             const satellites = songs.filter((s) => s.id !== focusId);
             return (
@@ -69,7 +73,7 @@ export default function PlanetSystem() {
               </>
             );
           })()}
-        </group>
+        </SystemGroup>
 
         {/* Subtle vertical projection sweep across the HUD area */}
         <ProjectionSweep />
@@ -78,8 +82,50 @@ export default function PlanetSystem() {
 
 
         <OrbitControls enablePan={false} enableZoom={false} enableRotate={false} target={[0, 0.35, 0]} />
+        <OverlapManager />
       </Canvas>
     </div>
+  );
+}
+
+function OrbitGuides() {
+  const { songs } = usePlayerStore();
+  const layout = React.useMemo(() => computePlanetLayout(songs as any), [songs]);
+  const rings = React.useMemo(() => {
+    const map = new Map<number, { r: number; tiltDeg: number }>();
+    for (const id in layout) {
+      const l = layout[id];
+      const prev = map.get(l.ringIndex);
+      if (!prev || l.orbitRadius > prev.r) map.set(l.ringIndex, { r: l.orbitRadius, tiltDeg: l.tiltDeg });
+    }
+    return Array.from(map.entries()).sort((a, b) => a[0] - b[0]).map(([, v]) => v);
+  }, [layout]);
+  return (
+    <group>
+      {rings.map((r, i) => (
+        <group key={i} rotation={[-Math.PI / 2 + (r.tiltDeg * Math.PI/180), 0, 0]}>
+          <mesh>
+            <ringGeometry args={[Math.max(0, r.r - 0.01), r.r + 0.01, 96]} />
+            <meshBasicMaterial color={'#19E3FF'} transparent opacity={0.12} depthWrite={false} blending={AdditiveBlending} />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  );
+}
+
+function SystemGroup({ children }: { children: React.ReactNode }) {
+  const ref = React.useRef<ThreeGroup>(null);
+  const reduced = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  useFrame((_, dt) => {
+    if (!ref.current || reduced) return;
+    // slow idle auto-orbit around Y
+    ref.current.rotation.y += 0.02 * dt;
+  });
+  return (
+    <group ref={ref} rotation={[0.08, -0.04, 0]} position={[0, 0.35, 0]}>
+      {children}
+    </group>
   );
 }
 
@@ -146,19 +192,57 @@ function ZoomOnChange() {
     const closeFov = 36;
     // use a bell curve around 0.5
     const bell = Math.sin(Math.PI * ease);
-    camera.position.z = base.current.z - (base.current.z - closeZ) * bell;
-    camera.fov = base.current.fov - (base.current.fov - closeFov) * bell;
-    camera.updateProjectionMatrix();
+    (camera as any).position.z = base.current.z - (base.current.z - closeZ) * bell;
+    (camera as any).fov = base.current.fov - (base.current.fov - closeFov) * bell;
+    (camera as any).updateProjectionMatrix();
     anim.current.t += dt;
     if (anim.current.t >= anim.current.d) {
       anim.current.active = false;
-      camera.position.z = base.current.z;
-      camera.fov = base.current.fov;
-      camera.updateProjectionMatrix();
+      (camera as any).position.z = base.current.z;
+      (camera as any).fov = base.current.fov;
+      (camera as any).updateProjectionMatrix();
     } else {
       // request next frame while animating (frameloop is demand)
       invalidate();
     }
+  });
+  return null;
+}
+
+function OverlapManager() {
+  const { size, camera } = useThree();
+  const reduced = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const toScreen = (p: any) => {
+    const vec = p.clone().project(camera);
+    return { x: (vec.x * 0.5 + 0.5) * size.width, y: ( -vec.y * 0.5 + 0.5) * size.height };
+  };
+  useFrame(() => {
+    if (reduced) return;
+    const byRing = getEntriesByRing();
+    byRing.forEach((list) => {
+      if (list.length < 2) return;
+      // Snapshot angles and positions
+      const snapshot = list.map((e) => {
+        const wp = e.getWorldPosition();
+        return { e, theta: e.getAngle(), pos: toScreen(wp) };
+      });
+      // Sort by angle within ring for nearest-neighbor checks
+      snapshot.sort((a, b) => a.theta - b.theta);
+      const dMin = Math.min(size.width, size.height) < 640 ? 22 : 28; // px
+      for (let i = 0; i < snapshot.length; i++) {
+        const a = snapshot[i];
+        const b = snapshot[(i + 1) % snapshot.length]; // neighbor with wrap
+        const dx = a.pos.x - b.pos.x;
+        const dy = a.pos.y - b.pos.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < dMin) {
+          const nudge = 0.01;
+          // push apart by adjusting phases in opposite directions
+          a.e.addPhase(+nudge);
+          b.e.addPhase(-nudge);
+        }
+      }
+    });
   });
   return null;
 }

@@ -1,0 +1,24 @@
+# Minimal gitleaks config tuned for this repo
+
+[extend]
+useDefault = true
+
+[rules]
+
+# Allow public assets and sample envs
+[[allowlist.files]]
+description = "Ignore common non-secret files"
+regex = '''(
+  ^public/|^styles/|^app/.*\.(css|png|jpg|mp4|webm)$|^README\.md$|^LICENSE$|^\.husky/|^\.githooks/
+)'''
+
+# Ignore example env files
+[[allowlist.files]]
+description = "ignore example envs"
+regex = '''^\.env\.example$'''
+
+# Known test SFX filenames (not secrets)
+[[allowlist.files]]
+description = "audio/video placeholders"
+regex = '''^public/(tracks|audio|skies|cockpit)/'''
+

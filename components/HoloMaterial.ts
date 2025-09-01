@@ -1,1 +1,1 @@
-export { default } from "./HoloMaterial.tsx";
+export { default } from "./HoloMaterial";

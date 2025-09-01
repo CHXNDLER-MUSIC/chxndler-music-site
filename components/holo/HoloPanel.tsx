@@ -1,9 +1,10 @@
 "use client";
 
 import React from "react";
-import PlanetSystem from "@/components/holo/PlanetSystem.tsx";
+import PlanetSystem from "@/components/holo/PlanetSystem";
 import SongList from "@/components/holo/SongList";
 import { usePlayerStore } from "@/store/usePlayerStore";
+import HoloAudioBridge from "@/components/holo/HoloAudioBridge";
 
 export default function HoloPanel() {
   const { mainId, songs } = usePlayerStore((s) => ({ mainId: s.mainId, songs: s.songs }));
@@ -18,6 +19,8 @@ export default function HoloPanel() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 md:p-6">
         <div className="relative h-[320px] md:h-[360px] lg:h-[420px] rounded-xl bg-black/30 backdrop-blur-md ring-1 ring-cyan-400/20 p-2">
           <PlanetSystem />
+          {/* Hidden audio bridge for the /holo route */}
+          <div className="hidden"><HoloAudioBridge /></div>
         </div>
         <div className="rounded-xl bg-black/30 backdrop-blur-md ring-1 ring-cyan-400/20 p-2">
           <header className="mb-3 px-1">

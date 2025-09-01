@@ -9,7 +9,11 @@
     "lint": "next lint",
     "test:openai": "node test.mjs",
     "gen:hud": "node scripts/generateHudImage.mjs \"${HUD_SONG_TITLE:-OCEAN GIRL}\" \"${HUD_ONE_LINER:-Love flows back like the tide.}\" ${HUD_SIZE:-1920x1080} ${HUD_COVER:-} ${HUD_SLUG:-}",
-    "gen:hud:cover": "node scripts/generateHudImage.mjs \"${HUD_SONG_TITLE:-OCEAN GIRL}\" \"${HUD_ONE_LINER:-Love flows back like the tide.}\" ${HUD_SIZE:-1920x1080} ${HUD_COVER:-public/cover/ocean-girl-cover.png} ${HUD_SLUG:-ocean-girl}"
+    "gen:hud:cover": "node scripts/generateHudImage.mjs \"${HUD_SONG_TITLE:-OCEAN GIRL}\" \"${HUD_ONE_LINER:-Love flows back like the tide.}\" ${HUD_SIZE:-1920x1080} ${HUD_COVER:-public/cover/ocean-girl-cover.png} ${HUD_SLUG:-ocean-girl}",
+    "set:openai": "bash scripts/set-openai-key.sh",
+    "purge:secret": "bash scripts/purge-secret.sh",
+    "scan:secrets": "bash scripts/secret-scan.sh",
+    "hooks:enable": "git config core.hooksPath .githooks && chmod +x .githooks/pre-commit scripts/secret-scan.sh"
   },
   "dependencies": {
     "@react-three/drei": "^9.122.0",

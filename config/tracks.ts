@@ -9,6 +9,7 @@ export type Track = {
   type?: string;        // default "audio/mpeg"
   subtitle?: string;    // optional label
   slug?: string;        // auto-filled; falls back to track-<n> if needed
+  bgSky?: string;       // optional HUD sky override (used by CockpitDashboard)
 };
 
 // Taglines per song, keyed by slugified title
@@ -48,7 +49,7 @@ const TAGLINES: Record<string, string> = {
   "were-just-friends-mickey-jas-remix": "Lines blur between us.",
 };
 
-const RAW: Omit<Track, "slug" | "type" | "cover" | "subtitle">[] = [
+const RAW: Omit<Track, "slug" | "type" | "subtitle">[] = [
   { title: "GAME BOY HEART (ゲームボーイの心)", spotify:"https://open.spotify.com/track/5VypE0QkaggJemaNG6sMsF", apple:"https://music.apple.com/us/album/game-boy-heart-%E3%82%B2%E3%83%BC%E3%83%A0%E3%83%9C%E3%83%BC%E3%82%A4%E3%81%AE%E5%BF%83/1826340576?i=1826340577", src: "/tracks/game-boy-heart.mp3", cover: "/cover/game-boy-heart-cover.png" },
   { title: "KID FOREVER (永遠の子供)",           spotify:"https://open.spotify.com/track/5X27jqHBvMBsDvvFixeZdN", apple:"https://music.apple.com/us/album/kid-forever-%E6%B0%B8%E9%81%A0%E3%81%AE%E5%AD%90%E4%BE%9B-single/1826397337", src: "/tracks/kid-forever.mp3" },
   { title: "BRAIN FREEZE",                       spotify:"https://open.spotify.com/track/5ou8AyA71rLFK6Ysxr2CpT", apple:"https://music.apple.com/us/album/brain-freeze/1823925483?i=1823925484", src: "/tracks/brain-freeze.mp3" },

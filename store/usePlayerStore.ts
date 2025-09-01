@@ -54,3 +54,9 @@ export function usePlayerStore<T = State>(selector?: (s: State) => T): T {
 (usePlayerStore as any).setState = setState;
 (usePlayerStore as any).subscribe = subscribe;
 
+// Type declaration for static properties on the function (non-breaking)
+export namespace usePlayerStore {
+  export const getState: () => State = getState;
+  export const setState: (partial: Partial<State>) => void = setState;
+  export const subscribe: (l: () => void) => () => void = subscribe;
+}

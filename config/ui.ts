@@ -1,5 +1,5 @@
 // config/ui.ts
-export const BRAND = { yellow: "#F2EF1D", pink: "#FC54AF", blue: "#38B6FF" };
+export const BRAND = { yellow: "#F2EF1D", pink: "#FC54AF", blue: "#38B6FF", green: "#1DB954" };
 
 export const glow = {
   base: "shadow-[0_0_12px_rgba(255,255,255,0.35)]",

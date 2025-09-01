@@ -71,15 +71,16 @@ export default function LumaKeyVideo({
       if (w === 0 || h === 0) { rafRef.current = requestAnimationFrame(draw); return; }
       // Match canvas backing size to CSS pixels for crispness
       const dpr = Math.min(2, window.devicePixelRatio || 1);
-      const CW = Math.floor(w * dpr);
-      const CH = Math.floor(h * dpr);
+      const CW = Math.max(1, Math.floor(w * dpr));
+      const CH = Math.max(1, Math.floor(h * dpr));
       if (canvas.width !== CW || canvas.height !== CH) {
         canvas.width = CW; canvas.height = CH;
       }
       // Draw video to canvas covering
       // Compute cover fit
-      const vw = video.videoWidth || 1;
-      const vh = video.videoHeight || 1;
+      const vw = video.videoWidth || 0;
+      const vh = video.videoHeight || 0;
+      if (!vw || !vh) { rafRef.current = requestAnimationFrame(draw); return; }
       const scale = Math.max(CW / vw, CH / vh);
       const dx = Math.floor((CW - vw * scale) / 2);
       let dy = Math.floor((CH - vh * scale) / 2);
