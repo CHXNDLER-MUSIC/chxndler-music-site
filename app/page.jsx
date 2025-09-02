@@ -127,17 +127,12 @@ export default function Dashboard() {
 
       {/* Hologram HUD overlay via portal; uses existing HUD markup as projection */}
       {mounted && process.env.NEXT_PUBLIC_HOLOHUD === '1' ? (
-        <div suppressHydrationWarning>
-          <HoloHUD>
-            <div style={{ gridArea: 'title / art / planet / list' }} className="pointer-events-auto">
-              <div className="mx-auto w-[min(90vw,1100px)]">
-                <HUDPanel songs={hudSongs} onSongChange={onSongChange} track={curTrack} currentId={curTrack?.slug} />
-              </div>
-            </div>
-          </HoloHUD>
-        </div>
+        <HoloHUD
+          track={curTrack}
+          playing={isPlaying}
+          onToggle={() => setToggleSignal((n) => n + 1)}
+        />
       ) : null}
     </main>
   );
 }
-

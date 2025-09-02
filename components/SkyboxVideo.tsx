@@ -6,7 +6,7 @@ export default function SkyboxVideo({
   srcWebm,
   srcMp4 = "/skies/ocean-girl.mp4",
   videoKey,
-  offsetY = "4vh",
+  offsetY = "2vh",
   flySignal,
 }:{
   brightness?: number;

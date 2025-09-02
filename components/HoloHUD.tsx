@@ -18,7 +18,7 @@ export default function HoloHUD({
   const highlight = (track?.title || "").toLowerCase().includes("ocean girl") || (track?.slug === "ocean-girl");
 
   return (
-    <div className="holo-hud fixed inset-0 z-35 pointer-events-none select-none" aria-hidden={false}>
+    <div className="holo-hud fixed inset-0 z-40 pointer-events-none select-none" aria-hidden={false}>
       {/* Film grain + subtle bloom */}
       <div className="filmgrain" aria-hidden />
 
@@ -64,7 +64,16 @@ export default function HoloHUD({
       <button
         type="button"
         className={`play-btn ${playing ? "on" : ""}`}
-        onClick={onToggle}
+        onClick={() => {
+          try { onToggle(); } catch {}
+          try {
+            const a = document.querySelector<HTMLAudioElement>('audio[data-audio-player="1"]');
+            if (a) {
+              try { a.muted = false; if (a.volume === 0) a.volume = 1.0; } catch {}
+              if (playing) a.pause(); else void a.play();
+            }
+          } catch {}
+        }}
         aria-label={playing ? "Pause" : "Play"}
       >
         {playing ? 

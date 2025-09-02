@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 // 2D HUD removed per request; 3D only
 // 3D planet system (requires three/r3f/drei installed)
 // Use direct import to avoid dynamic chunk load issues during dev
-import PlanetSystem from "@/components/holo/PlanetSystem.tsx";
+import PlanetSystem from "@/components/holo/PlanetSystem";
 import { usePlayerStore } from "@/store/usePlayerStore";
 
 // We import the 3D system directly and only render on client via this client component
@@ -183,24 +183,18 @@ export default function HUDPanel({
               background:
                 'radial-gradient(140% 180% at 50% 0%, rgba(25,227,255,0.32), rgba(25,227,255,0.18) 55%, rgba(25,227,255,0.10) 85%, rgba(255,255,255,0) 100%)',
               mixBlendMode: 'screen',
-              filter: 'saturate(1.35) brightness(1.06)',
-              WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 120px, rgba(255,255,255,1) 120px, rgba(255,255,255,1) 100%)',
-              maskImage: 'linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 120px, rgba(255,255,255,1) 120px, rgba(255,255,255,1) 100%)'
+              filter: 'saturate(1.35) brightness(1.06)'
             }}
           />
           {/* Outer bloom layers for stronger hologram glow */}
           <div className="pointer-events-none absolute -inset-1 rounded-3xl opacity-70 mix-blend-screen"
                style={{
-                 boxShadow: '0 0 90px rgba(25,227,255,0.55), 0 0 140px rgba(25,227,255,0.35)',
-                 WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 120px, rgba(255,255,255,1) 120px, rgba(255,255,255,1) 100%)',
-                 maskImage: 'linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 120px, rgba(255,255,255,1) 120px, rgba(255,255,255,1) 100%)'
+                 boxShadow: '0 0 90px rgba(25,227,255,0.55), 0 0 140px rgba(25,227,255,0.35)'
                }} />
           <div className="pointer-events-none absolute inset-0 rounded-2xl opacity-70 mix-blend-screen"
                style={{
                  outline: '1px solid rgba(25,227,255,0.75)',
-                 boxShadow: 'inset 0 0 22px rgba(25,227,255,0.35)',
-                 WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 120px, rgba(255,255,255,1) 120px, rgba(255,255,255,1) 100%)',
-                 maskImage: 'linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 120px, rgba(255,255,255,1) 120px, rgba(255,255,255,1) 100%)'
+                 boxShadow: 'inset 0 0 22px rgba(25,227,255,0.35)'
                }} />
           {/* Element icon pinned at the HUD box top-left */}
           <div className="absolute z-20" style={{ left: 12, top: 12, pointerEvents: 'none' }}>
@@ -430,16 +424,7 @@ export default function HUDPanel({
                 <span className="frame-sheen" aria-hidden />
               </div>
             </div>
-            {(track?.spotify || track?.apple) ? (
-              <div className="mt-4 flex items-center justify-center gap-3">
-                {track?.spotify ? (
-                  <a href={track.spotify} target="_blank" rel="noreferrer" className="btn-stream btn-spotify" title="Open on Spotify">Spotify</a>
-                ) : null}
-                {track?.apple ? (
-                  <a href={track.apple} target="_blank" rel="noreferrer" className="btn-stream btn-apple" title="Open on Apple Music">Apple Music</a>
-                ) : null}
-              </div>
-            ) : null}
+            {/* Streaming buttons removed per request */}
             <button
               type="button"
               aria-label="Close"

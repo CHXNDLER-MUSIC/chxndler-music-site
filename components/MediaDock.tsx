@@ -260,20 +260,23 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
         </div>
       ) : null}
 
-      <audio
-        ref={audioRef}
-        src={cur.src}
-        controls={!!cur.src}
-        controlsList="noplaybackrate nodownload nofullscreen noremoteplayback"
-        className="w-full mt-2"
-        data-audio-player="1"
-        loop
-        preload="metadata"
-        onError={() => {
-          const a = audioRef.current; if (!a) return;
-          a.removeAttribute("src"); a.load(); setPlaying(false);
-        }}
-      />
+      {typeof document !== 'undefined' ? createPortal(
+        <audio
+          ref={audioRef}
+          src={cur.src}
+          controls={false}
+          className="media-dock-audio"
+          data-audio-player="1"
+          loop
+          preload="auto"
+          onError={() => {
+            const a = audioRef.current; if (!a) return;
+            a.removeAttribute("src"); a.load(); setPlaying(false);
+          }}
+          style={{ position:'fixed', width:0, height:0, opacity:0, pointerEvents:'none', left:0, top:0 }}
+        />,
+        document.body
+      ) : null}
 
       {/* SFX: reuse an existing asset to avoid 404; you can provide distinct files in /public/ui */}
       <audio ref={uiClickRef}  src="/audio/click.mp3" preload="auto" />

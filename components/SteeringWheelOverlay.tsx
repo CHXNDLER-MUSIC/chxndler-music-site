@@ -26,6 +26,17 @@ export default function SteeringWheelOverlay({
       const a = willPause ? pauseRef.current : sfxRef.current;
       if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
     } catch {}
+    // Also attempt a direct, gesture-synchronous toggle of the main audio element
+    // This helps bypass autoplay restrictions on iOS/Safari that reject play() in effects
+    try {
+      const main = document.querySelector<HTMLAudioElement>('audio[data-audio-player="1"]');
+      if (main) {
+        // Ensure not muted and reasonable volume
+        try { main.muted = false; if (main.volume === 0) main.volume = 1.0; } catch {}
+        if (willPause) { main.pause(); }
+        else { void main.play(); }
+      }
+    } catch {}
   }
 
   const wheel = POS?.wheel || {};
