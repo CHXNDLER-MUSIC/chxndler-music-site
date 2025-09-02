@@ -35,7 +35,11 @@ export default function Dashboard() {
   function onSongChange(id){
     const slug = id;
     const idx = tracks.findIndex(t => (t.slug||"") === slug || (t.slug||"").startsWith(slug));
-    if (idx >= 0) setChannelIdx(idx);
+    if (idx >= 0) {
+      setChannelIdx(idx);
+      // Nudge playback to start immediately after selection (helps with autoplay policies)
+      setPlaySignal((n)=> n + 1);
+    }
   }
 
   React.useEffect(() => { setFlySignal((n)=> n + 1); }, [channelIdx]);
@@ -65,7 +69,7 @@ export default function Dashboard() {
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
       {/* Ambient audio and sky */}
       <AmbientSpace ambientSrc="/audio/space-music.mp3" introSrc="/audio/welcome-to-the-heartverse.mp3" playingMusic={isPlaying} />
-      <SkyboxVideo brightness={0.95} srcWebm={sky.webm} srcMp4={sky.mp4} videoKey={sky.key} flySignal={flySignal} />
+      <SkyboxVideo brightness={0.95} srcWebm={sky.webm} srcMp4={sky.mp4} videoKey={sky.key} flySignal={flySignal} offsetY="-1vh" />
 
       {/* Cockpit frame overlay */}
       <div className="cockpit-bg fixed inset-0 z-20 pointer-events-none" aria-hidden="true" />

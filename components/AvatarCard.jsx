@@ -8,7 +8,7 @@ export default function AvatarCard({ src = "/artist/avatar.webp", label = "CHAND
           src={src}
           alt={label}
           className="w-full h-full object-cover"
-          onError={(e)=>{ e.currentTarget.src = "/cockpit/cockpit.png"; }}
+          onError={(e)=>{ e.currentTarget.src = "/cockpit/cockpit-filled.png?v=20250902"; }}
         />
         {/* inner glow */}
         <div className="pointer-events-none absolute inset-0 rounded-[12px] ring-1 ring-[#19E3FF]/40" />

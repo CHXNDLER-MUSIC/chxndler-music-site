@@ -159,9 +159,10 @@ export default function HUDPanel({
       className={
         `relative ${inConsole ? 'w-full h-full mx-0 mt-0' : 'mx-auto w-[1180px] mt-[10vh]'} `
       }
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
+      /* Remove entrance animation to prevent flash-disappear on some devices */
+      initial={false}
+      animate={undefined}
+      transition={undefined}
       aria-label="Spaceship HUD"
       ref={inConsole ? containerRef : undefined}
     >
@@ -169,22 +170,17 @@ export default function HUDPanel({
       <div className="w-full h-full flex items-start justify-center">
           <motion.div
             className={`relative rounded-2xl shadow-[0_0_50px_rgba(25,227,255,0.35)] -ml-6 sm:-ml-8 md:-ml-12 lg:-ml-18`}
-            whileHover={{ scale: inConsole ? 1 : 1.01, boxShadow: "0 0 70px rgba(25,227,255,0.8)" }}
-          transition={{ type: "spring", stiffness: 200, damping: 20 }}
-          style={inConsole ? { width: '100%', height: '100%', transform: 'perspective(1200px) rotateX(6deg)', transformOrigin: 'center' } : { transform: 'perspective(1200px) rotateX(6deg)' }}
-        >
+            // Remove hover glow/scale for the entire HUD display per request
+            transition={{ type: "spring", stiffness: 200, damping: 20 }}
+            style={inConsole ? { width: '100%', height: '100%', transform: 'perspective(1200px) rotateX(6deg)', transformOrigin: 'center' } : { transform: 'perspective(1200px) rotateX(6deg)' }}
+          >
           {/* Background removed: keep HUD box transparent */}
         {/* Single blue outline wrapping the HUD content (amped glow) */}
         <div className={`relative rounded-2xl border border-[#19E3FF]/90 ring-2 ring-[#19E3FF]/50 shadow-[0_0_70px_rgba(25,227,255,0.6),_0_0_24px_rgba(25,227,255,0.85)] ${inConsole ? 'p-2' : 'p-4'}`}>
-          {/* Hologram-blue inner glass fill */}
+          {/* Uniform base fill for cohesive background across entire panel */}
           <div
             className="pointer-events-none absolute inset-0 rounded-2xl"
-            style={{
-              background:
-                'radial-gradient(140% 180% at 50% 0%, rgba(25,227,255,0.32), rgba(25,227,255,0.18) 55%, rgba(25,227,255,0.10) 85%, rgba(255,255,255,0) 100%)',
-              mixBlendMode: 'screen',
-              filter: 'saturate(1.35) brightness(1.06)'
-            }}
+            style={{ background: 'rgba(8,26,32,0.50)' }}
           />
           {/* Outer bloom layers for stronger hologram glow */}
           <div className="pointer-events-none absolute -inset-1 rounded-3xl opacity-70 mix-blend-screen"
@@ -210,20 +206,30 @@ export default function HUDPanel({
           {/* Left: title + planet */}
           <div className="flex flex-col gap-6">
             {/* Title/subtitle removed per request; song title is shown within the HUD display */}
-            <div className="pt-2 w-full mt-auto transform -translate-y-[12vh] sm:-translate-y-[10vh] md:-translate-y-[8vh] lg:-translate-y-[6vh]">
+            <div className="pt-2 w-full mt-auto transform -translate-y-[6vh] sm:-translate-y-[5vh] md:-translate-y-[4vh] lg:-translate-y-[4vh]">
               {/* Hologram panel wrapper to integrate with dashboard styling */}
               <div className="relative">
                 {/* Dynamic 3D with safe fallback to 2D if it errors */}
-                <div className={`relative w-full overflow-visible rounded-[12px] ${inConsole ? 'h-[260px] sm:h-[280px]' : 'h-[420px] md:h-[480px] lg:h-[560px]'}`}>
+                <div className={`relative w-full overflow-visible rounded-[12px] ${inConsole ? 'h-[260px] sm:h-[280px]' : 'h-[400px] md:h-[480px] lg:h-[560px]'}`}>
                   {/* Keep 3D background clear (no backdrop behind Canvas) */}
                   {/* Title overlay removed from panel; shown under cover art */}
                 {can3D ? (
-                  <div className="absolute left-0 right-0 bottom-0" style={{ top: 60 }}>
+                  <div className="absolute left-0 right-0 bottom-0" style={{ top: 24 }}>
                     <ErrorBoundary fallback={null}>
                       <PlanetSystem />
                     </ErrorBoundary>
                   </div>
-                ) : null}
+                ) : (
+                  // Minimal 2D fallback so the HUD area never appears to disappear
+                  <div className="absolute inset-0 grid place-items-center">
+                    <div
+                      className="rounded-full"
+                      style={{ width: '58%', aspectRatio: '1 / 1',
+                        background: 'radial-gradient(circle at 40% 40%, rgba(25,227,255,0.65), rgba(25,227,255,0.18) 60%, rgba(25,227,255,0.06) 80%, transparent 100%)',
+                        filter: 'blur(0.4px) saturate(1.1)' }}
+                    />
+                  </div>
+                )}
                   {/* Removed debug badge */}
                   {/* Top-left song title (hologram blue, larger font) */}
                   <div
@@ -242,8 +248,8 @@ export default function HUDPanel({
                       minHeight: 44,
                       display: 'block',
                       padding: 0,
-                      left: 48,
-                      top: 32,
+                      left: 60,
+                      top: 12,
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -269,8 +275,8 @@ export default function HUDPanel({
                       display: 'flex',
                       alignItems: 'center',
                       padding: '0 10px',
-                      left: 48,
-                      top: 76,
+                      left: 60,
+                      top: 46,
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -319,7 +325,7 @@ export default function HUDPanel({
         </div>
 
         {/* Hologram base glow + upward beam (restored simpler look) */}
-        <div className="pointer-events-none absolute inset-x-0 -bottom-56 h-40" aria-hidden>
+        <div className="pointer-events-none absolute inset-x-0 -bottom-44 h-32" aria-hidden>
           {/* Cyan base pool at console lip (broad soft glow) */}
           <div
             className="absolute inset-x-[-20px] bottom-0 h-28 mix-blend-screen"

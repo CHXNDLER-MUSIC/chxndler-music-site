@@ -8,5 +8,5 @@ export const DASHBOARD = {
 
   /* Right bay (Join the Aliens) */
   // Move down and make skinnier to sit lower in the bay
-  joinBox:    { top: 56, left: 75, width: 15, height: 24 },
+  joinBox:    { top: 56, left: 74, width: 15, height: 24 },
 };

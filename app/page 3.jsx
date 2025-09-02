@@ -27,7 +27,7 @@ export default function Dashboard() {
           src="/bg/starfield.webp"
           alt="starfield"
           className="absolute inset-0 w-full h-full object-cover opacity-70"
-          onError={(e)=>{ e.currentTarget.src = "/cockpit/cockpit.png"; e.currentTarget.style.opacity = 0.4; }}
+          onError={(e)=>{ e.currentTarget.src = "/cockpit/cockpit-filled.png?v=20250902"; e.currentTarget.style.opacity = 0.4; }}
         />
         <img
           src="/bg/ocean.webp"

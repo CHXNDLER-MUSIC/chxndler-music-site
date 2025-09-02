@@ -61,6 +61,8 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
     const a = audioRef.current; if (!a) return;
     a.load();
     if (cur.src) {
+      // Optimistically mark playing to immediately duck ambient; will correct if play() is blocked
+      setPlaying(true);
       a.play().then(()=>{ setPlaying(true); }).catch(()=> setPlaying(false));
     } else {
       setPlaying(false);
@@ -152,15 +154,65 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
   }
 
   useEffect(() => {
+    // Keep local playing state in sync with the audio element's real state
+    const a = audioRef.current; if (!a) return;
+    const onPlay = () => setPlaying(true);
+    const onPause = () => setPlaying(false);
+    const onEnded = () => setPlaying(false);
+    a.addEventListener('play', onPlay);
+    a.addEventListener('pause', onPause);
+    a.addEventListener('ended', onEnded);
+    return () => {
+      a.removeEventListener('play', onPlay);
+      a.removeEventListener('pause', onPause);
+      a.removeEventListener('ended', onEnded);
+    };
+  }, [audioRef.current]);
+
+  useEffect(() => {
+    // Prime audio on first real user pointer/touch interaction to satisfy autoplay
+    const unlock = () => {
+      const a = audioRef.current; if (!a) return;
+      try { a.load(); } catch {}
+      a.play().catch(() => {
+        try {
+          a.muted = true;
+          a.play().then(() => { setTimeout(() => { try { a.muted = false; } catch {} }, 60); }).catch(()=>{});
+        } catch {}
+      });
+    };
+    window.addEventListener('pointerdown', unlock, { once: true } as any);
+    window.addEventListener('touchstart', unlock, { once: true } as any);
+    return () => {
+      window.removeEventListener('pointerdown', unlock as any);
+      window.removeEventListener('touchstart', unlock as any);
+    };
+  }, []);
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       // Ignore global hotkeys when typing in an input/textarea/contenteditable
       try {
         const ae = (document.activeElement as HTMLElement | null);
         if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || (ae as any).isContentEditable)) return;
       } catch {}
-      if (e.key === "ArrowLeft") { e.preventDefault(); prev(); }
-      else if (e.key === "ArrowRight") { e.preventDefault(); next(); }
-      else if (e.key === " ") { e.preventDefault(); toggle(); }
+      // Prime audio on first interaction to satisfy autoplay policies
+      try {
+        const a = audioRef.current;
+        if (a && a.paused) {
+          // Ensure element is loaded and attempt to start playback; fallback to muted start then unmute
+          try { a.load(); } catch {}
+          a.play().catch(() => {
+            try {
+              a.muted = true;
+              a.play().then(() => { setTimeout(() => { try { a.muted = false; } catch {} }, 50); }).catch(() => {});
+            } catch {}
+          });
+        }
+      } catch {}
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") { e.preventDefault(); prev(); }
+      else if (e.key === "ArrowRight" || e.key === "ArrowDown") { e.preventDefault(); next(); }
+      else if (e.code === "Space" || e.key === " " || e.key === "Spacebar") { e.preventDefault(); toggle(); }
       else if (/^[1-9]$/.test(e.key)) {
         const n = Number(e.key) - 1; if (n < tracks.length) { uiClick(); setIdx(n); }
       }
@@ -269,6 +321,7 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
           data-audio-player="1"
           loop
           preload="auto"
+          playsInline
           onError={() => {
             const a = audioRef.current; if (!a) return;
             a.removeAttribute("src"); a.load(); setPlaying(false);

@@ -2,7 +2,7 @@
 export const BUILD_TAG = "Cockpit v3.2 — integrated";
 
 export const PATHS = {
-  cockpit: "/cockpit/cockpit.png",
+  cockpit: "/cockpit/cockpit-filled.png?v=20250902",
   fallbackBackdrop: "/cockpit/ocean-girl.png",
   logoFallback: "/logo/CHXNDLER_Logo.png",
 };

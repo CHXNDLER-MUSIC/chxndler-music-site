@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 
 export default function SkyboxVideo({
   brightness = 0.95,
@@ -20,19 +20,34 @@ export default function SkyboxVideo({
   const [ready, setReady] = useState(true);
   const translateY = typeof offsetY === "number" ? `${offsetY}px` : offsetY;
   const [flying, setFlying] = useState(false);
+  const [showLightspeed, setShowLightspeed] = useState(false);
+  const lsRef = useRef<HTMLVideoElement|null>(null);
+  const lsTimerRef = useRef<number | undefined>(undefined);
   
   // Brief zoom/blur to simulate flying to another world
   React.useEffect(() => {
     if (typeof flySignal !== 'number') return;
+    // Brief camera zoom/blur
     setFlying(true);
     const t = setTimeout(() => setFlying(false), 700);
-    return () => clearTimeout(t);
+
+    // Trigger lightspeed overlay clip
+    try {
+      setShowLightspeed(true);
+      const v = lsRef.current;
+      if (v) { v.currentTime = 0; void v.play().catch(()=>{}); }
+      if (lsTimerRef.current !== undefined) window.clearTimeout(lsTimerRef.current);
+      lsTimerRef.current = window.setTimeout(() => { setShowLightspeed(false); lsTimerRef.current = undefined; }, 900);
+    } catch {}
+
+    return () => { clearTimeout(t); if (lsTimerRef.current !== undefined) { window.clearTimeout(lsTimerRef.current); lsTimerRef.current = undefined; } };
   }, [flySignal]);
 
   return (
     /* z-10 so it's above any page bg image; HUD slots are z>=30 */
     <div className="fixed inset-0 z-10 pointer-events-none flex items-center justify-center">
       <div className="h-full w-full">
+        {/* Sky video (base) */}
         <video
           key={videoKey}
           autoPlay muted loop playsInline preload="auto"
@@ -52,6 +67,22 @@ export default function SkyboxVideo({
           {srcMp4 ? <source src={srcMp4} type="video/mp4" /> : null}
           {srcWebm ? <source src={srcWebm} type="video/webm" /> : null}
         </video>
+
+        {/* Lightspeed transition overlay (plays once on song change) */}
+        {showLightspeed ? (
+          <video
+            ref={lsRef}
+            autoPlay
+            muted
+            playsInline
+            preload="auto"
+            onEnded={() => setShowLightspeed(false)}
+            className="absolute inset-0 h-full w-full object-cover"
+            style={{ filter: `brightness(${Math.max(0.9, brightness)})`, mixBlendMode: 'screen' as any }}
+          >
+            <source src="/skies/lightspeed.mp4" type="video/mp4" />
+          </video>
+        ) : null}
       </div>
     </div>
   );

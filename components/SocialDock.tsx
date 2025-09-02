@@ -13,9 +13,15 @@ const IG = ({ size = 22 }: { size?: number }) => (
     <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" />
   </svg>
 );
-const TT = ({ size = 22 }: { size?: number }) => (
-  <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor">
-    <path d="M21 8.5c-2 0-4-1-5.3-2.7V17a5 5 0 11-3-4.6V5h3a6.7 6.7 0 005.3 2.5V8.5z" />
+const TT = ({ size = 18 }: { size?: number }) => (
+  <svg viewBox="0 0 256 256" width={size} height={size} aria-hidden>
+    <g transform="translate(8,-6)">
+      <path fill="#69C9D0" d="M120 32h40c2 26 21 47 46 52v32c-18-.4-36-5.9-52-15.7V184c0 35.3-28.7 64-64 64s-64-28.7-64-64c0-34.2 26.7-62.1 60.6-63.9 5.6-.3 11.2.2 16.7 1.4v32c-5.2-1.9-10.7-2.7-16.2-2.3-16.7 1.1-30.2 14.9-30.8 31.6-.7 18.5 14.1 33.6 32.6 33.6s32-14.3 32-32.8V32Z"/>
+    </g>
+    <g transform="translate(-8,8)">
+      <path fill="#EE1D52" d="M120 32h40c2 26 21 47 46 52v32c-18-.4-36-5.9-52-15.7V184c0 35.3-28.7 64-64 64s-64-28.7-64-64c0-34.2 26.7-62.1 60.6-63.9 5.6-.3 11.2.2 16.7 1.4v32c-5.2-1.9-10.7-2.7-16.2-2.3-16.7 1.1-30.2 14.9-30.8 31.6-.7 18.5 14.1 33.6 32.6 33.6s32-14.3 32-32.8V32Z"/>
+    </g>
+    <path fill="#FFFFFF" d="M120 32h40c2 26 21 47 46 52v32c-18-.4-36-5.9-52-15.7V184c0 35.3-28.7 64-64 64s-64-28.7-64-64c0-34.2 26.7-62.1 60.6-63.9 5.6-.3 11.2.2 16.7 1.4v32c-5.2-1.9-10.7-2.7-16.2-2.3-16.7 1.1-30.2 14.9-30.8 31.6-.7 18.5 14.1 33.6 32.6 33.6s32-14.3 32-32.8V32Z"/>
   </svg>
 );
 const YT = ({ size = 22 }: { size?: number }) => (
@@ -74,9 +80,9 @@ export default function SocialDock() {
               transition: "transform .12s ease, box-shadow .18s ease, background .2s ease",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "scale(1.04)";
+              e.currentTarget.style.transform = "scale(1.06)";
               e.currentTarget.style.boxShadow = hoverShadow;
-              e.currentTarget.style.background = "rgba(255,255,255,.14)";
+              e.currentTarget.style.background = "rgba(255,255,255,.16)";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = "none";

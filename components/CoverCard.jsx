@@ -11,7 +11,7 @@ export default function CoverCard({ src = "/cover/ocean-girl.png", label, size =
           src={src}
           alt={label || "Cover art"}
           className="w-full h-full object-cover"
-          onError={(e)=>{ e.currentTarget.src = "/cockpit/cockpit.png"; }}
+          onError={(e)=>{ e.currentTarget.src = "/cockpit/cockpit-filled.png?v=20250902"; }}
         />
         {/* inner neon rim */}
         <div className="pointer-events-none absolute inset-0 rounded-[12px] ring-1 ring-[#19E3FF]/40" />

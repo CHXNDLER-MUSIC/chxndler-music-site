@@ -105,12 +105,12 @@ export default function SteeringWheelOverlay({
       >
         <span className="glyph" aria-hidden>
           {playing ? (
-            <svg viewBox="0 0 24 24" width="44" height="44" fill="currentColor">
+            <svg viewBox="0 0 24 24" width="52" height="52" fill="currentColor">
               <rect x="6.5" y="5.5" width="4.2" height="13" rx="1.2" />
               <rect x="13.3" y="5.5" width="4.2" height="13" rx="1.2" />
             </svg>
           ) : (
-            <svg viewBox="0 0 24 24" width="44" height="44" fill="currentColor">
+            <svg viewBox="0 0 24 24" width="52" height="52" fill="currentColor">
               <path d="M7 5l12 7-12 7z" />
             </svg>
           )}
@@ -120,19 +120,19 @@ export default function SteeringWheelOverlay({
       <style jsx>{`
         .wheel-play {
           position: relative;
-          display:grid; place-items:center; font-size:22px; font-weight:700; color:#00ff90;
+          display:grid; place-items:center; font-size:22px; font-weight:700; color:#00ffd0;
           /* Thruster nozzle: dark metal face with inner glow */
           background:
             radial-gradient(60% 60% at 50% 40%, rgba(255,255,255,.08), rgba(255,255,255,0) 65%),
             radial-gradient(closest-side, rgba(0,255,160,.18), rgba(0,0,0,0) 70%),
             radial-gradient(100% 100% at 50% 50%, #0b0b0b, #000);
           box-shadow:
-            0 12px 28px rgba(0,0,0,.55),
-            0 0 24px rgba(0,255,140,.55),
-            0 0 56px rgba(0,255,140,.35),
+            0 14px 32px rgba(0,0,0,.55),
+            0 0 32px rgba(0,255,180,.75),
+            0 0 88px rgba(0,255,180,.55),
             inset 0 2px 0 rgba(255,255,255,.35),
             inset 0 -10px 22px rgba(0,0,0,.6),
-            inset 0 0 26px rgba(0,255,160,.2);
+            inset 0 0 34px rgba(0,255,200,.28);
           border:1px solid rgba(255,255,255,.22);
           transition: transform .12s ease, box-shadow .18s ease, filter .18s ease;
           overflow: visible;
@@ -147,10 +147,10 @@ export default function SteeringWheelOverlay({
         .wheel-play::after{
           content:""; position:absolute; left:48%; top:30%; width:160%; height:40%; border-radius:9999px; pointer-events:none;
           background:
-            radial-gradient(80% 70% at 0% 50%, rgba(255,255,255,.95), rgba(255,255,255,0) 60%),
-            radial-gradient(90% 80% at 0% 50%, rgba(114,255,255,.85), rgba(114,255,255,0) 70%),
-            radial-gradient(100% 90% at 0% 50%, rgba(25,227,255,.65), rgba(25,227,255,0) 75%);
-          filter: blur(10px) saturate(1.2);
+            radial-gradient(80% 70% at 0% 50%, rgba(255,255,255,1), rgba(255,255,255,0) 60%),
+            radial-gradient(90% 80% at 0% 50%, rgba(114,255,255,.95), rgba(114,255,255,0) 70%),
+            radial-gradient(100% 90% at 0% 50%, rgba(25,227,255,.75), rgba(25,227,255,0) 75%);
+          filter: blur(9px) saturate(1.25) brightness(1.1);
           mix-blend-mode: screen;
           transform-origin: 0% 50%;
           animation: plume 1.1s ease-in-out infinite alternate;
@@ -164,16 +164,17 @@ export default function SteeringWheelOverlay({
           display:inline-flex; align-items:center; justify-content:center;
           color:#ffffff; /* inner symbol color (white) */
           filter:
-            drop-shadow(0 0 8px rgba(255,255,255,.8))
-            drop-shadow(0 0 18px rgba(255,255,255,.35));
+            drop-shadow(0 0 10px rgba(255,255,255,.95))
+            drop-shadow(0 0 28px rgba(0,255,200,.55))
+            drop-shadow(0 0 52px rgba(0,255,200,.35));
           mix-blend-mode: screen;
           transform: translateY(1px);
           opacity: .9;
         }
         .wheel-play:hover {
-          transform: scale(1.05) rotateZ(-1deg);
-          box-shadow: 0 12px 32px rgba(0,0,0,.6), 0 0 34px rgba(0,255,160,.85), 0 0 80px rgba(0,255,160,.55), inset 0 2px 0 rgba(255,255,255,.5), inset 0 -8px 20px rgba(0,0,0,.45);
-          filter: brightness(1.04) saturate(1.1);
+          transform: scale(1.06) rotateZ(-1deg);
+          box-shadow: 0 14px 36px rgba(0,0,0,.6), 0 0 44px rgba(0,255,200,.95), 0 0 110px rgba(0,255,200,.65), inset 0 2px 0 rgba(255,255,255,.5), inset 0 -8px 20px rgba(0,0,0,.45);
+          filter: brightness(1.06) saturate(1.15);
         }
         .wheel-play:active { transform: scale(0.96); }
       `}</style>

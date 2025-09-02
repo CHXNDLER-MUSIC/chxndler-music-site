@@ -1,5 +1,6 @@
 "use client";
-import React, { useRef, useCallback } from "react";
+import React, { useRef, useCallback, useEffect } from "react";
+import { sfx } from "@/lib/sfx";
 
 const Icon = {
   Instagram: ({ size=18 }) => (
@@ -10,8 +11,17 @@ const Icon = {
     </svg>
   ),
   TikTok: ({ size=18 }) => (
-    <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor">
-      <path d="M21 8.5c-2 0-4-1-5.3-2.7V17a5 5 0 11-3-4.6V5h3a6.7 6.7 0 005.3 2.5V8.5z" />
+    <svg viewBox="0 0 256 256" width={size} height={size} aria-hidden>
+      {/* Cyan back layer (offset) */}
+      <g transform="translate(8,-6)">
+        <path fill="#69C9D0" d="M120 32h40c2 26 21 47 46 52v32c-18-.4-36-5.9-52-15.7V184c0 35.3-28.7 64-64 64s-64-28.7-64-64c0-34.2 26.7-62.1 60.6-63.9 5.6-.3 11.2.2 16.7 1.4v32c-5.2-1.9-10.7-2.7-16.2-2.3-16.7 1.1-30.2 14.9-30.8 31.6-.7 18.5 14.1 33.6 32.6 33.6s32-14.3 32-32.8V32Z"/>
+      </g>
+      {/* Pink back layer (offset) */}
+      <g transform="translate(-8,8)">
+        <path fill="#EE1D52" d="M120 32h40c2 26 21 47 46 52v32c-18-.4-36-5.9-52-15.7V184c0 35.3-28.7 64-64 64s-64-28.7-64-64c0-34.2 26.7-62.1 60.6-63.9 5.6-.3 11.2.2 16.7 1.4v32c-5.2-1.9-10.7-2.7-16.2-2.3-16.7 1.1-30.2 14.9-30.8 31.6-.7 18.5 14.1 33.6 32.6 33.6s32-14.3 32-32.8V32Z"/>
+      </g>
+      {/* White front layer */}
+      <path fill="#FFFFFF" d="M120 32h40c2 26 21 47 46 52v32c-18-.4-36-5.9-52-15.7V184c0 35.3-28.7 64-64 64s-64-28.7-64-64c0-34.2 26.7-62.1 60.6-63.9 5.6-.3 11.2.2 16.7 1.4v32c-5.2-1.9-10.7-2.7-16.2-2.3-16.7 1.1-30.2 14.9-30.8 31.6-.7 18.5 14.1 33.6 32.6 33.6s32-14.3 32-32.8V32Z"/>
     </svg>
   ),
   YouTube: ({ size=18 }) => (
@@ -56,6 +66,17 @@ function IconButton({ title, href, children, color = "#38B6FF", onClickFX, onHov
           transition: box-shadow .2s ease, background .2s ease, transform .12s ease, filter .18s ease;
           cursor:pointer;
         }
+        .ck-icon-btn:hover{
+          /* Slightly larger like Join the Aliens button and brighter glow */
+          transform: scale(1.05);
+          box-shadow:
+            0 22px 44px rgba(0,0,0,.7),
+            0 0 40px rgba(25,227,255,.55),
+            0 0 90px rgba(25,227,255,.35),
+            inset 0 2px 0 rgba(255,255,255,.35),
+            inset 0 -8px 18px rgba(0,0,0,.65);
+          filter: brightness(1.06) saturate(1.12);
+        }
         .ck-icon-btn:before{ /* outer rim glow very subtle to fuse with console */
           content:""; position:absolute; inset:-2px; border-radius:20px;
           box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset, 0 10px 30px rgba(0,0,0,.65), 0 0 0 1px rgba(0,255,255,.06);
@@ -81,7 +102,7 @@ function IconButton({ title, href, children, color = "#38B6FF", onClickFX, onHov
             drop-shadow(0 0 16px var(--btn-color))
             drop-shadow(0 0 36px var(--btn-color))
             drop-shadow(0 0 64px var(--btn-color));
-          transform: scale(1.04);
+          transform: scale(1.06);
         }
         @keyframes pulseGlow {
           0%, 100% { filter: brightness(1.1) saturate(1.2) drop-shadow(0 0 12px var(--btn-color)) drop-shadow(0 0 28px var(--btn-color)); transform: scale(1); }
@@ -100,17 +121,33 @@ export default function SocialIcons({ LINKS, POS, trackLinks }) {
   // We'll build a dynamic column, stacking items using base/spacing if available
   const hasStack = typeof s.baseYVh === 'number' && typeof s.spacingVh === 'number';
   const BASE = s.tilt || "perspective(1100px) rotateX(32deg) rotateY(-8deg)";
-  const iconSize = Math.round(size * 0.56); // logo fills more of the button
+  const iconSize = Math.round(size * 0.56); // baseline logo size
+  const tiktokSize = Math.max(12, Math.round(iconSize * 0.8)); // make TikTok slightly smaller to fit box
   const clickRef = useRef(null);
   const hoverRef = useRef(null);
-  const playClick = useCallback(() => {
-    const a = clickRef.current; if (!a) return;
-    a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{});
+  // Prime SFX on first user interaction to remove initial latency
+  useEffect(() => {
+    const prime = () => {
+      try {
+        const h = hoverRef.current; const c = clickRef.current;
+        [h, c].forEach((a) => {
+          if (!a) return;
+          a.muted = true; a.volume = 0; a.play().catch(()=>{});
+          setTimeout(() => { try { a.pause(); a.currentTime = 0; a.muted = false; a.volume = 0.3; } catch {} }, 30);
+        });
+      } catch {}
+      window.removeEventListener('pointerdown', prime);
+      window.removeEventListener('touchstart', prime);
+    };
+    window.addEventListener('pointerdown', prime, { once: true });
+    window.addEventListener('touchstart', prime, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', prime);
+      window.removeEventListener('touchstart', prime);
+    };
   }, []);
-  const playHover = useCallback(() => {
-    const a = hoverRef.current; if (!a) return;
-    a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{});
-  }, []);
+  const playClick = useCallback(() => { try { sfx.play('click', 0.6); } catch {} }, []);
+  const playHover = useCallback(() => { try { sfx.play('hover', 0.35); } catch {} }, []);
   // per-brand glow color
   const colorFor = (name) => {
     const n = String(name).toLowerCase();
@@ -124,15 +161,20 @@ export default function SocialIcons({ LINKS, POS, trackLinks }) {
 
   const items = [
     { key: 'instagram', title: 'Instagram', href: LINKS.instagram, color: colorFor('instagram'), icon: <Icon.Instagram size={iconSize} /> },
-    { key: 'tiktok',    title: 'TikTok',    href: LINKS.tiktok,    color: colorFor('tiktok'),    icon: <Icon.TikTok size={iconSize} /> },
+    { key: 'tiktok',    title: 'TikTok',    href: LINKS.tiktok,    color: colorFor('tiktok'),    icon: <Icon.TikTok size={tiktokSize} /> },
     { key: 'youtube',   title: 'YouTube',   href: LINKS.youtube,   color: colorFor('youtube'),   icon: <Icon.YouTube size={iconSize} /> },
   ];
 
   return (
     <>
       {items.map((it, i) => {
-        const top = hasStack ? `calc(${s.baseYVh + s.spacingVh * i}vh - ${size/2}px)` : `calc(${[s.igYVh, s.ttYVh, s.ytYVh, s.appleYVh, s.spotifyYVh][i]}vh - ${size/2}px)`;
-        const offsetPx = it.key === 'youtube' ? 16 : 0; // nudge YouTube left
+        const yAdjPxMap = { instagram: 0, tiktok: -10, youtube: -18 };
+        const yAdj = (yAdjPxMap[it.key] !== undefined ? yAdjPxMap[it.key] : 0);
+        const top = hasStack
+          ? `calc(${s.baseYVh + s.spacingVh * i}vh - ${size/2}px + ${yAdj}px)`
+          : `calc(${[s.igYVh, s.ttYVh, s.ytYVh, s.appleYVh, s.spotifyYVh][i]}vh - ${size/2}px + ${yAdj}px)`;
+        const xAdjPxMap = { instagram: -12, tiktok: 8, youtube: 16 };
+        const offsetPx = (xAdjPxMap[it.key] !== undefined ? xAdjPxMap[it.key] : 0); // +left, -right
         const leftCSS = `calc(${s.xVw}vw - ${size/2 + offsetPx}px)`;
         return (
           <div key={it.key} className="ck-icon-wrap" style={{ left: leftCSS, top, width:size, height:size, transform: BASE }}>
@@ -146,26 +188,17 @@ export default function SocialIcons({ LINKS, POS, trackLinks }) {
       })}
 
       <style jsx>{`
-        .ck-icon-wrap{ position:absolute; z-index:40; pointer-events:auto; transform-origin:center; }
+        .ck-icon-wrap{ position:absolute; z-index:32; pointer-events:auto; transform-origin:center; }
         .ck-icon-wrap .deck{ position:absolute; left:-12px; right:-12px; bottom:-10px; height:24px; border-radius:9999px; pointer-events:none;
           background: radial-gradient(60% 60% at 50% 40%, rgba(25,227,255,.22), rgba(25,227,255,0) 70%);
           filter: blur(8px); opacity:.85; mix-blend-mode:screen;
         }
-        .ck-icon-wrap .socket{ position:absolute; inset:-10px; border-radius:22px; pointer-events:none; }
-        /* Recessed socket creates the integrated-in-console look */
-        .ck-icon-wrap .socket{
-          background:
-            radial-gradient(140% 130% at 50% 8%, rgba(255,255,255,.08), rgba(255,255,255,0) 38%),
-            radial-gradient(100% 140% at 50% 120%, rgba(0,0,0,.85), rgba(0,0,0,0) 60%);
-          box-shadow:
-            0 22px 48px rgba(0,0,0,.9),           /* drop to seat into console */
-            inset 0 0 26px rgba(0,0,0,.92),       /* deeper inner recess */
-            inset 0 2px 0 rgba(255,255,255,.08);  /* top rim catchlight */
-        }
+        /* Remove recessed inlay/socket behind icons per request */
+        .ck-icon-wrap .socket{ display:none; }
       `}</style>
       {/* Play hover/click sounds */}
-      <audio ref={clickRef} src="/audio/join-alien.mp3" preload="auto" />
-      <audio ref={hoverRef} preload="auto">
+      <audio ref={clickRef} src="/audio/join-alien.mp3" preload="auto" playsInline />
+      <audio ref={hoverRef} preload="auto" playsInline>
         <source src="/audio/hover.mp3" type="audio/mpeg" />
         <source src="/audio/song-select.mp3" type="audio/mpeg" />
       </audio>

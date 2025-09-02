@@ -1,5 +1,6 @@
 "use client";
-import React, { useRef, useCallback } from "react";
+import React, { useRef, useCallback, useEffect } from "react";
+import { sfx } from "@/lib/sfx";
 
 function IconButton({ title, href, children, color = "#1DB954", onClickFX, onHoverFX }) {
   return (
@@ -12,32 +13,34 @@ function IconButton({ title, href, children, color = "#1DB954", onClickFX, onHov
         className="ck-icon-btn"
         style={{ "--btn-color": color } as React.CSSProperties}
         onMouseEnter={() => { if (onHoverFX) onHoverFX(); }}
-        onMouseDown={(e)=>{ if(onClickFX) onClickFX(); e.currentTarget.style.transform = "translateY(1px) scale(0.985)"; }}
-        onMouseUp={(e)=>{ e.currentTarget.style.transform = "none"; }}
+        onMouseDown={() => { if (onClickFX) onClickFX(); }}
       >
         <span className="logo-glow">{children}</span>
       </a>
       <style jsx>{`
         .ck-icon-btn {
           position:relative; display:grid; place-items:center; width:100%; height:100%;
-          border-radius:18px; color:#e8f1ff;
-          background: radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 40%), linear-gradient(180deg, #0a0a0a, #000);
+          border-radius:16px; color:#e8f1ff;
+          /* Match SocialIcons button shell exactly */
+          background:
+            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.08), rgba(255,255,255,0) 42%),
+            linear-gradient(180deg, #0b0b0b, #000 64%);
           border:1px solid rgba(255,255,255,.18);
           box-shadow:
-            0 14px 30px rgba(0,0,0,.6),
-            inset 0 2px 0 rgba(255,255,255,.22),
-            inset 0 -4px 10px rgba(0,0,0,.78);
+            0 18px 36px rgba(0,0,0,.65),          /* drop */
+            inset 0 2px 0 rgba(255,255,255,.22),  /* top bevel */
+            inset 0 -6px 14px rgba(0,0,0,.8);     /* bottom shade */
           backdrop-filter:blur(8px);
           -webkit-backdrop-filter:blur(8px);
           transition: box-shadow .2s ease, background .2s ease, transform .12s ease, filter .18s ease;
           cursor:pointer;
         }
-        .ck-icon-btn:before{
+        .ck-icon-btn:before{ /* outer rim glow very subtle to fuse with console */
           content:""; position:absolute; inset:-2px; border-radius:20px;
-          box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset, 0 10px 30px rgba(0,0,0,.65);
+          box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset, 0 10px 30px rgba(0,0,0,.65), 0 0 0 1px rgba(0,255,255,.06);
           pointer-events:none;
         }
-        .ck-icon-btn:after{
+        .ck-icon-btn:after{ /* glossy top highlight */
           content:""; position:absolute; left:10%; right:10%; top:6%; height:26%; border-radius:9999px;
           background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0));
           filter: blur(1px); opacity:.85; pointer-events:none;
@@ -76,14 +79,29 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
   const tilt = pos.tilt ?? "perspective(1200px) rotateX(18deg)";
   const clickRef = useRef<HTMLAudioElement|null>(null);
   const hoverRef = useRef<HTMLAudioElement|null>(null);
-  const playClick = useCallback(() => {
-    const a = clickRef.current; if (!a) return;
-    a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{});
+  // Prime SFX on first user interaction to eliminate first-hover lag
+  useEffect(() => {
+    const prime = () => {
+      try {
+        const h = hoverRef.current; const c = clickRef.current;
+        [h, c].forEach((a) => {
+          if (!a) return;
+          a.muted = true; a.volume = 0; a.play().catch(()=>{});
+          setTimeout(() => { try { a.pause(); a.currentTime = 0; a.muted = false; a.volume = 0.3; } catch {} }, 30);
+        });
+      } catch {}
+      window.removeEventListener('pointerdown', prime as any);
+      window.removeEventListener('touchstart', prime as any);
+    };
+    window.addEventListener('pointerdown', prime, { once: true } as any);
+    window.addEventListener('touchstart', prime, { once: true } as any);
+    return () => {
+      window.removeEventListener('pointerdown', prime as any);
+      window.removeEventListener('touchstart', prime as any);
+    };
   }, []);
-  const playHover = useCallback(() => {
-    const a = hoverRef.current; if (!a) return;
-    a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{});
-  }, []);
+  const playClick = useCallback(() => { try { sfx.play('click', 0.6); } catch {} }, []);
+  const playHover = useCallback(() => { try { sfx.play('hover', 0.35); } catch {} }, []);
 
   const iconSize = Math.round(size * 0.56);
 
@@ -104,8 +122,9 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
         <div
           className="wrap"
           style={vertical
-            ? { left: `calc(${pos.xVw}vw - ${size/2}px)`, top: `calc(${pos.yVh}vh - ${size + gap/2}px)`, width: size, height: size, transform: tilt }
-            : { left: `calc(${pos.xVw}vw - ${(size + gap/2)}px)`, top, width: size, height: size, transform: tilt }
+            // Move Spotify down slightly (+10px)
+            ? { left: `calc(${pos.xVw}vw - ${size/2}px)`, top: `calc(${pos.yVh}vh - ${size + gap/2}px + 10px)`, width: size, height: size, transform: tilt }
+            : { left: `calc(${pos.xVw}vw - ${(size + gap/2)}px)`, top: `calc(${pos.yVh}vh - ${size/2}px + 10px)`, width: size, height: size, transform: tilt }
           }
         >
           <span className="socket" aria-hidden />
@@ -131,18 +150,34 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
         </div>
       )}
       <style jsx>{`
-        .wrap{ position:absolute; z-index:40; pointer-events:auto; transform-origin:center; }
-        .wrap .socket{ position:absolute; inset:-8px; border-radius:22px; pointer-events:none; }
-        .wrap .socket{
-          background: radial-gradient(120% 130% at 50% 10%, rgba(255,255,255,.08), rgba(0,0,0,0) 40%);
+        .wrap{ position:absolute; z-index:40; pointer-events:auto; transform-origin:center; overflow:visible; }
+        .wrap:hover{ z-index:60; }
+        /* Remove recessed inlay/socket behind streaming buttons per request */
+        .wrap .socket{ display:none; }
+        /* Performance hints for smoother hover animations */
+        .ck-icon-btn{ will-change: transform, filter; transform: translateZ(0); backface-visibility: hidden; contain: paint; }
+        /* Button hover: brighter + slightly larger (same intensity as SocialIcons) */
+        .ck-icon-btn:hover{
+          transform: scale(1.06);
           box-shadow:
-            0 18px 40px rgba(0,0,0,.85),
-            inset 0 0 22px rgba(0,0,0,.9),
-            inset 0 2px 0 rgba(255,255,255,.06);
+            0 22px 44px rgba(0,0,0,.7),
+            0 0 40px var(--btn-color),
+            0 0 90px var(--btn-color),
+            inset 0 2px 0 rgba(255,255,255,.35),
+            inset 0 -8px 18px rgba(0,0,0,.65);
+          filter: brightness(1.06) saturate(1.12);
+        }
+        .ck-icon-btn:active{ transform: scale(0.98); }
+        .ck-icon-btn:hover .logo-glow{
+          transform: scale(1.06);
+          filter:
+            drop-shadow(0 0 16px var(--btn-color))
+            drop-shadow(0 0 36px var(--btn-color))
+            drop-shadow(0 0 64px var(--btn-color));
         }
       `}</style>
-      <audio ref={clickRef} src="/audio/join-alien.mp3" preload="auto" />
-      <audio ref={hoverRef} preload="auto">
+      <audio ref={clickRef} src="/audio/join-alien.mp3" preload="auto" playsInline />
+      <audio ref={hoverRef} preload="auto" playsInline>
         <source src="/audio/hover.mp3" type="audio/mpeg" />
         <source src="/audio/song-select.mp3" type="audio/mpeg" />
       </audio>

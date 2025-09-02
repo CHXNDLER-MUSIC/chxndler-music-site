@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { sfx } from "@/lib/sfx";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import { useCycleList } from "@/lib/useCycleList";
 
@@ -105,6 +106,11 @@ export default function SongDropdown({ items = [], initialActiveId, onChange }) 
       const id = items[highlight]?.id;
       if (id) { setActiveId(id); onChange?.(id); }
       setOpen(false);
+      // Start playback on keyboard selection as well
+      try {
+        const a = document.querySelector('audio[data-audio-player="1"]');
+        if (a) { a.muted = false; a.load(); a.play().catch(()=>{}); }
+      } catch {}
       try { usePlayerStore.getState().setHover(null); } catch {}
     }
   }
@@ -119,10 +125,10 @@ export default function SongDropdown({ items = [], initialActiveId, onChange }) 
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls="song-dropdown-list"
-        onMouseEnter={() => { try { const a = hoverBtnRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
+        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {}; try { const a = hoverBtnRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
         onClick={() => { try { const a = clickRef.current; if (a) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}; setOpen((v) => { const nv = !v; try { usePlayerStore.getState().setHover(nv ? (items[highlight]?.id || null) : null); } catch {}; return nv; }); }}
         onKeyDown={onTriggerKeyDown}
-        className="w-full flex items-center justify-between gap-2 px-2 py-3 rounded-[10px] border-2 border-[#19E3FF]/80 bg-cyan-400/10 backdrop-blur-xl shadow-[0_0_18px_rgba(25,227,255,0.35)] focus:outline-none focus:ring-2 focus:ring-cyan-400"
+        className="songs-trigger w-full flex items-center justify-between gap-2 px-2 py-3 rounded-[10px] border-2 border-[#19E3FF]/80 bg-cyan-400/10 backdrop-blur-xl shadow-[0_0_18px_rgba(25,227,255,0.35)] focus:outline-none focus:ring-2 focus:ring-cyan-400"
       >
         <span className="flex items-center gap-2 min-w-0">
           <span className="songs-icon">
@@ -151,9 +157,19 @@ export default function SongDropdown({ items = [], initialActiveId, onChange }) 
                 role="option"
                 aria-selected={isActive}
                 className={"opt flex items-center gap-1.5 px-1.5 py-1 text-[9px] cursor-pointer transition"}
-                onMouseEnter={() => { setHighlight(i); try { usePlayerStore.getState().setHover(s.id); } catch{}; try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
+                onMouseEnter={() => { setHighlight(i); try { usePlayerStore.getState().setHover(s.id); } catch{}; try { sfx.play('hover', 0.35); } catch {}; try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
                 onMouseLeave={() => { try { usePlayerStore.getState().setHover(null); } catch{} }}
-                onClick={() => { try { const c = clickRef.current; if (c) { c.currentTime = 0; c.volume = 0.65; c.play().catch(()=>{}); } } catch {}; setActiveId(s.id); onChange?.(s.id); setOpen(false); try { usePlayerStore.getState().setHover(null); } catch{} }}
+                onClick={() => {
+                  try { sfx.play('click', 0.65); } catch {}
+                  try { const c = clickRef.current; if (c) { c.currentTime = 0; c.volume = 0.65; c.play().catch(()=>{}); } } catch {}
+                  setActiveId(s.id); onChange?.(s.id); setOpen(false);
+                  // Immediately start playback within this user gesture for reliability
+                  try {
+                    const a = document.querySelector('audio[data-audio-player="1"]');
+                    if (a) { a.muted = false; a.load(); a.play().catch(()=>{}); }
+                  } catch {}
+                  try { usePlayerStore.getState().setHover(null); } catch{}
+                }}
               >
                 <span className="shrink-0">
                   <ElementIcon name={s.icon} />
@@ -176,6 +192,16 @@ export default function SongDropdown({ items = [], initialActiveId, onChange }) 
         <source src="/audio/song-select.mp3" type="audio/mpeg" />
       </audio>
       <style jsx>{`
+        /* Glow behavior similar to cover art */
+        .songs-trigger{ outline:1px solid rgba(25,227,255,.35); transition: transform .15s ease, box-shadow .2s ease, outline-color .2s ease; }
+        .songs-trigger:hover{
+          transform: scale(1.04);
+          outline-color: rgba(25,227,255,.8);
+          box-shadow: 0 0 52px rgba(25,227,255,.7), 0 0 90px rgba(25,227,255,.45);
+        }
+        /* List options: add subtle rim + glow on hover */
+        .opt{ border-radius:10px; background: rgba(8,26,32,0.45); border:1px solid rgba(25,227,255,0.18); }
+        .opt:hover{ border-color: rgba(25,227,255,0.6); box-shadow: 0 0 36px rgba(25,227,255,.55), 0 0 70px rgba(25,227,255,.35); transform: translateZ(0) scale(1.02); }
         .holo-icon{ display:inline-flex; will-change: transform; animation: holoPulse 2.6s ease-in-out infinite; }
         @keyframes holoPulse { 0%,100%{ transform: scale(1);} 50%{ transform: scale(1.06);} }
         .songs-icon{ display:inline-flex; align-items:center; 

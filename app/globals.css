@@ -44,7 +44,7 @@ html, body { height: 100%; background:#000; color:#fff; }
 
 /* Cockpit background (frame stays fixed; sky video shows “through” windshield) */
 .cockpit-bg{
-  background-image: url("/cockpit/cockpit.png");
+  background-image: url("/cockpit/cockpit-filled.png?v=20250902");
   background-size: cover;
   background-position: center;
 }

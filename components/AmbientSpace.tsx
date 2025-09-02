@@ -86,8 +86,8 @@ export default function AmbientSpace({
     const intro = introRef.current;
     if (!amb) return;
     if (playingMusic) {
-      // Fade out then pause
-      fadeVolume(0, 300, () => { amb.pause(); });
+      // Fade out quickly then pause to avoid overlap with music
+      fadeVolume(0, 150, () => { amb.pause(); });
       // Stop welcome VO if it's playing
       if (intro) {
         try { if (!intro.paused) intro.pause(); } catch {}

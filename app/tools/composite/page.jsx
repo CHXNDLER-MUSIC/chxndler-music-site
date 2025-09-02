@@ -2,7 +2,7 @@
 import React from "react";
 
 export default function CompositeTool() {
-  const [bg, setBg] = React.useState("/cockpit/cockpit.png");
+  const [bg, setBg] = React.useState("/cockpit/cockpit-filled.png?v=20250902");
   const [overlay, setOverlay] = React.useState("/generated/hud-ocean-girl-1920x1080.png");
   const [w, setW] = React.useState(1920);
   const [h, setH] = React.useState(1080);
@@ -64,4 +64,3 @@ export default function CompositeTool() {
     </main>
   );
 }
-

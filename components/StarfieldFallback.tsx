@@ -16,6 +16,7 @@ export default function StarfieldFallback({ brightness = 0.96 }: { brightness?: 
     canvas.height = Math.floor(h * DPR);
     canvas.style.width = w + "px";
     canvas.style.height = h + "px";
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.scale(DPR, DPR);
 
     const STAR_COUNT = Math.floor((w * h) / 2400);
@@ -39,9 +40,10 @@ export default function StarfieldFallback({ brightness = 0.96 }: { brightness?: 
         s.y += s.z * s.sp; // drift
         if (s.y > h + 2) s.y = -2;
         const twinkle = 0.75 + 0.25 * Math.sin(t * 0.002 + s.tw);
-        const r = s.r * twinkle;
+        let r = s.r * twinkle;
+        if (!isFinite(r) || r <= 0) r = 0.2;
         ctx.beginPath();
-        ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
+        try { ctx.arc(s.x, s.y, r, 0, Math.PI * 2); } catch { continue; }
         ctx.fillStyle = "rgba(255,255,255,0.9)";
         ctx.fill();
       }
@@ -51,10 +53,11 @@ export default function StarfieldFallback({ brightness = 0.96 }: { brightness?: 
 
     const onResize = () => {
       w = window.innerWidth; h = window.innerHeight;
-      canvas.width = Math.floor(w * DPR);
-      canvas.height = Math.floor(h * DPR);
+      canvas.width = Math.max(1, Math.floor(w * DPR));
+      canvas.height = Math.max(1, Math.floor(h * DPR));
       canvas.style.width = w + "px";
       canvas.style.height = h + "px";
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.scale(DPR, DPR);
     };
     window.addEventListener("resize", onResize);
