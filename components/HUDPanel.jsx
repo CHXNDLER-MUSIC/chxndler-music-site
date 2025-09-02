@@ -398,7 +398,7 @@ export default function HUDPanel({
                     "mr-brightside": "/card/mr.brightside.png",
                     "tienes-un-amigo": "/card/tienes-un-amigo-acqi.png",
                   };
-                  const cardSrc = slug ? (CARD_OVERRIDES[slug] || `/card/${slug}.png`) : (track?.cover || '/cover/ocean-girl-cover.png');
+                  const cardSrc = slug ? (CARD_OVERRIDES[slug] || `/card/${slug}.png`) : (track?.cover || '/cover/ocean-girl.png');
                   return (
                     <img
                       src={cardSrc}
@@ -414,7 +414,7 @@ export default function HUDPanel({
                             if (el.dataset) el.dataset.fallback = '1';
                             return;
                           }
-                          el.src = track?.cover || '/cover/ocean-girl-cover.png';
+                          el.src = track?.cover || '/cover/ocean-girl.png';
                           if (el.dataset) el.dataset.fallback = '2';
                         } catch {}
                       }}

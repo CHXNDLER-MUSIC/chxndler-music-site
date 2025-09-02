@@ -14,7 +14,7 @@ export default function HoloHUD({
 }) {
   const title = track?.title || "";
   const subtitle = (track as any)?.subtitle || "";
-  const cover = track?.cover || "/cover/ocean-girl-cover.png";
+  const cover = track?.cover || "/cover/ocean-girl.png";
   const highlight = (track?.title || "").toLowerCase().includes("ocean girl") || (track?.slug === "ocean-girl");
 
   return (

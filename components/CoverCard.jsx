@@ -1,6 +1,6 @@
 "use client";
 
-export default function CoverCard({ src = "/cover/ocean-girl-cover.png", label, size = 120 }) {
+export default function CoverCard({ src = "/cover/ocean-girl.png", label, size = 120 }) {
   return (
     <div className="flex flex-col items-start">
       <div

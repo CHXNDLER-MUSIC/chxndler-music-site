@@ -21,7 +21,7 @@ export default function HoloConsole({
   const hoverRef = useRef<HTMLAudioElement|null>(null);
   const title = track?.title || "";
   const subtitle = track?.subtitle || "";
-  const cover = track?.cover || "/cover/ocean-girl-cover.png";
+  const cover = track?.cover || "/cover/ocean-girl.png";
   const genCard = track?.slug ? `/generated/${track.slug}-album-card.png` : undefined;
 
   return (

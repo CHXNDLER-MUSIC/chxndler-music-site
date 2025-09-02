@@ -18,7 +18,7 @@ export const songs: Song[] = [
     id: "ocean-girl",
     title: "OCEAN GIRL",
     oneLiner: "Love flows back like the tide.",
-    coverUrl: "/cover/ocean-girl-cover.png",
+    coverUrl: "/cover/ocean-girl.png",
     planet: { radius: 1.1, color: "#38B6FF", orbitRadius: 2.6, orbitSpeed: 0.45, tilt: 0.22 },
   },
   { id: "alone", title: "Alone", oneLiner: "Echoes in a quiet room.", planet: { radius: 0.8, color: "#000000", orbitRadius: 3.4, orbitSpeed: 0.32, tilt: 0.15 } },
