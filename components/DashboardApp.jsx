@@ -47,6 +47,7 @@ export default function DashboardApp() {
   const [homeIntroEnabled, setHomeIntroEnabled] = useState(true);
   const [pendingHomePower, setPendingHomePower] = useState(false);
   const [pendingTrackPlay, setPendingTrackPlay] = useState(false);
+  const trackPlayTimerRef = React.useRef(undefined);
   const [ambientSuspended, setAmbientSuspended] = useState(false);
   const SPACE_SKY = { webm: "/skies/space.webm", mp4: "/skies/space.mp4", key: "space" };
 
@@ -163,6 +164,14 @@ export default function DashboardApp() {
           if (nextSky) { setSky(nextSky); setNextSky(null); }
           // If this warp was due to Boost (not track selection), prepare to land on home
           if (!pendingTrackPlay) setPendingHomePower(true);
+          else {
+            // Fallback: if base video playing event doesn't fire, kick off audio after a short delay
+            if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); }
+            trackPlayTimerRef.current = window.setTimeout(() => {
+              setPlaySignal((n) => n + 1);
+              trackPlayTimerRef.current = undefined;
+            }, 1400);
+          }
         }}
         onBasePlaying={() => {
           if (pendingHomePower) {
@@ -180,6 +189,7 @@ export default function DashboardApp() {
             setPendingTrackPlay(false);
             setAllowWarp(false);
             // Start the selected track now that its sky video is playing
+            if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
             setPlaySignal((n) => n + 1);
           }
         }}

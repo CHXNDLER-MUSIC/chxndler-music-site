@@ -295,8 +295,8 @@ export default function HUDPanel({
                       minHeight: 44,
                       display: 'block',
                       padding: 0,
-                      left: 60,
-                      top: 12,
+                      left: 46,
+                      top: -38,
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -322,8 +322,8 @@ export default function HUDPanel({
                       display: 'flex',
                       alignItems: 'center',
                       padding: '0 10px',
-                      left: 60,
-                      top: 46,
+                      left: 40,
+                      top: -14,
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -375,7 +375,7 @@ export default function HUDPanel({
         <div
           className="pointer-events-none absolute inset-x-0 h-32"
           aria-hidden
-          style={{ top: 'calc(100% - 68px)', opacity: beamOpacity, transform: 'translateX(-26px)', transition: 'opacity 180ms ease, transform 200ms ease' }}
+          style={{ top: 'calc(100% - 52px)', opacity: beamOpacity, transform: 'translateX(-26px)', transition: 'opacity 180ms ease, transform 200ms ease' }}
         >
           {/* Cyan base pool at console lip (broad soft glow) */}
           <div
@@ -403,7 +403,7 @@ export default function HUDPanel({
           />
           {/* Upward flaring beam from console across entire HUD (nudged down slightly) */}
           <div
-            className="absolute inset-x-6 top-10 bottom-4 mix-blend-screen"
+            className="absolute inset-x-6 top-12 bottom-6 mix-blend-screen"
             style={{
               clipPath: "polygon(48% 100%, 52% 100%, 100% 0, 0 0)",
               background: "linear-gradient(0deg, rgba(25,227,255,.6), rgba(25,227,255,0))",
@@ -453,7 +453,8 @@ export default function HUDPanel({
             <div className="tilt-wrap">
               <div className="card-frame">
                 {(() => {
-                  const slug = (!playing ? '' : (track?.slug || ''));
+                  const home = !currentId;
+                  const slug = home ? '' : (track?.slug || active || '');
                   const CARD_OVERRIDES = {
                     "were-just-friends": "/card/we're-just-friends.png",
                     "were-just-friends-dmvrco-remix": "/card/we're-just-friends-dmvrco-remix.png",
@@ -461,11 +462,10 @@ export default function HUDPanel({
                     "mr-brightside": "/card/mr.brightside.png",
                     "tienes-un-amigo": "/card/tienes-un-amigo-acqi.png",
                   };
-                  const defaultCard = '/card/BUSINESS CARD.png';
+                  const defaultCard = '/card/chxndler.png';
                   const fallbackCover = '/cover/chxndler.png';
-                  const cardSrc = (!playing)
-                    ? '/card/chxndler.png'
-                    : (slug ? (CARD_OVERRIDES[slug] || `/card/${slug}.png`) : (track?.cover || fallbackCover));
+                  const explicitCard = slug ? (CARD_OVERRIDES[slug] || `/card/${slug}.png`) : '';
+                  const cardSrc = home ? defaultCard : (explicitCard || track?.cover || fallbackCover);
                   return (
                     <img
                       src={cardSrc}
@@ -476,18 +476,13 @@ export default function HUDPanel({
                         try {
                           const el = e.currentTarget;
                           const tried = Number((el.dataset && el.dataset.fallback) || '0');
-                          if (!playing) {
-                            // Home state: try fallback to business card
-                            el.src = '/card/BUSINESS CARD.png';
-                            if (el.dataset) el.dataset.fallback = '2';
-                            return;
-                          }
+                          if (home) { el.src = '/card/BUSINESS CARD.png'; if (el.dataset) el.dataset.fallback = '2'; return; }
                           if (tried === 0 && slug) {
                             el.src = `/generated/${slug}-album-card.png`;
                             if (el.dataset) el.dataset.fallback = '1';
                             return;
                           }
-                          el.src = track?.cover || '/cover/ocean-girl.png';
+                          el.src = track?.cover || '/cover/chxndler.png';
                           if (el.dataset) el.dataset.fallback = '2';
                         } catch {}
                       }}
