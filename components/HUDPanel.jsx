@@ -13,7 +13,7 @@ import { usePlayerStore } from "@/store/usePlayerStore";
 class ErrorBoundary extends React.Component { 
   constructor(props){ super(props); this.state = { hasError:false }; }
   static getDerivedStateFromError(){ return { hasError:true }; }
-  componentDidCatch(err, info){}
+  componentDidCatch(err, info){ try { this.props.onError && this.props.onError(err); } catch {} }
   render(){ return this.state.hasError ? this.props.fallback : this.props.children; }
 }
 // Song list removed in favor of dropdown-only selector
@@ -21,6 +21,7 @@ import CoverCard from "@/components/CoverCard";
 import { buildPlanetSongs } from "@/lib/planets";
 import SongDropdown from "@/components/SongDropdown";
 import DevErrorLogger from "@/components/DevErrorLogger";
+import { sfx } from "@/lib/sfx";
 // HologramPlanets demo removed per request (3D only)
 
 // Use system font stack to avoid network font fetches during build
@@ -79,6 +80,9 @@ export default function HUDPanel({
   inConsole = false,
   track,
   currentId,
+  holoPop = false,
+  playing = false,
+  beamOnly = false,
 }) {
   const hoverCoverRef = useRef(null);
   const clickCoverRef = useRef(null);
@@ -92,17 +96,24 @@ export default function HUDPanel({
   const [can3D, setCan3D] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [showCard, setShowCard] = useState(false);
-
-  // Runtime probe: only enable 3D if real deps are present (not stubs)
+  // Tiny fade-in for the beam instead of hard toggle
+  const [beamOpacity, setBeamOpacity] = useState(0);
   useEffect(() => {
+    const t = setTimeout(() => setBeamOpacity(1), 10);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Runtime probe: optimistically enable 3D immediately; if libs truly missing, fall back to static
+  useEffect(() => {
+    setCan3D(true);
     let mounted = true;
     (async () => {
       try {
         const r3f = await import("@react-three/fiber");
         const drei = await import("@react-three/drei");
         const three = await import("three");
-        const ok = !r3f.__STUB && !drei.__STUB && !three.__STUB;
-        if (mounted) setCan3D(!!ok);
+        const ok = !(((r3f || {}).__STUB) || ((drei || {}).__STUB) || ((three || {}).__STUB));
+        if (mounted && !ok) setCan3D(false);
       } catch {
         if (mounted) setCan3D(false);
       }
@@ -182,6 +193,8 @@ export default function HUDPanel({
             className="pointer-events-none absolute inset-0 rounded-2xl"
             style={{ background: 'rgba(8,26,32,0.50)' }}
           />
+          {/* Cover art moved into right column above the song list */}
+          {/* No beam/scan overlays; keep HUD static */}
           {/* Outer bloom layers for stronger hologram glow */}
           <div className="pointer-events-none absolute -inset-1 rounded-3xl opacity-70 mix-blend-screen"
                style={{
@@ -192,16 +205,28 @@ export default function HUDPanel({
                  outline: '1px solid rgba(25,227,255,0.75)',
                  boxShadow: 'inset 0 0 22px rgba(25,227,255,0.35)'
                }} />
-          {/* Element icon pinned at the HUD box top-left */}
+          {/* Element/logo pinned at the HUD box top-left */}
           <div className="absolute z-20" style={{ left: 12, top: 12, pointerEvents: 'none' }}>
             {(() => {
               try {
+                if (!playing) {
+                  return (
+                    <img
+                      src="/logo/CHXNDLER_Logo.png"
+                      alt="CHXNDLER"
+                      width={36}
+                      height={36}
+                      style={{ width: 36, height: 36, objectFit: 'contain', filter: 'drop-shadow(0 0 10px #19E3FF) drop-shadow(0 0 18px #19E3FF)' }}
+                    />
+                  );
+                }
                 const found = resolvedSongs.find(s => s.id === (active || ''));
                 const icon = found && found.icon;
                 return icon ? <ElementIcon name={icon} size={36} /> : null;
               } catch { return null; }
             })()}
           </div>
+          {beamOnly ? null : (
           <div className={`grid grid-cols-[1.35fr_0.65fr] gap-6 ${inConsole ? 'p-3' : 'p-8'}`}>
           {/* Left: title + planet */}
           <div className="flex flex-col gap-6">
@@ -210,18 +235,18 @@ export default function HUDPanel({
               {/* Hologram panel wrapper to integrate with dashboard styling */}
               <div className="relative">
                 {/* Dynamic 3D with safe fallback to 2D if it errors */}
-                <div className={`relative w-full overflow-visible rounded-[12px] ${inConsole ? 'h-[260px] sm:h-[280px]' : 'h-[400px] md:h-[480px] lg:h-[560px]'}`}>
+                <div className={`relative w-full overflow-visible rounded-[12px] ${inConsole ? 'h-[200px] sm:h-[220px]' : 'h-[400px] md:h-[480px] lg:h-[560px]'}`}>
                   {/* Keep 3D background clear (no backdrop behind Canvas) */}
                   {/* Title overlay removed from panel; shown under cover art */}
                 {can3D ? (
-                  <div className="absolute left-0 right-0 bottom-0" style={{ top: 24 }}>
-                    <ErrorBoundary fallback={null}>
-                      <PlanetSystem />
+                  <div className="absolute left-0 right-0 bottom-0" style={{ top: 72 }}>
+                    <ErrorBoundary fallback={null} onError={(e)=>{ if (String(e?.name||'').includes('IndexSizeError')) { try { console.warn('Disabling 3D due to IndexSizeError'); } catch {} } setCan3D(false); }}>
+                      <PlanetSystem showAll={!playing} />
                     </ErrorBoundary>
                   </div>
                 ) : (
-                  // Minimal 2D fallback so the HUD area never appears to disappear
-                  <div className="absolute inset-0 grid place-items-center">
+                  // Minimal 2D fallback: start below the one-liner
+                  <div className="absolute left-0 right-0 bottom-0 grid place-items-center" style={{ top: 72 }}>
                     <div
                       className="rounded-full"
                       style={{ width: '58%', aspectRatio: '1 / 1',
@@ -256,7 +281,7 @@ export default function HUDPanel({
                       pointerEvents: 'none',
                     }}
                   >
-                    {(track?.title) || (resolvedSongs.find(s=> s.id === (active || ''))?.title) || ''}
+                    {(!playing ? 'CHXNDLER' : ((track?.title) || (resolvedSongs.find(s=> s.id === (active || ''))?.title) || ''))}
                   </div>
                   {/* Song tagline directly under the title */}
                   <div
@@ -284,7 +309,7 @@ export default function HUDPanel({
                     }}
                     aria-label="Song tagline"
                   >
-                    {track?.subtitle || ''}
+                    {(!playing ? 'A home for ALIENS, where misfits and dreamers live free.' : (track?.subtitle || ''))}
                   </div>
 
                   {/* Song changer moved to right rail under cover art */}
@@ -295,25 +320,26 @@ export default function HUDPanel({
               </div>
             </div>
           </div>
-
-          {/* Right: cover art (top-right) + dropdown */}
+          {/* Right rail: cover art + dropdown list */}
           <aside className="relative flex flex-col items-end gap-3 translate-x-0">
-            {track?.cover ? (
-              <div className="self-end mr-1 md:mr-2 lg:mr-3">
+            <div className="mt-0 pr-0 self-end mr-1 md:mr-2 lg:mr-3" style={{ width: inConsole ? 200 : 280 }}>
+              {true ? (
                 <button
                   type="button"
-                  className="cover-link"
-                  aria-label="Cover art"
-                  onMouseEnter={() => { try { const a = hoverCoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
-                  onClick={(e) => { e.preventDefault(); try { const a = clickCoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}; setShowCard(true); }}
-                  title="View card"
+                  aria-label="Open song card"
+                  className="cover-link w-full"
+                  onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {}; try { const a = hoverCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
+                  onClick={() => { try { sfx.play('click', 0.6); } catch {}; try { const a = clickCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}; setShowCard(true); }}
                 >
-                  <CoverCard src={track.cover} size={220} />
+                  {(() => {
+                    const defaultCover = '/cover/chxndler.png';
+                    const src = (!playing ? defaultCover : (track?.cover || defaultCover));
+                    return <CoverCard src={src} size={inConsole ? 200 : 280} />;
+                  })()}
                 </button>
-              </div>
-            ) : null}
-            {/* Song changer under cover art (right rail) */}
-            <div className="w-[220px] mt-0 pr-0 self-end mr-1 md:mr-2 lg:mr-3">
+              ) : null}
+            </div>
+            <div className="mt-1 pr-0 self-end mr-1 md:mr-2 lg:mr-3" style={{ width: inConsole ? 200 : 280 }}>
               <SongDropdown
                 items={resolvedSongs}
                 initialActiveId={active || resolvedSongs[0]?.id}
@@ -322,10 +348,14 @@ export default function HUDPanel({
             </div>
           </aside>
         </div>
-        </div>
+          )}
 
-        {/* Hologram base glow + upward beam (restored simpler look) */}
-        <div className="pointer-events-none absolute inset-x-0 -bottom-44 h-32" aria-hidden>
+        {/* Hologram base glow + upward beam: positioned below the HUD box with a small gap */}
+        <div
+          className="pointer-events-none absolute inset-x-0 h-32"
+          aria-hidden
+          style={{ top: 'calc(100% + 16px)', opacity: beamOpacity, transition: 'opacity 180ms ease' }}
+        >
           {/* Cyan base pool at console lip (broad soft glow) */}
           <div
             className="absolute inset-x-[-20px] bottom-0 h-28 mix-blend-screen"
@@ -370,6 +400,7 @@ export default function HUDPanel({
         </div>
 
         {/* bottom-corner buttons removed per design request */}
+        </div>
         </motion.div>
       <style jsx>{`
         .cover-link{ display:block; border-radius:16px; outline:1px solid rgba(25,227,255,.35);
@@ -382,12 +413,17 @@ export default function HUDPanel({
           box-shadow: 0 0 52px rgba(25,227,255,.7), 0 0 90px rgba(25,227,255,.45);
         }
         .cover-link:active{ transform: scale(.98); }
+        /* No HUD animation styles */
       `}</style>
       {showCard ? (
         <div
           className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-start justify-end"
           style={{ padding: '6vh 5vw' }}
-          onClick={() => { try { const a = closeCoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}; setShowCard(false); }}
+          onClick={() => {
+            try { sfx.play('/audio/close.mp3', 0.7); } catch {}
+            try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
+            setShowCard(false);
+          }}
         >
           <div
             className="relative rounded-2xl p-4 card-modal"
@@ -396,7 +432,7 @@ export default function HUDPanel({
             <div className="tilt-wrap">
               <div className="card-frame">
                 {(() => {
-                  const slug = track?.slug || '';
+                  const slug = (!playing ? '' : (track?.slug || ''));
                   const CARD_OVERRIDES = {
                     "were-just-friends": "/card/we're-just-friends.png",
                     "were-just-friends-dmvrco-remix": "/card/we're-just-friends-dmvrco-remix.png",
@@ -404,7 +440,11 @@ export default function HUDPanel({
                     "mr-brightside": "/card/mr.brightside.png",
                     "tienes-un-amigo": "/card/tienes-un-amigo-acqi.png",
                   };
-                  const cardSrc = slug ? (CARD_OVERRIDES[slug] || `/card/${slug}.png`) : (track?.cover || '/cover/ocean-girl.png');
+                  const defaultCard = '/card/BUSINESS CARD.png';
+                  const fallbackCover = '/cover/chxndler.png';
+                  const cardSrc = (!playing)
+                    ? defaultCard
+                    : (slug ? (CARD_OVERRIDES[slug] || `/card/${slug}.png`) : (track?.cover || fallbackCover));
                   return (
                     <img
                       src={cardSrc}
@@ -415,6 +455,11 @@ export default function HUDPanel({
                         try {
                           const el = e.currentTarget;
                           const tried = Number((el.dataset && el.dataset.fallback) || '0');
+                          if (!playing) {
+                            el.src = '/card/BUSINESS CARD.png';
+                            if (el.dataset) el.dataset.fallback = '2';
+                            return;
+                          }
                           if (tried === 0 && slug) {
                             el.src = `/generated/${slug}-album-card.png`;
                             if (el.dataset) el.dataset.fallback = '1';
@@ -434,7 +479,11 @@ export default function HUDPanel({
             <button
               type="button"
               aria-label="Close"
-              onClick={() => { try { const a = closeCoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}; setShowCard(false); }}
+              onClick={() => {
+                try { sfx.play('/audio/close.mp3', 0.7); } catch {}
+                try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
+                setShowCard(false);
+              }}
               className="absolute -top-3 -right-3 rounded-full bg-[#19E3FF] text-black font-bold w-8 h-8 shadow-[0_0_20px_rgba(25,227,255,0.8)]"
               title="Close"
             >×</button>

@@ -32,6 +32,7 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
   const detentRef = useRef<HTMLAudioElement|null>(null);
   const dialRef = useRef<HTMLDivElement|null>(null);
   const warpTimerRef = useRef<number|undefined>(undefined);
+  const warpPlayTimerRef = useRef<number|undefined>(undefined);
   const [showWarp, setShowWarp] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
 
@@ -56,14 +57,17 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
     }, 0);
   }, [startSignal]); // eslint-disable-line
 
-  // load on index change; update sky; attempt autoplay if the track has local audio
+  // load on index change; update sky; delay music start until warp SFX finishes
   useEffect(() => {
     const a = audioRef.current; if (!a) return;
+    // Clear any pending delayed plays from prior index changes
+    if (warpPlayTimerRef.current !== undefined) { clearTimeout(warpPlayTimerRef.current); warpPlayTimerRef.current = undefined; }
     a.load();
     if (cur.src) {
-      // Optimistically mark playing to immediately duck ambient; will correct if play() is blocked
-      setPlaying(true);
-      a.play().then(()=>{ setPlaying(true); }).catch(()=> setPlaying(false));
+      // Begin playback muted immediately (allowed by autoplay policies), then unmute after warp
+      try { a.muted = true; a.volume = 0.0; } catch {}
+      a.play().catch(()=>{});
+      setPlaying(false);
     } else {
       setPlaying(false);
     }
@@ -77,16 +81,33 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
     try { setShowWarp(true); } catch {}
     if (warpTimerRef.current !== undefined) clearTimeout(warpTimerRef.current);
     warpTimerRef.current = window.setTimeout(() => { setShowWarp(false); warpTimerRef.current = undefined; }, 820);
+
+    // Delay music start to allow warp SFX to play; align with lightspeed overlay (≈1800ms)
+    if (cur.src) {
+      const WARP_MS = 1800;
+      warpPlayTimerRef.current = window.setTimeout(() => {
+        const a2 = audioRef.current; if (!a2) return;
+        try { a2.muted = false; a2.volume = 1.0; } catch {}
+        // Already playing muted; just mark playing and ensure it continues
+        a2.play().catch(()=>{});
+        setPlaying(true);
+        warpPlayTimerRef.current = undefined;
+      }, WARP_MS);
+    }
   }, [idx]); // eslint-disable-line
 
-  // Cleanup any pending warp timer on unmount
-  useEffect(() => () => { if (warpTimerRef.current !== undefined) { clearTimeout(warpTimerRef.current); } }, []);
+  // Cleanup any pending warp timers on unmount
+  useEffect(() => () => {
+    if (warpTimerRef.current !== undefined) { clearTimeout(warpTimerRef.current); }
+    if (warpPlayTimerRef.current !== undefined) { clearTimeout(warpPlayTimerRef.current); }
+  }, []);
 
   // External play signal: play current track if it has audio; otherwise jump to first with local audio
   useEffect(() => {
     const a = audioRef.current; if (!a) return;
     if (cur?.src) {
       a.load();
+      try { a.muted = false; a.volume = 1.0; } catch {}
       a.play()
         .then(() => { setPlaying(true); onPlayingChange(true); gaTrack("play", { slug: cur.slug }); })
         .catch(() => setPlaying(false));
@@ -98,7 +119,7 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
       setIdx(withAudio);
       setTimeout(() => {
         const a2 = audioRef.current; if (!a2) return;
-        a2.load();
+        a2.load(); try { a2.muted = false; a2.volume = 1.0; } catch {}
         a2.play().then(() => { setPlaying(true); onPlayingChange(true); gaTrack("play", { slug: tracks[withAudio].slug }); }).catch(()=>setPlaying(false));
       }, 0);
     }
@@ -108,19 +129,33 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
   useEffect(() => {
     const a = audioRef.current; if (!a) return;
     if (a.paused) {
+      // Start playing muted immediately, then unmute after warp SFX/overlay
+      if (warpPlayTimerRef.current !== undefined) { clearTimeout(warpPlayTimerRef.current); warpPlayTimerRef.current = undefined; }
+      const WARP_MS = 1800;
       if (cur?.src) {
         a.load();
-        a.play().then(() => { setPlaying(true); onPlayingChange(true); gaTrack("play", { slug: cur.slug }); }).catch(()=>setPlaying(false));
+        try { a.muted = true; a.volume = 0.0; } catch {}
+        a.play().catch(()=>{});
+        warpPlayTimerRef.current = window.setTimeout(() => {
+          const ax = audioRef.current; if (!ax) return;
+          try { ax.muted = false; ax.volume = 1.0; } catch {}
+          ax.play().catch(()=>{});
+          setPlaying(true); onPlayingChange(true); gaTrack("play", { slug: cur.slug });
+          warpPlayTimerRef.current = undefined;
+        }, WARP_MS);
       } else {
         // Fallback to first with audio
         const withAudio = tracks.findIndex(t => !!t.src);
         if (withAudio >= 0) {
           setIdx(withAudio);
-          setTimeout(() => {
+          // Begin muted immediately, then unmute after warp
+          warpPlayTimerRef.current = window.setTimeout(() => {
             const a2 = audioRef.current; if (!a2) return;
-            a2.load();
-            a2.play().then(() => { setPlaying(true); onPlayingChange(true); gaTrack("play", { slug: tracks[withAudio].slug }); }).catch(()=>setPlaying(false));
-          }, 0);
+            try { a2.muted = false; a2.volume = 1.0; } catch {}
+            a2.play().catch(()=>{});
+            setPlaying(true); onPlayingChange(true); gaTrack("play", { slug: tracks[withAudio].slug });
+            warpPlayTimerRef.current = undefined;
+          }, WARP_MS);
         }
       }
     } else {
@@ -149,7 +184,7 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
       }
       return;
     }
-    if (a.paused) a.play().then(()=>{ setPlaying(true); gaTrack("play", { slug: cur.slug }); }).catch(()=>setPlaying(false));
+    if (a.paused) { try { a.muted = false; a.volume = 1.0; } catch {}; a.play().then(()=>{ setPlaying(true); gaTrack("play", { slug: cur.slug }); }).catch(()=>setPlaying(false)); }
     else { a.pause(); setPlaying(false); gaTrack("pause", { slug: cur.slug }); }
   }
 

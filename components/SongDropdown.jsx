@@ -34,6 +34,9 @@ export default function SongDropdown({ items = [], initialActiveId, onChange }) 
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
   const rootRef = useRef(null);
+  const listRef = useRef(null);
+  const optMeasureRef = useRef(null);
+  const [maxListHeight, setMaxListHeight] = useState(null);
   const hoverRef = useRef(null);
   const clickRef = useRef(null);
   const hoverBtnRef = useRef(null);
@@ -52,6 +55,21 @@ export default function SongDropdown({ items = [], initialActiveId, onChange }) 
     }
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
+  }, [open]);
+
+  // When opening the menu, measure one option's height and cap list to 6 rows
+  useEffect(() => {
+    if (!open) return;
+    const raf = requestAnimationFrame(() => {
+      try {
+        const h = optMeasureRef.current?.offsetHeight || 0;
+        if (h > 0) setMaxListHeight(h * 6);
+        else setMaxListHeight(180); // fallback
+      } catch {
+        setMaxListHeight(180);
+      }
+    });
+    return () => cancelAnimationFrame(raf);
   }, [open]);
 
   // Keyboard for the closed combobox cycles songs directly
@@ -106,11 +124,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange }) 
       const id = items[highlight]?.id;
       if (id) { setActiveId(id); onChange?.(id); }
       setOpen(false);
-      // Start playback on keyboard selection as well
-      try {
-        const a = document.querySelector('audio[data-audio-player="1"]');
-        if (a) { a.muted = false; a.load(); a.play().catch(()=>{}); }
-      } catch {}
+      // Playback will start after warp SFX delay via MediaDock
       try { usePlayerStore.getState().setHover(null); } catch {}
     }
   }
@@ -146,7 +160,9 @@ export default function SongDropdown({ items = [], initialActiveId, onChange }) 
           role="listbox"
           tabIndex={-1}
           onKeyDown={onListKeyDown}
-          className="absolute z-[200] mt-1.5 w-full max-h-64 overflow-y-auto rounded-[8px] border border-[#19E3FF]/60 bg-[rgba(8,26,32,0.6)] backdrop-blur-xl shadow-[0_6px_18px_rgba(0,0,0,0.45)]"
+          ref={listRef}
+          className="absolute z-[200] mt-1.5 w-full max-h-[180px] overflow-y-auto rounded-[8px] border border-[#19E3FF]/60 bg-[rgba(8,26,32,0.6)] backdrop-blur-xl shadow-[0_6px_18px_rgba(0,0,0,0.45)]"
+          style={maxListHeight ? { maxHeight: `${maxListHeight}px`, overflowY: 'auto' } : undefined}
         >
           {items.map((s, i) => {
             const isActive = s.id === activeId;
@@ -157,17 +173,13 @@ export default function SongDropdown({ items = [], initialActiveId, onChange }) 
                 role="option"
                 aria-selected={isActive}
                 className={"opt flex items-center gap-1.5 px-1.5 py-1 text-[9px] cursor-pointer transition"}
+                ref={i === 0 ? optMeasureRef : undefined}
                 onMouseEnter={() => { setHighlight(i); try { usePlayerStore.getState().setHover(s.id); } catch{}; try { sfx.play('hover', 0.35); } catch {}; try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
                 onMouseLeave={() => { try { usePlayerStore.getState().setHover(null); } catch{} }}
                 onClick={() => {
                   try { sfx.play('click', 0.65); } catch {}
                   try { const c = clickRef.current; if (c) { c.currentTime = 0; c.volume = 0.65; c.play().catch(()=>{}); } } catch {}
                   setActiveId(s.id); onChange?.(s.id); setOpen(false);
-                  // Immediately start playback within this user gesture for reliability
-                  try {
-                    const a = document.querySelector('audio[data-audio-player="1"]');
-                    if (a) { a.muted = false; a.load(); a.play().catch(()=>{}); }
-                  } catch {}
                   try { usePlayerStore.getState().setHover(null); } catch{}
                 }}
               >

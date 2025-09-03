@@ -18,6 +18,7 @@ class SFXBus {
     pause: "/audio/pause.mp3",
     launch: "/audio/launch.mp3",
     select: "/audio/song-select.mp3",
+    warp: "/audio/warp.mp3",
   };
 
   private ensure() {
@@ -106,4 +107,3 @@ export const sfx = new SFXBus();
 if (typeof window !== "undefined") {
   try { sfx.attachUnlock(); } catch {}
 }
-

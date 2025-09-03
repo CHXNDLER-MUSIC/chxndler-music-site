@@ -1,5 +1,6 @@
 "use client";
 import React, { useRef, useState } from "react";
+import { sfx } from "@/lib/sfx";
 
 export default function SkyboxVideo({
   brightness = 0.95,
@@ -8,6 +9,8 @@ export default function SkyboxVideo({
   videoKey,
   offsetY = "2vh",
   flySignal,
+  onFlyStart,
+  onFlyEnd,
 }:{
   brightness?: number;
   srcWebm?: string;
@@ -15,6 +18,8 @@ export default function SkyboxVideo({
   videoKey?: string;
   offsetY?: number | string; // shift video vertically, e.g. "-6vh" or -40 (px)
   flySignal?: number; // increment to trigger brief zoom/fly effect
+  onFlyStart?: () => void;
+  onFlyEnd?: () => void;
 }) {
   // Default to visible to avoid missing sky if loadeddata doesn't fire
   const [ready, setReady] = useState(true);
@@ -23,6 +28,8 @@ export default function SkyboxVideo({
   const [showLightspeed, setShowLightspeed] = useState(false);
   const lsRef = useRef<HTMLVideoElement|null>(null);
   const lsTimerRef = useRef<number | undefined>(undefined);
+  const flyEndCalledRef = useRef(false);
+  const firstRunRef = useRef(true);
   
   // Brief zoom/blur to simulate flying to another world
   React.useEffect(() => {
@@ -36,12 +43,39 @@ export default function SkyboxVideo({
       setShowLightspeed(true);
       const v = lsRef.current;
       if (v) { v.currentTime = 0; void v.play().catch(()=>{}); }
+      try { sfx.play('warp', 0.7); } catch {}
+      flyEndCalledRef.current = false;
+      if (onFlyStart) try { onFlyStart(); } catch {}
       if (lsTimerRef.current !== undefined) window.clearTimeout(lsTimerRef.current);
-      lsTimerRef.current = window.setTimeout(() => { setShowLightspeed(false); lsTimerRef.current = undefined; }, 900);
+      // Keep the lightspeed overlay visible a bit longer on song change
+      lsTimerRef.current = window.setTimeout(() => {
+        setShowLightspeed(false);
+        lsTimerRef.current = undefined;
+        if (!flyEndCalledRef.current && onFlyEnd) { try { onFlyEnd(); } catch {} }
+        flyEndCalledRef.current = true;
+      }, 1800);
     } catch {}
 
     return () => { clearTimeout(t); if (lsTimerRef.current !== undefined) { window.clearTimeout(lsTimerRef.current); lsTimerRef.current = undefined; } };
   }, [flySignal]);
+
+  // Play lightspeed clip once on initial page open
+  React.useEffect(() => {
+    if (!firstRunRef.current) return;
+    firstRunRef.current = false;
+    try {
+      setShowLightspeed(true);
+      const v = lsRef.current;
+      if (v) { v.currentTime = 0; void v.play().catch(()=>{}); }
+      try { sfx.play('warp', 0.7); } catch {}
+      if (lsTimerRef.current !== undefined) window.clearTimeout(lsTimerRef.current);
+      lsTimerRef.current = window.setTimeout(() => {
+        setShowLightspeed(false);
+        lsTimerRef.current = undefined;
+      }, 1800);
+    } catch {}
+    return () => { if (lsTimerRef.current !== undefined) { window.clearTimeout(lsTimerRef.current); lsTimerRef.current = undefined; } };
+  }, []);
 
   return (
     /* z-10 so it's above any page bg image; HUD slots are z>=30 */
@@ -76,7 +110,7 @@ export default function SkyboxVideo({
             muted
             playsInline
             preload="auto"
-            onEnded={() => setShowLightspeed(false)}
+            onEnded={() => { setShowLightspeed(false); if (!flyEndCalledRef.current && onFlyEnd) { try { onFlyEnd(); } catch {} } flyEndCalledRef.current = true; }}
             className="absolute inset-0 h-full w-full object-cover"
             style={{ filter: `brightness(${Math.max(0.9, brightness)})`, mixBlendMode: 'screen' as any }}
           >

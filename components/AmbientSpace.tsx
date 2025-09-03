@@ -46,10 +46,12 @@ export default function AmbientSpace({
     const intro = introRef.current;
     if (!amb) return;
     amb.volume = 0;
+    try { amb.muted = true; } catch {}
     // Try to start ambient
     const tryAmbient = amb.play();
     // Try to play intro once on first load
     let tryIntro: Promise<any>|undefined;
+    // Play the welcome VO on every fresh page load (first open or refresh)
     if (intro && introSrc && introPendingRef.current && !playingMusic) {
       intro.volume = 0.9;
       // Duck ambient while intro is playing
@@ -62,7 +64,7 @@ export default function AmbientSpace({
     Promise.allSettled([tryAmbient, tryIntro].filter(Boolean) as Promise<any>[]).then((res) => {
       const blocked = res.some(r => r && r.status === "rejected");
       if (blocked) setNeedEnable(true);
-      else if (!introPlayingRef.current) fadeVolume(volume, 300);
+      else if (!introPlayingRef.current) { try { amb.muted = false; } catch {}; fadeVolume(volume, 300); }
     });
     return cancelFade;
   }, []);
@@ -98,7 +100,7 @@ export default function AmbientSpace({
     } else {
       // Resume then fade in
       amb.volume = 0;
-      amb.play().then(() => fadeVolume(volume, 300)).catch(()=>{});
+      amb.play().then(() => { try { amb.muted = false; } catch {}; fadeVolume(volume, 300); }).catch(()=>{});
     }
     return cancelFade;
   }, [playingMusic, volume]);
@@ -112,7 +114,7 @@ export default function AmbientSpace({
       await amb.play();
       // If intro is about to play and no song is playing, duck ambient; else fade up
       if (!playingMusic && intro && introSrc && introPendingRef.current) amb.volume = Math.min(volume, 0.12);
-      else fadeVolume(volume, 300);
+      else { try { amb.muted = false; } catch {}; fadeVolume(volume, 300); }
       // If intro didn't get a chance to play on initial load, play it once now
       if (!playingMusic && intro && introSrc && introPendingRef.current) {
         intro.volume = 0.9;
@@ -127,8 +129,8 @@ export default function AmbientSpace({
 
   return (
     <>
-      <audio ref={ambRef}  src={ambientSrc} loop preload="auto" autoPlay />
-      {introSrc ? <audio ref={introRef} src={introSrc} preload="auto" autoPlay /> : null}
+      <audio ref={ambRef}  src={ambientSrc} loop preload="auto" autoPlay playsInline muted data-ambient="1" />
+      {introSrc ? <audio ref={introRef} src={introSrc} preload="auto" autoPlay playsInline data-intro="1" /> : null}
       {/* Enable sound button hidden; global interaction starts audio automatically */}
     </>
   );

@@ -1,6 +1,7 @@
 "use client";
 import React, { useRef, useCallback, useEffect } from "react";
 import { sfx } from "@/lib/sfx";
+import IconButtonShell from "@/components/IconButtonShell";
 
 function IconButton({ title, href, children, color = "#1DB954", onClickFX, onHoverFX }) {
   return (
@@ -13,7 +14,8 @@ function IconButton({ title, href, children, color = "#1DB954", onClickFX, onHov
         className="ck-icon-btn"
         style={{ "--btn-color": color } as React.CSSProperties}
         onMouseEnter={() => { if (onHoverFX) onHoverFX(); }}
-        onMouseDown={() => { if (onClickFX) onClickFX(); }}
+        onMouseDown={(e)=>{ if(onClickFX) onClickFX(); (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(1px) scale(0.985)"; }}
+        onMouseUp={(e)=>{ (e.currentTarget as HTMLAnchorElement).style.transform = "none"; }}
       >
         <span className="logo-glow">{children}</span>
       </a>
@@ -122,31 +124,31 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
         <div
           className="wrap"
           style={vertical
-            // Move Spotify down slightly (+10px)
-            ? { left: `calc(${pos.xVw}vw - ${size/2}px)`, top: `calc(${pos.yVh}vh - ${size + gap/2}px + 10px)`, width: size, height: size, transform: tilt }
-            : { left: `calc(${pos.xVw}vw - ${(size + gap/2)}px)`, top: `calc(${pos.yVh}vh - ${size/2}px + 10px)`, width: size, height: size, transform: tilt }
+            // Move Spotify down slightly more (+17px total)
+            ? { left: `calc(${pos.xVw}vw - ${size/2}px)`, top: `calc(${pos.yVh}vh - ${size + gap/2}px + 17px)`, width: size, height: size, transform: tilt }
+            : { left: `calc(${pos.xVw}vw - ${(size + gap/2)}px)`, top: `calc(${pos.yVh}vh - ${size/2}px + 17px)`, width: size, height: size, transform: tilt }
           }
         >
           <span className="socket" aria-hidden />
-          <IconButton title="Listen on Spotify" href={links.spotify} color="#1DB954" onClickFX={playClick} onHoverFX={playHover}>
+          <IconButtonShell title="Listen on Spotify" href={links.spotify} color="#1DB954" onClickFX={playClick} onHoverFX={playHover}>
             {SpotifyIcon}
-          </IconButton>
+          </IconButtonShell>
         </div>
       )}
       {links.apple && (
         <div
           className="wrap"
           style={vertical
-            // Nudge Apple further down and left relative to Spotify when stacked vertically
-            ? { left: `calc(${pos.xVw}vw - ${size/2}px - 18px)`, top: `calc(${pos.yVh}vh + ${gap/2}px + 56px)`, width: size, height: size, transform: tilt }
-            // Horizontal layout fallback: also nudge down and left slightly more
-            : { left: `calc(${pos.xVw}vw + ${gap/2}px - 16px)`, top: `calc(${pos.yVh}vh - ${size/2}px + 52px)`, width: size, height: size, transform: tilt }
+            // Move Apple up slightly more (56px -> 49px)
+            ? { left: `calc(${pos.xVw}vw - ${size/2}px - 18px)`, top: `calc(${pos.yVh}vh + ${gap/2}px + 49px)`, width: size, height: size, transform: tilt }
+            // Horizontal layout: move up slightly more (52px -> 45px)
+            : { left: `calc(${pos.xVw}vw + ${gap/2}px - 16px)`, top: `calc(${pos.yVh}vh - ${size/2}px + 45px)`, width: size, height: size, transform: tilt }
           }
         >
           <span className="socket" aria-hidden />
-          <IconButton title="Listen on Apple Music" href={links.apple} color="#FF3B30" onClickFX={playClick} onHoverFX={playHover}>
+          <IconButtonShell title="Listen on Apple Music" href={links.apple} color="#FF3B30" onClickFX={playClick} onHoverFX={playHover}>
             {AppleIcon}
-          </IconButton>
+          </IconButtonShell>
         </div>
       )}
       <style jsx>{`
@@ -158,7 +160,7 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
         .ck-icon-btn{ will-change: transform, filter; transform: translateZ(0); backface-visibility: hidden; contain: paint; }
         /* Button hover: brighter + slightly larger (same intensity as SocialIcons) */
         .ck-icon-btn:hover{
-          transform: scale(1.06);
+          transform: scale(1.05);
           box-shadow:
             0 22px 44px rgba(0,0,0,.7),
             0 0 40px var(--btn-color),
@@ -167,7 +169,7 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
             inset 0 -8px 18px rgba(0,0,0,.65);
           filter: brightness(1.06) saturate(1.12);
         }
-        .ck-icon-btn:active{ transform: scale(0.98); }
+        /* Match SocialIcons behavior; press handled inline */
         .ck-icon-btn:hover .logo-glow{
           transform: scale(1.06);
           filter:

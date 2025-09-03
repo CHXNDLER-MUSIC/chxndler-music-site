@@ -19,10 +19,10 @@ function InvalidateOnState() {
   return null;
 }
 
-export default function PlanetSystem() {
+export default function PlanetSystem({ showAll = false }: { showAll?: boolean }) {
   const { songs, mainId, prevMainId, hoverId } = usePlayerStore();
-  const focusId = mainId ?? songs[0]?.id;
-  const focus = songs.find((s) => s.id === focusId) ?? songs[0];
+  const focusId = showAll ? null : (mainId ?? songs[0]?.id);
+  const focus = showAll ? null : (songs.find((s) => s.id === focusId) ?? songs[0]);
 
   return (
     // Fill the parent (HUDPanel provides a fixed-height relative container)
@@ -55,24 +55,32 @@ export default function PlanetSystem() {
         {/* Render the full system: satellites first, focus planet last; previous main becomes a moon */}
         <SystemGroup>
           <OrbitGuides />
-          {(() => {
-            const satellites = songs.filter((s) => s.id !== focusId);
-            return (
-              <>
-                {satellites.map((s) => (
-                  <Planet key={s.id} song={s} isMain={false} isHover={hoverId === s.id} isMoon={false} />
-                ))}
-                {/* Never apply hover inflation to main planet to avoid perceived zoom-in */}
-                {focus ? <Planet key={`main-${focus.id}`} song={focus} isMain={true} isHover={false} isMoon={false} /> : null}
-                {prevMainId && prevMainId !== focusId ? (
-                  (() => {
-                    const prev = songs.find((s) => s.id === prevMainId);
-                    return prev ? <Planet key={`moon-${prev.id}`} song={prev} isMain={false} isHover={prev.id === hoverId} isMoon={true} /> : null;
-                  })()
-                ) : null}
-              </>
-            );
-          })()}
+          {showAll ? (
+            <>
+              {songs.map((s) => (
+                <Planet key={s.id} song={s} isMain={false} isHover={hoverId === s.id} isMoon={false} />
+              ))}
+            </>
+          ) : (
+            (() => {
+              const satellites = songs.filter((s) => s.id !== focusId);
+              return (
+                <>
+                  {satellites.map((s) => (
+                    <Planet key={s.id} song={s} isMain={false} isHover={hoverId === s.id} isMoon={false} />
+                  ))}
+                  {/* Never apply hover inflation to main planet to avoid perceived zoom-in */}
+                  {focus ? <Planet key={`main-${focus.id}`} song={focus} isMain={true} isHover={false} isMoon={false} /> : null}
+                  {prevMainId && prevMainId !== focusId ? (
+                    (() => {
+                      const prev = songs.find((s) => s.id === prevMainId);
+                      return prev ? <Planet key={`moon-${prev.id}`} song={prev} isMain={false} isHover={prev.id === hoverId} isMoon={true} /> : null;
+                    })()
+                  ) : null}
+                </>
+              );
+            })()
+          )}
         </SystemGroup>
 
         {/* Subtle vertical projection sweep across the HUD area */}
