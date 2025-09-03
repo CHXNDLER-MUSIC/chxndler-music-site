@@ -69,16 +69,12 @@ export default function AmbientSpace({
     return cancelFade;
   }, []);
 
-  // Global gesture-to-unlock: if autoplay is blocked, start on first interaction anywhere
+  // Global unlock: if autoplay is blocked, start only on key press (not clicks/taps)
   useEffect(() => {
     if (!needEnable) return;
     const onAnyInteract = () => { enable(); };
-    window.addEventListener('pointerdown', onAnyInteract, { passive: true });
-    window.addEventListener('touchstart', onAnyInteract, { passive: true });
     window.addEventListener('keydown', onAnyInteract, { passive: true } as any);
     return () => {
-      window.removeEventListener('pointerdown', onAnyInteract as any);
-      window.removeEventListener('touchstart', onAnyInteract as any);
       window.removeEventListener('keydown', onAnyInteract as any);
     };
   }, [needEnable]);

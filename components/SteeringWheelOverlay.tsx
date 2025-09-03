@@ -48,6 +48,8 @@ export default function SteeringWheelOverlay({
   const basePx = Math.max(lp.sizePx || 72, pp.sizePx || 64);
   const vs = Math.round(basePx * (vconf.scale || 4.0));
 
+  const isBoost = Boolean((POS?.wheel && (POS.wheel as any).boost) || process.env.NEXT_PUBLIC_BOOST_BUTTON === '1' || process.env.NEXT_PUBLIC_PLAY_BUTTON_STYLE === 'boost');
+
   return (
     <div
       className="absolute inset-0 pointer-events-none"
@@ -85,10 +87,10 @@ export default function SteeringWheelOverlay({
           style={{ display: 'block', width: '100%', height: '100%' }}
         />
       </div>
-      {/* Neon green play button anchored on the wheel */}
+      {/* Boost button anchored on the wheel */}
       <button
         onClick={handleLaunch}
-        className="pointer-events-auto wheel-play"
+        className={`pointer-events-auto wheel-play${isBoost ? ' boost' : ''}`}
         style={{
           position: "absolute",
           top: `calc(${pp.topVh}vh - ${pp.sizePx/2}px)`,
@@ -100,19 +102,25 @@ export default function SteeringWheelOverlay({
           zIndex: 90,
         }}
         onMouseEnter={() => { try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
-        aria-label={playing ? "Pause" : "Play"}
-        title={playing ? "Pause" : "Play"}
+        aria-label={isBoost ? "Boost" : (playing ? "Pause" : "Play")}
+        title={isBoost ? "Boost" : (playing ? "Pause" : "Play")}
       >
+        {/* Outer animated glow ring for boost visual */}
+        {isBoost ? <span className="ring" aria-hidden /> : null}
         <span className="glyph" aria-hidden>
-          {playing ? (
-            <svg viewBox="0 0 24 24" width="52" height="52" fill="currentColor">
-              <rect x="6.5" y="5.5" width="4.2" height="13" rx="1.2" />
-              <rect x="13.3" y="5.5" width="4.2" height="13" rx="1.2" />
-            </svg>
+          {isBoost ? (
+            <span className="boost-label">BOOST</span>
           ) : (
-            <svg viewBox="0 0 24 24" width="52" height="52" fill="currentColor">
-              <path d="M7 5l12 7-12 7z" />
-            </svg>
+            playing ? (
+              <svg viewBox="0 0 24 24" width="52" height="52" fill="currentColor">
+                <rect x="6.5" y="5.5" width="4.2" height="13" rx="1.2" />
+                <rect x="13.3" y="5.5" width="4.2" height="13" rx="1.2" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" width="52" height="52" fill="currentColor">
+                <path d="M7 5l12 7-12 7z" />
+              </svg>
+            )
           )}
         </span>
       </button>
@@ -137,11 +145,38 @@ export default function SteeringWheelOverlay({
           transition: transform .12s ease, box-shadow .18s ease, filter .18s ease;
           overflow: visible;
         }
+        /* BOOST variant: warm red/orange glow and plume */
+        .wheel-play.boost{
+          color:#fff;
+          background:
+            radial-gradient(60% 60% at 50% 40%, rgba(255,255,255,.10), rgba(255,255,255,0) 66%),
+            radial-gradient(closest-side, rgba(255,100,80,.25), rgba(0,0,0,0) 72%),
+            radial-gradient(120% 120% at 50% 60%, #161010, #000);
+          box-shadow:
+            0 14px 32px rgba(0,0,0,.55),
+            0 0 36px rgba(255,59,48,.95),
+            0 0 120px rgba(255,59,48,.55),
+            inset 0 2px 0 rgba(255,255,255,.45),
+            inset 0 -12px 24px rgba(0,0,0,.65),
+            inset 0 0 40px rgba(255,92,72,.38);
+          animation: breathe 1.8s ease-in-out infinite;
+        }
+        @keyframes breathe { 0%{ filter: brightness(1) } 50%{ filter: brightness(1.08) } 100%{ filter: brightness(1) } }
+        /* Outer glow ring */
+        .wheel-play .ring{ position:absolute; inset:-16%; border-radius:9999px; pointer-events:none;
+          box-shadow: 0 0 0 2px rgba(255,59,48,.28), 0 0 34px rgba(255,59,48,.55), 0 0 90px rgba(255,59,48,.45);
+          animation: ringPulse 1.6s ease-in-out infinite;
+        }
+        @keyframes ringPulse { 0%{ transform: scale(.96); opacity:.85 } 50%{ transform: scale(1); opacity:1 } 100%{ transform: scale(.96); opacity:.85 } }
         /* Nozzle inner rim */
         .wheel-play::before{
           content:""; position:absolute; inset:8%; border-radius:9999px; pointer-events:none;
           box-shadow: inset 0 0 0 2px rgba(0,255,180,.25), inset 0 0 30px rgba(0,255,180,.25), inset 0 -8px 18px rgba(0,0,0,.5);
           background: radial-gradient(70% 70% at 50% 40%, rgba(114,255,220,.12), rgba(0,0,0,0) 70%);
+        }
+        .wheel-play.boost::before{
+          box-shadow: inset 0 0 0 2px rgba(255,59,48,.35), inset 0 0 36px rgba(255,120,100,.35), inset 0 -10px 18px rgba(0,0,0,.5);
+          background: radial-gradient(70% 70% at 50% 40%, rgba(255,140,120,.16), rgba(0,0,0,0) 70%);
         }
         /* Exhaust plume shooting rightwards */
         .wheel-play::after{
@@ -155,26 +190,28 @@ export default function SteeringWheelOverlay({
           transform-origin: 0% 50%;
           animation: plume 1.1s ease-in-out infinite alternate;
         }
+        .wheel-play.boost::after{
+          background:
+            radial-gradient(80% 70% at 0% 50%, rgba(255,255,255,1), rgba(255,255,255,0) 60%),
+            radial-gradient(90% 80% at 0% 50%, rgba(255,180,120,.95), rgba(255,180,120,0) 70%),
+            radial-gradient(100% 90% at 0% 50%, rgba(255,59,48,.85), rgba(255,59,48,0) 75%);
+        }
         @keyframes plume {
           0% { transform: scaleX(0.9) translateX(0); opacity: .75; filter: blur(10px) saturate(1.2); }
           100%{ transform: scaleX(1.15) translateX(4px); opacity: 1; filter: blur(8px) saturate(1.35); }
         }
         /* inner icon glow, like the logo-glow on other buttons */
-        .glyph{
-          display:inline-flex; align-items:center; justify-content:center;
-          color:#ffffff; /* inner symbol color (white) */
-          filter:
-            drop-shadow(0 0 10px rgba(255,255,255,.95))
-            drop-shadow(0 0 28px rgba(0,255,200,.55))
-            drop-shadow(0 0 52px rgba(0,255,200,.35));
-          mix-blend-mode: screen;
-          transform: translateY(1px);
-          opacity: .9;
+        .glyph{ display:inline-flex; align-items:center; justify-content:center; transform: translateY(1px); }
+        .boost-label{ font-family: OrbitronLocal, InterLocal, system-ui, sans-serif; font-weight: 900; font-size: 18px; letter-spacing: 0.14em; color:#fff; text-transform: uppercase;
+          text-shadow: 0 0 10px rgba(255,59,48,1), 0 0 34px rgba(255,59,48,.8), 0 0 64px rgba(255,59,48,.55);
         }
         .wheel-play:hover {
           transform: scale(1.06) rotateZ(-1deg);
           box-shadow: 0 14px 36px rgba(0,0,0,.6), 0 0 44px rgba(0,255,200,.95), 0 0 110px rgba(0,255,200,.65), inset 0 2px 0 rgba(255,255,255,.5), inset 0 -8px 20px rgba(0,0,0,.45);
           filter: brightness(1.06) saturate(1.15);
+        }
+        .wheel-play.boost:hover{
+          box-shadow: 0 14px 36px rgba(0,0,0,.6), 0 0 60px rgba(255,59,48,.98), 0 0 150px rgba(255,59,48,.7), inset 0 2px 0 rgba(255,255,255,.6), inset 0 -8px 20px rgba(0,0,0,.45);
         }
         .wheel-play:active { transform: scale(0.96); }
       `}</style>

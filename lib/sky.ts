@@ -19,4 +19,5 @@ export function skyFor(slug?: string) {
   return SPACE;
 }
 
-export const introSky = { key: "space", webm: "/skies/space.webm", mp4: "/skies/space.mp4" };
+// Use the lightspeed warp as the initial looping sky
+export const introSky = { key: "lightspeed", webm: "", mp4: "/skies/lightspeed.mp4" };

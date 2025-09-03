@@ -4,8 +4,9 @@ import { motion } from "framer-motion";
 // 2D fallback hologram
 // 2D HUD removed per request; 3D only
 // 3D planet system (requires three/r3f/drei installed)
-// Use direct import to avoid dynamic chunk load issues during dev
-import PlanetSystem from "@/components/holo/PlanetSystem";
+// IMPORTANT: Do NOT import at module scope — older @react-three/fiber versions
+// are incompatible with React 19 and can crash on evaluation. We lazy-load it
+// only after probing availability, and fall back gracefully.
 import { usePlayerStore } from "@/store/usePlayerStore";
 
 // We import the 3D system directly and only render on client via this client component
@@ -83,6 +84,7 @@ export default function HUDPanel({
   holoPop = false,
   playing = false,
   beamOnly = false,
+  beamEnabled = undefined, // optional external control for beam fade (true/false)
 }) {
   const hoverCoverRef = useRef(null);
   const clickCoverRef = useRef(null);
@@ -94,27 +96,50 @@ export default function HUDPanel({
   const [scale, setScale] = useState(1);
   const [hoverId, setHoverId] = useState(null);
   const [can3D, setCan3D] = useState(false);
+  const [PlanetSystemComp, setPlanetSystemComp] = useState(null);
   const [mounted, setMounted] = useState(false);
   const [showCard, setShowCard] = useState(false);
-  // Tiny fade-in for the beam instead of hard toggle
+  // Beam fade: allow external control; default to fade-in on mount
   const [beamOpacity, setBeamOpacity] = useState(0);
   useEffect(() => {
-    const t = setTimeout(() => setBeamOpacity(1), 10);
-    return () => clearTimeout(t);
-  }, []);
+    if (typeof beamEnabled === 'boolean') {
+      const t = setTimeout(() => setBeamOpacity(beamEnabled ? 1 : 0), 10);
+      return () => clearTimeout(t);
+    } else {
+      const t = setTimeout(() => setBeamOpacity(1), 10);
+      return () => clearTimeout(t);
+    }
+  }, [beamEnabled]);
+  // Content fade (instead of hard hide when beamOnly)
+  const [contentOpacity, setContentOpacity] = useState(beamOnly ? 0 : 1);
+  useEffect(() => { setContentOpacity(beamOnly ? 0 : 1); }, [beamOnly]);
 
-  // Runtime probe: optimistically enable 3D immediately; if libs truly missing, fall back to static
+  // Runtime probe: lazy import r3f/drei/three and PlanetSystem; if any fail, keep 2D-only
   useEffect(() => {
-    setCan3D(true);
     let mounted = true;
+    // Avoid r3f on React 19 unless known-compatible; skip imports entirely
+    try {
+      const ver = (React && React.version) ? String(React.version) : "";
+      const major = ver ? parseInt(ver.split(".")[0] || "0", 10) : 0;
+      if (major >= 19) { setCan3D(false); return () => { mounted = false; }; }
+    } catch {}
     (async () => {
       try {
         const r3f = await import("@react-three/fiber");
         const drei = await import("@react-three/drei");
         const three = await import("three");
-        const ok = !(((r3f || {}).__STUB) || ((drei || {}).__STUB) || ((three || {}).__STUB));
-        if (mounted && !ok) setCan3D(false);
-      } catch {
+        const ok = !!r3f && !!drei && !!three;
+        if (!ok) { if (mounted) setCan3D(false); return; }
+        const mod = await import("@/components/holo/PlanetSystem");
+        if (!mounted) return;
+        const Comp = mod.default || mod.PlanetSystem;
+        if (Comp) {
+          setPlanetSystemComp(() => Comp);
+          setCan3D(true);
+        } else {
+          setCan3D(false);
+        }
+      } catch (e) {
         if (mounted) setCan3D(false);
       }
     })();
@@ -226,8 +251,10 @@ export default function HUDPanel({
               } catch { return null; }
             })()}
           </div>
-          {beamOnly ? null : (
-          <div className={`grid grid-cols-[1.35fr_0.65fr] gap-6 ${inConsole ? 'p-3' : 'p-8'}`}>
+          <div
+            className={`grid grid-cols-[1.35fr_0.65fr] gap-6 ${inConsole ? 'p-3' : 'p-8'}`}
+            style={{ opacity: contentOpacity, transition: 'opacity 240ms ease', pointerEvents: contentOpacity > 0.01 ? 'auto' : 'none' }}
+          >
           {/* Left: title + planet */}
           <div className="flex flex-col gap-6">
             {/* Title/subtitle removed per request; song title is shown within the HUD display */}
@@ -238,10 +265,10 @@ export default function HUDPanel({
                 <div className={`relative w-full overflow-visible rounded-[12px] ${inConsole ? 'h-[200px] sm:h-[220px]' : 'h-[400px] md:h-[480px] lg:h-[560px]'}`}>
                   {/* Keep 3D background clear (no backdrop behind Canvas) */}
                   {/* Title overlay removed from panel; shown under cover art */}
-                {can3D ? (
+                {can3D && PlanetSystemComp ? (
                   <div className="absolute left-0 right-0 bottom-0" style={{ top: 72 }}>
                     <ErrorBoundary fallback={null} onError={(e)=>{ if (String(e?.name||'').includes('IndexSizeError')) { try { console.warn('Disabling 3D due to IndexSizeError'); } catch {} } setCan3D(false); }}>
-                      <PlanetSystem showAll={!playing} />
+                      <PlanetSystemComp showAll={!playing} />
                     </ErrorBoundary>
                   </div>
                 ) : (
@@ -348,7 +375,6 @@ export default function HUDPanel({
             </div>
           </aside>
         </div>
-          )}
 
         {/* Hologram base glow + upward beam: positioned below the HUD box with a small gap */}
         <div
