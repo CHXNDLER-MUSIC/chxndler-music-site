@@ -31,7 +31,8 @@ function ElementIcon({ name, size = 18 }) {
   if (!name) return null;
   const n = String(name).toLowerCase();
   let src = "";
-  if (n.includes("heart")) src = "/elements/heart.png";
+  if (n.includes("chxndler")) src = "/elements/chxndler.png";
+  else if (n.includes("heart")) src = "/elements/heart.png";
   else if (n.includes("lightning") || n.includes("electric")) src = "/elements/lighting.png";
   else if (n.includes("dark")) src = "/elements/darkness.png";
   else if (n.includes("water") || n.includes("air")) src = "/elements/water.png";
@@ -41,6 +42,7 @@ function ElementIcon({ name, size = 18 }) {
   const colorFor = (key) => {
     if (!key) return "#38B6FF";
     const k = String(key).toLowerCase();
+    if (k.includes("chxndler")) return "#19E3FF"; // brand cyan
     if (k.includes("water")) return "#38B6FF";      // cyan
     if (k.includes("heart")) return "#FC54AF";      // pink
     if (k.includes("lightning") || k.includes("electric")) return "#F2EF1D"; // yellow
@@ -208,7 +210,10 @@ export default function HUDPanel({
             className={`relative rounded-2xl shadow-[0_0_50px_rgba(25,227,255,0.35)] -ml-6 sm:-ml-8 md:-ml-12 lg:-ml-18`}
             // Remove hover glow/scale for the entire HUD display per request
             transition={{ type: "spring", stiffness: 200, damping: 20 }}
-            style={inConsole ? { width: '100%', height: '100%', transform: 'perspective(1200px) rotateX(6deg)', transformOrigin: 'center' } : { transform: 'perspective(1200px) rotateX(6deg)' }}
+            style={inConsole
+              ? { width: '100%', height: '100%', transform: 'perspective(1200px) rotateX(6deg)', transformOrigin: 'center', marginTop: 16 }
+              : { transform: 'perspective(1200px) rotateX(6deg)', marginTop: 16 }
+            }
           >
           {/* Background removed: keep HUD box transparent */}
         {/* Single blue outline wrapping the HUD content (amped glow) */}
@@ -231,20 +236,10 @@ export default function HUDPanel({
                  boxShadow: 'inset 0 0 22px rgba(25,227,255,0.35)'
                }} />
           {/* Element/logo pinned at the HUD box top-left */}
-          <div className="absolute z-20" style={{ left: 12, top: 12, pointerEvents: 'none' }}>
+          <div className="absolute z-40" style={{ left: 12, top: 12, pointerEvents: 'none' }}>
             {(() => {
               try {
-                if (!playing) {
-                  return (
-                    <img
-                      src="/logo/CHXNDLER_Logo.png"
-                      alt="CHXNDLER"
-                      width={36}
-                      height={36}
-                      style={{ width: 36, height: 36, objectFit: 'contain', filter: 'drop-shadow(0 0 10px #19E3FF) drop-shadow(0 0 18px #19E3FF)' }}
-                    />
-                  );
-                }
+                if (!currentId) { return <ElementIcon name="chxndler" size={36} />; }
                 const found = resolvedSongs.find(s => s.id === (active || ''));
                 const icon = found && found.icon;
                 return icon ? <ElementIcon name={icon} size={36} /> : null;
@@ -258,7 +253,7 @@ export default function HUDPanel({
           {/* Left: title + planet */}
           <div className="flex flex-col gap-6">
             {/* Title/subtitle removed per request; song title is shown within the HUD display */}
-            <div className="pt-2 w-full mt-auto transform -translate-y-[6vh] sm:-translate-y-[5vh] md:-translate-y-[4vh] lg:-translate-y-[4vh]">
+            <div className="pt-2 w-full mt-auto transform -translate-y-[4vh] sm:-translate-y-[3vh] md:-translate-y-[2vh] lg:-translate-y-[2vh]">
               {/* Hologram panel wrapper to integrate with dashboard styling */}
               <div className="relative">
                 {/* Dynamic 3D with safe fallback to 2D if it errors */}
@@ -268,7 +263,7 @@ export default function HUDPanel({
                 {can3D && PlanetSystemComp ? (
                   <div className="absolute left-0 right-0 bottom-0" style={{ top: 72 }}>
                     <ErrorBoundary fallback={null} onError={(e)=>{ if (String(e?.name||'').includes('IndexSizeError')) { try { console.warn('Disabling 3D due to IndexSizeError'); } catch {} } setCan3D(false); }}>
-                      <PlanetSystemComp showAll={!playing} />
+                      <PlanetSystemComp showAll={!currentId} />
                     </ErrorBoundary>
                   </div>
                 ) : (
@@ -308,7 +303,7 @@ export default function HUDPanel({
                       pointerEvents: 'none',
                     }}
                   >
-                    {(!playing ? 'CHXNDLER' : ((track?.title) || (resolvedSongs.find(s=> s.id === (active || ''))?.title) || ''))}
+                    {(!currentId ? 'CHXNDLER' : ((track?.title) || (resolvedSongs.find(s=> s.id === (active || ''))?.title) || ''))}
                   </div>
                   {/* Song tagline directly under the title */}
                   <div
@@ -336,7 +331,7 @@ export default function HUDPanel({
                     }}
                     aria-label="Song tagline"
                   >
-                    {(!playing ? 'A home for ALIENS, where misfits and dreamers live free.' : (track?.subtitle || ''))}
+                    {(!currentId ? 'A home for ALIENS, where misfits and dreamers live free.' : (track?.subtitle || ''))}
                   </div>
 
                   {/* Song changer moved to right rail under cover art */}
@@ -360,7 +355,7 @@ export default function HUDPanel({
                 >
                   {(() => {
                     const defaultCover = '/cover/chxndler.png';
-                    const src = (!playing ? defaultCover : (track?.cover || defaultCover));
+                    const src = (!currentId ? defaultCover : (track?.cover || defaultCover));
                     return <CoverCard src={src} size={inConsole ? 200 : 280} />;
                   })()}
                 </button>
@@ -380,7 +375,7 @@ export default function HUDPanel({
         <div
           className="pointer-events-none absolute inset-x-0 h-32"
           aria-hidden
-          style={{ top: 'calc(100% + 16px)', opacity: beamOpacity, transition: 'opacity 180ms ease' }}
+          style={{ top: 'calc(100% - 68px)', opacity: beamOpacity, transform: 'translateX(-26px)', transition: 'opacity 180ms ease, transform 200ms ease' }}
         >
           {/* Cyan base pool at console lip (broad soft glow) */}
           <div
@@ -469,7 +464,7 @@ export default function HUDPanel({
                   const defaultCard = '/card/BUSINESS CARD.png';
                   const fallbackCover = '/cover/chxndler.png';
                   const cardSrc = (!playing)
-                    ? defaultCard
+                    ? '/card/chxndler.png'
                     : (slug ? (CARD_OVERRIDES[slug] || `/card/${slug}.png`) : (track?.cover || fallbackCover));
                   return (
                     <img
@@ -482,6 +477,7 @@ export default function HUDPanel({
                           const el = e.currentTarget;
                           const tried = Number((el.dataset && el.dataset.fallback) || '0');
                           if (!playing) {
+                            // Home state: try fallback to business card
                             el.src = '/card/BUSINESS CARD.png';
                             if (el.dataset) el.dataset.fallback = '2';
                             return;

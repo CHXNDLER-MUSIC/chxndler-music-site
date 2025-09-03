@@ -17,9 +17,11 @@ type Props = {
   showHUDPlay?: boolean;   // show the HUD play/pause button (default true)
   index?: number;          // controlled index (optional)
   onIndexChange?: (idx:number)=>void; // notify parent on index change
+  autoPlayOnIndex?: boolean; // if false, do not auto-start playback on index changes
+  unlockPlays?: boolean;     // if false, gesture unlock will not auto-play
 };
 
-export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange, wrapChannels = true, startSignal = 0, startIndex = 0, playSignal = 0, toggleSignal = 0, showHUDPlay = true, index, onIndexChange }: Props) {
+export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange, wrapChannels = true, startSignal = 0, startIndex = 0, playSignal = 0, toggleSignal = 0, showHUDPlay = true, index, onIndexChange, autoPlayOnIndex = true, unlockPlays = true }: Props) {
   const [internalIdx, setInternalIdx] = useState(startIndex);
   const idx = (typeof index === 'number') ? index : internalIdx;
   const setIdx = (val: number | ((p:number)=>number)) => {
@@ -57,19 +59,19 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
     }, 0);
   }, [startSignal]); // eslint-disable-line
 
-  // load on index change; update sky; delay music start until warp SFX finishes
+  // load on index change; update sky; optionally auto-start after delay
   useEffect(() => {
     const a = audioRef.current; if (!a) return;
     // Clear any pending delayed plays from prior index changes
     if (warpPlayTimerRef.current !== undefined) { clearTimeout(warpPlayTimerRef.current); warpPlayTimerRef.current = undefined; }
     a.load();
-    if (cur.src) {
+    setPlaying(false);
+    if (cur.src && autoPlayOnIndex) {
       // Begin playback muted immediately (allowed by autoplay policies), then unmute after warp
       try { a.muted = true; a.volume = 0.0; } catch {}
       a.play().catch(()=>{});
-      setPlaying(false);
     } else {
-      setPlaying(false);
+      try { a.pause(); } catch {}
     }
     const s = skyFor(cur.slug);
     onSkyChange(s.webm, s.mp4, s.key);
@@ -82,8 +84,8 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
     if (warpTimerRef.current !== undefined) clearTimeout(warpTimerRef.current);
     warpTimerRef.current = window.setTimeout(() => { setShowWarp(false); warpTimerRef.current = undefined; }, 820);
 
-    // Delay music start to allow warp SFX to play; align with lightspeed overlay (≈1800ms)
-    if (cur.src) {
+    // Optionally delay music start to allow warp SFX; align with overlay (≈1800ms)
+    if (cur.src && autoPlayOnIndex) {
       const WARP_MS = 1800;
       warpPlayTimerRef.current = window.setTimeout(() => {
         const a2 = audioRef.current; if (!a2) return;
@@ -94,7 +96,7 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
         warpPlayTimerRef.current = undefined;
       }, WARP_MS);
     }
-  }, [idx]); // eslint-disable-line
+  }, [idx, autoPlayOnIndex]); // eslint-disable-line
 
   // Cleanup any pending warp timers on unmount
   useEffect(() => () => {
@@ -107,10 +109,33 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
     const a = audioRef.current; if (!a) return;
     if (cur?.src) {
       a.load();
+      // Try direct play; if blocked, fall back to muted-start then unmute shortly
       try { a.muted = false; a.volume = 1.0; } catch {}
       a.play()
-        .then(() => { setPlaying(true); onPlayingChange(true); gaTrack("play", { slug: cur.slug }); })
-        .catch(() => setPlaying(false));
+        .then(() => {
+          // Guard: some browsers may resolve but stay paused; recheck shortly
+          setTimeout(() => {
+            const ax = audioRef.current; if (!ax) return;
+            if (!ax.paused) { setPlaying(true); onPlayingChange(true); gaTrack("play", { slug: cur.slug }); return; }
+            // Fallback if still paused
+            try {
+              ax.muted = true; ax.volume = 0.0;
+              ax.play().then(() => {
+                setTimeout(() => { try { ax.muted = false; ax.volume = 1.0; } catch {} }, 80);
+                setPlaying(true); onPlayingChange(true); gaTrack("play", { slug: cur.slug });
+              }).catch(() => setPlaying(false));
+            } catch { setPlaying(false); }
+          }, 120);
+        })
+        .catch(() => {
+          try {
+            a.muted = true; a.volume = 0.0;
+            a.play().then(() => {
+              setTimeout(() => { try { a.muted = false; a.volume = 1.0; } catch {} }, 80);
+              setPlaying(true); onPlayingChange(true); gaTrack("play", { slug: cur.slug });
+            }).catch(() => setPlaying(false));
+          } catch { setPlaying(false); }
+        });
       return;
     }
     // Fallback: find first track that has a local audio src
@@ -209,6 +234,7 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
     const unlock = () => {
       const a = audioRef.current; if (!a) return;
       try { a.load(); } catch {}
+      if (!unlockPlays) return;
       a.play().catch(() => {
         try {
           a.muted = true;
@@ -222,7 +248,7 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
       window.removeEventListener('pointerdown', unlock as any);
       window.removeEventListener('touchstart', unlock as any);
     };
-  }, []);
+  }, [unlockPlays]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

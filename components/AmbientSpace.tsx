@@ -7,11 +7,13 @@ export default function AmbientSpace({
   introSrc,
   volume = 0.35,
   playingMusic,
+  suspend = false,
 }: {
   ambientSrc: string;
   introSrc?: string; // optional intro VO
   volume?: number;
   playingMusic: boolean;
+  suspend?: boolean;
 }) {
   const ambRef = useRef<HTMLAudioElement|null>(null);
   const introRef = useRef<HTMLAudioElement|null>(null);
@@ -69,6 +71,27 @@ export default function AmbientSpace({
     return cancelFade;
   }, []);
 
+  // If introSrc becomes available after mount (e.g., navigate to homepage), play it once
+  useEffect(() => {
+    const amb = ambRef.current;
+    const intro = introRef.current;
+    if (!introSrc || !intro || !amb) return;
+    if (playingMusic || suspend) return;
+    if (!introPendingRef.current) return;
+    try {
+      intro.volume = 0.9;
+      const onIntroPlay = () => { introPlayingRef.current = true; amb.volume = Math.min(volume, 0.12); };
+      const onIntroEnd  = () => { introPlayingRef.current = false; fadeVolume(volume, 400); };
+      intro.addEventListener('play', onIntroPlay);
+      intro.addEventListener('ended', onIntroEnd, { once: true });
+      intro.play().then(() => { introPendingRef.current = false; }).catch(()=>{});
+      return () => {
+        intro.removeEventListener('play', onIntroPlay);
+        intro.removeEventListener('ended', onIntroEnd as any);
+      };
+    } catch {}
+  }, [introSrc, playingMusic, suspend, volume]);
+
   // Global unlock: if autoplay is blocked, start only on key press (not clicks/taps)
   useEffect(() => {
     if (!needEnable) return;
@@ -83,7 +106,7 @@ export default function AmbientSpace({
     const amb = ambRef.current;
     const intro = introRef.current;
     if (!amb) return;
-    if (playingMusic) {
+    if (playingMusic || suspend) {
       // Fade out quickly then pause to avoid overlap with music
       fadeVolume(0, 150, () => { amb.pause(); });
       // Stop welcome VO if it's playing
@@ -99,7 +122,7 @@ export default function AmbientSpace({
       amb.play().then(() => { try { amb.muted = false; } catch {}; fadeVolume(volume, 300); }).catch(()=>{});
     }
     return cancelFade;
-  }, [playingMusic, volume]);
+  }, [playingMusic, suspend, volume]);
 
   const enable = async () => {
     const amb = ambRef.current;

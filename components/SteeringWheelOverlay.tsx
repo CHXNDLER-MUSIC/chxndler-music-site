@@ -22,9 +22,12 @@ export default function SteeringWheelOverlay({
     // Trigger toggle action first so downstream can open streaming links within a user gesture
     try { onLaunch(); } catch {}
     // Then play context-appropriate SFX without blocking the gesture
+    // Remove launch sound on boost press; keep pause sound only when pausing
     try {
-      const a = willPause ? pauseRef.current : sfxRef.current;
-      if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
+      if (willPause) {
+        const a = pauseRef.current;
+        if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
+      }
     } catch {}
     // Also attempt a direct, gesture-synchronous toggle of the main audio element
     // This helps bypass autoplay restrictions on iOS/Safari that reject play() in effects

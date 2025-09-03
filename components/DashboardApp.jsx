@@ -27,7 +27,8 @@ export default function DashboardApp() {
   const [channelIdx, setChannelIdx] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [sky, setSky] = useState(introSky);
-  const [links, setLinks] = useState({ spotify: "", apple: "" });
+  const [links, setLinks] = useState({ spotify: LINKS.spotify, apple: LINKS.apple });
+  const [userSelected, setUserSelected] = useState(false);
   const [curTrack, setCurTrack] = useState(tracks[0]);
   const [playSignal, setPlaySignal] = useState(0);
   const [toggleSignal, setToggleSignal] = useState(0);
@@ -40,12 +41,78 @@ export default function DashboardApp() {
   const [beamEnabled, setBeamEnabled] = useState(false);
   const [powerBusy, setPowerBusy] = useState(false);
   const powerRef = React.useRef(null);
+  const powerHoverRef = React.useRef(null);
+  const [allowWarp, setAllowWarp] = useState(false);
+  const [homeMode, setHomeMode] = useState(false);
+  const [homeIntroEnabled, setHomeIntroEnabled] = useState(true);
+  const [pendingHomePower, setPendingHomePower] = useState(false);
+  const [pendingTrackPlay, setPendingTrackPlay] = useState(false);
+  const [ambientSuspended, setAmbientSuspended] = useState(false);
+  const SPACE_SKY = { webm: "/skies/space.webm", mp4: "/skies/space.mp4", key: "space" };
+
+  // Centralized HUD power sequencing: play SFX then run beam/HUD fades
+  const triggerHudPower = React.useCallback((turnOn) => {
+    if (powerBusy) return;
+    setPowerBusy(true);
+    const a = powerRef.current;
+    const turningOn = typeof turnOn === 'boolean' ? turnOn : (!beamEnabled && !showHUD);
+    // Fire SFX, but do NOT block visuals on audio end
+    try {
+      if (a) {
+        a.currentTime = 0; a.volume = 0.9; a.play().catch(()=>{});
+        // Suspend ambient/intro until join-alien finishes (for clean timing)
+        setAmbientSuspended(true);
+        a.onended = () => { try { a.onended = null; } catch {} setAmbientSuspended(false); };
+        // Fallback if ended doesn't fire
+        setTimeout(() => setAmbientSuspended(false), 1400);
+      }
+    } catch {}
+
+    if (turningOn) {
+      // Ensure home-mode visuals/content when powering on from opening screen
+      setHomeMode(true);
+      setHomeIntroEnabled(false); // do not play welcome VO on power button
+      setUserSelected(false);
+      setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
+      // Do NOT force sky to space here; only Boost changes the sky
+      // 1) Mount HUD hidden
+      setShowHUD(true);
+      setBeamOnly(true);
+      // 2) Start beam immediately
+      setTimeout(() => { setBeamEnabled(true); }, 0);
+      // 3) Fade HUD in shortly after beam begins (~150–180ms)
+      setTimeout(() => { setBeamOnly(false); setPowerBusy(false); }, 170);
+    } else {
+      // Powering off: play SFX immediately (done above), then fade beam out now,
+      // and fade HUD out shortly after for a snappy close.
+      setBeamEnabled(false); // start beam fade-out immediately
+      setTimeout(() => { setBeamOnly(true); }, 120); // hide HUD content right after beam starts fading
+      setTimeout(() => { setShowHUD(false); setPowerBusy(false); }, 320); // unmount once fades complete
+    }
+  }, [powerBusy, beamEnabled, showHUD]);
 
   function onSongChange(id){
     const slug = id;
     const idx = tracks.findIndex(t => (t.slug||"") === slug || (t.slug||"").startsWith(slug));
     if (idx >= 0) {
+      setUserSelected(true);
+      setHomeMode(false);
+      setAmbientSuspended(true);
+      // Stop all audio immediately
+      try {
+        const a = document.querySelector('audio[data-audio-player="1"]');
+        if (a) {
+          a.pause();
+          // Prime autoplay permission within this gesture without output
+          try { a.muted = true; a.play().then(()=>{ a.pause(); a.currentTime = 0; }).catch(()=>{}); } catch {}
+        }
+      } catch {}
+      // Prepare warp to the selected track's sky
+      setAllowWarp(true);
+      setNextSky(skyFor(tracks[idx].slug));
+      setPendingTrackPlay(true);
       setChannelIdx(idx);
+      setFlySignal((n) => n + 1);
     }
   }
 
@@ -66,16 +133,11 @@ export default function DashboardApp() {
     }
   }, [curTrack]);
 
+  // Only update sky when track changes; do not auto-warp
   React.useEffect(() => {
     if (!mounted) return;
-    if (!isPlaying) {
-      setNextSky(introSky);
-      setFlySignal((n) => n + 1);
-    } else if (curTrack) {
-      setNextSky(skyFor(curTrack.slug));
-      setFlySignal((n) => n + 1);
-    }
-  }, [isPlaying, mounted, curTrack]);
+    if (curTrack) setNextSky(skyFor(curTrack.slug));
+  }, [mounted, curTrack]);
 
   useEffect(() => { setMounted(true); }, []);
   // Disable auto actions on random interactions; nothing should trigger on click/touch/move
@@ -85,18 +147,41 @@ export default function DashboardApp() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
       <PrewarmThree />
-      <AmbientSpace ambientSrc="/audio/space-music.mp3" playingMusic={isPlaying} />
+      <AmbientSpace ambientSrc="/audio/space-music.mp3" introSrc={homeMode && homeIntroEnabled ? "/audio/welcome-to-the-heartverse.mp3" : undefined} playingMusic={isPlaying} suspend={warpActive || ambientSuspended} />
       <SkyboxVideo
         brightness={0.95}
         srcWebm={sky.webm}
         srcMp4={sky.mp4}
         videoKey={sky.key}
         flySignal={flySignal}
+        allowWarp={allowWarp}
         offsetY="-1vh"
         onFlyStart={() => { setWarpActive(true); }}
         onFlyEnd={() => {
           setWarpActive(false);
+          setAllowWarp(false);
           if (nextSky) { setSky(nextSky); setNextSky(null); }
+          // If this warp was due to Boost (not track selection), prepare to land on home
+          if (!pendingTrackPlay) setPendingHomePower(true);
+        }}
+        onBasePlaying={() => {
+          if (pendingHomePower) {
+            setPendingHomePower(false);
+            // Now that space.mp4 is playing, enable homepage ambient + VO and power HUD
+            setHomeMode(true);
+            // For boost flow, do NOT play join-alien or welcome VO; just space-music
+            setHomeIntroEnabled(false);
+            setUserSelected(false);
+            setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
+            // Do not power HUD via join-alien here; ambient resumes automatically
+          }
+          if (pendingTrackPlay) {
+            // Selected a song: stop warp overlay and allow MediaDock to handle playback
+            setPendingTrackPlay(false);
+            setAllowWarp(false);
+            // Start the selected track now that its sky video is playing
+            setPlaySignal((n) => n + 1);
+          }
         }}
       />
 
@@ -109,9 +194,13 @@ export default function DashboardApp() {
         POS={POS}
         playing={isPlaying}
         onLaunch={() => {
-          setToggleSignal((n)=> n + 1);
-          if (isPlaying) setTimeout(() => setFlySignal((n) => n + 1), 300);
-          else setFlySignal((n) => n + 1);
+          // Boost: warp overlay + sound, then land on CHXNDLER homepage
+          // Stop track playback so ambient can play on homepage
+          try { const a = document.querySelector('audio[data-audio-player="1"]'); if (a) a.pause(); } catch {}
+          setIsPlaying(false);
+          setAllowWarp(true);
+          setNextSky(SPACE_SKY);
+          setFlySignal((n) => n + 1);
         }}
       />
       <Slot rect={DASHBOARD.joinBox}>
@@ -130,87 +219,90 @@ export default function DashboardApp() {
         <div className="relative h-full w-full p-0" style={{ overflow: 'visible' }} suppressHydrationWarning>
           {showHUD && process.env.NEXT_PUBLIC_HOLOHUD !== '1' ? (
             <div className="absolute inset-0 p-0" suppressHydrationWarning>
-              <HUDPanel inConsole songs={hudSongs} onSongChange={onSongChange} track={curTrack} currentId={curTrack?.slug} playing={isPlaying} beamOnly={beamOnly} beamEnabled={beamEnabled} />
+              <HUDPanel
+                inConsole
+                songs={hudSongs}
+                onSongChange={onSongChange}
+                track={curTrack}
+                currentId={homeMode ? undefined : curTrack?.slug}
+                playing={isPlaying}
+                beamOnly={beamOnly}
+                beamEnabled={beamEnabled}
+              />
             </div>
           ) : null}
           {/* Power button below the beam base */}
             <button
               type="button"
               className="pointer-events-auto power-btn"
-              onClick={async () => {
-                if (powerBusy) return;
-                setPowerBusy(true);
-                try {
-                  const a = powerRef.current;
-                  if (a) { a.currentTime = 0; a.volume = 0.9; await a.play().catch(()=>{}); }
-                } catch {}
-                const isOff = !beamEnabled && !showHUD;
-                if (isOff) {
-                  // Mount HUD, keep content hidden, beam off until SFX done
-                  setShowHUD(true);
-                  setBeamOnly(true);
-                  // Delay to let audio play first
-                  setTimeout(() => {
-                    setBeamEnabled(true); // fade beam in
-                    // after beam in, fade content in
-                    setTimeout(() => { setBeamOnly(false); setPowerBusy(false); }, 360);
-                  }, 240);
-                } else {
-                  // Fade content out, then beam out, then unmount
-                  setBeamOnly(true);
-                  setTimeout(() => {
-                    setBeamEnabled(false);
-                    setTimeout(() => { setShowHUD(false); setPowerBusy(false); }, 220);
-                  }, 260);
-                }
-              }}
+              onMouseEnter={() => { try { const a = powerHoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
+              onClick={() => triggerHudPower(undefined)}
               aria-label="Power"
               title="Power"
               style={{
-                position: 'absolute',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                top: 'calc(100% + 84px)',
-                width: 42, height: 42, borderRadius: 9999, zIndex: 95,
+                position: 'fixed',
+                left: 'calc(50% - 36px)', // slightly left of center
+                top: 'calc(50vh + 24px)', // nudged a little more down
+                width: 32, height: 32, borderRadius: 9999, zIndex: 95,
               }}
             >
               <span className="sr-only">Toggle HUD Power</span>
+              <span className="power-glyph" aria-hidden>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M12 3v7" strokeLinecap="round" />
+                  <path d="M6.7 6.7a7 7 0 1 0 9.9 0" fill="none" strokeLinecap="round" />
+                </svg>
+              </span>
             </button>
             <audio ref={powerRef} src="/audio/join-alien.mp3" preload="auto" playsInline />
+            <audio ref={powerHoverRef} src="/audio/hover.mp3" preload="auto" playsInline />
+            {/* Click-to-activate overlay on opening screen: turn HUD on when area is tapped */}
+            {!showHUD ? (
+              <button
+                type="button"
+                className="absolute inset-0 pointer-events-auto"
+                aria-label="Activate HUD"
+                title="Activate HUD"
+                style={{ background:'transparent', zIndex: 30, cursor:'pointer' }}
+                onClick={() => { setHomeMode(true); setHomeIntroEnabled(false); setUserSelected(false); setLinks({ spotify: LINKS.spotify, apple: LINKS.apple }); triggerHudPower(true); }}
+              />
+            ) : null}
             <style jsx>{`
               .power-btn{
+                /* Solid, filled, single glowing cyan button with 3D bevel */
                 background:
-                  radial-gradient(60% 60% at 50% 40%, rgba(255,255,255,.10), rgba(255,255,255,0) 60%),
-                  radial-gradient(closest-side, rgba(25,227,255,.30), rgba(0,0,0,0) 70%),
-                  radial-gradient(120% 120% at 50% 60%, #0b0f12, #000);
-                border:1px solid rgba(25,227,255,.55);
+                  radial-gradient(120% 120% at 50% 0%, rgba(255,255,255,.35), rgba(255,255,255,0) 58%),
+                  linear-gradient(180deg, #33ECFF, #0FD5F1);
+                border: none;
                 box-shadow:
-                  0 8px 16px rgba(0,0,0,.55),
-                  0 0 18px rgba(25,227,255,.85),
-                  0 0 48px rgba(25,227,255,.55),
-                  inset 0 2px 0 rgba(255,255,255,.35),
-                  inset 0 -6px 14px rgba(0,0,0,.6),
-                  inset 0 0 22px rgba(19,180,220,.35);
+                  0 6px 14px rgba(0,0,0,.45),                     /* drop */
+                  0 0 24px rgba(25,227,255,.95), 0 0 64px rgba(25,227,255,.55), /* glow */
+                  inset 0 2px 0 rgba(255,255,255,.5),              /* top bevel */
+                  inset 0 -6px 12px rgba(0,0,0,.25);               /* bottom shade */
                 transition: transform .12s ease, box-shadow .18s ease, filter .18s ease;
-                display:grid; place-items:center; color:#19E3FF; font-weight:800; font-size:14px;
-                animation: powerPulse 2s ease-in-out infinite;
+                display:grid; place-items:center; font-weight:800; font-size:14px;
+                animation: powerPulse 2.2s ease-in-out infinite;
               }
-              .power-btn::before{ content:""; position:absolute; inset:18%; border-radius:9999px; box-shadow: inset 0 0 0 2px rgba(25,227,255,.28), inset 0 0 24px rgba(25,227,255,.28); }
-              .power-btn:hover{ transform: scale(1.06); box-shadow: 0 8px 18px rgba(0,0,0,.6), 0 0 26px rgba(25,227,255,1), 0 0 72px rgba(25,227,255,.7), inset 0 2px 0 rgba(255,255,255,.5); }
+              /* glossy top highlight */
+              .power-btn::before{ content:""; position:absolute; left:22%; right:22%; top:14%; height:28%; border-radius:9999px; background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0)); filter: blur(1px); pointer-events:none; }
+              .power-glyph{ display:inline-flex; align-items:center; justify-content:center; color:#fff; filter: drop-shadow(0 0 8px rgba(25,227,255,1)) drop-shadow(0 0 26px rgba(25,227,255,.85)) drop-shadow(0 0 44px rgba(25,227,255,.55)); }
+              .power-btn:hover{ transform: scale(1.06); box-shadow: 0 8px 16px rgba(0,0,0,.48), 0 0 28px rgba(25,227,255,1), 0 0 86px rgba(25,227,255,.85), 0 0 140px rgba(25,227,255,.6), inset 0 2px 0 rgba(255,255,255,.55), inset 0 -6px 12px rgba(0,0,0,.28); }
               .power-btn:active{ transform: scale(.96); }
-              @keyframes powerPulse{ 0%{ filter: brightness(1)} 50%{ filter: brightness(1.06)} 100%{ filter: brightness(1)} }
+              @keyframes powerPulse{ 0%{ filter: brightness(1)} 50%{ filter: brightness(1.08)} 100%{ filter: brightness(1)} }
             `}</style>
         </div>
         <div className="hidden">
           <MediaDock
             onSkyChange={(webm, mp4, key) => setNextSky({ webm, mp4, key })}
-            onPlayingChange={(p) => setIsPlaying(p)}
-            onTrackChange={(t) => { setLinks({ spotify: t.spotify || "", apple: t.apple || "" }); setCurTrack(t); }}
+        onPlayingChange={(p) => { setIsPlaying(p); if (p) setAmbientSuspended(false); }}
+            onTrackChange={(t) => { setCurTrack(t); if (userSelected) { setLinks({ spotify: t.spotify || LINKS.spotify, apple: t.apple || LINKS.apple }); } else { setLinks({ spotify: LINKS.spotify, apple: LINKS.apple }); } }}
             playSignal={playSignal}
             toggleSignal={toggleSignal}
             showHUDPlay={false}
             index={channelIdx}
             onIndexChange={(i)=> setChannelIdx(i)}
+            autoPlayOnIndex={false}
+            unlockPlays={false}
           />
         </div>
       </Slot>
