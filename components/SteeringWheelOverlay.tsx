@@ -113,11 +113,13 @@ export default function SteeringWheelOverlay({
           </svg>
         );
         const TikTokIcon = (
-          <svg viewBox="0 0 256 256" width={iconSize} height={iconSize} aria-hidden>
-            <g transform="translate(8,-6)"><path fill="#69C9D0" d="M120 32h40c2 26 21 47 46 52v32c-18-.4-36-5.9-52-15.7V184c0 35.3-28.7 64-64 64s-64-28.7-64-64c0-34.2 26.7-62.1 60.6-63.9 5.6-.3 11.2.2 16.7 1.4v32c-5.2-1.9-10.7-2.7-16.2-2.3-16.7 1.1-30.2 14.9-30.8 31.6-.7 18.5 14.1 33.6 32.6 33.6s32-14.3 32-32.8V32Z"/></g>
-            <g transform="translate(-8,8)"><path fill="#EE1D52" d="M120 32h40c2 26 21 47 46 52v32c-18-.4-36-5.9-52-15.7V184c0 35.3-28.7 64-64 64s-64-28.7-64-64c0-34.2 26.7-62.1 60.6-63.9 5.6-.3 11.2.2 16.7 1.4v32c-5.2-1.9-10.7-2.7-16.2-2.3-16.7 1.1-30.2 14.9-30.8 31.6-.7 18.5 14.1 33.6 32.6 33.6s32-14.3 32-32.8V32Z"/></g>
-            <path fill="#FFFFFF" d="M120 32h40c2 26 21 47 46 52v32c-18-.4-36-5.9-52-15.7V184c0 35.3-28.7 64-64 64s-64-28.7-64-64c0-34.2 26.7-62.1 60.6-63.9 5.6-.3 11.2.2 16.7 1.4v32c-5.2-1.9-10.7-2.7-16.2-2.3-16.7 1.1-30.2 14.9-30.8 31.6-.7 18.5 14.1 33.6 32.6 33.6s32-14.3 32-32.8V32Z"/>
-          </svg>
+          <span style={{ filter: 'drop-shadow(0 0 10px #FFFFFF) drop-shadow(0 0 22px #FFFFFF) drop-shadow(0 0 46px #FFFFFF)', mixBlendMode: 'screen' as any }}>
+            <svg viewBox="0 0 256 256" width={iconSize} height={iconSize} aria-hidden>
+              <g transform="translate(8,-6)"><path fill="#69C9D0" d="M120 32h40c2 26 21 47 46 52v32c-18-.4-36-5.9-52-15.7V184c0 35.3-28.7 64-64 64s-64-28.7-64-64c0-34.2 26.7-62.1 60.6-63.9 5.6-.3 11.2.2 16.7 1.4v32c-5.2-1.9-10.7-2.7-16.2-2.3-16.7 1.1-30.2 14.9-30.8 31.6-.7 18.5 14.1 33.6 32.6 33.6s32-14.3 32-32.8V32Z"/></g>
+              <g transform="translate(-8,8)"><path fill="#EE1D52" d="M120 32h40c2 26 21 47 46 52v32c-18-.4-36-5.9-52-15.7V184c0 35.3-28.7 64-64 64s-64-28.7-64-64c0-34.2 26.7-62.1 60.6-63.9 5.6-.3 11.2.2 16.7 1.4v32c-5.2-1.9-10.7-2.7-16.2-2.3-16.7 1.1-30.2 14.9-30.8 31.6-.7 18.5 14.1 33.6 32.6 33.6s32-14.3 32-32.8V32Z"/></g>
+              <path fill="#FFFFFF" d="M120 32h40c2 26 21 47 46 52v32c-18-.4-36-5.9-52-15.7V184c0 35.3-28.7 64-64 64s-64-28.7-64-64c0-34.2 26.7-62.1 60.6-63.9 5.6-.3 11.2.2 16.7 1.4v32c-5.2-1.9-10.7-2.7-16.2-2.3-16.7 1.1-30.2 14.9-30.8 31.6-.7 18.5 14.1 33.6 32.6 33.6s32-14.3 32-32.8V32Z"/>
+            </svg>
+          </span>
         );
         const YouTubeIcon = (
           <svg viewBox="0 0 24 24" width={iconSize} height={iconSize} fill="currentColor">
@@ -129,9 +131,17 @@ export default function SteeringWheelOverlay({
             <path d="M12 1.5a10.5 10.5 0 100 21 10.5 10.5 0 000-21zm4.8 15.2a.8.8 0 01-1.1.3c-3-1.8-6.9-2.2-11.4-1.1a.8.8 0 11-.4-1.6c4.9-1.2 9.2-.7 12.6 1.3.4.2.6.7.3 1.1zm1.5-3.2a1 1 0 01-1.4.4c-3.4-2-8.7-2.6-12.8-1.3a1 1 0 11-.6-1.9c4.8-1.4 10.7-.8 14.7 1.6.5.3.7.9.4 1.4zm.2-3.5c-3.9-2.3-10.5-2.5-14.3-1.4a1.2 1.2 0 01-.7-2.2c4.4-1.4 11.8-1.2 16.4 1.5a1.2 1.2 0 01-1.4 2.1z"/>
           </svg>
         );
-        const AppleIcon = (
-          <svg viewBox="0 0 24 24" width={iconSize} height={iconSize} fill="currentColor">
-            <path d="M16.36 2.5c-.97.06-2.1.57-2.77 1.23-.6.6-1.11 1.53-.91 2.49 1.04.03 2.1-.55 2.75-1.21.62-.63 1.14-1.56.93-2.51zM20.5 17.2c-.46 1.06-.68 1.53-1.27 2.46-.83 1.28-2 2.87-3.45 2.9-1.29.03-1.63-.84-3.39-.84-1.75 0-2.14.82-3.42.87-1.37.05-2.41-1.38-3.25-2.66-1.77-2.74-3.13-7.73-1.31-11.11.9-1.73 2.52-2.83 4.33-2.86 1.35-.03 2.63.9 3.39.9.76 0 2.2-1.12 3.71-.95.63.03 2.4.26 3.54 2-3.11 1.72-2.61 6.18.52 7.29-.32.8-.47 1.2-.69 1.9z"/>
+        // Simple Apple Music-style note glyph (approximation)
+        const AppleMusicIcon = (
+          <svg viewBox="0 0 24 24" width={iconSize} height={iconSize} fill="none" aria-hidden>
+            <defs>
+              <linearGradient id="amg" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#FA2D48"/>
+                <stop offset="100%" stopColor="#FF4D7E"/>
+              </linearGradient>
+            </defs>
+            <path d="M16.8 3.5v9.1c0 .9-.6 1.7-1.5 1.9l-5 1.2a2 2 0 00-1.5 1.9c0 1.1 1 2 2.1 1.8l.1-.02a2 2 0 001.4-1.9V11l6.4-1.6V6.3c0-1.2-1.1-2.1-2.3-1.8l-.7.2z" fill="url(#amg)"/>
+            <circle cx="9" cy="18.6" r="2" fill="#ffffff" fillOpacity="0.85"/>
           </svg>
         );
         return (
@@ -150,16 +160,20 @@ export default function SteeringWheelOverlay({
             <div style={{ opacity: showUI ? 1 : 0, transition: 'opacity 300ms ease', pointerEvents: showUI ? 'auto' : 'none' }}>
               <HoloHubMenu
                 items={[
-                LINKS.instagram ? { id: 'ig', label: 'Instagram', href: LINKS.instagram, icon: InstagramIcon, color: '#FC54AF' } : null,
-                LINKS.tiktok ? { id: 'tt', label: 'TikTok', href: LINKS.tiktok, icon: TikTokIcon, color: '#38B6FF' } : null,
-                LINKS.youtube ? { id: 'yt', label: 'YouTube', href: LINKS.youtube, icon: YouTubeIcon, color: '#FF3B30' } : null,
-                LINKS.spotify ? { id: 'sp', label: 'Spotify', href: LINKS.spotify, icon: SpotifyIcon, color: '#1DB954' } : null,
-                LINKS.apple ? { id: 'am', label: 'Apple Music', href: LINKS.apple, icon: AppleIcon, color: '#FF3B30' } : null,
+                LINKS.instagram ? { id: 'ig', label: 'Instagram', href: LINKS.instagram, icon: InstagramIcon, color: '#E1306C', size: 66 } : null,
+                LINKS.tiktok ? { id: 'tt', label: 'TikTok', href: LINKS.tiktok, icon: TikTokIcon, color: '#69C9D0', size: 64 } : null,
+                LINKS.youtube ? { id: 'yt', label: 'YouTube', href: LINKS.youtube, icon: YouTubeIcon, color: '#FF0000', size: 66 } : null,
+                LINKS.spotify ? { id: 'sp', label: 'Spotify', href: LINKS.spotify, icon: SpotifyIcon, color: '#1DB954', size: 72 } : null,
+                LINKS.apple ? { id: 'am', label: 'Apple Music', href: LINKS.apple, icon: AppleMusicIcon, color: '#FA2D48', size: 66 } : null,
               ].filter(Boolean) as any}
-                radius={96}
+                radius={108}
                 hubColor="#F2EF1D"
                 itemSize={68}
                 hubSize={84}
+                // Explicit placement by clock position:
+                // 12 o'clock: Spotify (-90deg), 2 o'clock: Apple (-30deg),
+                // 4 o'clock: Instagram (30deg), 5 o'clock: TikTok (60deg), 7 o'clock: YouTube (120deg)
+                angles={{ sp: -90, am: -30, ig: 30, tt: 60, yt: 120 }}
               />
             </div>
           </div>
@@ -184,12 +198,15 @@ export default function SteeringWheelOverlay({
                 ? `calc(50vw - ${vs/2}px + ${jdx}px)`
                 : `calc(${(pp.leftVw + (vconf.offsetVw || 0))}vw - ${vs/2}px + ${jdx}px)`,
               zIndex: 92,
-              pointerEvents: 'auto',
+              // Prevent any interaction before UI reveal
+              pointerEvents: showUI ? 'auto' : 'none',
             }}
           >
-            <div style={{ opacity: showUI ? 1 : 0, transition: 'opacity 300ms ease', pointerEvents: showUI ? 'auto' : 'none' }}>
-              <HoloJoinPopout size={joinSize} label="Join" iconSrc="/elements/join.png" hubColor="#FC54AF" panelWidth={320} panelSide="above" />
-            </div>
+            {showUI ? (
+              <div style={{ opacity: 1, transition: 'opacity 300ms ease', pointerEvents: 'auto' }}>
+                <HoloJoinPopout size={joinSize} label="Join" iconSrc="/elements/join.png" hubColor="#FC54AF" panelWidth={244} panelSide="above" />
+              </div>
+            ) : null}
           </div>
         );
       })()}
@@ -266,7 +283,7 @@ export default function SteeringWheelOverlay({
           box-shadow: 0 0 36px rgba(25,227,255,.65), 0 0 80px rgba(25,227,255,.45);
           animation: startHalo 2s ease-in-out infinite;
         }
-        .chx-icon{ width: 82%; height: 82%; object-fit: contain; display:block; will-change: transform, filter;
+        .chx-icon{ width: 92%; height: 92%; object-fit: contain; display:block; will-change: transform, filter;
           filter: saturate(1.25) brightness(1.1) drop-shadow(0 0 8px #19E3FF) drop-shadow(0 0 22px #19E3FF) drop-shadow(0 0 42px #19E3FF);
           animation: startPulse 2s ease-in-out infinite;
         }

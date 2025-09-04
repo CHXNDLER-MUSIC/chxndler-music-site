@@ -8,7 +8,7 @@ export default function HoloJoinPopout({
   hubColor = "#FC54AF",
   label = "Join",
   iconSrc = "/elements/join.png",
-  panelWidth = 380,
+  panelWidth = 244,
   panelSide = "left", // left or above relative to the button
 }: {
   size?: number;
@@ -79,6 +79,7 @@ export default function HoloJoinPopout({
             src={iconSrc}
             alt=""
             className="hub-icon"
+            style={{ width: Math.round(size*0.88), height: Math.round(size*0.88) }}
             onError={(e)=>{ const img = e.currentTarget as HTMLImageElement; img.onerror = null; img.src = "/elements/chxndler.png"; }}
           />
         </span>
@@ -136,15 +137,16 @@ export default function HoloJoinPopout({
             drop-shadow(0 0 90px ${hubColor}); }
 
         .panel{ position:absolute; pointer-events:${open ? 'auto' : 'none'}; opacity:0; transition: opacity 200ms ease, transform 220ms cubic-bezier(0.2,0.8,0.2,1); }
-        .panel.left{ right: calc(100% + 10px); top: 50%; transform-origin: right center; transform: translateY(6px) scale(0.98); }
+        .panel.left{ right: calc(100% + 10px); top: 50%; transform-origin: right center; transform: translate(-24px, 12px) scale(0.98); }
         .panel.above{ bottom: calc(100% + 10px); left: 50%; transform-origin: center bottom; transform: translate(-50%, 6px) scale(0.98); }
-        .panel.open.left{ opacity:1; transform: translateY(0) scale(1); }
+        .panel.open.left{ opacity:1; transform: translate(-24px, 6px) scale(1); }
         .panel.open.above{ opacity:1; transform: translate(-50%, 0) scale(1); }
         .panel-inner{ border-radius: 16px; padding: 12px; color:#fff; background:
+            linear-gradient(180deg, ${hubColor}44, ${hubColor}26),
             radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
             linear-gradient(180deg, rgba(0,0,0,.65), rgba(0,0,0,.55));
-          border:1px solid rgba(255,255,255,.2);
-          box-shadow: 0 18px 36px rgba(0,0,0,.5), 0 0 34px ${hubColor}55, 0 0 70px ${hubColor}33, inset 0 2px 0 rgba(255,255,255,.2), inset 0 -6px 14px rgba(0,0,0,.6);
+          border:1px solid ${hubColor}66;
+          box-shadow: 0 18px 36px rgba(0,0,0,.5), 0 0 42px ${hubColor}AA, 0 0 100px ${hubColor}55, inset 0 2px 0 rgba(255,255,255,.2), inset 0 -6px 14px rgba(0,0,0,.6);
           backdrop-filter: blur(10px);
         }
         @keyframes holoPulse { 0%,100%{ filter: brightness(1) } 50%{ filter: brightness(1.08) } }

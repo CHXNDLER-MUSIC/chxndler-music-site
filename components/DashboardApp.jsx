@@ -52,6 +52,7 @@ export default function DashboardApp() {
   const trackPlayTimerRef = React.useRef(undefined);
   const [ambientSuspended, setAmbientSuspended] = useState(false);
   const [firstStartDone, setFirstStartDone] = useState(false);
+  const welcomeOnStartRef = React.useRef(false); // deprecated, kept to avoid refactor; always false
   const SPACE_SKY = { webm: "/skies/space.webm", mp4: "/skies/space.mp4", key: "space" };
 
   // Centralized HUD power sequencing: play SFX then run beam/HUD fades
@@ -64,31 +65,47 @@ export default function DashboardApp() {
     try {
       if (a) {
         a.currentTime = 0; a.volume = 0.9; a.play().catch(()=>{});
-        // Suspend ambient/intro until join-alien finishes (for clean timing)
-        setAmbientSuspended(true);
+        // Reveal cockpit UI buttons (power/comms/join) as soon as SFX starts
+        // so they "come in when the sound plays"
+        if (turningOn) {
+          setShowOverlayUI(true);
+          setShowPowerBtn(true);
+        }
+        // Do NOT suspend ambient; allow join-alien SFX to play over space-music
         a.onended = () => {
           try { a.onended = null; } catch {}
-          setAmbientSuspended(false);
+          // Stop any welcome VO if it was queued/playing and do not play it
+          try {
+            const intro = document.querySelector('audio[data-intro="1"]');
+            if (intro && typeof (intro).pause === 'function') {
+              (intro).pause();
+              try { (intro).currentTime = 0; } catch {}
+            }
+          } catch {}
+          setHomeIntroEnabled(false);
           if (turningOn) {
             // 2) Start beam after SFX
             setBeamEnabled(true);
             // 3) Fade HUD in shortly after beam begins (~150–180ms)
             setTimeout(() => { setBeamOnly(false); setPowerBusy(false); }, 170);
-            // Reveal cockpit UI buttons (power/comms/join) after SFX finishes
-            setShowOverlayUI(true);
-            setShowPowerBtn(true);
           }
         };
         // Fallback if ended doesn't fire
         setTimeout(() => {
-          setAmbientSuspended(false);
+          // Stop any welcome VO and ensure it's disabled
+          try {
+            const intro = document.querySelector('audio[data-intro="1"]');
+            if (intro && typeof (intro).pause === 'function') {
+              (intro).pause();
+              try { (intro).currentTime = 0; } catch {}
+            }
+          } catch {}
+          setHomeIntroEnabled(false);
           if (turningOn) {
             setBeamEnabled(true);
             setTimeout(() => { setBeamOnly(false); setPowerBusy(false); }, 170);
-            setShowOverlayUI(true);
-            setShowPowerBtn(true);
           }
-        }, 1500);
+        }, 2600);
       }
     } catch {}
 
@@ -101,7 +118,8 @@ export default function DashboardApp() {
       // 1) Mount HUD hidden
       setShowHUD(true);
       setBeamOnly(true);
-      // Beam/HUD will start after SFX end (handled above)
+      // Start the beam immediately on power press (HUD still fades after SFX timing)
+      try { setBeamEnabled(true); } catch {}
     } else {
       // Powering off: play SFX immediately (done above), then fade beam out now,
       // and fade HUD out shortly after for a snappy close.
@@ -155,6 +173,14 @@ export default function DashboardApp() {
       setAllowWarp(true);
       setNextSky(skyFor(tracks[idx].slug));
       setFlySignal((n) => n + 1);
+      // Extra safety: schedule a fallback play signal in case base video 'playing' isn't fired (same-sky key or race)
+      try {
+        if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
+        trackPlayTimerRef.current = window.setTimeout(() => {
+          setPlaySignal((n) => n + 1);
+          trackPlayTimerRef.current = undefined;
+        }, 1850);
+      } catch {}
     }
   }
 
@@ -198,7 +224,15 @@ export default function DashboardApp() {
         flySignal={flySignal}
         allowWarp={allowWarp}
         offsetY="-1vh"
-        onFlyStart={() => { setWarpActive(true); }}
+        onFlyStart={() => {
+          setWarpActive(true);
+          // Stop any currently playing track as soon as warp begins
+          try {
+            const a = document.querySelector('audio[data-audio-player="1"]');
+            if (a) a.pause();
+          } catch {}
+          setIsPlaying(false);
+        }}
         onFlyEnd={() => {
           setWarpActive(false);
           setAllowWarp(false);
@@ -206,12 +240,13 @@ export default function DashboardApp() {
           // If this warp was due to Start (not track selection), prepare to land on home
           if (!pendingTrackPlay) setPendingHomePower(true);
           else {
-            // Fallback: if base video playing event doesn't fire, kick off audio after a short delay
+            // Fallback: if base video 'playing' event doesn't fire (same-sky key or race),
+            // kick off audio after the lightspeed overlay has fully cleared.
             if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); }
             trackPlayTimerRef.current = window.setTimeout(() => {
               setPlaySignal((n) => n + 1);
               trackPlayTimerRef.current = undefined;
-            }, 1400);
+            }, 1850);
           }
         }}
         onBasePlaying={() => {
@@ -219,9 +254,9 @@ export default function DashboardApp() {
             setPendingHomePower(false);
             // Now that space.mp4 is playing
             setHomeMode(true);
-            // Play welcome VO only on the first time start is pressed
-            setHomeIntroEnabled(!firstStartDone);
-            if (!firstStartDone) setFirstStartDone(true);
+            // Do not play welcome VO after Start; keep it disabled
+            welcomeOnStartRef.current = false;
+            setHomeIntroEnabled(false);
             setUserSelected(false);
             setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
             // Begin HUD power sequence: plays join-alien SFX, then beam fade-in, then HUD fade-in
@@ -261,11 +296,12 @@ export default function DashboardApp() {
 
       <Slot
         rects={[
-          { minWidth: 420, maxWidth: 460, top: -1.2, left: 26.5, width: 52, height: 14, orientation: 'portrait' },
-          { maxWidth: 419, top: 0.0, left: 27, width: 51, height: 14, orientation: 'portrait' },
-          { minWidth: 480, maxWidth: 740, top: -1.2, left: 25, width: 58, height: 14, orientation: 'landscape' },
-          { minWidth: 741, maxWidth: 1024, top: -0.8, left: 24.5, width: 54, height: 15 },
-          { minWidth: 1025, top: -1.2, left: 24, width: 56, height: 15 },
+          // Widen HUD even more: extend ~5vw per side vs original
+          { minWidth: 420, maxWidth: 460, top: -1.2, left: 21.5, width: 62, height: 14, orientation: 'portrait' },
+          { maxWidth: 419, top: 0.0, left: 22, width: 61, height: 14, orientation: 'portrait' },
+          { minWidth: 480, maxWidth: 740, top: -1.2, left: 20, width: 68, height: 14, orientation: 'landscape' },
+          { minWidth: 741, maxWidth: 1024, top: -0.8, left: 19.5, width: 64, height: 15 },
+          { minWidth: 1025, top: -1.2, left: 19, width: 66, height: 15 },
         ]}
       >
         <div className="relative h-full w-full p-0" style={{ overflow: 'visible' }} suppressHydrationWarning>
@@ -289,14 +325,14 @@ export default function DashboardApp() {
                 type="button"
                 className="pointer-events-auto power-btn"
                 onMouseEnter={() => { try { const a = powerHoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
-                onClick={() => triggerHudPower(undefined)}
+                onClick={() => { try { sfx.play('join', 0.9); } catch {}; triggerHudPower(undefined); }}
                 aria-label="Power"
                 title="Power"
                 style={{
                   position: 'fixed',
-                  left: 'calc(50% - 52px)', // slightly left of center (adjusted for larger size)
-                  top: 'calc(50vh + 24px)', // nudged a little more down
-                  width: 48, height: 48, borderRadius: 9999, zIndex: 95,
+                  left: 'calc(50% - 30px)', // recenter for slightly smaller size
+                  top: 'calc(50vh + 78px)', // moved down slightly
+                  width: 60, height: 60, borderRadius: 9999, zIndex: 95,
                   opacity: showOverlayUI ? 1 : 0,
                   transition: 'opacity 300ms ease',
                   pointerEvents: showOverlayUI ? 'auto' : 'none',
@@ -304,10 +340,7 @@ export default function DashboardApp() {
               >
                 <span className="sr-only">Toggle HUD Power</span>
                 <span className="power-glyph" aria-hidden>
-                  <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M12 3v7" strokeLinecap="round" />
-                    <path d="M6.7 6.7a7 7 0 1 0 9.9 0" fill="none" strokeLinecap="round" />
-                  </svg>
+                  <img src="/elements/power.png" alt="" className="power-icon" onError={(e)=>{ try { const img = e.currentTarget; img.onerror = null; img.src = '/elements/lighting.png'; } catch {} }} />
                 </span>
               </button>
             ) : null}
@@ -329,15 +362,15 @@ export default function DashboardApp() {
                 position: relative;
                 display:grid; place-items:center;
                 border-radius:9999px;
-                /* Hologram ring (blue) */
+                /* Match comms/join hologram style, tinted blue */
                 background:
                   radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
                   linear-gradient(180deg, rgba(8,16,26,.45), rgba(0,0,0,.38));
                 border:1px solid rgba(255,255,255,.14);
                 box-shadow:
                   0 14px 28px rgba(0,0,0,.6),
-                  0 0 38px #19E3FFCC,
-                  0 0 110px #19E3FF88,
+                  0 0 30px #19E3FF88,
+                  0 0 80px #19E3FF55,
                   inset 0 1px 0 rgba(255,255,255,.22),
                   inset 0 -6px 14px rgba(0,0,0,.6);
                 backdrop-filter: blur(8px);
@@ -345,9 +378,9 @@ export default function DashboardApp() {
                 transition: transform .15s ease, box-shadow .2s ease, filter .18s ease;
                 animation: powerPulse 2.6s ease-in-out infinite;
               }
-              .power-btn::before{ /* outer halo */
-                content:""; position:absolute; inset:-20%; border-radius:9999px; pointer-events:none;
-                box-shadow: 0 0 56px #19E3FFFF, 0 0 150px #19E3FF99;
+              .power-btn::before{ /* outer halo to match hubs */
+                content:""; position:absolute; inset:-1%; border-radius:9999px; pointer-events:none;
+                box-shadow: 0 0 46px #19E3FFCC, 0 0 86px #19E3FF88;
               }
               .power-btn::after{ /* sheen + scanlines */
                 content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none; mix-blend-mode:screen; opacity:.6;
@@ -357,13 +390,35 @@ export default function DashboardApp() {
                 transform: translateX(-130%);
                 animation: powerSheen 3s ease-in-out infinite;
               }
-              .power-glyph{ display:inline-flex; align-items:center; justify-content:center; color:#fff; filter: drop-shadow(0 0 16px #19E3FF) drop-shadow(0 0 46px #19E3FF); }
+              .power-glyph{ position:relative; display:inline-flex; align-items:center; justify-content:center; color:#fff;
+                /* Blue glow coming through the icon */
+                mix-blend-mode: screen;
+                filter: brightness(1.1) saturate(1.2)
+                  drop-shadow(0 0 18px #19E3FF)
+                  drop-shadow(0 0 42px #19E3FF);
+              }
+              .power-icon{ width: 86%; height: 86%; object-fit: contain; display:block; filter:
+                saturate(1.1) brightness(1.05)
+                drop-shadow(0 0 16px #19E3FF)
+                drop-shadow(0 0 36px #19E3FF);
+              }
+              /* Inner cyan glow masked to the power symbol shape */
+              .power-glyph::before{
+                content:""; position:absolute; inset:14%; pointer-events:none; mix-blend-mode:screen;
+                background: radial-gradient(closest-side, #19E3FFCC, #19E3FF55 60%, transparent 78%);
+                filter: blur(6px) saturate(1.15) brightness(1.05);
+                -webkit-mask-image: url('/elements/power.png');
+                mask-image: url('/elements/power.png');
+                -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+                -webkit-mask-position: center; mask-position: center;
+                -webkit-mask-size: contain; mask-size: contain;
+              }
               .power-btn:hover{
                 transform: scale(1.07);
                 box-shadow:
                   0 18px 34px rgba(0,0,0,.68),
-                  0 0 72px #19E3FFFF,
-                  0 0 180px #19E3FFCC,
+                  0 0 56px #19E3FF,
+                  0 0 140px #19E3FFAA,
                   inset 0 1px 0 rgba(255,255,255,.28),
                   inset 0 -8px 18px rgba(0,0,0,.65);
                 filter: brightness(1.08) saturate(1.15);

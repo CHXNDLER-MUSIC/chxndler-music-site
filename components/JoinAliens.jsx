@@ -44,7 +44,7 @@ export default function JoinAliens() {
         placeholder="Email"
         disabled={status === "loading" || status === "ok"}
         aria-disabled={status === "loading" || status === "ok"}
-        className="w-full max-w-[260px] mx-auto rounded-xl bg-black/35 backdrop-blur-md px-3 py-0.5 text-white placeholder-white/80 outline-none border-2 border-[#19E3FF]/80 shadow-[0_0_30px_rgba(25,227,255,0.55),_0_0_60px_rgba(25,227,255,0.35)] focus:ring-4 focus:ring-[#19E3FF] focus:shadow-[0_0_50px_rgba(25,227,255,0.85),_0_0_110px_rgba(25,227,255,0.55)] disabled:opacity-60 disabled:cursor-not-allowed text-sm"
+        className="w-full max-w-[220px] mx-auto rounded-xl bg-black/35 backdrop-blur-md px-3 py-0.5 text-white placeholder-white/80 outline-none border-2 border-[#FC54AF]/80 shadow-[0_0_30px_rgba(252,84,175,0.55),_0_0_60px_rgba(252,84,175,0.35)] focus:ring-4 focus:ring-[#FC54AF] focus:shadow-[0_0_50px_rgba(252,84,175,0.85),_0_0_110px_rgba(252,84,175,0.55)] disabled:opacity-60 disabled:cursor-not-allowed text-sm"
       />
 
       <label className="sr-only" htmlFor="join-phone">Phone (optional)</label>
@@ -57,7 +57,7 @@ export default function JoinAliens() {
         placeholder="Phone"
         disabled={status === "loading" || status === "ok"}
         aria-disabled={status === "loading" || status === "ok"}
-        className="w-full max-w-[260px] mx-auto rounded-xl bg-black/35 backdrop-blur-md px-3 py-0.5 text-white placeholder-white/80 outline-none border-2 border-[#19E3FF]/80 shadow-[0_0_30px_rgba(25,227,255,0.55),_0_0_60px_rgba(25,227,255,0.35)] focus:ring-4 focus:ring-[#19E3FF] focus:shadow-[0_0_50px_rgba(25,227,255,0.85),_0_0_110px_rgba(25,227,255,0.55)] disabled:opacity-60 disabled:cursor-not-allowed text-sm"
+        className="w-full max-w-[220px] mx-auto rounded-xl bg-black/35 backdrop-blur-md px-3 py-0.5 text-white placeholder-white/80 outline-none border-2 border-[#FC54AF]/80 shadow-[0_0_30px_rgba(252,84,175,0.55),_0_0_60px_rgba(252,84,175,0.35)] focus:ring-4 focus:ring-[#FC54AF] focus:shadow-[0_0_50px_rgba(252,84,175,0.85),_0_0_110px_rgba(252,84,175,0.55)] disabled:opacity-60 disabled:cursor-not-allowed text-sm"
       />
 
       <button
@@ -70,7 +70,7 @@ export default function JoinAliens() {
             ? // Neon pink locked state
               'text-white bg-[#FC54AF]/30 ring-2 ring-[#FC54AF] shadow-[0_0_36px_rgba(252,84,175,0.85)] cursor-default'
             : // Default cyan interactive state — amped glow + soft pulse
-              'text-cyan-50 bg-cyan-500/25 ring-4 ring-cyan-300/80 shadow-[0_0_42px_rgba(25,227,255,0.85),0_0_90px_rgba(25,227,255,0.45)] hover:shadow-[0_0_60px_rgba(25,227,255,0.95),0_0_120px_rgba(25,227,255,0.55)] hover:scale-[1.03] focus:outline-none focus:ring-4 focus:ring-cyan-400 disabled:opacity-70 disabled:cursor-not-allowed pulse-soft')
+              'text-white bg-[#FC54AF]/25 ring-4 ring-[#FC54AF]/80 shadow-[0_0_42px_rgba(252,84,175,0.85),0_0_90px_rgba(252,84,175,0.45)] hover:shadow-[0_0_60px_rgba(252,84,175,0.95),0_0_120px_rgba(252,84,175,0.55)] hover:scale-[1.03] focus:outline-none focus:ring-4 focus:ring-[#FC54AF] disabled:opacity-70 disabled:cursor-not-allowed pulse-soft')
         }
         onMouseEnter={() => { try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
       >

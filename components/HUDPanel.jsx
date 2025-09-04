@@ -375,7 +375,7 @@ export default function HUDPanel({
         <div
           className="pointer-events-none absolute inset-x-0 h-32"
           aria-hidden
-          style={{ top: 'calc(100% - 20px)', opacity: beamOpacity, transform: 'translateX(-26px)', transition: 'opacity 180ms ease, transform 200ms ease' }}
+          style={{ top: 'calc(100% - 20px)', opacity: beamOpacity, transform: 'translateX(-10px)', transition: 'opacity 180ms ease, transform 200ms ease' }}
         >
           {/* Cyan base pool at console lip (broad soft glow) */}
           <div

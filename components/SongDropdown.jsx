@@ -140,7 +140,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange }) 
         aria-expanded={open}
         aria-controls="song-dropdown-list"
         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {}; try { const a = hoverBtnRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
-        onClick={() => { try { const a = clickRef.current; if (a) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}; setOpen((v) => { const nv = !v; try { usePlayerStore.getState().setHover(nv ? (items[highlight]?.id || null) : null); } catch {}; return nv; }); }}
+        onClick={() => { try { sfx.play('join', 0.75); } catch {}; try { const a = clickRef.current; if (a) { a.currentTime = 0; a.volume = 0.75; a.play().catch(()=>{}); } } catch {}; setOpen((v) => { const nv = !v; try { usePlayerStore.getState().setHover(nv ? (items[highlight]?.id || null) : null); } catch {}; return nv; }); }}
         onKeyDown={onTriggerKeyDown}
         className="songs-trigger w-full flex items-center justify-between gap-2 px-2 py-3 rounded-[10px] border-2 border-[#19E3FF]/80 bg-cyan-400/10 backdrop-blur-xl shadow-[0_0_18px_rgba(25,227,255,0.35)] focus:outline-none focus:ring-2 focus:ring-cyan-400"
       >
@@ -177,8 +177,8 @@ export default function SongDropdown({ items = [], initialActiveId, onChange }) 
                 onMouseEnter={() => { setHighlight(i); try { usePlayerStore.getState().setHover(s.id); } catch{}; try { sfx.play('hover', 0.35); } catch {}; try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
                 onMouseLeave={() => { try { usePlayerStore.getState().setHover(null); } catch{} }}
                 onClick={() => {
-                  try { sfx.play('click', 0.65); } catch {}
-                  try { const c = clickRef.current; if (c) { c.currentTime = 0; c.volume = 0.65; c.play().catch(()=>{}); } } catch {}
+                  try { sfx.play('join', 0.9); } catch {}
+                  try { const c = clickRef.current; if (c) { c.currentTime = 0; c.volume = 0.9; c.play().catch(()=>{}); } } catch {}
                   setActiveId(s.id); onChange?.(s.id); setOpen(false);
                   try { usePlayerStore.getState().setHover(null); } catch{}
                 }}
@@ -197,7 +197,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange }) 
         </div>
       ) : null}
       {/* Click SFX */}
-      <audio ref={clickRef} src="/audio/click.mp3" preload="auto" />
+      <audio ref={clickRef} src="/audio/join-alien.mp3" preload="auto" />
       {/* Hover SFX for button */}
       <audio ref={hoverBtnRef} preload="auto">
         <source src="/audio/hover.mp3" type="audio/mpeg" />

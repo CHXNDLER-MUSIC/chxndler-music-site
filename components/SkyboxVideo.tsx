@@ -122,7 +122,14 @@ export default function SkyboxVideo({
         <video
           ref={baseRef}
           key={videoKey}
-          autoPlay muted loop playsInline preload="auto"
+          autoPlay muted loop playsInline preload="auto" controls={false}
+          // Prevent any default interactions that could open the video URL
+          // on some mobile browsers when tapping during/after warp
+          controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
+          disablePictureInPicture
+          // @ts-ignore: Safari-specific remote playback disable
+          disableRemotePlayback
+          tabIndex={-1}
           onEnded={(e)=>{ try { const v = e.currentTarget as HTMLVideoElement; v.currentTime = 0; v.play().catch(()=>{}); } catch {} }}
           onLoadedData={() => setReady(true)}
           onCanPlay={() => setReady(true)}
@@ -132,7 +139,8 @@ export default function SkyboxVideo({
             opacity: (ready && !showLightspeed) ? 1 : 0,
             filter: `brightness(${brightness})${flying ? ' saturate(1.1) blur(1.2px)' : ''}`,
             transform: `translateY(${translateY}) scale(${flying ? 1.12 : 1})`,
-            transition: 'opacity 500ms ease, transform 650ms ease, filter 650ms ease'
+            transition: 'opacity 500ms ease, transform 650ms ease, filter 650ms ease',
+            pointerEvents: 'none'
           }}
         >
           {/* Prefer MP4 first to avoid 404s if WebM is missing */}
@@ -148,6 +156,12 @@ export default function SkyboxVideo({
             muted
             playsInline
             preload="auto"
+            controls={false}
+            controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
+            disablePictureInPicture
+            // @ts-ignore
+            disableRemotePlayback
+            tabIndex={-1}
             onEnded={() => { setShowLightspeed(false); if (!flyEndCalledRef.current && onFlyEnd) { try { onFlyEnd(); } catch {} } flyEndCalledRef.current = true; }}
             className="absolute inset-0 h-full w-full object-cover"
             style={{ filter: `brightness(${Math.max(0.9, brightness)})`, mixBlendMode: 'screen' as any }}

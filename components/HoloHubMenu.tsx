@@ -9,6 +9,7 @@ type HubItem = {
   onClick?: () => void;
   icon?: React.ReactNode | string; // string treated as img src
   color?: string; // optional tint
+  size?: number; // optional per-item diameter (px)
 };
 
 export default function HoloHubMenu({
@@ -18,6 +19,7 @@ export default function HoloHubMenu({
   className,
   itemSize = 60,
   hubSize = 72,
+  angles,
 }: {
   items?: HubItem[];
   radius?: number;
@@ -25,6 +27,8 @@ export default function HoloHubMenu({
   className?: string;
   itemSize?: number;
   hubSize?: number;
+  // Optional explicit angle mapping per item id (degrees; -90 = 12 o'clock, 0 = 3 o'clock)
+  angles?: Record<string, number>;
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -108,14 +112,16 @@ export default function HoloHubMenu({
   // Compute positions; when closed, items sit on hub (0,0)
   const positions = useMemo(() => {
     const n = entries.length || 1;
-    return entries.map((_, i) => {
-      const angleDeg = -90 + (360 / n) * i; // start at top
+    return entries.map((it, i) => {
+      // If explicit angle provided for this item id, use it; else even spacing
+      const explicit = (angles && it?.id ? angles[it.id] : undefined);
+      const angleDeg = (typeof explicit === 'number') ? explicit : (-90 + (360 / n) * i);
       const a = (angleDeg * Math.PI) / 180;
       const x = Math.cos(a) * effRadius;
       const y = Math.sin(a) * effRadius;
       return { x, y, angleDeg };
     });
-  }, [entries, effRadius]);
+  }, [entries, effRadius, angles]);
 
   return (
     <div
@@ -140,12 +146,12 @@ export default function HoloHubMenu({
         style={{ width: hubSize, height: hubSize, left: -Math.round(hubSize/2), top: -Math.round(hubSize/2) } as React.CSSProperties}
       >
         <span className="hub-glyph" aria-hidden>
-          {/* Comms hologram icon */}
+          {/* Comms hologram icon (fill tighter in ring) */}
           <img
             src="/elements/comms.png"
             alt=""
             className="hub-icon"
-            style={{ width: Math.round(hubSize*0.72), height: Math.round(hubSize*0.72) }}
+            style={{ width: Math.round(hubSize*0.88), height: Math.round(hubSize*0.88) }}
             onError={(e)=>{ const img = e.currentTarget as HTMLImageElement; img.onerror = null; img.src = "/elements/chxndler.png"; }}
           />
         </span>
@@ -160,7 +166,7 @@ export default function HoloHubMenu({
           const tint = it.color || "#38B6FF";
           const isFirst = i === 0;
           const isLast = i === entries.length - 1;
-          const size = Math.max(40, itemSize);
+          const size = Math.max(40, (it as any)?.size ?? itemSize);
           const half = Math.round(size / 2);
           const iconPx = Math.round(size * 0.5);
           return (
@@ -171,6 +177,7 @@ export default function HoloHubMenu({
               className="item"
               role="menuitem"
               tabIndex={open ? 0 : -1}
+              data-id={it.id}
               style={{
                 transform: `translate(${atRest ? pos.x : 0}px, ${atRest ? pos.y : 0}px) scale(${open ? 1 : 0.85})`,
                 opacity: open ? 1 : 0,
@@ -207,6 +214,18 @@ export default function HoloHubMenu({
           filter: blur(8px);
         }
         /* Hologram hub button */
+        .hub-glyph{ position: relative; display:inline-flex; }
+        /* Inner glow masked to the comms icon shape so color shines "through" */
+        .hub-glyph::before{
+          content:""; position:absolute; inset:10%; pointer-events:none; mix-blend-mode:screen;
+          background: radial-gradient(closest-side, ${hubColor}CC, ${hubColor}55 60%, transparent 75%);
+          filter: blur(6px) saturate(1.1) brightness(1.05);
+          -webkit-mask-image: url('/elements/comms.png');
+          mask-image: url('/elements/comms.png');
+          -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+          -webkit-mask-position: center; mask-position: center;
+          -webkit-mask-size: contain; mask-size: contain;
+        }
         .hub{
           position:absolute; border-radius:9999px; cursor:pointer;
           display:grid; place-items:center;
@@ -225,8 +244,9 @@ export default function HoloHubMenu({
           animation: holoPulse 2.6s ease-in-out infinite;
           transition: transform 150ms ease, box-shadow 200ms ease, filter 180ms ease;
         }
-        .hub::before{ content:""; position:absolute; inset:-4%; border-radius:9999px; pointer-events:none;
-          box-shadow: 0 0 38px ${hubColor}88, 0 0 110px ${hubColor}55;
+        .hub::before{ content:""; position:absolute; inset:-1%; border-radius:9999px; pointer-events:none;
+          /* tighter halo with brighter core to reduce outside space */
+          box-shadow: 0 0 46px ${hubColor}CC, 0 0 86px ${hubColor}88;
         }
         .hub::after{ content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none; mix-blend-mode:screen; opacity:.6;
           background:
@@ -243,7 +263,7 @@ export default function HoloHubMenu({
           filter: brightness(1.08) saturate(1.15);
         }
         .hub:active{ transform: scale(.96); }
-        .hub-icon{ object-fit: contain; display:block; transition: filter 180ms ease, transform 180ms ease;
+        .hub-icon{ object-fit: contain; display:block; transition: filter 180ms ease, transform 180ms ease; mix-blend-mode: screen;
           filter: saturate(1.2) brightness(1.06)
             drop-shadow(0 0 18px ${hubColor})
             drop-shadow(0 0 42px ${hubColor});
@@ -273,9 +293,9 @@ export default function HoloHubMenu({
           -webkit-backdrop-filter: blur(8px);
           transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 200ms ease, box-shadow 160ms ease, filter 160ms ease;
         }
-        .item::before{ /* outer rim + inner neon */
-          content:""; position:absolute; inset:-2px; border-radius:9999px; pointer-events:none;
-          box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset, 0 0 0 1px rgba(0,255,255,.06), 0 0 18px var(--tint, #38B6FF)33 inset;
+        .item::before{ /* tighter rim, no gap */
+          content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none;
+          box-shadow: 0 0 0 2px rgba(255,255,255,.18) inset, 0 0 16px var(--tint, #38B6FF)30 inset;
         }
         .item::after{ /* sheen + scanline shimmer */
           content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none; mix-blend-mode:screen; opacity:.6;
@@ -292,13 +312,98 @@ export default function HoloHubMenu({
             inset 0 1px 0 rgba(255,255,255,.28), inset 0 -8px 18px rgba(0,0,0,.65);
           filter: brightness(1.08) saturate(1.16);
         }
+        /* Instagram-specific tweaks: no rim, multi‑color outer halo, bigger logo, strong inner glow */
+        .item[data-id="ig"]{
+          border: none;
+          /* Soften the base glass to avoid a hard outline */
+          background:
+            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.04), rgba(255,255,255,0) 42%),
+            linear-gradient(180deg, rgba(8,16,26,.24), rgba(0,0,0,.18));
+          box-shadow:
+            0 10px 16px rgba(0,0,0,.48),
+            0 0 60px rgba(252,84,175,.66),
+            0 0 300px rgba(252,84,175,.40),
+            inset 0 0 0 0 rgba(255,255,255,0),
+            inset 0 0 24px rgba(252,84,175,.36);
+        }
+        .item[data-id="ig"]:hover{ box-shadow:
+            0 14px 22px rgba(0,0,0,.56),
+            0 0 40px rgba(252,84,175,.73),
+            0 0 160px rgba(252,84,175,.46),
+            inset 0 0 0 0 rgba(255,255,255,0),
+            inset 0 0 28px rgba(252,84,175,.52);
+        }
+        /* Remove the rim entirely for IG */
+        .item[data-id="ig"]::before{ display:none; }
+        .item[data-id="ig"] .icon{ position: relative; mix-blend-mode: screen; width: 97%; height: 97%; }
+        /* Remove SVG shadow filters to restore crisp strokes */
+        .item[data-id="ig"] .icon svg{ filter: none; }
+        .item[data-id="ig"] .icon::before{
+          content:""; position:absolute; inset:4%; pointer-events:none; mix-blend-mode:screen;
+          /* Multi-color inner glow, masked to IG silhouette */
+          background:
+            conic-gradient(from 0deg,
+              #F58529 0deg, #FEDA77 60deg, #DD2A7B 120deg,
+              #8134AF 200deg, #515BD4 300deg, #F58529 360deg);
+          filter: blur(7px) saturate(1.2) brightness(1.06);
+          /* Mask to Instagram silhouette (square + lens) */
+          -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="%23fff"/><circle cx="12" cy="12" r="8.2" fill="%23fff"/></svg>');
+          mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="%23fff"/><circle cx="12" cy="12" r="8.2" fill="%23fff"/></svg>');
+          -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+          -webkit-mask-position: center; mask-position: center;
+          -webkit-mask-size: contain; mask-size: contain;
+        }
+        /* Replace sheen with a soft multi-color outer halo */
+        .item[data-id="ig"]::after{ content:""; position:absolute; inset:-26%; border-radius:9999px; pointer-events:none; opacity:.7; mix-blend-mode:screen;
+          background:
+            conic-gradient(from 0deg,
+              #F58529 0deg, #FEDA77 60deg, #DD2A7B 120deg,
+              #8134AF 200deg, #515BD4 300deg, #F58529 360deg);
+          filter: blur(44px) saturate(1.05);
+        }
+        /* Additional soft edge bloom layer to blend the halo */
+        .item[data-id="ig"]::before{ content:""; position:absolute; inset:-14%; border-radius:9999px; pointer-events:none; opacity:.22; mix-blend-mode:screen;
+          background: radial-gradient(closest-side, rgba(255,255,255,.18), transparent 80%);
+          filter: blur(32px);
+        }
+        /* Apply the same IG style to TikTok, YouTube, Spotify, and Apple with their tint colors */
+        .item[data-id="tt"], .item[data-id="yt"], .item[data-id="sp"], .item[data-id="am"]{ border:none; box-shadow:
+            0 10px 16px rgba(0,0,0,.5),
+            0 0 4px var(--tint, #38B6FF)60,
+            inset 0 0 0 0 rgba(255,255,255,0),
+            inset 0 0 20px var(--tint, #38B6FF)48;
+        }
+        .item[data-id="tt"]:hover, .item[data-id="yt"]:hover, .item[data-id="sp"]:hover, .item[data-id="am"]:hover{ box-shadow:
+            0 14px 22px rgba(0,0,0,.56),
+            0 0 12px var(--tint, #38B6FF)9a,
+            inset 0 0 0 0 rgba(255,255,255,0),
+            inset 0 0 24px var(--tint, #38B6FF)7a;
+        }
+        .item[data-id="tt"]::before, .item[data-id="yt"]::before, .item[data-id="sp"]::before, .item[data-id="am"]::before{ display:none; }
+        .item[data-id="tt"] .icon, .item[data-id="yt"] .icon, .item[data-id="sp"] .icon, .item[data-id="am"] .icon{ position:relative; mix-blend-mode: screen; width: 90%; height: 90%; }
+        /* Inner glow masked to a circle for each brand button */
+        .item[data-id="tt"] .icon::before,
+        .item[data-id="yt"] .icon::before,
+        .item[data-id="sp"] .icon::before,
+        .item[data-id="am"] .icon::before{
+          content:""; position:absolute; inset:10%; pointer-events:none; mix-blend-mode:screen;
+          background: radial-gradient(closest-side, var(--tint, #38B6FF)cc, var(--tint, #38B6FF)55 60%, transparent 78%);
+          filter: blur(6px) saturate(1.15) brightness(1.05);
+          -webkit-mask-image: radial-gradient(circle, #fff 68%, transparent 70%);
+          mask-image: radial-gradient(circle, #fff 68%, transparent 70%);
+          -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+          -webkit-mask-position: center; mask-position: center;
+          -webkit-mask-size: contain; mask-size: contain;
+        }
         .item:active{ transform: translate(var(--tx,0), var(--ty,0)) scale(0.98); }
         /* Focus ring should follow the item's own tint, not the hub color */
         .item:focus{ outline: 2px solid var(--tint, #38B6FF); outline-offset: 2px; }
-        .item .icon{ display:inline-flex; align-items:center; justify-content:center; color: var(--tint, #9EEBFF);
+        .item .icon{ display:flex; align-items:center; justify-content:center; color: var(--tint, #9EEBFF);
+          width: 80%; height: 80%;
           filter: drop-shadow(0 0 16px var(--tint, #38B6FF)) drop-shadow(0 0 36px var(--tint, #38B6FF));
           transition: filter 180ms ease, transform 180ms ease;
         }
+        .item .icon > img, .item .icon > svg{ width: 100% !important; height: 100% !important; }
         .item:hover .icon{ transform: scale(1.06); filter: drop-shadow(0 0 22px var(--tint, #38B6FF)) drop-shadow(0 0 64px var(--tint, #38B6FF)); }
         @keyframes holoSheen { 0% { transform: translateX(-130%); } 55% { transform: translateX(130%);} 100% { transform: translateX(130%);} }
         .item .dot{ width: 10px; height:10px; border-radius:9999px; background:#9EEBFF; }
