@@ -41,6 +41,7 @@ export default function DashboardApp() {
   const [beamEnabled, setBeamEnabled] = useState(false);
   const [powerBusy, setPowerBusy] = useState(false);
   const [showPowerBtn, setShowPowerBtn] = useState(false);
+  const [showOverlayUI, setShowOverlayUI] = useState(false); // comms + join buttons
   const powerRef = React.useRef(null);
   const powerHoverRef = React.useRef(null);
   const [allowWarp, setAllowWarp] = useState(false);
@@ -73,6 +74,9 @@ export default function DashboardApp() {
             setBeamEnabled(true);
             // 3) Fade HUD in shortly after beam begins (~150–180ms)
             setTimeout(() => { setBeamOnly(false); setPowerBusy(false); }, 170);
+            // Reveal cockpit UI buttons (power/comms/join) after SFX finishes
+            setShowOverlayUI(true);
+            setShowPowerBtn(true);
           }
         };
         // Fallback if ended doesn't fire
@@ -81,6 +85,8 @@ export default function DashboardApp() {
           if (turningOn) {
             setBeamEnabled(true);
             setTimeout(() => { setBeamOnly(false); setPowerBusy(false); }, 170);
+            setShowOverlayUI(true);
+            setShowPowerBtn(true);
           }
         }, 1500);
       }
@@ -112,6 +118,14 @@ export default function DashboardApp() {
       setUserSelected(true);
       setHomeMode(false);
       setAmbientSuspended(true);
+      // Immediately reflect selection in HUD (title/cover/subtitle)
+      try {
+        const t = tracks[idx];
+        if (t) {
+          setCurTrack(t);
+          setLinks({ spotify: t.spotify || LINKS.spotify, apple: t.apple || LINKS.apple });
+        }
+      } catch {}
       // Stop all audio immediately
       try {
         const a = document.querySelector('audio[data-audio-player="1"]');
@@ -123,6 +137,17 @@ export default function DashboardApp() {
       } catch {}
       // Update selected channel.
       setChannelIdx(idx);
+      // Prime the hidden audio element within this click to satisfy autoplay policies.
+      // Start it muted so actual audio output only occurs after warp completes.
+      try {
+        const audioEl = document.querySelector('audio[data-audio-player="1"]');
+        const src = tracks[idx]?.src || '';
+        if (audioEl && src) {
+          if (audioEl.getAttribute('src') !== src) audioEl.setAttribute('src', src);
+          audioEl.muted = true; audioEl.volume = 0.0;
+          audioEl.play().catch(()=>{});
+        }
+      } catch {}
       // Defer audio start until lightspeed overlay finishes AND the target sky video is playing.
       // Mark this as a pending track play and let SkyboxVideo's onBasePlaying trigger it.
       setPendingTrackPlay(true);
@@ -220,6 +245,7 @@ export default function DashboardApp() {
       <SteeringWheelOverlay
         POS={POS}
         playing={isPlaying}
+        showUI={showOverlayUI}
         onLaunch={() => {
           // Start: warp overlay + sound, then land on CHXNDLER homepage
           // Stop track playback so ambient can play on homepage
@@ -228,8 +254,7 @@ export default function DashboardApp() {
           setAllowWarp(true);
           setNextSky(SPACE_SKY);
           setFlySignal((n) => n + 1);
-          // Reveal HUD power toggle only after Start is clicked
-          setShowPowerBtn(true);
+          // Do not reveal UI yet; will fade in after join SFX ends in triggerHudPower
         }}
       />
       {/* Removed Join the Aliens dashboard panel per request */}
@@ -269,14 +294,17 @@ export default function DashboardApp() {
                 title="Power"
                 style={{
                   position: 'fixed',
-                  left: 'calc(50% - 36px)', // slightly left of center
+                  left: 'calc(50% - 52px)', // slightly left of center (adjusted for larger size)
                   top: 'calc(50vh + 24px)', // nudged a little more down
-                  width: 32, height: 32, borderRadius: 9999, zIndex: 95,
+                  width: 48, height: 48, borderRadius: 9999, zIndex: 95,
+                  opacity: showOverlayUI ? 1 : 0,
+                  transition: 'opacity 300ms ease',
+                  pointerEvents: showOverlayUI ? 'auto' : 'none',
                 }}
               >
                 <span className="sr-only">Toggle HUD Power</span>
                 <span className="power-glyph" aria-hidden>
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="currentColor" strokeWidth="1.5">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" stroke="currentColor" strokeWidth="1.5">
                     <path d="M12 3v7" strokeLinecap="round" />
                     <path d="M6.7 6.7a7 7 0 1 0 9.9 0" fill="none" strokeLinecap="round" />
                   </svg>
@@ -298,26 +326,51 @@ export default function DashboardApp() {
             ) : null}
             <style jsx>{`
               .power-btn{
-                /* Solid, filled, single glowing cyan button with 3D bevel */
+                position: relative;
+                display:grid; place-items:center;
+                border-radius:9999px;
+                /* Hologram ring (blue) */
                 background:
-                  radial-gradient(120% 120% at 50% 0%, rgba(255,255,255,.35), rgba(255,255,255,0) 58%),
-                  linear-gradient(180deg, #33ECFF, #0FD5F1);
-                border: none;
+                  radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
+                  linear-gradient(180deg, rgba(8,16,26,.45), rgba(0,0,0,.38));
+                border:1px solid rgba(255,255,255,.14);
                 box-shadow:
-                  0 6px 14px rgba(0,0,0,.45),                     /* drop */
-                  0 0 24px rgba(25,227,255,.95), 0 0 64px rgba(25,227,255,.55), /* glow */
-                  inset 0 2px 0 rgba(255,255,255,.5),              /* top bevel */
-                  inset 0 -6px 12px rgba(0,0,0,.25);               /* bottom shade */
-                transition: transform .12s ease, box-shadow .18s ease, filter .18s ease;
-                display:grid; place-items:center; font-weight:800; font-size:14px;
-                animation: powerPulse 2.2s ease-in-out infinite;
+                  0 14px 28px rgba(0,0,0,.6),
+                  0 0 38px #19E3FFCC,
+                  0 0 110px #19E3FF88,
+                  inset 0 1px 0 rgba(255,255,255,.22),
+                  inset 0 -6px 14px rgba(0,0,0,.6);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                transition: transform .15s ease, box-shadow .2s ease, filter .18s ease;
+                animation: powerPulse 2.6s ease-in-out infinite;
               }
-              /* glossy top highlight */
-              .power-btn::before{ content:""; position:absolute; left:22%; right:22%; top:14%; height:28%; border-radius:9999px; background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0)); filter: blur(1px); pointer-events:none; }
-              .power-glyph{ display:inline-flex; align-items:center; justify-content:center; color:#fff; filter: drop-shadow(0 0 8px rgba(25,227,255,1)) drop-shadow(0 0 26px rgba(25,227,255,.85)) drop-shadow(0 0 44px rgba(25,227,255,.55)); }
-              .power-btn:hover{ transform: scale(1.06); box-shadow: 0 8px 16px rgba(0,0,0,.48), 0 0 28px rgba(25,227,255,1), 0 0 86px rgba(25,227,255,.85), 0 0 140px rgba(25,227,255,.6), inset 0 2px 0 rgba(255,255,255,.55), inset 0 -6px 12px rgba(0,0,0,.28); }
+              .power-btn::before{ /* outer halo */
+                content:""; position:absolute; inset:-20%; border-radius:9999px; pointer-events:none;
+                box-shadow: 0 0 56px #19E3FFFF, 0 0 150px #19E3FF99;
+              }
+              .power-btn::after{ /* sheen + scanlines */
+                content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none; mix-blend-mode:screen; opacity:.6;
+                background:
+                  linear-gradient(120deg, rgba(255,255,255,.18), rgba(255,255,255,0) 60%),
+                  repeating-linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.08) 1px, rgba(0,0,0,0) 1px, rgba(0,0,0,0) 3px);
+                transform: translateX(-130%);
+                animation: powerSheen 3s ease-in-out infinite;
+              }
+              .power-glyph{ display:inline-flex; align-items:center; justify-content:center; color:#fff; filter: drop-shadow(0 0 16px #19E3FF) drop-shadow(0 0 46px #19E3FF); }
+              .power-btn:hover{
+                transform: scale(1.07);
+                box-shadow:
+                  0 18px 34px rgba(0,0,0,.68),
+                  0 0 72px #19E3FFFF,
+                  0 0 180px #19E3FFCC,
+                  inset 0 1px 0 rgba(255,255,255,.28),
+                  inset 0 -8px 18px rgba(0,0,0,.65);
+                filter: brightness(1.08) saturate(1.15);
+              }
               .power-btn:active{ transform: scale(.96); }
-              @keyframes powerPulse{ 0%{ filter: brightness(1)} 50%{ filter: brightness(1.08)} 100%{ filter: brightness(1)} }
+              @keyframes powerPulse{ 0%,100%{ filter: brightness(1) } 50%{ filter: brightness(1.08) } }
+              @keyframes powerSheen { 0% { transform: translateX(-130%);} 55% { transform: translateX(130%);} 100% { transform: translateX(130%);} }
             `}</style>
         </div>
         <div className="hidden">

@@ -11,11 +11,13 @@ export default function SteeringWheelOverlay({
   onLaunch,
   POS,
   playing,
+  showUI = true,
 }: {
   logoSrc?: string;
   onLaunch: () => void;
   POS: any;
   playing?: boolean;
+  showUI?: boolean;
 }) {
   const sfxRef = useRef<HTMLAudioElement|null>(null);
   const pauseRef = useRef<HTMLAudioElement|null>(null);
@@ -145,19 +147,21 @@ export default function SteeringWheelOverlay({
             }}
             aria-hidden={false}
           >
-            <HoloHubMenu
-              items={[
+            <div style={{ opacity: showUI ? 1 : 0, transition: 'opacity 300ms ease', pointerEvents: showUI ? 'auto' : 'none' }}>
+              <HoloHubMenu
+                items={[
                 LINKS.instagram ? { id: 'ig', label: 'Instagram', href: LINKS.instagram, icon: InstagramIcon, color: '#FC54AF' } : null,
                 LINKS.tiktok ? { id: 'tt', label: 'TikTok', href: LINKS.tiktok, icon: TikTokIcon, color: '#38B6FF' } : null,
                 LINKS.youtube ? { id: 'yt', label: 'YouTube', href: LINKS.youtube, icon: YouTubeIcon, color: '#FF3B30' } : null,
                 LINKS.spotify ? { id: 'sp', label: 'Spotify', href: LINKS.spotify, icon: SpotifyIcon, color: '#1DB954' } : null,
                 LINKS.apple ? { id: 'am', label: 'Apple Music', href: LINKS.apple, icon: AppleIcon, color: '#FF3B30' } : null,
               ].filter(Boolean) as any}
-              radius={96}
-              hubColor="#FC54AF"
-              itemSize={68}
-              hubSize={84}
-            />
+                radius={96}
+                hubColor="#F2EF1D"
+                itemSize={68}
+                hubSize={84}
+              />
+            </div>
           </div>
         );
       })()}
@@ -183,7 +187,9 @@ export default function SteeringWheelOverlay({
               pointerEvents: 'auto',
             }}
           >
-            <HoloJoinPopout size={joinSize} label="Join" iconSrc="/elements/join.png" hubColor="#FC54AF" panelWidth={320} panelSide="above" />
+            <div style={{ opacity: showUI ? 1 : 0, transition: 'opacity 300ms ease', pointerEvents: showUI ? 'auto' : 'none' }}>
+              <HoloJoinPopout size={joinSize} label="Join" iconSrc="/elements/join.png" hubColor="#FC54AF" panelWidth={320} panelSide="above" />
+            </div>
           </div>
         );
       })()}
