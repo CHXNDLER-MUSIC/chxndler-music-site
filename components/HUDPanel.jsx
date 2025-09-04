@@ -22,6 +22,7 @@ import CoverCard from "@/components/CoverCard";
 import { buildPlanetSongs } from "@/lib/planets";
 import SongDropdown from "@/components/SongDropdown";
 import DevErrorLogger from "@/components/DevErrorLogger";
+import PlanetSystemRaw from "@/components/holo/PlanetSystemRaw";
 import { sfx } from "@/lib/sfx";
 // HologramPlanets demo removed per request (3D only)
 
@@ -98,7 +99,8 @@ export default function HUDPanel({
   const [scale, setScale] = useState(1);
   const [hoverId, setHoverId] = useState(null);
   const [can3D, setCan3D] = useState(false);
-  const [PlanetSystemComp, setPlanetSystemComp] = useState(null);
+  const [PlanetSystemComp, setPlanetSystemComp] = useState(() => PlanetSystemRaw);
+  const [threeFailed, setThreeFailed] = useState(null);
   const [mounted, setMounted] = useState(false);
   const [showCard, setShowCard] = useState(false);
   // Beam fade: allow external control; default to fade-in on mount
@@ -116,35 +118,26 @@ export default function HUDPanel({
   const [contentOpacity, setContentOpacity] = useState(beamOnly ? 0 : 1);
   useEffect(() => { setContentOpacity(beamOnly ? 0 : 1); }, [beamOnly]);
 
-  // Runtime probe: lazy import r3f/drei/three and PlanetSystem; if any fail, keep 2D-only
+  // Runtime probe: ensure WebGL exists; use raw Three-based system to avoid React internals issues
   useEffect(() => {
     let mounted = true;
-    // Avoid r3f on React 19 unless known-compatible; skip imports entirely
+    // Quick capability probe: require a WebGL context
     try {
-      const ver = (React && React.version) ? String(React.version) : "";
-      const major = ver ? parseInt(ver.split(".")[0] || "0", 10) : 0;
-      if (major >= 19) { setCan3D(false); return () => { mounted = false; }; }
-    } catch {}
-    (async () => {
-      try {
-        const r3f = await import("@react-three/fiber");
-        const drei = await import("@react-three/drei");
-        const three = await import("three");
-        const ok = !!r3f && !!drei && !!three;
-        if (!ok) { if (mounted) setCan3D(false); return; }
-        const mod = await import("@/components/holo/PlanetSystem");
-        if (!mounted) return;
-        const Comp = mod.default || mod.PlanetSystem;
-        if (Comp) {
-          setPlanetSystemComp(() => Comp);
-          setCan3D(true);
-        } else {
-          setCan3D(false);
-        }
-      } catch (e) {
-        if (mounted) setCan3D(false);
+      const c = document.createElement('canvas');
+      const gl = c && (c.getContext('webgl') || c.getContext('experimental-webgl'));
+      if (!gl) {
+        setCan3D(false);
+        setThreeFailed('WebGL unavailable');
+        return () => { mounted = false; };
       }
-    })();
+    } catch {
+      setCan3D(false);
+      setThreeFailed('WebGL blocked');
+      return () => { mounted = false; };
+    }
+    // Raw Three-based system requires only WebGL
+    setCan3D(true);
+    setThreeFailed(null);
     return () => { mounted = false; };
   }, []);
   // Bridge to 3D store available if installed
@@ -248,27 +241,43 @@ export default function HUDPanel({
           </div>
           <div
             className={`grid grid-cols-[1.35fr_0.65fr] gap-6 ${inConsole ? 'p-3' : 'p-8'}`}
-            style={{ opacity: contentOpacity, transition: 'opacity 240ms ease', pointerEvents: contentOpacity > 0.01 ? 'auto' : 'none' }}
+            style={{ opacity: contentOpacity, transition: 'opacity 240ms ease', pointerEvents: contentOpacity > 0.01 ? 'auto' : 'none', minHeight: inConsole ? 260 : 520 }}
           >
           {/* Left: title + planet */}
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-6 h-full">
             {/* Title/subtitle removed per request; song title is shown within the HUD display */}
-            <div className="pt-2 w-full mt-auto transform -translate-y-[4vh] sm:-translate-y-[3vh] md:-translate-y-[2vh] lg:-translate-y-[2vh]">
+            <div className="pt-2 w-full flex-1 transform -translate-y-[2vh] sm:-translate-y-[1.5vh] md:-translate-y-[1vh] lg:-translate-y-[1vh]">
               {/* Hologram panel wrapper to integrate with dashboard styling */}
               <div className="relative">
                 {/* Dynamic 3D with safe fallback to 2D if it errors */}
-                <div className={`relative w-full overflow-visible rounded-[12px] ${inConsole ? 'h-[200px] sm:h-[220px]' : 'h-[400px] md:h-[480px] lg:h-[560px]'}`}>
+                <div className={`relative w-full h-full overflow-visible rounded-[12px] ${inConsole ? 'min-h-[220px]' : 'min-h-[520px]'}`}>
                   {/* Keep 3D background clear (no backdrop behind Canvas) */}
                   {/* Title overlay removed from panel; shown under cover art */}
                 {can3D && PlanetSystemComp ? (
-                  <div className="absolute left-0 right-0 bottom-0" style={{ top: 72 }}>
-                    <ErrorBoundary fallback={null} onError={(e)=>{ if (String(e?.name||'').includes('IndexSizeError')) { try { console.warn('Disabling 3D due to IndexSizeError'); } catch {} } setCan3D(false); }}>
+                  <div className="absolute left-0 right-0 bottom-0" style={{ top: 0 }}>
+                    <ErrorBoundary fallback={null} onError={(e)=>{ if (String(e?.name||'').includes('IndexSizeError')) { try { console.warn('Disabling 3D due to IndexSizeError'); } catch {} } setThreeFailed((e && (e.message||e.name)) || 'Render error'); setCan3D(false); }}>
                       <PlanetSystemComp showAll={!currentId} />
                     </ErrorBoundary>
                   </div>
                 ) : (
                   // Minimal 2D fallback: start below the one-liner
-                  <div className="absolute left-0 right-0 bottom-0 grid place-items-center" style={{ top: 72 }}>
+                  <div className="absolute left-0 right-0 bottom-0 grid place-items-center" style={{ top: 0 }}>
+                    {/* In-HUD fallback notice */}
+                    {threeFailed ? (
+                      <div
+                        style={{
+                          position: 'absolute', left: 10, bottom: 10, pointerEvents: 'none',
+                          fontSize: 11, letterSpacing: '0.04em', fontWeight: 700,
+                          color: '#EFFFFF', textShadow: '0 0 10px rgba(25,227,255,0.8), 0 0 24px rgba(25,227,255,0.45)',
+                          background: 'linear-gradient(180deg, rgba(0,0,0,.38), rgba(0,0,0,.22))',
+                          border: '1px solid rgba(25,227,255,.35)', borderRadius: 8, padding: '6px 8px',
+                          boxShadow: '0 10px 24px rgba(0,0,0,.35), 0 0 22px rgba(25,227,255,.35)'
+                        }}
+                        aria-live="polite"
+                      >
+                        3D disabled: {threeFailed}. Showing fallback.
+                      </div>
+                    ) : null}
                     <div
                       className="rounded-full"
                       style={{ width: '58%', aspectRatio: '1 / 1',
@@ -296,7 +305,7 @@ export default function HUDPanel({
                       display: 'block',
                       padding: 0,
                       left: 46,
-                      top: -38,
+                      top: 4,
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -323,7 +332,7 @@ export default function HUDPanel({
                       alignItems: 'center',
                       padding: '0 10px',
                       left: 40,
-                      top: -14,
+                      top: 32,
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -331,7 +340,7 @@ export default function HUDPanel({
                     }}
                     aria-label="Song tagline"
                   >
-                    {(!currentId ? 'A home for ALIENS, where misfits and dreamers live free.' : (track?.subtitle || ''))}
+                    {(!currentId ? 'Welcome to the HEARTVERSE - a home for ALIENS, where misfits and dreamers live free.' : (track?.subtitle || ''))}
                   </div>
 
                   {/* Song changer moved to right rail under cover art */}
@@ -450,6 +459,67 @@ export default function HUDPanel({
             className="relative rounded-2xl p-4 card-modal"
             onClick={(e)=> e.stopPropagation()}
           >
+            {(() => {
+              try {
+                const home = !currentId;
+                const slug = home ? '' : (track?.slug || active || '');
+                // Map track slugs to purchase links
+                const BUY_LINKS = {
+                  'alone': 'https://buy.stripe.com/dRmfZiclr5l3e3Ddll4gg0i',
+                  'always-on-my-mind': 'https://buy.stripe.com/9B6cN61GN28R0cN5ST4gg04',
+                  'baby': 'https://buy.stripe.com/aFacN64SZ4gZcZz8114gg0a',
+                  'be-my-bee-acoustic': 'https://buy.stripe.com/aFacN64SZ4gZcZz8114gg0a',
+                  'brain-freeze': 'https://buy.stripe.com/8x2aEYfxD00JcZza994gg0h',
+                  'collide': 'https://buy.stripe.com/7sY3cw5X3fZH0cN0yz4gg05',
+                  'colors-of-our-home': 'https://buy.stripe.com/5kQ00k2KRfZH9Nn1CD4gg0j',
+                  'i-might-fall-in-love-with-you': 'https://buy.stripe.com/aFa8wQdpv7tb1gR1CD4gg0c',
+                  'kid-forever': 'https://buy.stripe.com/00wfZibhnfZH4t3dll4gg0g',
+                  'letting-go': 'https://buy.stripe.com/3cI9AU85b00J9Nna994gg0d',
+                  'mr-brightside': 'https://buy.stripe.com/8x25kEetz8xf0cN8114gg02',
+                  'mr-brightside-killers-cover': 'https://buy.stripe.com/8x25kEetz8xf0cN8114gg02',
+                  'ocean-girl': 'https://buy.stripe.com/dRmbJ24SZ00J6Bb9554gg00',
+                  'ocean-girl-acoustic': 'https://buy.stripe.com/aFaeVeclr28R3oZftt4gg09',
+                  'ocean-girl-remix': 'https://buy.stripe.com/dRmeVeetz8xf0cNchh4gg08',
+                  'somebody-to-love': 'https://buy.stripe.com/4gM00kgBH4gZaRr1CD4gg0e',
+                  'tienes-un-amigo': 'https://buy.stripe.com/cNibJ2gBH3cV8Jjgxx4gg0f',
+                  'were-just-friends': 'https://buy.stripe.com/14A14o99fbJrbVv8114gg0b',
+                  'were-just-friends-mickey-jas-remix': 'https://buy.stripe.com/aFa5kE3OV14N3oZchh4gg06',
+                  'were-just-friends-dmvrco-remix': 'https://buy.stripe.com/28EdRa0CJ5l38Jj9554gg03',
+                };
+                const url = slug ? BUY_LINKS[slug] : (home ? 'https://buy.stripe.com/cNi14oetz6p76Bbgxx4gg0k' : undefined);
+                if (url) {
+                  return (
+                    <div className="mb-3 flex justify-center">
+                      <div className="ocean-cta-wrap relative">
+                        <a
+                          href={url}
+                          rel="noopener noreferrer"
+                          className="btn-ocean"
+                          title="Collect this card"
+                          onClick={(e) => {
+                            try { e.preventDefault(); } catch {}
+                            try { sfx.play('click', 0.6); } catch {}
+                            try {
+                              const el = e.currentTarget;
+                              el.classList.remove('is-rippling');
+                              // force reflow to restart animation
+                              // @ts-ignore
+                              void el.offsetWidth;
+                              el.classList.add('is-rippling');
+                              setTimeout(() => { window.location.href = el.href; }, 520);
+                            } catch { window.location.href = (e.currentTarget || {}).href; }
+                          }}
+                        >
+                          <span className="btn-label">COLLECT CARD</span>
+                          <span className="btn-ripple" aria-hidden />
+                        </a>
+                      </div>
+                    </div>
+                  );
+                }
+              } catch {}
+              return null;
+            })()}
             <div className="tilt-wrap">
               <div className="card-frame">
                 {(() => {
@@ -548,6 +618,45 @@ export default function HUDPanel({
         .btn-spotify:hover{ transform: translateZ(0) scale(1.04); box-shadow: 0 0 32px rgba(29,185,84,.8), inset 0 2px 0 rgba(255,255,255,.6), inset 0 -6px 16px rgba(0,0,0,.3); filter: saturate(1.05) brightness(1.03); }
         .btn-apple{ background: radial-gradient(100% 100% at 50% 30%, rgba(255,210,210,1), #FF3B30); box-shadow: 0 0 24px rgba(255,59,48,.55), inset 0 2px 0 rgba(255,255,255,.55), inset 0 -6px 14px rgba(0,0,0,.25); }
         .btn-apple:hover{ transform: translateZ(0) scale(1.04); box-shadow: 0 0 32px rgba(255,59,48,.8), inset 0 2px 0 rgba(255,255,255,.6), inset 0 -6px 16px rgba(0,0,0,.3); filter: saturate(1.05) brightness(1.03); }
+        /* Ocean Girl purchase button */
+        .ocean-cta-wrap{ position:relative; }
+        .btn-ocean{
+          position:relative; display:inline-grid; place-items:center;
+          padding: 8px 12px; border-radius: 10px; font-weight:800; letter-spacing:.06em; font-size: 12px;
+          color:#001014; text-transform:uppercase; font-family: InterLocal, system-ui, sans-serif;
+          background: radial-gradient(100% 100% at 50% 20%, rgba(210,255,255,0.95), #19E3FF);
+          border: 1px solid rgba(255,255,255,.24);
+          box-shadow: 0 0 20px rgba(25,227,255,.55), inset 0 2px 0 rgba(255,255,255,.6), inset 0 -8px 16px rgba(0,0,0,.22);
+          transition: transform .12s ease, box-shadow .18s ease, filter .18s ease;
+          overflow:hidden;
+        }
+        .btn-ocean:hover{
+          transform: translateZ(0) scale(1.05);
+          box-shadow:
+            0 0 36px rgba(25,227,255,.95),
+            0 0 80px rgba(25,227,255,.55),
+            inset 0 2px 0 rgba(255,255,255,.7),
+            inset 0 -10px 18px rgba(0,0,0,.28);
+          filter: saturate(1.08) brightness(1.07);
+          animation: oceanGlow 1.8s ease-in-out infinite;
+        }
+        .btn-ocean:active{ transform: scale(.98); }
+        @keyframes oceanGlow {
+          0%, 100% { box-shadow: 0 0 36px rgba(25,227,255,.95), 0 0 80px rgba(25,227,255,.55), inset 0 2px 0 rgba(255,255,255,.7), inset 0 -10px 18px rgba(0,0,0,.28); }
+          50% { box-shadow: 0 0 52px rgba(25,227,255,1), 0 0 110px rgba(25,227,255,.7), inset 0 2px 0 rgba(255,255,255,.75), inset 0 -12px 20px rgba(0,0,0,.3); }
+        }
+        /* Ripple light pass on click */
+        .btn-ripple{ position:absolute; inset:-10%; border-radius:inherit; pointer-events:none; opacity:0;
+          background: radial-gradient(closest-side, rgba(255,255,255,.85), rgba(25,227,255,.45) 40%, rgba(25,227,255,0) 60%);
+          filter: blur(1px);
+        }
+        .btn-ocean.is-rippling .btn-ripple{ animation: og-ripple 520ms ease-out 1; }
+        @keyframes og-ripple{
+          0% { opacity:.7; transform: scale(.5); }
+          60% { opacity:.25; transform: scale(1.6); }
+          100% { opacity:0; transform: scale(2.2); }
+        }
+        /* (flicker effect removed) */
       `}</style>
       <audio ref={hoverCoverRef} preload="auto">
         <source src="/audio/hover.mp3" type="audio/mpeg" />

@@ -8,11 +8,9 @@ export default function PrewarmThree() {
         await Promise.all([
           import("three"),
           import("@react-three/fiber"),
-          import("@react-three/drei"),
         ]);
       } catch {}
     })();
   }, []);
   return null;
 }
-

@@ -36,17 +36,7 @@ export default function SteeringWheelOverlay({
         if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
       }
     } catch {}
-    // Also attempt a direct, gesture-synchronous toggle of the main audio element
-    // This helps bypass autoplay restrictions on iOS/Safari that reject play() in effects
-    try {
-      const main = document.querySelector<HTMLAudioElement>('audio[data-audio-player="1"]');
-      if (main) {
-        // Ensure not muted and reasonable volume
-        try { main.muted = false; if (main.volume === 0) main.volume = 1.0; } catch {}
-        if (willPause) { main.pause(); }
-        else { void main.play(); }
-      }
-    } catch {}
+    // Do not toggle main track audio on Start. Playback is controlled via song selection.
   }
 
   const wheel = POS?.wheel || {};
@@ -107,19 +97,15 @@ export default function SteeringWheelOverlay({
         const iconSize = 30;
         const InstagramIcon = (
           <svg viewBox="0 0 24 24" width={iconSize} height={iconSize} fill="none">
-            <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="2" />
-            <circle cx="12" cy="12" r="4.2" stroke="currentColor" strokeWidth="2" />
-            <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" />
+            <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="12" cy="12" r="4.2" stroke="currentColor" strokeWidth="2.6" />
+            <circle cx="17.5" cy="6.5" r="1.6" fill="currentColor" />
           </svg>
         );
         const TikTokIcon = (
-          <span style={{ filter: 'drop-shadow(0 0 10px #FFFFFF) drop-shadow(0 0 22px #FFFFFF) drop-shadow(0 0 46px #FFFFFF)', mixBlendMode: 'screen' as any }}>
-            <svg viewBox="0 0 256 256" width={iconSize} height={iconSize} aria-hidden>
-              <g transform="translate(8,-6)"><path fill="#69C9D0" d="M120 32h40c2 26 21 47 46 52v32c-18-.4-36-5.9-52-15.7V184c0 35.3-28.7 64-64 64s-64-28.7-64-64c0-34.2 26.7-62.1 60.6-63.9 5.6-.3 11.2.2 16.7 1.4v32c-5.2-1.9-10.7-2.7-16.2-2.3-16.7 1.1-30.2 14.9-30.8 31.6-.7 18.5 14.1 33.6 32.6 33.6s32-14.3 32-32.8V32Z"/></g>
-              <g transform="translate(-8,8)"><path fill="#EE1D52" d="M120 32h40c2 26 21 47 46 52v32c-18-.4-36-5.9-52-15.7V184c0 35.3-28.7 64-64 64s-64-28.7-64-64c0-34.2 26.7-62.1 60.6-63.9 5.6-.3 11.2.2 16.7 1.4v32c-5.2-1.9-10.7-2.7-16.2-2.3-16.7 1.1-30.2 14.9-30.8 31.6-.7 18.5 14.1 33.6 32.6 33.6s32-14.3 32-32.8V32Z"/></g>
-              <path fill="#FFFFFF" d="M120 32h40c2 26 21 47 46 52v32c-18-.4-36-5.9-52-15.7V184c0 35.3-28.7 64-64 64s-64-28.7-64-64c0-34.2 26.7-62.1 60.6-63.9 5.6-.3 11.2.2 16.7 1.4v32c-5.2-1.9-10.7-2.7-16.2-2.3-16.7 1.1-30.2 14.9-30.8 31.6-.7 18.5 14.1 33.6 32.6 33.6s32-14.3 32-32.8V32Z"/>
-            </svg>
-          </span>
+          <svg viewBox="0 0 256 256" width={iconSize} height={iconSize} aria-hidden fill="currentColor">
+            <path d="M120 32h40c2 26 21 47 46 52v32c-18-.4-36-5.9-52-15.7V184c0 35.3-28.7 64-64 64s-64-28.7-64-64c0-34.2 26.7-62.1 60.6-63.9 5.6-.3 11.2.2 16.7 1.4v32c-5.2-1.9-10.7-2.7-16.2-2.3-16.7 1.1-30.2 14.9-30.8 31.6-.7 18.5 14.1 33.6 32.6 33.6s32-14.3 32-32.8V32Z"/>
+          </svg>
         );
         const YouTubeIcon = (
           <svg viewBox="0 0 24 24" width={iconSize} height={iconSize} fill="currentColor">
@@ -131,17 +117,17 @@ export default function SteeringWheelOverlay({
             <path d="M12 1.5a10.5 10.5 0 100 21 10.5 10.5 0 000-21zm4.8 15.2a.8.8 0 01-1.1.3c-3-1.8-6.9-2.2-11.4-1.1a.8.8 0 11-.4-1.6c4.9-1.2 9.2-.7 12.6 1.3.4.2.6.7.3 1.1zm1.5-3.2a1 1 0 01-1.4.4c-3.4-2-8.7-2.6-12.8-1.3a1 1 0 11-.6-1.9c4.8-1.4 10.7-.8 14.7 1.6.5.3.7.9.4 1.4zm.2-3.5c-3.9-2.3-10.5-2.5-14.3-1.4a1.2 1.2 0 01-.7-2.2c4.4-1.4 11.8-1.2 16.4 1.5a1.2 1.2 0 01-1.4 2.1z"/>
           </svg>
         );
-        // Simple Apple Music-style note glyph (approximation)
+        // Apple Music beamed double note (filled), centered and legible at small size
         const AppleMusicIcon = (
-          <svg viewBox="0 0 24 24" width={iconSize} height={iconSize} fill="none" aria-hidden>
-            <defs>
-              <linearGradient id="amg" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#FA2D48"/>
-                <stop offset="100%" stopColor="#FF4D7E"/>
-              </linearGradient>
-            </defs>
-            <path d="M16.8 3.5v9.1c0 .9-.6 1.7-1.5 1.9l-5 1.2a2 2 0 00-1.5 1.9c0 1.1 1 2 2.1 1.8l.1-.02a2 2 0 001.4-1.9V11l6.4-1.6V6.3c0-1.2-1.1-2.1-2.3-1.8l-.7.2z" fill="url(#amg)"/>
-            <circle cx="9" cy="18.6" r="2" fill="#ffffff" fillOpacity="0.85"/>
+          <svg viewBox="0 0 24 24" width={iconSize} height={iconSize} fill="currentColor" aria-hidden>
+            {/* right note head */}
+            <circle cx="16.2" cy="14.8" r="2.0" />
+            {/* left note head */}
+            <circle cx="9.2" cy="18.0" r="2.2" />
+            {/* right stem */}
+            <path d="M15.4 6h1.6v8.0h-1.6z" />
+            {/* beam */}
+            <path d="M17 6.2l-8.2 1.9v1.6l8.2-1.9V6.2z" />
           </svg>
         );
         return (
@@ -160,20 +146,20 @@ export default function SteeringWheelOverlay({
             <div style={{ opacity: showUI ? 1 : 0, transition: 'opacity 300ms ease', pointerEvents: showUI ? 'auto' : 'none' }}>
               <HoloHubMenu
                 items={[
-                LINKS.instagram ? { id: 'ig', label: 'Instagram', href: LINKS.instagram, icon: InstagramIcon, color: '#E1306C', size: 66 } : null,
-                LINKS.tiktok ? { id: 'tt', label: 'TikTok', href: LINKS.tiktok, icon: TikTokIcon, color: '#69C9D0', size: 64 } : null,
-                LINKS.youtube ? { id: 'yt', label: 'YouTube', href: LINKS.youtube, icon: YouTubeIcon, color: '#FF0000', size: 66 } : null,
-                LINKS.spotify ? { id: 'sp', label: 'Spotify', href: LINKS.spotify, icon: SpotifyIcon, color: '#1DB954', size: 72 } : null,
-                LINKS.apple ? { id: 'am', label: 'Apple Music', href: LINKS.apple, icon: AppleMusicIcon, color: '#FA2D48', size: 66 } : null,
+                LINKS.instagram ? { id: 'ig', label: 'Instagram', href: LINKS.instagram, icon: InstagramIcon, color: '#E1306C' } : null,
+                LINKS.tiktok ? { id: 'tt', label: 'TikTok', href: LINKS.tiktok, icon: TikTokIcon, color: '#69C9D0' } : null,
+                LINKS.youtube ? { id: 'yt', label: 'YouTube', href: LINKS.youtube, icon: YouTubeIcon, color: '#FF0000' } : null,
+                LINKS.spotify ? { id: 'sp', label: 'Spotify', href: LINKS.spotify, icon: SpotifyIcon, color: '#1DB954' } : null,
+                LINKS.apple ? { id: 'am', label: 'Apple Music', href: LINKS.apple, icon: AppleMusicIcon, color: '#FA2D48' } : null,
               ].filter(Boolean) as any}
                 radius={108}
                 hubColor="#F2EF1D"
-                itemSize={68}
+                itemSize={72}
                 hubSize={84}
                 // Explicit placement by clock position:
                 // 12 o'clock: Spotify (-90deg), 2 o'clock: Apple (-30deg),
-                // 4 o'clock: Instagram (30deg), 5 o'clock: TikTok (60deg), 7 o'clock: YouTube (120deg)
-                angles={{ sp: -90, am: -30, ig: 30, tt: 60, yt: 120 }}
+                // 3:30–4 o'clock: Instagram (15deg), 5 o'clock: TikTok (60deg), 6:30–7 o'clock: YouTube (110deg)
+                angles={{ sp: -90, am: -30, ig: 15, tt: 60, yt: 110 }}
               />
             </div>
           </div>

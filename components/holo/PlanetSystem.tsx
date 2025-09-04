@@ -3,7 +3,7 @@
 import React, { useEffect } from "react";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { AdditiveBlending, Group as ThreeGroup } from "three";
-import { Html, OrbitControls, Environment } from "@react-three/drei";
+// drei removed to avoid external asset/preset loading that can abort in some runtimes
 import { usePlayerStore } from "@/store/usePlayerStore";
 import Planet from "@/components/holo/Planet";
 import { usePlanetLayout, computePlanetLayout } from "@/lib/planetLayout";
@@ -38,16 +38,15 @@ export default function PlanetSystem({ showAll = false }: { showAll?: boolean })
         frameloop="demand"
       >
         {/* Transparent background; parent provides holographic blue backdrop */}
-        {/* HDR environment for realistic reflections */}
-        <Environment preset="sunset" background={false} blur={0.3} />
-        <hemisphereLight skyColor={"#bfefff"} groundColor={"#0a1e24"} intensity={0.35} />
-        <ambientLight intensity={0.22} />
-        <directionalLight position={[3, 6, 5]} intensity={0.6} color={"#9ff"} />
-        <pointLight position={[-4, 2, 4]} intensity={0.4} color={"#4ff"} />
+        {/* Simple lighting without external env presets */}
+        <hemisphereLight skyColor={"#bfefff"} groundColor={"#0a1e24"} intensity={0.26} />
+        <ambientLight intensity={0.18} />
+        <directionalLight position={[3, 6, 5]} intensity={0.5} color={"#9ff"} />
+        <pointLight position={[-4, 2, 4]} intensity={0.35} color={"#4ff"} />
         {/* Console-emitted cyan from below */}
-        <pointLight position={[0, -1.4, 0.6]} intensity={1.3} color={"#19E3FF"} distance={9} />
+        <pointLight position={[0, -1.4, 0.6]} intensity={1.1} color={"#19E3FF"} distance={9} />
         {/* Very soft magenta secondary glow for depth */}
-        <pointLight position={[0.8, -1.0, -0.4]} intensity={0.3} color={"#FC54AF"} distance={7.5} />
+        <pointLight position={[0.8, -1.0, -0.4]} intensity={0.26} color={"#FC54AF"} distance={7.5} />
         <InvalidateOnState />
         <ZoomOnChange />
 
@@ -89,7 +88,7 @@ export default function PlanetSystem({ showAll = false }: { showAll?: boolean })
         {/* Bloom skipped (package not installed). Using stronger glow shells instead. */}
 
 
-        <OrbitControls enablePan={false} enableZoom={false} enableRotate={false} target={[0, 0.35, 0]} />
+        {/* Controls removed; system slowly orbits programmatically */}
         <OverlapManager />
       </Canvas>
     </div>

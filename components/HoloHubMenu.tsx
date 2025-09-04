@@ -117,8 +117,11 @@ export default function HoloHubMenu({
       const explicit = (angles && it?.id ? angles[it.id] : undefined);
       const angleDeg = (typeof explicit === 'number') ? explicit : (-90 + (360 / n) * i);
       const a = (angleDeg * Math.PI) / 180;
-      const x = Math.cos(a) * effRadius;
-      const y = Math.sin(a) * effRadius;
+      // Allow subtle per-item placement tweaks without new props
+      const rMul = it.id === 'yt' ? 0.86 : 1.0; // bring YouTube closer to hub
+      let x = Math.cos(a) * (effRadius * rMul);
+      let y = Math.sin(a) * (effRadius * rMul);
+      if (it.id === 'yt') x += 8; // nudge slightly to the right
       return { x, y, angleDeg };
     });
   }, [entries, effRadius, angles]);
@@ -312,99 +315,55 @@ export default function HoloHubMenu({
             inset 0 1px 0 rgba(255,255,255,.28), inset 0 -8px 18px rgba(0,0,0,.65);
           filter: brightness(1.08) saturate(1.16);
         }
-        /* Instagram-specific tweaks: no rim, multi‑color outer halo, bigger logo, strong inner glow */
-        .item[data-id="ig"]{
+        /* Simplify brand buttons: plain circle with logo only (same format/size) */
+        .item[data-id="ig"], .item[data-id="tt"], .item[data-id="yt"], .item[data-id="sp"], .item[data-id="am"]{
+          background: transparent;
           border: none;
-          /* Soften the base glass to avoid a hard outline */
-          background:
-            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.04), rgba(255,255,255,0) 42%),
-            linear-gradient(180deg, rgba(8,16,26,.24), rgba(0,0,0,.18));
-          box-shadow:
-            0 10px 16px rgba(0,0,0,.48),
-            0 0 60px rgba(252,84,175,.66),
-            0 0 300px rgba(252,84,175,.40),
-            inset 0 0 0 0 rgba(255,255,255,0),
-            inset 0 0 24px rgba(252,84,175,.36);
+          box-shadow: none;
         }
-        .item[data-id="ig"]:hover{ box-shadow:
-            0 14px 22px rgba(0,0,0,.56),
-            0 0 40px rgba(252,84,175,.73),
-            0 0 160px rgba(252,84,175,.46),
-            inset 0 0 0 0 rgba(255,255,255,0),
-            inset 0 0 28px rgba(252,84,175,.52);
+        .item[data-id="ig"]::before, .item[data-id="tt"]::before, .item[data-id="yt"]::before, .item[data-id="sp"]::before, .item[data-id="am"]::before{ display: none; }
+        .item[data-id="ig"]::after,  .item[data-id="tt"]::after,  .item[data-id="yt"]::after,  .item[data-id="sp"]::after,  .item[data-id="am"]::after{ display: none; }
+        .item[data-id="ig"] .icon, .item[data-id="tt"] .icon, .item[data-id="yt"] .icon, .item[data-id="sp"] .icon, .item[data-id="am"] .icon{
+          position: relative; width: 86%; height: 86%; color: var(--tint, #38B6FF);
+          filter: none;
+          mix-blend-mode: normal;
         }
-        /* Remove the rim entirely for IG */
-        .item[data-id="ig"]::before{ display:none; }
-        .item[data-id="ig"] .icon{ position: relative; mix-blend-mode: screen; width: 97%; height: 97%; }
-        /* Remove SVG shadow filters to restore crisp strokes */
-        .item[data-id="ig"] .icon svg{ filter: none; }
-        .item[data-id="ig"] .icon::before{
-          content:""; position:absolute; inset:4%; pointer-events:none; mix-blend-mode:screen;
-          /* Multi-color inner glow, masked to IG silhouette */
-          background:
-            conic-gradient(from 0deg,
-              #F58529 0deg, #FEDA77 60deg, #DD2A7B 120deg,
-              #8134AF 200deg, #515BD4 300deg, #F58529 360deg);
-          filter: blur(7px) saturate(1.2) brightness(1.06);
-          /* Mask to Instagram silhouette (square + lens) */
-          -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="%23fff"/><circle cx="12" cy="12" r="8.2" fill="%23fff"/></svg>');
-          mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="%23fff"/><circle cx="12" cy="12" r="8.2" fill="%23fff"/></svg>');
-          -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-          -webkit-mask-position: center; mask-position: center;
-          -webkit-mask-size: contain; mask-size: contain;
+        /* Ensure SVG glyphs are transparent fills with brand-colored strokes so glow shines through */
+        .item[data-id="ig"] .icon > svg, .item[data-id="tt"] .icon > svg, .item[data-id="yt"] .icon > svg, .item[data-id="sp"] .icon > svg, .item[data-id="am"] .icon > svg{
+          width: 100%; height: 100%; display:block; fill: currentColor; stroke: none;
         }
-        /* Replace sheen with a soft multi-color outer halo */
-        .item[data-id="ig"]::after{ content:""; position:absolute; inset:-26%; border-radius:9999px; pointer-events:none; opacity:.7; mix-blend-mode:screen;
-          background:
-            conic-gradient(from 0deg,
-              #F58529 0deg, #FEDA77 60deg, #DD2A7B 120deg,
-              #8134AF 200deg, #515BD4 300deg, #F58529 360deg);
-          filter: blur(44px) saturate(1.05);
+        .item[data-id="ig"] .icon > svg *, .item[data-id="tt"] .icon > svg *, .item[data-id="yt"] .icon > svg *, .item[data-id="sp"] .icon > svg *, .item[data-id="am"] .icon > svg *{
+          fill: currentColor !important; stroke: none !important;
         }
-        /* Additional soft edge bloom layer to blend the halo */
-        .item[data-id="ig"]::before{ content:""; position:absolute; inset:-14%; border-radius:9999px; pointer-events:none; opacity:.22; mix-blend-mode:screen;
-          background: radial-gradient(closest-side, rgba(255,255,255,.18), transparent 80%);
-          filter: blur(32px);
-        }
-        /* Apply the same IG style to TikTok, YouTube, Spotify, and Apple with their tint colors */
-        .item[data-id="tt"], .item[data-id="yt"], .item[data-id="sp"], .item[data-id="am"]{ border:none; box-shadow:
-            0 10px 16px rgba(0,0,0,.5),
-            0 0 4px var(--tint, #38B6FF)60,
-            inset 0 0 0 0 rgba(255,255,255,0),
-            inset 0 0 20px var(--tint, #38B6FF)48;
-        }
-        .item[data-id="tt"]:hover, .item[data-id="yt"]:hover, .item[data-id="sp"]:hover, .item[data-id="am"]:hover{ box-shadow:
-            0 14px 22px rgba(0,0,0,.56),
-            0 0 12px var(--tint, #38B6FF)9a,
-            inset 0 0 0 0 rgba(255,255,255,0),
-            inset 0 0 24px var(--tint, #38B6FF)7a;
-        }
-        .item[data-id="tt"]::before, .item[data-id="yt"]::before, .item[data-id="sp"]::before, .item[data-id="am"]::before{ display:none; }
-        .item[data-id="tt"] .icon, .item[data-id="yt"] .icon, .item[data-id="sp"] .icon, .item[data-id="am"] .icon{ position:relative; mix-blend-mode: screen; width: 90%; height: 90%; }
-        /* Inner glow masked to a circle for each brand button */
+        /* Apple Music uses filled note now; no stroke override */
+        .item[data-id="ig"] .icon svg, .item[data-id="tt"] .icon svg, .item[data-id="yt"] .icon svg, .item[data-id="sp"] .icon svg, .item[data-id="am"] .icon svg{ display:block; width:100%; height:100%; }
+        /* Remove hologram glows for a clean reset */
+        .item[data-id="ig"] .icon::before,
         .item[data-id="tt"] .icon::before,
         .item[data-id="yt"] .icon::before,
         .item[data-id="sp"] .icon::before,
-        .item[data-id="am"] .icon::before{
-          content:""; position:absolute; inset:10%; pointer-events:none; mix-blend-mode:screen;
-          background: radial-gradient(closest-side, var(--tint, #38B6FF)cc, var(--tint, #38B6FF)55 60%, transparent 78%);
-          filter: blur(6px) saturate(1.15) brightness(1.05);
-          -webkit-mask-image: radial-gradient(circle, #fff 68%, transparent 70%);
-          mask-image: radial-gradient(circle, #fff 68%, transparent 70%);
-          -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-          -webkit-mask-position: center; mask-position: center;
-          -webkit-mask-size: contain; mask-size: contain;
-        }
+        .item[data-id="am"] .icon::before,
+        .item[data-id="ig"] .icon::after,
+        .item[data-id="tt"] .icon::after,
+        .item[data-id="yt"] .icon::after,
+        .item[data-id="sp"] .icon::after,
+        .item[data-id="am"] .icon::after{ display:none; }
+        /* Tinted inner ring at the button level for a "through the button" glow */
+        .item[data-id="ig"]::before, .item[data-id="tt"]::before, .item[data-id="yt"]::before, .item[data-id="sp"]::before, .item[data-id="am"]::before,
+        .item[data-id="ig"]::after, .item[data-id="tt"]::after, .item[data-id="yt"]::after, .item[data-id="sp"]::after, .item[data-id="am"]::after{ display:none; }
+        /* Remove any IG-specific halo; keep all brand items visually consistent */
+        .item[data-id="ig"]:hover .icon, .item[data-id="tt"]:hover .icon, .item[data-id="yt"]:hover .icon, .item[data-id="sp"]:hover .icon, .item[data-id="am"]:hover .icon{ transform: scale(1.04); filter: none; }
+        @keyframes holoCore {}
         .item:active{ transform: translate(var(--tx,0), var(--ty,0)) scale(0.98); }
         /* Focus ring should follow the item's own tint, not the hub color */
         .item:focus{ outline: 2px solid var(--tint, #38B6FF); outline-offset: 2px; }
-        .item .icon{ display:flex; align-items:center; justify-content:center; color: var(--tint, #9EEBFF);
-          width: 80%; height: 80%;
-          filter: drop-shadow(0 0 16px var(--tint, #38B6FF)) drop-shadow(0 0 36px var(--tint, #38B6FF));
-          transition: filter 180ms ease, transform 180ms ease;
+        .item .icon{ display:flex; align-items:center; justify-content:center; color: inherit;
+          width: 86%; height: 86%;
+          filter: none;
+          transition: transform 180ms ease;
         }
         .item .icon > img, .item .icon > svg{ width: 100% !important; height: 100% !important; }
-        .item:hover .icon{ transform: scale(1.06); filter: drop-shadow(0 0 22px var(--tint, #38B6FF)) drop-shadow(0 0 64px var(--tint, #38B6FF)); }
+        .item:hover .icon{ transform: scale(1.06); }
         @keyframes holoSheen { 0% { transform: translateX(-130%); } 55% { transform: translateX(130%);} 100% { transform: translateX(130%);} }
         .item .dot{ width: 10px; height:10px; border-radius:9999px; background:#9EEBFF; }
 

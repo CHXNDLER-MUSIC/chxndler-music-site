@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { tracks as ALL, type Track } from "@/config/tracks";
 import { skyFor } from "@/lib/sky";
 import { track as gaTrack } from "@/lib/analytics";
+import { DEBUG_MEDIA, dlog, dwarn, dumpAudio } from "@/lib/debug";
 
 type Props = {
   onSkyChange: (webm: string, mp4: string, key: string) => void;
@@ -46,12 +47,14 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
 
   useEffect(() => { onPlayingChange(playing); }, [playing, onPlayingChange]);
 
-  // external "start" signal: jump to startIndex and play
+  // External "start" signal: only act when startSignal increments (>0).
+  // Prevent auto-start on initial mount.
   useEffect(() => {
+    if (!startSignal) return;
     const a = audioRef.current; if (!a) return;
     setIdx(startIndex);
     setTimeout(() => {
-      a.load();
+      try { if (a.readyState < 2) a.load(); } catch {}
       if (cur.src) {
         a.play().then(() => { setPlaying(true); gaTrack("play", { slug: cur.slug }); })
                  .catch(() => setPlaying(false));
@@ -59,20 +62,21 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
     }, 0);
   }, [startSignal]); // eslint-disable-line
 
-  // load on index change; update sky; optionally auto-start after delay
+  // Load on index change; update sky; optionally auto-start after delay
   useEffect(() => {
     const a = audioRef.current; if (!a) return;
+    if (DEBUG_MEDIA) { dlog('index change', { idx, title: cur?.title, slug: cur?.slug, autoPlayOnIndex }); dumpAudio(a, 'onIndexChange:before'); }
     // Clear any pending delayed plays from prior index changes
     if (warpPlayTimerRef.current !== undefined) { clearTimeout(warpPlayTimerRef.current); warpPlayTimerRef.current = undefined; }
-    a.load();
-    setPlaying(false);
+    // Avoid resetting playback unless the new source isn't ready yet
+    try { if (a.readyState < 2 /* HAVE_CURRENT_DATA */) a.load(); } catch {}
+    // Do not force-stop audio when external controller will start it (autoPlayOnIndex=false)
+    if (autoPlayOnIndex) setPlaying(false);
     if (cur.src && autoPlayOnIndex) {
       // Begin playback muted immediately (allowed by autoplay policies), then unmute after warp
       try { a.muted = true; a.volume = 0.0; } catch {}
       a.play().catch(()=>{});
-    } else {
-      try { a.pause(); } catch {}
-    }
+    } // else: leave current playback state as-is (DashboardApp coordinates play)
     const s = skyFor(cur.slug);
     onSkyChange(s.webm, s.mp4, s.key);
     if (onTrackChange) onTrackChange(cur);
@@ -94,6 +98,7 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
         a2.play().catch(()=>{});
         setPlaying(true);
         warpPlayTimerRef.current = undefined;
+        if (DEBUG_MEDIA) { dlog('autoPlayOnIndex unmute+play after warp'); dumpAudio(a2, 'onIndexChange:autoPlay'); }
       }, WARP_MS);
     }
   }, [idx, autoPlayOnIndex]); // eslint-disable-line
@@ -108,32 +113,48 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
   useEffect(() => {
     const a = audioRef.current; if (!a) return;
     if (cur?.src) {
-      a.load();
+      // Ensure the audio element is pointing at the current track source
+      try {
+        const want = String(cur.src || "");
+        if (want && a.getAttribute("src") !== want) {
+          a.setAttribute("src", want);
+          // If we swapped the src, load the new one to be safe
+          try { a.load(); } catch {}
+          if (DEBUG_MEDIA) dlog('playSignal: set src', want);
+        }
+      } catch {}
+      // Avoid unconditional load() here — it can reset playback right after warp.
+      // Only load if the element isn't ready to play the current source yet.
+      try {
+        if (a.readyState < 2 /* HAVE_CURRENT_DATA */) a.load();
+      } catch {}
       // Try direct play; if blocked, fall back to muted-start then unmute shortly
       try { a.muted = false; a.volume = 1.0; } catch {}
+      if (DEBUG_MEDIA) { dlog('playSignal: attempting direct play'); dumpAudio(a, 'playSignal:before'); }
       a.play()
         .then(() => {
           // Guard: some browsers may resolve but stay paused; recheck shortly
           setTimeout(() => {
             const ax = audioRef.current; if (!ax) return;
-            if (!ax.paused) { setPlaying(true); onPlayingChange(true); gaTrack("play", { slug: cur.slug }); return; }
+            if (!ax.paused) { if (DEBUG_MEDIA) dlog('playSignal: direct play confirmed'); setPlaying(true); onPlayingChange(true); gaTrack("play", { slug: cur.slug }); return; }
             // Fallback if still paused
             try {
               ax.muted = true; ax.volume = 0.0;
               ax.play().then(() => {
                 setTimeout(() => { try { ax.muted = false; ax.volume = 1.0; } catch {} }, 80);
                 setPlaying(true); onPlayingChange(true); gaTrack("play", { slug: cur.slug });
-              }).catch(() => setPlaying(false));
+              }).catch((e) => { if (DEBUG_MEDIA) dwarn('playSignal: muted fallback rejected', e?.name, e?.message); setPlaying(false); });
             } catch { setPlaying(false); }
           }, 120);
         })
-        .catch(() => {
+        .catch((e) => {
+          if (DEBUG_MEDIA) dwarn('playSignal: direct play rejected', e?.name, e?.message);
           try {
             a.muted = true; a.volume = 0.0;
             a.play().then(() => {
               setTimeout(() => { try { a.muted = false; a.volume = 1.0; } catch {} }, 80);
               setPlaying(true); onPlayingChange(true); gaTrack("play", { slug: cur.slug });
-            }).catch(() => setPlaying(false));
+            }).catch((e2) => { if (DEBUG_MEDIA) dwarn('playSignal: muted fallback rejected', e2?.name, e2?.message); setPlaying(false); });
           } catch { setPlaying(false); }
         });
       return;
@@ -144,8 +165,15 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
       setIdx(withAudio);
       setTimeout(() => {
         const a2 = audioRef.current; if (!a2) return;
-        a2.load(); try { a2.muted = false; a2.volume = 1.0; } catch {}
-        a2.play().then(() => { setPlaying(true); onPlayingChange(true); gaTrack("play", { slug: tracks[withAudio].slug }); }).catch(()=>setPlaying(false));
+        // Ensure source is correct when jumping tracks programmatically
+        try {
+          const want = String(tracks[withAudio]?.src || "");
+          if (want && a2.getAttribute("src") !== want) { a2.setAttribute("src", want); try { a2.load(); } catch {} }
+        } catch {}
+        // As above, only load if needed to avoid resetting mid-play when already correct
+        try { if (a2.readyState < 2) a2.load(); } catch {}
+        try { a2.muted = false; a2.volume = 1.0; } catch {}
+        a2.play().then(() => { if (DEBUG_MEDIA) dlog('playSignal: fallback first-with-audio played'); setPlaying(true); onPlayingChange(true); gaTrack("play", { slug: tracks[withAudio].slug }); }).catch((e)=>{ if (DEBUG_MEDIA) dwarn('playSignal: fallback play rejected', e?.name, e?.message); setPlaying(false); });
       }, 0);
     }
   }, [playSignal]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -216,16 +244,25 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
   useEffect(() => {
     // Keep local playing state in sync with the audio element's real state
     const a = audioRef.current; if (!a) return;
-    const onPlay = () => setPlaying(true);
-    const onPause = () => setPlaying(false);
-    const onEnded = () => setPlaying(false);
+    const onPlay = () => { if (DEBUG_MEDIA) dlog('audio event: play'); setPlaying(true); };
+    const onPause = () => { if (DEBUG_MEDIA) dlog('audio event: pause'); setPlaying(false); };
+    const onEnded = () => { if (DEBUG_MEDIA) dlog('audio event: ended'); setPlaying(false); };
+    const onErr = (e: any) => { if (DEBUG_MEDIA) { dwarn('audio event: error', e?.message || e); dumpAudio(a, 'audio:error'); }};
+    const onWaiting = () => { if (DEBUG_MEDIA) dlog('audio event: waiting'); };
+    const onStalled = () => { if (DEBUG_MEDIA) dlog('audio event: stalled'); };
     a.addEventListener('play', onPlay);
     a.addEventListener('pause', onPause);
     a.addEventListener('ended', onEnded);
+    a.addEventListener('error', onErr as any);
+    a.addEventListener('waiting', onWaiting as any);
+    a.addEventListener('stalled', onStalled as any);
     return () => {
       a.removeEventListener('play', onPlay);
       a.removeEventListener('pause', onPause);
       a.removeEventListener('ended', onEnded);
+      a.removeEventListener('error', onErr as any);
+      a.removeEventListener('waiting', onWaiting as any);
+      a.removeEventListener('stalled', onStalled as any);
     };
   }, [audioRef.current]);
 
@@ -385,6 +422,7 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
           playsInline
           onError={() => {
             const a = audioRef.current; if (!a) return;
+            if (DEBUG_MEDIA) { dwarn('audio tag onError'); dumpAudio(a, 'audio:onError'); }
             a.removeAttribute("src"); a.load(); setPlaying(false);
           }}
           style={{ position:'fixed', width:0, height:0, opacity:0, pointerEvents:'none', left:0, top:0 }}

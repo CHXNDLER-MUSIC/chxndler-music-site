@@ -26,8 +26,20 @@ export default function NeonCockpitRim() {
     }
     if (!ctx) return;
 
-    // Some browsers require resume after user gesture; attempt non-blocking resume
-    try { if (ctx.state === 'suspended') ctx.resume().catch(()=>{}); } catch {}
+    // Safari/iOS require a user gesture to resume; if suspended, attach a one-time unlock
+    if (ctx.state !== 'running') {
+      const unlock = () => {
+        try { ctx.resume().catch(()=>{}); } catch {}
+        window.removeEventListener('pointerdown', unlock as any);
+        window.removeEventListener('touchstart', unlock as any);
+        window.removeEventListener('keydown', unlock as any);
+      };
+      window.addEventListener('pointerdown', unlock, { once: true } as any);
+      window.addEventListener('touchstart', unlock, { once: true } as any);
+      window.addEventListener('keydown', unlock as any, { once: true } as any);
+      // Defer node wiring until context is running to avoid silencing output on Safari
+      return;
+    }
 
     // Build nodes once per element
     let analyser = analyserRef.current;
@@ -124,4 +136,3 @@ export default function NeonCockpitRim() {
     </div>
   );
 }
-

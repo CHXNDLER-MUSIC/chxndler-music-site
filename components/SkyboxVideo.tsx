@@ -1,6 +1,7 @@
 "use client";
 import React, { useRef, useState } from "react";
 import { sfx } from "@/lib/sfx";
+import { DEBUG_MEDIA, dlog } from "@/lib/debug";
 
 export default function SkyboxVideo({
   brightness = 0.95,
@@ -108,7 +109,7 @@ export default function SkyboxVideo({
       if (showLightspeed) return; // ignore while overlay is visible
       if (basePlayNotified.current === key) return;
       basePlayNotified.current = key;
-      try { onBasePlaying && onBasePlaying(); } catch {}
+      try { if (DEBUG_MEDIA) dlog('Skybox base video onplaying', { key, srcMp4 }); onBasePlaying && onBasePlaying(); } catch {}
     };
     base.addEventListener('playing', onPlaying);
     return () => { base.removeEventListener('playing', onPlaying); };

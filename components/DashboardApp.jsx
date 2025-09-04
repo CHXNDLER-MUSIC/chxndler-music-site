@@ -13,6 +13,7 @@ import HoloHUD from "@/components/HoloHUD";
 import { skyFor, introSky } from "@/lib/sky";
 import MediaDock from "@/components/MediaDock";
 import { sfx } from "@/lib/sfx";
+import { DEBUG_MEDIA, dlog, dwarn, dumpAudio } from "@/lib/debug";
 // import SocialIcons from "@/components/SocialIcons";
 // import StreamingButtons from "@/components/StreamingButtons";
 import NeonCockpitRim from "@/components/NeonCockpitRim";
@@ -52,7 +53,7 @@ export default function DashboardApp() {
   const trackPlayTimerRef = React.useRef(undefined);
   const [ambientSuspended, setAmbientSuspended] = useState(false);
   const [firstStartDone, setFirstStartDone] = useState(false);
-  const welcomeOnStartRef = React.useRef(false); // deprecated, kept to avoid refactor; always false
+  const welcomeOnStartRef = React.useRef(false); // signals that welcome VO should play now
   const SPACE_SKY = { webm: "/skies/space.webm", mp4: "/skies/space.mp4", key: "space" };
 
   // Centralized HUD power sequencing: play SFX then run beam/HUD fades
@@ -61,50 +62,49 @@ export default function DashboardApp() {
     setPowerBusy(true);
     const a = powerRef.current;
     const turningOn = typeof turnOn === 'boolean' ? turnOn : (!beamEnabled && !showHUD);
-    // Fire SFX; for turning on, delay beam/HUD until SFX ends
+    // Fire SFX; for turning on, fade in UI immediately with the SFX,
+    // then start beam after SFX ends and finally fade HUD in
     try {
       if (a) {
         a.currentTime = 0; a.volume = 0.9; a.play().catch(()=>{});
-        // Reveal cockpit UI buttons (power/comms/join) as soon as SFX starts
-        // so they "come in when the sound plays"
+        // Fade in comms/power/join together right as SFX starts
         if (turningOn) {
           setShowOverlayUI(true);
           setShowPowerBtn(true);
         }
-        // Do NOT suspend ambient; allow join-alien SFX to play over space-music
+        // Keep ambient paused until after HUD fades in
+        // Start light beam immediately with SFX
+        if (turningOn) {
+          try { setBeamEnabled(true); } catch {}
+          // Fade HUD in shortly after SFX starts (and beam is visible)
+          setTimeout(() => {
+            setBeamOnly(false);
+            setPowerBusy(false);
+            setAmbientSuspended(false); // allow AmbientSpace to resume ambient and then VO
+          }, 120);
+        }
         a.onended = () => {
           try { a.onended = null; } catch {}
-          // Stop any welcome VO if it was queued/playing and do not play it
-          try {
-            const intro = document.querySelector('audio[data-intro="1"]');
-            if (intro && typeof (intro).pause === 'function') {
-              (intro).pause();
-              try { (intro).currentTime = 0; } catch {}
-            }
-          } catch {}
-          setHomeIntroEnabled(false);
-          if (turningOn) {
-            // 2) Start beam after SFX
-            setBeamEnabled(true);
-            // 3) Fade HUD in shortly after beam begins (~150–180ms)
-            setTimeout(() => { setBeamOnly(false); setPowerBusy(false); }, 170);
+          // If we specifically queued welcome VO for first Start, do not cancel it here
+          if (!welcomeOnStartRef.current) {
+            // Otherwise, ensure welcome VO is not playing and stays disabled
+            try {
+              const intro = document.querySelector('audio[data-intro="1"]');
+              if (intro && typeof (intro).pause === 'function') {
+                (intro).pause();
+                try { (intro).currentTime = 0; } catch {}
+              }
+            } catch {}
+            setHomeIntroEnabled(false);
           }
+          // HUD already faded in; nothing further needed here besides grace timer
+          // Clear the flag after a grace window so fallback timers won't cancel VO
+          setTimeout(() => { welcomeOnStartRef.current = false; }, 6000);
         };
         // Fallback if ended doesn't fire
         setTimeout(() => {
-          // Stop any welcome VO and ensure it's disabled
-          try {
-            const intro = document.querySelector('audio[data-intro="1"]');
-            if (intro && typeof (intro).pause === 'function') {
-              (intro).pause();
-              try { (intro).currentTime = 0; } catch {}
-            }
-          } catch {}
-          setHomeIntroEnabled(false);
-          if (turningOn) {
-            setBeamEnabled(true);
-            setTimeout(() => { setBeamOnly(false); setPowerBusy(false); }, 170);
-          }
+          // Do not cancel welcome VO in fallback path
+          welcomeOnStartRef.current = false;
         }, 2600);
       }
     } catch {}
@@ -118,8 +118,9 @@ export default function DashboardApp() {
       // 1) Mount HUD hidden
       setShowHUD(true);
       setBeamOnly(true);
-      // Start the beam immediately on power press (HUD still fades after SFX timing)
-      try { setBeamEnabled(true); } catch {}
+      // Keep ambient paused until HUD fades in
+      try { setAmbientSuspended(true); } catch {}
+      // Do not start beam yet; will start after SFX ends (above)
     } else {
       // Powering off: play SFX immediately (done above), then fade beam out now,
       // and fade HUD out shortly after for a snappy close.
@@ -150,7 +151,7 @@ export default function DashboardApp() {
         if (a) {
           a.pause();
           // Prime autoplay permission within this gesture without output
-          try { a.muted = true; a.play().then(()=>{ a.pause(); a.currentTime = 0; }).catch(()=>{}); } catch {}
+          try { a.muted = true; a.play().then(()=>{ a.pause(); a.currentTime = 0; }).catch((e)=>{ if (DEBUG_MEDIA) dwarn('gesture prime rejected', e?.name, e?.message); }); } catch {}
         }
       } catch {}
       // Update selected channel.
@@ -164,6 +165,7 @@ export default function DashboardApp() {
           if (audioEl.getAttribute('src') !== src) audioEl.setAttribute('src', src);
           audioEl.muted = true; audioEl.volume = 0.0;
           audioEl.play().catch(()=>{});
+          if (DEBUG_MEDIA) { dlog('onSongChange: primed muted play', { src }); dumpAudio(audioEl, 'onSongChange:prime'); }
         }
       } catch {}
       // Defer audio start until lightspeed overlay finishes AND the target sky video is playing.
@@ -229,7 +231,7 @@ export default function DashboardApp() {
           // Stop any currently playing track as soon as warp begins
           try {
             const a = document.querySelector('audio[data-audio-player="1"]');
-            if (a) a.pause();
+            if (a) { a.pause(); if (DEBUG_MEDIA) dlog('onFlyStart: paused main audio'); }
           } catch {}
           setIsPlaying(false);
         }}
@@ -240,35 +242,40 @@ export default function DashboardApp() {
           // If this warp was due to Start (not track selection), prepare to land on home
           if (!pendingTrackPlay) setPendingHomePower(true);
           else {
-            // Fallback: if base video 'playing' event doesn't fire (same-sky key or race),
-            // kick off audio after the lightspeed overlay has fully cleared.
-            if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); }
-            trackPlayTimerRef.current = window.setTimeout(() => {
-              setPlaySignal((n) => n + 1);
-              trackPlayTimerRef.current = undefined;
-            }, 1850);
+            // Warp overlay just finished for a song change: start playback now.
+            if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
+            setPlaySignal((n) => n + 1);
           }
         }}
         onBasePlaying={() => {
+          if (DEBUG_MEDIA) dlog('Sky base video playing');
           if (pendingHomePower) {
+            // Start path: ensure main track audio stays stopped on landing
+            try {
+              const a = document.querySelector('audio[data-audio-player="1"]');
+              if (a) { a.pause(); try { a.currentTime = 0; } catch {} }
+            } catch {}
+            setIsPlaying(false);
             setPendingHomePower(false);
             // Now that space.mp4 is playing
             setHomeMode(true);
-            // Do not play welcome VO after Start; keep it disabled
-            welcomeOnStartRef.current = false;
-            setHomeIntroEnabled(false);
+            // First Start: enable welcome VO to play over ambient once space-music is in
+            if (!firstStartDone) {
+              welcomeOnStartRef.current = true; // signal power-up not to cancel it
+              setHomeIntroEnabled(true);
+              setFirstStartDone(true);
+            }
             setUserSelected(false);
             setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
+            // Keep ambient paused until UI beam + HUD have faded in
+            setAmbientSuspended(true);
             // Begin HUD power sequence: plays join-alien SFX, then beam fade-in, then HUD fade-in
             try { triggerHudPower(true); } catch {}
           }
           if (pendingTrackPlay) {
-            // Selected a song: stop warp overlay and allow MediaDock to handle playback
-            setPendingTrackPlay(false);
-            setAllowWarp(false);
-            // Start the selected track now that its sky video is playing
+            // Do not start audio here; wait for onFlyEnd so playback begins after warp SFX ends.
+            // Clear any pending fallback timers; onFlyEnd will trigger play immediately.
             if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
-            setPlaySignal((n) => n + 1);
           }
         }}
       />
@@ -283,8 +290,17 @@ export default function DashboardApp() {
         showUI={showOverlayUI}
         onLaunch={() => {
           // Start: warp overlay + sound, then land on CHXNDLER homepage
-          // Stop track playback so ambient can play on homepage
-          try { const a = document.querySelector('audio[data-audio-player="1"]'); if (a) a.pause(); } catch {}
+          // Hard-stop any main track audio so Start never blips a song
+          try {
+            const a = document.querySelector('audio[data-audio-player="1"]');
+            if (a) {
+              a.pause();
+              try { a.currentTime = 0; } catch {}
+              try { a.muted = true; } catch {}
+              try { a.removeAttribute('src'); } catch {}
+              try { a.load(); } catch {}
+            }
+          } catch {}
           setIsPlaying(false);
           setAllowWarp(true);
           setNextSky(SPACE_SKY);
@@ -305,7 +321,7 @@ export default function DashboardApp() {
         ]}
       >
         <div className="relative h-full w-full p-0" style={{ overflow: 'visible' }} suppressHydrationWarning>
-          {showHUD && process.env.NEXT_PUBLIC_HOLOHUD !== '1' ? (
+          {showHUD ? (
             <div className="absolute inset-0 p-0" suppressHydrationWarning>
               <HUDPanel
                 inConsole

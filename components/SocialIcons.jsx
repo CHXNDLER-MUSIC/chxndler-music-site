@@ -89,12 +89,14 @@ export default function SocialIcons({ LINKS, POS, trackLinks }) {
   return (
     <>
       {items.map((it, i) => {
-        const yAdjPxMap = { instagram: 0, tiktok: -12, youtube: -30 };
+        // Slight position tweaks: IG up a bit, YT stays but adjustable
+        const yAdjPxMap = { instagram: -6, tiktok: -12, youtube: -30 };
         const yAdj = (yAdjPxMap[it.key] !== undefined ? yAdjPxMap[it.key] : 0);
         const top = hasStack
           ? `calc(${s.baseYVh + s.spacingVh * i}vh - ${size/2}px + ${yAdj}px)`
           : `calc(${[s.igYVh, s.ttYVh, s.ytYVh, s.appleYVh, s.spotifyYVh][i]}vh - ${size/2}px + ${yAdj}px)`;
-        const xAdjPxMap = { instagram: -10, tiktok: 12, youtube: 28 };
+        // Nudge YouTube slightly to the right
+        const xAdjPxMap = { instagram: -10, tiktok: 12, youtube: 36 };
         const offsetPx = (xAdjPxMap[it.key] !== undefined ? xAdjPxMap[it.key] : 0); // +left, -right
         const leftCSS = `calc(${s.xVw}vw - ${size/2 + offsetPx}px)`;
         // Slight clockwise (right) rotation for social icons
@@ -102,7 +104,7 @@ export default function SocialIcons({ LINKS, POS, trackLinks }) {
         const extraRot = rotateZMap[it.key] ? ` rotateZ(${rotateZMap[it.key]})` : '';
         const transformCSS = `${BASE}${extraRot}`;
         return (
-          <div key={it.key} className="ck-icon-wrap" style={{ left: leftCSS, top, width:size, height:size, transform: transformCSS }}>
+          <div key={it.key} data-key={it.key} className="ck-icon-wrap" style={{ left: leftCSS, top, width:size, height:size, transform: transformCSS }}>
             <span className="deck" aria-hidden />
             <span className="socket" aria-hidden />
             <IconButtonShell title={it.title} href={it.href} color={it.color} onClickFX={playClick} onHoverFX={playHover}>
@@ -120,6 +122,9 @@ export default function SocialIcons({ LINKS, POS, trackLinks }) {
         }
         /* Remove recessed inlay/socket behind icons per request */
         .ck-icon-wrap .socket{ display:none; }
+        /* Remove rim border specifically for Instagram */
+        .ck-icon-wrap[data-key="instagram"] :global(.ck-icon-btn){ border:none !important; }
+        .ck-icon-wrap[data-key="instagram"] :global(.ck-icon-btn:before){ display:none !important; }
       `}</style>
       {/* Play hover/click sounds */}
       <audio ref={clickRef} src="/audio/join-alien.mp3" preload="auto" playsInline />
