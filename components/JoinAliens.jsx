@@ -44,7 +44,7 @@ export default function JoinAliens() {
         placeholder="Email"
         disabled={status === "loading" || status === "ok"}
         aria-disabled={status === "loading" || status === "ok"}
-        className="w-full rounded-xl bg-black/35 backdrop-blur-md px-3 py-2 text-white placeholder-white/80 outline-none border-2 border-[#19E3FF]/80 shadow-[0_0_30px_rgba(25,227,255,0.55),_0_0_60px_rgba(25,227,255,0.35)] focus:ring-4 focus:ring-[#19E3FF] focus:shadow-[0_0_50px_rgba(25,227,255,0.85),_0_0_110px_rgba(25,227,255,0.55)] disabled:opacity-60 disabled:cursor-not-allowed"
+        className="w-full max-w-[260px] mx-auto rounded-xl bg-black/35 backdrop-blur-md px-3 py-0.5 text-white placeholder-white/80 outline-none border-2 border-[#19E3FF]/80 shadow-[0_0_30px_rgba(25,227,255,0.55),_0_0_60px_rgba(25,227,255,0.35)] focus:ring-4 focus:ring-[#19E3FF] focus:shadow-[0_0_50px_rgba(25,227,255,0.85),_0_0_110px_rgba(25,227,255,0.55)] disabled:opacity-60 disabled:cursor-not-allowed text-sm"
       />
 
       <label className="sr-only" htmlFor="join-phone">Phone (optional)</label>
@@ -57,7 +57,7 @@ export default function JoinAliens() {
         placeholder="Phone"
         disabled={status === "loading" || status === "ok"}
         aria-disabled={status === "loading" || status === "ok"}
-        className="w-full rounded-xl bg-black/35 backdrop-blur-md px-3 py-2 text-white placeholder-white/80 outline-none border-2 border-[#19E3FF]/80 shadow-[0_0_30px_rgba(25,227,255,0.55),_0_0_60px_rgba(25,227,255,0.35)] focus:ring-4 focus:ring-[#19E3FF] focus:shadow-[0_0_50px_rgba(25,227,255,0.85),_0_0_110px_rgba(25,227,255,0.55)] disabled:opacity-60 disabled:cursor-not-allowed"
+        className="w-full max-w-[260px] mx-auto rounded-xl bg-black/35 backdrop-blur-md px-3 py-0.5 text-white placeholder-white/80 outline-none border-2 border-[#19E3FF]/80 shadow-[0_0_30px_rgba(25,227,255,0.55),_0_0_60px_rgba(25,227,255,0.35)] focus:ring-4 focus:ring-[#19E3FF] focus:shadow-[0_0_50px_rgba(25,227,255,0.85),_0_0_110px_rgba(25,227,255,0.55)] disabled:opacity-60 disabled:cursor-not-allowed text-sm"
       />
 
       <button

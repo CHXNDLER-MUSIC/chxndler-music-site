@@ -13,14 +13,14 @@ import HoloHUD from "@/components/HoloHUD";
 import { skyFor, introSky } from "@/lib/sky";
 import MediaDock from "@/components/MediaDock";
 import { sfx } from "@/lib/sfx";
-import SocialIcons from "@/components/SocialIcons";
-import StreamingButtons from "@/components/StreamingButtons";
+// import SocialIcons from "@/components/SocialIcons";
+// import StreamingButtons from "@/components/StreamingButtons";
 import NeonCockpitRim from "@/components/NeonCockpitRim";
 import { LINKS, POS } from "@/config/cockpit";
 import { tracks } from "@/config/tracks";
 import { buildPlanetSongs } from "@/lib/planets";
 import { usePlayerStore } from "@/store/usePlayerStore";
-import JoinAliensBox from "@/components/JoinAliensBox";
+// import JoinAliensBox from "@/components/JoinAliensBox";
 import PrewarmThree from "@/components/PrewarmThree";
 
 export default function DashboardApp() {
@@ -40,6 +40,7 @@ export default function DashboardApp() {
   const [beamOnly, setBeamOnly] = useState(true);
   const [beamEnabled, setBeamEnabled] = useState(false);
   const [powerBusy, setPowerBusy] = useState(false);
+  const [showPowerBtn, setShowPowerBtn] = useState(false);
   const powerRef = React.useRef(null);
   const powerHoverRef = React.useRef(null);
   const [allowWarp, setAllowWarp] = useState(false);
@@ -75,7 +76,7 @@ export default function DashboardApp() {
       setHomeIntroEnabled(false); // do not play welcome VO on power button
       setUserSelected(false);
       setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
-      // Do NOT force sky to space here; only Boost changes the sky
+      // Do NOT force sky to space here; only Start changes the sky
       // 1) Mount HUD hidden
       setShowHUD(true);
       setBeamOnly(true);
@@ -108,11 +109,14 @@ export default function DashboardApp() {
           try { a.muted = true; a.play().then(()=>{ a.pause(); a.currentTime = 0; }).catch(()=>{}); } catch {}
         }
       } catch {}
-      // Prepare warp to the selected track's sky
+      // Update selected channel.
+      setChannelIdx(idx);
+      // Defer audio start until lightspeed overlay finishes AND the target sky video is playing.
+      // Mark this as a pending track play and let SkyboxVideo's onBasePlaying trigger it.
+      setPendingTrackPlay(true);
+      // Trigger lightspeed overlay + warp SFX and switch sky.
       setAllowWarp(true);
       setNextSky(skyFor(tracks[idx].slug));
-      setPendingTrackPlay(true);
-      setChannelIdx(idx);
       setFlySignal((n) => n + 1);
     }
   }
@@ -162,7 +166,7 @@ export default function DashboardApp() {
           setWarpActive(false);
           setAllowWarp(false);
           if (nextSky) { setSky(nextSky); setNextSky(null); }
-          // If this warp was due to Boost (not track selection), prepare to land on home
+          // If this warp was due to Start (not track selection), prepare to land on home
           if (!pendingTrackPlay) setPendingHomePower(true);
           else {
             // Fallback: if base video playing event doesn't fire, kick off audio after a short delay
@@ -178,8 +182,8 @@ export default function DashboardApp() {
             setPendingHomePower(false);
             // Now that space.mp4 is playing, enable homepage ambient + VO and power HUD
             setHomeMode(true);
-            // For boost flow, do NOT play join-alien or welcome VO; just space-music
-            setHomeIntroEnabled(false);
+            // For start flow: play the welcome VO once and loop space ambient underneath
+            setHomeIntroEnabled(true);
             setUserSelected(false);
             setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
             // Do not power HUD via join-alien here; ambient resumes automatically
@@ -198,24 +202,23 @@ export default function DashboardApp() {
       <div className="cockpit-bg fixed inset-0 z-20 pointer-events-none" aria-hidden="true" />
       <NeonCockpitRim />
 
-      <SocialIcons LINKS={LINKS} POS={POS} trackLinks={links} />
-      <StreamingButtons pos={POS.stream} links={links} />
+      {/* Social + Streaming buttons removed per request */}
       <SteeringWheelOverlay
         POS={POS}
         playing={isPlaying}
         onLaunch={() => {
-          // Boost: warp overlay + sound, then land on CHXNDLER homepage
+          // Start: warp overlay + sound, then land on CHXNDLER homepage
           // Stop track playback so ambient can play on homepage
           try { const a = document.querySelector('audio[data-audio-player="1"]'); if (a) a.pause(); } catch {}
           setIsPlaying(false);
           setAllowWarp(true);
           setNextSky(SPACE_SKY);
           setFlySignal((n) => n + 1);
+          // Reveal HUD power toggle only after Start is clicked
+          setShowPowerBtn(true);
         }}
       />
-      <Slot rect={DASHBOARD.joinBox}>
-        <JoinAliensBox />
-      </Slot>
+      {/* Removed Join the Aliens dashboard panel per request */}
 
       <Slot
         rects={[
@@ -241,29 +244,31 @@ export default function DashboardApp() {
               />
             </div>
           ) : null}
-          {/* Power button below the beam base */}
-            <button
-              type="button"
-              className="pointer-events-auto power-btn"
-              onMouseEnter={() => { try { const a = powerHoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
-              onClick={() => triggerHudPower(undefined)}
-              aria-label="Power"
-              title="Power"
-              style={{
-                position: 'fixed',
-                left: 'calc(50% - 36px)', // slightly left of center
-                top: 'calc(50vh + 24px)', // nudged a little more down
-                width: 32, height: 32, borderRadius: 9999, zIndex: 95,
-              }}
-            >
-              <span className="sr-only">Toggle HUD Power</span>
-              <span className="power-glyph" aria-hidden>
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M12 3v7" strokeLinecap="round" />
-                  <path d="M6.7 6.7a7 7 0 1 0 9.9 0" fill="none" strokeLinecap="round" />
-                </svg>
-              </span>
-            </button>
+          {/* Power button below the beam base (hidden until Start is clicked) */}
+            {showPowerBtn ? (
+              <button
+                type="button"
+                className="pointer-events-auto power-btn"
+                onMouseEnter={() => { try { const a = powerHoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
+                onClick={() => triggerHudPower(undefined)}
+                aria-label="Power"
+                title="Power"
+                style={{
+                  position: 'fixed',
+                  left: 'calc(50% - 36px)', // slightly left of center
+                  top: 'calc(50vh + 24px)', // nudged a little more down
+                  width: 32, height: 32, borderRadius: 9999, zIndex: 95,
+                }}
+              >
+                <span className="sr-only">Toggle HUD Power</span>
+                <span className="power-glyph" aria-hidden>
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M12 3v7" strokeLinecap="round" />
+                    <path d="M6.7 6.7a7 7 0 1 0 9.9 0" fill="none" strokeLinecap="round" />
+                  </svg>
+                </span>
+              </button>
+            ) : null}
             <audio ref={powerRef} src="/audio/join-alien.mp3" preload="auto" playsInline />
             <audio ref={powerHoverRef} src="/audio/hover.mp3" preload="auto" playsInline />
             {/* Click-to-activate overlay on opening screen: turn HUD on when area is tapped */}
