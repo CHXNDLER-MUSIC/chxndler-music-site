@@ -109,21 +109,14 @@ export default function HoloJoinPopout({
         }
         .hub{
           position:relative; display:grid; place-items:center; border-radius:9999px; cursor:pointer;
-          border:1px solid rgba(255,255,255,.18);
-          background:
-            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.08), rgba(255,255,255,0) 42%),
-            linear-gradient(180deg, #0b0b0b, #000 64%);
-          box-shadow:
-            0 18px 36px rgba(0,0,0,.65),
-            0 0 34px ${hubColor}66,
-            0 0 70px ${hubColor}33,
-            inset 0 2px 0 rgba(255,255,255,.25),
-            inset 0 -6px 14px rgba(0,0,0,.7);
-          transition: transform 120ms ease, box-shadow 180ms ease, filter 180ms ease;
+          border:none;
+          background: radial-gradient(60% 60% at 50% 45%, ${hubColor}33, ${hubColor}10 60%, transparent 70%);
+          box-shadow: 0 14px 30px rgba(0,0,0,.55), 0 0 30px ${hubColor}88, 0 0 80px ${hubColor}55;
+          transition: transform 140ms ease, box-shadow 200ms ease, filter 180ms ease;
         }
-        .hub::before{ content:""; position:absolute; inset:-2px; border-radius:9999px; pointer-events:none; box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset, 0 0 0 1px rgba(0,255,255,.06); }
-        .hub::after{ content:""; position:absolute; left:16%; right:16%; top:10%; height:26%; border-radius:9999px; pointer-events:none; background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0)); filter: blur(1px); opacity:.85; }
-        .hub:hover{ transform: scale(1.05); box-shadow: 0 22px 44px rgba(0,0,0,.7), 0 0 40px ${hubColor}, 0 0 90px ${hubColor}, inset 0 2px 0 rgba(255,255,255,.3), inset 0 -8px 18px rgba(0,0,0,.7); filter: brightness(1.06) saturate(1.12); }
+        .hub::before{ content:""; position:absolute; inset:-10%; border-radius:9999px; pointer-events:none; box-shadow: 0 0 40px ${hubColor}99, 0 0 110px ${hubColor}66; filter: blur(1px); }
+        .hub::after{ content:""; position:absolute; left:18%; right:18%; top:12%; height:26%; border-radius:9999px; pointer-events:none; background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0)); filter: blur(1px); opacity:.85; }
+        .hub:hover{ transform: scale(1.07); box-shadow: 0 22px 44px rgba(0,0,0,.7), 0 0 56px ${hubColor}, 0 0 140px ${hubColor}AA; filter: brightness(1.08) saturate(1.15); }
         .hub:active{ transform: scale(.96); }
         .hub-icon{ width:${Math.round(size*0.62)}px; height:${Math.round(size*0.62)}px; object-fit: contain; filter: saturate(1.2) brightness(1.06) drop-shadow(0 0 8px ${hubColor}) drop-shadow(0 0 18px ${hubColor}); transition: filter 180ms ease, transform 180ms ease; }
         .hub:hover .hub-icon{ transform: scale(1.06); filter: saturate(1.28) brightness(1.08) drop-shadow(0 0 12px ${hubColor}) drop-shadow(0 0 28px ${hubColor}) drop-shadow(0 0 52px ${hubColor}); }
@@ -140,6 +133,10 @@ export default function HoloJoinPopout({
           box-shadow: 0 18px 36px rgba(0,0,0,.5), 0 0 34px ${hubColor}55, 0 0 70px ${hubColor}33, inset 0 2px 0 rgba(255,255,255,.2), inset 0 -6px 14px rgba(0,0,0,.6);
           backdrop-filter: blur(10px);
         }
+        /* Icon-only hub button overrides (no surrounding circle) */
+        .hub{ background: transparent !important; border:none !important; box-shadow:none !important; }
+        .hub::before, .hub::after{ display:none !important; content:none !important; }
+        .hub:hover{ box-shadow:none !important; }
       `}</style>
       <audio ref={clickRef} src="/audio/join-alien.mp3" preload="auto" playsInline />
     </div>

@@ -211,8 +211,8 @@ export default function HUDPanel({
             // Remove hover glow/scale for the entire HUD display per request
             transition={{ type: "spring", stiffness: 200, damping: 20 }}
             style={inConsole
-              ? { width: '100%', height: '100%', transform: 'perspective(1200px) rotateX(6deg)', transformOrigin: 'center', marginTop: 16 }
-              : { transform: 'perspective(1200px) rotateX(6deg)', marginTop: 16 }
+              ? { width: '100%', height: '100%', transform: 'perspective(1200px) rotateX(6deg)', transformOrigin: 'center', marginTop: 48 }
+              : { transform: 'perspective(1200px) rotateX(6deg)', marginTop: 48 }
             }
           >
           {/* Background removed: keep HUD box transparent */}
@@ -375,7 +375,7 @@ export default function HUDPanel({
         <div
           className="pointer-events-none absolute inset-x-0 h-32"
           aria-hidden
-          style={{ top: 'calc(100% - 52px)', opacity: beamOpacity, transform: 'translateX(-26px)', transition: 'opacity 180ms ease, transform 200ms ease' }}
+          style={{ top: 'calc(100% - 20px)', opacity: beamOpacity, transform: 'translateX(-26px)', transition: 'opacity 180ms ease, transform 200ms ease' }}
         >
           {/* Cyan base pool at console lip (broad soft glow) */}
           <div

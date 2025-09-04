@@ -251,6 +251,7 @@ export default function SteeringWheelOverlay({
           border: none;
           box-shadow: none;
           position: relative;
+          cursor: pointer;
         }
         /* Do not use the default before; define our own halo on ::after */
         .wheel-play.chx::before{ display:none; content:none; }
@@ -263,6 +264,8 @@ export default function SteeringWheelOverlay({
           filter: saturate(1.25) brightness(1.1) drop-shadow(0 0 8px #19E3FF) drop-shadow(0 0 22px #19E3FF) drop-shadow(0 0 42px #19E3FF);
           animation: startPulse 2s ease-in-out infinite;
         }
+        .wheel-play.chx:hover .chx-icon{ animation: none; transform: scale(1.14); filter: saturate(1.6) brightness(1.2) drop-shadow(0 0 18px #19E3FF) drop-shadow(0 0 48px #19E3FF) drop-shadow(0 0 96px #19E3FF); }
+        .wheel-play.chx:hover::after{ box-shadow: 0 0 56px rgba(25,227,255,.9), 0 0 140px rgba(25,227,255,.7); }
         @keyframes startPulse {
           0%, 100% { transform: scale(1); filter: saturate(1.25) brightness(1.1) drop-shadow(0 0 8px #19E3FF) drop-shadow(0 0 22px #19E3FF) drop-shadow(0 0 42px #19E3FF); }
           50% { transform: scale(1.08); filter: saturate(1.5) brightness(1.22) drop-shadow(0 0 16px #19E3FF) drop-shadow(0 0 40px #19E3FF) drop-shadow(0 0 84px #19E3FF); }

@@ -140,12 +140,12 @@ export default function HoloHubMenu({
         style={{ width: hubSize, height: hubSize, left: -Math.round(hubSize/2), top: -Math.round(hubSize/2) } as React.CSSProperties}
       >
         <span className="hub-glyph" aria-hidden>
-          {/* Comms icon */}
+          {/* Comms icon as the full button */}
           <img
             src="/elements/comms.png"
             alt=""
             className="hub-icon"
-            style={{ width: Math.round(hubSize*0.61), height: Math.round(hubSize*0.61) }}
+            style={{ width: Math.round(hubSize*0.92), height: Math.round(hubSize*0.92) }}
             onError={(e)=>{ const img = e.currentTarget as HTMLImageElement; img.onerror = null; img.src = "/elements/chxndler.png"; }}
           />
         </span>
@@ -208,40 +208,17 @@ export default function HoloHubMenu({
         }
         .hub{
           position:absolute; border-radius:9999px;
-          display:grid; place-items:center;
-          /* Black glass + neon like Instagram shell */
-          border:1px solid rgba(255,255,255,.18);
-          background:
-            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.08), rgba(255,255,255,0) 42%),
-            linear-gradient(180deg, #0b0b0b, #000 64%);
-          box-shadow:
-            0 18px 36px rgba(0,0,0,.65),
-            0 0 34px ${hubColor}66,
-            0 0 70px ${hubColor}33,
-            inset 0 2px 0 rgba(255,255,255,.25),
-            inset 0 -6px 14px rgba(0,0,0,.7);
-          transition: transform 120ms ease, box-shadow 180ms ease, filter 180ms ease;
+          display:grid; place-items:center; cursor:pointer;
+          background: transparent; border:none; box-shadow:none;
+          transition: transform 140ms ease, filter 180ms ease;
         }
-        .hub::before{ content:""; position:absolute; inset:-2px; border-radius:9999px; pointer-events:none;
-          box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset, 0 0 0 1px rgba(0,255,255,.06);
-        }
-        .hub::after{ content:""; position:absolute; left:16%; right:16%; top:10%; height:26%; border-radius:9999px; pointer-events:none;
-          background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0)); filter: blur(1px); opacity:.85;
-        }
+        .hub::before, .hub::after{ display:none; content:none; }
         .hub:active{ transform: scale(.96); }
-        .hub:hover{
-          transform: scale(1.05);
-          box-shadow:
-            0 22px 44px rgba(0,0,0,.7),
-            0 0 40px ${hubColor},
-            0 0 90px ${hubColor},
-            inset 0 2px 0 rgba(255,255,255,.3),
-            inset 0 -8px 18px rgba(0,0,0,.7);
-          filter: brightness(1.06) saturate(1.12);
+        .hub:hover{ transform: scale(1.06); filter: brightness(1.06) saturate(1.12); }
+        .hub-icon{ object-fit: contain; display:block; transition: filter 180ms ease, transform 180ms ease;
+          filter: saturate(1.25) brightness(1.08) drop-shadow(0 0 8px ${hubColor}) drop-shadow(0 0 24px ${hubColor});
         }
-        .hub.on{ box-shadow: 0 12px 28px rgba(0,0,0,.6), 0 0 44px ${hubColor}, 0 0 110px ${hubColor}88, inset 0 2px 0 rgba(255,255,255,.35); }
-        .hub-icon{ width: 44px; height: 44px; object-fit: contain; filter: saturate(1.2) brightness(1.06) drop-shadow(0 0 8px ${hubColor}) drop-shadow(0 0 18px ${hubColor}); transition: filter 180ms ease, transform 180ms ease; }
-        .hub:hover .hub-icon{ transform: scale(1.06); filter: saturate(1.3) brightness(1.08) drop-shadow(0 0 12px ${hubColor}) drop-shadow(0 0 28px ${hubColor}) drop-shadow(0 0 52px ${hubColor}); }
+        .hub:hover .hub-icon{ transform: scale(1.06); filter: saturate(1.45) brightness(1.14) drop-shadow(0 0 18px ${hubColor}) drop-shadow(0 0 48px ${hubColor}); }
 
         .items{ position:absolute; left:0; top:0; width:0; height:0; pointer-events:${open ? "auto" : "none"}; }
         .item{

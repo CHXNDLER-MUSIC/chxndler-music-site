@@ -50,6 +50,7 @@ export default function DashboardApp() {
   const [pendingTrackPlay, setPendingTrackPlay] = useState(false);
   const trackPlayTimerRef = React.useRef(undefined);
   const [ambientSuspended, setAmbientSuspended] = useState(false);
+  const [firstStartDone, setFirstStartDone] = useState(false);
   const SPACE_SKY = { webm: "/skies/space.webm", mp4: "/skies/space.mp4", key: "space" };
 
   // Centralized HUD power sequencing: play SFX then run beam/HUD fades
@@ -58,32 +59,43 @@ export default function DashboardApp() {
     setPowerBusy(true);
     const a = powerRef.current;
     const turningOn = typeof turnOn === 'boolean' ? turnOn : (!beamEnabled && !showHUD);
-    // Fire SFX, but do NOT block visuals on audio end
+    // Fire SFX; for turning on, delay beam/HUD until SFX ends
     try {
       if (a) {
         a.currentTime = 0; a.volume = 0.9; a.play().catch(()=>{});
         // Suspend ambient/intro until join-alien finishes (for clean timing)
         setAmbientSuspended(true);
-        a.onended = () => { try { a.onended = null; } catch {} setAmbientSuspended(false); };
+        a.onended = () => {
+          try { a.onended = null; } catch {}
+          setAmbientSuspended(false);
+          if (turningOn) {
+            // 2) Start beam after SFX
+            setBeamEnabled(true);
+            // 3) Fade HUD in shortly after beam begins (~150–180ms)
+            setTimeout(() => { setBeamOnly(false); setPowerBusy(false); }, 170);
+          }
+        };
         // Fallback if ended doesn't fire
-        setTimeout(() => setAmbientSuspended(false), 1400);
+        setTimeout(() => {
+          setAmbientSuspended(false);
+          if (turningOn) {
+            setBeamEnabled(true);
+            setTimeout(() => { setBeamOnly(false); setPowerBusy(false); }, 170);
+          }
+        }, 1500);
       }
     } catch {}
 
     if (turningOn) {
       // Ensure home-mode visuals/content when powering on from opening screen
       setHomeMode(true);
-      setHomeIntroEnabled(false); // do not play welcome VO on power button
       setUserSelected(false);
       setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
       // Do NOT force sky to space here; only Start changes the sky
       // 1) Mount HUD hidden
       setShowHUD(true);
       setBeamOnly(true);
-      // 2) Start beam immediately
-      setTimeout(() => { setBeamEnabled(true); }, 0);
-      // 3) Fade HUD in shortly after beam begins (~150–180ms)
-      setTimeout(() => { setBeamOnly(false); setPowerBusy(false); }, 170);
+      // Beam/HUD will start after SFX end (handled above)
     } else {
       // Powering off: play SFX immediately (done above), then fade beam out now,
       // and fade HUD out shortly after for a snappy close.
@@ -180,13 +192,15 @@ export default function DashboardApp() {
         onBasePlaying={() => {
           if (pendingHomePower) {
             setPendingHomePower(false);
-            // Now that space.mp4 is playing, enable homepage ambient + VO and power HUD
+            // Now that space.mp4 is playing
             setHomeMode(true);
-            // For start flow: play the welcome VO once and loop space ambient underneath
-            setHomeIntroEnabled(true);
+            // Play welcome VO only on the first time start is pressed
+            setHomeIntroEnabled(!firstStartDone);
+            if (!firstStartDone) setFirstStartDone(true);
             setUserSelected(false);
             setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
-            // Do not power HUD via join-alien here; ambient resumes automatically
+            // Begin HUD power sequence: plays join-alien SFX, then beam fade-in, then HUD fade-in
+            try { triggerHudPower(true); } catch {}
           }
           if (pendingTrackPlay) {
             // Selected a song: stop warp overlay and allow MediaDock to handle playback
