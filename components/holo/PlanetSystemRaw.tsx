@@ -24,6 +24,9 @@ export default function PlanetSystemRaw() {
   const mainRef = useRef<{ id: string | null; mesh: THREE.Mesh | null; ring: THREE.Mesh | null }>({ id: null, mesh: null, ring: null });
   const ringsRef = useRef<THREE.Group[]>([]);
   const sweepUniforms = useRef<{ uTime: { value: number } } | null>(null);
+  // Focus logic: rotate system to bring selected planet to front-center
+  const focusTargetRy = useRef<number | null>(null);
+  const spinSpeedRef = useRef<number>(0.0025);
 
   // Build a hologram shader material (rim glow + scanlines + additive)
   function makeHoloMat(color: number) {
@@ -176,7 +179,26 @@ export default function PlanetSystemRaw() {
       });
       // Update holo sweep shader time
       try { if (sweepUniforms.current) sweepUniforms.current.uTime.value = t; } catch {}
-      if (!reduced && sys) sys.rotation.y += 0.0025;
+      // Apply focus-or-spin for the system group
+      if (sys) {
+        if (focusTargetRy.current !== null) {
+          // Smoothly rotate toward the target yaw using shortest angular path
+          const cur = sys.rotation.y;
+          const target = focusTargetRy.current;
+          // Normalize delta to [-PI, PI]
+          let delta = ((target - cur + Math.PI) % (Math.PI * 2));
+          if (delta < 0) delta += Math.PI * 2;
+          delta -= Math.PI;
+          // Step a fraction of the remaining angle
+          sys.rotation.y = cur + delta * 0.12;
+          if (Math.abs(delta) < 0.002) {
+            sys.rotation.y = target;
+            focusTargetRy.current = null; // done focusing
+          }
+        } else if (!reduced) {
+          sys.rotation.y += spinSpeedRef.current;
+        }
+      }
       renderer.render(scene, camera);
       rafRef.current = requestAnimationFrame(tick);
     };
@@ -266,12 +288,42 @@ export default function PlanetSystemRaw() {
       const a0 = lay?.angle0 ?? (Math.random() * Math.PI * 2);
       addSatLocal(id, radius, r, color, speed, a0);
     });
+    // After building, compute a focus rotation so the selected planet is front-center
+    try {
+      const sat = satsRef.current.find(s => s.id === focusId);
+      if (sat) {
+        const cur = sys.rotation.y;
+        const desired = Math.PI / 2 - sat.a;
+        let delta = ((desired - cur + Math.PI) % (Math.PI * 2));
+        if (delta < 0) delta += Math.PI * 2;
+        delta -= Math.PI;
+        focusTargetRy.current = cur + delta;
+      }
+    } catch {}
     // Update main planet
     const mainEntry = songs.find(s => s.id === focusId) || songs[0];
     const main = mainRef.current.mesh;
     if (main) main.visible = false; // no separate central planet; every song has its own
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [songs, mainId, layout && Object.keys(layout).join(',')]);
+
+  // When the selected song changes, rotate the system to bring its planet front-center
+  useEffect(() => {
+    const sys = groupRef.current; if (!sys) return;
+    const id = mainId; if (!id) return;
+    const sat = satsRef.current.find(s => s.id === id);
+    if (!sat) return;
+    // Desired yaw so the satellite sits directly in front of the camera
+    const desired = Math.PI / 2 - sat.a; // see derivation: z' maximized when ry + a = PI/2
+    // Normalize to current neighborhood to avoid long spins
+    const cur = sys.rotation.y;
+    let target = desired;
+    // Map target to be within +/- PI of current for shortest path
+    let delta = ((target - cur + Math.PI) % (Math.PI * 2));
+    if (delta < 0) delta += Math.PI * 2;
+    delta -= Math.PI;
+    focusTargetRy.current = cur + delta;
+  }, [mainId]);
 
   // Hover behavior handled in main tick via hoverRef
 

@@ -21,6 +21,7 @@ export default function HoloJoinPopout({
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const hubRef = useRef<HTMLButtonElement | null>(null);
+  // Removed auto-focus to avoid triggering browser autofill
   const firstInputRef = useRef<HTMLInputElement | null>(null);
   const clickRef = useRef<HTMLAudioElement | null>(null);
 
@@ -55,7 +56,6 @@ export default function HoloJoinPopout({
     try { sfx.play('hover', 0.35); } catch {}
     try { const a = clickRef.current; if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); } } catch {}
     setOpen((o) => !o);
-    if (!open) setTimeout(() => firstInputRef.current?.focus(), 50);
   }, [open]);
 
   return (
@@ -97,8 +97,8 @@ export default function HoloJoinPopout({
         <div className="panel-inner">
           {/* Focusable anchor for first input */}
           <div className="sr-only" aria-hidden tabIndex={-1} />
-          {/* Mount form; pass ref to email input */}
-          <JoinAliensInputProxy inputRef={firstInputRef} />
+          {/* Mount form only when open; no auto-focus */}
+          {open ? <JoinAliens /> : null}
         </div>
       </div>
 
@@ -157,23 +157,4 @@ export default function HoloJoinPopout({
   );
 }
 
-// Lightweight proxy that focuses the first input of JoinAliens when mounted
-function JoinAliensInputProxy({ inputRef }: { inputRef: React.RefObject<HTMLInputElement> }) {
-  const localRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    try {
-      const host = localRef.current; if (!host) return;
-      // Find the email input from the rendered JoinAliens component
-      const email = host.querySelector<HTMLInputElement>("#join-email");
-      if (email && inputRef && (inputRef as any).current === null) {
-        (inputRef as any).current = email;
-      }
-      setTimeout(() => email?.focus(), 50);
-    } catch {}
-  }, [inputRef]);
-  return (
-    <div ref={localRef}>
-      <JoinAliens />
-    </div>
-  );
-}
+// Removed InputProxy that auto-focused fields to prevent unwanted autofill popups

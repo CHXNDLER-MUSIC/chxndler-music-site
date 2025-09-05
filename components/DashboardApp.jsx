@@ -60,34 +60,29 @@ export default function DashboardApp() {
   const triggerHudPower = React.useCallback((turnOn) => {
     if (powerBusy) return;
     setPowerBusy(true);
-    const a = powerRef.current;
     const turningOn = typeof turnOn === 'boolean' ? turnOn : (!beamEnabled && !showHUD);
     // Fire SFX; for turning on, fade in UI immediately with the SFX,
     // then start beam after SFX ends and finally fade HUD in
     try {
-      if (a) {
-        a.currentTime = 0; a.volume = 0.9; a.play().catch(()=>{});
+      if (turningOn) {
+        // Use WebAudio SFX to avoid interrupting the music stream
+        try { sfx.play('join', 0.9); } catch {}
         // Fade in comms/power/join together right as SFX starts
-        if (turningOn) {
-          setShowOverlayUI(true);
-          setShowPowerBtn(true);
-        }
+        setShowOverlayUI(true);
+        setShowPowerBtn(true);
         // Keep ambient paused until after HUD fades in
         // Start light beam immediately with SFX
-        if (turningOn) {
-          try { setBeamEnabled(true); } catch {}
-          // Fade HUD in shortly after SFX starts (and beam is visible)
-          setTimeout(() => {
-            setBeamOnly(false);
-            setPowerBusy(false);
-            setAmbientSuspended(false); // allow AmbientSpace to resume ambient and then VO
-          }, 120);
-        }
-        a.onended = () => {
-          try { a.onended = null; } catch {}
-          // If we specifically queued welcome VO for first Start, do not cancel it here
+        try { setBeamEnabled(true); } catch {}
+        // Fade HUD in shortly after SFX starts (and beam is visible)
+        setTimeout(() => {
+          setBeamOnly(false);
+          setPowerBusy(false);
+          setAmbientSuspended(false); // allow AmbientSpace to resume ambient and then VO
+        }, 120);
+        // Simulate SFX end callbacks without relying on an <audio> element
+        const onSfxEndMs = 1200;
+        setTimeout(() => {
           if (!welcomeOnStartRef.current) {
-            // Otherwise, ensure welcome VO is not playing and stays disabled
             try {
               const intro = document.querySelector('audio[data-intro="1"]');
               if (intro && typeof (intro).pause === 'function') {
@@ -97,24 +92,19 @@ export default function DashboardApp() {
             } catch {}
             setHomeIntroEnabled(false);
           }
-          // HUD already faded in; nothing further needed here besides grace timer
-          // Clear the flag after a grace window so fallback timers won't cancel VO
           setTimeout(() => { welcomeOnStartRef.current = false; }, 6000);
-        };
-        // Fallback if ended doesn't fire
-        setTimeout(() => {
-          // Do not cancel welcome VO in fallback path
-          welcomeOnStartRef.current = false;
-        }, 2600);
+        }, onSfxEndMs);
+        // Fallback if timers were throttled
+        setTimeout(() => { welcomeOnStartRef.current = false; }, 2600);
+      } else {
+        // Turning off: do not play any power SFX to avoid audio blips while music is playing
       }
     } catch {}
 
     if (turningOn) {
-      // Ensure home-mode visuals/content when powering on from opening screen
-      setHomeMode(true);
-      setUserSelected(false);
-      setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
-      // Do NOT force sky to space here; only Start changes the sky
+      // Preserve current HUD content/state when powering on via the power button.
+      // Initial home-mode activation is handled by callers (e.g., Start or opening overlay),
+      // so avoid resetting to CHXNDLER here.
       // 1) Mount HUD hidden
       setShowHUD(true);
       setBeamOnly(true);
@@ -341,7 +331,7 @@ export default function DashboardApp() {
                 type="button"
                 className="pointer-events-auto power-btn"
                 onMouseEnter={() => { try { const a = powerHoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
-                onClick={() => { try { sfx.play('join', 0.9); } catch {}; triggerHudPower(undefined); }}
+                onClick={() => { triggerHudPower(undefined); }}
                 aria-label="Power"
                 title="Power"
                 style={{

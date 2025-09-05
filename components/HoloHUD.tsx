@@ -157,9 +157,10 @@ export default function HoloHUD({
         /* Right-side song panel */
         .song-panel{ position:absolute; right:6vw; top: 30vh; width: clamp(180px, 18vw, 260px);
           padding: 10px; border-radius: 16px; backdrop-filter: blur(12px);
-          background: linear-gradient(180deg, rgba(0,0,0,.32), rgba(0,0,0,.18));
-          border: 1px solid rgba(255,255,255,.16);
-          box-shadow: 0 10px 40px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.06);
+          /* Unified HUD tint to match dashboard */
+          background: linear-gradient(180deg, rgba(8,16,26,.45), rgba(0,0,0,.38));
+          border: 1px solid rgba(25,227,255,.25);
+          box-shadow: 0 10px 40px rgba(0,0,0,.45), inset 0 0 0 1px rgba(25,227,255,.15);
           pointer-events:auto;
         }
         .song{ display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:12px; color:#fff;

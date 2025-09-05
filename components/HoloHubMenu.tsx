@@ -238,8 +238,8 @@ export default function HoloHubMenu({
           border:1px solid rgba(255,255,255,.14);
           box-shadow:
             0 14px 28px rgba(0,0,0,.6),
-            0 0 30px ${hubColor}88,
-            0 0 80px ${hubColor}55,
+            0 0 42px ${hubColor}AA,
+            0 0 120px ${hubColor}66,
             inset 0 1px 0 rgba(255,255,255,.22),
             inset 0 -6px 14px rgba(0,0,0,.6);
           backdrop-filter: blur(8px);
@@ -260,20 +260,20 @@ export default function HoloHubMenu({
         }
         .hub:hover{ transform: scale(1.07); box-shadow:
             0 18px 34px rgba(0,0,0,.68),
-            0 0 56px ${hubColor},
-            0 0 140px ${hubColor}AA,
+            0 0 72px ${hubColor},
+            0 0 200px ${hubColor}AA,
             inset 0 1px 0 rgba(255,255,255,.28), inset 0 -8px 18px rgba(0,0,0,.65);
           filter: brightness(1.08) saturate(1.15);
         }
         .hub:active{ transform: scale(.96); }
         .hub-icon{ object-fit: contain; display:block; transition: filter 180ms ease, transform 180ms ease; mix-blend-mode: screen;
-          filter: saturate(1.2) brightness(1.06)
-            drop-shadow(0 0 18px ${hubColor})
-            drop-shadow(0 0 42px ${hubColor});
-        }
-        .hub:hover .hub-icon{ transform: scale(1.06); filter: saturate(1.32) brightness(1.12)
+          filter: saturate(1.24) brightness(1.08)
             drop-shadow(0 0 24px ${hubColor})
-            drop-shadow(0 0 64px ${hubColor}); }
+            drop-shadow(0 0 62px ${hubColor});
+        }
+        .hub:hover .hub-icon{ transform: scale(1.06); filter: saturate(1.34) brightness(1.14)
+            drop-shadow(0 0 32px ${hubColor})
+            drop-shadow(0 0 88px ${hubColor}); }
         @keyframes holoPulse { 0%,100%{ filter: brightness(1) } 50%{ filter: brightness(1.08) } }
 
         .items{ position:absolute; left:0; top:0; width:0; height:0; pointer-events:${open ? "auto" : "none"}; }
@@ -288,8 +288,8 @@ export default function HoloHubMenu({
           border: 1px solid rgba(255,255,255,.14);
           box-shadow:
             0 12px 26px rgba(0,0,0,.55),
-            0 0 16px var(--tint, #38B6FF)66,
-            0 0 30px var(--tint, #38B6FF)33,
+            0 0 22px var(--tint, #38B6FF)88,
+            0 0 60px var(--tint, #38B6FF)44,
             inset 0 1px 0 rgba(255,255,255,.22),
             inset 0 -6px 14px rgba(0,0,0,.6);
           backdrop-filter: blur(8px);
@@ -310,49 +310,58 @@ export default function HoloHubMenu({
         }
         .item:hover{ transform: translate(var(--tx,0), var(--ty,0)) scale(1.08); box-shadow:
             0 18px 34px rgba(0,0,0,.68),
-            0 0 42px var(--tint, #38B6FF),
-            0 0 96px var(--tint, #38B6FF),
+            0 0 60px var(--tint, #38B6FF),
+            0 0 140px var(--tint, #38B6FF),
             inset 0 1px 0 rgba(255,255,255,.28), inset 0 -8px 18px rgba(0,0,0,.65);
           filter: brightness(1.08) saturate(1.16);
         }
-        /* Simplify brand buttons: plain circle with logo only (same format/size) */
+        /* Brand buttons: consistent yellow circular ring behind all */
         .item[data-id="ig"], .item[data-id="tt"], .item[data-id="yt"], .item[data-id="sp"], .item[data-id="am"]{
           background: transparent;
           border: none;
           box-shadow: none;
         }
-        .item[data-id="ig"]::before, .item[data-id="tt"]::before, .item[data-id="yt"]::before, .item[data-id="sp"]::before, .item[data-id="am"]::before{ display: none; }
-        .item[data-id="ig"]::after,  .item[data-id="tt"]::after,  .item[data-id="yt"]::after,  .item[data-id="sp"]::after,  .item[data-id="am"]::after{ display: none; }
-        .item[data-id="ig"] .icon, .item[data-id="tt"] .icon, .item[data-id="yt"] .icon, .item[data-id="sp"] .icon, .item[data-id="am"] .icon{
-          position: relative; width: 86%; height: 86%; color: var(--tint, #38B6FF);
-          filter: none;
-          mix-blend-mode: normal;
+        /* Shared yellow ring — hug the button edge (no gap) */
+        .item[data-id="ig"]::before, .item[data-id="tt"]::before, .item[data-id="yt"]::before, .item[data-id="sp"]::before, .item[data-id="am"]::before{
+          content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none;
+          box-shadow:
+            inset 0 0 0 2px #F2EF1D,
+            0 0 18px #F2EF1D88,
+            0 0 60px #F2EF1D55;
         }
-        /* Ensure SVG glyphs are transparent fills with brand-colored strokes so glow shines through */
+        .item[data-id="ig"]:hover::before, .item[data-id="tt"]:hover::before, .item[data-id="yt"]:hover::before, .item[data-id="sp"]:hover::before, .item[data-id="am"]:hover::before{
+          box-shadow:
+            inset 0 0 0 2px #F2EF1D,
+            0 0 36px #F2EF1D,
+            0 0 120px #F2EF1D99;
+        }
+        /* Icon wrapper sizing/glow remains brand-colored; ring is uniform yellow */
+        .item[data-id="ig"] .icon, .item[data-id="tt"] .icon, .item[data-id="yt"] .icon, .item[data-id="sp"] .icon, .item[data-id="am"] .icon{
+          position: relative; width: 96%; height: 96%; color: var(--tint, #38B6FF);
+          /* Add brand-colored glow around the glyphs */
+          filter: brightness(1.1) saturate(1.2)
+            drop-shadow(0 0 14px var(--tint, #38B6FF))
+            drop-shadow(0 0 40px var(--tint, #38B6FF)66);
+          mix-blend-mode: normal;
+          transition: transform 180ms ease, filter 160ms ease;
+        }
+        /* Ensure SVG glyphs are solid fills in brand color */
         .item[data-id="ig"] .icon > svg, .item[data-id="tt"] .icon > svg, .item[data-id="yt"] .icon > svg, .item[data-id="sp"] .icon > svg, .item[data-id="am"] .icon > svg{
           width: 100%; height: 100%; display:block; fill: currentColor; stroke: none;
         }
         .item[data-id="ig"] .icon > svg *, .item[data-id="tt"] .icon > svg *, .item[data-id="yt"] .icon > svg *, .item[data-id="sp"] .icon > svg *, .item[data-id="am"] .icon > svg *{
           fill: currentColor !important; stroke: none !important;
         }
-        /* Apple Music uses filled note now; no stroke override */
         .item[data-id="ig"] .icon svg, .item[data-id="tt"] .icon svg, .item[data-id="yt"] .icon svg, .item[data-id="sp"] .icon svg, .item[data-id="am"] .icon svg{ display:block; width:100%; height:100%; }
-        /* Remove hologram glows for a clean reset */
-        .item[data-id="ig"] .icon::before,
-        .item[data-id="tt"] .icon::before,
-        .item[data-id="yt"] .icon::before,
-        .item[data-id="sp"] .icon::before,
-        .item[data-id="am"] .icon::before,
-        .item[data-id="ig"] .icon::after,
-        .item[data-id="tt"] .icon::after,
-        .item[data-id="yt"] .icon::after,
-        .item[data-id="sp"] .icon::after,
-        .item[data-id="am"] .icon::after{ display:none; }
         /* Tinted inner ring at the button level for a "through the button" glow */
-        .item[data-id="ig"]::before, .item[data-id="tt"]::before, .item[data-id="yt"]::before, .item[data-id="sp"]::before, .item[data-id="am"]::before,
         .item[data-id="ig"]::after, .item[data-id="tt"]::after, .item[data-id="yt"]::after, .item[data-id="sp"]::after, .item[data-id="am"]::after{ display:none; }
         /* Remove any IG-specific halo; keep all brand items visually consistent */
-        .item[data-id="ig"]:hover .icon, .item[data-id="tt"]:hover .icon, .item[data-id="yt"]:hover .icon, .item[data-id="sp"]:hover .icon, .item[data-id="am"]:hover .icon{ transform: scale(1.04); filter: none; }
+        .item[data-id="ig"]:hover .icon, .item[data-id="tt"]:hover .icon, .item[data-id="yt"]:hover .icon, .item[data-id="sp"]:hover .icon, .item[data-id="am"]:hover .icon{
+          transform: scale(1.08);
+          filter: brightness(1.16) saturate(1.28)
+            drop-shadow(0 0 22px var(--tint, #38B6FF))
+            drop-shadow(0 0 70px var(--tint, #38B6FF));
+        }
         @keyframes holoCore {}
         .item:active{ transform: translate(var(--tx,0), var(--ty,0)) scale(0.98); }
         /* Focus ring should follow the item's own tint, not the hub color */

@@ -34,11 +34,15 @@ export default function JoinAliens() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex h-full w-full flex-col gap-3">
+    <form onSubmit={onSubmit} autoComplete="off" className="flex h-full w-full flex-col gap-3">
       <label className="sr-only" htmlFor="join-email">Email</label>
       <input
         id="join-email"
         type="email"
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="none"
+        spellCheck={false}
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Email"
@@ -52,6 +56,10 @@ export default function JoinAliens() {
         id="join-phone"
         type="tel"
         inputMode="tel"
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="none"
+        spellCheck={false}
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
         placeholder="Phone"

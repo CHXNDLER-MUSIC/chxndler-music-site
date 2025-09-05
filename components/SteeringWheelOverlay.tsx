@@ -1,7 +1,6 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import LumaKeyVideo from "@/components/LumaKeyVideo";
 import HoloHubMenu from "@/components/HoloHubMenu";
 import HoloJoinPopout from "@/components/HoloJoinPopout";
 import { LINKS } from "@/config/cockpit";
@@ -44,7 +43,8 @@ export default function SteeringWheelOverlay({
   // Default play button to the exact center of the wheel logo
   const pp = wheel.play || { topVh: lp.topVh, leftVw: lp.leftVw, sizePx: Math.round(lp.sizePx * 0.9) };
   // Wheel video size (relative to footprint) + optional offsets
-  const vconf = wheel.video || { scale: 4.0, offsetVh: 0, offsetVw: 0, centerHoriz: true, debug: false };
+  // Slightly reduce default scale to make the wheel smaller
+  const vconf = wheel.video || { scale: 3.6, offsetVh: 0, offsetVw: 0, centerHoriz: true, debug: false };
   const basePx = Math.max(lp.sizePx || 72, pp.sizePx || 64);
   const vs = Math.round(basePx * (vconf.scale || 4.0));
 
@@ -75,22 +75,28 @@ export default function SteeringWheelOverlay({
           height: vs,
           transform: "none",
           borderRadius: vs/2,
-          // Allow content like hands below the wheel to render past the circle
-          overflow: "visible",
+          // Clip video to circular mask (no transparent filter)
+          overflow: "hidden",
           zIndex: 60,
           outline: vconf.debug ? "1px dashed rgba(25,227,255,0.6)" : undefined,
           background: vconf.debug ? "rgba(25,227,255,0.08)" : "transparent",
+          // Allow hiding via config if needed, default to visible
+          display: (vconf as any)?.hidden ? 'none' as const : undefined,
         }}
       >
-        <LumaKeyVideo
-          srcMp4="/cockpit/wheel.mp4"
-          srcAlt="/wheel.mp4"
-          threshold={0.08}
-          softness={0.08}
-          offsetYRatio={0}
+        {/* Wheel video (visible, circular mask). Leaving blend off for reliability. */}
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
           className="block w-full h-full"
-          style={{ display: 'block', width: '100%', height: '100%' }}
-        />
+          style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+        >
+          <source src="/cockpit/wheel.mp4" type="video/mp4" />
+          <source src="/wheel.mp4" type="video/mp4" />
+        </video>
       </div>
       {/* Hologram Comms menu — offset from the wheel's top-left */}
       {(() => {
@@ -117,17 +123,10 @@ export default function SteeringWheelOverlay({
             <path d="M12 1.5a10.5 10.5 0 100 21 10.5 10.5 0 000-21zm4.8 15.2a.8.8 0 01-1.1.3c-3-1.8-6.9-2.2-11.4-1.1a.8.8 0 11-.4-1.6c4.9-1.2 9.2-.7 12.6 1.3.4.2.6.7.3 1.1zm1.5-3.2a1 1 0 01-1.4.4c-3.4-2-8.7-2.6-12.8-1.3a1 1 0 11-.6-1.9c4.8-1.4 10.7-.8 14.7 1.6.5.3.7.9.4 1.4zm.2-3.5c-3.9-2.3-10.5-2.5-14.3-1.4a1.2 1.2 0 01-.7-2.2c4.4-1.4 11.8-1.2 16.4 1.5a1.2 1.2 0 01-1.4 2.1z"/>
           </svg>
         );
-        // Apple Music beamed double note (filled), centered and legible at small size
+        // Apple (corporate) logo for Apple Music entry — solid silhouette works well with current-color fills
         const AppleMusicIcon = (
           <svg viewBox="0 0 24 24" width={iconSize} height={iconSize} fill="currentColor" aria-hidden>
-            {/* right note head */}
-            <circle cx="16.2" cy="14.8" r="2.0" />
-            {/* left note head */}
-            <circle cx="9.2" cy="18.0" r="2.2" />
-            {/* right stem */}
-            <path d="M15.4 6h1.6v8.0h-1.6z" />
-            {/* beam */}
-            <path d="M17 6.2l-8.2 1.9v1.6l8.2-1.9V6.2z" />
+            <path d="M16.36 2.5c-.97.06-2.1.57-2.77 1.23-.6.6-1.11 1.53-.91 2.49 1.04.03 2.1-.55 2.75-1.21.62-.63 1.14-1.56.93-2.51zM20.5 17.2c-.46 1.06-.68 1.53-1.27 2.46-.83 1.28-2 2.87-3.45 2.9-1.29.03-1.63-.84-3.39-.84-1.75 0-2.14.82-3.42.87-1.37.05-2.41-1.38-3.25-2.66-1.77-2.74-3.13-7.73-1.31-11.11.9-1.73 2.52-2.83 4.33-2.86 1.35-.03 2.63.9 3.39.9.76 0 2.2-1.12 3.71-.95.63.03 2.4.26 3.54 2-3.11 1.72-2.61 6.18.52 7.29-.32.8-.47 1.2-.69 1.9z"/>
           </svg>
         );
         return (
@@ -238,19 +237,14 @@ export default function SteeringWheelOverlay({
         .wheel-play {
           position: relative;
           display:grid; place-items:center; font-size:22px; font-weight:700; color:#00ffd0;
-          /* Thruster nozzle: dark metal face with inner glow */
-          background:
-            radial-gradient(60% 60% at 50% 40%, rgba(255,255,255,.08), rgba(255,255,255,0) 65%),
-            radial-gradient(closest-side, rgba(0,255,160,.18), rgba(0,0,0,0) 70%),
-            radial-gradient(100% 100% at 50% 50%, #0b0b0b, #000);
+          /* Transparent face: remove dark circle behind the wheel */
+          background: transparent;
           box-shadow:
-            0 14px 32px rgba(0,0,0,.55),
             0 0 32px rgba(0,255,180,.75),
             0 0 88px rgba(0,255,180,.55),
             inset 0 2px 0 rgba(255,255,255,.35),
-            inset 0 -10px 22px rgba(0,0,0,.6),
-            inset 0 0 34px rgba(0,255,200,.28);
-          border:1px solid rgba(255,255,255,.22);
+            inset 0 0 24px rgba(0,255,200,.22);
+          border:1px solid rgba(255,255,255,.18);
           transition: transform .12s ease, box-shadow .18s ease, filter .18s ease;
           overflow: visible;
         }
@@ -262,19 +256,15 @@ export default function SteeringWheelOverlay({
           position: relative;
           cursor: pointer;
         }
-        /* Do not use the default before; define our own halo on ::after */
+        /* No halo/glow behind the START icon */
         .wheel-play.chx::before{ display:none; content:none; }
-        .wheel-play.chx::after{
-          content:""; position:absolute; inset:-10%; border-radius:9999px; pointer-events:none;
-          box-shadow: 0 0 36px rgba(25,227,255,.65), 0 0 80px rgba(25,227,255,.45);
-          animation: startHalo 2s ease-in-out infinite;
-        }
+        .wheel-play.chx::after{ display:none; content:none; }
         .chx-icon{ width: 92%; height: 92%; object-fit: contain; display:block; will-change: transform, filter;
-          filter: saturate(1.25) brightness(1.1) drop-shadow(0 0 8px #19E3FF) drop-shadow(0 0 22px #19E3FF) drop-shadow(0 0 42px #19E3FF);
-          animation: startPulse 2s ease-in-out infinite;
+          filter: none;
+          animation: none;
         }
-        .wheel-play.chx:hover .chx-icon{ animation: none; transform: scale(1.14); filter: saturate(1.6) brightness(1.2) drop-shadow(0 0 18px #19E3FF) drop-shadow(0 0 48px #19E3FF) drop-shadow(0 0 96px #19E3FF); }
-        .wheel-play.chx:hover::after{ box-shadow: 0 0 56px rgba(25,227,255,.9), 0 0 140px rgba(25,227,255,.7); }
+        .wheel-play.chx:hover .chx-icon{ animation: none; transform: scale(1.08); filter: none; }
+        .wheel-play.chx:hover::after{ display:none; }
         @keyframes startPulse {
           0%, 100% { transform: scale(1); filter: saturate(1.25) brightness(1.1) drop-shadow(0 0 8px #19E3FF) drop-shadow(0 0 22px #19E3FF) drop-shadow(0 0 42px #19E3FF); }
           50% { transform: scale(1.08); filter: saturate(1.5) brightness(1.22) drop-shadow(0 0 16px #19E3FF) drop-shadow(0 0 40px #19E3FF) drop-shadow(0 0 84px #19E3FF); }
@@ -286,16 +276,11 @@ export default function SteeringWheelOverlay({
         /* START variant: warm red/orange glow and plume */
         .wheel-play.start{
           color:#fff;
-          background:
-            radial-gradient(60% 60% at 50% 40%, rgba(255,255,255,.10), rgba(255,255,255,0) 66%),
-            radial-gradient(closest-side, rgba(255,100,80,.25), rgba(0,0,0,0) 72%),
-            radial-gradient(120% 120% at 50% 60%, #161010, #000);
+          background: transparent;
           box-shadow:
-            0 14px 32px rgba(0,0,0,.55),
             0 0 36px rgba(255,59,48,.95),
             0 0 120px rgba(255,59,48,.55),
             inset 0 2px 0 rgba(255,255,255,.45),
-            inset 0 -12px 24px rgba(0,0,0,.65),
             inset 0 0 40px rgba(255,92,72,.38);
           animation: breathe 1.8s ease-in-out infinite;
         }
