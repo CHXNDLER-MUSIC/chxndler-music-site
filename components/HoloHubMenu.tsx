@@ -345,6 +345,8 @@ export default function HoloHubMenu({
           mix-blend-mode: normal;
           transition: transform 180ms ease, filter 160ms ease;
         }
+        /* Specifically remove the outer ring for Instagram */
+        .item[data-id="ig"]::before, .item[data-id="ig"]:hover::before{ display:none !important; box-shadow:none !important; }
         /* Ensure SVG glyphs are solid fills in brand color */
         .item[data-id="ig"] .icon > svg, .item[data-id="tt"] .icon > svg, .item[data-id="yt"] .icon > svg, .item[data-id="sp"] .icon > svg, .item[data-id="am"] .icon > svg{
           width: 100%; height: 100%; display:block; fill: currentColor; stroke: none;

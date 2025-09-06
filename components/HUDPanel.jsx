@@ -28,7 +28,7 @@ import { sfx } from "@/lib/sfx";
 
 // Use system font stack to avoid network font fetches during build
 
-function ElementIcon({ name, size = 18 }) {
+function ElementIcon({ name, size = 18, glow = true }) {
   if (!name) return null;
   const n = String(name).toLowerCase();
   let src = "";
@@ -69,7 +69,7 @@ function ElementIcon({ name, size = 18 }) {
           objectFit: 'contain',
           display:'block',
           background: 'transparent',
-          filter: `saturate(1.2) brightness(1.08) drop-shadow(0 0 6px ${outer}) drop-shadow(0 0 16px ${outer}) drop-shadow(0 0 34px ${outer})`,
+          filter: glow ? `saturate(1.2) brightness(1.08) drop-shadow(0 0 6px ${outer}) drop-shadow(0 0 16px ${outer}) drop-shadow(0 0 34px ${outer})` : 'none',
         }}
       />
     </span>
@@ -232,10 +232,12 @@ export default function HUDPanel({
           <div className="absolute z-40" style={{ left: 12, top: 12, pointerEvents: 'none' }}>
             {(() => {
               try {
-                if (!currentId) { return <ElementIcon name="chxndler" size={36} />; }
+                // Make the default CHXNDLER logo larger in the top-left
+                if (!currentId) { return <ElementIcon name="chxndler" size={48} />; }
                 const found = resolvedSongs.find(s => s.id === (active || ''));
                 const icon = found && found.icon;
-                return icon ? <ElementIcon name={icon} size={36} /> : null;
+                // Disable glow for song-specific element icons to avoid any rectangular glow box
+                return icon ? <ElementIcon name={icon} size={36} glow={false} /> : null;
               } catch { return null; }
             })()}
           </div>
@@ -380,15 +382,15 @@ export default function HUDPanel({
           </aside>
         </div>
 
-        {/* Hologram base glow + upward beam: positioned below the HUD box with a small gap */}
+        {/* Hologram base glow + upward beam: positioned below the HUD box with extended height */}
         <div
-          className="pointer-events-none absolute inset-x-0 h-32"
+          className="pointer-events-none absolute inset-x-0 h-48"
           aria-hidden
-          style={{ top: 'calc(100% - 20px)', opacity: beamOpacity, transform: 'translateX(-10px)', transition: 'opacity 180ms ease, transform 200ms ease' }}
+          style={{ top: 'calc(100% + 20px)', opacity: beamOpacity, transform: 'translateX(-10px)', transition: 'opacity 180ms ease, transform 200ms ease' }}
         >
-          {/* Cyan base pool at console lip (broad soft glow) */}
+          {/* Cyan base pool at console lip (broad soft glow) - moved lower */}
           <div
-            className="absolute inset-x-[-20px] bottom-0 h-28 mix-blend-screen"
+            className="absolute inset-x-[-20px] bottom-0 h-36 mix-blend-screen"
             style={{
               background: "radial-gradient(72% 130% at 50% 100%, rgba(25,227,255,.55), rgba(25,227,255,0) 70%)",
               filter: "blur(12px)", opacity: 0.85,
@@ -396,7 +398,7 @@ export default function HUDPanel({
           />
           {/* Intense core glow at the base to feel like it's emitting from the dashboard */}
           <div
-            className="absolute inset-x-24 bottom-1 h-12 mix-blend-screen"
+            className="absolute inset-x-24 bottom-1 h-16 mix-blend-screen"
             style={{
               background: "radial-gradient(60% 100% at 50% 100%, rgba(114,255,255,.95), rgba(114,255,255,0) 70%)",
               filter: "blur(10px)",
@@ -404,24 +406,33 @@ export default function HUDPanel({
           />
           {/* White-hot inner hotspot */}
           <div
-            className="absolute inset-x-40 bottom-0 h-6 mix-blend-screen"
+            className="absolute inset-x-40 bottom-0 h-8 mix-blend-screen"
             style={{
               background: "radial-gradient(50% 100% at 50% 100%, rgba(255,255,255,.9), rgba(255,255,255,0) 70%)",
               filter: "blur(8px)", opacity: 0.75,
             }}
           />
-          {/* Upward flaring beam from console across entire HUD (nudged down slightly) */}
+          {/* Upward flaring beam from console across entire HUD - much taller */}
           <div
-            className="absolute inset-x-6 top-12 bottom-6 mix-blend-screen"
+            className="absolute inset-x-6 top-0 bottom-8 mix-blend-screen"
             style={{
               clipPath: "polygon(48% 100%, 52% 100%, 100% 0, 0 0)",
               background: "linear-gradient(0deg, rgba(25,227,255,.6), rgba(25,227,255,0))",
               filter: "blur(10px)", opacity: 0.55,
             }}
           />
-          {/* Subtle magenta secondary bloom for neon richness */}
+          {/* Secondary beam layer for extra height and intensity */}
           <div
-            className="absolute inset-x-[-16px] bottom-0 h-16 mix-blend-screen"
+            className="absolute inset-x-12 top-0 bottom-12 mix-blend-screen"
+            style={{
+              clipPath: "polygon(49% 100%, 51% 100%, 95% 0, 5% 0)",
+              background: "linear-gradient(0deg, rgba(25,227,255,.4), rgba(25,227,255,0) 80%)",
+              filter: "blur(8px)", opacity: 0.4,
+            }}
+          />
+          {/* Subtle magenta secondary bloom for neon richness - taller */}
+          <div
+            className="absolute inset-x-[-16px] bottom-0 h-24 mix-blend-screen"
             style={{
               background: "radial-gradient(60% 80% at 50% 100%, rgba(252,84,175,.28), rgba(252,84,175,0) 70%)",
               filter: "blur(10px)", opacity: 0.35,
@@ -493,6 +504,7 @@ export default function HUDPanel({
                       <div className="ocean-cta-wrap relative">
                         <a
                           href={url}
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="btn-ocean"
                           title="Collect this card"
@@ -506,8 +518,8 @@ export default function HUDPanel({
                               // @ts-ignore
                               void el.offsetWidth;
                               el.classList.add('is-rippling');
-                              setTimeout(() => { window.location.href = el.href; }, 520);
-                            } catch { window.location.href = (e.currentTarget || {}).href; }
+                              setTimeout(() => { window.open(el.href, '_blank', 'noopener,noreferrer'); }, 520);
+                            } catch { window.open((e.currentTarget || {}).href, '_blank', 'noopener,noreferrer'); }
                           }}
                         >
                           <span className="btn-label">COLLECT CARD</span>

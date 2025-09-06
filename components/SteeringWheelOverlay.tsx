@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import HoloHubMenu from "@/components/HoloHubMenu";
+import LumaKeyVideo from "@/components/LumaKeyVideo";
 import HoloJoinPopout from "@/components/HoloJoinPopout";
 import { LINKS } from "@/config/cockpit";
 
@@ -74,9 +75,9 @@ export default function SteeringWheelOverlay({
           width: vs,
           height: vs,
           transform: "none",
-          borderRadius: vs/2,
-          // Clip video to circular mask (no transparent filter)
-          overflow: "hidden",
+          // Do not mask/clamp — allow hands to extend beyond the wheel
+          borderRadius: undefined,
+          overflow: "visible",
           zIndex: 60,
           outline: vconf.debug ? "1px dashed rgba(25,227,255,0.6)" : undefined,
           background: vconf.debug ? "rgba(25,227,255,0.08)" : "transparent",
@@ -84,19 +85,23 @@ export default function SteeringWheelOverlay({
           display: (vconf as any)?.hidden ? 'none' as const : undefined,
         }}
       >
-        {/* Wheel video (visible, circular mask). Leaving blend off for reliability. */}
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          className="block w-full h-full"
-          style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
-        >
-          <source src="/cockpit/wheel.mp4" type="video/mp4" />
-          <source src="/wheel.mp4" type="video/mp4" />
-        </video>
+        {/* Wheel video with luma key: remove black background; no circle crop, allow hands to extend. */}
+        <LumaKeyVideo
+          srcMp4="/cockpit/wheel.mp4"
+          srcAlt="/wheel.mp4"
+          threshold={(vconf as any)?.threshold ?? 0.08}
+          softness={(vconf as any)?.softness ?? 0.06}
+          saturation={(vconf as any)?.saturation ?? 1.05}
+          contrast={(vconf as any)?.contrast ?? 1.05}
+          className="block"
+          style={{
+            display: 'block',
+            width: vs,
+            height: vs,
+            pointerEvents: 'none',
+            background: 'transparent',
+          }}
+        />
       </div>
       {/* Hologram Comms menu — offset from the wheel's top-left */}
       {(() => {

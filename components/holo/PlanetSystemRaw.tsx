@@ -27,6 +27,8 @@ export default function PlanetSystemRaw() {
   // Focus logic: rotate system to bring selected planet to front-center
   const focusTargetRy = useRef<number | null>(null);
   const spinSpeedRef = useRef<number>(0.0025);
+  // Central planet system: selected planet becomes stationary at center
+  const centralPlanetRef = useRef<{ id: string | null; mesh: THREE.Mesh | null; originalSat: Sat | null }>({ id: null, mesh: null, originalSat: null });
 
   // Build a hologram shader material (rim glow + scanlines + additive)
   function makeHoloMat(color: number) {
@@ -83,12 +85,14 @@ export default function PlanetSystemRaw() {
 
   useEffect(() => {
     const mount = mountRef.current; if (!mount) return;
-    const width = mount.clientWidth || 600;
-    const height = mount.clientHeight || 340;
+    // Guard against transient zero-size containers (e.g., during layout)
+    const width = Math.max(1, mount.clientWidth || 600);
+    const height = Math.max(1, mount.clientHeight || 340);
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 120);
-    camera.position.set(0.2, 0.6, 20.0);
+    const camera = new THREE.PerspectiveCamera(35, width / height, 0.1, 120);
+    camera.position.set(0, 1.2, 16.0);
+    camera.lookAt(0, 0, 0); // Look directly at center
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setClearColor(0x000000, 0);
@@ -109,8 +113,8 @@ export default function PlanetSystemRaw() {
 
     // System group
     const sys = new THREE.Group();
-    sys.position.set(0, 0.35, 0);
-    sys.rotation.set(0.08, -0.04, 0);
+    sys.position.set(0, 0, 0); // Center the system at origin
+    sys.rotation.set(0, 0, 0); // Start with no rotation
     scene.add(sys);
     groupRef.current = sys;
 
@@ -158,7 +162,38 @@ export default function PlanetSystemRaw() {
     const tick = () => {
       t += 0.016;
       const hov = hoverRef.current;
+      const centralPlanet = centralPlanetRef.current;
+      
+      // Update central planet if it exists
+      if (centralPlanet.mesh) {
+        const hovered = !!hov && centralPlanet.id === hov;
+        const osc = hovered ? (1 + 0.06 * Math.sin(t * 3.2)) : 1;
+        const targetScale = (hovered ? 1.6 : 1.4) * osc; // Central planet is much larger
+        const ms = centralPlanet.mesh.scale;
+        ms.x += (targetScale - ms.x) * 0.18;
+        ms.y = ms.x; ms.z = ms.x;
+        // Position central planet slightly forward for better visibility
+        centralPlanet.mesh.position.set(0, 0, 1.5);
+        // Gentle rotation for the central planet
+        centralPlanet.mesh.rotation.y += 0.003;
+        
+        // Drive hologram shader uniforms
+        try {
+          const u: any = (centralPlanet.mesh.material as any).uniforms;
+          if (u && u.uTime) u.uTime.value = t;
+          if (u && u.uIntensity) u.uIntensity.value += (((hovered ? 2.0 : 1.2)) - u.uIntensity.value) * 0.18;
+          if (u && u.uOpacity) u.uOpacity.value += (((hovered ? 1.0 : 0.95)) - u.uOpacity.value) * 0.18;
+        } catch {}
+      }
+      
       satsRef.current.forEach(s => {
+        // Skip the satellite if it's the central planet
+        if (centralPlanet.id && s.id === centralPlanet.id) {
+          s.mesh.visible = false; // Hide the original satellite
+          return;
+        }
+        
+        s.mesh.visible = true;
         s.a += (reduced ? 0.0 : s.speed * 0.008);
         const x = Math.cos(s.a) * s.r;
         const z = Math.sin(s.a) * s.r;
@@ -181,7 +216,11 @@ export default function PlanetSystemRaw() {
       try { if (sweepUniforms.current) sweepUniforms.current.uTime.value = t; } catch {}
       // Apply focus-or-spin for the system group
       if (sys) {
-        if (focusTargetRy.current !== null) {
+        // Don't rotate the system if we have a central planet - let it stay fixed
+        if (centralPlanet.mesh) {
+          // Keep system rotation stable when central planet is active
+          // The central planet is at origin, others orbit around it
+        } else if (focusTargetRy.current !== null) {
           // Smoothly rotate toward the target yaw using shortest angular path
           const cur = sys.rotation.y;
           const target = focusTargetRy.current;
@@ -207,10 +246,11 @@ export default function PlanetSystemRaw() {
     // Resize
     const onResize = () => {
       if (!mount) return;
-      const w = mount.clientWidth || 600;
-      const h = mount.clientHeight || 340;
+      // Clamp to at least 1×1 to avoid IndexSizeError in some browsers
+      const w = Math.max(1, mount.clientWidth || 600);
+      const h = Math.max(1, mount.clientHeight || 340);
       renderer.setSize(w, h);
-      camera.aspect = w / h;
+      camera.aspect = w / Math.max(1, h);
       camera.updateProjectionMatrix();
     };
     const ro = new ResizeObserver(onResize); ro.observe(mount);
@@ -220,6 +260,14 @@ export default function PlanetSystemRaw() {
       try { ro.disconnect(); } catch {}
       try { if (rendererRef.current) { rendererRef.current.dispose(); rendererRef.current.forceContextLoss?.(); } } catch {}
       try { if (mount && renderer.domElement.parentNode === mount) mount.removeChild(renderer.domElement); } catch {}
+      // Cleanup central planet
+      try {
+        const centralPlanet = centralPlanetRef.current;
+        if (centralPlanet.mesh) {
+          centralPlanet.mesh.geometry?.dispose();
+          centralPlanet.mesh.material?.dispose();
+        }
+      } catch {}
     };
   }, []);
 
@@ -247,6 +295,13 @@ export default function PlanetSystemRaw() {
       try { sys.remove(g); g.clear(); } catch {}
     }
     ringsRef.current = [];
+    
+    // Clear central planet when rebuilding system
+    const centralPlanet = centralPlanetRef.current;
+    if (centralPlanet.mesh) {
+      try { sys.remove(centralPlanet.mesh); } catch {}
+      centralPlanetRef.current = { id: null, mesh: null, originalSat: null };
+    }
 
     // Build orbit ring guides per ring index using layout radii
     if (layout) {
@@ -307,22 +362,41 @@ export default function PlanetSystemRaw() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [songs, mainId, layout && Object.keys(layout).join(',')]);
 
-  // When the selected song changes, rotate the system to bring its planet front-center
+  // When the selected song changes, create central planet and update orbital system
   useEffect(() => {
     const sys = groupRef.current; if (!sys) return;
     const id = mainId; if (!id) return;
     const sat = satsRef.current.find(s => s.id === id);
     if (!sat) return;
-    // Desired yaw so the satellite sits directly in front of the camera
-    const desired = Math.PI / 2 - sat.a; // see derivation: z' maximized when ry + a = PI/2
-    // Normalize to current neighborhood to avoid long spins
-    const cur = sys.rotation.y;
-    let target = desired;
-    // Map target to be within +/- PI of current for shortest path
-    let delta = ((target - cur + Math.PI) % (Math.PI * 2));
-    if (delta < 0) delta += Math.PI * 2;
-    delta -= Math.PI;
-    focusTargetRy.current = cur + delta;
+    
+    // Create central planet from the selected satellite
+    const centralPlanet = centralPlanetRef.current;
+    
+    // Clean up previous central planet
+    if (centralPlanet.mesh && centralPlanet.mesh !== sat.mesh) {
+      try { sys.remove(centralPlanet.mesh); } catch {}
+    }
+    
+    // Create new central planet as a larger copy of the selected satellite
+    const centralGeo = new THREE.SphereGeometry(sat.baseRadius * 2.0, 64, 64); // Make it much larger and higher quality
+    const centralMat = makeHoloMat(new THREE.Color(sat.mat.uniforms.uBase.value).getHex());
+    const centralMesh = new THREE.Mesh(centralGeo, centralMat);
+    
+    // Position forward from center for prominent display
+    centralMesh.position.set(0, 0, 1.5);
+    centralMesh.scale.set(1.4, 1.4, 1.4); // Start even larger
+    sys.add(centralMesh);
+    
+    // Update central planet reference
+    centralPlanetRef.current = {
+      id: id,
+      mesh: centralMesh,
+      originalSat: sat
+    };
+    
+    // Reset system rotation to face forward since central planet is now at origin
+    focusTargetRy.current = 0;
+    
   }, [mainId]);
 
   // Hover behavior handled in main tick via hoverRef
