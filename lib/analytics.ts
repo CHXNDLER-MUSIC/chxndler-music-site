@@ -40,3 +40,108 @@ export function track(
 export function trackPageView() {
   track('page_view');
 }
+
+// Music-specific tracking functions
+export function trackSongSelected(song_slug: string, song_title?: string) {
+  track('song_selected', { 
+    song_slug, 
+    payload: { song_title } 
+  });
+}
+
+export function trackCoverArtClicked(song_slug: string, song_title?: string) {
+  track('cover_art_clicked', { 
+    song_slug, 
+    payload: { song_title } 
+  });
+}
+
+export function trackSongHovered(song_slug: string, hover_method?: string) {
+  track('song_hovered', { 
+    song_slug, 
+    payload: { hover_method } 
+  });
+}
+
+export function trackMusicStarted() {
+  track('music_started');
+}
+
+// Click tracking types
+export interface ClickData {
+  id: string;
+  timestamp: number;
+  element: {
+    tagName: string;
+    className: string;
+    id: string;
+    textContent: string;
+    href?: string;
+    role?: string;
+    ariaLabel?: string;
+  };
+  position: {
+    x: number;
+    y: number;
+    screenX: number;
+    screenY: number;
+  };
+  viewport: {
+    width: number;
+    height: number;
+  };
+  page: {
+    url: string;
+    title: string;
+  };
+  userAgent: string;
+}
+
+// Click tracking functions
+export function generateClickId(): string {
+  return Math.random().toString(36).substring(2, 15);
+}
+
+// Legacy trackClick function (keeping for compatibility)
+export function trackClickLegacy(element: HTMLElement, clickId: string) {
+  if (!element || !element.tagName) return;
+  
+  track('click', {
+    payload: {
+      element_tag: element.tagName.toLowerCase(),
+      element_class: element.className,
+      element_text: element.textContent?.slice(0, 100),
+      click_id: clickId
+    }
+  });
+}
+
+// New trackClick function that accepts ClickData
+export function trackClick(clickData: ClickData) {
+  track('click', {
+    payload: {
+      element_tag: clickData.element.tagName,
+      element_class: clickData.element.className,
+      element_text: clickData.element.textContent,
+      click_id: clickData.id,
+      position: clickData.position,
+      viewport: clickData.viewport,
+      page: clickData.page,
+      user_agent: clickData.userAgent
+    }
+  });
+}
+
+// Server-side analytics functions (for admin dashboard)
+export async function getMusicAnalytics() {
+  // This would typically make an API call to your backend
+  return { success: false, error: 'Not implemented - use API directly' };
+}
+
+export async function getClickAnalytics() {
+  return { success: false, error: 'Not implemented - use API directly' };
+}
+
+export async function clearClickAnalytics() {
+  return { success: false, error: 'Not implemented - use API directly' };
+}

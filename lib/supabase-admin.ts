@@ -2,6 +2,9 @@ import { createClient } from '@supabase/supabase-js';
 
 export const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE!, // never import this in client code
-  { auth: { persistSession: false } }
+  process.env.SUPABASE_SERVICE_ROLE!, // server-only
+  {
+    auth: { persistSession: false },
+    db: { schema: 'analytics' }, // <<< important
+  }
 );

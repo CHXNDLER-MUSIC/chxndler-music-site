@@ -4,7 +4,7 @@ import SupabaseAnalytics from '../../lib/supabase';
 // Admin authentication
 const ADMIN_SECRET = process.env.ADMIN_SECRET || 'your-secret-key-change-this';
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');

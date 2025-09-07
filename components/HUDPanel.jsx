@@ -407,7 +407,7 @@ export default function HUDPanel({
         <div
           className="pointer-events-none absolute inset-x-0 h-48"
           aria-hidden
-          style={{ top: 'calc(100% + 20px)', opacity: beamOpacity, transform: 'translateX(-10px)', transition: 'opacity 180ms ease, transform 200ms ease' }}
+          style={{ top: 'calc(100% + 8px)', opacity: beamOpacity, transform: 'translateX(-10px)', transition: 'opacity 180ms ease, transform 200ms ease' }}
         >
           {/* Cyan base pool at console lip (broad soft glow) - moved lower */}
           <div
@@ -419,7 +419,7 @@ export default function HUDPanel({
           />
           {/* Intense core glow at the base to feel like it's emitting from the dashboard */}
           <div
-            className="absolute inset-x-24 bottom-9 h-16 mix-blend-screen beam-core-glow"
+            className="absolute inset-x-24 bottom-8 h-16 mix-blend-screen beam-core-glow"
             style={{
               background: "radial-gradient(60% 100% at 50% 100%, rgba(114,255,255,.95), rgba(114,255,255,0) 70%)",
               filter: "blur(10px)",

@@ -7,7 +7,7 @@ export function useClickTracking() {
   useEffect(() => {
     function handleClick(event: MouseEvent) {
       const target = event.target as HTMLElement;
-      if (!target) return;
+      if (!target || !target.tagName || typeof target.tagName !== 'string') return;
 
       // Skip tracking for certain elements if needed
       if (target.closest('[data-no-track]')) return;

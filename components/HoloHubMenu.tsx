@@ -169,9 +169,9 @@ export default function HoloHubMenu({
           const tint = it.color || "#38B6FF";
           const isFirst = i === 0;
           const isLast = i === entries.length - 1;
-          const size = Math.max(40, (it as any)?.size ?? itemSize);
+          const size = itemSize; // Use consistent size for all buttons
           const half = Math.round(size / 2);
-          const iconPx = size; // Make icon same size as button to fill it completely
+          const iconPx = size;
           return (
             <button
               key={it.id}
@@ -315,38 +315,57 @@ export default function HoloHubMenu({
             inset 0 1px 0 rgba(255,255,255,.28), inset 0 -8px 18px rgba(0,0,0,.65);
           filter: brightness(1.08) saturate(1.16);
         }
-        /* Brand buttons: remove all rings and backgrounds, allow overflow for larger images */
+        /* All brand buttons: completely clean appearance with NO effects whatsoever */
         .item[data-id="ig"], .item[data-id="tt"], .item[data-id="yt"], .item[data-id="sp"], .item[data-id="am"]{
-          background: transparent;
-          border: none;
-          box-shadow: none;
+          background: none !important;
+          border: none !important;
+          box-shadow: none !important;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
           overflow: visible;
+          --tint: transparent !important; /* Override tint color */
         }
-        /* Remove all yellow rings */
-        .item[data-id="ig"]::before, .item[data-id="tt"]::before, .item[data-id="yt"]::before, .item[data-id="sp"]::before, .item[data-id="am"]::before{
-          display: none;
+        .item[data-id="ig"]:hover, .item[data-id="tt"]:hover, .item[data-id="yt"]:hover, .item[data-id="sp"]:hover, .item[data-id="am"]:hover{
+          background: none !important;
+          border: none !important;
+          box-shadow: none !important;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+          filter: brightness(1.1) !important; /* Only brightness change on hover */
+          transform: scale(1.05) !important; /* Simple scale only */
         }
-        .item[data-id="ig"]:hover::before, .item[data-id="tt"]:hover::before, .item[data-id="yt"]:hover::before, .item[data-id="sp"]:hover::before, .item[data-id="am"]:hover::before{
-          display: none;
+        .item[data-id="ig"]::before, .item[data-id="tt"]::before, .item[data-id="yt"]::before, .item[data-id="sp"]::before, .item[data-id="am"]::before,
+        .item[data-id="ig"]:hover::before, .item[data-id="tt"]:hover::before, .item[data-id="yt"]:hover::before, .item[data-id="sp"]:hover::before, .item[data-id="am"]:hover::before,
+        .item[data-id="ig"]::after, .item[data-id="tt"]::after, .item[data-id="yt"]::after, .item[data-id="sp"]::after, .item[data-id="am"]::after{
+          display: none !important;
         }
-        /* Icon wrapper sizing - make images fill entire button */
+        /* Brand button icons - fill entire button area completely */
         .item[data-id="ig"] .icon, .item[data-id="tt"] .icon, .item[data-id="yt"] .icon, .item[data-id="sp"] .icon, .item[data-id="am"] .icon{
-          position: relative; width: 100%; height: 100%; color: var(--tint, #38B6FF);
-          /* Remove glow effects to let PNG images show naturally */
-          filter: none;
-          mix-blend-mode: normal;
+          position: absolute; inset: 0; width: 100%; height: 100%; 
+          display: block; padding: 0 !important; margin: 0 !important;
+          transition: none;
+        }
+        .item[data-id="ig"] .icon img, .item[data-id="tt"] .icon img, .item[data-id="yt"] .icon img, .item[data-id="sp"] .icon img, .item[data-id="am"] .icon img{
+          position: absolute; inset: 0; width: 100% !important; height: 100% !important; 
+          display: block !important; object-fit: cover !important; border-radius: 50% !important;
+          max-width: none !important; max-height: none !important;
+          transform: none !important; padding: 0 !important; margin: 0 !important;
+          box-sizing: border-box !important;
+        }
+        /* Regular icon wrapper for non-brand buttons */
+        .item .icon{
+          position: relative; width: 100%; height: 100%; 
+          display: flex; align-items: center; justify-content: center;
+          padding: 0 !important; margin: 0 !important;
           transition: transform 180ms ease, filter 160ms ease;
         }
-        /* Make images fill the entire button with no padding */
-        .item[data-id="ig"] .icon img, .item[data-id="tt"] .icon img, .item[data-id="yt"] .icon img, .item[data-id="sp"] .icon img, .item[data-id="am"] .icon img{
-          width: 100% !important; height: 100% !important; display:block !important; object-fit: cover !important; border-radius: 50% !important;
-          max-width: none !important; max-height: none !important;
-          transform: none !important;
-        }
-        /* Remove any background effects */
-        .item[data-id="ig"]::after, .item[data-id="tt"]::after, .item[data-id="yt"]::after, .item[data-id="sp"]::after, .item[data-id="am"]::after{ display:none; }
-        /* Simple hover scale for images */
+        /* Override any general hover effects for brand buttons */
         .item[data-id="ig"]:hover .icon, .item[data-id="tt"]:hover .icon, .item[data-id="yt"]:hover .icon, .item[data-id="sp"]:hover .icon, .item[data-id="am"]:hover .icon{
+          transform: none !important;
+          filter: none !important;
+        }
+        /* General hover for non-brand buttons */
+        .item:not([data-id="ig"]):not([data-id="tt"]):not([data-id="yt"]):not([data-id="sp"]):not([data-id="am"]):hover .icon{
           transform: scale(1.08);
           filter: brightness(1.1);
         }
@@ -354,13 +373,6 @@ export default function HoloHubMenu({
         .item:active{ transform: translate(var(--tx,0), var(--ty,0)) scale(0.98); }
         /* Focus ring should follow the item's own tint, not the hub color */
         .item:focus{ outline: 2px solid var(--tint, #38B6FF); outline-offset: 2px; }
-        .item .icon{ display:flex; align-items:center; justify-content:center; color: inherit;
-          width: 100%; height: 100%;
-          filter: none;
-          transition: transform 180ms ease;
-        }
-        .item .icon img, .item .icon svg{ width: 100% !important; height: 100% !important; max-width: none !important; max-height: none !important; }
-        .item:hover .icon{ transform: scale(1.06); }
         @keyframes holoSheen { 0% { transform: translateX(-130%); } 55% { transform: translateX(130%);} 100% { transform: translateX(130%);} }
         .item .dot{ width: 10px; height:10px; border-radius:9999px; background:#9EEBFF; }
 
