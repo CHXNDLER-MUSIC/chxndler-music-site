@@ -44,8 +44,8 @@ export default function SteeringWheelOverlay({
   // Default play button to the exact center of the wheel logo
   const pp = wheel.play || { topVh: lp.topVh, leftVw: lp.leftVw, sizePx: Math.round(lp.sizePx * 0.9) };
   // Wheel video size (relative to footprint) + optional offsets
-  // Slightly reduce default scale to make the wheel smaller
-  const vconf = wheel.video || { scale: 3.6, offsetVh: 0, offsetVw: 0, centerHoriz: true, debug: false };
+  // Minimal scale for subtle wheel presence
+  const vconf = wheel.video || { scale: 1.0, offsetVh: 0, offsetVw: 0, centerHoriz: true, debug: false };
   const basePx = Math.max(lp.sizePx || 72, pp.sizePx || 64);
   const vs = Math.round(basePx * (vconf.scale || 4.0));
 
@@ -89,10 +89,11 @@ export default function SteeringWheelOverlay({
         <LumaKeyVideo
           srcMp4="/cockpit/wheel.mp4"
           srcAlt="/wheel.mp4"
-          threshold={(vconf as any)?.threshold ?? 0.08}
-          softness={(vconf as any)?.softness ?? 0.06}
-          saturation={(vconf as any)?.saturation ?? 1.05}
-          contrast={(vconf as any)?.contrast ?? 1.05}
+          threshold={(vconf as any)?.threshold ?? 0.01}
+          softness={(vconf as any)?.softness ?? 0.0}
+          saturation={(vconf as any)?.saturation ?? 1.8}
+          contrast={(vconf as any)?.contrast ?? 2.0}
+          offsetYRatio={0.08}
           className="block"
           style={{
             display: 'block',
@@ -100,6 +101,8 @@ export default function SteeringWheelOverlay({
             height: vs,
             pointerEvents: 'none',
             background: 'transparent',
+            transform: 'scale(0.9)',
+            transformOrigin: 'center',
           }}
         />
       </div>
@@ -207,7 +210,7 @@ export default function SteeringWheelOverlay({
         style={{
           position: "absolute",
           top: `calc(${pp.topVh}vh - ${pp.sizePx/2}px)`,
-          left: `calc(${pp.leftVw}vw - ${pp.sizePx/2}px)`,
+          left: `calc(${pp.leftVw}vw - ${pp.sizePx/2}px + 2px)`,
           width: pp.sizePx,
           height: pp.sizePx,
           borderRadius: 9999,
@@ -222,7 +225,7 @@ export default function SteeringWheelOverlay({
         {/* Ring removed for START variant and standard play/pause */}
         <span className="glyph" aria-hidden>
           {isStart ? (
-            <img src="/elements/chxndler.png" alt="Start" className="chx-icon" />
+            <img src="/elements/start.png" alt="Start" className="chx-icon" />
           ) : (
             playing ? (
               <svg viewBox="0 0 24 24" width="52" height="52" fill="currentColor">

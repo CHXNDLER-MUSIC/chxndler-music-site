@@ -103,6 +103,7 @@ export default function HUDPanel({
   const [threeFailed, setThreeFailed] = useState(null);
   const [mounted, setMounted] = useState(false);
   const [showCard, setShowCard] = useState(false);
+  const [cardFlipped, setCardFlipped] = useState(false);
   // Beam fade: allow external control; default to fade-in on mount
   const [beamOpacity, setBeamOpacity] = useState(0);
   useEffect(() => {
@@ -149,6 +150,13 @@ export default function HUDPanel({
     const onKey = (e) => { if (e.key === 'Escape') setShowCard(false); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
+  }, [showCard]);
+
+  // Reset flip state when modal closes
+  useEffect(() => {
+    if (!showCard) {
+      setCardFlipped(false);
+    }
   }, [showCard]);
 
   // Measure container and compute a stable scale before first paint to avoid flicker.
@@ -534,43 +542,85 @@ export default function HUDPanel({
             })()}
             <div className="tilt-wrap">
               <div className="card-frame">
-                {(() => {
-                  const home = !currentId;
-                  const slug = home ? '' : (track?.slug || active || '');
-                  const CARD_OVERRIDES = {
-                    "were-just-friends": "/card/we're-just-friends.png",
-                    "were-just-friends-dmvrco-remix": "/card/we're-just-friends-dmvrco-remix.png",
-                    "were-just-friends-mickey-jas-remix": "/card/we're-just-friends-mickey jas-remix.png",
-                    "mr-brightside": "/card/mr.brightside.png",
-                    "tienes-un-amigo": "/card/tienes-un-amigo-acqi.png",
-                  };
-                  const defaultCard = '/card/chxndler.png';
-                  const fallbackCover = '/cover/chxndler.png';
-                  const explicitCard = slug ? (CARD_OVERRIDES[slug] || `/card/${slug}.png`) : '';
-                  const cardSrc = home ? defaultCard : (explicitCard || track?.cover || fallbackCover);
-                  return (
-                    <img
-                      src={cardSrc}
-                      alt={(track?.title)||'Card'}
-                      className="tilt-img"
-                      data-fallback="0"
-                      onError={(e)=>{
-                        try {
-                          const el = e.currentTarget;
-                          const tried = Number((el.dataset && el.dataset.fallback) || '0');
-                          if (home) { el.src = '/card/BUSINESS CARD.png'; if (el.dataset) el.dataset.fallback = '2'; return; }
-                          if (tried === 0 && slug) {
-                            el.src = `/generated/${slug}-album-card.png`;
-                            if (el.dataset) el.dataset.fallback = '1';
-                            return;
-                          }
-                          el.src = track?.cover || '/cover/chxndler.png';
-                          if (el.dataset) el.dataset.fallback = '2';
-                        } catch {}
+                <div 
+                  className="card-flip-container"
+                  style={{
+                    position: 'relative',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => { 
+                    try { sfx.play('flip', 0.6); } catch {} 
+                    setCardFlipped(!cardFlipped); 
+                  }}
+                >
+                  <div 
+                    className="card-flip-inner"
+                    style={{
+                      transition: 'transform 0.7s ease-in-out',
+                      transformStyle: 'preserve-3d',
+                      transform: cardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                    }}
+                  >
+                    {/* Front side */}
+                    <div style={{ backfaceVisibility: 'hidden', transform: 'rotateY(0deg)' }}>
+                      {(() => {
+                        const home = !currentId;
+                        const slug = home ? '' : (track?.slug || active || '');
+                        const CARD_OVERRIDES = {
+                          "were-just-friends": "/card/we're-just-friends.png",
+                          "were-just-friends-dmvrco-remix": "/card/we're-just-friends-dmvrco-remix.png",
+                          "were-just-friends-mickey-jas-remix": "/card/we're-just-friends-mickey jas-remix.png",
+                          "mr-brightside": "/card/mr.brightside.png",
+                          "tienes-un-amigo": "/card/tienes-un-amigo-acqi.png",
+                        };
+                        const defaultCard = '/card/chxndler.png';
+                        const fallbackCover = '/cover/chxndler.png';
+                        const explicitCard = slug ? (CARD_OVERRIDES[slug] || `/card/${slug}.png`) : '';
+                        const cardSrc = home ? defaultCard : (explicitCard || track?.cover || fallbackCover);
+                        return (
+                          <img
+                            src={cardSrc}
+                            alt={(track?.title)||'Card'}
+                            className="tilt-img"
+                            data-fallback="0"
+                            onError={(e)=>{
+                              try {
+                                const el = e.currentTarget;
+                                const tried = Number((el.dataset && el.dataset.fallback) || '0');
+                                if (home) { el.src = '/card/BUSINESS CARD.png'; if (el.dataset) el.dataset.fallback = '2'; return; }
+                                if (tried === 0 && slug) {
+                                  el.src = `/generated/${slug}-album-card.png`;
+                                  if (el.dataset) el.dataset.fallback = '1';
+                                  return;
+                                }
+                                el.src = track?.cover || '/cover/chxndler.png';
+                                if (el.dataset) el.dataset.fallback = '2';
+                              } catch {}
+                            }}
+                          />
+                        );
+                      })()} 
+                    </div>
+                    {/* Back side */}
+                    <div 
+                      style={{ 
+                        position: 'absolute', 
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        backfaceVisibility: 'hidden',
+                        transform: 'rotateY(180deg)'
                       }}
-                    />
-                  );
-                })()}
+                    >
+                      <img
+                        src="/card/back.png"
+                        alt="Card back"
+                        className="tilt-img"
+                      />
+                    </div>
+                  </div>
+                </div>
                 <span className="frame-sheen" aria-hidden />
               </div>
             </div>

@@ -6,6 +6,9 @@ export const metadata = {
 import "./globals.css";
 // Use a local font via @font-face in globals.css to avoid network fetches.
 
+import ClickTracker from "../components/ClickTracker";
+import AnalyticsWidget from "../components/AnalyticsWidget";
+
 export default function RootLayout({ children }) {
   const gaId = process.env.NEXT_PUBLIC_GA_ID;            // e.g., G-XXXXXXX
   const mpId = process.env.NEXT_PUBLIC_META_PIXEL_ID;    // e.g., 1234567890
@@ -52,6 +55,8 @@ export default function RootLayout({ children }) {
         ) : null}
       </head>
       <body className={`font-sans`}>
+        <ClickTracker />
+        <AnalyticsWidget />
         {children}
 
         {/* Meta Pixel <noscript> */}

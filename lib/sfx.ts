@@ -19,6 +19,7 @@ class SFXBus {
     launch: "/audio/launch.mp3",
     select: "/audio/song-select.mp3",
     warp: "/audio/warp.mp3",
+    flip: "/audio/flip.mp3",
   };
 
   private ensure() {

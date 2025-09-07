@@ -97,7 +97,8 @@ export default function DashboardApp() {
         // Fallback if timers were throttled
         setTimeout(() => { welcomeOnStartRef.current = false; }, 2600);
       } else {
-        // Turning off: do not play any power SFX to avoid audio blips while music is playing
+        // Turning off: play join-alien SFX when powering down
+        try { sfx.play('join', 0.9); } catch {}
       }
     } catch {}
 
@@ -112,11 +113,13 @@ export default function DashboardApp() {
       try { setAmbientSuspended(true); } catch {}
       // Do not start beam yet; will start after SFX ends (above)
     } else {
-      // Powering off: play SFX immediately (done above), then fade beam out now,
-      // and fade HUD out shortly after for a snappy close.
+      // Powering off: play SFX immediately (done above), then fade beam out first,
+      // and immediately afterwards fade HUD display out.
       setBeamEnabled(false); // start beam fade-out immediately
-      setTimeout(() => { setBeamOnly(true); }, 120); // hide HUD content right after beam starts fading
-      setTimeout(() => { setShowHUD(false); setPowerBusy(false); }, 320); // unmount once fades complete
+      setTimeout(() => { 
+        setBeamOnly(true); // hide HUD content immediately after beam fades
+        setTimeout(() => { setShowHUD(false); setPowerBusy(false); }, 50); // unmount HUD right after
+      }, 180); // wait for beam to fade out
     }
   }, [powerBusy, beamEnabled, showHUD]);
 
@@ -337,7 +340,7 @@ export default function DashboardApp() {
                 style={{
                   position: 'fixed',
                   left: 'calc(50% - 30px)', // recenter for slightly smaller size
-                  top: 'calc(50vh + 78px)', // moved down slightly
+                  top: 'calc(50vh + 88px)', // moved down slightly
                   width: 60, height: 60, borderRadius: 9999, zIndex: 95,
                   opacity: showOverlayUI ? 1 : 0,
                   transition: 'opacity 300ms ease',
