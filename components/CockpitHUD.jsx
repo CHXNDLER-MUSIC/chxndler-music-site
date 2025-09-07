@@ -114,7 +114,7 @@ export default function CockpitHUD({
         .ck-controls {
           display:flex;align-items:center;justify-content:flex-end;
           margin-left:auto;
-          transform:perspective(800px) rotateX(8deg) translateY(-12px);
+          transform:perspective(800px) rotateX(8deg) translateY(-16px);
           will-change:transform;
         }
         .ck-progress {

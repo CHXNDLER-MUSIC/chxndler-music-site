@@ -456,6 +456,38 @@ export default function DashboardApp() {
         </div>
       </Slot>
 
+      {/* Upward shooting light beam from dashboard base to HUD (using MediaDock beam pattern) */}
+      {mounted && (beamEnabled || showHUD) ? (
+        <div 
+          className="fixed pointer-events-none z-10"
+          style={{
+            left: '50%',
+            bottom: '15vh',
+            top: '35vh', 
+            width: '300px',
+            transform: 'translateX(-50%)',
+            opacity: beamEnabled ? 1 : 0,
+            transition: 'opacity 300ms ease'
+          }}
+        >
+          <div 
+            style={{
+              position: 'absolute',
+              left: '10%', 
+              right: '10%', 
+              bottom: '10px', 
+              top: '22%',
+              zIndex: 0,
+              clipPath: 'polygon(45% 100%, 55% 100%, 100% 0, 0% 0)',
+              background: 'linear-gradient(180deg, rgba(25,227,255,0.08), rgba(25,227,255,0.16) 40%, rgba(25,227,255,0.0) 100%)',
+              filter: 'blur(6px)',
+              mixBlendMode: 'screen',
+              opacity: 0.9
+            }}
+          />
+        </div>
+      ) : null}
+
       {mounted && showHUD && process.env.NEXT_PUBLIC_HOLOHUD === '1' ? (
         <HoloHUD
           track={curTrack}
