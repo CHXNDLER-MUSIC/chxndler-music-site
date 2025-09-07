@@ -29,11 +29,22 @@ export default function HoloHUD({
       </div>
 
       {/* Top-right: tilted album hologram with cyan border & scanlines */}
-      <div className="album-card">
+      <button
+        type="button"
+        className="album-card"
+        onClick={() => {
+          // Dispatch event to trigger HUDPanel card modal
+          const event = new CustomEvent('showCoverCard', { 
+            detail: { track, cover } 
+          });
+          window.dispatchEvent(event);
+        }}
+        aria-label="Open song card"
+      >
         <div className="card-glow" />
         <img src={cover} alt={title} className="card-img" />
         <div className="scanlines" />
-      </div>
+      </button>
 
       {/* Center: Orrery above steering wheel */}
       <div className="orrery" aria-label="Song worlds orrery">
