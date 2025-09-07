@@ -494,33 +494,52 @@ export default function Planet({
       {/* Planet-type specific ring systems */}
       {isMain && planetType === 'gas-giant' && (
         <>
-          {/* Multiple prominent ring systems for gas giants */}
+          {/* Enhanced multiple ring systems for gas giants with realistic gaps and density variations */}
           <mesh ref={mainRingRef} rotation={[-Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[1.2, 1.8, 128]} />
-            <meshBasicMaterial
+            <ringGeometry args={[1.2, 1.8, 256]} />
+            <meshStandardMaterial
               color={ringColor}
               transparent
-              opacity={0.6}
+              opacity={0.75}
+              roughness={0.8}
+              metalness={0.02}
               depthWrite={false}
               blending={AdditiveBlending}
             />
           </mesh>
+          {/* Cassini Division gap simulation */}
           <mesh ref={mainRingRef2} rotation={[-Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[2.0, 2.4, 128]} />
-            <meshBasicMaterial
-              color={new Color(ringColor).lerp(new Color('#FFFFFF'), 0.3)}
+            <ringGeometry args={[2.1, 2.5, 256]} />
+            <meshStandardMaterial
+              color={new Color(ringColor).lerp(new Color('#FFFFFF'), 0.2)}
               transparent
-              opacity={0.4}
+              opacity={0.5}
+              roughness={0.9}
+              metalness={0.01}
               depthWrite={false}
               blending={AdditiveBlending}
             />
           </mesh>
+          {/* Outer E ring simulation */}
           <mesh rotation={[-Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[2.6, 2.8, 128]} />
-            <meshBasicMaterial
-              color={new Color(ringColor).lerp(new Color('#FFFFFF'), 0.5)}
+            <ringGeometry args={[2.7, 3.1, 256]} />
+            <meshStandardMaterial
+              color={new Color(ringColor).lerp(new Color('#FFFFFF'), 0.4)}
               transparent
-              opacity={0.25}
+              opacity={0.3}
+              roughness={0.95}
+              metalness={0.005}
+              depthWrite={false}
+              blending={AdditiveBlending}
+            />
+          </mesh>
+          {/* Faint shepherd moon effect ring */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[3.2, 3.35, 128]} />
+            <meshBasicMaterial
+              color={new Color(ringColor).lerp(new Color('#FFFFFF'), 0.6)}
+              transparent
+              opacity={0.15}
               depthWrite={false}
               blending={AdditiveBlending}
             />
@@ -588,38 +607,46 @@ export default function Planet({
 
       {/* Outer glow shell removed per request (no aura around planets) */}
 
-      {/* Core planet body with type-specific geometry */}
+      {/* Core planet body with enhanced high-detail geometry */}
       <mesh ref={meshRef}>
         {planetType === 'gas-giant' ? (
-          <sphereGeometry args={[1, 32, 32]} />
+          <sphereGeometry args={[1, 48, 48]} />
         ) : planetType === 'neptune' ? (
-          <sphereGeometry args={[1, 40, 40]} />
+          <sphereGeometry args={[1, 56, 56]} />
         ) : planetType === 'dwarf' ? (
-          <dodecahedronGeometry args={[1, 2]} />
+          <dodecahedronGeometry args={[1, 3]} />
         ) : (
-          <sphereGeometry args={[1, 64, 64]} />
+          <sphereGeometry args={[1, 80, 80]} />
         )}
         <meshPhysicalMaterial
           map={colorTex}
           normalMap={normalTex}
           roughnessMap={roughTex}
+          displacementMap={normalTex}
+          displacementScale={
+            planetType === 'gas-giant' ? 0.001 :
+            planetType === 'neptune' ? 0.002 :
+            element === 'earth' ? 0.008 :
+            element === 'water' ? 0.003 :
+            isDark ? 0.012 : 0.005
+          }
           color={"white"}
-          // Realistic material properties by planet type
+          // Enhanced realistic material properties by planet type
           metalness={
             planetType === 'gas-giant' ? 0.0 : 
             planetType === 'neptune' ? 0.02 : 
-            element === 'lightning' ? 0.25 : 
-            element === 'water' ? 0.08 : 
-            element === 'earth' ? 0.12 : 
-            isDark ? 0.35 : 0.05
+            element === 'lightning' ? 0.35 : 
+            element === 'water' ? 0.05 : 
+            element === 'earth' ? 0.15 : 
+            isDark ? 0.45 : 0.08
           }
           roughness={
-            planetType === 'gas-giant' ? 0.1 : 
-            planetType === 'neptune' ? 0.2 : 
-            element === 'water' ? 0.15 : 
-            element === 'earth' ? 0.95 : 
-            element === 'fire' ? 0.6 : 
-            isDark ? 0.8 : 0.7
+            planetType === 'gas-giant' ? 0.05 : 
+            planetType === 'neptune' ? 0.15 : 
+            element === 'water' ? 0.08 : 
+            element === 'earth' ? 0.92 : 
+            element === 'fire' ? 0.55 : 
+            isDark ? 0.85 : 0.75
           }
           clearcoat={
             planetType === 'gas-giant' ? 0.9 : 
@@ -711,6 +738,34 @@ export default function Planet({
           transparent
           opacity={isMain ? 0.68 : 0.58}
           depthWrite
+        />
+      </mesh>
+
+      {/* Realistic atmospheric rim lighting effect */}
+      <mesh scale={1.03}>
+        <sphereGeometry args={[1, 32, 32]} />
+        <meshBasicMaterial
+          color={
+            planetType === 'gas-giant' ? new Color(color).lerp(new Color('#FFFFFF'), 0.4) :
+            planetType === 'neptune' ? new Color('#87CEEB') :
+            element === 'water' ? new Color('#B0E0E6') :
+            element === 'fire' ? new Color('#FFB347') :
+            element === 'lightning' ? new Color('#E0E6FF') :
+            element === 'earth' ? new Color('#8FBC8F') :
+            element === 'darkness' ? new Color('#2F2F4F') :
+            new Color(color).lerp(new Color('#FFFFFF'), 0.3)
+          }
+          transparent
+          opacity={
+            planetType === 'gas-giant' ? 0.08 :
+            planetType === 'neptune' ? 0.06 :
+            element === 'water' ? 0.05 :
+            element === 'fire' ? 0.04 :
+            0.03
+          }
+          side={2} // BackSide for rim effect
+          depthWrite={false}
+          blending={AdditiveBlending}
         />
       </mesh>
 
