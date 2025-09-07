@@ -1,13 +1,28 @@
-"use client";
+'use client';
 
-import React from "react";
-import PlanetSystem from "@/components/holo/PlanetSystem";
-import SongList from "@/components/holo/SongList";
-import { usePlayerStore } from "@/store/usePlayerStore";
-import HoloAudioBridge from "@/components/holo/HoloAudioBridge";
+import React from 'react';
+import dynamic from 'next/dynamic';
+import { usePlayerStore } from '@/store/usePlayerStore';
+import HoloAudioBridge from '@/components/holo/HoloAudioBridge';
+// SongList is fine to load normally (UI only)
+import SongList from '@/components/holo/SongList';
+
+// ⬇️ Extra safety: load WebGL scene client-only, never during SSR
+const PlanetSystem = dynamic(() => import('@/components/holo/PlanetSystem'), {
+  ssr: false,
+  // Optional: tiny fallback while the 3D bundle loads
+  loading: () => (
+    <div className="flex h-full items-center justify-center text-cyan-300/70">
+      Loading hologram…
+    </div>
+  ),
+});
 
 export default function HoloPanel() {
-  const { mainId, songs } = usePlayerStore((s) => ({ mainId: s.mainId, songs: s.songs }));
+  const { mainId, songs } = usePlayerStore((s) => ({
+    mainId: s.mainId,
+    songs: s.songs,
+  }));
   const main = songs.find((s) => s.id === mainId);
 
   return (
@@ -20,25 +35,31 @@ export default function HoloPanel() {
         <div className="relative h-[320px] md:h-[360px] lg:h-[420px] rounded-xl bg-black/30 backdrop-blur-md ring-1 ring-cyan-400/20 p-2">
           <PlanetSystem />
           {/* Hidden audio bridge for the /holo route */}
-          <div className="hidden"><HoloAudioBridge /></div>
+          <div className="hidden">
+            <HoloAudioBridge />
+          </div>
         </div>
+
         <div className="rounded-xl bg-black/30 backdrop-blur-md ring-1 ring-cyan-400/20 p-2">
           <header className="mb-3 px-1">
             <h1 className="text-cyan-300 text-2xl md:text-3xl font-extrabold drop-shadow-cyan">
-              {main?.title ?? "—"}
+              {main?.title ?? '—'}
             </h1>
-            <p className="text-cyan-100/80 text-sm md:text-base">{main?.oneLiner ?? ""}</p>
+            <p className="text-cyan-100/80 text-sm md:text-base">
+              {main?.oneLiner ?? ''}
+            </p>
           </header>
           <SongList />
         </div>
       </div>
+
       {/* Full-width cyan underglow to sell the hologram panel */}
       <div
         className="pointer-events-none absolute inset-x-[-20px] -bottom-5 h-24 mix-blend-screen opacity-80"
         style={{
           background:
-            "radial-gradient(70% 120% at 50% 100%, rgba(61,245,255,.42), rgba(61,245,255,0) 70%)",
-          filter: "blur(12px)",
+            'radial-gradient(70% 120% at 50% 100%, rgba(61,245,255,.42), rgba(61,245,255,0) 70%)',
+          filter: 'blur(12px)',
         }}
         aria-hidden
       />
