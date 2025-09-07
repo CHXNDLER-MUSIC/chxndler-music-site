@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import NextDynamic from 'next/dynamic';
+import dynamic from 'next/dynamic';
 import { usePlayerStore } from '@/store/usePlayerStore';
 import { buildPlanetSongs } from '@/lib/planets';
 import SongList from '@/components/holo/SongList';
 import HoloAudioBridge from '@/components/holo/HoloAudioBridge';
 
 // WebGL scene must remain client-only
-const PlanetSystem = NextDynamic(() => import('@/components/holo/PlanetSystem'), {
+const PlanetSystem = dynamic(() => import('@/components/holo/PlanetSystem'), {
   ssr: false,
   loading: () => (
     <div className="flex h-full items-center justify-center text-cyan-300/70">
