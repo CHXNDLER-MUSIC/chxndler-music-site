@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import dynamic from 'next/dynamic';
+import NextDynamic from 'next/dynamic';
 import { usePlayerStore } from '@/store/usePlayerStore';
 import { buildPlanetSongs } from '@/lib/planets';
 import SongList from '@/components/holo/SongList';
 import HoloAudioBridge from '@/components/holo/HoloAudioBridge';
 
 // WebGL scene must remain client-only
-const PlanetSystem = dynamic(() => import('@/components/holo/PlanetSystem'), {
+const PlanetSystem = NextDynamic(() => import('@/components/holo/PlanetSystem'), {
   ssr: false,
   loading: () => (
     <div className="flex h-full items-center justify-center text-cyan-300/70">
@@ -18,7 +18,7 @@ const PlanetSystem = dynamic(() => import('@/components/holo/PlanetSystem'), {
 });
 
 export default function HoloPanel() {
-  // Initialize songs once on mount (moved from page.tsx)
+  // Initialize songs once on mount
   useEffect(() => {
     const { holoSongs } = buildPlanetSongs();
     usePlayerStore.getState().initSongs(holoSongs);
@@ -39,6 +39,7 @@ export default function HoloPanel() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 md:p-6">
         <div className="relative h-[320px] md:h-[360px] lg:h-[420px] rounded-xl bg-black/30 backdrop-blur-md ring-1 ring-cyan-400/20 p-2">
           <PlanetSystem />
+          {/* Hidden audio bridge for the /holo route */}
           <div className="hidden">
             <HoloAudioBridge />
           </div>
@@ -57,6 +58,7 @@ export default function HoloPanel() {
         </div>
       </div>
 
+      {/* Full-width cyan underglow to sell the hologram panel */}
       <div
         className="pointer-events-none absolute inset-x-[-20px] -bottom-5 h-24 mix-blend-screen opacity-80"
         style={{

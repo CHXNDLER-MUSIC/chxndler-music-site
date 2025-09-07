@@ -1,12 +1,12 @@
 // app/holo/page.tsx
-export const dynamic = 'force-dynamic'; // don't prerender
-export const runtime = 'nodejs';        // avoid Edge
-export const revalidate = 0;            // disable cache
+export const dynamic = 'force-dynamic'; // do not prerender
+export const runtime = 'nodejs';        // avoid Edge for WebGL / Node APIs
+export const revalidate = 0;            // no static cache
 
-import dynamic from 'next/dynamic';
+import NextDynamic from 'next/dynamic'; // <- alias to avoid name collision
 
-// Load the client-only panel (WebGL, stores, effects) on the browser
-const HoloPanel = dynamic(() => import('@/components/holo/HoloPanel'), {
+// Client-only panel (contains hooks, stores, WebGL, etc.)
+const HoloPanel = NextDynamic(() => import('@/components/holo/HoloPanel'), {
   ssr: false,
 });
 
