@@ -21,7 +21,7 @@ export default function StartMusic({ show, onStart }: { show: boolean; onStart: 
   return (
     <>
       <div className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
-        <div className="pointer-events-auto rounded-2xl px-6 py-4 bg-black/40 backdrop-blur-md glow">
+        <div className="pointer-events-auto rounded-2xl px-6 py-4 bg-black/40 backdrop-blur-md glow ml-8">
           <button
             onClick={handle}
             className="hud-btn text-xl px-6 py-3 cockpit-glow"

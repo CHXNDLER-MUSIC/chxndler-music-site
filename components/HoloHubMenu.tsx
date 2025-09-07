@@ -171,7 +171,7 @@ export default function HoloHubMenu({
           const isLast = i === entries.length - 1;
           const size = Math.max(40, (it as any)?.size ?? itemSize);
           const half = Math.round(size / 2);
-          const iconPx = Math.round(size * 0.5);
+          const iconPx = size; // Make icon same size as button to fill it completely
           return (
             <button
               key={it.id}
@@ -199,7 +199,7 @@ export default function HoloHubMenu({
             >
               <span className="icon" aria-hidden>
                 {typeof it.icon === "string" ? (
-                  <img src={it.icon} alt="" style={{ width: iconPx, height: iconPx }} />
+                  <img src={it.icon} alt="" />
                 ) : (
                   it.icon || <span className="dot" />
                 )}
@@ -315,65 +315,51 @@ export default function HoloHubMenu({
             inset 0 1px 0 rgba(255,255,255,.28), inset 0 -8px 18px rgba(0,0,0,.65);
           filter: brightness(1.08) saturate(1.16);
         }
-        /* Brand buttons: consistent yellow circular ring behind all */
+        /* Brand buttons: remove all rings and backgrounds, allow overflow for larger images */
         .item[data-id="ig"], .item[data-id="tt"], .item[data-id="yt"], .item[data-id="sp"], .item[data-id="am"]{
           background: transparent;
           border: none;
           box-shadow: none;
+          overflow: visible;
         }
-        /* Shared yellow ring — hug the button edge (no gap) */
+        /* Remove all yellow rings */
         .item[data-id="ig"]::before, .item[data-id="tt"]::before, .item[data-id="yt"]::before, .item[data-id="sp"]::before, .item[data-id="am"]::before{
-          content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none;
-          box-shadow:
-            inset 0 0 0 2px #F2EF1D,
-            0 0 18px #F2EF1D88,
-            0 0 60px #F2EF1D55;
+          display: none;
         }
         .item[data-id="ig"]:hover::before, .item[data-id="tt"]:hover::before, .item[data-id="yt"]:hover::before, .item[data-id="sp"]:hover::before, .item[data-id="am"]:hover::before{
-          box-shadow:
-            inset 0 0 0 2px #F2EF1D,
-            0 0 36px #F2EF1D,
-            0 0 120px #F2EF1D99;
+          display: none;
         }
-        /* Icon wrapper sizing/glow remains brand-colored; ring is uniform yellow */
+        /* Icon wrapper sizing - make images fill entire button */
         .item[data-id="ig"] .icon, .item[data-id="tt"] .icon, .item[data-id="yt"] .icon, .item[data-id="sp"] .icon, .item[data-id="am"] .icon{
-          position: relative; width: 96%; height: 96%; color: var(--tint, #38B6FF);
-          /* Add brand-colored glow around the glyphs */
-          filter: brightness(1.1) saturate(1.2)
-            drop-shadow(0 0 14px var(--tint, #38B6FF))
-            drop-shadow(0 0 40px var(--tint, #38B6FF)66);
+          position: relative; width: 100%; height: 100%; color: var(--tint, #38B6FF);
+          /* Remove glow effects to let PNG images show naturally */
+          filter: none;
           mix-blend-mode: normal;
           transition: transform 180ms ease, filter 160ms ease;
         }
-        /* Specifically remove the outer ring for Instagram */
-        .item[data-id="ig"]::before, .item[data-id="ig"]:hover::before{ display:none !important; box-shadow:none !important; }
-        /* Ensure SVG glyphs are solid fills in brand color */
-        .item[data-id="ig"] .icon > svg, .item[data-id="tt"] .icon > svg, .item[data-id="yt"] .icon > svg, .item[data-id="sp"] .icon > svg, .item[data-id="am"] .icon > svg{
-          width: 100%; height: 100%; display:block; fill: currentColor; stroke: none;
+        /* Make images fill the entire button with no padding */
+        .item[data-id="ig"] .icon img, .item[data-id="tt"] .icon img, .item[data-id="yt"] .icon img, .item[data-id="sp"] .icon img, .item[data-id="am"] .icon img{
+          width: 100% !important; height: 100% !important; display:block !important; object-fit: cover !important; border-radius: 50% !important;
+          max-width: none !important; max-height: none !important;
+          transform: none !important;
         }
-        .item[data-id="ig"] .icon > svg *, .item[data-id="tt"] .icon > svg *, .item[data-id="yt"] .icon > svg *, .item[data-id="sp"] .icon > svg *, .item[data-id="am"] .icon > svg *{
-          fill: currentColor !important; stroke: none !important;
-        }
-        .item[data-id="ig"] .icon svg, .item[data-id="tt"] .icon svg, .item[data-id="yt"] .icon svg, .item[data-id="sp"] .icon svg, .item[data-id="am"] .icon svg{ display:block; width:100%; height:100%; }
-        /* Tinted inner ring at the button level for a "through the button" glow */
+        /* Remove any background effects */
         .item[data-id="ig"]::after, .item[data-id="tt"]::after, .item[data-id="yt"]::after, .item[data-id="sp"]::after, .item[data-id="am"]::after{ display:none; }
-        /* Remove any IG-specific halo; keep all brand items visually consistent */
+        /* Simple hover scale for images */
         .item[data-id="ig"]:hover .icon, .item[data-id="tt"]:hover .icon, .item[data-id="yt"]:hover .icon, .item[data-id="sp"]:hover .icon, .item[data-id="am"]:hover .icon{
           transform: scale(1.08);
-          filter: brightness(1.16) saturate(1.28)
-            drop-shadow(0 0 22px var(--tint, #38B6FF))
-            drop-shadow(0 0 70px var(--tint, #38B6FF));
+          filter: brightness(1.1);
         }
         @keyframes holoCore {}
         .item:active{ transform: translate(var(--tx,0), var(--ty,0)) scale(0.98); }
         /* Focus ring should follow the item's own tint, not the hub color */
         .item:focus{ outline: 2px solid var(--tint, #38B6FF); outline-offset: 2px; }
         .item .icon{ display:flex; align-items:center; justify-content:center; color: inherit;
-          width: 86%; height: 86%;
+          width: 100%; height: 100%;
           filter: none;
           transition: transform 180ms ease;
         }
-        .item .icon > img, .item .icon > svg{ width: 100% !important; height: 100% !important; }
+        .item .icon img, .item .icon svg{ width: 100% !important; height: 100% !important; max-width: none !important; max-height: none !important; }
         .item:hover .icon{ transform: scale(1.06); }
         @keyframes holoSheen { 0% { transform: translateX(-130%); } 55% { transform: translateX(130%);} 100% { transform: translateX(130%);} }
         .item .dot{ width: 10px; height:10px; border-radius:9999px; background:#9EEBFF; }

@@ -108,14 +108,22 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
   const iconSize = Math.round(size * 0.56);
 
   const SpotifyIcon = (
-    <svg viewBox="0 0 24 24" width={iconSize} height={iconSize} fill="currentColor">
-      <path d="M12 1.5a10.5 10.5 0 100 21 10.5 10.5 0 000-21zm4.8 15.2a.8.8 0 01-1.1.3c-3-1.8-6.9-2.2-11.4-1.1a.8.8 0 11-.4-1.6c4.9-1.2 9.2-.7 12.6 1.3.4.2.6.7.3 1.1zm1.5-3.2a1 1 0 01-1.4.4c-3.4-2-8.7-2.6-12.8-1.3a1 1 0 11-.6-1.9c4.8-1.4 10.7-.8 14.7 1.6.5.3.7.9.4 1.4zm.2-3.5c-3.9-2.3-10.5-2.5-14.3-1.4a1.2 1.2 0 01-.7-2.2c4.4-1.4 11.8-1.2 16.4 1.5a1.2 1.2 0 01-1.4 2.1z"/>
-    </svg>
+    <img
+      src="/elements/spotify.png"
+      alt="Spotify"
+      width={iconSize}
+      height={iconSize}
+      className="object-contain"
+    />
   );
   const AppleIcon = (
-    <svg viewBox="0 0 24 24" width={iconSize} height={iconSize} fill="currentColor">
-      <path d="M16.36 2.5c-.97.06-2.1.57-2.77 1.23-.6.6-1.11 1.53-.91 2.49 1.04.03 2.1-.55 2.75-1.21.62-.63 1.14-1.56.93-2.51zM20.5 17.2c-.46 1.06-.68 1.53-1.27 2.46-.83 1.28-2 2.87-3.45 2.9-1.29.03-1.63-.84-3.39-.84-1.75 0-2.14.82-3.42.87-1.37.05-2.41-1.38-3.25-2.66-1.77-2.74-3.13-7.73-1.31-11.11.9-1.73 2.52-2.83 4.33-2.86 1.35-.03 2.63.9 3.39.9.76 0 2.2-1.12 3.71-.95.63.03 2.4.26 3.54 2-3.11 1.72-2.61 6.18.52 7.29-.32.8-.47 1.2-.69 1.9z"/>
-    </svg>
+    <img
+      src="/elements/apple.png"
+      alt="Apple Music"
+      width={iconSize}
+      height={iconSize}
+      className="object-contain"
+    />
   );
 
   return (

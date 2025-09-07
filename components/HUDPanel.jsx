@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 // are incompatible with React 19 and can crash on evaluation. We lazy-load it
 // only after probing availability, and fall back gracefully.
 import { usePlayerStore } from "@/store/usePlayerStore";
+import { track } from "@/lib/analytics";
 
 // We import the 3D system directly and only render on client via this client component
 
@@ -370,7 +371,19 @@ export default function HUDPanel({
                   aria-label="Open song card"
                   className="cover-link w-full"
                   onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {}; try { const a = hoverCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
-                  onClick={() => { try { sfx.play('click', 0.6); } catch {}; try { const a = clickCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}; setShowCard(true); }}
+                  onClick={() => { 
+                    try { sfx.play('click', 0.6); } catch {};
+                    try { const a = clickCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {};
+                    // Track cover art click
+                    const trackingSong = (!currentId ? 'chxndler_home' : (track?.slug || active || 'unknown'));
+                    const trackingTitle = (!currentId ? 'CHXNDLER Home' : (track?.title || 'Unknown'));
+                    track("cover_art_clicked", {
+                      song_id: trackingSong,
+                      song_title: trackingTitle,
+                      cover_src: (!currentId ? '/cover/chxndler.png' : (track?.cover || '/cover/chxndler.png'))
+                    });
+                    setShowCard(true); 
+                  }}
                 >
                   {(() => {
                     const defaultCover = '/cover/chxndler.png';
@@ -398,7 +411,7 @@ export default function HUDPanel({
         >
           {/* Cyan base pool at console lip (broad soft glow) - moved lower */}
           <div
-            className="absolute inset-x-[-20px] bottom-0 h-36 mix-blend-screen"
+            className="absolute inset-x-[-20px] bottom-8 h-36 mix-blend-screen beam-base-glow"
             style={{
               background: "radial-gradient(72% 130% at 50% 100%, rgba(25,227,255,.55), rgba(25,227,255,0) 70%)",
               filter: "blur(12px)", opacity: 0.85,
@@ -406,7 +419,7 @@ export default function HUDPanel({
           />
           {/* Intense core glow at the base to feel like it's emitting from the dashboard */}
           <div
-            className="absolute inset-x-24 bottom-1 h-16 mix-blend-screen"
+            className="absolute inset-x-24 bottom-9 h-16 mix-blend-screen beam-core-glow"
             style={{
               background: "radial-gradient(60% 100% at 50% 100%, rgba(114,255,255,.95), rgba(114,255,255,0) 70%)",
               filter: "blur(10px)",
@@ -414,7 +427,7 @@ export default function HUDPanel({
           />
           {/* White-hot inner hotspot */}
           <div
-            className="absolute inset-x-40 bottom-0 h-8 mix-blend-screen"
+            className="absolute inset-x-40 bottom-8 h-8 mix-blend-screen beam-hotspot"
             style={{
               background: "radial-gradient(50% 100% at 50% 100%, rgba(255,255,255,.9), rgba(255,255,255,0) 70%)",
               filter: "blur(8px)", opacity: 0.75,
@@ -422,7 +435,7 @@ export default function HUDPanel({
           />
           {/* Upward flaring beam from console across entire HUD - much taller */}
           <div
-            className="absolute inset-x-6 top-0 bottom-8 mix-blend-screen"
+            className="absolute inset-x-6 top-0 bottom-16 mix-blend-screen beam-primary"
             style={{
               clipPath: "polygon(48% 100%, 52% 100%, 100% 0, 0 0)",
               background: "linear-gradient(0deg, rgba(25,227,255,.6), rgba(25,227,255,0))",
@@ -431,7 +444,7 @@ export default function HUDPanel({
           />
           {/* Secondary beam layer for extra height and intensity */}
           <div
-            className="absolute inset-x-12 top-0 bottom-12 mix-blend-screen"
+            className="absolute inset-x-12 top-0 bottom-20 mix-blend-screen beam-secondary"
             style={{
               clipPath: "polygon(49% 100%, 51% 100%, 95% 0, 5% 0)",
               background: "linear-gradient(0deg, rgba(25,227,255,.4), rgba(25,227,255,0) 80%)",
@@ -440,7 +453,7 @@ export default function HUDPanel({
           />
           {/* Subtle magenta secondary bloom for neon richness - taller */}
           <div
-            className="absolute inset-x-[-16px] bottom-0 h-24 mix-blend-screen"
+            className="absolute inset-x-[-16px] bottom-8 h-24 mix-blend-screen"
             style={{
               background: "radial-gradient(60% 80% at 50% 100%, rgba(252,84,175,.28), rgba(252,84,175,0) 70%)",
               filter: "blur(10px)", opacity: 0.35,
@@ -462,7 +475,76 @@ export default function HUDPanel({
           box-shadow: 0 0 52px rgba(25,227,255,.7), 0 0 90px rgba(25,227,255,.45);
         }
         .cover-link:active{ transform: scale(.98); }
-        /* No HUD animation styles */
+        
+        /* Holographic beam animations */
+        .beam-base-glow {
+          animation: beamPulse 3.2s ease-in-out infinite;
+        }
+        .beam-core-glow {
+          animation: beamFlicker 2.8s ease-in-out infinite, beamPulse 3.2s ease-in-out infinite 0.4s;
+        }
+        .beam-hotspot {
+          animation: beamFlicker 1.6s ease-in-out infinite, beamIntensity 2.4s ease-in-out infinite 0.8s;
+        }
+        .beam-primary {
+          animation: beamWave 4.5s ease-in-out infinite, beamPulse 3.2s ease-in-out infinite 1.2s;
+        }
+        .beam-secondary {
+          animation: beamWave 4.5s ease-in-out infinite 0.6s, beamFlicker 3.8s ease-in-out infinite 1.8s;
+        }
+        
+        /* Enhanced animations when music is playing */
+        ${playing ? `
+        .beam-base-glow { animation-duration: 2.4s; }
+        .beam-core-glow { animation-duration: 2.0s, 2.4s; }
+        .beam-hotspot { animation-duration: 1.2s, 1.8s; }
+        .beam-primary { animation-duration: 3.2s, 2.4s; }
+        .beam-secondary { animation-duration: 3.2s, 2.8s; }
+        ` : ''}
+        
+        @keyframes beamPulse {
+          0%, 100% { opacity: 0.85; filter: blur(12px) saturate(1); }
+          50% { opacity: 0.95; filter: blur(10px) saturate(1.15); }
+        }
+        
+        @keyframes beamFlicker {
+          0%, 100% { opacity: 0.75; }
+          15% { opacity: 0.85; }
+          30% { opacity: 0.72; }
+          45% { opacity: 0.88; }
+          60% { opacity: 0.76; }
+          75% { opacity: 0.82; }
+          90% { opacity: 0.78; }
+        }
+        
+        @keyframes beamIntensity {
+          0%, 100% { filter: blur(8px) brightness(1) saturate(1); }
+          33% { filter: blur(7px) brightness(1.08) saturate(1.12); }
+          66% { filter: blur(9px) brightness(0.95) saturate(0.98); }
+        }
+        
+        @keyframes beamWave {
+          0%, 100% { 
+            opacity: 0.55; 
+            transform: scaleY(1) scaleX(1);
+            filter: blur(10px) hue-rotate(0deg);
+          }
+          25% { 
+            opacity: 0.48; 
+            transform: scaleY(1.02) scaleX(0.98);
+            filter: blur(11px) hue-rotate(2deg);
+          }
+          50% { 
+            opacity: 0.62; 
+            transform: scaleY(0.98) scaleX(1.02);
+            filter: blur(9px) hue-rotate(-1deg);
+          }
+          75% { 
+            opacity: 0.52; 
+            transform: scaleY(1.01) scaleX(0.99);
+            filter: blur(10px) hue-rotate(1deg);
+          }
+        }
       `}</style>
       {showCard ? (
         <div

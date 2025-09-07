@@ -110,32 +110,50 @@ export default function SteeringWheelOverlay({
       {(() => {
         const iconSize = 30;
         const InstagramIcon = (
-          <svg viewBox="0 0 24 24" width={iconSize} height={iconSize} fill="none">
-            <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx="12" cy="12" r="4.2" stroke="currentColor" strokeWidth="2.6" />
-            <circle cx="17.5" cy="6.5" r="1.6" fill="currentColor" />
-          </svg>
+          <img
+            src="/elements/instagram.png"
+            alt="Instagram"
+            width={iconSize}
+            height={iconSize}
+            style={{ objectFit: 'contain' }}
+          />
         );
         const TikTokIcon = (
-          <svg viewBox="0 0 256 256" width={iconSize} height={iconSize} aria-hidden fill="currentColor">
-            <path d="M120 32h40c2 26 21 47 46 52v32c-18-.4-36-5.9-52-15.7V184c0 35.3-28.7 64-64 64s-64-28.7-64-64c0-34.2 26.7-62.1 60.6-63.9 5.6-.3 11.2.2 16.7 1.4v32c-5.2-1.9-10.7-2.7-16.2-2.3-16.7 1.1-30.2 14.9-30.8 31.6-.7 18.5 14.1 33.6 32.6 33.6s32-14.3 32-32.8V32Z"/>
-          </svg>
+          <img
+            src="/elements/tiktok.png"
+            alt="TikTok"
+            width={iconSize}
+            height={iconSize}
+            style={{ objectFit: 'contain' }}
+          />
         );
         const YouTubeIcon = (
-          <svg viewBox="0 0 24 24" width={iconSize} height={iconSize} fill="currentColor">
-            <path d="M23 12s0-3.2-.4-4.7a3.1 3.1 0 00-2.2-2.2C18.9 4.5 12 4.5 12 4.5s-6.9 0-8.4.6A3.1 3.1 0 001.4 7.3C1 8.8 1 12 1 12s0 3.2.4 4.7a3.1 3.1 0 002.2 2.2c1.5.6 8.4.6 8.4.6s6.9 0 8.4-.6a3.1 3.1 0 002.2-2.2c.4-1.5.4-4.7.4-4.7zM10 15.5v-7l6 3.5-6 3.5z" />
-          </svg>
+          <img
+            src="/elements/youtube.png"
+            alt="YouTube"
+            width={iconSize}
+            height={iconSize}
+            style={{ objectFit: 'contain' }}
+          />
         );
         const SpotifyIcon = (
-          <svg viewBox="0 0 24 24" width={iconSize} height={iconSize} fill="currentColor">
-            <path d="M12 1.5a10.5 10.5 0 100 21 10.5 10.5 0 000-21zm4.8 15.2a.8.8 0 01-1.1.3c-3-1.8-6.9-2.2-11.4-1.1a.8.8 0 11-.4-1.6c4.9-1.2 9.2-.7 12.6 1.3.4.2.6.7.3 1.1zm1.5-3.2a1 1 0 01-1.4.4c-3.4-2-8.7-2.6-12.8-1.3a1 1 0 11-.6-1.9c4.8-1.4 10.7-.8 14.7 1.6.5.3.7.9.4 1.4zm.2-3.5c-3.9-2.3-10.5-2.5-14.3-1.4a1.2 1.2 0 01-.7-2.2c4.4-1.4 11.8-1.2 16.4 1.5a1.2 1.2 0 01-1.4 2.1z"/>
-          </svg>
+          <img
+            src="/elements/spotify.png"
+            alt="Spotify"
+            width={iconSize}
+            height={iconSize}
+            style={{ objectFit: 'contain' }}
+          />
         );
-        // Apple (corporate) logo for Apple Music entry — solid silhouette works well with current-color fills
+        // Apple Music icon using PNG
         const AppleMusicIcon = (
-          <svg viewBox="0 0 24 24" width={iconSize} height={iconSize} fill="currentColor" aria-hidden>
-            <path d="M16.36 2.5c-.97.06-2.1.57-2.77 1.23-.6.6-1.11 1.53-.91 2.49 1.04.03 2.1-.55 2.75-1.21.62-.63 1.14-1.56.93-2.51zM20.5 17.2c-.46 1.06-.68 1.53-1.27 2.46-.83 1.28-2 2.87-3.45 2.9-1.29.03-1.63-.84-3.39-.84-1.75 0-2.14.82-3.42.87-1.37.05-2.41-1.38-3.25-2.66-1.77-2.74-3.13-7.73-1.31-11.11.9-1.73 2.52-2.83 4.33-2.86 1.35-.03 2.63.9 3.39.9.76 0 2.2-1.12 3.71-.95.63.03 2.4.26 3.54 2-3.11 1.72-2.61 6.18.52 7.29-.32.8-.47 1.2-.69 1.9z"/>
-          </svg>
+          <img
+            src="/elements/apple.png"
+            alt="Apple Music"
+            width={iconSize}
+            height={iconSize}
+            style={{ objectFit: 'contain' }}
+          />
         );
         return (
           <div
@@ -153,11 +171,11 @@ export default function SteeringWheelOverlay({
             <div style={{ opacity: showUI ? 1 : 0, transition: 'opacity 300ms ease', pointerEvents: showUI ? 'auto' : 'none' }}>
               <HoloHubMenu
                 items={[
-                LINKS.instagram ? { id: 'ig', label: 'Instagram', href: LINKS.instagram, icon: InstagramIcon, color: '#E1306C' } : null,
-                LINKS.tiktok ? { id: 'tt', label: 'TikTok', href: LINKS.tiktok, icon: TikTokIcon, color: '#69C9D0' } : null,
-                LINKS.youtube ? { id: 'yt', label: 'YouTube', href: LINKS.youtube, icon: YouTubeIcon, color: '#FF0000' } : null,
-                LINKS.spotify ? { id: 'sp', label: 'Spotify', href: LINKS.spotify, icon: SpotifyIcon, color: '#1DB954' } : null,
-                LINKS.apple ? { id: 'am', label: 'Apple Music', href: LINKS.apple, icon: AppleMusicIcon, color: '#FA2D48' } : null,
+                LINKS.instagram ? { id: 'ig', label: 'Instagram', href: LINKS.instagram, icon: '/elements/instagram.png', color: '#E1306C' } : null,
+                LINKS.tiktok ? { id: 'tt', label: 'TikTok', href: LINKS.tiktok, icon: '/elements/tiktok.png', color: '#69C9D0' } : null,
+                LINKS.youtube ? { id: 'yt', label: 'YouTube', href: LINKS.youtube, icon: '/elements/youtube.png', color: '#FF0000' } : null,
+                LINKS.spotify ? { id: 'sp', label: 'Spotify', href: LINKS.spotify, icon: '/elements/spotify.png', color: '#1DB954' } : null,
+                LINKS.apple ? { id: 'am', label: 'Apple Music', href: LINKS.apple, icon: '/elements/apple.png', color: '#FA2D48' } : null,
               ].filter(Boolean) as any}
                 radius={108}
                 hubColor="#F2EF1D"
@@ -209,10 +227,10 @@ export default function SteeringWheelOverlay({
         className={`pointer-events-auto wheel-play${isStart ? ' chx' : ''}`}
         style={{
           position: "absolute",
-          top: `calc(${pp.topVh}vh - ${pp.sizePx/2}px)`,
-          left: `calc(${pp.leftVw}vw - ${pp.sizePx/2}px + 2px)`,
-          width: pp.sizePx,
-          height: pp.sizePx,
+          top: `calc(${pp.topVh}vh - ${(pp.sizePx * 0.95)/2}px)`,
+          left: `calc(${pp.leftVw}vw - ${(pp.sizePx * 0.95)/2}px + 10px)`,
+          width: pp.sizePx * 0.95,
+          height: pp.sizePx * 0.95,
           borderRadius: 9999,
           transform: "none",
           zIndex: 90,

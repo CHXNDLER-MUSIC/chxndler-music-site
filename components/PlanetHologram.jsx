@@ -29,10 +29,17 @@ export default function PlanetHologram({ items = [], activeId, hoverId, onSelect
             <stop offset="0.45" stopColor="#19E3FF" stopOpacity="0.85" />
             <stop offset="1" stopColor="#19E3FF" stopOpacity="0.05" />
           </radialGradient>
-          {/* Subtle texture using turbulence masked inside the planet */}
+          {/* Enhanced realistic surface texture */}
           <filter id="f-noise" x="-20%" y="-20%" width="140%" height="140%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" result="n" />
-            <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0.8  0 0 0 0 1  0 0 0 0.15 0"/>
+            <feTurbulence type="fractalNoise" baseFrequency="1.2" numOctaves="4" stitchTiles="stitch" result="n1" />
+            <feTurbulence type="turbulence" baseFrequency="0.6" numOctaves="3" stitchTiles="stitch" result="n2" />
+            <feComposite operator="multiply" in="n1" in2="n2" result="combined" />
+            <feColorMatrix in="combined" type="matrix" values="0 0 0 0 0  0 0 0 0 0.8  0 0 0 0 1  0 0 0 0.2 0"/>
+          </filter>
+          {/* Continental patterns */}
+          <filter id="f-continents" x="-20%" y="-20%" width="140%" height="140%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.4" numOctaves="2" stitchTiles="stitch" result="continents" />
+            <feColorMatrix in="continents" type="matrix" values="0 0 0 0 0.1  0 0 0 0 0.9  0 0 0 0 1  0 0 0 0.12 0"/>
           </filter>
           {/* Specular sweep for reflections */}
           <linearGradient id="g-sheen" x1="0" y1="0" x2="1" y2="1">
@@ -83,10 +90,24 @@ export default function PlanetHologram({ items = [], activeId, hoverId, onSelect
           animate={{ r: [82, 83.5, 82] }} transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut", delay: 0.1 }}
         />
 
-        {/* Starfield reflections + texture inside the planet */}
-        <g clipPath="url(#clip-planet)" opacity="0.25">
-          <rect x="50" y="40" width="120" height="80" fill="url(#g-sheen)" />
+        {/* Enhanced surface features inside the planet */}
+        <g clipPath="url(#clip-planet)" opacity="0.3">
+          {/* Polar ice caps */}
+          <ellipse cx="130" cy="90" rx="20" ry="12" fill="#FFFFFF" opacity="0.4" />
+          <ellipse cx="130" cy="170" rx="18" ry="10" fill="#FFFFFF" opacity="0.4" />
+          
+          {/* Continental patterns */}
+          <rect x="-10" y="-10" width="280" height="280" filter="url(#f-continents)" />
+          
+          {/* Surface texture */}
           <rect x="-10" y="-10" width="280" height="280" filter="url(#f-noise)" />
+          
+          {/* Specular highlight */}
+          <rect x="40" y="30" width="140" height="100" fill="url(#g-sheen)" />
+          
+          {/* Atmospheric terminator (day/night line) */}
+          <ellipse cx="130" cy="130" rx="62" ry="62" fill="none" stroke="#000000" strokeWidth="1" strokeOpacity="0.15" />
+          <path d="M 68 130 Q 130 100 192 130 Q 130 160 68 130" fill="#000000" fillOpacity="0.08" />
         </g>
 
         {/* Rings (behind + front) with stronger glow */}

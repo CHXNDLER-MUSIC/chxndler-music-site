@@ -8,14 +8,12 @@ export default function SocialButtons() {
       color: "#FC54AF",
       // Moved slightly up
       pos: "top-[24%] left-[6%] rotate-2", // adjust for perfect alignment
-      icon: "📸",
     },
     {
       id: "tiktok",
       href: "https://www.tiktok.com/@chxndler_music",
       color: "#ffffff",
       pos: "top-[38%] left-[6%] -rotate-1",
-      icon: "🎵",
     },
     {
       id: "youtube",
@@ -23,7 +21,6 @@ export default function SocialButtons() {
       color: "#FF0000",
       // Nudged slightly to the right
       pos: "top-[50%] left-[8%] rotate-1",
-      icon: "▶️",
     },
   ];
 
@@ -44,7 +41,11 @@ export default function SocialButtons() {
             transformOrigin: "center",
           }}
         >
-          <span className="text-2xl select-none">{b.icon}</span>
+          <img
+            src={`/elements/${b.id}.png`}
+            alt={b.id}
+            className="w-8 h-8 object-contain select-none"
+          />
         </a>
       ))}
     </div>

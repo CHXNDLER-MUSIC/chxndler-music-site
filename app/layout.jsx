@@ -17,6 +17,13 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        
+        {/* Preload social media images for instant visibility */}
+        <link rel="preload" as="image" href="/elements/instagram.png" />
+        <link rel="preload" as="image" href="/elements/tiktok.png" />
+        <link rel="preload" as="image" href="/elements/youtube.png" />
+        <link rel="preload" as="image" href="/elements/spotify.png" />
+        <link rel="preload" as="image" href="/elements/apple.png" />
         {/* GA4 (optional) */}
         {gaId ? (
           <>
