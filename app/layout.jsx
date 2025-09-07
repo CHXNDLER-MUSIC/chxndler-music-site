@@ -18,6 +18,10 @@ export default function RootLayout({ children }) {
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         
+        {/* Favicon */}
+        <link rel="icon" href="/logo/CHXNDLER_Logo.png" sizes="any" />
+        <link rel="icon" href="/logo/CHXNDLER_Logo.png" type="image/png" />
+        
         {/* Preload social media images for instant visibility */}
         <link rel="preload" as="image" href="/elements/instagram.png" />
         <link rel="preload" as="image" href="/elements/tiktok.png" />

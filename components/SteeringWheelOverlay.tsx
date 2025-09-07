@@ -179,7 +179,7 @@ export default function SteeringWheelOverlay({
               ].filter(Boolean) as any}
                 radius={108}
                 hubColor="#F2EF1D"
-                itemSize={72}
+                itemSize={84}
                 hubSize={84}
                 // Explicit placement by clock position:
                 // 12 o'clock: Spotify (-90deg), 2 o'clock: Apple (-30deg),
@@ -289,7 +289,7 @@ export default function SteeringWheelOverlay({
           filter: none;
           animation: none;
         }
-        .wheel-play.chx:hover .chx-icon{ animation: none; transform: scale(1.08); filter: none; }
+        .wheel-play.chx:hover .chx-icon{ animation: none; transform: scale(1.04); filter: none; }
         .wheel-play.chx:hover::after{ display:none; }
         @keyframes startPulse {
           0%, 100% { transform: scale(1); filter: saturate(1.25) brightness(1.1) drop-shadow(0 0 8px #19E3FF) drop-shadow(0 0 22px #19E3FF) drop-shadow(0 0 42px #19E3FF); }
@@ -355,7 +355,7 @@ export default function SteeringWheelOverlay({
           text-shadow: 0 0 10px rgba(255,59,48,1), 0 0 34px rgba(255,59,48,.8), 0 0 64px rgba(255,59,48,.55);
         }
         .wheel-play:hover {
-          transform: scale(1.06) rotateZ(-1deg);
+          transform: scale(1.04);
           box-shadow: 0 14px 36px rgba(0,0,0,.6), 0 0 44px rgba(0,255,200,.95), 0 0 110px rgba(0,255,200,.65), inset 0 2px 0 rgba(255,255,255,.5), inset 0 -8px 20px rgba(0,0,0,.45);
           filter: brightness(1.06) saturate(1.15);
         }
@@ -367,7 +367,7 @@ export default function SteeringWheelOverlay({
         .wheel-play.chx:hover{ box-shadow: none; transform: none; filter:none; }
         .wheel-play.chx .chx-icon{ transition: transform .12s ease, filter .15s ease; }
         .wheel-play.chx:hover .chx-icon{
-          transform: scale(1.06);
+          transform: scale(1.04);
           filter:
             saturate(1.25) brightness(1.12)
             drop-shadow(0 0 0 #19E3FF)

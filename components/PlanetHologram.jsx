@@ -12,7 +12,7 @@ export default function PlanetHologram({ items = [], activeId, hoverId, onSelect
       transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
       aria-label="Holographic planet"
     >
-      {/* Beam and base halo removed; HUDPanel provides full-width underglow */}
+      {/* Beam and base halo removed; beam now positioned outside HUD */}
 
       {/* Planet + rings (clean cyan neon look, no red moon) */}
       <svg

@@ -12,13 +12,19 @@ export function skyFor(slug?: string) {
   const ALONE = { key: "alone-sky", webm: "", mp4: "/skies/alone.mp4" };
   const SPACE = { key: "space-sky", webm: "/skies/space.webm", mp4: "/skies/space.mp4" };
   const ALIEN_HOUSE = { key: "alien-house-party-sky", webm: "", mp4: "/skies/alien-house-party.mp4" };
+  const WERE_JUST_FRIENDS = { key: "were-just-friends-sky", webm: "", mp4: "/skies/were-just-friends.mp4" };
+  const BE_MY_BEE = { key: "be-my-bee-sky", webm: "", mp4: "/skies/be-my-bee.mp4" };
+  const GAME_BOY_HEART = { key: "game-boy-heart-sky", webm: "", mp4: "/skies/game-boy-heart.mp4" };
 
   if (!slug) return SPACE;
   if (slug.startsWith("ocean-girl")) return OCEAN_GIRL;
   if (slug.startsWith("alien-house-party") || slug.startsWith("house-party")) return ALIEN_HOUSE;
+  if (slug.startsWith("were-just-friends")) return WERE_JUST_FRIENDS;
   if (slug.startsWith("kid-forever")) return KID_FOREVER;
   if (slug.startsWith("brain-freeze")) return BRAIN_FREEZE;
   if (slug.startsWith("alone")) return ALONE;
+  if (slug.startsWith("be-my-bee")) return BE_MY_BEE;
+  if (slug.startsWith("game-boy-heart")) return GAME_BOY_HEART;
   return SPACE;
 }
 

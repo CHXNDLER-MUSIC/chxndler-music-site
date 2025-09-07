@@ -169,7 +169,7 @@ export default function HoloHubMenu({
           const tint = it.color || "#38B6FF";
           const isFirst = i === 0;
           const isLast = i === entries.length - 1;
-          const size = itemSize; // Use consistent size for all buttons
+          const size = it.id === 'tt' ? itemSize * 0.75 : itemSize; // Make TikTok smaller
           const half = Math.round(size / 2);
           const iconPx = size;
           return (
@@ -186,6 +186,9 @@ export default function HoloHubMenu({
                 opacity: open ? 1 : 0,
                 // use CSS var for tint so hover styles can reference it
                 ['--tint' as any]: tint,
+                // Set proper translation values for hover states
+                ['--tx' as any]: `${atRest ? pos.x : 0}px`,
+                ['--ty' as any]: `${atRest ? pos.y : 0}px`,
                 borderColor: `${tint}AA`,
                 width: `${size}px`,
                 height: `${size}px`,
@@ -294,7 +297,7 @@ export default function HoloHubMenu({
             inset 0 -6px 14px rgba(0,0,0,.6);
           backdrop-filter: blur(8px);
           -webkit-backdrop-filter: blur(8px);
-          transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 200ms ease, box-shadow 160ms ease, filter 160ms ease;
+          transition: transform 180ms ease-out, opacity 200ms ease, box-shadow 160ms ease, filter 160ms ease;
         }
         .item::before{ /* tighter rim, no gap */
           content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none;
@@ -308,12 +311,12 @@ export default function HoloHubMenu({
           transform: translateX(-130%);
           animation: holoSheen 2.8s ease-in-out infinite;
         }
-        .item:hover{ transform: translate(var(--tx,0), var(--ty,0)) scale(1.08); box-shadow:
-            0 18px 34px rgba(0,0,0,.68),
-            0 0 60px var(--tint, #38B6FF),
-            0 0 140px var(--tint, #38B6FF),
-            inset 0 1px 0 rgba(255,255,255,.28), inset 0 -8px 18px rgba(0,0,0,.65);
-          filter: brightness(1.08) saturate(1.16);
+        .item:hover{ transform: translate(var(--tx,0), var(--ty,0)) scale(1.06); box-shadow:
+            0 16px 30px rgba(0,0,0,.65),
+            0 0 50px var(--tint, #38B6FF),
+            0 0 120px var(--tint, #38B6FF),
+            inset 0 1px 0 rgba(255,255,255,.26), inset 0 -6px 16px rgba(0,0,0,.6);
+          filter: brightness(1.05) saturate(1.1);
         }
         /* All brand buttons: completely clean appearance with NO effects whatsoever */
         .item[data-id="ig"], .item[data-id="tt"], .item[data-id="yt"], .item[data-id="sp"], .item[data-id="am"]{
@@ -331,8 +334,8 @@ export default function HoloHubMenu({
           box-shadow: none !important;
           backdrop-filter: none !important;
           -webkit-backdrop-filter: none !important;
-          filter: brightness(1.1) !important; /* Only brightness change on hover */
-          transform: scale(1.05) !important; /* Simple scale only */
+          filter: brightness(1.08) !important;
+          transform: translate(var(--tx,0), var(--ty,0)) scale(1.04) !important; /* Maintain position with scale */
         }
         .item[data-id="ig"]::before, .item[data-id="tt"]::before, .item[data-id="yt"]::before, .item[data-id="sp"]::before, .item[data-id="am"]::before,
         .item[data-id="ig"]:hover::before, .item[data-id="tt"]:hover::before, .item[data-id="yt"]:hover::before, .item[data-id="sp"]:hover::before, .item[data-id="am"]:hover::before,
@@ -370,7 +373,7 @@ export default function HoloHubMenu({
           filter: brightness(1.1);
         }
         @keyframes holoCore {}
-        .item:active{ transform: translate(var(--tx,0), var(--ty,0)) scale(0.98); }
+        .item:active{ transform: translate(var(--tx,0), var(--ty,0)) scale(0.95); }
         /* Focus ring should follow the item's own tint, not the hub color */
         .item:focus{ outline: 2px solid var(--tint, #38B6FF); outline-offset: 2px; }
         @keyframes holoSheen { 0% { transform: translateX(-130%); } 55% { transform: translateX(130%);} 100% { transform: translateX(130%);} }

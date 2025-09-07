@@ -226,7 +226,44 @@ export default function HUDPanel({
             style={{ background: 'rgba(8,26,32,0.50)' }}
           />
           {/* Cover art moved into right column above the song list */}
-          {/* No beam/scan overlays; keep HUD static */}
+          {/* Holographic beam overlays */}
+          <div 
+            className="pointer-events-none absolute inset-0 rounded-2xl overflow-hidden"
+            style={{ opacity: beamOpacity, transition: 'opacity 240ms ease' }}
+          >
+            {/* Primary beam layer */}
+            <div 
+              className="beam-primary absolute inset-x-0 bottom-0 h-24"
+              style={{
+                background: 'linear-gradient(0deg, rgba(25,227,255,0.15), rgba(25,227,255,0.05) 60%, transparent)',
+                filter: 'blur(3px)'
+              }}
+            />
+            {/* Secondary beam layer */}
+            <div 
+              className="beam-secondary absolute inset-x-0 bottom-0 h-16"
+              style={{
+                background: 'linear-gradient(0deg, rgba(25,227,255,0.25), rgba(25,227,255,0.08) 50%, transparent)',
+                filter: 'blur(1px)'
+              }}
+            />
+            {/* Core beam glow */}
+            <div 
+              className="beam-core-glow absolute left-1/2 bottom-0 w-32 h-20 -translate-x-1/2"
+              style={{
+                background: 'radial-gradient(ellipse at bottom, rgba(25,227,255,0.4), rgba(25,227,255,0.1) 70%, transparent)',
+                filter: 'blur(2px)'
+              }}
+            />
+            {/* Beam hotspot */}
+            <div 
+              className="beam-hotspot absolute left-1/2 bottom-0 w-16 h-8 -translate-x-1/2"
+              style={{
+                background: 'radial-gradient(ellipse at bottom, rgba(25,227,255,0.6), transparent 60%)',
+                filter: 'blur(0.5px)'
+              }}
+            />
+          </div>
           {/* Outer bloom layers for stronger hologram glow */}
           <div className="pointer-events-none absolute -inset-1 rounded-3xl opacity-70 mix-blend-screen"
                style={{
@@ -403,63 +440,6 @@ export default function HUDPanel({
           </aside>
         </div>
 
-        {/* Hologram base glow + upward beam: positioned below the HUD box with extended height */}
-        <div
-          className="pointer-events-none absolute inset-x-0 h-48"
-          aria-hidden
-          style={{ top: 'calc(100% + 8px)', opacity: beamOpacity, transform: 'translateX(-10px)', transition: 'opacity 180ms ease, transform 200ms ease' }}
-        >
-          {/* Cyan base pool at console lip (broad soft glow) - moved lower */}
-          <div
-            className="absolute inset-x-[-20px] bottom-8 h-36 mix-blend-screen beam-base-glow"
-            style={{
-              background: "radial-gradient(72% 130% at 50% 100%, rgba(25,227,255,.55), rgba(25,227,255,0) 70%)",
-              filter: "blur(12px)", opacity: 0.85,
-            }}
-          />
-          {/* Intense core glow at the base to feel like it's emitting from the dashboard */}
-          <div
-            className="absolute inset-x-24 bottom-8 h-16 mix-blend-screen beam-core-glow"
-            style={{
-              background: "radial-gradient(60% 100% at 50% 100%, rgba(114,255,255,.95), rgba(114,255,255,0) 70%)",
-              filter: "blur(10px)",
-            }}
-          />
-          {/* White-hot inner hotspot */}
-          <div
-            className="absolute inset-x-40 bottom-8 h-8 mix-blend-screen beam-hotspot"
-            style={{
-              background: "radial-gradient(50% 100% at 50% 100%, rgba(255,255,255,.9), rgba(255,255,255,0) 70%)",
-              filter: "blur(8px)", opacity: 0.75,
-            }}
-          />
-          {/* Upward flaring beam from console across entire HUD - much taller */}
-          <div
-            className="absolute inset-x-6 top-0 bottom-16 mix-blend-screen beam-primary"
-            style={{
-              clipPath: "polygon(48% 100%, 52% 100%, 100% 0, 0 0)",
-              background: "linear-gradient(0deg, rgba(25,227,255,.6), rgba(25,227,255,0))",
-              filter: "blur(10px)", opacity: 0.55,
-            }}
-          />
-          {/* Secondary beam layer for extra height and intensity */}
-          <div
-            className="absolute inset-x-12 top-0 bottom-20 mix-blend-screen beam-secondary"
-            style={{
-              clipPath: "polygon(49% 100%, 51% 100%, 95% 0, 5% 0)",
-              background: "linear-gradient(0deg, rgba(25,227,255,.4), rgba(25,227,255,0) 80%)",
-              filter: "blur(8px)", opacity: 0.4,
-            }}
-          />
-          {/* Subtle magenta secondary bloom for neon richness - taller */}
-          <div
-            className="absolute inset-x-[-16px] bottom-8 h-24 mix-blend-screen"
-            style={{
-              background: "radial-gradient(60% 80% at 50% 100%, rgba(252,84,175,.28), rgba(252,84,175,0) 70%)",
-              filter: "blur(10px)", opacity: 0.35,
-            }}
-          />
-        </div>
 
         {/* bottom-corner buttons removed per design request */}
         </div>

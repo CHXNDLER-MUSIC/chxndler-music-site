@@ -179,7 +179,10 @@ export default function DashboardApp() {
     }
   }
 
-  React.useEffect(() => { setFlySignal((n)=> n + 1); }, [channelIdx]);
+  React.useEffect(() => { 
+    if (!mounted) return;
+    setFlySignal((n)=> n + 1); 
+  }, [channelIdx, mounted]);
   const { hudSongs, holoSongs } = React.useMemo(() => buildPlanetSongs(), []);
   React.useEffect(() => {
     try {
