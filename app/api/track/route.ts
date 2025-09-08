@@ -13,7 +13,7 @@ import { createClient } from '@supabase/supabase-js';
 // - SUPABASE_SERVICE_ROLE_KEY  (service role key, not anon key)
 const SUPABASE_URL =
   process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE || '';
 
 function j(status: number, data?: unknown) {
   return new NextResponse(data ? JSON.stringify(data) : null, {
@@ -60,10 +60,10 @@ export async function POST(req: NextRequest) {
     const ip_hash = crypto.createHash('sha256').update(ip).digest('hex');
     const ua = body.user_agent || req.headers.get('user-agent') || 'unknown';
 
-    // Supabase admin client, bound to analytics schema
+    // Supabase admin client, using public schema
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
       auth: { persistSession: false },
-      db: { schema: 'analytics' },
+      db: { schema: 'public' },
     });
 
     // OPTIONAL: touch_session RPC; ignore failures so tracking never 500s
@@ -78,23 +78,26 @@ export async function POST(req: NextRequest) {
       console.warn('touch_session call failed:', e);
     }
 
-    // Insert event into analytics.events
-    const { error } = await supabase.from('events').insert({
-      session_id: body.session_id,
-      event_type: body.event_type,
-      page: body.page?.slice(0, 512) ?? null,
-      referrer: body.referrer?.slice(0, 512) ?? null,
-      song_slug: body.song_slug?.slice(0, 128) ?? null,
-      payload: body.payload ?? null,
-      user_agent: ua,
-      ip_hash,
-    });
+    // Insert event into events table (if it exists)
+    try {
+      const { error } = await supabase.from('events').insert({
+        session_id: body.session_id,
+        event_type: body.event_type,
+        page: body.page?.slice(0, 512) ?? null,
+        referrer: body.referrer?.slice(0, 512) ?? null,
+        song_slug: body.song_slug?.slice(0, 128) ?? null,
+        payload: body.payload ?? null,
+        user_agent: ua,
+        ip_hash,
+      });
 
-    if (error) {
-      // TEMP: uncomment for one-time debugging to see exact message in response
-      // return j(500, { error: error.message });
-      console.error('events insert error:', error);
-      return j(500, { error: 'DB insert failed' });
+      if (error) {
+        console.warn('events insert error (table may not exist):', error);
+        // Don't return 500 - analytics is optional
+      }
+    } catch (e) {
+      console.warn('events insert failed (table may not exist):', e);
+      // Don't return 500 - analytics is optional
     }
 
     // Success: no content needed
