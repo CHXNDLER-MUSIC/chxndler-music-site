@@ -1,21 +1,22 @@
-// lib/supabase-admin.ts
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-/**
- * Lazily creates the Supabase admin client.
- * Never call createClient at module scope in the App Router.
- */
+let admin: SupabaseClient | undefined;
+
 export function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (admin) return admin;
 
-  if (!url || !serviceKey) {
-    // Throw at request-time, not at build-time
-    throw new Error('Missing Supabase env vars (URL or SERVICE_ROLE_KEY)');
+  const url =
+    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !key) {
+    throw new Error('Supabase env missing: SUPABASE_URL and/or SUPABASE_SERVICE_ROLE_KEY');
   }
 
-  return createClient(url, serviceKey, {
+  admin = createClient(url, key, {
     auth: { persistSession: false },
-    global: { headers: { 'X-Client-Info': 'chxndler-music-site/api' } },
+    db: { schema: 'analytics' }, // 👈 talk to the analytics schema by default
   });
+
+  return admin;
 }

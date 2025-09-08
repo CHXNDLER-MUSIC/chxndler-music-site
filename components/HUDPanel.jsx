@@ -153,6 +153,15 @@ export default function HUDPanel({
     return () => window.removeEventListener('keydown', onKey);
   }, [showCard]);
 
+  // Listen for cover card events from HoloHUD
+  useEffect(() => {
+    const handleShowCoverCard = (event) => {
+      setShowCard(true);
+    };
+    window.addEventListener('showCoverCard', handleShowCoverCard);
+    return () => window.removeEventListener('showCoverCard', handleShowCoverCard);
+  }, []);
+
   // Reset flip state when modal closes
   useEffect(() => {
     if (!showCard) {
