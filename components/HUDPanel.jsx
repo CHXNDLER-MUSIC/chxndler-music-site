@@ -25,21 +25,30 @@ import SongDropdown from "@/components/SongDropdown";
 import DevErrorLogger from "@/components/DevErrorLogger";
 import PlanetSystemRaw from "@/components/holo/PlanetSystemRaw";
 import { sfx } from "@/lib/sfx";
+import { ElementIcon as OptimizedElementIcon } from "@/lib/elementIcons";
 // HologramPlanets demo removed per request (3D only)
 
 // Use system font stack to avoid network font fetches during build
 
+// Constants to prevent recreating URLs on every render
+const DEFAULT_COVER = '/cover/chxndler.png';
+const DEFAULT_CARD = '/card/chxndler.png';
+const FALLBACK_COVER = '/cover/chxndler.png';
+
 function ElementIcon({ name, size = 18, glow = true }) {
   if (!name) return null;
   const n = String(name).toLowerCase();
-  let src = "";
-  if (n.includes("chxndler")) src = "/elements/chxndler.png";
-  else if (n.includes("heart")) src = "/elements/heart.png";
-  else if (n.includes("lightning") || n.includes("electric")) src = "/elements/lighting.png";
-  else if (n.includes("dark")) src = "/elements/darkness.png";
-  else if (n.includes("water") || n.includes("air")) src = "/elements/water.png";
-  else if (n.includes("earth") || n.includes("fire")) src = "/elements/heart.png"; // fallbacks
-  else src = "/elements/heart.png";
+  
+  // Map names to icon keys
+  let iconKey = null;
+  if (n.includes("chxndler")) iconKey = "chxndler";
+  else if (n.includes("heart")) iconKey = "heart";
+  else if (n.includes("lightning") || n.includes("electric")) iconKey = "lighting";
+  else if (n.includes("dark")) iconKey = "darkness";
+  else if (n.includes("water") || n.includes("air")) iconKey = "water";
+  else if (n.includes("earth") || n.includes("fire")) iconKey = "heart"; // fallbacks
+  else iconKey = "heart"; // default fallback
+
   // Element colors (match system hues)
   const colorFor = (key) => {
     if (!key) return "#38B6FF";
@@ -56,21 +65,20 @@ function ElementIcon({ name, size = 18, glow = true }) {
   const clr = colorFor(n);
   // Outer halo uses same color except for darkness which would be invisible — use cyan halo to sell hologram
   const outer = (n.includes("dark")) ? "#19E3FF" : clr;
-  const sz = typeof size === 'number' ? `${size}px` : String(size);
+  const glowFilter = glow ? `saturate(1.2) brightness(1.08) drop-shadow(0 0 6px ${outer}) drop-shadow(0 0 16px ${outer}) drop-shadow(0 0 34px ${outer})` : 'none';
+  
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent:'center', pointerEvents:'none' }}>
-      <img
-        src={src}
-        alt="Element"
-        width={size}
+      <OptimizedElementIcon 
+        name={iconKey} 
+        alt="Element" 
+        width={size} 
         height={size}
         style={{
-          width: sz,
-          height: sz,
           objectFit: 'contain',
           display:'block',
           background: 'transparent',
-          filter: glow ? `saturate(1.2) brightness(1.08) drop-shadow(0 0 6px ${outer}) drop-shadow(0 0 16px ${outer}) drop-shadow(0 0 34px ${outer})` : 'none',
+          filter: glowFilter,
         }}
       />
     </span>
@@ -426,14 +434,13 @@ export default function HUDPanel({
                     track("cover_art_clicked", {
                       song_id: trackingSong,
                       song_title: trackingTitle,
-                      cover_src: (!currentId ? '/cover/chxndler.png' : (track?.cover || '/cover/chxndler.png'))
+                      cover_src: (!currentId ? DEFAULT_COVER : (track?.cover || DEFAULT_COVER))
                     });
                     setShowCard(true); 
                   }}
                 >
                   {(() => {
-                    const defaultCover = '/cover/chxndler.png';
-                    const src = (!currentId ? defaultCover : (track?.cover || defaultCover));
+                    const src = (!currentId ? DEFAULT_COVER : (track?.cover || DEFAULT_COVER));
                     return <CoverCard src={src} size={inConsole ? 200 : 280} />;
                   })()}
                 </button>
@@ -644,10 +651,8 @@ export default function HUDPanel({
                           "mr-brightside": "/card/mr.brightside.png",
                           "tienes-un-amigo": "/card/tienes-un-amigo-acqi.png",
                         };
-                        const defaultCard = '/card/chxndler.png';
-                        const fallbackCover = '/cover/chxndler.png';
                         const explicitCard = slug ? (CARD_OVERRIDES[slug] || `/card/${slug}.png`) : '';
-                        const cardSrc = home ? defaultCard : (explicitCard || track?.cover || fallbackCover);
+                        const cardSrc = home ? DEFAULT_CARD : (explicitCard || track?.cover || FALLBACK_COVER);
                         return (
                           <img
                             src={cardSrc}
@@ -664,7 +669,7 @@ export default function HUDPanel({
                                   if (el.dataset) el.dataset.fallback = '1';
                                   return;
                                 }
-                                el.src = track?.cover || '/cover/chxndler.png';
+                                el.src = track?.cover || DEFAULT_COVER;
                                 if (el.dataset) el.dataset.fallback = '2';
                               } catch {}
                             }}

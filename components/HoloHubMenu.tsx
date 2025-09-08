@@ -1,6 +1,9 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { sfx } from "@/lib/sfx";
+import commsIcon from "@/public/elements/comms.png";
+import chxndlerFallback from "@/public/elements/chxndler.png";
 
 type HubItem = {
   id: string;
@@ -150,12 +153,14 @@ export default function HoloHubMenu({
       >
         <span className="hub-glyph mask-element-comms" aria-hidden>
           {/* Comms hologram icon (fill tighter in ring) */}
-          <img
-            src="/elements/comms.png"
+          <Image
+            src={commsIcon}
             alt=""
             className="hub-icon"
+            width={Math.round(hubSize*0.88)}
+            height={Math.round(hubSize*0.88)}
             style={{ width: Math.round(hubSize*0.88), height: Math.round(hubSize*0.88) }}
-            onError={(e)=>{ const img = e.currentTarget as HTMLImageElement; img.onerror = null; img.src = "/elements/chxndler.png"; }}
+            draggable={false}
           />
         </span>
         <span className="sr-only">{open ? "Close communications menu" : "Open communications menu"}</span>

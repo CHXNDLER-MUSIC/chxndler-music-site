@@ -1,13 +1,15 @@
 "use client";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { sfx } from "@/lib/sfx";
 import JoinAliens from "@/components/JoinAliens";
+import joinIcon from "@/public/elements/join.png";
 
 export default function HoloJoinPopout({
   size = 84,
   hubColor = "#FC54AF",
   label = "Join",
-  iconSrc = "/elements/join.png",
+  iconSrc = joinIcon,
   panelWidth = 244,
   panelSide = "left", // left or above relative to the button
 }: {
@@ -75,12 +77,14 @@ export default function HoloJoinPopout({
         style={{ width: size, height: size }}
       >
         <span className="hub-glyph" aria-hidden>
-          <img
+          <Image
             src={iconSrc}
             alt=""
             className="hub-icon"
+            width={Math.round(size*0.88)}
+            height={Math.round(size*0.88)}
             style={{ width: Math.round(size*0.88), height: Math.round(size*0.88) }}
-            onError={(e)=>{ const img = e.currentTarget as HTMLImageElement; img.onerror = null; img.src = "/elements/chxndler.png"; }}
+            draggable={false}
           />
         </span>
         <span className="sr-only">{label}</span>

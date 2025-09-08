@@ -1,6 +1,8 @@
 "use client";
 import React, { useRef } from "react";
+import Image from "next/image";
 import { sfx } from "@/lib/sfx";
+import joinIcon from "@/public/elements/join.png";
 
 export default function HoloJoinButton({
   onClick,
@@ -8,7 +10,7 @@ export default function HoloJoinButton({
   hubColor = "#FC54AF",
   size = 72,
   label = "Join",
-  iconSrc = "/elements/join.png",
+  iconSrc = joinIcon,
 }: {
   onClick?: () => void;
   href?: string;
@@ -40,11 +42,14 @@ export default function HoloJoinButton({
         style={{ width: size, height: size }}
       >
         <span className="hub-glyph" aria-hidden>
-          <img
+          <Image
             src={iconSrc}
             alt=""
             className="hub-icon"
-            onError={(e)=>{ const img = e.currentTarget as HTMLImageElement; img.onerror = null; img.src = "/elements/chxndler.png"; }}
+            width={Math.round(size*0.88)}
+            height={Math.round(size*0.88)}
+            style={{ width: Math.round(size*0.88), height: Math.round(size*0.88) }}
+            draggable={false}
           />
         </span>
         <span className="sr-only">{label}</span>
