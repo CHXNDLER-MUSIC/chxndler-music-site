@@ -2,8 +2,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { sfx } from "@/lib/sfx";
-import commsIcon from "@/public/elements/comms.png";
-import chxndlerFallback from "@/public/elements/chxndler.png";
 
 type HubItem = {
   id: string;
@@ -154,7 +152,7 @@ export default function HoloHubMenu({
         <span className="hub-glyph mask-element-comms" aria-hidden>
           {/* Comms hologram icon (fill tighter in ring) */}
           <Image
-            src={commsIcon}
+            src="/elements/comms.png"
             alt=""
             className="hub-icon"
             width={Math.round(hubSize*0.88)}

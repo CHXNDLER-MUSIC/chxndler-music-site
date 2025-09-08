@@ -2,7 +2,6 @@
 import React, { useRef } from "react";
 import Image from "next/image";
 import { sfx } from "@/lib/sfx";
-import joinIcon from "@/public/elements/join.png";
 
 export default function HoloJoinButton({
   onClick,
@@ -10,7 +9,7 @@ export default function HoloJoinButton({
   hubColor = "#FC54AF",
   size = 72,
   label = "Join",
-  iconSrc = joinIcon,
+  iconSrc = "/elements/join.png",
 }: {
   onClick?: () => void;
   href?: string;

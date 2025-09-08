@@ -3,13 +3,12 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { sfx } from "@/lib/sfx";
 import JoinAliens from "@/components/JoinAliens";
-import joinIcon from "@/public/elements/join.png";
 
 export default function HoloJoinPopout({
   size = 84,
   hubColor = "#FC54AF",
   label = "Join",
-  iconSrc = joinIcon,
+  iconSrc = "/elements/join.png",
   panelWidth = 244,
   panelSide = "left", // left or above relative to the button
 }: {
