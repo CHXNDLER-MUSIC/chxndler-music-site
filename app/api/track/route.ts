@@ -1,14 +1,19 @@
 // app/api/track/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';          // required if using Node 'crypto'
+export const dynamic = 'force-dynamic';   // never pre-render
 export const revalidate = 0;
 
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+// ---- Env setup --------------------------------------------------------------
+// You must have these in Vercel (Production env):
+// - SUPABASE_URL  (or NEXT_PUBLIC_SUPABASE_URL)
+// - SUPABASE_SERVICE_ROLE_KEY  (service role key, not anon key)
+const SUPABASE_URL =
+  process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 function j(status: number, data?: unknown) {
   return new NextResponse(data ? JSON.stringify(data) : null, {
@@ -23,44 +28,79 @@ function j(status: number, data?: unknown) {
   });
 }
 
-export function OPTIONS() { return j(204); }
+export function OPTIONS() {
+  return j(204);
+}
+
+type Body = {
+  session_id?: string;
+  event_type?: string;
+  page?: string;
+  referrer?: string;
+  song_slug?: string;
+  payload?: Record<string, any>;
+  user_agent?: string;
+};
 
 export async function POST(req: NextRequest) {
   try {
-    const { session_id, event_type, page, referrer, song_slug, payload, user_agent } =
-      await req.json();
+    if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
+      console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+      return j(500, { error: 'Server misconfiguration' });
+    }
 
-    if (!session_id || !event_type) return j(400, { error: 'Missing session_id or event_type' });
+    const body = (await req.json().catch(() => ({}))) as Body;
+    if (!body.session_id || !body.event_type) {
+      return j(400, { error: 'Missing session_id or event_type' });
+    }
 
-    const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0]?.trim() || '0.0.0.0';
+    // Derive IP + UA (hash IP for privacy)
+    const fwd = req.headers.get('x-forwarded-for') || '';
+    const ip = fwd.split(',')[0]?.trim() || '0.0.0.0';
     const ip_hash = crypto.createHash('sha256').update(ip).digest('hex');
-    const ua = user_agent || req.headers.get('user-agent') || 'unknown';
+    const ua = body.user_agent || req.headers.get('user-agent') || 'unknown';
 
-    const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
+    // Supabase admin client, bound to analytics schema
+    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
       auth: { persistSession: false },
-      db: { schema: 'analytics' }, // your tables live here
+      db: { schema: 'analytics' },
     });
 
-    // INSERT ONLY (no RPC yet)
+    // OPTIONAL: touch_session RPC; ignore failures so tracking never 500s
+    try {
+      const { error: rpcError } = await supabase.rpc('touch_session', {
+        p_session_id: body.session_id,
+        p_user_agent: ua,
+        p_ip_hash: ip_hash,
+      });
+      if (rpcError) console.warn('touch_session error:', rpcError.message);
+    } catch (e) {
+      console.warn('touch_session call failed:', e);
+    }
+
+    // Insert event into analytics.events
     const { error } = await supabase.from('events').insert({
-      session_id,
-      event_type,
-      page: page?.slice(0, 512) ?? null,
-      referrer: referrer?.slice(0, 512) ?? null,
-      song_slug: song_slug?.slice(0, 128) ?? null,
-      payload: payload ?? null,
+      session_id: body.session_id,
+      event_type: body.event_type,
+      page: body.page?.slice(0, 512) ?? null,
+      referrer: body.referrer?.slice(0, 512) ?? null,
+      song_slug: body.song_slug?.slice(0, 128) ?? null,
+      payload: body.payload ?? null,
       user_agent: ua,
       ip_hash,
     });
 
     if (error) {
+      // TEMP: uncomment for one-time debugging to see exact message in response
+      // return j(500, { error: error.message });
       console.error('events insert error:', error);
       return j(500, { error: 'DB insert failed' });
     }
 
+    // Success: no content needed
     return j(204);
   } catch (e: any) {
-    console.error('/api/track error:', e);
+    console.error('/api/track unexpected error:', e);
     return j(500, { error: e?.message || 'Unexpected server error' });
   }
 }
