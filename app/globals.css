@@ -136,3 +136,24 @@ html, body { height: 100%; background:#000; color:#fff; }
 
 /* Mask CSS removed; keeping optional clip class commented for reference */
 /* .windshield-clip { clip-path: ellipse(65% 45% at 50% 52%); } */
+
+/* Element icon background classes - stable URLs for caching */
+.bg-element-chxndler { background-image: url('/elements/chxndler.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-heart { background-image: url('/elements/heart.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-lighting { background-image: url('/elements/lighting.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-darkness { background-image: url('/elements/darkness.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-water { background-image: url('/elements/water.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-music { background-image: url('/elements/music.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-instagram { background-image: url('/elements/instagram.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-tiktok { background-image: url('/elements/tiktok.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-youtube { background-image: url('/elements/youtube.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-spotify { background-image: url('/elements/spotify.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-apple { background-image: url('/elements/apple.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-comms { background-image: url('/elements/comms.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-join { background-image: url('/elements/join.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-power { background-image: url('/elements/power.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-start { background-image: url('/elements/start.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+
+/* Mask image classes for stable URLs */
+.mask-element-power::before { -webkit-mask-image: url('/elements/power.png'); mask-image: url('/elements/power.png'); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-size: contain; mask-size: contain; -webkit-mask-position: center; mask-position: center; }
+.mask-element-comms::before { -webkit-mask-image: url('/elements/comms.png'); mask-image: url('/elements/comms.png'); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-size: contain; mask-size: contain; -webkit-mask-position: center; mask-position: center; }

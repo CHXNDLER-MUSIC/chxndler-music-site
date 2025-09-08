@@ -351,7 +351,7 @@ export default function DashboardApp() {
                 }}
               >
                 <span className="sr-only">Toggle HUD Power</span>
-                <span className="power-glyph" aria-hidden>
+                <span className="power-glyph mask-element-power" aria-hidden>
                   <img src="/elements/power.png" alt="" className="power-icon" onError={(e)=>{ try { const img = e.currentTarget; img.onerror = null; img.src = '/elements/lighting.png'; } catch {} }} />
                 </span>
               </button>
@@ -419,11 +419,6 @@ export default function DashboardApp() {
                 content:""; position:absolute; inset:14%; pointer-events:none; mix-blend-mode:screen;
                 background: radial-gradient(closest-side, #19E3FFCC, #19E3FF55 60%, transparent 78%);
                 filter: blur(6px) saturate(1.15) brightness(1.05);
-                -webkit-mask-image: url('/elements/power.png');
-                mask-image: url('/elements/power.png');
-                -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-                -webkit-mask-position: center; mask-position: center;
-                -webkit-mask-size: contain; mask-size: contain;
               }
               .power-btn:hover{
                 transform: scale(1.07);

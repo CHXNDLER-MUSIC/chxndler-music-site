@@ -7,12 +7,26 @@ export default function CompositeTool() {
   const [w, setW] = React.useState(1920);
   const [h, setH] = React.useState(1080);
   const canvasRef = React.useRef(null);
+  const backgroundImageRef = React.useRef(null);
+  const overlayImageRef = React.useRef(null);
+
+  // Initialize images once
+  React.useEffect(() => {
+    const ib = new Image();
+    const io = new Image();
+    ib.crossOrigin = "anonymous";
+    io.crossOrigin = "anonymous";
+    backgroundImageRef.current = ib;
+    overlayImageRef.current = io;
+  }, []);
 
   function draw() {
-    const c = canvasRef.current; if (!c) return;
+    const c = canvasRef.current;
+    const ib = backgroundImageRef.current;
+    const io = overlayImageRef.current;
+    if (!c || !ib || !io) return;
+    
     const ctx = c.getContext("2d");
-    const ib = new Image(); const io = new Image();
-    ib.crossOrigin = "anonymous"; io.crossOrigin = "anonymous";
     let loaded = 0;
     const tryDraw = () => {
       loaded += 1;

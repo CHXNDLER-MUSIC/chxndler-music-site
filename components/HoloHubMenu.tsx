@@ -148,7 +148,7 @@ export default function HoloHubMenu({
         onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !open) { e.preventDefault(); onHubClick(); } }}
         style={{ width: hubSize, height: hubSize, left: -Math.round(hubSize/2), top: -Math.round(hubSize/2) } as React.CSSProperties}
       >
-        <span className="hub-glyph" aria-hidden>
+        <span className="hub-glyph mask-element-comms" aria-hidden>
           {/* Comms hologram icon (fill tighter in ring) */}
           <img
             src="/elements/comms.png"
@@ -226,11 +226,6 @@ export default function HoloHubMenu({
           content:""; position:absolute; inset:10%; pointer-events:none; mix-blend-mode:screen;
           background: radial-gradient(closest-side, ${hubColor}CC, ${hubColor}55 60%, transparent 75%);
           filter: blur(6px) saturate(1.1) brightness(1.05);
-          -webkit-mask-image: url('/elements/comms.png');
-          mask-image: url('/elements/comms.png');
-          -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-          -webkit-mask-position: center; mask-position: center;
-          -webkit-mask-size: contain; mask-size: contain;
         }
         .hub{
           position:absolute; border-radius:9999px; cursor:pointer;

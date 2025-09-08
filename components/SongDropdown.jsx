@@ -6,9 +6,9 @@ import { usePlayerStore } from "@/store/usePlayerStore";
 import { useCycleList } from "@/lib/useCycleList";
 import { track } from "@/lib/analytics";
 import { trackSecure } from "@/lib/secureAnalytics";
+import { ElementIcon as OptimizedElementIcon } from "@/lib/elementIcons";
 
 function ElementIcon({ name }) {
-  const cn = "w-4 h-4 object-contain";
   const colorFor = (key) => {
     const k = String(key || '').toLowerCase();
     if (k.includes('water')) return '#38B6FF';
@@ -21,14 +21,22 @@ function ElementIcon({ name }) {
   };
   const outer = String(name || '').toLowerCase().includes('dark') ? '#19E3FF' : colorFor(name);
   const glowStyle = { filter: `brightness(1.35) saturate(1.6) drop-shadow(0 0 16px ${outer}) drop-shadow(0 0 40px ${outer}) drop-shadow(0 0 70px ${outer})`, transform: 'translateZ(0)' };
-  if (name === "heart") return <span className="holo-icon" style={glowStyle}><img src="/elements/heart.png" alt="Heart" className={cn} /></span>;
-  if (name === "lightning" || name === "electric") return <span className="holo-icon" style={glowStyle}><img src="/elements/lighting.png" alt="Lightning" className={cn} /></span>;
-  if (name === "darkness") return <span className="holo-icon" style={glowStyle}><img src="/elements/darkness.png" alt="Darkness" className={cn} /></span>;
-  if (name === "water") return <span className="holo-icon" style={glowStyle}><img src="/elements/water.png" alt="Water" className={cn} /></span>;
-  if (name === "fire") return <span className="holo-icon" style={glowStyle}><img src="/elements/lighting.png" alt="Lightning" className={cn} /></span>; // fallback to lightning asset
-  if (name === "earth") return <span className="holo-icon" style={glowStyle}><img src="/elements/heart.png" alt="Heart" className={cn} /></span>; // fallback visual
-  if (name === "air") return <span className="holo-icon" style={glowStyle}><img src="/elements/water.png" alt="Water" className={cn} /></span>; // fallback visual
-  return null;
+  
+  // Map names to icon keys
+  let iconKey = name;
+  if (name === "electric") iconKey = "lighting";
+  if (name === "fire") iconKey = "lighting"; // fallback to lighting asset
+  if (name === "earth") iconKey = "heart"; // fallback visual
+  if (name === "air") iconKey = "water"; // fallback visual
+  
+  const validIcons = ["heart", "lighting", "darkness", "water"];
+  if (!validIcons.includes(iconKey)) return null;
+  
+  return (
+    <span className="holo-icon" style={glowStyle}>
+      <OptimizedElementIcon name={iconKey} alt={name} className="w-4 h-4 object-contain" width={16} height={16} />
+    </span>
+  );
 }
 
 export default function SongDropdown({ items = [], initialActiveId, onChange }) {
@@ -166,7 +174,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange }) 
       >
         <span className="flex items-center gap-2 min-w-0">
           <span className="songs-icon">
-            <img src="/elements/music.png" alt="Music" className="w-7 h-7 object-contain" />
+            <OptimizedElementIcon name="music" alt="Music" className="w-7 h-7 object-contain" width={28} height={28} />
           </span>
           <span className="songs-label truncate text-[16px] font-semibold tracking-wide">SONGS</span>
         </span>

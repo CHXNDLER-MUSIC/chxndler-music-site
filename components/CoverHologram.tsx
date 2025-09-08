@@ -6,13 +6,29 @@ import { cockpit } from "@/config/ui";
 
 export default function CoverHologram({ src, title }: { src: string; title: string }) {
   const w = cockpit.cover.width;
+  
+  const handleClick = () => {
+    // Dispatch custom event to show cover card
+    window.dispatchEvent(new CustomEvent('showCoverCard'));
+  };
+
   return (
     <motion.div
-      className={`absolute left-1/2 z-30 -translate-x-1/2 ${cockpit.cover.glass} ${"rounded-2xl"}`}
+      className={`absolute left-1/2 z-30 -translate-x-1/2 ${cockpit.cover.glass} ${"rounded-2xl"} cursor-pointer hover:scale-105 transition-transform duration-200`}
       style={{ width: w, top: "calc(50% + 90px)", transform: "translateX(-50%)" }}
       initial={{ opacity: 0, y: 20, rotateX: -8 }}
       animate={{ opacity: cockpit.cover.hologramOpacity, y: 0, rotateX: -cockpit.cover.tilt }}
       transition={{ type: "spring", stiffness: 100, damping: 18 }}
+      onClick={handleClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
+      aria-label={`View ${title} card`}
     >
       <div className="p-2">
         <Image
@@ -20,7 +36,7 @@ export default function CoverHologram({ src, title }: { src: string; title: stri
           alt={`${title} cover`}
           width={w - 12}
           height={w - 12}
-          className="rounded-xl object-cover select-none pointer-events-none"
+          className="rounded-xl object-cover select-none"
           priority
         />
       </div>
