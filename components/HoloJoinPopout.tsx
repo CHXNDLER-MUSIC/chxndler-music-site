@@ -1,6 +1,5 @@
 "use client";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import { sfx } from "@/lib/sfx";
 import JoinAliens from "@/components/JoinAliens";
 
@@ -76,12 +75,10 @@ export default function HoloJoinPopout({
         style={{ width: size, height: size }}
       >
         <span className="hub-glyph" aria-hidden>
-          <Image
+          <img
             src={iconSrc}
             alt=""
             className="hub-icon"
-            width={Math.round(size*0.88)}
-            height={Math.round(size*0.88)}
             style={{ width: Math.round(size*0.88), height: Math.round(size*0.88) }}
             draggable={false}
           />

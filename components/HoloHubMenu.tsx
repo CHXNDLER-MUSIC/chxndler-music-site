@@ -1,6 +1,5 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import { sfx } from "@/lib/sfx";
 
 type HubItem = {
@@ -151,12 +150,10 @@ export default function HoloHubMenu({
       >
         <span className="hub-glyph mask-element-comms" aria-hidden>
           {/* Comms hologram icon (fill tighter in ring) */}
-          <Image
+          <img
             src="/elements/comms.png"
             alt=""
             className="hub-icon"
-            width={Math.round(hubSize*0.88)}
-            height={Math.round(hubSize*0.88)}
             style={{ width: Math.round(hubSize*0.88), height: Math.round(hubSize*0.88) }}
             draggable={false}
           />

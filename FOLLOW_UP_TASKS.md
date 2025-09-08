@@ -2,11 +2,13 @@
 
 ## 1. Fix Git LFS/PNG Corruption Issue
 
-**Priority:** Medium (build is unblocked, but static imports would be better for performance)
+**Priority:** Medium (site is working, but actual images would be better)
 
-**Problem:** PNG files in `/public/elements/` are Git LFS pointer files or corrupted, causing Next.js static import failures during build.
+**Problem:** PNG files in `/public/elements/` are Git LFS pointer files (132 bytes each), not actual images, causing Next.js Image optimization failures.
 
-**Current Workaround:** Reverted to string paths (`"/elements/chxndler.png"`) instead of static imports.
+**Current Workaround:** 
+- Reverted to string paths (`"/elements/chxndler.png"`) instead of static imports
+- Reverted to regular `<img>` tags instead of Next.js `<Image>` components to avoid 400 Bad Request errors
 
 **Ideal Solution:** Fix the root cause so we can restore static imports for better optimization.
 
