@@ -352,7 +352,7 @@ export default function DashboardApp() {
               >
                 <span className="sr-only">Toggle HUD Power</span>
                 <span className="power-glyph mask-element-power" aria-hidden>
-                  <img src="/elements/power.png" alt="" className="power-icon" onError={(e)=>{ try { const img = e.currentTarget; img.onerror = null; img.src = '/elements/lighting.png'; } catch {} }} />
+                  <img src="/elements/power.png" alt="" className="power-icon" onError={(e)=>{ try { const img = e.currentTarget; img.onerror = null; img.src = '/elements/lightning.png'; } catch {} }} />
                 </span>
               </button>
             ) : null}
@@ -451,33 +451,32 @@ export default function DashboardApp() {
         </div>
       </Slot>
 
-      {/* Upward shooting light beam from dashboard base to HUD (using MediaDock beam pattern) */}
+      {/* Simplified upward shooting light beam */}
       {mounted && (beamEnabled || showHUD) ? (
         <div 
-          className="fixed pointer-events-none z-10"
+          className="fixed pointer-events-none z-30"
           style={{
             left: '50%',
-            bottom: '15vh',
-            top: '35vh', 
-            width: '300px',
+            bottom: '40vh', // Move whole light beam up slightly
+            top: '42vh', // Make top of light beam very slightly higher
+            width: '1200px', // Wide to match HUD display size
             transform: 'translateX(-50%)',
             opacity: beamEnabled ? 1 : 0,
             transition: 'opacity 300ms ease'
           }}
         >
+          {/* Single main beam */}
           <div 
             style={{
               position: 'absolute',
-              left: '10%', 
-              right: '10%', 
-              bottom: '10px', 
-              top: '22%',
-              zIndex: 0,
-              clipPath: 'polygon(45% 100%, 55% 100%, 100% 0, 0% 0)',
-              background: 'linear-gradient(180deg, rgba(25,227,255,0.08), rgba(25,227,255,0.16) 40%, rgba(25,227,255,0.0) 100%)',
-              filter: 'blur(6px)',
-              mixBlendMode: 'screen',
-              opacity: 0.9
+              left: '5%', 
+              right: '5%', 
+              bottom: '0px', 
+              top: '0%',
+              clipPath: 'polygon(48% 100%, 52% 100%, 3% 0, 97% 0)', // Made top of light beam very very slightly less wide
+              background: 'linear-gradient(180deg, rgba(25,227,255,0.35), rgba(25,227,255,0.55) 25%, rgba(25,227,255,0.35) 60%, rgba(25,227,255,0.15) 85%, rgba(25,227,255,0.0) 100%)',
+              filter: 'blur(8px)',
+              mixBlendMode: 'screen'
             }}
           />
         </div>

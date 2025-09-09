@@ -73,9 +73,11 @@ export async function POST(req: NextRequest) {
         p_user_agent: ua,
         p_ip_hash: ip_hash,
       });
-      if (rpcError) console.warn('touch_session error:', rpcError.message);
+      if (rpcError && !rpcError.message?.includes('schema cache')) {
+        console.warn('touch_session error:', rpcError.message);
+      }
     } catch (e) {
-      console.warn('touch_session call failed:', e);
+      // Suppress schema cache errors to reduce log noise
     }
 
     // Insert event into events table (if it exists)
@@ -91,13 +93,11 @@ export async function POST(req: NextRequest) {
         ip_hash,
       });
 
-      if (error) {
-        console.warn('events insert error (table may not exist):', error);
-        // Don't return 500 - analytics is optional
+      if (error && !error.message?.includes('schema cache')) {
+        console.warn('events insert error:', error);
       }
     } catch (e) {
-      console.warn('events insert failed (table may not exist):', e);
-      // Don't return 500 - analytics is optional
+      // Suppress schema cache errors to reduce log noise
     }
 
     // Success: no content needed

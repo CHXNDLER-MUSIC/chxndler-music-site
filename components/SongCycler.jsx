@@ -6,7 +6,7 @@ import { useCycleList } from "@/lib/useCycleList";
 function ElementIcon({ name }) {
   const cn = "w-4 h-4 object-contain";
   if (name === "heart") return <img src="/elements/heart.png" alt="Heart" className={cn} />;
-  if (name === "lightning" || name === "electric") return <img src="/elements/lighting.png" alt="Lightning" className={cn} />;
+  if (name === "lightning" || name === "electric") return <img src="/elements/lightning.png" alt="Lightning" className={cn} />;
   if (name === "darkness") return <img src="/elements/darkness.png" alt="Darkness" className={cn} />;
   if (name === "water") return <img src="/elements/water.png" alt="Water" className={cn} />;
   return null;

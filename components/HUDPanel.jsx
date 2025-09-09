@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 // are incompatible with React 19 and can crash on evaluation. We lazy-load it
 // only after probing availability, and fall back gracefully.
 import { usePlayerStore } from "@/store/usePlayerStore";
-import { track } from "@/lib/analytics";
+import { track as trackAnalytics } from "@/lib/analytics";
 
 // We import the 3D system directly and only render on client via this client component
 
@@ -43,7 +43,7 @@ function ElementIcon({ name, size = 18, glow = true }) {
   let iconKey = null;
   if (n.includes("chxndler")) iconKey = "chxndler";
   else if (n.includes("heart")) iconKey = "heart";
-  else if (n.includes("lightning") || n.includes("electric")) iconKey = "lighting";
+  else if (n.includes("lightning") || n.includes("electric")) iconKey = "lightning";
   else if (n.includes("dark")) iconKey = "darkness";
   else if (n.includes("water") || n.includes("air")) iconKey = "water";
   else if (n.includes("earth") || n.includes("fire")) iconKey = "heart"; // fallbacks
@@ -226,7 +226,7 @@ export default function HUDPanel({
       <DevErrorLogger />
       <div className="w-full h-full flex items-start justify-center">
           <motion.div
-            className={`relative rounded-2xl shadow-[0_0_50px_rgba(25,227,255,0.35)] -ml-6 sm:-ml-8 md:-ml-12 lg:-ml-18`}
+            className={`relative rounded-2xl -ml-6 sm:-ml-8 md:-ml-12 lg:-ml-18`}
             // Remove hover glow/scale for the entire HUD display per request
             transition={{ type: "spring", stiffness: 200, damping: 20 }}
             style={inConsole
@@ -236,61 +236,14 @@ export default function HUDPanel({
           >
           {/* Background removed: keep HUD box transparent */}
         {/* Single blue outline wrapping the HUD content (amped glow) */}
-        <div className={`relative rounded-2xl border border-[#19E3FF]/90 ring-2 ring-[#19E3FF]/50 shadow-[0_0_70px_rgba(25,227,255,0.6),_0_0_24px_rgba(25,227,255,0.85)] ${inConsole ? 'p-2' : 'p-4'}`}>
-          {/* Uniform base fill for cohesive background across entire panel */}
-          <div
-            className="pointer-events-none absolute inset-0 rounded-2xl"
-            style={{ background: 'rgba(8,26,32,0.50)' }}
-          />
+        <div className={`relative rounded-2xl border border-[#19E3FF]/90 ring-2 ring-[#19E3FF]/50 ${inConsole ? 'p-2' : 'p-4'}`} style={{
+          background: 'linear-gradient(180deg, rgba(25,227,255,0.35), rgba(25,227,255,0.55) 25%, rgba(25,227,255,0.35) 60%, rgba(25,227,255,0.15) 85%, rgba(25,227,255,0.0) 100%)',
+          boxShadow: '0 0 50px rgba(25,227,255,0.35), 0 0 70px rgba(25,227,255,0.6), 0 0 24px rgba(25,227,255,0.85)'
+        }}>
+          {/* Background removed for transparent HUD */}
           {/* Cover art moved into right column above the song list */}
-          {/* Holographic beam overlays */}
-          <div 
-            className="pointer-events-none absolute inset-0 rounded-2xl overflow-hidden"
-            style={{ opacity: beamOpacity, transition: 'opacity 240ms ease' }}
-          >
-            {/* Primary beam layer */}
-            <div 
-              className="beam-primary absolute inset-x-0 bottom-0 h-24"
-              style={{
-                background: 'linear-gradient(0deg, rgba(25,227,255,0.15), rgba(25,227,255,0.05) 60%, transparent)',
-                filter: 'blur(3px)'
-              }}
-            />
-            {/* Secondary beam layer */}
-            <div 
-              className="beam-secondary absolute inset-x-0 bottom-0 h-16"
-              style={{
-                background: 'linear-gradient(0deg, rgba(25,227,255,0.25), rgba(25,227,255,0.08) 50%, transparent)',
-                filter: 'blur(1px)'
-              }}
-            />
-            {/* Core beam glow */}
-            <div 
-              className="beam-core-glow absolute left-1/2 bottom-0 w-32 h-20 -translate-x-1/2"
-              style={{
-                background: 'radial-gradient(ellipse at bottom, rgba(25,227,255,0.4), rgba(25,227,255,0.1) 70%, transparent)',
-                filter: 'blur(2px)'
-              }}
-            />
-            {/* Beam hotspot */}
-            <div 
-              className="beam-hotspot absolute left-1/2 bottom-0 w-16 h-8 -translate-x-1/2"
-              style={{
-                background: 'radial-gradient(ellipse at bottom, rgba(25,227,255,0.6), transparent 60%)',
-                filter: 'blur(0.5px)'
-              }}
-            />
-          </div>
-          {/* Outer bloom layers for stronger hologram glow */}
-          <div className="pointer-events-none absolute -inset-1 rounded-3xl opacity-70 mix-blend-screen"
-               style={{
-                 boxShadow: '0 0 90px rgba(25,227,255,0.55), 0 0 140px rgba(25,227,255,0.35)'
-               }} />
-          <div className="pointer-events-none absolute inset-0 rounded-2xl opacity-70 mix-blend-screen"
-               style={{
-                 outline: '1px solid rgba(25,227,255,0.75)',
-                 boxShadow: 'inset 0 0 22px rgba(25,227,255,0.35)'
-               }} />
+          {/* Holographic beam overlays removed */}
+          {/* Bloom layers removed */}
           {/* Element/logo pinned at the HUD box top-left */}
           <div className="absolute z-40" style={{ left: 12, top: 12, pointerEvents: 'none' }}>
             {(() => {
@@ -343,12 +296,7 @@ export default function HUDPanel({
                         3D disabled: {threeFailed}. Showing fallback.
                       </div>
                     ) : null}
-                    <div
-                      className="rounded-full"
-                      style={{ width: '58%', aspectRatio: '1 / 1',
-                        background: 'radial-gradient(circle at 40% 40%, rgba(25,227,255,0.65), rgba(25,227,255,0.18) 60%, rgba(25,227,255,0.06) 80%, transparent 100%)',
-                        filter: 'blur(0.4px) saturate(1.1)' }}
-                    />
+{/* Light gradient removed */}
                   </div>
                 )}
                   {/* Removed debug badge */}
@@ -431,7 +379,7 @@ export default function HUDPanel({
                     // Track cover art click
                     const trackingSong = (!currentId ? 'chxndler_home' : (track?.slug || active || 'unknown'));
                     const trackingTitle = (!currentId ? 'CHXNDLER Home' : (track?.title || 'Unknown'));
-                    track("cover_art_clicked", {
+                    trackAnalytics("cover_art_clicked", {
                       song_id: trackingSong,
                       song_title: trackingTitle,
                       cover_src: (!currentId ? DEFAULT_COVER : (track?.cover || DEFAULT_COVER))
@@ -472,75 +420,7 @@ export default function HUDPanel({
         }
         .cover-link:active{ transform: scale(.98); }
         
-        /* Holographic beam animations */
-        .beam-base-glow {
-          animation: beamPulse 3.2s ease-in-out infinite;
-        }
-        .beam-core-glow {
-          animation: beamFlicker 2.8s ease-in-out infinite, beamPulse 3.2s ease-in-out infinite 0.4s;
-        }
-        .beam-hotspot {
-          animation: beamFlicker 1.6s ease-in-out infinite, beamIntensity 2.4s ease-in-out infinite 0.8s;
-        }
-        .beam-primary {
-          animation: beamWave 4.5s ease-in-out infinite, beamPulse 3.2s ease-in-out infinite 1.2s;
-        }
-        .beam-secondary {
-          animation: beamWave 4.5s ease-in-out infinite 0.6s, beamFlicker 3.8s ease-in-out infinite 1.8s;
-        }
-        
-        /* Enhanced animations when music is playing */
-        ${playing ? `
-        .beam-base-glow { animation-duration: 2.4s; }
-        .beam-core-glow { animation-duration: 2.0s, 2.4s; }
-        .beam-hotspot { animation-duration: 1.2s, 1.8s; }
-        .beam-primary { animation-duration: 3.2s, 2.4s; }
-        .beam-secondary { animation-duration: 3.2s, 2.8s; }
-        ` : ''}
-        
-        @keyframes beamPulse {
-          0%, 100% { opacity: 0.85; filter: blur(12px) saturate(1); }
-          50% { opacity: 0.95; filter: blur(10px) saturate(1.15); }
-        }
-        
-        @keyframes beamFlicker {
-          0%, 100% { opacity: 0.75; }
-          15% { opacity: 0.85; }
-          30% { opacity: 0.72; }
-          45% { opacity: 0.88; }
-          60% { opacity: 0.76; }
-          75% { opacity: 0.82; }
-          90% { opacity: 0.78; }
-        }
-        
-        @keyframes beamIntensity {
-          0%, 100% { filter: blur(8px) brightness(1) saturate(1); }
-          33% { filter: blur(7px) brightness(1.08) saturate(1.12); }
-          66% { filter: blur(9px) brightness(0.95) saturate(0.98); }
-        }
-        
-        @keyframes beamWave {
-          0%, 100% { 
-            opacity: 0.55; 
-            transform: scaleY(1) scaleX(1);
-            filter: blur(10px) hue-rotate(0deg);
-          }
-          25% { 
-            opacity: 0.48; 
-            transform: scaleY(1.02) scaleX(0.98);
-            filter: blur(11px) hue-rotate(2deg);
-          }
-          50% { 
-            opacity: 0.62; 
-            transform: scaleY(0.98) scaleX(1.02);
-            filter: blur(9px) hue-rotate(-1deg);
-          }
-          75% { 
-            opacity: 0.52; 
-            transform: scaleY(1.01) scaleX(0.99);
-            filter: blur(10px) hue-rotate(1deg);
-          }
-        }
+        /* Beam animations removed */
       `}</style>
       {showCard ? (
         <div

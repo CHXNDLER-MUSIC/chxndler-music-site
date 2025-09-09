@@ -204,7 +204,7 @@ export default function SteeringWheelOverlay({
           <div
             style={{
               position: "absolute",
-              top: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${vs/2}px + ${jdy}px)`,
+              top: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${vs/2}px + ${jdy}px - 4px)`, // Moved up 4px
               left: vconf.centerHoriz
                 ? `calc(50vw - ${vs/2}px + ${jdx}px)`
                 : `calc(${(pp.leftVw + (vconf.offsetVw || 0))}vw - ${vs/2}px + ${jdx}px)`,
@@ -227,7 +227,7 @@ export default function SteeringWheelOverlay({
         className={`pointer-events-auto wheel-play${isStart ? ' chx' : ''}`}
         style={{
           position: "absolute",
-          top: `calc(${pp.topVh}vh - ${(pp.sizePx * 0.95)/2}px)`,
+          top: `calc(${pp.topVh}vh - ${(pp.sizePx * 0.95)/2}px - 12px)`, // Moved up 12px (4px more)
           left: `calc(${pp.leftVw}vw - ${(pp.sizePx * 0.95)/2}px + 10px)`,
           width: pp.sizePx * 0.95,
           height: pp.sizePx * 0.95,

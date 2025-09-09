@@ -84,21 +84,21 @@ export const POS = {
     // Moved down a touch and made larger/brighter per request
     // Nudge left slightly for better centering
     // Place the START button centered over the wheel; nudge up slightly
-    // Lower + enlarge START button
-    play: { topVh: 89, leftVw: 49.7, sizePx: 188 },
+    // Make START button smaller and move down slightly
+    play: { topVh: 88, leftVw: 49.7, sizePx: 170 },
     // Use START button instead of cyan play
     start: true,
     // Comms (hologram hub) offset relative to the wheel's top-left corner (in pixels)
-    // Move slightly left and keep up
-    comms: { dxPx: 160, dyPx: 356 },
+    // Move slightly right
+    comms: { dxPx: 180, dyPx: 356 },
     // Join button (hologram style) offset and size
     // Use offsetRightPx relative to wheel rim (positive = further right, negative = to the left of rim)
-    // Align roughly with comms vertically and move slightly further up
-    join: { offsetRightPx: -210, dyPx: 332, sizePx: 84 },
+    // Align roughly with comms vertically and move slightly to the left
+    join: { offsetRightPx: -230, dyPx: 332, sizePx: 84 },
     // Optional video overlay tuning for /cockpit/wheel.mp4
     // Smaller wheel footprint; move wheel down slightly
     // Lower the wheel slightly by reducing the negative offset (closer to 0)
     // Raise the wheel by moving it further up (more negative offset)
-    video: { scale: 4.2, offsetVh: -24, offsetVw: 0, centerHoriz: true, debug: false },
+    video: { scale: 3.8, offsetVh: -20, offsetVw: 0, centerHoriz: true, debug: false },
   },
 };

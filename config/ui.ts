@@ -10,7 +10,8 @@ export const glow = {
 export const cockpit = {
   // keeps cover art small + embedded
   cover: {
-    width: 180,          // px
+    width: 180,          // px (desktop)
+    mobileWidth: 140,    // px (mobile)
     tilt: 6,             // deg
     hologramOpacity: 0.55,
     glass: "bg-white/4 backdrop-blur-md border border-white/10",

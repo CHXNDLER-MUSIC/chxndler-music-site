@@ -140,7 +140,7 @@ html, body { height: 100%; background:#000; color:#fff; }
 /* Element icon background classes - stable URLs for caching */
 .bg-element-chxndler { background-image: url('/elements/chxndler.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
 .bg-element-heart { background-image: url('/elements/heart.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
-.bg-element-lighting { background-image: url('/elements/lighting.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-lightning { background-image: url('/elements/lightning.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
 .bg-element-darkness { background-image: url('/elements/darkness.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
 .bg-element-water { background-image: url('/elements/water.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
 .bg-element-music { background-image: url('/elements/music.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }

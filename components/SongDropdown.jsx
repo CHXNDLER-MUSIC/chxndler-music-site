@@ -24,12 +24,12 @@ function ElementIcon({ name }) {
   
   // Map names to icon keys
   let iconKey = name;
-  if (name === "electric") iconKey = "lighting";
-  if (name === "fire") iconKey = "lighting"; // fallback to lighting asset
+  if (name === "electric") iconKey = "lightning";
+  if (name === "fire") iconKey = "lightning"; // fallback to lightning asset
   if (name === "earth") iconKey = "heart"; // fallback visual
   if (name === "air") iconKey = "water"; // fallback visual
   
-  const validIcons = ["heart", "lighting", "darkness", "water"];
+  const validIcons = ["heart", "lightning", "darkness", "water"];
   if (!validIcons.includes(iconKey)) return null;
   
   return (

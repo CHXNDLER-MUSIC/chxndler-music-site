@@ -10,7 +10,7 @@ function Icon({ name }) {
       return <img src="/elements/heart.png" alt="Heart" className={cn} />;
     case "lightning":
     case "electric": // backward-compat
-      return <img src="/elements/lighting.png" alt="Lightning" className={cn} />;
+      return <img src="/elements/lightning.png" alt="Lightning" className={cn} />;
     case "darkness":
       return <img src="/elements/darkness.png" alt="Darkness" className={cn} />;
     case "water":
