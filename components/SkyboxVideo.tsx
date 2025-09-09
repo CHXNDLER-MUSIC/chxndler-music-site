@@ -28,6 +28,7 @@ export default function SkyboxVideo({
 }) {
   // Default to visible to avoid missing sky if loadeddata doesn't fire
   const [ready, setReady] = useState(true);
+  const [hasStartedLoading, setHasStartedLoading] = useState(false);
   const translateY = typeof offsetY === "number" ? `${offsetY}px` : offsetY;
   const [flying, setFlying] = useState(false);
   const [showLightspeed, setShowLightspeed] = useState(false);
@@ -55,13 +56,13 @@ export default function SkyboxVideo({
       flyEndCalledRef.current = false;
       if (onFlyStart) try { onFlyStart(); } catch {}
       if (lsTimerRef.current !== undefined) window.clearTimeout(lsTimerRef.current);
-      // Keep the lightspeed overlay visible a bit longer on song change
+      // Reduced lightspeed overlay duration for faster song video appearance
       lsTimerRef.current = window.setTimeout(() => {
         setShowLightspeed(false);
         lsTimerRef.current = undefined;
         if (!flyEndCalledRef.current && onFlyEnd) { try { onFlyEnd(); } catch {} }
         flyEndCalledRef.current = true;
-      }, 1800);
+      }, 1200); // Reduced from 1800ms to 1200ms
     } catch {}
 
     return () => { clearTimeout(t); if (lsTimerRef.current !== undefined) { window.clearTimeout(lsTimerRef.current); lsTimerRef.current = undefined; } };
@@ -81,7 +82,7 @@ export default function SkyboxVideo({
       lsTimerRef.current = window.setTimeout(() => {
         setShowLightspeed(false);
         lsTimerRef.current = undefined;
-      }, 1800);
+      }, 1200); // Reduced from 1800ms to 1200ms for faster video appearance
     } catch {}
     return () => { if (lsTimerRef.current !== undefined) { window.clearTimeout(lsTimerRef.current); lsTimerRef.current = undefined; } };
   }, [allowWarp]);
@@ -94,11 +95,28 @@ export default function SkyboxVideo({
       if (showLightspeed) {
         base.pause();
       } else {
-        // resume base silently
+        // resume base silently and start loading if not already
+        if (!hasStartedLoading) {
+          setHasStartedLoading(true);
+        }
         void base.play().catch(()=>{});
       }
     } catch {}
-  }, [showLightspeed]);
+  }, [showLightspeed, hasStartedLoading]);
+
+  // Start loading video as soon as videoKey changes (preload)
+  React.useEffect(() => {
+    const base = baseRef.current;
+    if (!base || !videoKey) return;
+    
+    // Start loading the new video immediately
+    try {
+      base.load(); // Force reload with new source
+      setHasStartedLoading(true);
+      // Start preloading
+      base.preload = 'auto';
+    } catch {}
+  }, [videoKey]);
 
   // Notify when the base sky starts playing (once per videoKey)
   React.useEffect(() => {
@@ -131,16 +149,18 @@ export default function SkyboxVideo({
           // @ts-ignore: Safari-specific remote playback disable
           disableRemotePlayback
           tabIndex={-1}
-          onEnded={(e)=>{ try { const v = e.currentTarget as HTMLVideoElement; v.currentTime = 0; v.play().catch(()=>{}); } catch {} }}
+          // Removed manual loop handling - let native loop attribute handle seamless looping
+          onLoadStart={() => setHasStartedLoading(true)}
           onLoadedData={() => setReady(true)}
           onCanPlay={() => setReady(true)}
           onCanPlayThrough={() => setReady(true)}
-          className="h-full w-full object-cover transition-opacity duration-500"
+          onPlaying={() => setReady(true)} // Ensure video stays visible during playback
+          className="h-full w-full object-cover"
           style={{
             opacity: (ready && !showLightspeed) ? 1 : 0,
+            transition: showLightspeed ? 'opacity 300ms ease, transform 650ms ease, filter 650ms ease' : 'transform 650ms ease, filter 650ms ease', // Only transition opacity during warp
             filter: `brightness(${brightness})${flying ? ' saturate(1.1) blur(1.2px)' : ''}`,
             transform: `translateY(${translateY}) scale(${flying ? 1.12 : 1})`,
-            transition: 'opacity 500ms ease, transform 650ms ease, filter 650ms ease',
             pointerEvents: 'none'
           }}
         >

@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getClickAnalytics, clearClickAnalytics, type ClickData } from "../lib/analytics";
+import { getClickAnalyticsLocal, clearClickAnalyticsLocal, type ClickData } from "../lib/analytics";
+import MusicAnalyticsVisual from "./MusicAnalyticsVisual";
 
 interface ClickStats {
   totalClicks: number;
@@ -21,11 +22,13 @@ export default function AnalyticsDashboard({ onClose, embedded = false }: Analyt
   const [stats, setStats] = useState<ClickStats | null>(null);
   const [isVisible, setIsVisible] = useState(!embedded);
   const [selectedClick, setSelectedClick] = useState<ClickData | null>(null);
+  const [showMusicAnalytics, setShowMusicAnalytics] = useState(false);
 
   const loadAnalytics = () => {
-    const clicks = getClickAnalytics();
+    const clicks = getClickAnalyticsLocal();
     
-    if (clicks.length === 0) {
+    // Safety check: ensure clicks is an array
+    if (!Array.isArray(clicks) || clicks.length === 0) {
       setStats({
         totalClicks: 0,
         uniqueElements: 0,
@@ -91,7 +94,7 @@ export default function AnalyticsDashboard({ onClose, embedded = false }: Analyt
 
   const handleClear = () => {
     if (confirm("Are you sure you want to clear all click analytics data?")) {
-      clearClickAnalytics();
+      clearClickAnalyticsLocal();
       loadAnalytics();
     }
   };
@@ -132,6 +135,12 @@ export default function AnalyticsDashboard({ onClose, embedded = false }: Analyt
         <div className="p-6 border-b border-gray-200 flex justify-between items-center">
           <h2 className="text-2xl font-bold text-gray-900">Click Analytics Dashboard</h2>
           <div className="flex gap-2">
+            <button
+              onClick={() => setShowMusicAnalytics(true)}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+            >
+              🎵 Music Analytics
+            </button>
             <button
               onClick={loadAnalytics}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
@@ -298,6 +307,11 @@ export default function AnalyticsDashboard({ onClose, embedded = false }: Analyt
             </div>
           </div>
         </div>
+      )}
+
+      {/* Music Analytics Modal */}
+      {showMusicAnalytics && (
+        <MusicAnalyticsVisual onClose={() => setShowMusicAnalytics(false)} />
       )}
     </div>
   );

@@ -57,7 +57,7 @@ export default function AmbientSpace({
       if (!intro || !introSrc || !introPendingRef.current || playingMusic) return;
       try {
         intro.volume = 0.9;
-        const onIntroPlay = () => { introPlayingRef.current = true; amb.volume = Math.min(volume, 0.12); };
+        const onIntroPlay = () => { introPlayingRef.current = true; amb.volume = Math.min(volume, 0.25); };
         const onIntroEnd  = () => { introPlayingRef.current = false; fadeVolume(volume, 400); };
         intro.addEventListener('play', onIntroPlay);
         intro.addEventListener('ended', onIntroEnd, { once: true });
@@ -97,7 +97,7 @@ export default function AmbientSpace({
         if (!introPendingRef.current || playingMusic || suspend) return;
         try {
           intro.volume = 0.9;
-          const onIntroPlay = () => { introPlayingRef.current = true; amb.volume = Math.min(volume, 0.12); };
+          const onIntroPlay = () => { introPlayingRef.current = true; amb.volume = Math.min(volume, 0.25); };
           const onIntroEnd  = () => { introPlayingRef.current = false; fadeVolume(volume, 400); };
           intro.addEventListener('play', onIntroPlay);
           intro.addEventListener('ended', onIntroEnd, { once: true });
@@ -155,7 +155,7 @@ export default function AmbientSpace({
       amb.volume = 0;
       await amb.play();
       // If intro is about to play and no song is playing, duck ambient; else fade up
-      if (!playingMusic && intro && introSrc && introPendingRef.current) amb.volume = Math.min(volume, 0.12);
+      if (!playingMusic && intro && introSrc && introPendingRef.current) amb.volume = Math.min(volume, 0.25);
       else { try { amb.muted = false; } catch {}; fadeVolume(volume, 300); }
       // If intro didn't get a chance to play on initial load, play it once now
       if (!playingMusic && intro && introSrc && introPendingRef.current) {

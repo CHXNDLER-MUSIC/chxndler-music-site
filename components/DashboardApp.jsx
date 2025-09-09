@@ -23,6 +23,7 @@ import { buildPlanetSongs } from "@/lib/planets";
 import { usePlayerStore } from "@/store/usePlayerStore";
 // import JoinAliensBox from "@/components/JoinAliensBox";
 import PrewarmThree from "@/components/PrewarmThree";
+import { track } from "@/lib/analytics";
 
 export default function DashboardApp() {
   const [channelIdx, setChannelIdx] = useState(0);
@@ -80,8 +81,11 @@ export default function DashboardApp() {
         setTimeout(() => {
           setBeamOnly(false);
           setPowerBusy(false);
-          setAmbientSuspended(false); // allow AmbientSpace to resume ambient and then VO
-        }, 200); // Reduced from 320ms to 200ms for faster HUD fade-in
+          // Only change ambient suspension if not interrupting welcome audio
+          if (!welcomeOnStartRef.current) {
+            setAmbientSuspended(false); // allow AmbientSpace to resume ambient and then VO
+          }
+        }, 150); // Further reduced to 150ms for even faster HUD fade-in after Start button
         // Only manage welcome audio during initial startup sequence, not manual power toggle
         if (pendingHomePower) {
           // Simulate SFX end callbacks without relying on an <audio> element
@@ -115,8 +119,10 @@ export default function DashboardApp() {
       // 1) Mount HUD hidden
       setShowHUD(true);
       setBeamOnly(true);
-      // Keep ambient paused until HUD fades in
-      try { setAmbientSuspended(true); } catch {}
+      // Keep ambient paused until HUD fades in, but don't interrupt welcome audio if playing
+      if (!welcomeOnStartRef.current) {
+        try { setAmbientSuspended(true); } catch {}
+      }
       // Do not start beam yet; will start after SFX ends (above)
     } else {
       // Powering off: play SFX immediately (done above), then fade beam out first,
@@ -125,7 +131,7 @@ export default function DashboardApp() {
       setTimeout(() => { 
         setBeamOnly(true); // hide HUD content immediately after beam fades
         setTimeout(() => { setShowHUD(false); setPowerBusy(false); }, 50); // unmount HUD right after
-      }, 200); // Reduced from 320ms to 200ms for faster HUD fade-out
+      }, 150); // Reduced to match faster HUD fade-in timing for consistency
     }
   }, [powerBusy, beamEnabled, showHUD]);
 
@@ -133,6 +139,19 @@ export default function DashboardApp() {
     const slug = id;
     const idx = tracks.findIndex(t => (t.slug||"") === slug || (t.slug||"").startsWith(slug));
     if (idx >= 0) {
+      // Track song selection from HUD
+      const selectedTrack = tracks[idx];
+      try {
+        track('song_selected', { 
+          song_slug: slug,
+          payload: { 
+            song_title: selectedTrack?.title || slug,
+            source: 'hud_panel',
+            track_index: idx
+          } 
+        });
+      } catch {}
+      
       setUserSelected(true);
       setHomeMode(false);
       setAmbientSuspended(true);
@@ -229,12 +248,15 @@ export default function DashboardApp() {
     };
   }, []);
 
-  // Spacebar toggle for music play/pause
+  // Spacebar and Pause key toggle for music play/pause
   React.useEffect(() => {
     const handleKeyDown = (e) => {
-      // Only trigger if spacebar is pressed and not in an input field or textarea
-      if (e.code === 'Space' && !['INPUT', 'TEXTAREA'].includes(e.target?.tagName)) {
-        e.preventDefault(); // Prevent page scroll
+      // Trigger on spacebar (not in input fields) or pause key (anywhere)
+      const isSpacebar = e.code === 'Space' && !['INPUT', 'TEXTAREA'].includes(e.target?.tagName);
+      const isPauseKey = e.code === 'Pause';
+      
+      if (isSpacebar || isPauseKey) {
+        e.preventDefault(); // Prevent default behavior
         setToggleSignal((n) => n + 1); // Trigger music toggle
         try { sfx.play('click', 0.6); } catch {} // Optional click sound feedback
       }
@@ -253,7 +275,7 @@ export default function DashboardApp() {
   const lightBeamStyle = useMemo(() => ({
     left: '50%',
     bottom: '40vh',
-    top: '42vh', // Moved up from 48vh to 42vh (6vh higher)
+    top: '50vh', // Pulled down from 42vh to 50vh (8vh lower)
     width: 'min(1400px, 85vw)',
     transform: 'translateX(-50%)',
     opacity: beamEnabled ? (cardModalOpen ? 0.3 : 1) : 0,
@@ -321,10 +343,10 @@ export default function DashboardApp() {
             // Keep ambient paused until UI beam + HUD have faded in
             setAmbientSuspended(true);
             // Begin HUD power sequence: plays join-alien SFX, then beam fade-in, then HUD fade-in
-            // Add delay after warp to let the user settle before light beam appears
+            // Add brief delay after warp, then immediately start HUD sequence
             setTimeout(() => {
               try { triggerHudPower(true); } catch {}
-            }, 1000); // 1 second delay after warp completes
+            }, 400); // Reduced to 400ms for faster HUD appearance
           }
           if (pendingTrackPlay) {
             // Do not start audio here; wait for onFlyEnd so playback begins after warp SFX ends.
@@ -342,7 +364,14 @@ export default function DashboardApp() {
         POS={POS}
         playing={isPlaying}
         showUI={showOverlayUI}
-        onPowerToggle={() => { triggerHudPower(undefined); }}
+        onPowerToggle={() => { 
+          // Manual power toggle should not start new welcome audio, but don't interrupt if it's already playing
+          if (!welcomeOnStartRef.current) {
+            // Only disable welcome intro if it's not currently playing
+            setHomeIntroEnabled(false);
+          }
+          triggerHudPower(undefined); 
+        }}
         onLaunch={() => {
           // Start: hide all UI first, then warp overlay + sound, then land on CHXNDLER homepage
           // Hide HUD, comms, join, and power buttons during warp

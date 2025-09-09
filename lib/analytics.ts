@@ -95,6 +95,7 @@ export interface ClickData {
     title: string;
   };
   userAgent: string;
+  enhancedLabel?: string;
 }
 
 // Click tracking functions
@@ -130,6 +131,48 @@ export function trackClick(clickData: ClickData) {
       user_agent: clickData.userAgent
     }
   });
+}
+
+// Local storage constants
+const CLICKS_STORAGE_KEY = 'chx_click_analytics';
+const MAX_CLICKS = 1000;
+
+// Client-side click analytics functions for dashboard
+export function getClickAnalyticsLocal(): ClickData[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const stored = localStorage.getItem(CLICKS_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.warn('Failed to load click analytics from localStorage:', error);
+    return [];
+  }
+}
+
+export function storeClickData(clickData: ClickData) {
+  if (typeof window === 'undefined') return;
+  try {
+    const existing = getClickAnalyticsLocal();
+    existing.push(clickData);
+    
+    // Keep only the most recent clicks
+    if (existing.length > MAX_CLICKS) {
+      existing.splice(0, existing.length - MAX_CLICKS);
+    }
+    
+    localStorage.setItem(CLICKS_STORAGE_KEY, JSON.stringify(existing));
+  } catch (error) {
+    console.warn('Failed to store click analytics:', error);
+  }
+}
+
+export function clearClickAnalyticsLocal() {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(CLICKS_STORAGE_KEY);
+  } catch (error) {
+    console.warn('Failed to clear click analytics:', error);
+  }
 }
 
 // Server-side analytics functions (for admin dashboard)
