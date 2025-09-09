@@ -156,7 +156,14 @@ export default function HUDPanel({
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => {
     if (!showCard) return;
-    const onKey = (e) => { if (e.key === 'Escape') setShowCard(false); };
+    const onKey = (e) => { 
+      if (e.key === 'Escape') {
+        setShowCard(false);
+        // Dispatch event to notify DashboardApp that card modal closed
+        const event = new CustomEvent('hideCoverCard');
+        window.dispatchEvent(event);
+      }
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [showCard]);
@@ -237,7 +244,7 @@ export default function HUDPanel({
           {/* Background removed: keep HUD box transparent */}
         {/* Single blue outline wrapping the HUD content (amped glow) */}
         <div className={`relative rounded-2xl border border-[#19E3FF]/90 ring-2 ring-[#19E3FF]/50 ${inConsole ? 'p-2' : 'p-4'}`} style={{
-          background: 'linear-gradient(180deg, rgba(25,227,255,0.35), rgba(25,227,255,0.55) 25%, rgba(25,227,255,0.35) 60%, rgba(25,227,255,0.15) 85%, rgba(25,227,255,0.0) 100%)',
+          background: 'rgba(25,227,255,0.45)',
           boxShadow: '0 0 50px rgba(25,227,255,0.35), 0 0 70px rgba(25,227,255,0.6), 0 0 24px rgba(25,227,255,0.85)'
         }}>
           {/* Background removed for transparent HUD */}
@@ -430,6 +437,9 @@ export default function HUDPanel({
             try { sfx.play('/audio/close.mp3', 0.7); } catch {}
             try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
             setShowCard(false);
+            // Dispatch event to notify DashboardApp that card modal closed
+            const event = new CustomEvent('hideCoverCard');
+            window.dispatchEvent(event);
           }}
         >
           <div
@@ -588,6 +598,9 @@ export default function HUDPanel({
                 try { sfx.play('/audio/close.mp3', 0.7); } catch {}
                 try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
                 setShowCard(false);
+                // Dispatch event to notify DashboardApp that card modal closed
+                const event = new CustomEvent('hideCoverCard');
+                window.dispatchEvent(event);
               }}
               className="absolute -top-3 -right-3 rounded-full bg-[#19E3FF] text-black font-bold w-8 h-8 shadow-[0_0_20px_rgba(25,227,255,0.8)]"
               title="Close"
@@ -598,7 +611,7 @@ export default function HUDPanel({
       <style jsx>{`
         .card-modal{
           max-width: min(60vw, 360px);
-          background: linear-gradient(180deg, rgba(12,24,30,0.6), rgba(12,24,30,0.35));
+          background: rgba(25,227,255,0.45);
           box-shadow: 0 0 60px rgba(25,227,255,0.45), inset 0 0 0 1px rgba(25,227,255,0.35);
         }
         .tilt-wrap{ perspective: 1200px; transform-style: preserve-3d; }

@@ -41,10 +41,7 @@ export default function DashboardApp() {
   const [beamOnly, setBeamOnly] = useState(true);
   const [beamEnabled, setBeamEnabled] = useState(false);
   const [powerBusy, setPowerBusy] = useState(false);
-  const [showPowerBtn, setShowPowerBtn] = useState(false);
   const [showOverlayUI, setShowOverlayUI] = useState(false); // comms + join buttons
-  const powerRef = React.useRef(null);
-  const powerHoverRef = React.useRef(null);
   const [allowWarp, setAllowWarp] = useState(false);
   const [homeMode, setHomeMode] = useState(false);
   const [homeIntroEnabled, setHomeIntroEnabled] = useState(true);
@@ -54,6 +51,7 @@ export default function DashboardApp() {
   const [ambientSuspended, setAmbientSuspended] = useState(false);
   const [firstStartDone, setFirstStartDone] = useState(false);
   const welcomeOnStartRef = React.useRef(false); // signals that welcome VO should play now
+  const [cardModalOpen, setCardModalOpen] = useState(false); // track card modal state for beam dimming
   const SPACE_SKY = { webm: "/skies/space.webm", mp4: "/skies/space.mp4", key: "space" };
 
   // Centralized HUD power sequencing: play SFX then run beam/HUD fades
@@ -69,16 +67,17 @@ export default function DashboardApp() {
         try { sfx.play('join', 0.9); } catch {}
         // Fade in comms/power/join together right as SFX starts
         setShowOverlayUI(true);
-        setShowPowerBtn(true);
         // Keep ambient paused until after HUD fades in
-        // Start light beam immediately with SFX
-        try { setBeamEnabled(true); } catch {}
-        // Fade HUD in shortly after SFX starts (and beam is visible)
+        // Start light beam after a brief delay to let audio begin
+        setTimeout(() => {
+          try { setBeamEnabled(true); } catch {}
+        }, 50);
+        // Fade HUD in after beam starts fading in (more sequential)
         setTimeout(() => {
           setBeamOnly(false);
           setPowerBusy(false);
           setAmbientSuspended(false); // allow AmbientSpace to resume ambient and then VO
-        }, 120);
+        }, 400); // Increased delay for smoother sequencing
         // Simulate SFX end callbacks without relying on an <audio> element
         const onSfxEndMs = 1200;
         setTimeout(() => {
@@ -209,11 +208,32 @@ export default function DashboardApp() {
   // Disable auto actions on random interactions; nothing should trigger on click/touch/move
   React.useEffect(() => { /* intentionally empty */ }, [mounted]);
 
+  // Listen for card modal events to dim light beam
+  React.useEffect(() => {
+    const handleShowCard = () => setCardModalOpen(true);
+    const handleHideCard = () => setCardModalOpen(false);
+    
+    window.addEventListener('showCoverCard', handleShowCard);
+    window.addEventListener('hideCoverCard', handleHideCard);
+    
+    return () => {
+      window.removeEventListener('showCoverCard', handleShowCard);
+      window.removeEventListener('hideCoverCard', handleHideCard);
+    };
+  }, []);
+
   if (!mounted) return null;
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
-      <PrewarmThree />
-      <AmbientSpace ambientSrc="/audio/space-music.mp3" introSrc={homeMode && homeIntroEnabled ? "/audio/welcome-to-the-heartverse.mp3" : undefined} playingMusic={isPlaying} suspend={warpActive || ambientSuspended} />
+      <div 
+        className="absolute inset-0"
+        style={{
+          filter: cardModalOpen ? 'blur(2px)' : 'none',
+          transition: 'filter 300ms ease'
+        }}
+      >
+        <PrewarmThree />
+        <AmbientSpace ambientSrc="/audio/space-music.mp3" introSrc={homeMode && homeIntroEnabled ? "/audio/welcome-to-the-heartverse.mp3" : undefined} playingMusic={isPlaying} suspend={warpActive || ambientSuspended} />
       <SkyboxVideo
         brightness={0.95}
         srcWebm={sky.webm}
@@ -284,6 +304,7 @@ export default function DashboardApp() {
         POS={POS}
         playing={isPlaying}
         showUI={showOverlayUI}
+        onPowerToggle={() => { triggerHudPower(undefined); }}
         onLaunch={() => {
           // Start: warp overlay + sound, then land on CHXNDLER homepage
           // Hard-stop any main track audio so Start never blips a song
@@ -305,15 +326,17 @@ export default function DashboardApp() {
         }}
       />
       {/* Removed Join the Aliens dashboard panel per request */}
+      </div> {/* Close blur wrapper */}
 
       <Slot
+        className="slot-container"
         rects={[
-          // Widen HUD even more: extend ~5vw per side vs original
-          { minWidth: 420, maxWidth: 460, top: -1.2, left: 21.5, width: 62, height: 14, orientation: 'portrait' },
-          { maxWidth: 419, top: 0.0, left: 22, width: 61, height: 14, orientation: 'portrait' },
-          { minWidth: 480, maxWidth: 740, top: -1.2, left: 20, width: 68, height: 14, orientation: 'landscape' },
-          { minWidth: 741, maxWidth: 1024, top: -0.8, left: 19.5, width: 64, height: 15 },
-          { minWidth: 1025, top: -1.2, left: 19, width: 66, height: 15 },
+          // Widen HUD much more: extend further on both sides, especially for mobile
+          { minWidth: 420, maxWidth: 460, top: -1.2, left: 18, width: 68, height: 14, orientation: 'portrait' },
+          { maxWidth: 419, top: 0.0, left: 16, width: 72, height: 14, orientation: 'portrait' },
+          { minWidth: 480, maxWidth: 740, top: -8.0, left: 16, width: 74, height: 14, orientation: 'landscape' }, // Moved up significantly for mobile landscape
+          { minWidth: 741, maxWidth: 1024, top: -0.8, left: 15.5, width: 72, height: 15 },
+          { minWidth: 1025, top: -1.2, left: 15, width: 74, height: 15 },
         ]}
       >
         <div className="relative h-full w-full p-0" style={{ overflow: 'visible' }} suppressHydrationWarning>
@@ -331,33 +354,6 @@ export default function DashboardApp() {
               />
             </div>
           ) : null}
-          {/* Power button below the beam base (hidden until Start is clicked) */}
-            {showPowerBtn ? (
-              <button
-                type="button"
-                className="pointer-events-auto power-btn"
-                onMouseEnter={() => { try { const a = powerHoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
-                onClick={() => { triggerHudPower(undefined); }}
-                aria-label="Power"
-                title="Power"
-                style={{
-                  position: 'fixed',
-                  left: 'calc(50% - 30px)', // recenter for slightly smaller size
-                  top: 'calc(50vh + 88px)', // moved down slightly
-                  width: 60, height: 60, borderRadius: 9999, zIndex: 95,
-                  opacity: showOverlayUI ? 1 : 0,
-                  transition: 'opacity 300ms ease',
-                  pointerEvents: showOverlayUI ? 'auto' : 'none',
-                }}
-              >
-                <span className="sr-only">Toggle HUD Power</span>
-                <span className="power-glyph mask-element-power" aria-hidden>
-                  <img src="/elements/power.png" alt="" className="power-icon" onError={(e)=>{ try { const img = e.currentTarget; img.onerror = null; img.src = '/elements/lightning.png'; } catch {} }} />
-                </span>
-              </button>
-            ) : null}
-            <audio ref={powerRef} src="/audio/join-alien.mp3" preload="auto" playsInline />
-            <audio ref={powerHoverRef} src="/audio/hover.mp3" preload="auto" playsInline />
             {/* Click-to-activate overlay on opening screen: turn HUD on when area is tapped */}
             {!showHUD ? (
               <button
@@ -369,71 +365,6 @@ export default function DashboardApp() {
                 onClick={() => { setHomeMode(true); setHomeIntroEnabled(false); setUserSelected(false); setLinks({ spotify: LINKS.spotify, apple: LINKS.apple }); triggerHudPower(true); }}
               />
             ) : null}
-            <style jsx>{`
-              .power-btn{
-                position: relative;
-                display:grid; place-items:center;
-                border-radius:9999px;
-                /* Match comms/join hologram style, tinted blue */
-                background:
-                  radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
-                  linear-gradient(180deg, rgba(8,16,26,.45), rgba(0,0,0,.38));
-                border:1px solid rgba(255,255,255,.14);
-                box-shadow:
-                  0 14px 28px rgba(0,0,0,.6),
-                  0 0 30px #19E3FF88,
-                  0 0 80px #19E3FF55,
-                  inset 0 1px 0 rgba(255,255,255,.22),
-                  inset 0 -6px 14px rgba(0,0,0,.6);
-                backdrop-filter: blur(8px);
-                -webkit-backdrop-filter: blur(8px);
-                transition: transform .15s ease, box-shadow .2s ease, filter .18s ease;
-                animation: powerPulse 2.6s ease-in-out infinite;
-              }
-              .power-btn::before{ /* outer halo to match hubs */
-                content:""; position:absolute; inset:-1%; border-radius:9999px; pointer-events:none;
-                box-shadow: 0 0 46px #19E3FFCC, 0 0 86px #19E3FF88;
-              }
-              .power-btn::after{ /* sheen + scanlines */
-                content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none; mix-blend-mode:screen; opacity:.6;
-                background:
-                  linear-gradient(120deg, rgba(255,255,255,.18), rgba(255,255,255,0) 60%),
-                  repeating-linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.08) 1px, rgba(0,0,0,0) 1px, rgba(0,0,0,0) 3px);
-                transform: translateX(-130%);
-                animation: powerSheen 3s ease-in-out infinite;
-              }
-              .power-glyph{ position:relative; display:inline-flex; align-items:center; justify-content:center; color:#fff;
-                /* Blue glow coming through the icon */
-                mix-blend-mode: screen;
-                filter: brightness(1.1) saturate(1.2)
-                  drop-shadow(0 0 18px #19E3FF)
-                  drop-shadow(0 0 42px #19E3FF);
-              }
-              .power-icon{ width: 86%; height: 86%; object-fit: contain; display:block; filter:
-                saturate(1.1) brightness(1.05)
-                drop-shadow(0 0 16px #19E3FF)
-                drop-shadow(0 0 36px #19E3FF);
-              }
-              /* Inner cyan glow masked to the power symbol shape */
-              .power-glyph::before{
-                content:""; position:absolute; inset:14%; pointer-events:none; mix-blend-mode:screen;
-                background: radial-gradient(closest-side, #19E3FFCC, #19E3FF55 60%, transparent 78%);
-                filter: blur(6px) saturate(1.15) brightness(1.05);
-              }
-              .power-btn:hover{
-                transform: scale(1.07);
-                box-shadow:
-                  0 18px 34px rgba(0,0,0,.68),
-                  0 0 56px #19E3FF,
-                  0 0 140px #19E3FFAA,
-                  inset 0 1px 0 rgba(255,255,255,.28),
-                  inset 0 -8px 18px rgba(0,0,0,.65);
-                filter: brightness(1.08) saturate(1.15);
-              }
-              .power-btn:active{ transform: scale(.96); }
-              @keyframes powerPulse{ 0%,100%{ filter: brightness(1) } 50%{ filter: brightness(1.08) } }
-              @keyframes powerSheen { 0% { transform: translateX(-130%);} 55% { transform: translateX(130%);} 100% { transform: translateX(130%);} }
-            `}</style>
         </div>
         <div className="hidden">
           <MediaDock
@@ -451,17 +382,17 @@ export default function DashboardApp() {
         </div>
       </Slot>
 
-      {/* Simplified upward shooting light beam */}
+      {/* Responsive upward shooting light beam - wider on mobile to match HUD proportions */}
       {mounted && (beamEnabled || showHUD) ? (
         <div 
-          className="fixed pointer-events-none z-30"
+          className="fixed pointer-events-none z-10"
           style={{
             left: '50%',
             bottom: '40vh', // Move whole light beam up slightly
-            top: '42vh', // Make top of light beam very slightly higher
-            width: '1200px', // Wide to match HUD display size
+            top: '48vh', // Make light beam shorter by moving top down
+            width: 'min(1400px, 85vw)', // Responsive width: wider on mobile, capped on desktop
             transform: 'translateX(-50%)',
-            opacity: beamEnabled ? 1 : 0,
+            opacity: beamEnabled ? (cardModalOpen ? 0.3 : 1) : 0,
             transition: 'opacity 300ms ease'
           }}
         >
@@ -469,14 +400,30 @@ export default function DashboardApp() {
           <div 
             style={{
               position: 'absolute',
-              left: '5%', 
-              right: '5%', 
+              left: '3%', // Reduced from 5% to make beam wider on mobile
+              right: '3%', // Reduced from 5% to make beam wider on mobile
               bottom: '0px', 
               top: '0%',
-              clipPath: 'polygon(48% 100%, 52% 100%, 3% 0, 97% 0)', // Made top of light beam very very slightly less wide
-              background: 'linear-gradient(180deg, rgba(25,227,255,0.35), rgba(25,227,255,0.55) 25%, rgba(25,227,255,0.35) 60%, rgba(25,227,255,0.15) 85%, rgba(25,227,255,0.0) 100%)',
+              clipPath: 'polygon(48% 100%, 52% 100%, 1% 0, 99% 0)', // Wider beam top to match wider HUD
+              background: `
+                linear-gradient(180deg, 
+                  rgba(25,227,255,0.0) 0%, 
+                  rgba(25,227,255,0.15) 15%, 
+                  rgba(25,227,255,0.35) 40%, 
+                  rgba(25,227,255,0.55) 65%, 
+                  rgba(25,227,255,0.35) 85%, 
+                  rgba(25,227,255,0.0) 100%),
+                repeating-linear-gradient(180deg,
+                  transparent 0px,
+                  rgba(25,227,255,0.1) 20px,
+                  rgba(25,227,255,0.2) 40px,
+                  rgba(25,227,255,0.1) 60px,
+                  transparent 80px)
+              `,
+              backgroundSize: '100% 100%, 100% 160px',
               filter: 'blur(8px)',
-              mixBlendMode: 'screen'
+              mixBlendMode: 'screen',
+              animation: 'beamFlow 3s linear infinite'
             }}
           />
         </div>
@@ -489,6 +436,7 @@ export default function DashboardApp() {
           onToggle={() => setToggleSignal((n) => n + 1)}
         />
       ) : null}
+
     </main>
   );
 }

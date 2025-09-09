@@ -12,12 +12,14 @@ export default function SteeringWheelOverlay({
   POS,
   playing,
   showUI = true,
+  onPowerToggle,
 }: {
   logoSrc?: string;
   onLaunch: () => void;
   POS: any;
   playing?: boolean;
   showUI?: boolean;
+  onPowerToggle?: () => void;
 }) {
   const sfxRef = useRef<HTMLAudioElement|null>(null);
   const pauseRef = useRef<HTMLAudioElement|null>(null);
@@ -159,7 +161,7 @@ export default function SteeringWheelOverlay({
           <div
             style={{
               position: "absolute",
-              top: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${vs/2}px + ${(POS?.wheel?.comms?.dyPx ?? 0) + 10}px)`,
+              top: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${vs/2}px + ${(POS?.wheel?.comms?.dyPx ?? 0) + 2}px)`, // Moved up 8px (was +10px, now +2px)
               left: vconf.centerHoriz
                 ? `calc(50vw - ${vs/2}px + ${(POS?.wheel?.comms?.dxPx ?? 0) + 10}px)`
                 : `calc(${(pp.leftVw + (vconf.offsetVw || 0))}vw - ${vs/2}px + ${(POS?.wheel?.comms?.dxPx ?? 0) + 10}px)`,
@@ -204,7 +206,7 @@ export default function SteeringWheelOverlay({
           <div
             style={{
               position: "absolute",
-              top: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${vs/2}px + ${jdy}px - 4px)`, // Moved up 4px
+              top: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${vs/2}px + ${jdy}px - 12px)`, // Moved up 12px (was -4px, now -12px)
               left: vconf.centerHoriz
                 ? `calc(50vw - ${vs/2}px + ${jdx}px)`
                 : `calc(${(pp.leftVw + (vconf.offsetVw || 0))}vw - ${vs/2}px + ${jdx}px)`,
@@ -221,6 +223,55 @@ export default function SteeringWheelOverlay({
           </div>
         );
       })()}
+
+      {/* Power button positioned above wheel center, horizontally centered on screen */}
+      {(() => {
+        const powerCfg: any = (POS?.wheel as any)?.power || {};
+        const powerSize: number = typeof powerCfg.sizePx === 'number' ? powerCfg.sizePx : 60;
+        const pdx = (typeof powerCfg.dxPx === 'number') ? powerCfg.dxPx : 0;
+        const pdy = (typeof powerCfg.dyPx === 'number') ? powerCfg.dyPx : -80;
+        const centerHorizontally = powerCfg.centerHoriz === true;
+        return (
+          <div
+            style={{
+              position: "absolute",
+              top: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${vs/2}px + ${pdy}px)`,
+              left: centerHorizontally
+                ? `calc(50vw - ${powerSize/2}px)`
+                : (vconf.centerHoriz
+                  ? `calc(50vw - ${vs/2}px + ${pdx}px - ${powerSize/2}px)`
+                  : `calc(${(pp.leftVw + (vconf.offsetVw || 0))}vw - ${vs/2}px + ${pdx}px - ${powerSize/2}px)`),
+              zIndex: 95,
+              pointerEvents: showUI ? 'auto' : 'none',
+            }}
+          >
+            {showUI && onPowerToggle ? (
+              <button
+                type="button"
+                className="power-btn"
+                onMouseEnter={() => { try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
+                onClick={onPowerToggle}
+                aria-label="Power"
+                title="Power"
+                style={{
+                  width: powerSize, 
+                  height: powerSize, 
+                  borderRadius: 9999,
+                  opacity: 1,
+                  transition: 'opacity 300ms ease, transform 150ms ease, box-shadow 200ms ease, filter 180ms ease',
+                  pointerEvents: 'auto',
+                }}
+              >
+                <span className="sr-only">Toggle HUD Power</span>
+                <span className="power-glyph" aria-hidden>
+                  <img src="/elements/power.png" alt="" className="power-icon" onError={(e)=>{ try { const img = e.currentTarget; img.onerror = null; img.src = '/elements/lightning.png'; } catch {} }} />
+                </span>
+              </button>
+            ) : null}
+          </div>
+        );
+      })()}
+
       {/* Start button anchored on the wheel */}
       <button
         onClick={handleLaunch}
@@ -375,6 +426,71 @@ export default function SteeringWheelOverlay({
             drop-shadow(0 0 26px #19E3FF)
             drop-shadow(0 0 54px #19E3FF);
         }
+        
+        /* Power button styles */
+        .power-btn{
+          position: relative;
+          display:grid; place-items:center;
+          border-radius:9999px;
+          /* Match comms/join hologram style, tinted blue */
+          background:
+            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
+            rgba(25,227,255,0.45);
+          border:1px solid rgba(255,255,255,.14);
+          box-shadow:
+            0 14px 28px rgba(0,0,0,.6),
+            0 0 30px #19E3FF88,
+            0 0 80px #19E3FF55,
+            inset 0 1px 0 rgba(255,255,255,.22),
+            inset 0 -6px 14px rgba(0,0,0,.6);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          transition: transform .15s ease, box-shadow .2s ease, filter .18s ease;
+          animation: powerPulse 2.6s ease-in-out infinite;
+        }
+        .power-btn::before{ /* outer halo to match hubs */
+          content:""; position:absolute; inset:-1%; border-radius:9999px; pointer-events:none;
+          box-shadow: 0 0 46px #19E3FFCC, 0 0 86px #19E3FF88;
+        }
+        .power-btn::after{ /* sheen + scanlines */
+          content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none; mix-blend-mode:screen; opacity:.6;
+          background:
+            linear-gradient(120deg, rgba(255,255,255,.18), rgba(255,255,255,0) 60%),
+            repeating-linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.08) 1px, rgba(0,0,0,0) 1px, rgba(0,0,0,0) 3px);
+          transform: translateX(-130%);
+          animation: powerSheen 3s ease-in-out infinite;
+        }
+        .power-glyph{ position:relative; display:inline-flex; align-items:center; justify-content:center; color:#fff;
+          /* Blue glow coming through the icon */
+          mix-blend-mode: screen;
+          filter: brightness(1.1) saturate(1.2)
+            drop-shadow(0 0 18px #19E3FF)
+            drop-shadow(0 0 42px #19E3FF);
+        }
+        .power-icon{ width: 86%; height: 86%; object-fit: contain; display:block; filter:
+          saturate(1.1) brightness(1.05)
+          drop-shadow(0 0 16px #19E3FF)
+          drop-shadow(0 0 36px #19E3FF);
+        }
+        /* Inner cyan glow masked to the power symbol shape */
+        .power-glyph::before{
+          content:""; position:absolute; inset:14%; pointer-events:none; mix-blend-mode:screen;
+          background: radial-gradient(closest-side, #19E3FFCC, #19E3FF55 60%, transparent 78%);
+          filter: blur(6px) saturate(1.15) brightness(1.05);
+        }
+        .power-btn:hover{
+          transform: scale(1.07);
+          box-shadow:
+            0 18px 34px rgba(0,0,0,.68),
+            0 0 56px #19E3FF,
+            0 0 140px #19E3FFAA,
+            inset 0 1px 0 rgba(255,255,255,.28),
+            inset 0 -8px 18px rgba(0,0,0,.65);
+          filter: brightness(1.08) saturate(1.15);
+        }
+        .power-btn:active{ transform: scale(.96); }
+        @keyframes powerPulse{ 0%,100%{ filter: brightness(1) } 50%{ filter: brightness(1.08) } }
+        @keyframes powerSheen { 0% { transform: translateX(-130%);} 55% { transform: translateX(130%);} 100% { transform: translateX(130%);} }
       `}</style>
 
       <audio ref={sfxRef} src="/audio/launch.MP3" preload="auto" />

@@ -31,7 +31,7 @@ export default function CoverHologram({ src, title }: { src: string; title: stri
 
   return (
     <motion.div
-      className={`absolute left-1/2 z-30 -translate-x-1/2 ${cockpit.cover.glass} rounded-2xl cursor-pointer hover:scale-105 transition-transform duration-200 w-[180px] md:w-[180px] max-md:w-[140px]`}
+      className={`absolute left-1/2 z-30 -translate-x-1/2 ${cockpit.cover.glass} rounded-2xl cursor-pointer hover:scale-105 transition-transform duration-200 w-[180px] md:w-[180px] max-md:w-[100px]`}
       style={{ 
         top: "calc(50% + 90px)", 
         transform: "translateX(-50%)"
@@ -178,7 +178,7 @@ export default function CoverHologram({ src, title }: { src: string; title: stri
       <style jsx>{`
         .card-modal{
           max-width: min(60vw, 360px);
-          background: linear-gradient(180deg, rgba(12,24,30,0.6), rgba(12,24,30,0.35));
+          background: rgba(25,227,255,0.45);
           box-shadow: 0 0 60px rgba(25,227,255,0.45), inset 0 0 0 1px rgba(25,227,255,0.35);
         }
         .tilt-wrap{ perspective: 1200px; transform-style: preserve-3d; }

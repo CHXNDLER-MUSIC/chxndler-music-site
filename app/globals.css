@@ -157,3 +157,28 @@ html, body { height: 100%; background:#000; color:#fff; }
 /* Mask image classes for stable URLs */
 .mask-element-power::before { -webkit-mask-image: url('/elements/power.png'); mask-image: url('/elements/power.png'); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-size: contain; mask-size: contain; -webkit-mask-position: center; mask-position: center; }
 .mask-element-comms::before { -webkit-mask-image: url('/elements/comms.png'); mask-image: url('/elements/comms.png'); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-size: contain; mask-size: contain; -webkit-mask-position: center; mask-position: center; }
+
+/* Light beam animation keyframes */
+@keyframes beamFlow {
+  0% {
+    background-position: 0% 0%, 0% 0%;
+  }
+  100% {
+    background-position: 0% 0%, 0% -160px;
+  }
+}
+
+/* Mobile landscape HUD positioning adjustments */
+@media screen and (orientation: landscape) and (max-height: 500px) {
+  /* Target mobile devices in landscape with limited vertical space */
+  .slot-container {
+    transform: translateY(-15vh) !important;
+  }
+}
+
+@media screen and (orientation: landscape) and (max-height: 400px) {
+  /* Very short screens (phones in landscape) need even more adjustment */
+  .slot-container {
+    transform: translateY(-20vh) !important;
+  }
+}

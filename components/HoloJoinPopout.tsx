@@ -112,19 +112,19 @@ export default function HoloJoinPopout({
           position:relative; display:grid; place-items:center; border-radius:9999px; cursor:pointer;
           background:
             radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
-            linear-gradient(180deg, rgba(8,16,26,.45), rgba(0,0,0,.38));
+            rgba(25,227,255,0.45);
           border:1px solid rgba(255,255,255,.14);
-          box-shadow: 0 14px 28px rgba(0,0,0,.6), 0 0 30px ${hubColor}88, 0 0 80px ${hubColor}55, inset 0 1px 0 rgba(255,255,255,.22), inset 0 -6px 14px rgba(0,0,0,.6);
+          box-shadow: 0 14px 28px rgba(0,0,0,.6), 0 0 20px ${hubColor}66, 0 0 50px ${hubColor}33, inset 0 1px 0 rgba(255,255,255,.22), inset 0 -6px 14px rgba(0,0,0,.6);
           backdrop-filter: blur(8px);
           -webkit-backdrop-filter: blur(8px);
           animation: holoPulse 2.6s ease-in-out infinite;
           transition: transform 150ms ease, box-shadow 200ms ease, filter 180ms ease;
         }
-        .hub::before{ content:""; position:absolute; inset:-4%; border-radius:9999px; pointer-events:none; box-shadow: 0 0 38px ${hubColor}88, 0 0 110px ${hubColor}55; }
+        .hub::before{ content:""; position:absolute; inset:-4%; border-radius:9999px; pointer-events:none; box-shadow: 0 0 24px ${hubColor}66, 0 0 72px ${hubColor}33; }
         .hub::after{ content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none; mix-blend-mode:screen; opacity:.6; background:
             linear-gradient(120deg, rgba(255,255,255,.18), rgba(255,255,255,0) 60%), repeating-linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.08) 1px, rgba(0,0,0,0) 1px, rgba(0,0,0,0) 3px);
           transform: translateX(-130%); animation: holoSheen 3s ease-in-out infinite; }
-        .hub:hover{ transform: scale(1.07); box-shadow: 0 18px 34px rgba(0,0,0,.68), 0 0 56px ${hubColor}, 0 0 140px ${hubColor}AA, inset 0 1px 0 rgba(255,255,255,.28), inset 0 -8px 18px rgba(0,0,0,.65); filter: brightness(1.08) saturate(1.15); }
+        .hub:hover{ transform: scale(1.07); box-shadow: 0 18px 34px rgba(0,0,0,.68), 0 0 36px ${hubColor}DD, 0 0 90px ${hubColor}77, inset 0 1px 0 rgba(255,255,255,.28), inset 0 -8px 18px rgba(0,0,0,.65); filter: brightness(1.08) saturate(1.15); }
         .hub:active{ transform: scale(.96); }
         .hub-icon{ width:${Math.round(size*0.92)}px; height:${Math.round(size*0.92)}px; object-fit: contain; display:block; transition: filter 180ms ease, transform 180ms ease;
           /* Glow using hubColor (per-button) */

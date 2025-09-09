@@ -232,12 +232,12 @@ export default function HoloHubMenu({
           display:grid; place-items:center;
           background:
             radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
-            linear-gradient(180deg, rgba(8,16,26,.45), rgba(0,0,0,.38));
+            rgba(25,227,255,0.45);
           border:1px solid rgba(255,255,255,.14);
           box-shadow:
             0 14px 28px rgba(0,0,0,.6),
-            0 0 42px ${hubColor}AA,
-            0 0 120px ${hubColor}66,
+            0 0 26px ${hubColor}88,
+            0 0 68px ${hubColor}44,
             inset 0 1px 0 rgba(255,255,255,.22),
             inset 0 -6px 14px rgba(0,0,0,.6);
           backdrop-filter: blur(8px);
@@ -246,8 +246,8 @@ export default function HoloHubMenu({
           transition: transform 150ms ease, box-shadow 200ms ease, filter 180ms ease;
         }
         .hub::before{ content:""; position:absolute; inset:-1%; border-radius:9999px; pointer-events:none;
-          /* tighter halo with brighter core to reduce outside space */
-          box-shadow: 0 0 46px ${hubColor}CC, 0 0 86px ${hubColor}88;
+          /* reduced halo glow */
+          box-shadow: 0 0 30px ${hubColor}AA, 0 0 56px ${hubColor}66;
         }
         .hub::after{ content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none; mix-blend-mode:screen; opacity:.6;
           background:
@@ -258,8 +258,8 @@ export default function HoloHubMenu({
         }
         .hub:hover{ transform: scale(1.07); box-shadow:
             0 18px 34px rgba(0,0,0,.68),
-            0 0 72px ${hubColor},
-            0 0 200px ${hubColor}AA,
+            0 0 46px ${hubColor}DD,
+            0 0 120px ${hubColor}77,
             inset 0 1px 0 rgba(255,255,255,.28), inset 0 -8px 18px rgba(0,0,0,.65);
           filter: brightness(1.08) saturate(1.15);
         }
@@ -282,7 +282,7 @@ export default function HoloHubMenu({
           /* Lighter, glassy base with subtle tint */
           background:
             radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
-            linear-gradient(180deg, rgba(8,16,26,.45), rgba(0,0,0,.38));
+            rgba(25,227,255,0.45);
           border: 1px solid rgba(255,255,255,.14);
           box-shadow:
             0 12px 26px rgba(0,0,0,.55),
