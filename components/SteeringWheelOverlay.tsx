@@ -224,12 +224,12 @@ export default function SteeringWheelOverlay({
         );
       })()}
 
-      {/* Power button positioned above wheel center, horizontally centered on screen */}
+      {/* Power button positioned way down below wheel center, horizontally centered on screen */}
       {(() => {
         const powerCfg: any = (POS?.wheel as any)?.power || {};
         const powerSize: number = typeof powerCfg.sizePx === 'number' ? powerCfg.sizePx : 60;
         const pdx = (typeof powerCfg.dxPx === 'number') ? powerCfg.dxPx : 0;
-        const pdy = (typeof powerCfg.dyPx === 'number') ? powerCfg.dyPx : -80;
+        const pdy = (typeof powerCfg.dyPx === 'number') ? powerCfg.dyPx : 270;
         const centerHorizontally = powerCfg.centerHoriz === true;
         return (
           <div

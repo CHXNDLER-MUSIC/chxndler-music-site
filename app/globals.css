@@ -182,3 +182,48 @@ html, body { height: 100%; background:#000; color:#fff; }
     transform: translateY(-20vh) !important;
   }
 }
+
+/* Mobile performance optimizations */
+@media screen and (max-width: 768px) {
+  /* Reduce motion complexity on mobile */
+  @media (prefers-reduced-motion: no-preference) {
+    * {
+      /* Use GPU acceleration for better performance */
+      transform: translateZ(0);
+      /* Optimize animations for mobile */
+      will-change: transform, opacity;
+    }
+    
+    /* Simplify complex animations on mobile */
+    .light-beam-animation {
+      animation-duration: 4s !important; /* Slower = less CPU intensive */
+    }
+    
+    /* Optimize backdrop filters */
+    .backdrop-blur {
+      backdrop-filter: blur(4px) !important; /* Less blur = better performance */
+    }
+  }
+  
+  /* Disable complex animations on lower-end devices */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Very small screens - aggressive optimizations */
+@media screen and (max-width: 480px) {
+  /* Reduce visual complexity */
+  .filmgrain {
+    opacity: 0.06 !important; /* Less grain = better performance */
+  }
+  
+  /* Simplify shadows and effects */
+  .complex-shadow {
+    box-shadow: 0 0 20px rgba(25,227,255,0.3) !important;
+  }
+}

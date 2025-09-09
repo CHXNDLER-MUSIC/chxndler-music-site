@@ -373,7 +373,30 @@ export default function HUDPanel({
           </div>
           {/* Right rail: cover art + dropdown list */}
           <aside className="relative flex flex-col items-end gap-3 translate-x-0">
-            <div className="mt-0 pr-0 self-end mr-1 md:mr-2 lg:mr-3" style={{ width: inConsole ? 200 : 280 }}>
+            <div 
+              className="mt-0 pr-0 self-end mr-1 md:mr-2 lg:mr-3" 
+              style={{ 
+                width: inConsole 
+                  ? (() => {
+                      if (typeof window === 'undefined') return 200;
+                      const screenWidth = window.innerWidth;
+                      // Proportional sizing: smaller screens get proportionally smaller covers
+                      // Range: 100px (very small) to 240px (large mobile/small tablet)
+                      const minSize = 100;
+                      const maxSize = 240;
+                      const minWidth = 320; // Minimum expected screen width
+                      const maxWidth = 768; // Where we cap the growth
+                      
+                      if (screenWidth <= minWidth) return minSize;
+                      if (screenWidth >= maxWidth) return maxSize;
+                      
+                      // Linear interpolation between min and max based on screen width
+                      const progress = (screenWidth - minWidth) / (maxWidth - minWidth);
+                      return Math.round(minSize + (maxSize - minSize) * progress);
+                    })()
+                  : 280 
+              }}
+            >
               {true ? (
                 <button
                   type="button"
@@ -396,12 +419,54 @@ export default function HUDPanel({
                 >
                   {(() => {
                     const src = (!currentId ? DEFAULT_COVER : (track?.cover || DEFAULT_COVER));
-                    return <CoverCard src={src} size={inConsole ? 200 : 280} />;
+                    const coverSize = inConsole 
+                      ? (() => {
+                          if (typeof window === 'undefined') return 200;
+                          const screenWidth = window.innerWidth;
+                          // Proportional sizing: smaller screens get proportionally smaller covers
+                          // Range: 100px (very small) to 240px (large mobile/small tablet)
+                          const minSize = 100;
+                          const maxSize = 240;
+                          const minWidth = 320; // Minimum expected screen width
+                          const maxWidth = 768; // Where we cap the growth
+                          
+                          if (screenWidth <= minWidth) return minSize;
+                          if (screenWidth >= maxWidth) return maxSize;
+                          
+                          // Linear interpolation between min and max based on screen width
+                          const progress = (screenWidth - minWidth) / (maxWidth - minWidth);
+                          return Math.round(minSize + (maxSize - minSize) * progress);
+                        })()
+                      : 280;
+                    return <CoverCard src={src} size={coverSize} />;
                   })()}
                 </button>
               ) : null}
             </div>
-            <div className="mt-1 pr-0 self-end mr-1 md:mr-2 lg:mr-3" style={{ width: inConsole ? 200 : 280 }}>
+            <div 
+              className="mt-1 pr-0 self-end mr-1 md:mr-2 lg:mr-3" 
+              style={{ 
+                width: inConsole 
+                  ? (() => {
+                      if (typeof window === 'undefined') return 200;
+                      const screenWidth = window.innerWidth;
+                      // Proportional sizing: smaller screens get proportionally smaller covers
+                      // Range: 100px (very small) to 240px (large mobile/small tablet)
+                      const minSize = 100;
+                      const maxSize = 240;
+                      const minWidth = 320; // Minimum expected screen width
+                      const maxWidth = 768; // Where we cap the growth
+                      
+                      if (screenWidth <= minWidth) return minSize;
+                      if (screenWidth >= maxWidth) return maxSize;
+                      
+                      // Linear interpolation between min and max based on screen width
+                      const progress = (screenWidth - minWidth) / (maxWidth - minWidth);
+                      return Math.round(minSize + (maxSize - minSize) * progress);
+                    })()
+                  : 280 
+              }}
+            >
               <SongDropdown
                 items={resolvedSongs}
                 initialActiveId={active || resolvedSongs[0]?.id}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import SkyboxVideo from "@/components/SkyboxVideo";
 import AmbientSpace from "@/components/AmbientSpace";
 import SteeringWheelOverlay from "@/components/SteeringWheelOverlay";
@@ -53,6 +53,12 @@ export default function DashboardApp() {
   const welcomeOnStartRef = React.useRef(false); // signals that welcome VO should play now
   const [cardModalOpen, setCardModalOpen] = useState(false); // track card modal state for beam dimming
   const SPACE_SKY = { webm: "/skies/space.webm", mp4: "/skies/space.mp4", key: "space" };
+  
+  // Detect mobile device for performance optimizations
+  const isMobile = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  }, [mounted]);
 
   // Centralized HUD power sequencing: play SFX then run beam/HUD fades
   const triggerHudPower = React.useCallback((turnOn) => {
@@ -68,33 +74,34 @@ export default function DashboardApp() {
         // Fade in comms/power/join together right as SFX starts
         setShowOverlayUI(true);
         // Keep ambient paused until after HUD fades in
-        // Start light beam after a brief delay to let audio begin
-        setTimeout(() => {
-          try { setBeamEnabled(true); } catch {}
-        }, 50);
-        // Fade HUD in after beam starts fading in (more sequential)
+        // Start light beam immediately with audio
+        try { setBeamEnabled(true); } catch {}
+        // Fade HUD in shortly after beam starts fading in (faster response)
         setTimeout(() => {
           setBeamOnly(false);
           setPowerBusy(false);
           setAmbientSuspended(false); // allow AmbientSpace to resume ambient and then VO
-        }, 400); // Increased delay for smoother sequencing
-        // Simulate SFX end callbacks without relying on an <audio> element
-        const onSfxEndMs = 1200;
-        setTimeout(() => {
-          if (!welcomeOnStartRef.current) {
-            try {
-              const intro = document.querySelector('audio[data-intro="1"]');
-              if (intro && typeof (intro).pause === 'function') {
-                (intro).pause();
-                try { (intro).currentTime = 0; } catch {}
-              }
-            } catch {}
-            setHomeIntroEnabled(false);
-          }
-          setTimeout(() => { welcomeOnStartRef.current = false; }, 6000);
-        }, onSfxEndMs);
-        // Fallback if timers were throttled
-        setTimeout(() => { welcomeOnStartRef.current = false; }, 2600);
+        }, 200); // Reduced from 320ms to 200ms for faster HUD fade-in
+        // Only manage welcome audio during initial startup sequence, not manual power toggle
+        if (pendingHomePower) {
+          // Simulate SFX end callbacks without relying on an <audio> element
+          const onSfxEndMs = 1200;
+          setTimeout(() => {
+            if (!welcomeOnStartRef.current) {
+              try {
+                const intro = document.querySelector('audio[data-intro="1"]');
+                if (intro && typeof (intro).pause === 'function') {
+                  (intro).pause();
+                  try { (intro).currentTime = 0; } catch {}
+                }
+              } catch {}
+              setHomeIntroEnabled(false);
+            }
+            setTimeout(() => { welcomeOnStartRef.current = false; }, 6000);
+          }, onSfxEndMs);
+          // Fallback if timers were throttled
+          setTimeout(() => { welcomeOnStartRef.current = false; }, 2600);
+        }
       } else {
         // Turning off: play join-alien SFX when powering down
         try { sfx.play('join', 0.9); } catch {}
@@ -114,11 +121,11 @@ export default function DashboardApp() {
     } else {
       // Powering off: play SFX immediately (done above), then fade beam out first,
       // and immediately afterwards fade HUD display out.
-      setBeamEnabled(false); // start beam fade-out immediately
+      setBeamEnabled(false); // start beam fade-out immediately with audio
       setTimeout(() => { 
         setBeamOnly(true); // hide HUD content immediately after beam fades
         setTimeout(() => { setShowHUD(false); setPowerBusy(false); }, 50); // unmount HUD right after
-      }, 180); // wait for beam to fade out
+      }, 200); // Reduced from 320ms to 200ms for faster HUD fade-out
     }
   }, [powerBusy, beamEnabled, showHUD]);
 
@@ -222,15 +229,43 @@ export default function DashboardApp() {
     };
   }, []);
 
+  // Spacebar toggle for music play/pause
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Only trigger if spacebar is pressed and not in an input field or textarea
+      if (e.code === 'Space' && !['INPUT', 'TEXTAREA'].includes(e.target?.tagName)) {
+        e.preventDefault(); // Prevent page scroll
+        setToggleSignal((n) => n + 1); // Trigger music toggle
+        try { sfx.play('click', 0.6); } catch {} // Optional click sound feedback
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Memoize expensive style calculations
+  const blurWrapperStyle = useMemo(() => ({
+    filter: cardModalOpen ? 'blur(2px)' : 'none',
+    transition: 'filter 300ms ease'
+  }), [cardModalOpen]);
+
+  const lightBeamStyle = useMemo(() => ({
+    left: '50%',
+    bottom: '40vh',
+    top: '42vh', // Moved up from 48vh to 42vh (6vh higher)
+    width: 'min(1400px, 85vw)',
+    transform: 'translateX(-50%)',
+    opacity: beamEnabled ? (cardModalOpen ? 0.3 : 1) : 0,
+    transition: 'opacity 300ms ease'
+  }), [beamEnabled, cardModalOpen]);
+
   if (!mounted) return null;
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
       <div 
         className="absolute inset-0"
-        style={{
-          filter: cardModalOpen ? 'blur(2px)' : 'none',
-          transition: 'filter 300ms ease'
-        }}
+        style={blurWrapperStyle}
       >
         <PrewarmThree />
         <AmbientSpace ambientSrc="/audio/space-music.mp3" introSrc={homeMode && homeIntroEnabled ? "/audio/welcome-to-the-heartverse.mp3" : undefined} playingMusic={isPlaying} suspend={warpActive || ambientSuspended} />
@@ -286,7 +321,10 @@ export default function DashboardApp() {
             // Keep ambient paused until UI beam + HUD have faded in
             setAmbientSuspended(true);
             // Begin HUD power sequence: plays join-alien SFX, then beam fade-in, then HUD fade-in
-            try { triggerHudPower(true); } catch {}
+            // Add delay after warp to let the user settle before light beam appears
+            setTimeout(() => {
+              try { triggerHudPower(true); } catch {}
+            }, 1000); // 1 second delay after warp completes
           }
           if (pendingTrackPlay) {
             // Do not start audio here; wait for onFlyEnd so playback begins after warp SFX ends.
@@ -306,7 +344,12 @@ export default function DashboardApp() {
         showUI={showOverlayUI}
         onPowerToggle={() => { triggerHudPower(undefined); }}
         onLaunch={() => {
-          // Start: warp overlay + sound, then land on CHXNDLER homepage
+          // Start: hide all UI first, then warp overlay + sound, then land on CHXNDLER homepage
+          // Hide HUD, comms, join, and power buttons during warp
+          setShowHUD(false);
+          setShowOverlayUI(false);
+          setBeamEnabled(false);
+          
           // Hard-stop any main track audio so Start never blips a song
           try {
             const a = document.querySelector('audio[data-audio-player="1"]');
@@ -322,7 +365,7 @@ export default function DashboardApp() {
           setAllowWarp(true);
           setNextSky(SPACE_SKY);
           setFlySignal((n) => n + 1);
-          // Do not reveal UI yet; will fade in after join SFX ends in triggerHudPower
+          // UI will reappear when space.mp4 starts playing via triggerHudPower
         }}
       />
       {/* Removed Join the Aliens dashboard panel per request */}
@@ -331,9 +374,9 @@ export default function DashboardApp() {
       <Slot
         className="slot-container"
         rects={[
-          // Widen HUD much more: extend further on both sides, especially for mobile
-          { minWidth: 420, maxWidth: 460, top: -1.2, left: 18, width: 68, height: 14, orientation: 'portrait' },
-          { maxWidth: 419, top: 0.0, left: 16, width: 72, height: 14, orientation: 'portrait' },
+          // Widen HUD much more: extend further on both sides, especially for mobile portrait
+          { minWidth: 420, maxWidth: 460, top: -1.2, left: 12, width: 76, height: 14, orientation: 'portrait' }, // Much wider on mobile portrait
+          { maxWidth: 419, top: 0.0, left: 10, width: 80, height: 14, orientation: 'portrait' }, // Even wider on small mobile portrait
           { minWidth: 480, maxWidth: 740, top: -8.0, left: 16, width: 74, height: 14, orientation: 'landscape' }, // Moved up significantly for mobile landscape
           { minWidth: 741, maxWidth: 1024, top: -0.8, left: 15.5, width: 72, height: 15 },
           { minWidth: 1025, top: -1.2, left: 15, width: 74, height: 15 },
@@ -385,16 +428,8 @@ export default function DashboardApp() {
       {/* Responsive upward shooting light beam - wider on mobile to match HUD proportions */}
       {mounted && (beamEnabled || showHUD) ? (
         <div 
-          className="fixed pointer-events-none z-10"
-          style={{
-            left: '50%',
-            bottom: '40vh', // Move whole light beam up slightly
-            top: '48vh', // Make light beam shorter by moving top down
-            width: 'min(1400px, 85vw)', // Responsive width: wider on mobile, capped on desktop
-            transform: 'translateX(-50%)',
-            opacity: beamEnabled ? (cardModalOpen ? 0.3 : 1) : 0,
-            transition: 'opacity 300ms ease'
-          }}
+          className="fixed pointer-events-none z-30 light-beam-animation"
+          style={lightBeamStyle}
         >
           {/* Single main beam */}
           <div 
@@ -405,25 +440,30 @@ export default function DashboardApp() {
               bottom: '0px', 
               top: '0%',
               clipPath: 'polygon(48% 100%, 52% 100%, 1% 0, 99% 0)', // Wider beam top to match wider HUD
-              background: `
-                linear-gradient(180deg, 
-                  rgba(25,227,255,0.0) 0%, 
-                  rgba(25,227,255,0.15) 15%, 
-                  rgba(25,227,255,0.35) 40%, 
-                  rgba(25,227,255,0.55) 65%, 
-                  rgba(25,227,255,0.35) 85%, 
-                  rgba(25,227,255,0.0) 100%),
-                repeating-linear-gradient(180deg,
-                  transparent 0px,
-                  rgba(25,227,255,0.1) 20px,
-                  rgba(25,227,255,0.2) 40px,
-                  rgba(25,227,255,0.1) 60px,
-                  transparent 80px)
-              `,
-              backgroundSize: '100% 100%, 100% 160px',
-              filter: 'blur(8px)',
+              background: isMobile 
+                ? // Simplified gradient for mobile performance
+                  `linear-gradient(180deg, 
+                    rgba(25,227,255,0.0) 0%, 
+                    rgba(25,227,255,0.25) 50%, 
+                    rgba(25,227,255,0.0) 100%)`
+                : // Full complexity for desktop
+                  `linear-gradient(180deg, 
+                    rgba(25,227,255,0.0) 0%, 
+                    rgba(25,227,255,0.15) 15%, 
+                    rgba(25,227,255,0.35) 40%, 
+                    rgba(25,227,255,0.55) 65%, 
+                    rgba(25,227,255,0.35) 85%, 
+                    rgba(25,227,255,0.0) 100%),
+                  repeating-linear-gradient(180deg,
+                    transparent 0px,
+                    rgba(25,227,255,0.1) 20px,
+                    rgba(25,227,255,0.2) 40px,
+                    rgba(25,227,255,0.1) 60px,
+                    transparent 80px)`,
+              backgroundSize: isMobile ? '100% 100%' : '100% 100%, 100% 160px',
+              filter: isMobile ? 'blur(4px)' : 'blur(8px)', // Less blur on mobile
               mixBlendMode: 'screen',
-              animation: 'beamFlow 3s linear infinite'
+              animation: isMobile ? 'beamFlow 4s linear infinite' : 'beamFlow 3s linear infinite' // Slower on mobile
             }}
           />
         </div>

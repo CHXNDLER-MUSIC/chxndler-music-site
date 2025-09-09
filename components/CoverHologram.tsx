@@ -4,6 +4,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { cockpit } from "@/config/ui";
 import { useState, useEffect, useRef } from "react";
+import { track } from "@/lib/analytics";
 
 export default function CoverHologram({ src, title }: { src: string; title: string }) {
   const [showCard, setShowCard] = useState(false);
@@ -93,6 +94,20 @@ export default function CoverHologram({ src, title }: { src: string; title: stri
                   title="Collect this card"
                   onClick={(e) => {
                     try { e.preventDefault(); } catch {}
+                    
+                    // Track collect card button click
+                    try {
+                      track('collect_card_clicked', { 
+                        song_slug: title?.toLowerCase().replace(/\s+/g, '-'),
+                        card_src: src,
+                        payload: { 
+                          song_title: title,
+                          card_image: src,
+                          stripe_url: e.currentTarget.href 
+                        } 
+                      });
+                    } catch {}
+                    
                     try {
                       const el = e.currentTarget;
                       el.classList.remove('is-rippling');

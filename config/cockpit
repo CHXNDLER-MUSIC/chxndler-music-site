@@ -95,8 +95,8 @@ export const POS = {
     // Use offsetRightPx relative to wheel rim (positive = further right, negative = to the left of rim)
     // Align roughly with comms vertically and move slightly to the left
     join: { offsetRightPx: -230, dyPx: 332, sizePx: 84 },
-    // Power button positioned above the wheel center, horizontally centered on screen
-    power: { dxPx: 0, dyPx: -80, sizePx: 60, centerHoriz: true },
+    // Power button positioned way down below the wheel center, horizontally centered on screen
+    power: { dxPx: 0, dyPx: 270, sizePx: 60, centerHoriz: true },
     // Optional video overlay tuning for /cockpit/wheel.mp4
     // Smaller wheel footprint; move wheel down slightly
     // Lower the wheel slightly by reducing the negative offset (closer to 0)
