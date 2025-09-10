@@ -4,6 +4,8 @@ import { createPortal } from "react-dom";
 import HoloHubMenu from "@/components/HoloHubMenu";
 import LumaKeyVideo from "@/components/LumaKeyVideo";
 import HoloJoinPopout from "@/components/HoloJoinPopout";
+import HoloJoinButton from "@/components/HoloJoinButton";
+import JoinAliens from "@/components/JoinAliens";
 import { LINKS } from "@/config/cockpit";
 
 export default function SteeringWheelOverlay({
@@ -13,6 +15,7 @@ export default function SteeringWheelOverlay({
   playing,
   showUI = true,
   onPowerToggle,
+  onJoinToggle,
 }: {
   logoSrc?: string;
   onLaunch: () => void;
@@ -20,11 +23,35 @@ export default function SteeringWheelOverlay({
   playing?: boolean;
   showUI?: boolean;
   onPowerToggle?: () => void;
+  onJoinToggle?: (showJoin: boolean) => void;
 }) {
   const sfxRef = useRef<HTMLAudioElement|null>(null);
   const pauseRef = useRef<HTMLAudioElement|null>(null);
   const hoverRef = useRef<HTMLAudioElement|null>(null);
   const [showJoin, setShowJoin] = useState(false);
+
+  // Notify parent when showJoin changes
+  useEffect(() => {
+    onJoinToggle?.(showJoin);
+  }, [showJoin, onJoinToggle]);
+  const joinFormRef = useRef<HTMLDivElement|null>(null);
+
+  // Close join form when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (showJoin && joinFormRef.current && !joinFormRef.current.contains(event.target as Node)) {
+        setShowJoin(false);
+      }
+    }
+    
+    if (showJoin) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showJoin]);
 
   function handleLaunch() {
     const willPause = !!playing;
@@ -161,10 +188,8 @@ export default function SteeringWheelOverlay({
           <div
             style={{
               position: "absolute",
-              top: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${vs/2}px + ${(POS?.wheel?.comms?.dyPx ?? 0) + 2}px)`, // Moved up 8px (was +10px, now +2px)
-              left: vconf.centerHoriz
-                ? `calc(50vw - ${vs/2}px + ${(POS?.wheel?.comms?.dxPx ?? 0) + 10}px)`
-                : `calc(${(pp.leftVw + (vconf.offsetVw || 0))}vw - ${vs/2}px + ${(POS?.wheel?.comms?.dxPx ?? 0) + 10}px)`,
+              top: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${vs/2}px + ${(POS?.wheel?.comms?.dyPx ?? 0) - 50}px)`, // Moved up more (was -35px, now -50px)
+              left: `calc(50vw - 44px)`, // Center on screen, moved slightly right
               zIndex: 92,
               pointerEvents: 'auto',
             }}
@@ -206,8 +231,9 @@ export default function SteeringWheelOverlay({
           <div
             style={{
               position: "absolute",
-              top: `calc(50vh - ${joinSize/2}px - 100px)`, // Center vertically and move up 100px
-              left: `calc(50vw - ${joinSize/2}px - 150px)`, // Center horizontally and move left 150px
+              // Position at 3 o'clock of the steering wheel (directly to the right)
+              top: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${joinSize/2}px)`, // Vertically centered with steering wheel
+              left: `calc(${(pp.leftVw + (vconf.offsetVw || 0))}vw - ${joinSize/2}px + ${vs/2 - 40}px)`, // Moved slightly more to the left
               zIndex: 92,
               // Prevent any interaction before UI reveal
               pointerEvents: showUI ? 'auto' : 'none',
@@ -215,9 +241,64 @@ export default function SteeringWheelOverlay({
           >
             {showUI ? (
               <div style={{ opacity: 1, transition: 'opacity 300ms ease', pointerEvents: 'auto' }}>
-                <HoloJoinPopout size={joinSize} label="Join" iconSrc="/elements/join.png" hubColor="#FC54AF" panelWidth={244} panelSide="above" />
+                <HoloJoinButton 
+                  size={joinSize} 
+                  label="Join Alien Display" 
+                  iconSrc="/elements/join.png" 
+                  hubColor="#FC54AF" 
+                  onClick={() => setShowJoin(prev => !prev)}
+                />
               </div>
             ) : null}
+          </div>
+        );
+      })()}
+
+      {/* Separate Join Aliens Form - positioned up and to the left of join button */}
+      {(() => {
+        const joinCfg: any = (POS?.wheel as any)?.join || {};
+        const joinSize: number = typeof joinCfg.sizePx === 'number' ? joinCfg.sizePx : 84;
+        const vs = (POS?.wheel?.sizePx as number) || 108;
+        
+        return (
+          <div
+            ref={joinFormRef}
+            style={{
+              position: "absolute",
+              // Position up and to the left of the join button
+              top: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${joinSize/2}px - 320px)`, // 320px above join button (moved up 20px more)
+              left: `calc(${(pp.leftVw + (vconf.offsetVw || 0))}vw - ${joinSize/2}px + ${vs/2 + 30}px - 155px)`, // 155px to the left of join button (moved 10px more to the right)
+              zIndex: 93,
+              pointerEvents: (showUI && showJoin) ? 'auto' : 'none',
+              opacity: (showUI && showJoin) ? 1 : 0,
+              transition: 'opacity 300ms ease',
+            }}
+          >
+            {/* Join form panel */}
+            <div
+              style={{
+                width: 244,
+                borderRadius: '16px',
+                padding: '12px',
+                color: '#fff',
+                background: `
+                  linear-gradient(180deg, #FC54AF44, #FC54AF26),
+                  radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
+                  linear-gradient(180deg, rgba(0,0,0,.65), rgba(0,0,0,.55))
+                `,
+                border: '1px solid #FC54AF66',
+                boxShadow: `
+                  0 18px 36px rgba(0,0,0,.5), 
+                  0 0 42px #FC54AFAA, 
+                  0 0 100px #FC54AF55, 
+                  inset 0 2px 0 rgba(255,255,255,.2), 
+                  inset 0 -6px 14px rgba(0,0,0,.6)
+                `,
+                backdropFilter: 'blur(10px)',
+              }}
+            >
+              <JoinAliens />
+            </div>
           </div>
         );
       })()}
@@ -260,7 +341,7 @@ export default function SteeringWheelOverlay({
                   pointerEvents: 'auto',
                 }}
               >
-                <span className="sr-only">Toggle HUD Power</span>
+                <span className="sr-only">Power Button</span>
                 <span className="power-glyph" aria-hidden>
                   <img src="/elements/power.png" alt="" className="power-icon" onError={(e)=>{ try { const img = e.currentTarget; img.onerror = null; img.src = '/elements/lightning.png'; } catch {} }} />
                 </span>
@@ -270,60 +351,69 @@ export default function SteeringWheelOverlay({
         );
       })()}
 
-      {/* Yellow light beam - positioned to the left */}
-      {(() => {
-        return (
-          <div
-            style={{
-              position: "absolute",
-              top: `calc(50vh - 42px - 80px)`, // Center vertically and move up 80px
-              left: `calc(50vw - 42px - 300px)`, // Center horizontally and move left 300px
-              zIndex: 88,
-              pointerEvents: showUI ? 'auto' : 'none',
-            }}
-          >
-            {showUI ? (
-              <div style={{ opacity: 1, transition: 'opacity 300ms ease', pointerEvents: 'auto' }}>
-                <HoloJoinButton
-                  size={84}
-                  label="Lightning"
-                  iconSrc="/elements/lightning.png"
-                  hubColor="#F2EF1D"
-                  onClick={() => {
-                    try { console.log('Yellow beam activated!'); } catch {}
-                  }}
-                />
-              </div>
-            ) : null}
-          </div>
-        );
-      })()}
 
-      {/* Pink light beam - positioned to the right */}
+
+      {/* Red light beam - downward shooting beam positioned above join alien button */}
       {(() => {
+        const joinCfg: any = (POS?.wheel as any)?.join || {};
+        const joinSize: number = typeof joinCfg.sizePx === 'number' ? joinCfg.sizePx : 84;
+        // Check if mobile for performance optimizations
+        const isMobile = typeof window !== 'undefined' && (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+        
+        const redBeamStyle = {
+          position: "absolute" as const,
+          // Position above the join alien button, extending downward
+          top: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${joinSize/2}px - ${Math.cos(Math.PI/6) * 120}px + 75px - 220px)`, // Start higher
+          bottom: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${joinSize/2}px - ${Math.cos(Math.PI/6) * 120}px + 75px + ${joinSize}px)`, // End below button
+          left: `calc(${(pp.leftVw + (vconf.offsetVw || 0))}vw - ${joinSize/2}px + ${Math.sin(Math.PI/6) * 120}px + 110px)`, // Centered on button
+          width: 'min(400px, 25vw)', // Responsive width like blue beam but smaller
+          transform: 'translateX(-50%)', // Center the beam
+          zIndex: 88,
+          pointerEvents: 'none' as const,
+          opacity: showUI ? 1 : 0,
+          transition: 'opacity 300ms ease'
+        };
+
         return (
           <div
-            style={{
-              position: "absolute",
-              top: `calc(50vh - 42px + 120px)`, // Center vertically and move down 120px
-              left: `calc(50vw - 42px + 250px)`, // Center horizontally and move right 250px
-              zIndex: 88,
-              pointerEvents: showUI ? 'auto' : 'none',
-            }}
+            className="fixed pointer-events-none red-beam-animation"
+            style={redBeamStyle}
           >
-            {showUI ? (
-              <div style={{ opacity: 1, transition: 'opacity 300ms ease', pointerEvents: 'auto' }}>
-                <HoloJoinButton
-                  size={84}
-                  label="Heart"
-                  iconSrc="/elements/heart.png"
-                  hubColor="#FC54AF"
-                  onClick={() => {
-                    try { console.log('Pink beam activated!'); } catch {}
-                  }}
-                />
-              </div>
-            ) : null}
+            {/* Single main red beam */}
+            <div 
+              style={{
+                position: 'absolute',
+                left: '3%', // Match blue beam margins
+                right: '3%', // Match blue beam margins  
+                top: '0px',
+                bottom: '0%',
+                clipPath: 'polygon(1% 0, 99% 0, 52% 100%, 48% 100%)', // Inverted taper - wide at top, narrow at bottom
+                background: isMobile 
+                  ? // Simplified gradient for mobile performance
+                    `linear-gradient(180deg, 
+                      rgba(255,45,85,0.0) 0%, 
+                      rgba(255,45,85,0.25) 50%, 
+                      rgba(255,45,85,0.0) 100%)`
+                  : // Full complexity for desktop
+                    `linear-gradient(180deg, 
+                      rgba(255,45,85,0.0) 0%, 
+                      rgba(255,45,85,0.15) 15%, 
+                      rgba(255,45,85,0.35) 40%, 
+                      rgba(255,45,85,0.55) 65%, 
+                      rgba(255,45,85,0.35) 85%, 
+                      rgba(255,45,85,0.0) 100%),
+                    repeating-linear-gradient(180deg,
+                      transparent 0px,
+                      rgba(255,45,85,0.1) 20px,
+                      rgba(255,45,85,0.2) 40px,
+                      rgba(255,45,85,0.1) 60px,
+                      transparent 80px)`,
+                backgroundSize: isMobile ? '100% 100%' : '100% 100%, 100% 160px',
+                filter: isMobile ? 'blur(4px)' : 'blur(8px)', // Less blur on mobile
+                mixBlendMode: 'screen',
+                animation: isMobile ? 'redBeamFlow 4s linear infinite' : 'redBeamFlow 3s linear infinite' // Slower on mobile
+              }}
+            />
           </div>
         );
       })()}
@@ -547,7 +637,37 @@ export default function SteeringWheelOverlay({
         .power-btn:active{ transform: scale(.96); }
         @keyframes powerPulse{ 0%,100%{ filter: brightness(1) } 50%{ filter: brightness(1.08) } }
         @keyframes powerSheen { 0% { transform: translateX(-130%);} 55% { transform: translateX(130%);} 100% { transform: translateX(130%);} }
+        
+        /* 3D Planet System Animations */
+        @keyframes centralPulse {
+          0%, 100% { 
+            transform: translate(-50%, -50%) scale(1); 
+            box-shadow: 0 0 40px #19E3FF66, inset -10px -10px 20px rgba(0,0,0,0.3); 
+          }
+          50% { 
+            transform: translate(-50%, -50%) scale(1.1); 
+            box-shadow: 0 0 60px #19E3FFAA, inset -10px -10px 20px rgba(0,0,0,0.3); 
+          }
+        }
+        @keyframes ringRotate {
+          from { transform: translate(-50%, -50%) rotate(0deg); }
+          to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        @keyframes orbit {
+          from { 
+            transform: translate(-50%, -50%) rotate(0deg); 
+            filter: brightness(1);
+          }
+          50% { 
+            filter: brightness(1.2);
+          }
+          to { 
+            transform: translate(-50%, -50%) rotate(360deg); 
+            filter: brightness(1);
+          }
+        }
       `}</style>
+
 
       <audio ref={sfxRef} src="/audio/launch.mp3" preload="auto" />
       <audio ref={pauseRef} src="/audio/pause.mp3" preload="auto" />

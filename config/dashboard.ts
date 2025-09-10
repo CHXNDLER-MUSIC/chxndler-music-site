@@ -7,6 +7,6 @@ export const DASHBOARD = {
   mediaDock:  { top: 32, left: 28, width: 44, height: 28 },
 
   /* Right bay (Join the Aliens) */
-  // Move down and make skinnier to sit lower in the bay
-  joinBox:    { top: 56, left: 74, width: 15, height: 24 },
+  // Move up and left to better position in the bay
+  joinBox:    { top: 12, left: 42, width: 15, height: 24 },
 };

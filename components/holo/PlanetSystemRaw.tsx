@@ -569,7 +569,7 @@ export default function PlanetSystemRaw() {
     if (planetData.atmosphere) {
       const atmosphereMat = makeAtmosphereMaterial(planetData);
       if (atmosphereMat) {
-        const atmosphereGeometry = new THREE.SphereGeometry(radius * 1.05, segments / 2, segments / 2);
+        const atmosphereGeometry = new THREE.SphereGeometry(radius * 1.05, geometry.segments.widthSegments / 2, geometry.segments.heightSegments / 2);
         atmosphereMesh = new THREE.Mesh(atmosphereGeometry, atmosphereMat);
         mesh.add(atmosphereMesh);
       }
@@ -626,8 +626,8 @@ export default function PlanetSystemRaw() {
       planetData.weather.cloudLayers.forEach((cloudLayer, index) => {
         const cloudGeometry = new THREE.SphereGeometry(
           radius * cloudLayer.height,
-          Math.max(32, segments / 2),
-          Math.max(32, segments / 2)
+          Math.max(32, geometry.segments.widthSegments / 2),
+          Math.max(32, geometry.segments.heightSegments / 2)
         );
         const cloudMaterial = createCloudMaterial(cloudLayer);
         const cloudMesh = new THREE.Mesh(cloudGeometry, cloudMaterial);

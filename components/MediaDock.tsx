@@ -46,7 +46,7 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
   const STEP = useMemo(() => 360 / Math.max(tracks.length, 1), [tracks.length]);
   const [angle, setAngle] = useState(idx * STEP);
 
-  useEffect(() => { onPlayingChange(playing); }, [playing, onPlayingChange]);
+  useEffect(() => { if (onPlayingChange) onPlayingChange(playing); }, [playing, onPlayingChange]);
 
   // External "start" signal: only act when startSignal increments (>0).
   // Prevent auto-start on initial mount.
@@ -79,7 +79,7 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
       a.play().catch(()=>{});
     } // else: leave current playback state as-is (DashboardApp coordinates play)
     const s = skyFor(cur.slug);
-    onSkyChange(s.webm, s.mp4, s.key);
+    if (onSkyChange) onSkyChange(s.webm, s.mp4, s.key);
     if (onTrackChange) onTrackChange(cur);
     setAngle(normalize(idx * STEP));
     gaTrack("track_change", { title: cur.title, slug: cur.slug, idx });
@@ -137,13 +137,13 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
           // Guard: some browsers may resolve but stay paused; recheck shortly
           setTimeout(() => {
             const ax = audioRef.current; if (!ax) return;
-            if (!ax.paused) { if (DEBUG_MEDIA) dlog('playSignal: direct play confirmed'); setPlaying(true); onPlayingChange(true); gaTrack("play", { slug: cur.slug }); return; }
+            if (!ax.paused) { if (DEBUG_MEDIA) dlog('playSignal: direct play confirmed'); setPlaying(true); if (onPlayingChange) onPlayingChange(true); gaTrack("play", { slug: cur.slug }); return; }
             // Fallback if still paused
             try {
               ax.muted = true; ax.volume = 0.0;
               ax.play().then(() => {
                 setTimeout(() => { try { ax.muted = false; ax.volume = 1.0; } catch {} }, 80);
-                setPlaying(true); onPlayingChange(true); gaTrack("play", { slug: cur.slug });
+                setPlaying(true); if (onPlayingChange) onPlayingChange(true); gaTrack("play", { slug: cur.slug });
               }).catch((e) => { if (DEBUG_MEDIA) dwarn('playSignal: muted fallback rejected', e?.name, e?.message); setPlaying(false); });
             } catch { setPlaying(false); }
           }, 120);
@@ -154,7 +154,7 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
             a.muted = true; a.volume = 0.0;
             a.play().then(() => {
               setTimeout(() => { try { a.muted = false; a.volume = 1.0; } catch {} }, 80);
-              setPlaying(true); onPlayingChange(true); gaTrack("play", { slug: cur.slug });
+              setPlaying(true); if (onPlayingChange) onPlayingChange(true); gaTrack("play", { slug: cur.slug });
             }).catch((e2) => { if (DEBUG_MEDIA) dwarn('playSignal: muted fallback rejected', e2?.name, e2?.message); setPlaying(false); });
           } catch { setPlaying(false); }
         });
@@ -174,7 +174,7 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
         // As above, only load if needed to avoid resetting mid-play when already correct
         try { if (a2.readyState < 2) a2.load(); } catch {}
         try { a2.muted = false; a2.volume = 1.0; } catch {}
-        a2.play().then(() => { if (DEBUG_MEDIA) dlog('playSignal: fallback first-with-audio played'); setPlaying(true); onPlayingChange(true); gaTrack("play", { slug: tracks[withAudio].slug }); }).catch((e)=>{ if (DEBUG_MEDIA) dwarn('playSignal: fallback play rejected', e?.name, e?.message); setPlaying(false); });
+        a2.play().then(() => { if (DEBUG_MEDIA) dlog('playSignal: fallback first-with-audio played'); setPlaying(true); if (onPlayingChange) onPlayingChange(true); gaTrack("play", { slug: tracks[withAudio].slug }); }).catch((e)=>{ if (DEBUG_MEDIA) dwarn('playSignal: fallback play rejected', e?.name, e?.message); setPlaying(false); });
       }, 0);
     }
   }, [playSignal]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -189,7 +189,7 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
         // Don't reload - just resume from current position
         try { a.muted = false; a.volume = 1.0; } catch {}
         a.play().then(() => {
-          setPlaying(true); onPlayingChange(true); gaTrack("play", { slug: cur.slug });
+          setPlaying(true); if (onPlayingChange) onPlayingChange(true); gaTrack("play", { slug: cur.slug });
         }).catch(()=>{});
       } else {
         // Fallback to first with audio
@@ -200,7 +200,7 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
         }
       }
     } else {
-      a.pause(); setPlaying(false); onPlayingChange(false); gaTrack("pause", { slug: cur.slug });
+      a.pause(); setPlaying(false); if (onPlayingChange) onPlayingChange(false); gaTrack("pause", { slug: cur.slug });
     }
   }, [toggleSignal]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -243,7 +243,7 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
     const onPlay = () => { if (DEBUG_MEDIA) dlog('audio event: play'); setPlaying(true); };
     const onPause = () => { if (DEBUG_MEDIA) dlog('audio event: pause'); setPlaying(false); };
     const onEnded = () => { if (DEBUG_MEDIA) dlog('audio event: ended'); setPlaying(false); };
-    const onErr = (e: any) => { if (DEBUG_MEDIA) { dwarn('audio event: error', e?.message || e); dumpAudio(a, 'audio:error'); }};
+    const onErr = (e: any) => { if (DEBUG_MEDIA) { dwarn('audio event: error', e?.target?.error?.message || e?.target?.error?.code || 'unknown audio error'); dumpAudio(a, 'audio:error'); }};
     const onWaiting = () => { if (DEBUG_MEDIA) dlog('audio event: waiting'); };
     const onStalled = () => { if (DEBUG_MEDIA) dlog('audio event: stalled'); };
     const onVolumeChange = () => { setVolume(a.volume); };
@@ -384,11 +384,62 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
       </div>
 
 
-      <div className="flex items-center gap-2 mt-3">
-        <button onClick={prev}  className="hud-chip" aria-label="Previous">◀</button>
-        <button onClick={next}  className="hud-chip" aria-label="Next">▶</button>
-        <button onClick={() => setPickerOpen((o)=>!o)} className="hud-chip" aria-haspopup="listbox" aria-expanded={pickerOpen} aria-label="Select song">Select</button>
-        <div className="volume-display hud-chip">Vol: {Math.round(volume * 100)}%</div>
+      {/* Sleek integrated control bar */}
+      <div className="sleek-controls mt-3">
+        {showHUDPlay && (
+          <button 
+            onClick={toggle} 
+            className="play-pause-btn" 
+            aria-label={playing ? "Pause" : "Play"}
+          >
+            <div className="btn-glow"></div>
+            <span className="btn-icon">
+              {playing ? (
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                  <rect x="6" y="4" width="4" height="16" rx="1" />
+                  <rect x="14" y="4" width="4" height="16" rx="1" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              )}
+            </span>
+          </button>
+        )}
+        
+        <div className="track-controls">
+          <button onClick={prev} className="track-btn" aria-label="Previous">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+            </svg>
+          </button>
+          <button onClick={next} className="track-btn" aria-label="Next">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+            </svg>
+          </button>
+        </div>
+        
+        <button 
+          onClick={() => setPickerOpen((o)=>!o)} 
+          className="selector-btn" 
+          aria-haspopup="listbox" 
+          aria-expanded={pickerOpen} 
+          aria-label="Select song"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+          </svg>
+          <span>Track</span>
+        </button>
+        
+        <div className="volume-control">
+          <div className="volume-bar">
+            <div className="volume-fill" style={{ width: `${volume * 100}%` }}></div>
+          </div>
+          <span className="volume-text">{Math.round(volume * 100)}%</span>
+        </div>
       </div>
 
       {pickerOpen ? (
@@ -441,8 +492,8 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
         .proj{
           position:relative;
           /* Scale with container to stay clear of the console-hud clip edges */
-          width: clamp(120px, 34%, 170px);
-          height: clamp(160px, 42%, 230px);
+          width: clamp(80px, 25%, 120px);
+          height: clamp(100px, 30%, 150px);
           display:flex; align-items:flex-end; justify-content:center;
           perspective:1100px;
         }
@@ -473,11 +524,11 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
         }
         /* Nudge art smaller on wider screens to avoid right-edge clipping */
         @media (min-width: 1024px) {
-          .proj{ width: clamp(120px, 32%, 170px); }
+          .proj{ width: clamp(80px, 24%, 120px); }
           .plate{ width: 78%; }
         }
         @media (max-width: 640px) {
-          .proj{ width: clamp(110px, 38%, 160px); }
+          .proj{ width: clamp(70px, 28%, 110px); }
           .plate{ width: 80%; }
         }
         .plate-img{ width:100%; height:100%; object-fit:cover; filter:saturate(1.1) contrast(1.05) brightness(1.03); }
@@ -513,6 +564,135 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
           padding: 4px 8px;
           min-width: 60px;
           text-align: center;
+        }
+        
+        /* Sleek integrated controls */
+        .sleek-controls {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px;
+          background: rgba(25,227,255,0.05);
+          border: 1px solid rgba(25,227,255,0.2);
+          border-radius: 12px;
+          backdrop-filter: blur(8px);
+        }
+        
+        .play-pause-btn {
+          position: relative;
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          border: none;
+          background: radial-gradient(circle at 30% 30%, #19E3FF, #0EA8D0);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          box-shadow: 
+            0 4px 16px rgba(25,227,255,0.3),
+            inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+        
+        .play-pause-btn:hover {
+          transform: scale(1.05);
+          box-shadow: 
+            0 6px 20px rgba(25,227,255,0.4),
+            inset 0 1px 0 rgba(255,255,255,0.3);
+        }
+        
+        .btn-glow {
+          position: absolute;
+          inset: -4px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(25,227,255,0.4), transparent 70%);
+          animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .btn-icon {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .track-controls {
+          display: flex;
+          gap: 6px;
+        }
+        
+        .track-btn {
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          border: none;
+          background: rgba(25,227,255,0.1);
+          color: #19E3FF;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        
+        .track-btn:hover {
+          background: rgba(25,227,255,0.2);
+          transform: translateY(-1px);
+        }
+        
+        .selector-btn {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 12px;
+          border-radius: 8px;
+          border: none;
+          background: rgba(252,84,175,0.1);
+          color: #FC54AF;
+          font-size: 12px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        
+        .selector-btn:hover {
+          background: rgba(252,84,175,0.2);
+          transform: translateY(-1px);
+        }
+        
+        .volume-control {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-width: 80px;
+        }
+        
+        .volume-bar {
+          width: 60px;
+          height: 4px;
+          background: rgba(255,255,255,0.1);
+          border-radius: 2px;
+          overflow: hidden;
+        }
+        
+        .volume-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #19E3FF, #FC54AF);
+          border-radius: 2px;
+          transition: width 0.2s ease;
+        }
+        
+        .volume-text {
+          font-size: 10px;
+          color: rgba(255,255,255,0.7);
+          min-width: 28px;
+        }
+        
+        @keyframes pulse {
+          0%, 100% { opacity: 0.6; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.1); }
         }
       `}</style>
     </div>

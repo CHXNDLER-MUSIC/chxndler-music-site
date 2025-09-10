@@ -44,6 +44,23 @@ export default function Planet({
   const [depthFactor, setDepthFactor] = useState(1.0);
 
   const { mainId, hoverId } = usePlayerStore((s) => ({ mainId: s.mainId, hoverId: s.hoverId }));
+  
+  // Deterministic jitter so orbiting planets don't overlap perfectly
+  const idHash = useMemo(() => {
+    let h = 0;
+    for (let i = 0; i < song.id.length; i++) h = (h * 31 + song.id.charCodeAt(i)) | 0;
+    return h;
+  }, [song.id]);
+  
+  // Realistic planetary size variation based on song characteristics
+  const sizeVar = (idHash % 997) / 997; // [0,1)
+  
+  // Create dramatic size differences like real planets
+  const planetType = sizeVar < 0.15 ? 'dwarf' : sizeVar < 0.4 ? 'terrestrial' : sizeVar < 0.75 ? 'neptune' : 'gas-giant';
+  
+  // Element-based tweaks (non-destructive): radius/speed/wobble/scale tinting done as computed fields
+  const element = (song as any)?.planet?.element as ("water"|"fire"|"lightning"|"heart"|"moon"|"magic"|"darkness"|undefined);
+  
   // Dramatically different colors for each planet type
   const color = useMemo(() => {
     if (planetType === 'gas-giant') return "#FFD700"; // Gold for gas giants
@@ -74,20 +91,9 @@ export default function Planet({
   // One dominant center planet; others arranged on a shared ring, smaller.
   const speedBase = song.planet.orbitSpeed;
   const speedTarget = isHover ? speedBase * 1.8 : speedBase;
-  // Deterministic jitter so orbiting planets don't overlap perfectly
-  const idHash = useMemo(() => {
-    let h = 0;
-    for (let i = 0; i < song.id.length; i++) h = (h * 31 + song.id.charCodeAt(i)) | 0;
-    return h;
-  }, [song.id]);
   const jitter = ((idHash % 1000) / 1000 - 0.5) * 0.4; // wider placement jitter [-0.2, 0.2]
-  // Realistic planetary size variation based on song characteristics
-  const sizeVar = (idHash % 997) / 997; // [0,1)
   const titleLength = song.title.length;
-  const genreInfluence = song.genre ? song.genre.length / 10 : 0.5;
-  
-  // Create dramatic size differences like real planets
-  const planetType = sizeVar < 0.15 ? 'dwarf' : sizeVar < 0.4 ? 'terrestrial' : sizeVar < 0.75 ? 'neptune' : 'gas-giant';
+  const genreInfluence = (song as any).genre ? (song as any).genre.length / 10 : 0.5;
   
   // Debug: Log planet types so user can see the system working
   if (isMain) {
@@ -125,11 +131,13 @@ export default function Planet({
   const layoutAngle0 = layout?.angle0 ?? angleRef.current;
 
   // Element-based tweaks (non-destructive): radius/speed/wobble/scale tinting done as computed fields
-  const element = (song as any)?.planet?.element as ("water"|"fire"|"lightning"|"heart"|"moon"|"magic"|"darkness"|undefined);
   const radiusMul = element === "water" ? 1.04 : element === "fire" ? 0.96 : 1.0;
   const speedMul = element === "water" ? 0.92 : element === "fire" ? 1.08 : element === "lightning" ? 1.10 : 1.0;
   const wobbleExtra = element === "lightning" ? 0.01 : 0.0;
   const scaleMul = element === "heart" ? 1.06 : 1.0;
+  
+  // Element type flags for material properties
+  const isDark = element === 'darkness';
 
   // Register with global overlap manager (screen-space separation)
   useEffect(() => {
@@ -220,6 +228,9 @@ export default function Planet({
           const isEarth = (elemColor || '').toLowerCase() === 'earth';
           const isDark = (elemColor || '').toLowerCase() === 'darkness';
           const isLightning = (elemColor || '').toLowerCase() === 'lightning';
+          // Planet type booleans for material properties
+          const isGasGiant = planetType === 'gas-giant';
+          const isNeptune = planetType === 'neptune';
           // Advanced element-specific terrain features
           let bandBoost = 1.0;
           if (isWater) {
@@ -626,7 +637,7 @@ export default function Planet({
           displacementScale={
             planetType === 'gas-giant' ? 0.001 :
             planetType === 'neptune' ? 0.002 :
-            element === 'earth' ? 0.008 :
+            element === 'magic' ? 0.008 :
             element === 'water' ? 0.003 :
             isDark ? 0.012 : 0.005
           }
@@ -637,14 +648,14 @@ export default function Planet({
             planetType === 'neptune' ? 0.02 : 
             element === 'lightning' ? 0.35 : 
             element === 'water' ? 0.05 : 
-            element === 'earth' ? 0.15 : 
+            element === 'magic' ? 0.15 : 
             isDark ? 0.45 : 0.08
           }
           roughness={
             planetType === 'gas-giant' ? 0.05 : 
             planetType === 'neptune' ? 0.15 : 
             element === 'water' ? 0.08 : 
-            element === 'earth' ? 0.92 : 
+            element === 'magic' ? 0.92 : 
             element === 'fire' ? 0.55 : 
             isDark ? 0.85 : 0.75
           }
@@ -653,7 +664,7 @@ export default function Planet({
             planetType === 'neptune' ? 0.8 : 
             element === 'water' ? 0.95 : 
             element === 'lightning' ? 0.7 : 
-            element === 'earth' ? 0.1 : 0.3
+            element === 'magic' ? 0.1 : 0.3
           }
           clearcoatRoughness={
             planetType === 'gas-giant' ? 0.05 : 
@@ -664,12 +675,12 @@ export default function Planet({
           normalScale={new Vector2(
             planetType === 'gas-giant' ? 0.2 : 
             planetType === 'neptune' ? 0.4 : 
-            element === 'earth' ? 1.8 : 
+            element === 'magic' ? 1.8 : 
             element === 'water' ? 0.3 : 
             isDark ? 1.4 : 1.0,
             planetType === 'gas-giant' ? 0.2 : 
             planetType === 'neptune' ? 0.4 : 
-            element === 'earth' ? 1.8 : 
+            element === 'magic' ? 1.8 : 
             element === 'water' ? 0.3 : 
             isDark ? 1.4 : 1.0
           )}
@@ -751,7 +762,7 @@ export default function Planet({
             element === 'water' ? new Color('#B0E0E6') :
             element === 'fire' ? new Color('#FFB347') :
             element === 'lightning' ? new Color('#E0E6FF') :
-            element === 'earth' ? new Color('#8FBC8F') :
+            element === 'magic' ? new Color('#8FBC8F') :
             element === 'darkness' ? new Color('#2F2F4F') :
             new Color(color).lerp(new Color('#FFFFFF'), 0.3)
           }
@@ -821,7 +832,7 @@ export default function Planet({
         planetType === 'gas-giant' ? 1.025 : 
         planetType === 'neptune' ? 1.020 : 
         element === 'water' ? 1.015 : 
-        element === 'earth' ? 1.008 : 
+        element === 'magic' ? 1.008 : 
         element === 'fire' ? 1.018 : 1.005
       }>
         <sphereGeometry args={[1, 64, 64]} />
@@ -839,7 +850,7 @@ export default function Planet({
             planetType === 'gas-giant' ? 0.15 : 
             planetType === 'neptune' ? 0.12 : 
             element === 'water' ? 0.09 : 
-            element === 'earth' ? 0.03 : 
+            element === 'magic' ? 0.03 : 
             element === 'fire' ? 0.07 : 
             element === 'lightning' ? 0.06 : 
             element === 'darkness' ? 0.05 : 0.03

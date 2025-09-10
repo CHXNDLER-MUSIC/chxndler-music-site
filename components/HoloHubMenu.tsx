@@ -110,21 +110,24 @@ export default function HoloHubMenu({
   }, []);
 
   // Compute positions; when closed, items sit on hub (0,0)
+  // For open state, arrange items in a horizontal line
   const positions = useMemo(() => {
     const n = entries.length || 1;
     return entries.map((it, i) => {
-      // If explicit angle provided for this item id, use it; else even spacing
-      const explicit = (angles && it?.id ? angles[it.id] : undefined);
-      const angleDeg = (typeof explicit === 'number') ? explicit : (-90 + (360 / n) * i);
-      const a = (angleDeg * Math.PI) / 180;
-      // Allow subtle per-item placement tweaks without new props
-      const rMul = it.id === 'yt' ? 0.86 : 1.0; // bring YouTube closer to hub
-      let x = Math.cos(a) * (effRadius * rMul);
-      let y = Math.sin(a) * (effRadius * rMul);
-      if (it.id === 'yt') x += 8; // nudge slightly to the right
-      return { x, y, angleDeg };
+      if (!open) {
+        return { x: 0, y: 0, angleDeg: 0 };
+      }
+      
+      // Horizontal line arrangement
+      const spacing = 80; // Space between buttons
+      const totalWidth = (n - 1) * spacing;
+      const startX = -totalWidth / 2;
+      const x = startX + (i * spacing);
+      const y = -260; // Position much higher above the hub
+      
+      return { x, y, angleDeg: 0 };
     });
-  }, [entries, effRadius, angles]);
+  }, [entries, open]);
 
   return (
     <div
@@ -158,10 +161,15 @@ export default function HoloHubMenu({
             draggable={false}
           />
         </span>
-        <span className="sr-only">{open ? "Close communications menu" : "Open communications menu"}</span>
+        <span className="sr-only">{open ? "Close Comms Display" : "Comms"}</span>
       </button>
 
-      {/* Radial items */}
+      {/* Yellow hologram background panel */}
+      {open && (
+        <div className="background-panel" aria-hidden />
+      )}
+
+      {/* Horizontal line items */}
       <div className="items" role="menu" aria-hidden={!open}>
         {entries.map((it, i) => {
           const pos = positions[i];
@@ -219,6 +227,39 @@ export default function HoloHubMenu({
           background: radial-gradient(closest-side, ${hubColor}66, transparent 70%);
           filter: blur(8px);
         }
+        
+        /* Yellow hologram background panel */
+        .background-panel{ 
+          position: absolute; 
+          top: -300px; 
+          left: -200px; 
+          width: 400px; 
+          height: 80px; 
+          border-radius: 16px; 
+          pointer-events: none;
+          background:
+            linear-gradient(180deg, #F2EF1D44, #F2EF1D26),
+            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
+            linear-gradient(180deg, rgba(0,0,0,.65), rgba(0,0,0,.55));
+          border: 1px solid #F2EF1D66;
+          box-shadow: 
+            0 18px 36px rgba(0,0,0,.5), 
+            0 0 42px #F2EF1DAA, 
+            0 0 100px #F2EF1D55, 
+            inset 0 2px 0 rgba(255,255,255,.2), 
+            inset 0 -6px 14px rgba(0,0,0,.6);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          opacity: 0;
+          transform: translateY(6px) scale(0.98);
+          transition: opacity 200ms ease, transform 220ms cubic-bezier(0.2,0.8,0.2,1);
+        }
+        
+        .items:not([aria-hidden="true"]) ~ .background-panel,
+        .background-panel{
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
         /* Hologram hub button */
         .hub-glyph{ position: relative; display:inline-flex; }
         /* Inner glow masked to the comms icon shape so color shines "through" */
@@ -231,47 +272,63 @@ export default function HoloHubMenu({
           position:absolute; border-radius:9999px; cursor:pointer;
           display:grid; place-items:center;
           background:
-            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
-            rgba(25,227,255,0.45);
-          border:1px solid rgba(255,255,255,.14);
+            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.08), rgba(255,255,255,0) 42%),
+            radial-gradient(ellipse 140% 120% at 30% 20%, #F2EF1D66, transparent 70%),
+            linear-gradient(135deg, #F2EF1D33, #F2EF1D11 50%, transparent 80%),
+            rgba(242,239,29,0.35);
+          border:1px solid #F2EF1D88;
           box-shadow:
-            0 14px 28px rgba(0,0,0,.6),
-            0 0 26px ${hubColor}88,
-            0 0 68px ${hubColor}44,
-            inset 0 1px 0 rgba(255,255,255,.22),
-            inset 0 -6px 14px rgba(0,0,0,.6);
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
+            0 14px 28px rgba(0,0,0,.7),
+            0 0 32px #F2EF1DCC,
+            0 0 80px #F2EF1D88,
+            0 0 140px #F2EF1D44,
+            inset 0 2px 0 rgba(255,255,255,.25),
+            inset 0 -6px 14px rgba(0,0,0,.6),
+            inset 0 0 20px #F2EF1D22;
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
           animation: holoPulse 2.6s ease-in-out infinite;
           transition: transform 150ms ease, box-shadow 200ms ease, filter 180ms ease;
         }
-        .hub::before{ content:""; position:absolute; inset:-1%; border-radius:9999px; pointer-events:none;
-          /* reduced halo glow */
-          box-shadow: 0 0 30px ${hubColor}AA, 0 0 56px ${hubColor}66;
+        .hub::before{ content:""; position:absolute; inset:-2%; border-radius:9999px; pointer-events:none;
+          /* Enhanced yellow halo glow */
+          box-shadow: 
+            0 0 40px #F2EF1DDD, 
+            0 0 80px #F2EF1D99,
+            0 0 120px #F2EF1D55;
+          animation: holoHalo 3.2s ease-in-out infinite;
         }
-        .hub::after{ content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none; mix-blend-mode:screen; opacity:.6;
+        .hub::after{ content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none; mix-blend-mode:screen; opacity:.8;
           background:
-            linear-gradient(120deg, rgba(255,255,255,.18), rgba(255,255,255,0) 60%),
-            repeating-linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.08) 1px, rgba(0,0,0,0) 1px, rgba(0,0,0,0) 3px);
+            linear-gradient(120deg, rgba(255,255,255,.25), rgba(255,255,255,0) 60%),
+            linear-gradient(45deg, #F2EF1D44, transparent 30%),
+            repeating-linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.12) 1px, rgba(0,0,0,0) 1px, rgba(0,0,0,0) 3px);
           transform: translateX(-130%);
-          animation: holoSheen 3s ease-in-out infinite;
+          animation: holoSheen 2.8s ease-in-out infinite;
         }
         .hub:hover{ transform: scale(1.07); box-shadow:
-            0 18px 34px rgba(0,0,0,.68),
-            0 0 46px ${hubColor}DD,
-            0 0 120px ${hubColor}77,
-            inset 0 1px 0 rgba(255,255,255,.28), inset 0 -8px 18px rgba(0,0,0,.65);
-          filter: brightness(1.08) saturate(1.15);
+            0 18px 34px rgba(0,0,0,.75),
+            0 0 50px #F2EF1DFF,
+            0 0 120px #F2EF1DCC,
+            0 0 200px #F2EF1D77,
+            inset 0 2px 0 rgba(255,255,255,.35), 
+            inset 0 -8px 18px rgba(0,0,0,.65),
+            inset 0 0 30px #F2EF1D33;
+          filter: brightness(1.12) saturate(1.25);
+        }
+        @keyframes holoHalo { 
+          0%, 100% { opacity: 0.8; transform: scale(1); } 
+          50% { opacity: 1; transform: scale(1.05); } 
         }
         .hub:active{ transform: scale(.96); }
         .hub-icon{ object-fit: contain; display:block; transition: filter 180ms ease, transform 180ms ease; mix-blend-mode: screen;
           filter: saturate(1.24) brightness(1.08)
-            drop-shadow(0 0 24px ${hubColor})
-            drop-shadow(0 0 62px ${hubColor});
+            drop-shadow(0 0 24px #F2EF1D)
+            drop-shadow(0 0 62px #F2EF1D);
         }
         .hub:hover .hub-icon{ transform: scale(1.06); filter: saturate(1.34) brightness(1.14)
-            drop-shadow(0 0 32px ${hubColor})
-            drop-shadow(0 0 88px ${hubColor}); }
+            drop-shadow(0 0 32px #F2EF1D)
+            drop-shadow(0 0 88px #F2EF1D); }
         @keyframes holoPulse { 0%,100%{ filter: brightness(1) } 50%{ filter: brightness(1.08) } }
 
         .items{ position:absolute; left:0; top:0; width:0; height:0; pointer-events:${open ? "auto" : "none"}; }

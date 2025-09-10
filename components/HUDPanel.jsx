@@ -26,7 +26,6 @@ import DevErrorLogger from "@/components/DevErrorLogger";
 import PlanetSystemRaw from "@/components/holo/PlanetSystemRaw";
 import { sfx } from "@/lib/sfx";
 import { ElementIcon as OptimizedElementIcon } from "@/lib/elementIcons";
-// HologramPlanets demo removed per request (3D only)
 
 // Use system font stack to avoid network font fetches during build
 
@@ -103,7 +102,7 @@ export default function HUDPanel({
   const closeCoverRef = useRef(null);
   const [active, setActive] = useState((songs && songs[0]?.id) || undefined);
   const containerRef = useRef(null);
-  const baseW = 820; // design width for console-fit
+  const baseW = 320; // design width for console-fit (reduced from 380)
   const baseH = 340; // design height for console-fit
   const [scale, setScale] = useState(1);
   const [hoverId, setHoverId] = useState(null);
@@ -269,7 +268,7 @@ export default function HUDPanel({
   return (
     <motion.section
       className={
-        `relative ${inConsole ? 'w-full h-full mx-0 mt-0' : 'mx-auto w-[1180px] mt-[10vh]'} `
+        `relative ${inConsole ? 'w-full h-full mx-0 mt-0' : 'mx-auto w-[400px] mt-[10vh]'} `
       }
       /* Remove entrance animation to prevent flash-disappear on some devices */
       initial={false}
@@ -279,9 +278,9 @@ export default function HUDPanel({
       ref={inConsole ? containerRef : undefined}
     >
       <DevErrorLogger />
-      <div className="w-full h-full flex items-start justify-center">
+      <div className="w-full h-full flex items-start justify-end pr-16">
           <motion.div
-            className={`relative rounded-2xl -ml-6 sm:-ml-8 md:-ml-12 lg:-ml-18`}
+            className={`relative rounded-2xl mr-8`}
             // Remove hover glow/scale for the entire HUD display per request
             transition={{ type: "spring", stiffness: 200, damping: 20 }}
             style={inConsole
@@ -299,230 +298,190 @@ export default function HUDPanel({
           {/* Cover art moved into right column above the song list */}
           {/* Holographic beam overlays removed */}
           {/* Bloom layers removed */}
-          {/* Element/logo pinned at the HUD box top-left */}
-          <div className="absolute z-40" style={{ left: 12, top: 12, pointerEvents: 'none' }}>
-            {(() => {
-              try {
-                // Make the default CHXNDLER logo larger in the top-left
-                if (!currentId) { return <ElementIcon name="chxndler" size={48} />; }
-                const found = resolvedSongs.find(s => s.id === (active || ''));
-                const icon = found && found.icon;
-                // Disable glow for song-specific element icons to avoid any rectangular glow box
-                return icon ? <ElementIcon name={icon} size={36} glow={false} /> : null;
-              } catch { return null; }
-            })()}
-          </div>
           <div
-            className={`grid grid-cols-2 gap-4 ${inConsole ? 'p-3' : 'p-8'}`}
+            className={`relative ${inConsole ? 'p-2' : 'p-4'}`}
             style={{ 
               opacity: contentOpacity, 
               transition: 'opacity 240ms ease', 
               pointerEvents: contentOpacity > 0.01 ? 'auto' : 'none', 
-              minHeight: inConsole ? 300 : 600,
-              aspectRatio: '1/1',
-              maxWidth: inConsole ? 300 : 600,
-              margin: '0 auto'
+              minHeight: inConsole ? 300 : 400,
+              width: '100%',
+              height: '100%'
             }}
           >
-          {/* Left: title + planet */}
-          <div className="flex flex-col gap-6 h-full">
-            {/* Title/subtitle removed per request; song title is shown within the HUD display */}
-            <div className="pt-2 w-full flex-1 transform -translate-y-[2vh] sm:-translate-y-[1.5vh] md:-translate-y-[1vh] lg:-translate-y-[1vh]">
-              {/* Hologram panel wrapper to integrate with dashboard styling */}
-              <div className="relative">
-                {/* Dynamic 3D with safe fallback to 2D if it errors */}
-                <div className={`relative w-full h-full overflow-visible rounded-[12px] ${inConsole ? 'min-h-[280px]' : 'min-h-[560px]'}`}>
-                  {/* Keep 3D background clear (no backdrop behind Canvas) */}
-                  {/* Title overlay removed from panel; shown under cover art */}
-                {can3D && PlanetSystemComp ? (
-                  <div className="absolute left-0 right-0 bottom-0" style={{ top: 0 }}>
-                    <ErrorBoundary fallback={null} onError={(e)=>{ if (String(e?.name||'').includes('IndexSizeError')) { try { console.warn('Disabling 3D due to IndexSizeError'); } catch {} } setThreeFailed((e && (e.message||e.name)) || 'Render error'); setCan3D(false); }}>
-                      <PlanetSystemComp showAll={!currentId} />
-                    </ErrorBoundary>
-                  </div>
-                ) : (
-                  // Minimal 2D fallback: start below the one-liner
-                  <div className="absolute left-0 right-0 bottom-0 grid place-items-center" style={{ top: 0 }}>
-                    {/* In-HUD fallback notice */}
-                    {threeFailed ? (
-                      <div
-                        style={{
-                          position: 'absolute', left: 10, bottom: 10, pointerEvents: 'none',
-                          fontSize: 11, letterSpacing: '0.04em', fontWeight: 700,
-                          color: '#EFFFFF', textShadow: '0 0 10px rgba(25,227,255,0.8), 0 0 24px rgba(25,227,255,0.45)',
-                          background: 'linear-gradient(180deg, rgba(0,0,0,.38), rgba(0,0,0,.22))',
-                          border: '1px solid rgba(25,227,255,.35)', borderRadius: 8, padding: '6px 8px',
-                          boxShadow: '0 10px 24px rgba(0,0,0,.35), 0 0 22px rgba(25,227,255,.35)'
-                        }}
-                        aria-live="polite"
-                      >
-                        3D disabled: {threeFailed}. Showing fallback.
-                      </div>
-                    ) : null}
-{/* Light gradient removed */}
-                  </div>
-                )}
-                  {/* Removed debug badge */}
-                  {/* Top-left song title (hologram blue, larger font) */}
-                  <div
-                    className="absolute z-20 rounded-md"
-                    style={{
-                      color: '#19E3FF',
-                      fontFamily: 'OrbitronLocal, InterLocal, sans-serif',
-                      fontWeight: 800,
-                      letterSpacing: '0.08em',
-                      textTransform: 'uppercase',
-                      textShadow: 'none',
-                      WebkitTextStroke: '0px transparent',
-                      fontSize: 22,
-                      lineHeight: '1.12',
-                      width: 'clamp(360px, 70vw, 1200px)',
-                      minHeight: 44,
-                      display: 'block',
-                      padding: 0,
-                      left: 46,
-                      top: 4,
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      pointerEvents: 'none',
-                    }}
-                  >
-                    {(!currentId ? 'CHXNDLER' : ((track?.title) || (resolvedSongs.find(s=> s.id === (active || ''))?.title) || ''))}
-                  </div>
-                  {/* Song tagline directly under the title */}
-                  <div
-                    className="absolute z-20 rounded-md"
-                    style={{
-                      color: '#19E3FF',
-                      fontFamily: 'InterLocal, OrbitronLocal, system-ui, sans-serif',
-                      fontWeight: 700,
-                      letterSpacing: '0.04em',
-                      textShadow: 'none',
-                      WebkitTextStroke: '0px transparent',
-                      fontSize: 14,
-                      lineHeight: '1.25',
-                      width: 'clamp(360px, 75vw, 1200px)',
-                      height: 22,
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '0 10px',
-                      left: 40,
-                      top: 32,
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      pointerEvents: 'none',
-                    }}
-                    aria-label="Song tagline"
-                  >
-                    {(!currentId ? 'Welcome to the HEARTVERSE - a home for ALIENS, where misfits and dreamers live free.' : (track?.subtitle || ''))}
-                  </div>
-
-                  {/* Song changer moved to right rail under cover art */}
-
-                  {/* Sheen overlay removed to keep title + one-liner area fully transparent */}
-                  {/* Removed internal base glow; beam below panel provides the hologram emission */}
-                </div>
-              </div>
-            </div>
+          {/* Element icon at top left */}
+          <div className="absolute z-40" style={{ left: 8, top: 8, pointerEvents: 'none' }}>
+            {(() => {
+              try {
+                // Make the default CHXNDLER logo larger in the top-left
+                if (!currentId) { return <ElementIcon name="chxndler" size={32} />; }
+                const found = resolvedSongs.find(s => s.id === (active || ''));
+                const icon = found && found.icon;
+                // Disable glow for song-specific element icons to avoid any rectangular glow box
+                return icon ? <ElementIcon name={icon} size={28} glow={false} /> : null;
+              } catch { return null; }
+            })()}
           </div>
-          {/* Right rail: cover art + controls */}
-          <aside className="relative flex flex-col items-center gap-2 justify-start">
-            <div 
-              className="mt-0 w-full flex justify-center" 
-              style={{ 
-                maxWidth: inConsole ? 140 : 220
+          {/* Title directly next to element icon */}
+          <div
+            className="absolute z-20 rounded-md"
+            style={{
+              color: '#19E3FF',
+              fontFamily: 'OrbitronLocal, InterLocal, sans-serif',
+              fontWeight: 800,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              textShadow: 'none',
+              WebkitTextStroke: '0px transparent',
+              fontSize: inConsole ? 14 : 18,
+              lineHeight: '1.12',
+              display: 'flex',
+              alignItems: 'center',
+              left: inConsole ? 48 : 64,
+              top: inConsole ? 8 : 12,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              pointerEvents: 'none',
+            }}
+          >
+            {(!currentId ? 'CHXNDLER' : ((track?.title) || (resolvedSongs.find(s=> s.id === (active || ''))?.title) || ''))}
+          </div>
+
+          {/* One-liner directly below title */}
+          <div
+            className="absolute z-20 rounded-md"
+            style={{
+              color: '#19E3FF',
+              fontFamily: 'InterLocal, OrbitronLocal, system-ui, sans-serif',
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              textShadow: 'none',
+              WebkitTextStroke: '0px transparent',
+              fontSize: inConsole ? 10 : 12,
+              lineHeight: '1.25',
+              left: inConsole ? 48 : 64,
+              top: inConsole ? 28 : 38,
+              right: '50%',
+              wordWrap: 'break-word',
+              overflowWrap: 'break-word',
+              whiteSpace: 'normal',
+              pointerEvents: 'none',
+            }}
+            aria-label="Song tagline"
+          >
+            {(!currentId ? 'Welcome to the HEARTVERSE - a home for ALIENS, where misfits and dreamers live free.' : (track?.subtitle || ''))}
+          </div>
+
+          {/* 3D planets extending from left to media player */}
+          <div className="absolute bottom-2 left-2" style={{ width: '65%', height: '60%' }}>
+            {can3D && PlanetSystemComp ? (
+              <div className="relative w-full h-full">
+                <ErrorBoundary fallback={null} onError={(e)=>{ if (String(e?.name||'').includes('IndexSizeError')) { try { console.warn('Disabling 3D due to IndexSizeError'); } catch {} } setThreeFailed((e && (e.message||e.name)) || 'Render error'); setCan3D(false); }}>
+                  <PlanetSystemComp showAll={!currentId} />
+                </ErrorBoundary>
+              </div>
+            ) : (
+              <div className="w-full h-full grid place-items-center">
+                {threeFailed ? (
+                  <div
+                    style={{
+                      fontSize: 8, letterSpacing: '0.04em', fontWeight: 700,
+                      color: '#EFFFFF', textShadow: '0 0 10px rgba(25,227,255,0.8), 0 0 24px rgba(25,227,255,0.45)',
+                      background: 'linear-gradient(180deg, rgba(0,0,0,.38), rgba(0,0,0,.22))',
+                      border: '1px solid rgba(25,227,255,.35)', borderRadius: 4, padding: '4px 6px',
+                      boxShadow: '0 10px 24px rgba(0,0,0,.35), 0 0 22px rgba(25,227,255,.35)'
+                    }}
+                    aria-live="polite"
+                  >
+                    3D disabled: {threeFailed}
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </div>
+          {/* Cover section at top right */}
+          <div className="absolute top-2 right-2" style={{ width: '45%', display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              aria-label="Open song card"
+              className="cover-link"
+              onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {}; try { const a = hoverCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
+              onClick={() => { 
+                try { sfx.play('click', 0.6); } catch {};
+                try { const a = clickCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {};
+                // Track cover art click
+                const trackingSong = (!currentId ? 'chxndler_home' : (track?.slug || active || 'unknown'));
+                const trackingTitle = (!currentId ? 'CHXNDLER Home' : (track?.title || 'Unknown'));
+                trackAnalytics("cover_art_clicked", {
+                  song_id: trackingSong,
+                  song_title: trackingTitle,
+                  cover_src: (!currentId ? DEFAULT_COVER : (track?.cover || DEFAULT_COVER))
+                });
+                setShowCard(true); 
               }}
             >
-              {true ? (
-                <button
-                  type="button"
-                  aria-label="Open song card"
-                  className="cover-link w-full"
-                  onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {}; try { const a = hoverCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
-                  onClick={() => { 
-                    try { sfx.play('click', 0.6); } catch {};
-                    try { const a = clickCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {};
-                    // Track cover art click
-                    const trackingSong = (!currentId ? 'chxndler_home' : (track?.slug || active || 'unknown'));
-                    const trackingTitle = (!currentId ? 'CHXNDLER Home' : (track?.title || 'Unknown'));
-                    trackAnalytics("cover_art_clicked", {
-                      song_id: trackingSong,
-                      song_title: trackingTitle,
-                      cover_src: (!currentId ? DEFAULT_COVER : (track?.cover || DEFAULT_COVER))
-                    });
-                    setShowCard(true); 
-                  }}
-                >
-                  {(() => {
-                    const src = (!currentId ? DEFAULT_COVER : (track?.cover || DEFAULT_COVER));
-                    const coverSize = inConsole ? 120 : 180;
-                    return <CoverCard src={src} size={coverSize} />;
-                  })()}
-                </button>
-              ) : null}
-            </div>
-            
-            {/* Progress bar and play/pause controls */}
-            <div 
-              className="w-full" 
-              style={{ 
-                maxWidth: inConsole ? 140 : 220
-              }}
-            >
-              {/* Play/Pause button */}
+              {(() => {
+                const src = (!currentId ? DEFAULT_COVER : (track?.cover || DEFAULT_COVER));
+                const coverSize = inConsole ? 180 : 240;
+                return <CoverCard src={src} size={coverSize} />;
+              })()}
+            </button>
+          </div>
+
+          {/* Media player positioned directly below cover box and above song list - compact single line */}
+          <div className="absolute right-2" style={{ top: inConsole ? '200px' : '260px', width: '45%' }}>
+            <div className="flex items-center gap-2">
+              {/* Compact Play/Pause button */}
               <button 
                 onClick={handlePlayPause}
-                className="hud-play-btn"
+                className="hud-play-btn-compact"
                 aria-label={playing ? "Pause" : "Play"}
               >
                 {playing ? (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
                     <rect x="6" y="4" width="4" height="16" rx="1"/>
                     <rect x="14" y="4" width="4" height="16" rx="1"/>
                   </svg>
                 ) : (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M8 5v14l11-7z"/>
                   </svg>
                 )}
               </button>
               
-              {/* Progress bar */}
-              <div className="hud-progress-container">
+              {/* Inline progress bar */}
+              <div className="flex-1">
                 <div 
-                  className="hud-progress-bar"
+                  className="hud-progress-bar-compact"
                   onClick={handleProgressClick}
                 >
                   <div 
-                    className="hud-progress-fill" 
+                    className="hud-progress-fill-compact" 
                     style={{ 
                       width: duration > 0 ? `${(progress / duration) * 100}%` : '0%' 
                     }}
                   />
                 </div>
-                {duration > 0 && (
-                  <div className="hud-time-display">
-                    {Math.floor(progress / 60)}:{(Math.floor(progress % 60)).toString().padStart(2, '0')} / {Math.floor(duration / 60)}:{(Math.floor(duration % 60)).toString().padStart(2, '0')}
-                  </div>
-                )}
               </div>
+              
+              {/* Compact time display */}
+              {duration > 0 && (
+                <div className="hud-time-compact">
+                  {Math.floor(progress / 60)}:{(Math.floor(progress % 60)).toString().padStart(2, '0')}
+                </div>
+              )}
             </div>
-            
-            <div 
-              className="w-full" 
-              style={{ 
-                maxWidth: inConsole ? 140 : 220
-              }}
-            >
-              <SongDropdown
-                items={resolvedSongs}
-                initialActiveId={active || resolvedSongs[0]?.id}
-                onChange={(id)=>{ setActive(id); onSongChange?.(id); try { if (usePlayerStore?.getState) usePlayerStore.getState().setMain(id); } catch {} }}
-              />
-            </div>
-          </aside>
+          </div>
+
+          {/* Song selector positioned at bottom right of HUD display */}
+          <div className="absolute bottom-2 right-2" style={{ width: '35%' }}>
+            <SongDropdown
+              items={resolvedSongs}
+              initialActiveId={active || resolvedSongs[0]?.id}
+              onChange={(id)=>{ setActive(id); onSongChange?.(id); try { if (usePlayerStore?.getState) usePlayerStore.getState().setMain(id); } catch {} }}
+            />
+          </div>
         </div>
 
 
@@ -541,10 +500,10 @@ export default function HUDPanel({
         }
         .cover-link:active{ transform: scale(.98); }
         
-        /* HUD Progress Bar and Play Button */
-        .hud-play-btn{
-          width: 36px;
-          height: 36px;
+        /* HUD Progress Bar and Play Button - Compact Version */
+        .hud-play-btn-compact{
+          width: 20px;
+          height: 20px;
           border-radius: 50%;
           background: rgba(25,227,255,.7);
           border: 1px solid rgba(255,255,255,.3);
@@ -554,57 +513,53 @@ export default function HUDPanel({
           justify-content: center;
           cursor: pointer;
           transition: all 0.2s ease;
-          box-shadow: 0 0 16px rgba(25,227,255,.3);
-          margin: 0 auto 8px auto;
+          box-shadow: 0 0 8px rgba(25,227,255,.3);
+          flex-shrink: 0;
         }
-        .hud-play-btn:hover{
+        .hud-play-btn-compact:hover{
           background: rgba(25,227,255,.9);
-          transform: scale(1.08);
-          box-shadow: 0 0 24px rgba(25,227,255,.5);
+          transform: scale(1.1);
+          box-shadow: 0 0 12px rgba(25,227,255,.5);
           border-color: rgba(255,255,255,.5);
         }
-        .hud-play-btn:active{
+        .hud-play-btn-compact:active{
           transform: scale(0.95);
         }
         
-        .hud-progress-container{ 
-          position: relative; 
-          margin-top: 4px;
-        }
-        .hud-progress-bar{
+        .hud-progress-bar-compact{
           position: relative;
           width: 100%;
-          height: 16px;
+          height: 8px;
           background: rgba(0,0,0,.4);
-          border-radius: 8px;
+          border-radius: 4px;
           border: 1px solid rgba(25,227,255,.25);
           overflow: hidden;
           cursor: pointer;
           transition: all 0.15s ease;
         }
-        .hud-progress-bar:hover{
+        .hud-progress-bar-compact:hover{
           border-color: rgba(25,227,255,.5);
-          box-shadow: 0 0 8px rgba(25,227,255,.2);
+          box-shadow: 0 0 6px rgba(25,227,255,.2);
+          height: 10px;
         }
-        .hud-progress-fill{
+        .hud-progress-fill-compact{
           position: absolute;
           left: 0;
           top: 0;
           height: 100%;
-          background: linear-gradient(90deg, rgba(25,227,255,.7), rgba(25,227,255,.5));
-          border-radius: 8px;
+          background: linear-gradient(90deg, rgba(25,227,255,.8), rgba(25,227,255,.6));
+          border-radius: 4px;
           transition: width 0.1s ease;
-          box-shadow: 0 0 8px rgba(25,227,255,.3);
+          box-shadow: 0 0 4px rgba(25,227,255,.4);
         }
-        .hud-time-display{
-          position: absolute;
-          right: 0;
-          top: -20px;
-          font-size: 9px;
+        .hud-time-compact{
+          font-size: 8px;
           color: rgba(25,227,255,.8);
           font-family: 'OrbitronLocal', monospace;
           text-shadow: 0 0 4px rgba(25,227,255,.4);
           letter-spacing: 0.02em;
+          flex-shrink: 0;
+          min-width: 24px;
         }
         
         /* Beam animations removed */

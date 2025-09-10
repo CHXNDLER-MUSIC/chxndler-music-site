@@ -52,7 +52,7 @@ export default function SongList() {
       aria-label="Songs"
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      className="h-[54vh] md:h-[58vh] overflow-y-auto pr-1 custom-scroll"
+      className="h-[54vh] md:h-[58vh] overflow-y-auto pr-1 custom-scroll w-full"
     >
       {songs.map((s) => {
         const isMain = s.id === mainId;
@@ -88,9 +88,9 @@ export default function SongList() {
                   boxShadow: "0 0 12px 2px rgba(61,245,255,0.5)",
                 }}
               />
-              <span className="font-semibold">{s.title}</span>
+              <span className="font-semibold break-words">{s.title}</span>
             </div>
-            <div className="text-cyan-200/70 text-xs">{s.oneLiner}</div>
+            <div className="text-cyan-200/70 text-xs break-words">{s.oneLiner}</div>
           </button>
         );
       })}

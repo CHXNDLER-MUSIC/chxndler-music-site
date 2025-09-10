@@ -105,8 +105,9 @@ export default function HoloJoinPopout({
       <style jsx>{`
         .join-pop-wrap{ position:relative; pointer-events:auto; }
         .beam{ position:absolute; left:-${Math.round(size*0.5)}px; top:${Math.round(size*0.26)}px; width:${Math.round(size*2)}px; height:${Math.round(size*0.5)}px; pointer-events:none; mix-blend-mode:screen;
-          background: radial-gradient(closest-side, ${hubColor}66, transparent 70%);
-          filter: blur(8px);
+          clip-path: polygon(50% 100%, 90% 0, 10% 0);
+          background: linear-gradient(180deg, ${hubColor}12, ${hubColor}22 30%, ${hubColor}08 70%, ${hubColor}00 100%);
+          filter: blur(6px);
         }
         .hub{
           position:relative; display:grid; place-items:center; border-radius:9999px; cursor:pointer;

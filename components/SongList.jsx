@@ -93,7 +93,7 @@ export default function SongList({ items = [], initialActiveId, onChange, onHove
             aria-pressed={isActive}
             >
             <span className="text-[#19E3FF]" style={{ color: s.color }}><Icon name={s.icon} /></span>
-            <span className={`flex-1 text-sm tracking-wide ${isActive ? 'text-[#CFF7FF]' : 'text-[#9EEBFF] group-hover:text-[#CFF7FF]'}`}>{s.title}</span>
+            <span className={`flex-1 text-sm tracking-wide break-words ${isActive ? 'text-[#CFF7FF]' : 'text-[#9EEBFF] group-hover:text-[#CFF7FF]'}`}>{s.title}</span>
           </button>
         );
       })}

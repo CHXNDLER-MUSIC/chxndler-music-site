@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import SkyboxVideo from "@/components/SkyboxVideo";
 import AmbientSpace from "@/components/AmbientSpace";
 import SteeringWheelOverlay from "@/components/SteeringWheelOverlay";
@@ -53,6 +54,7 @@ export default function DashboardApp() {
   const [firstStartDone, setFirstStartDone] = useState(false);
   const welcomeOnStartRef = React.useRef(false); // signals that welcome VO should play now
   const [cardModalOpen, setCardModalOpen] = useState(false); // track card modal state for beam dimming
+  const [joinAlienOpen, setJoinAlienOpen] = useState(false); // track join alien button state for pink beam
   const SPACE_SKY = { webm: "/skies/space.webm", mp4: "/skies/space.mp4", key: "space" };
   
   // Detect mobile device for performance optimizations
@@ -288,7 +290,7 @@ export default function DashboardApp() {
   const lightBeamStyle = useMemo(() => ({
     left: '50%',
     bottom: '40vh',
-    top: '50vh', // Pulled down from 42vh to 50vh (8vh lower)
+    top: '45vh', // Made taller by starting higher
     width: 'min(1400px, 85vw)',
     transform: 'translateX(-50%)',
     opacity: beamEnabled ? (cardModalOpen ? 0.3 : 1) : 0,
@@ -417,6 +419,7 @@ export default function DashboardApp() {
         POS={POS}
         playing={isPlaying}
         showUI={showOverlayUI}
+        onJoinToggle={setJoinAlienOpen}
         onPowerToggle={() => { 
           // Manual power toggle should not start new welcome audio, but don't interrupt if it's already playing
           if (!welcomeOnStartRef.current) {
@@ -456,29 +459,44 @@ export default function DashboardApp() {
       <Slot
         className="slot-container"
         rects={[
-          // Widen HUD much more: extend further on both sides, especially for mobile portrait
-          { minWidth: 420, maxWidth: 460, top: -1.2, left: 12, width: 76, height: 14, orientation: 'portrait' }, // Much wider on mobile portrait
-          { maxWidth: 419, top: 0.0, left: 10, width: 80, height: 14, orientation: 'portrait' }, // Even wider on small mobile portrait
-          { minWidth: 480, maxWidth: 740, top: -8.0, left: 16, width: 74, height: 14, orientation: 'landscape' }, // Moved up significantly for mobile landscape
-          { minWidth: 741, maxWidth: 1024, top: -0.8, left: 15.5, width: 72, height: 15 },
-          { minWidth: 1025, top: -1.2, left: 15, width: 74, height: 15 },
+          // HUD: wider size positioned in center of screen
+          { minWidth: 420, maxWidth: 460, top: 2, left: 27.5, width: 45, height: 45, orientation: 'portrait' }, // Wider on mobile portrait
+          { maxWidth: 419, top: 5, left: 26, width: 48, height: 50, orientation: 'portrait' }, // Wider on small mobile portrait  
+          { minWidth: 480, maxWidth: 740, top: -2, left: 29, width: 42, height: 40, orientation: 'landscape' }, // Wider mobile landscape
+          { minWidth: 741, maxWidth: 1024, top: 8, left: 31, width: 38, height: 35 }, // Wider tablet
+          { minWidth: 1025, top: 10, left: 32.5, width: 35, height: 30 }, // Wider desktop
         ]}
       >
         <div className="relative h-full w-full p-0" style={{ overflow: 'visible' }} suppressHydrationWarning>
-          {showHUD ? (
-            <div className="absolute inset-0 p-0" suppressHydrationWarning>
-              <HUDPanel
-                inConsole
-                songs={hudSongs}
-                onSongChange={onSongChange}
-                track={curTrack}
-                currentId={homeMode ? undefined : curTrack?.slug}
-                playing={isPlaying}
-                beamOnly={beamOnly}
-                beamEnabled={beamEnabled}
-              />
-            </div>
-          ) : null}
+          <AnimatePresence mode="wait">
+            {showHUD && (
+              <motion.div 
+                key="hud-panel"
+                className="absolute inset-0 p-0" 
+                suppressHydrationWarning
+                initial={{ x: '100%', opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: '100%', opacity: 0 }}
+                transition={{ 
+                  type: 'spring',
+                  damping: 20,
+                  stiffness: 100,
+                  duration: 0.8
+                }}
+              >
+                <HUDPanel
+                  inConsole
+                  songs={hudSongs}
+                  onSongChange={onSongChange}
+                  track={curTrack}
+                  currentId={homeMode ? undefined : curTrack?.slug}
+                  playing={isPlaying}
+                  beamOnly={beamOnly}
+                  beamEnabled={beamEnabled}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
             {/* Click-to-activate overlay on opening screen: turn HUD on when area is tapped */}
             {!showHUD ? (
               <button
@@ -494,7 +512,7 @@ export default function DashboardApp() {
         <div className="hidden">
           <MediaDock
             onSkyChange={(webm, mp4, key) => setNextSky({ webm, mp4, key })}
-        onPlayingChange={(p) => { setIsPlaying(p); if (p) setAmbientSuspended(false); }}
+            onPlayingChange={(p) => { setIsPlaying(p); if (p) setAmbientSuspended(false); }}
             onTrackChange={(t) => { setCurTrack(t); if (userSelected) { setLinks({ spotify: t.spotify || LINKS.spotify, apple: t.apple || LINKS.apple }); } else { setLinks({ spotify: LINKS.spotify, apple: LINKS.apple }); } }}
             playSignal={playSignal}
             toggleSignal={toggleSignal}
@@ -521,7 +539,7 @@ export default function DashboardApp() {
               right: '3%', // Reduced from 5% to make beam wider on mobile
               bottom: '0px', 
               top: '0%',
-              clipPath: 'polygon(48% 100%, 52% 100%, 1% 0, 99% 0)', // Wider beam top to match wider HUD
+              clipPath: 'polygon(48% 100%, 52% 100%, 25% 0, 75% 0)', // Slightly narrower beam top
               background: isMobile 
                 ? // Simplified gradient for mobile performance
                   `linear-gradient(180deg, 
@@ -546,6 +564,59 @@ export default function DashboardApp() {
               filter: isMobile ? 'blur(4px)' : 'blur(8px)', // Less blur on mobile
               mixBlendMode: 'screen',
               animation: isMobile ? 'beamFlow 4s linear infinite' : 'beamFlow 3s linear infinite' // Slower on mobile
+            }}
+          />
+        </div>
+      ) : null}
+
+      {/* Pink light beam - controlled by join alien button */}
+      {mounted && joinAlienOpen ? (
+        <div 
+          className="fixed pointer-events-none z-30 pink-beam-animation"
+          style={{
+            position: 'fixed',
+            left: '55%', // Moved left from 60%
+            bottom: '35vh', // Moved down from 40vh
+            top: '50vh', // Adjusted top accordingly
+            width: 'min(1400px, 85vw)',
+            transform: 'translateX(-40%)', // Adjusted centering
+            opacity: 1, // Always visible when joinAlienOpen is true
+            transition: 'opacity 300ms ease'
+          }}
+        >
+          {/* Single main pink beam */}
+          <div 
+            style={{
+              position: 'absolute',
+              left: '3%', // Same positioning as blue beam
+              right: '3%', // Same positioning as blue beam
+              bottom: '0px', 
+              top: '0%',
+              clipPath: 'polygon(48% 100%, 52% 100%, 0% 0, 50% 0)', // Angles towards center/top-left, not spreading to top-right
+              background: isMobile 
+                ? // Simplified gradient for mobile performance
+                  `linear-gradient(180deg, 
+                    rgba(252,84,175,0.0) 0%, 
+                    rgba(252,84,175,0.25) 50%, 
+                    rgba(252,84,175,0.0) 100%)`
+                : // Full complexity for desktop
+                  `linear-gradient(180deg, 
+                    rgba(252,84,175,0.0) 0%, 
+                    rgba(252,84,175,0.15) 15%, 
+                    rgba(252,84,175,0.35) 40%, 
+                    rgba(252,84,175,0.55) 65%, 
+                    rgba(252,84,175,0.35) 85%, 
+                    rgba(252,84,175,0.0) 100%),
+                  repeating-linear-gradient(180deg,
+                    transparent 0px,
+                    rgba(252,84,175,0.1) 20px,
+                    rgba(252,84,175,0.2) 40px,
+                    rgba(252,84,175,0.1) 60px,
+                    transparent 80px)`,
+              backgroundSize: isMobile ? '100% 100%' : '100% 100%, 100% 160px',
+              filter: isMobile ? 'blur(4px)' : 'blur(8px)', // Same blur as blue beam
+              mixBlendMode: 'screen',
+              animation: isMobile ? 'pinkBeamFlow 4s linear infinite' : 'pinkBeamFlow 3s linear infinite' // Use pink beam animation
             }}
           />
         </div>
