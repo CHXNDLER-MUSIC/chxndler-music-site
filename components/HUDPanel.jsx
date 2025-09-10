@@ -160,32 +160,62 @@ export default function HUDPanel({
 
   // Audio progress tracking
   useEffect(() => {
-    const a = document.querySelector('audio[data-audio-player="1"]');
-    if (!a) return;
-    
-    const onTimeUpdate = () => { setProgress(a.currentTime); };
-    const onDurationChange = () => { setDuration(a.duration || 0); };
-    const onVolumeChange = () => { setVolume(a.volume); };
-    
-    a.addEventListener('timeupdate', onTimeUpdate);
-    a.addEventListener('durationchange', onDurationChange);
-    a.addEventListener('volumechange', onVolumeChange);
-    
-    return () => {
-      a.removeEventListener('timeupdate', onTimeUpdate);
-      a.removeEventListener('durationchange', onDurationChange);
-      a.removeEventListener('volumechange', onVolumeChange);
+    const findAndConnectAudio = () => {
+      const a = document.querySelector('audio[data-audio-player="1"]');
+      console.log('Looking for audio element:', a);
+      if (!a) {
+        // Try again in a moment if audio element not found
+        setTimeout(findAndConnectAudio, 100);
+        return;
+      }
+      
+      console.log('Found audio element, connecting listeners');
+      
+      const onTimeUpdate = () => { 
+        console.log('Time update:', a.currentTime);
+        setProgress(a.currentTime); 
+      };
+      const onDurationChange = () => { 
+        console.log('Duration changed:', a.duration);
+        setDuration(a.duration || 0); 
+      };
+      const onVolumeChange = () => { setVolume(a.volume); };
+      
+      // Set initial values
+      if (a.duration) setDuration(a.duration);
+      if (!isNaN(a.currentTime)) setProgress(a.currentTime);
+      
+      a.addEventListener('timeupdate', onTimeUpdate);
+      a.addEventListener('durationchange', onDurationChange);
+      a.addEventListener('volumechange', onVolumeChange);
+      a.addEventListener('loadedmetadata', onDurationChange);
+      
+      return () => {
+        a.removeEventListener('timeupdate', onTimeUpdate);
+        a.removeEventListener('durationchange', onDurationChange);
+        a.removeEventListener('volumechange', onVolumeChange);
+        a.removeEventListener('loadedmetadata', onDurationChange);
+      };
     };
+    
+    if (mounted) {
+      return findAndConnectAudio();
+    }
   }, [mounted]);
 
   // Progress bar click handler
   const handleProgressClick = (e) => {
     const a = document.querySelector('audio[data-audio-player="1"]');
-    if (!a || !duration) return;
+    console.log('Progress click - audio element:', a, 'duration:', duration);
+    if (!a || !duration) {
+      console.log('Cannot seek - no audio element or duration');
+      return;
+    }
     const rect = e.currentTarget.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const percentage = clickX / rect.width;
     const seekTime = percentage * duration;
+    console.log('Seeking to:', seekTime, 'seconds (', percentage * 100, '%)');
     a.currentTime = seekTime;
     try { sfx.play('click', 0.3); } catch {}
   };
@@ -429,48 +459,74 @@ export default function HUDPanel({
             </button>
           </div>
 
-          {/* Media player positioned directly below cover box and above song list - compact single line */}
-          <div className="absolute right-2" style={{ top: inConsole ? '200px' : '260px', width: '45%' }}>
-            <div className="flex items-center gap-2">
-              {/* Compact Play/Pause button */}
-              <button 
-                onClick={handlePlayPause}
-                className="hud-play-btn-compact"
-                aria-label={playing ? "Pause" : "Play"}
-              >
-                {playing ? (
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
-                    <rect x="6" y="4" width="4" height="16" rx="1"/>
-                    <rect x="14" y="4" width="4" height="16" rx="1"/>
-                  </svg>
-                ) : (
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M8 5v14l11-7z"/>
-                  </svg>
-                )}
-              </button>
-              
-              {/* Inline progress bar */}
-              <div className="flex-1">
-                <div 
-                  className="hud-progress-bar-compact"
-                  onClick={handleProgressClick}
+          {/* Enhanced Media Player - single line layout */}
+          <div className="absolute right-2" style={{ top: inConsole ? '190px' : '250px', width: '45%', height: '40px' }}>
+            <div className="hud-media-player">
+              {/* Single row: Play button, progress bar, and time display */}
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={handlePlayPause}
+                  className="hud-play-btn-enhanced"
+                  aria-label={playing ? "Pause" : "Play"}
                 >
+                  {playing ? (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                      <rect x="6" y="4" width="4" height="16" rx="1"/>
+                      <rect x="14" y="4" width="4" height="16" rx="1"/>
+                    </svg>
+                  ) : (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  )}
+                </button>
+                
+                {/* Enhanced progress bar with hover scrubbing - takes up most space */}
+                <div className="flex-1">
                   <div 
-                    className="hud-progress-fill-compact" 
-                    style={{ 
-                      width: duration > 0 ? `${(progress / duration) * 100}%` : '0%' 
+                    className="hud-progress-bar-enhanced"
+                    onClick={handleProgressClick}
+                    onMouseMove={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const hoverX = e.clientX - rect.left;
+                      const hoverPercentage = (hoverX / rect.width) * 100;
+                      e.currentTarget.style.setProperty('--hover-position', `${hoverPercentage}%`);
                     }}
-                  />
+                  >
+                    {/* Background track */}
+                    <div className="progress-track" />
+                    {/* Progress fill */}
+                    <div 
+                      className="hud-progress-fill-enhanced" 
+                      style={{ 
+                        width: duration > 0 ? `${(progress / duration) * 100}%` : '0%' 
+                      }}
+                    />
+                    {/* Hover indicator */}
+                    <div className="progress-hover-indicator" />
+                    {/* Progress handle */}
+                    <div 
+                      className="progress-handle"
+                      style={{
+                        left: duration > 0 ? `${(progress / duration) * 100}%` : '0%'
+                      }}
+                    />
+                  </div>
                 </div>
+                
+                {/* Enhanced time display */}
+                {duration > 0 && (
+                  <div className="hud-time-enhanced">
+                    <span className="current-time">
+                      {Math.floor(progress / 60)}:{(Math.floor(progress % 60)).toString().padStart(2, '0')}
+                    </span>
+                    <span className="time-separator">/</span>
+                    <span className="total-time">
+                      {Math.floor(duration / 60)}:{(Math.floor(duration % 60)).toString().padStart(2, '0')}
+                    </span>
+                  </div>
+                )}
               </div>
-              
-              {/* Compact time display */}
-              {duration > 0 && (
-                <div className="hud-time-compact">
-                  {Math.floor(progress / 60)}:{(Math.floor(progress % 60)).toString().padStart(2, '0')}
-                </div>
-              )}
             </div>
           </div>
 
@@ -500,66 +556,126 @@ export default function HUDPanel({
         }
         .cover-link:active{ transform: scale(.98); }
         
-        /* HUD Progress Bar and Play Button - Compact Version */
-        .hud-play-btn-compact{
-          width: 20px;
-          height: 20px;
+        /* Enhanced Media Player Styles */
+        .hud-media-player {
+          padding: 8px;
+          background: rgba(0,0,0,.3);
+          border: 1px solid rgba(25,227,255,.2);
+          border-radius: 8px;
+          backdrop-filter: blur(4px);
+        }
+        
+        .hud-play-btn-enhanced{
+          width: 28px;
+          height: 28px;
           border-radius: 50%;
-          background: rgba(25,227,255,.7);
-          border: 1px solid rgba(255,255,255,.3);
+          background: rgba(25,227,255,.8);
+          border: 1px solid rgba(255,255,255,.4);
           color: #000;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
           transition: all 0.2s ease;
-          box-shadow: 0 0 8px rgba(25,227,255,.3);
+          box-shadow: 0 0 12px rgba(25,227,255,.4);
           flex-shrink: 0;
         }
-        .hud-play-btn-compact:hover{
-          background: rgba(25,227,255,.9);
-          transform: scale(1.1);
-          box-shadow: 0 0 12px rgba(25,227,255,.5);
-          border-color: rgba(255,255,255,.5);
+        .hud-play-btn-enhanced:hover{
+          background: rgba(25,227,255,1);
+          transform: scale(1.08);
+          box-shadow: 0 0 18px rgba(25,227,255,.6);
+          border-color: rgba(255,255,255,.6);
         }
-        .hud-play-btn-compact:active{
+        .hud-play-btn-enhanced:active{
           transform: scale(0.95);
         }
         
-        .hud-progress-bar-compact{
+        .hud-time-enhanced{
+          font-size: 10px;
+          color: rgba(25,227,255,.9);
+          font-family: 'OrbitronLocal', monospace;
+          text-shadow: 0 0 6px rgba(25,227,255,.5);
+          letter-spacing: 0.03em;
+          display: flex;
+          align-items: center;
+          gap: 2px;
+        }
+        .current-time {
+          color: rgba(25,227,255,1);
+        }
+        .time-separator {
+          color: rgba(25,227,255,.6);
+          margin: 0 2px;
+        }
+        .total-time {
+          color: rgba(25,227,255,.7);
+        }
+        
+        .hud-progress-bar-enhanced{
           position: relative;
           width: 100%;
-          height: 8px;
-          background: rgba(0,0,0,.4);
-          border-radius: 4px;
-          border: 1px solid rgba(25,227,255,.25);
-          overflow: hidden;
+          height: 12px;
+          border-radius: 6px;
           cursor: pointer;
-          transition: all 0.15s ease;
+          transition: all 0.2s ease;
+          --hover-position: 0%;
         }
-        .hud-progress-bar-compact:hover{
-          border-color: rgba(25,227,255,.5);
-          box-shadow: 0 0 6px rgba(25,227,255,.2);
-          height: 10px;
+        
+        .progress-track {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          background: rgba(0,0,0,.5);
+          border: 1px solid rgba(25,227,255,.3);
+          border-radius: 6px;
+          overflow: hidden;
         }
-        .hud-progress-fill-compact{
+        
+        .hud-progress-fill-enhanced{
           position: absolute;
           left: 0;
           top: 0;
           height: 100%;
-          background: linear-gradient(90deg, rgba(25,227,255,.8), rgba(25,227,255,.6));
-          border-radius: 4px;
+          background: linear-gradient(90deg, rgba(25,227,255,.9), rgba(25,227,255,.7));
+          border-radius: 6px;
           transition: width 0.1s ease;
-          box-shadow: 0 0 4px rgba(25,227,255,.4);
+          box-shadow: 0 0 8px rgba(25,227,255,.5);
+          z-index: 2;
         }
-        .hud-time-compact{
-          font-size: 8px;
-          color: rgba(25,227,255,.8);
-          font-family: 'OrbitronLocal', monospace;
-          text-shadow: 0 0 4px rgba(25,227,255,.4);
-          letter-spacing: 0.02em;
-          flex-shrink: 0;
-          min-width: 24px;
+        
+        .progress-hover-indicator {
+          position: absolute;
+          left: var(--hover-position);
+          top: 0;
+          width: 2px;
+          height: 100%;
+          background: rgba(255,255,255,.8);
+          opacity: 0;
+          transition: opacity 0.15s ease;
+          z-index: 3;
+          transform: translateX(-50%);
+        }
+        
+        .hud-progress-bar-enhanced:hover .progress-hover-indicator {
+          opacity: 1;
+        }
+        
+        .progress-handle {
+          position: absolute;
+          top: 50%;
+          width: 16px;
+          height: 16px;
+          background: rgba(25,227,255,1);
+          border: 2px solid rgba(255,255,255,.8);
+          border-radius: 50%;
+          transform: translate(-50%, -50%);
+          box-shadow: 0 0 10px rgba(25,227,255,.6);
+          z-index: 4;
+          transition: left 0.1s ease, transform 0.15s ease;
+        }
+        
+        .hud-progress-bar-enhanced:hover .progress-handle {
+          transform: translate(-50%, -50%) scale(1.2);
         }
         
         /* Beam animations removed */

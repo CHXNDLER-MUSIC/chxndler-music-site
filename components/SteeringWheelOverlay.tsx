@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import HoloHubMenu from "@/components/HoloHubMenu";
 import LumaKeyVideo from "@/components/LumaKeyVideo";
@@ -28,6 +28,7 @@ export default function SteeringWheelOverlay({
   const sfxRef = useRef<HTMLAudioElement|null>(null);
   const pauseRef = useRef<HTMLAudioElement|null>(null);
   const hoverRef = useRef<HTMLAudioElement|null>(null);
+  const joinAlienRef = useRef<HTMLAudioElement|null>(null);
   const [showJoin, setShowJoin] = useState(false);
 
   // Notify parent when showJoin changes
@@ -36,11 +37,19 @@ export default function SteeringWheelOverlay({
   }, [showJoin, onJoinToggle]);
   const joinFormRef = useRef<HTMLDivElement|null>(null);
 
-  // Close join form when clicking outside
+  // Close join form when clicking outside (but not on the join alien button itself)
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (showJoin && joinFormRef.current && !joinFormRef.current.contains(event.target as Node)) {
-        setShowJoin(false);
+        // Check if the click was on a join alien button - if so, let the button handle it
+        const target = event.target as Element;
+        const isJoinButton = target?.closest('[aria-label="Join Alien Display"]') || 
+                            target?.closest('.join-wrap') ||
+                            target?.getAttribute('aria-label') === 'Join Alien Display';
+        
+        if (!isJoinButton) {
+          setShowJoin(false);
+        }
       }
     }
     
@@ -68,13 +77,35 @@ export default function SteeringWheelOverlay({
     // Do not toggle main track audio on Start. Playback is controlled via song selection.
   }
 
+  const handleJoinAlienToggle = useCallback(() => {
+    console.log('handleJoinAlienToggle called, current showJoin:', showJoin);
+    
+    // Simple toggle - just show/hide the pink join alien display
+    // Don't trigger blue light or HUD display
+    setShowJoin(prevShowJoin => !prevShowJoin);
+  }, [showJoin]);
+
+  // Helper function to get responsive values
+  const getResponsiveValue = (config: any) => {
+    if (!config) return config;
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+    const isTablet = typeof window !== 'undefined' && window.innerWidth > 768 && window.innerWidth <= 1024;
+    
+    if (isMobile && config.mobile) {
+      return { ...config, ...config.mobile };
+    } else if (isTablet && config.tablet) {
+      return { ...config, ...config.tablet };
+    }
+    return config;
+  };
+
   const wheel = POS?.wheel || {};
   const lp = wheel.logo || { topVh: 66, leftVw: 26, sizePx: 72 };
-  // Default play button to the exact center of the wheel logo
-  const pp = wheel.play || { topVh: lp.topVh, leftVw: lp.leftVw, sizePx: Math.round(lp.sizePx * 0.9) };
-  // Wheel video size (relative to footprint) + optional offsets
-  // Minimal scale for subtle wheel presence
-  const vconf = wheel.video || { scale: 1.0, offsetVh: 0, offsetVw: 0, centerHoriz: true, debug: false };
+  // Get responsive play button configuration
+  const ppConfig = getResponsiveValue(wheel.play) || { topVh: lp.topVh, leftVw: lp.leftVw, sizePx: Math.round(lp.sizePx * 0.9) };
+  const pp = ppConfig;
+  // Get responsive wheel video configuration
+  const vconf = getResponsiveValue(wheel.video) || { scale: 1.0, offsetVh: 0, offsetVw: 0, centerHoriz: true, debug: false };
   const basePx = Math.max(lp.sizePx || 72, pp.sizePx || 64);
   const vs = Math.round(basePx * (vconf.scale || 4.0));
 
@@ -184,18 +215,21 @@ export default function SteeringWheelOverlay({
             style={{ objectFit: 'contain' }}
           />
         );
+        // Check if mobile for responsive positioning
+        const isMobileComms = typeof window !== 'undefined' && (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+        
         return (
           <div
             style={{
               position: "absolute",
-              top: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${vs/2}px + ${(POS?.wheel?.comms?.dyPx ?? 0) - 50}px)`, // Moved up more (was -35px, now -50px)
-              left: `calc(50vw - 44px)`, // Center on screen, moved slightly right
+              top: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${vs/2}px + ${(getResponsiveValue(POS?.wheel?.comms)?.dyPx ?? 0) - 40}px)`, // Above steering wheel
+              left: `calc(50vw - 120px)`, // Moved even further to the left
               zIndex: 92,
               pointerEvents: 'auto',
             }}
             aria-hidden={false}
           >
-            <div style={{ opacity: showUI ? 1 : 0, transition: 'opacity 300ms ease', pointerEvents: showUI ? 'auto' : 'none' }}>
+            <div style={{ opacity: showUI ? 1 : 0, transition: 'opacity 75ms ease', pointerEvents: showUI ? 'auto' : 'none' }}>
               <HoloHubMenu
                 items={[
                 LINKS.instagram ? { id: 'ig', label: 'Instagram', href: LINKS.instagram, icon: '/elements/instagram.png', color: '#E1306C' } : null,
@@ -204,14 +238,26 @@ export default function SteeringWheelOverlay({
                 LINKS.spotify ? { id: 'sp', label: 'Spotify', href: LINKS.spotify, icon: '/elements/spotify.png', color: '#1DB954' } : null,
                 LINKS.apple ? { id: 'am', label: 'Apple Music', href: LINKS.apple, icon: '/elements/apple.png', color: '#FA2D48' } : null,
               ].filter(Boolean) as any}
-                radius={108}
+                radius={60}
                 hubColor="#F2EF1D"
                 itemSize={84}
                 hubSize={84}
-                // Explicit placement by clock position:
-                // 12 o'clock: Spotify (-90deg), 2 o'clock: Apple (-30deg),
-                // 3:30–4 o'clock: Instagram (15deg), 5 o'clock: TikTok (60deg), 6:30–7 o'clock: YouTube (110deg)
-                angles={{ sp: -90, am: -30, ig: 15, tt: 60, yt: 110 }}
+                // Centered arrangement within the yellow display
+                // All buttons centered around the hub circle
+                angles={{ sp: -36, am: -18, ig: 0, tt: 18, yt: 36 }}
+                onToggle={(isOpen) => {
+                  if (isOpen) {
+                    console.log('Comms menu opening, hiding other displays');
+                    // Hide HUD if showing
+                    if (showUI) {
+                      onPowerToggle?.();
+                    }
+                    // Hide join alien display if showing
+                    if (showJoin) {
+                      setShowJoin(false);
+                    }
+                  }
+                }}
               />
             </div>
           </div>
@@ -220,33 +266,36 @@ export default function SteeringWheelOverlay({
 
       {/* Hologram Join button — to the right of the steering wheel (pop-out) */}
       {(() => {
-        const joinCfg: any = (POS?.wheel as any)?.join || {};
+        const joinCfg: any = getResponsiveValue((POS?.wheel as any)?.join) || {};
         const joinSize: number = typeof joinCfg.sizePx === 'number' ? joinCfg.sizePx : 84;
         // Horizontal: allow relative offset from the wheel rim via offsetRightPx; fallback to absolute dxPx; else default (vs + 24)
         const jdx = (typeof joinCfg.offsetRightPx === 'number')
           ? (vs + joinCfg.offsetRightPx)
           : ((typeof joinCfg.dxPx === 'number' && joinCfg.dxPx !== 0) ? joinCfg.dxPx : (vs + 24));
         const jdy = (typeof joinCfg.dyPx === 'number' && joinCfg.dyPx !== 0) ? joinCfg.dyPx : (Math.round(vs/2 - joinSize/2));
+        // Mobile detection for wider spacing
+        const isMobileJoin = typeof window !== 'undefined' && (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+        
         return (
           <div
             style={{
               position: "absolute",
               // Position at 3 o'clock of the steering wheel (directly to the right)
               top: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${joinSize/2}px)`, // Vertically centered with steering wheel
-              left: `calc(${(pp.leftVw + (vconf.offsetVw || 0))}vw - ${joinSize/2}px + ${vs/2 - 40}px)`, // Moved slightly more to the left
+              left: `calc(${(pp.leftVw + (vconf.offsetVw || 0))}vw - ${joinSize/2}px + ${vs/2 - 160}px)`, // Moved to the left
               zIndex: 92,
               // Prevent any interaction before UI reveal
               pointerEvents: showUI ? 'auto' : 'none',
             }}
           >
             {showUI ? (
-              <div style={{ opacity: 1, transition: 'opacity 300ms ease', pointerEvents: 'auto' }}>
+              <div style={{ opacity: 1, transition: 'opacity 75ms ease', pointerEvents: 'auto' }}>
                 <HoloJoinButton 
                   size={joinSize} 
                   label="Join Alien Display" 
                   iconSrc="/elements/join.png" 
                   hubColor="#FC54AF" 
-                  onClick={() => setShowJoin(prev => !prev)}
+                  onClick={handleJoinAlienToggle}
                 />
               </div>
             ) : null}
@@ -259,6 +308,8 @@ export default function SteeringWheelOverlay({
         const joinCfg: any = (POS?.wheel as any)?.join || {};
         const joinSize: number = typeof joinCfg.sizePx === 'number' ? joinCfg.sizePx : 84;
         const vs = (POS?.wheel?.sizePx as number) || 108;
+        // Mobile detection for responsive form positioning
+        const isMobileForm = typeof window !== 'undefined' && (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
         
         return (
           <div
@@ -267,11 +318,11 @@ export default function SteeringWheelOverlay({
               position: "absolute",
               // Position up and to the left of the join button
               top: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${joinSize/2}px - 320px)`, // 320px above join button (moved up 20px more)
-              left: `calc(${(pp.leftVw + (vconf.offsetVw || 0))}vw - ${joinSize/2}px + ${vs/2 + 30}px - 155px)`, // 155px to the left of join button (moved 10px more to the right)
+              left: `calc(${(pp.leftVw + (vconf.offsetVw || 0))}vw - ${joinSize/2}px + ${isMobileForm ? vs/2 - 80 : vs/2 + 30}px - 155px)`, // Adjust for mobile spacing
               zIndex: 93,
-              pointerEvents: (showUI && showJoin) ? 'auto' : 'none',
-              opacity: (showUI && showJoin) ? 1 : 0,
-              transition: 'opacity 300ms ease',
+              pointerEvents: showJoin ? 'auto' : 'none',
+              opacity: showJoin ? 1 : 0,
+              transition: 'opacity 75ms ease',
             }}
           >
             {/* Join form panel */}
@@ -305,7 +356,7 @@ export default function SteeringWheelOverlay({
 
       {/* Power button positioned way down below wheel center, horizontally centered on screen */}
       {(() => {
-        const powerCfg: any = (POS?.wheel as any)?.power || {};
+        const powerCfg: any = getResponsiveValue((POS?.wheel as any)?.power) || {};
         const powerSize: number = typeof powerCfg.sizePx === 'number' ? powerCfg.sizePx : 60;
         const pdx = (typeof powerCfg.dxPx === 'number') ? powerCfg.dxPx : 0;
         const pdy = (typeof powerCfg.dyPx === 'number') ? powerCfg.dyPx : 270;
@@ -363,9 +414,9 @@ export default function SteeringWheelOverlay({
         const redBeamStyle = {
           position: "absolute" as const,
           // Position above the join alien button, extending downward
-          top: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${joinSize/2}px - ${Math.cos(Math.PI/6) * 120}px + 75px - 220px)`, // Start higher
+          top: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${joinSize/2}px - ${Math.cos(Math.PI/6) * 120}px + 75px - 120px)`, // Start lower - made beam shorter
           bottom: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${joinSize/2}px - ${Math.cos(Math.PI/6) * 120}px + 75px + ${joinSize}px)`, // End below button
-          left: `calc(${(pp.leftVw + (vconf.offsetVw || 0))}vw - ${joinSize/2}px + ${Math.sin(Math.PI/6) * 120}px + 110px)`, // Centered on button
+          left: `calc(${(pp.leftVw + (vconf.offsetVw || 0))}vw - ${joinSize/2}px + ${Math.sin(Math.PI/6) * 120}px + 50px)`, // Moved more to the left
           width: 'min(400px, 25vw)', // Responsive width like blue beam but smaller
           transform: 'translateX(-50%)', // Center the beam
           zIndex: 88,
@@ -585,8 +636,8 @@ export default function SteeringWheelOverlay({
           border:1px solid rgba(255,255,255,.14);
           box-shadow:
             0 14px 28px rgba(0,0,0,.6),
-            0 0 30px #19E3FF88,
-            0 0 80px #19E3FF55,
+            0 0 15px #19E3FF88,
+            0 0 30px #19E3FF55,
             inset 0 1px 0 rgba(255,255,255,.22),
             inset 0 -6px 14px rgba(0,0,0,.6);
           backdrop-filter: blur(8px);
@@ -596,7 +647,7 @@ export default function SteeringWheelOverlay({
         }
         .power-btn::before{ /* outer halo to match hubs */
           content:""; position:absolute; inset:-1%; border-radius:9999px; pointer-events:none;
-          box-shadow: 0 0 46px #19E3FFCC, 0 0 86px #19E3FF88;
+          box-shadow: 0 0 20px #19E3FFCC, 0 0 35px #19E3FF88;
         }
         .power-btn::after{ /* sheen + scanlines */
           content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none; mix-blend-mode:screen; opacity:.6;
@@ -628,8 +679,8 @@ export default function SteeringWheelOverlay({
           transform: scale(1.07);
           box-shadow:
             0 18px 34px rgba(0,0,0,.68),
-            0 0 56px #19E3FF,
-            0 0 140px #19E3FFAA,
+            0 0 25px #19E3FF,
+            0 0 60px #19E3FFAA,
             inset 0 1px 0 rgba(255,255,255,.28),
             inset 0 -8px 18px rgba(0,0,0,.65);
           filter: brightness(1.08) saturate(1.15);
@@ -675,6 +726,7 @@ export default function SteeringWheelOverlay({
         <source src="/audio/hover.mp3" type="audio/mpeg" />
         <source src="/audio/song-select.mp3" type="audio/mpeg" />
       </audio>
+      <audio ref={joinAlienRef} src="/audio/join-alien.mp3" preload="auto" />
     </div>
   );
 }

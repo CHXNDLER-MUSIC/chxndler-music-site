@@ -38,15 +38,53 @@
 @font-face { font-family: 'OrbitronLocal'; src: url('/fonts/orbitron-600.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; }
 @font-face { font-family: 'OrbitronLocal'; src: url('/fonts/orbitron-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
 :root { --font-orbitron: OrbitronLocal; }
-html, body { height: 100%; background:#000; color:#fff; }
+html, body { 
+  height: 100%; 
+  background:#000; 
+  color:#fff; 
+  overflow-x: hidden; /* Prevent horizontal scrolling */
+}
 * { -webkit-tap-highlight-color: transparent; }
+
+/* Responsive container adjustments */
+@media (max-width: 768px) {
+  body {
+    font-size: 14px; /* Slightly smaller text on mobile */
+  }
+}
 .font-sans { font-family: InterLocal, OrbitronLocal, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
 
-/* Cockpit background (frame stays fixed; sky video shows “through” windshield) */
+/* Cockpit background (responsive frame that adapts to screen size) */
 .cockpit-bg{
   background-image: url("/cockpit/cockpit.png");
-  background-size: cover;
   background-position: center;
+  /* Responsive background sizing for better mobile experience */
+  background-size: cover;
+}
+
+/* Mobile responsive cockpit sizing */
+@media (max-width: 768px) {
+  .cockpit-bg {
+    /* Scale down cockpit for smaller screens */
+    background-size: 120% auto;
+    background-position: center center;
+  }
+}
+
+@media (max-width: 480px) {
+  .cockpit-bg {
+    /* Further scale down for very small screens */
+    background-size: 140% auto;
+    background-position: center center;
+  }
+}
+
+/* Landscape mobile optimization */
+@media (max-width: 768px) and (orientation: landscape) {
+  .cockpit-bg {
+    background-size: cover;
+    background-position: center center;
+  }
 }
 
 /* Glow + pulse tokens */

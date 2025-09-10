@@ -48,7 +48,7 @@ export default function PlanetSystem({ showAll = false }: { showAll?: boolean })
         {/* Very soft magenta secondary glow for depth */}
         <pointLight position={[0.8, -1.0, -0.4]} intensity={0.26} color={"#FC54AF"} distance={7.5} />
         <InvalidateOnState />
-        <ZoomOnChange />
+        <ZoomOnChange focusId={focusId} />
 
         {/* Very shallow tilt for near-horizontal horizon line */}
         {/* Render the full system: satellites first, focus planet last; previous main becomes a moon */}
@@ -171,21 +171,30 @@ function ProjectionSweep() {
   );
 }
 
-function ZoomOnChange() {
-  // Subtle camera dolly + FOV ease when main song changes
-  const { mainId } = usePlayerStore();
+function ZoomOnChange({ focusId }: { focusId: string | null }) {
+  // Subtle camera dolly + FOV ease when focus song changes
   const { camera, invalidate } = useThree();
   const base = React.useRef({ z: 15.5, fov: 40 });
   const anim = React.useRef<{ t: number; d: number; active: boolean }>({ t: 0, d: 0.8, active: false });
 
   React.useEffect(() => {
-    // restart zoom animation on main change
-    anim.current.t = 0;
-    anim.current.active = true;
-    // kick a few frames to ensure animation starts in demand mode
-    invalidate();
-    invalidate();
-  }, [mainId, invalidate]);
+    // Only restart zoom animation if we have a focusId (not in showAll/home mode)
+    if (focusId) {
+      anim.current.t = 0;
+      anim.current.active = true;
+      // kick a few frames to ensure animation starts in demand mode
+      invalidate();
+      invalidate();
+    } else {
+      // If no focusId (home mode), ensure camera is at base position
+      anim.current.active = false;
+      const camera_: any = camera;
+      camera_.position.z = base.current.z;
+      camera_.fov = base.current.fov;
+      camera_.updateProjectionMatrix();
+      invalidate();
+    }
+  }, [focusId, invalidate, camera]);
 
   useFrame((state, dt) => {
     if (!anim.current.active) return;

@@ -40,12 +40,23 @@ export const LINKS = {
   apple: "https://music.apple.com/us/artist/chxndler/1660901437",
 };
 
-/* Positions for HUD + left console icons (tweak freely) */
+/* Positions for HUD + left console icons (responsive for all screen sizes) */
 export const POS = {
   hud: {
     topVh: 28,   // move HUD up/down so it sits on the center screen
     widthVw: 46, // % of viewport width
     maxPx: 740,  // clamp on wide screens
+    // Mobile responsive scaling
+    mobile: {
+      topVh: 25,    // Slightly higher on mobile
+      widthVw: 52,  // Wider on mobile for better touch targets
+      maxPx: 400,   // Smaller max width on mobile
+    },
+    tablet: {
+      topVh: 26,    // Medium position on tablet
+      widthVw: 48,  // Medium width on tablet
+      maxPx: 600,   // Medium max width on tablet
+    },
   },
   console: {
     // Column X for left console icons
@@ -76,31 +87,54 @@ export const POS = {
     tilt: "perspective(1100px) rotateX(10deg)",
   },
   wheel: {
-    // Approximate steering wheel overlay positions (tweak as needed)
+    // Approximate steering wheel overlay positions (responsive design)
     // Values are in viewport percentages for easy scaling
     // Center horizontally by default so the wheel video aligns from the start
     logo: { topVh: 66, leftVw: 50, sizePx: 72 },
-    // Play button: slightly more to the right of the wheel
-    // Moved down a touch and made larger/brighter per request
-    // Nudge left slightly for better centering
-    // Place the START button centered over the wheel; nudge up slightly
-    // Make START button smaller and move down slightly
-    play: { topVh: 88, leftVw: 49.7, sizePx: 170 },
+    // Play button: responsive sizing for better mobile experience
+    play: { 
+      topVh: 88, 
+      leftVw: 49.7, 
+      sizePx: 170,
+      // Mobile responsive scaling
+      mobile: { topVh: 90, leftVw: 49.5, sizePx: 140 },
+      tablet: { topVh: 89, leftVw: 49.6, sizePx: 155 },
+    },
     // Use START button instead of cyan play
     start: true,
-    // Comms (hologram hub) offset relative to the wheel's top-left corner (in pixels)
-    // Move slightly right
-    comms: { dxPx: 80, dyPx: 356 },
-    // Join button (hologram style) offset and size
-    // Use offsetRightPx relative to wheel rim (positive = further right, negative = to the left of rim)
-    // Align roughly with comms vertically and move higher up and further left
-    join: { offsetRightPx: -300, dyPx: 250, sizePx: 84 },
-    // Power button positioned way down below the wheel center, horizontally centered on screen
-    power: { dxPx: 0, dyPx: 270, sizePx: 60, centerHoriz: true },
-    // Optional video overlay tuning for /cockpit/wheel.mp4
-    // Smaller wheel footprint; move wheel down slightly
-    // Lower the wheel slightly by reducing the negative offset (closer to 0)
-    // Raise the wheel by moving it further up (more negative offset)
-    video: { scale: 3.8, offsetVh: -15, offsetVw: 0, centerHoriz: true, debug: false },
+    // Comms (hologram hub) with responsive positioning
+    comms: { 
+      dxPx: 80, 
+      dyPx: 356,
+      mobile: { dxPx: 60, dyPx: 300 },
+      tablet: { dxPx: 70, dyPx: 330 },
+    },
+    // Join button with responsive sizing
+    join: { 
+      offsetRightPx: -300, 
+      dyPx: 250, 
+      sizePx: 84,
+      mobile: { offsetRightPx: -200, dyPx: 200, sizePx: 70 },
+      tablet: { offsetRightPx: -250, dyPx: 225, sizePx: 77 },
+    },
+    // Power button with responsive sizing
+    power: { 
+      dxPx: 0, 
+      dyPx: 270, 
+      sizePx: 60, 
+      centerHoriz: true,
+      mobile: { dyPx: 220, sizePx: 50 },
+      tablet: { dyPx: 245, sizePx: 55 },
+    },
+    // Video overlay with responsive scaling
+    video: { 
+      scale: 3.8, 
+      offsetVh: -15, 
+      offsetVw: 0, 
+      centerHoriz: true, 
+      debug: false,
+      mobile: { scale: 3.2, offsetVh: -10 },
+      tablet: { scale: 3.5, offsetVh: -12 },
+    },
   },
 };

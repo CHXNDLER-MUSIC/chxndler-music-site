@@ -20,6 +20,7 @@ export default function HoloHubMenu({
   itemSize = 60,
   hubSize = 72,
   angles,
+  onToggle,
 }: {
   items?: HubItem[];
   radius?: number;
@@ -29,6 +30,7 @@ export default function HoloHubMenu({
   hubSize?: number;
   // Optional explicit angle mapping per item id (degrees; -90 = 12 o'clock, 0 = 3 o'clock)
   angles?: Record<string, number>;
+  onToggle?: (isOpen: boolean) => void;
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -97,17 +99,21 @@ export default function HoloHubMenu({
   const onHubClick = useCallback(() => {
     // Play join-alien SFX on hub click
     try { const a = joinRef.current; if (a) { a.currentTime = 0; a.volume = 0.95; void a.play(); } } catch {}
-    setOpen((o) => !o);
+    const newOpen = !open;
+    setOpen(newOpen);
+    // Notify parent of state change
+    onToggle?.(newOpen);
     // After opening, focus first item
     if (!open) setTimeout(() => firstItemRef.current?.focus(), 0);
-  }, [open]);
+  }, [open, onToggle]);
 
   const runItem = useCallback((it: HubItem) => {
     try { if (typeof it.onClick === "function") it.onClick(); else if (it.href) window.open(it.href, "_blank", "noopener,noreferrer"); } catch {}
     setOpen(false);
+    onToggle?.(false);
     // Return focus to hub after action
     setTimeout(() => hubRef.current?.focus(), 0);
-  }, []);
+  }, [onToggle]);
 
   // Compute positions; when closed, items sit on hub (0,0)
   // For open state, arrange items in a horizontal line
@@ -118,12 +124,13 @@ export default function HoloHubMenu({
         return { x: 0, y: 0, angleDeg: 0 };
       }
       
-      // Horizontal line arrangement
-      const spacing = 80; // Space between buttons
+      // Position buttons to the right side of yellow display with more spacing
+      const spacing = 80; // Increased spacing between buttons
       const totalWidth = (n - 1) * spacing;
-      const startX = -totalWidth / 2;
+      const offsetRight = 120; // Move all buttons even more to the right
+      const startX = offsetRight - totalWidth / 2;
       const x = startX + (i * spacing);
-      const y = -260; // Position much higher above the hub
+      const y = -260; // Center vertically within the yellow box
       
       return { x, y, angleDeg: 0 };
     });
@@ -132,7 +139,7 @@ export default function HoloHubMenu({
   return (
     <div
       ref={rootRef}
-      className={`holo-hub-wrap ${className || ""}`}
+      className={`holo-hub-wrap ${typeof className === 'string' ? className : ""}`}
       onMouseDown={(e) => { e.stopPropagation(); }}
       onClick={(e) => { e.stopPropagation(); }}
     >
@@ -231,23 +238,23 @@ export default function HoloHubMenu({
         /* Yellow hologram background panel */
         .background-panel{ 
           position: absolute; 
-          top: -300px; 
-          left: -200px; 
+          top: -310px; 
+          left: -80px; 
           width: 400px; 
-          height: 80px; 
+          height: 100px; 
           border-radius: 16px; 
           pointer-events: none;
           background:
-            linear-gradient(180deg, #F2EF1D44, #F2EF1D26),
-            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
-            linear-gradient(180deg, rgba(0,0,0,.65), rgba(0,0,0,.55));
+            linear-gradient(180deg, #F2EF1D44, #F2EF1D33),
+            radial-gradient(120% 100% at 50% -10%, rgba(242,239,29,.15), rgba(242,239,29,.05) 42%),
+            linear-gradient(180deg, #F2EF1D33, #F2EF1D22);
           border: 1px solid #F2EF1D66;
           box-shadow: 
             0 18px 36px rgba(0,0,0,.5), 
-            0 0 42px #F2EF1DAA, 
-            0 0 100px #F2EF1D55, 
-            inset 0 2px 0 rgba(255,255,255,.2), 
-            inset 0 -6px 14px rgba(0,0,0,.6);
+            0 0 42px #F2EF1DDD, 
+            0 0 100px #F2EF1DAA, 
+            inset 0 2px 0 rgba(255,255,255,.3), 
+            inset 0 -6px 14px rgba(242,239,29,.2);
           backdrop-filter: blur(10px);
           -webkit-backdrop-filter: blur(10px);
           opacity: 0;
@@ -272,11 +279,11 @@ export default function HoloHubMenu({
           position:absolute; border-radius:9999px; cursor:pointer;
           display:grid; place-items:center;
           background:
-            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.08), rgba(255,255,255,0) 42%),
-            radial-gradient(ellipse 140% 120% at 30% 20%, #F2EF1D66, transparent 70%),
-            linear-gradient(135deg, #F2EF1D33, #F2EF1D11 50%, transparent 80%),
-            rgba(242,239,29,0.35);
-          border:1px solid #F2EF1D88;
+            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.04), rgba(255,255,255,0) 42%),
+            radial-gradient(ellipse 140% 120% at 30% 20%, #F2EF1D33, transparent 70%),
+            linear-gradient(135deg, #F2EF1D22, #F2EF1D08 50%, transparent 80%),
+            rgba(242,239,29,0.18);
+          border:1px solid #F2EF1D44;
           box-shadow:
             0 14px 28px rgba(0,0,0,.7),
             0 0 32px #F2EF1DCC,

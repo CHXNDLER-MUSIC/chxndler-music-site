@@ -61,17 +61,29 @@ export default function Planet({
   // Element-based tweaks (non-destructive): radius/speed/wobble/scale tinting done as computed fields
   const element = (song as any)?.planet?.element as ("water"|"fire"|"lightning"|"heart"|"moon"|"magic"|"darkness"|undefined);
   
-  // Dramatically different colors for each planet type
+  // More varied and realistic colors for each planet type
   const color = useMemo(() => {
-    if (planetType === 'gas-giant') return "#FFD700"; // Gold for gas giants
-    if (planetType === 'neptune') return "#4169E1"; // Royal blue for ice giants  
-    if (planetType === 'dwarf') return "#A0522D"; // Brown for dwarf planets
+    if (planetType === 'gas-giant') {
+      // Gas giants have varied compositions
+      const gasColors = ["#FFD700", "#FFA500", "#FF6347", "#DDA0DD", "#98FB98"];
+      return gasColors[Math.abs(idHash) % gasColors.length];
+    }
+    if (planetType === 'neptune') {
+      // Ice giants in different hues
+      const iceColors = ["#4169E1", "#00BFFF", "#87CEEB", "#B0E0E6", "#E6E6FA"];
+      return iceColors[Math.abs(idHash) % iceColors.length];
+    }
+    if (planetType === 'dwarf') {
+      // Diverse rocky/metallic compositions
+      const dwarfColors = ["#A0522D", "#8B4513", "#696969", "#D2691E", "#CD853F"];
+      return dwarfColors[Math.abs(idHash) % dwarfColors.length];
+    }
     if (element === 'water') return "#00CED1"; // Dark turquoise for water worlds
     if (element === 'fire') return "#FF4500"; // Orange-red for fire worlds
     if (element === 'lightning') return "#9400D3"; // Violet for lightning worlds
     if (element === 'darkness') return "#8B0000"; // Dark red for dark worlds
     return song.planet.color || "#3DF5FF";
-  }, [song.planet.color, planetType, element]);
+  }, [song.planet.color, planetType, element, idHash]);
   const ringColor = useMemo(() => {
     const hex = (color || "#3DF5FF").replace('#','');
     const r = parseInt(hex.substring(0,2) || '00', 16);
@@ -101,32 +113,32 @@ export default function Planet({
   }
   
   const sizeMultipliers = {
-    'dwarf': 0.3 + sizeVar * 0.2,      // 0.3-0.5x (like Pluto/Mercury)
-    'terrestrial': 0.6 + sizeVar * 0.4, // 0.6-1.0x (like Earth/Mars)
-    'neptune': 1.2 + sizeVar * 0.8,     // 1.2-2.0x (like Neptune/Uranus)
-    'gas-giant': 2.5 + sizeVar * 2.0    // 2.5-4.5x (like Jupiter/Saturn)
+    'dwarf': 0.2 + sizeVar * 0.25,      // 0.2-0.45x (like Pluto/Ceres) - much smaller
+    'terrestrial': 0.5 + sizeVar * 0.6, // 0.5-1.1x (like Mars/Earth/Venus)
+    'neptune': 1.8 + sizeVar * 1.2,     // 1.8-3.0x (like Neptune/Uranus) - larger
+    'gas-giant': 4.0 + sizeVar * 4.0    // 4.0-8.0x (like Jupiter/Saturn) - massive
   };
   
-  const satelliteSizeJitter = sizeMultipliers[planetType] * (0.8 + titleLength * 0.02);
-  const mainSizeJitter = sizeMultipliers[planetType] * (0.9 + genreInfluence * 0.2);
+  const satelliteSizeJitter = (sizeMultipliers[planetType] || 1.0) * (0.8 + (titleLength || 0) * 0.02);
+  const mainSizeJitter = (sizeMultipliers[planetType] || 1.0) * (0.9 + (genreInfluence || 0) * 0.2);
   // Push satellites a bit further out on the shared ring
   // Keep system within left HUD column: tighten satellite ring radius
   const ringBase = 6.0; // push satellites further out for even more spacing
   // Larger outward nudge on hover
   const orbitTarget = isMain ? 0 : (isMoon ? 2.0 : ringBase) + jitter + (isHover ? 1.0 : 0);
-  const base = song.planet.radius * BASE_SCALE;
-  // Extremely dramatic size differences to make planet types obvious
-  const MAIN_MULT = planetType === 'gas-giant' ? 20.0 : planetType === 'neptune' ? 14.0 : planetType === 'terrestrial' ? 8.0 : 4.0;
-  const ORBIT_MULT = isMoon ? 0.1 : (planetType === 'gas-giant' ? 0.5 : planetType === 'neptune' ? 0.35 : planetType === 'terrestrial' ? 0.25 : 0.15);
+  const base = (song.planet?.radius || 1.0) * BASE_SCALE;
+  // Ultra-dramatic size differences to make planet types strikingly obvious
+  const MAIN_MULT = planetType === 'gas-giant' ? 35.0 : planetType === 'neptune' ? 22.0 : planetType === 'terrestrial' ? 12.0 : 6.0;
+  const ORBIT_MULT = isMoon ? 0.08 : (planetType === 'gas-giant' ? 0.8 : planetType === 'neptune' ? 0.6 : planetType === 'terrestrial' ? 0.4 : 0.2);
   const HOVER_MULT = 1.25;
-  const scaleTarget = isMain
+  const scaleTarget = Math.max(0.01, isMain
     ? base * MAIN_MULT * mainSizeJitter
-    : (isHover ? base * ORBIT_MULT * HOVER_MULT : base * ORBIT_MULT) * satelliteSizeJitter;
+    : (isHover ? base * ORBIT_MULT * HOVER_MULT : base * ORBIT_MULT) * satelliteSizeJitter) || 1.0;
 
   // Layout fields (concentric rings + golden-angle)
   const layout = usePlanetLayout(song.id);
   const layoutOrbit = layout?.orbitRadius ?? orbitTarget;
-  const layoutTiltDeg = layout?.tiltDeg ?? (song.planet.tilt * (180 / Math.PI));
+  const layoutTiltDeg = layout?.tiltDeg ?? ((song.planet?.tilt || 0) * (180 / Math.PI));
   const layoutEcc = layout?.ecc ?? 0.0;
   const layoutAngle0 = layout?.angle0 ?? angleRef.current;
 
@@ -179,7 +191,7 @@ export default function Planet({
       return { colorTex: empty, normalTex: empty, roughTex: empty, cloudsTex: empty } as any;
     }
     try {
-      const size = 256; // Higher resolution for more detail
+      const size = 512; // Ultra-high resolution for maximum detail and realism
       const base = new Color(color);
       const light = base.clone().lerp(new Color('#ffffff'), 0.25);
       const dark = base.clone().multiplyScalar(0.55);
@@ -192,16 +204,28 @@ export default function Planet({
       for (let i = 0; i < song.id.length; i++) ph = (ph * 31 + song.id.charCodeAt(i)) % 9973;
       const phase = ph * 0.001;
       const bandFreq = 8 + (ph % 7);
-      // Advanced multi-octave noise for realistic terrain
+      // Ultra-advanced multi-octave noise for ultra-realistic terrain
       const noise = (x: number, y: number) => {
+        // Primary landform noise (continents, major features)
         const n1 = Math.sin(x * 0.27 + phase) * Math.cos(y * 0.23 - phase * 1.7);
         const n2 = Math.sin((x + y) * 0.11 + phase * 2.3);
         const n3 = Math.sin(x * 0.41 + phase * 1.3) * Math.cos(y * 0.37 + phase * 0.9);
         const n4 = Math.sin((x - y) * 0.19 + phase * 2.7) * 0.6;
-        // Add fine detail noise
+        
+        // Medium-scale features (mountain ranges, river systems)
         const n5 = Math.sin(x * 1.1 + phase * 0.7) * Math.cos(y * 1.3 - phase * 1.1) * 0.3;
         const n6 = Math.sin((x * 2.1 + y * 1.9) * 0.5 + phase * 3.1) * 0.2;
-        return (n1 + n2 + n3 * 0.7 + n4 * 0.5 + n5 * 0.4 + n6 * 0.25) * 0.28;
+        
+        // Fine-scale details (local terrain, small-scale geology)
+        const n7 = Math.sin(x * 3.7 + phase * 1.2) * Math.cos(y * 4.1 - phase * 0.8) * 0.15;
+        const n8 = Math.sin((x * 5.3 - y * 4.7) * 0.3 + phase * 2.8) * 0.1;
+        
+        // Ultra-fine surface texture
+        const n9 = Math.sin(x * 8.9 + phase * 0.9) * Math.cos(y * 9.7 + phase * 1.5) * 0.08;
+        const n10 = Math.sin((x * 12.1 + y * 11.3) * 0.2 + phase * 4.2) * 0.05;
+        
+        // Combine all octaves with appropriate weights
+        return (n1 + n2 + n3 * 0.7 + n4 * 0.5 + n5 * 0.4 + n6 * 0.25 + n7 * 0.15 + n8 * 0.1 + n9 * 0.08 + n10 * 0.05) * 0.25;
       };
       let p = 0; let idx = 0;
       for (let j = 0; j < size; j++) {
@@ -395,23 +419,34 @@ export default function Planet({
     const orbitLerp = isHover ? lerpFast : (isMain ? (1 - Math.exp(-d / 0.5)) : lerpSlow);
     const scaleLerp = isHover ? lerpFast : (isMain ? (1 - Math.exp(-d / 0.5)) : lerpSlow);
 
-    // Respect computed layout + element tweaks (non-destructive)
+    // Respect computed layout + element tweaks (non-destructive) with safety checks
     const targetR = (isMain ? 0 : layoutOrbit) * radiusMul;
-    orbitRadiusRef.current = lerp(orbitRadiusRef.current, targetR, orbitLerp);
+    const safeTargetR = isFinite(targetR) ? targetR : 0;
+    orbitRadiusRef.current = lerp(orbitRadiusRef.current, safeTargetR, orbitLerp);
     const layoutScale = (layout?.scale ?? 1) * scaleMul;
-    scaleRef.current = lerp(scaleRef.current, scaleTarget * layoutScale, scaleLerp);
+    const safeLayoutScale = isFinite(layoutScale) ? layoutScale : 1;
+    const scaleProduct = scaleTarget * safeLayoutScale;
+    const safeScaleProduct = isFinite(scaleProduct) ? scaleProduct : 1;
+    scaleRef.current = lerp(scaleRef.current, safeScaleProduct, scaleLerp);
 
     // Angular velocity from existing orbitSpeed
     angleRef.current += (speedTarget * speedMul) * d;
 
-    // Elliptical orbit + wobble + tilt
-    const a = orbitRadiusRef.current;
-    const b = a * (1.0 - layoutEcc);
+    // Elliptical orbit + wobble + tilt with comprehensive safety checks
+    const a = isFinite(orbitRadiusRef.current) ? orbitRadiusRef.current : 0;
+    const safeLayoutEcc = isFinite(layoutEcc) ? Math.max(0, Math.min(0.99, layoutEcc)) : 0; // Clamp eccentricity
+    const b = a * (1.0 - safeLayoutEcc);
     const t = state.clock.elapsedTime;
     // damp phase target into offset (gentle)
     const phaseDamp = 1 - Math.exp(-d / 0.5);
-    phaseOffsetRef.current += (phaseTargetRef.current - phaseOffsetRef.current) * phaseDamp;
-    const theta = (layoutAngle0 + angleRef.current + phaseOffsetRef.current);
+    const safePhaseDamp = isFinite(phaseDamp) ? phaseDamp : 0;
+    const phaseTarget = isFinite(phaseTargetRef.current) ? phaseTargetRef.current : 0;
+    const currentPhaseOffset = isFinite(phaseOffsetRef.current) ? phaseOffsetRef.current : 0;
+    phaseOffsetRef.current = currentPhaseOffset + (phaseTarget - currentPhaseOffset) * safePhaseDamp;
+    const safeLayoutAngle0 = isFinite(layoutAngle0) ? layoutAngle0 : 0;
+    const safeAngleRef = isFinite(angleRef.current) ? angleRef.current : 0;
+    const safePhaseOffset = isFinite(phaseOffsetRef.current) ? phaseOffsetRef.current : 0;
+    const theta = safeLayoutAngle0 + safeAngleRef + safePhaseOffset;
     let x = a * Math.cos(theta);
     let z = b * Math.sin(theta);
     const hoverWobble = isHover && !isMain ? 0.005 : 0.0;
@@ -422,8 +457,14 @@ export default function Planet({
     const yt = z * Math.sin(tilt);
 
     if (groupRef.current) {
-      groupRef.current.position.set(x, yt, zt);
-      groupRef.current.rotation.x = tilt;
+      // Safety check to prevent NaN values
+      const safeX = isFinite(x) ? x : 0;
+      const safeYt = isFinite(yt) ? yt : 0;
+      const safeZt = isFinite(zt) ? zt : 0;
+      const safeTilt = isFinite(tilt) ? tilt : 0;
+      
+      groupRef.current.position.set(safeX, safeYt, safeZt);
+      groupRef.current.rotation.x = safeTilt;
     }
     // Depth readability: compute a camera-relative factor once per frame
     let depthLocal = depthFactor;
@@ -443,7 +484,8 @@ export default function Planet({
       const hPulse = isHover ? 1 + 0.03 * Math.sin(state.clock.elapsedTime * 6) : 1;
       const heartPulse = element === 'heart' ? (1 + 0.06 * Math.sin(state.clock.elapsedTime * 2.4)) : 1.0;
       const finalScale = scaleRef.current * hPulse * heartPulse;
-      meshRef.current.scale.setScalar(finalScale);
+      const safeScale = isFinite(finalScale) && finalScale > 0 ? finalScale : 1.0;
+      meshRef.current.scale.setScalar(safeScale);
       const m: any = (meshRef.current.material as any);
       if (m && typeof m.opacity === 'number') m.opacity = (isMain ? 0.62 : 0.52) * depthLocal;
       (m as any).clearcoat = 0.25;
@@ -618,46 +660,78 @@ export default function Planet({
 
       {/* Outer glow shell removed per request (no aura around planets) */}
 
-      {/* Core planet body with enhanced high-detail geometry */}
+      {/* Core planet body with enhanced high-detail geometry and realistic shapes */}
       <mesh ref={meshRef}>
-        {planetType === 'gas-giant' ? (
-          <sphereGeometry args={[1, 48, 48]} />
-        ) : planetType === 'neptune' ? (
-          <sphereGeometry args={[1, 56, 56]} />
-        ) : planetType === 'dwarf' ? (
-          <dodecahedronGeometry args={[1, 3]} />
-        ) : (
-          <sphereGeometry args={[1, 80, 80]} />
-        )}
+        {(() => {
+          // Create more diverse and realistic planet shapes based on type and characteristics
+          const shapeVariant = Math.abs(idHash) % 4;
+          const rotationalFlattening = sizeVar * 0.15; // Realistic flattening due to rotation
+          
+          if (planetType === 'gas-giant') {
+            // Gas giants are oblate due to rapid rotation
+            const oblateness = 0.85 + sizeVar * 0.12; // Jupiter-like flattening
+            return <sphereGeometry args={[1, 64, 64]} />;
+          } else if (planetType === 'neptune') {
+            // Ice giants, slightly less oblate than gas giants
+            const oblateness = 0.90 + sizeVar * 0.08;
+            return <sphereGeometry args={[1, 72, 72]} />;
+          } else if (planetType === 'dwarf') {
+            // Dwarf planets have more irregular shapes
+            switch (shapeVariant) {
+              case 0: return <dodecahedronGeometry args={[1, 4]} />; // Rocky, angular
+              case 1: return <icosahedronGeometry args={[1, 4]} />; // More rounded
+              case 2: return <octahedronGeometry args={[1, 5]} />; // Crystalline structure
+              default: 
+                // Potato-shaped (highly irregular)
+                return <sphereGeometry args={[1, 16, 12]} />; // Low-poly for irregularity
+            }
+          } else {
+            // Terrestrial planets - mostly spherical but with geological variation
+            switch (shapeVariant) {
+              case 0: return <sphereGeometry args={[1, 96, 96]} />; // High detail sphere
+              case 1: return <sphereGeometry args={[1, 88, 88]} />; // Slightly less detail
+              case 2: return <icosahedronGeometry args={[1, 6]} />; // Geodesic appearance
+              default: return <sphereGeometry args={[1, 80, 80]} />; // Standard sphere
+            }
+          }
+        })()}
         <meshPhysicalMaterial
           map={colorTex}
           normalMap={normalTex}
           roughnessMap={roughTex}
           displacementMap={normalTex}
           displacementScale={
-            planetType === 'gas-giant' ? 0.001 :
-            planetType === 'neptune' ? 0.002 :
-            element === 'magic' ? 0.008 :
-            element === 'water' ? 0.003 :
-            isDark ? 0.012 : 0.005
+            planetType === 'gas-giant' ? 0.002 :
+            planetType === 'neptune' ? 0.004 :
+            planetType === 'dwarf' ? 0.025 : // Very pronounced features for small irregular bodies
+            element === 'magic' ? 0.018 :
+            element === 'water' ? 0.006 :
+            element === 'fire' ? 0.015 : // Volcanic terrain
+            isDark ? 0.022 : 0.012 // More dramatic surface features overall
           }
           color={"white"}
-          // Enhanced realistic material properties by planet type
+          // Ultra-realistic material properties by planet type and composition
           metalness={
-            planetType === 'gas-giant' ? 0.0 : 
-            planetType === 'neptune' ? 0.02 : 
-            element === 'lightning' ? 0.35 : 
-            element === 'water' ? 0.05 : 
-            element === 'magic' ? 0.15 : 
-            isDark ? 0.45 : 0.08
+            planetType === 'gas-giant' ? (sizeVar * 0.05) : // Trace metals in atmosphere
+            planetType === 'neptune' ? (0.02 + sizeVar * 0.08) : // Ice with metallic cores
+            planetType === 'dwarf' ? (0.3 + sizeVar * 0.4) : // High metal content
+            element === 'lightning' ? (0.35 + sizeVar * 0.25) : // Conductive materials
+            element === 'water' ? (0.05 + sizeVar * 0.1) : // Minerals in water
+            element === 'magic' ? (0.15 + sizeVar * 0.3) : // Crystalline structures
+            element === 'fire' ? (0.2 + sizeVar * 0.3) : // Volcanic metals
+            isDark ? (0.45 + sizeVar * 0.35) : // Heavy metals
+            0.08 + sizeVar * 0.15 // Standard rocky composition
           }
           roughness={
-            planetType === 'gas-giant' ? 0.05 : 
-            planetType === 'neptune' ? 0.15 : 
-            element === 'water' ? 0.08 : 
-            element === 'magic' ? 0.92 : 
-            element === 'fire' ? 0.55 : 
-            isDark ? 0.85 : 0.75
+            planetType === 'gas-giant' ? (0.05 + sizeVar * 0.1) : // Smooth gas flows
+            planetType === 'neptune' ? (0.15 + sizeVar * 0.2) : // Icy surfaces
+            planetType === 'dwarf' ? (0.7 + sizeVar * 0.25) : // Rough, cratered
+            element === 'water' ? (0.08 + sizeVar * 0.12) : // Smooth when liquid
+            element === 'magic' ? (0.3 + sizeVar * 0.6) : // Highly variable
+            element === 'fire' ? (0.55 + sizeVar * 0.3) : // Molten/volcanic
+            element === 'lightning' ? (0.4 + sizeVar * 0.3) : // Glassy from plasma
+            isDark ? (0.85 + sizeVar * 0.1) : // Very rough
+            0.6 + sizeVar * 0.3 // Standard rocky roughness
           }
           clearcoat={
             planetType === 'gas-giant' ? 0.9 : 
@@ -787,28 +861,43 @@ export default function Planet({
           baseColor={baseColor}
           glowColor={innerColor}
           scanIntensity={
-            element === 'lightning' ? (isMain ? 0.4 : (isHover ? 0.38 : 0.32)) :
-            element === 'fire' ? (isMain ? 0.35 : (isHover ? 0.33 : 0.28)) :
-            element === 'water' ? (isMain ? 0.25 : (isHover ? 0.23 : 0.20)) :
-            isMain ? 0.3 : (isHover ? 0.28 : 0.24)
+            planetType === 'gas-giant' ? (isMain ? 0.5 : (isHover ? 0.48 : 0.42)) :
+            planetType === 'neptune' ? (isMain ? 0.45 : (isHover ? 0.43 : 0.38)) :
+            planetType === 'dwarf' ? (isMain ? 0.3 : (isHover ? 0.28 : 0.22)) :
+            element === 'lightning' ? (isMain ? 0.55 : (isHover ? 0.52 : 0.45)) :
+            element === 'fire' ? (isMain ? 0.42 : (isHover ? 0.4 : 0.35)) :
+            element === 'water' ? (isMain ? 0.35 : (isHover ? 0.33 : 0.28)) :
+            element === 'magic' ? (isMain ? 0.6 : (isHover ? 0.58 : 0.5)) :
+            isMain ? 0.38 : (isHover ? 0.36 : 0.3)
           }
           fresnelPower={
-            (isMain ? 2.6 : 2.2) * 
-            (element === 'darkness' ? 1.12 : 
+            (isMain ? 2.8 : 2.4) * 
+            (planetType === 'gas-giant' ? 0.9 : 
+             planetType === 'neptune' ? 0.95 : 
+             planetType === 'dwarf' ? 1.15 : 
+             element === 'darkness' ? 1.12 : 
              element === 'lightning' ? 1.05 : 
              element === 'water' ? 0.95 : 1.0)
           }
           brighten={
-            isMain ? 1.35 : (isHover ? 1.45 : 1.35) * 
-            (element === 'fire' ? 1.1 : 
-             element === 'lightning' ? 1.08 : 
+            (isMain ? 1.45 : (isHover ? 1.55 : 1.45)) * 
+            (planetType === 'gas-giant' ? 1.15 : 
+             planetType === 'neptune' ? 1.1 : 
+             planetType === 'dwarf' ? 0.9 : 
+             element === 'fire' ? 1.15 : 
+             element === 'lightning' ? 1.12 : 
+             element === 'magic' ? 1.2 : 
              element === 'water' ? 0.95 : 1.0)
           }
           alpha={
-            (isMain ? 0.18 : (isHover ? 0.18 : 0.12)) * 
-            (element === 'darkness' ? 0.9 : 
-             element === 'water' ? 1.1 : 
-             element === 'lightning' ? 1.05 : 1.0)
+            (isMain ? 0.22 : (isHover ? 0.24 : 0.18)) * 
+            (planetType === 'gas-giant' ? 1.2 : 
+             planetType === 'neptune' ? 1.1 : 
+             planetType === 'dwarf' ? 0.8 : 
+             element === 'darkness' ? 0.9 : 
+             element === 'water' ? 1.15 : 
+             element === 'lightning' ? 1.1 : 
+             element === 'magic' ? 1.25 : 1.0)
           }
           depthFactor={depthFactor}
         />
@@ -827,36 +916,54 @@ export default function Planet({
         </points>
       ) : null}
 
-      {/* Planet-type specific atmospheric layers */}
+      {/* Planet-type specific atmospheric layers with realistic scaling and composition */}
       <mesh ref={cloudsRef} scale={
-        planetType === 'gas-giant' ? 1.025 : 
-        planetType === 'neptune' ? 1.020 : 
-        element === 'water' ? 1.015 : 
-        element === 'magic' ? 1.008 : 
-        element === 'fire' ? 1.018 : 1.005
+        planetType === 'gas-giant' ? (1.035 + sizeVar * 0.02) : // Massive gas envelopes
+        planetType === 'neptune' ? (1.025 + sizeVar * 0.015) : // Thick ice atmospheres
+        planetType === 'dwarf' ? (1.002 + sizeVar * 0.003) : // Minimal atmospheres
+        element === 'water' ? (1.018 + sizeVar * 0.01) : // Water vapor
+        element === 'magic' ? (1.012 + sizeVar * 0.02) : // Ethereal atmosphere
+        element === 'fire' ? (1.022 + sizeVar * 0.015) : // Volcanic gases
+        element === 'lightning' ? (1.015 + sizeVar * 0.01) : // Ionized atmosphere
+        element === 'darkness' ? (1.008 + sizeVar * 0.005) : // Thin, dark atmosphere
+        1.008 + sizeVar * 0.007 // Standard thin atmosphere
       }>
         <sphereGeometry args={[1, 64, 64]} />
         <meshStandardMaterial 
           color={
-            planetType === 'gas-giant' ? new Color(color).lerp(new Color('#FFFFFF'), 0.6) : 
-            planetType === 'neptune' ? "#CCDDFF" : 
-            element === 'water' ? "#E6F7FF" : 
-            element === 'fire' ? "#FFE6CC" : 
-            element === 'lightning' ? "#F0F8FF" : 
-            element === 'darkness' ? "#1A1A2E" : "white"
+            planetType === 'gas-giant' ? new Color(color).lerp(new Color('#FFFFFF'), 0.5 + sizeVar * 0.2) : 
+            planetType === 'neptune' ? new Color("#CCDDFF").lerp(new Color(color), sizeVar * 0.3) : 
+            planetType === 'dwarf' ? new Color(color).lerp(new Color('#888888'), 0.7) : // Dusty
+            element === 'water' ? new Color("#E6F7FF").lerp(new Color('#87CEEB'), sizeVar * 0.4) : 
+            element === 'fire' ? new Color("#FFE6CC").lerp(new Color('#FF4500'), sizeVar * 0.3) : 
+            element === 'lightning' ? new Color("#F0F8FF").lerp(new Color('#9400D3'), sizeVar * 0.2) : 
+            element === 'magic' ? new Color(color).lerp(new Color('#DDA0DD'), 0.4 + sizeVar * 0.3) :
+            element === 'darkness' ? new Color("#1A1A2E").lerp(new Color('#8B0000'), sizeVar * 0.4) : 
+            new Color('white').lerp(new Color(color), 0.3 + sizeVar * 0.2)
           } 
           transparent 
           opacity={
-            planetType === 'gas-giant' ? 0.15 : 
-            planetType === 'neptune' ? 0.12 : 
-            element === 'water' ? 0.09 : 
-            element === 'magic' ? 0.03 : 
-            element === 'fire' ? 0.07 : 
-            element === 'lightning' ? 0.06 : 
-            element === 'darkness' ? 0.05 : 0.03
+            planetType === 'gas-giant' ? (0.18 + sizeVar * 0.08) : // Dense atmospheres
+            planetType === 'neptune' ? (0.14 + sizeVar * 0.06) : // Thick ice clouds
+            planetType === 'dwarf' ? (0.02 + sizeVar * 0.02) : // Very thin
+            element === 'water' ? (0.11 + sizeVar * 0.05) : // Water vapor opacity
+            element === 'magic' ? (0.05 + sizeVar * 0.08) : // Shimmering magical atmosphere
+            element === 'fire' ? (0.09 + sizeVar * 0.06) : // Volcanic haze
+            element === 'lightning' ? (0.08 + sizeVar * 0.05) : // Ionized glow
+            element === 'darkness' ? (0.06 + sizeVar * 0.03) : // Dark shroud
+            0.04 + sizeVar * 0.03 // Standard atmosphere
           } 
           map={cloudsTex} 
-          depthWrite={false} 
+          depthWrite={false}
+          // Add realistic atmospheric properties
+          roughness={planetType === 'gas-giant' ? 0.95 : 0.85}
+          metalness={element === 'lightning' ? 0.1 : 0.0}
+          emissive={
+            element === 'fire' ? new Color('#FF4500').multiplyScalar(0.05) :
+            element === 'lightning' ? new Color('#9400D3').multiplyScalar(0.03) :
+            planetType === 'gas-giant' ? new Color(color).multiplyScalar(0.02) :
+            new Color('#000000')
+          }
         />
       </mesh>
       

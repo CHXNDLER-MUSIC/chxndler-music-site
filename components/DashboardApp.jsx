@@ -289,17 +289,17 @@ export default function DashboardApp() {
 
   const lightBeamStyle = useMemo(() => ({
     left: '50%',
-    bottom: '40vh',
-    top: '45vh', // Made taller by starting higher
-    width: 'min(1400px, 85vw)',
+    bottom: isMobile ? '35vh' : '40vh', // Adjust for mobile
+    top: isMobile ? '45vh' : '50vh', // Made beam taller by starting lower
+    width: isMobile ? 'min(800px, 90vw)' : 'min(1400px, 85vw)', // Wider on mobile
     transform: 'translateX(-50%)',
     opacity: beamEnabled ? (cardModalOpen ? 0.3 : 1) : 0,
     transition: 'opacity 300ms ease'
-  }), [beamEnabled, cardModalOpen]);
+  }), [beamEnabled, cardModalOpen, isMobile]);
 
   if (!mounted) return null;
   return (
-    <main className="relative min-h-screen overflow-hidden bg-black text-white">
+    <main className="relative min-h-screen overflow-hidden bg-black text-white max-w-screen overflow-x-hidden">
       <div 
         className="absolute inset-0"
         style={blurWrapperStyle}
@@ -426,6 +426,10 @@ export default function DashboardApp() {
             // Only disable welcome intro if it's not currently playing
             setHomeIntroEnabled(false);
           }
+          // Hide join alien display if it's showing (mutual exclusion)
+          if (joinAlienOpen) {
+            setJoinAlienOpen(false);
+          }
           triggerHudPower(undefined); 
         }}
         onLaunch={() => {
@@ -474,9 +478,9 @@ export default function DashboardApp() {
                 key="hud-panel"
                 className="absolute inset-0 p-0" 
                 suppressHydrationWarning
-                initial={{ x: '100%', opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: '100%', opacity: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 transition={{ 
                   type: 'spring',
                   damping: 20,
