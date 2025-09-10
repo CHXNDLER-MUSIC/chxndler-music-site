@@ -101,6 +101,6 @@ export const POS = {
     // Smaller wheel footprint; move wheel down slightly
     // Lower the wheel slightly by reducing the negative offset (closer to 0)
     // Raise the wheel by moving it further up (more negative offset)
-    video: { scale: 3.8, offsetVh: -20, offsetVw: 0, centerHoriz: true, debug: false },
+    video: { scale: 3.8, offsetVh: -15, offsetVw: 0, centerHoriz: true, debug: false },
   },
 };

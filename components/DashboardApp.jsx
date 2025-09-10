@@ -79,11 +79,18 @@ export default function DashboardApp() {
         try { setBeamEnabled(true); } catch {}
         // Fade HUD in shortly after beam starts fading in (faster response)
         setTimeout(() => {
+          setShowHUD(true);
           setBeamOnly(false);
           setPowerBusy(false);
-          // Only change ambient suspension if not interrupting welcome audio
-          if (!welcomeOnStartRef.current) {
-            setAmbientSuspended(false); // allow AmbientSpace to resume ambient and then VO
+          // Ensure overlay UI is visible after HUD fades in (in case of race conditions)
+          setShowOverlayUI(true);
+          // If welcome audio should play, delay ambient resumption for better timing
+          if (welcomeOnStartRef.current) {
+            setTimeout(() => {
+              setAmbientSuspended(false); // Resume ambient and trigger welcome VO after HUD fade
+            }, 200); // Small delay after HUD fade completes to ensure smooth transition
+          } else {
+            setAmbientSuspended(false); // allow AmbientSpace to resume ambient immediately
           }
         }, 150); // Further reduced to 150ms for even faster HUD fade-in after Start button
         // Only manage welcome audio during initial startup sequence, not manual power toggle
@@ -155,6 +162,12 @@ export default function DashboardApp() {
       setUserSelected(true);
       setHomeMode(false);
       setAmbientSuspended(true);
+      
+      // FADE OUT: Hide HUD, comms, power, and join alien elements before warp
+      setShowHUD(false);
+      setShowOverlayUI(false);
+      setBeamEnabled(false);
+      
       // Immediately reflect selection in HUD (title/cover/subtitle)
       try {
         const t = tracks[idx];
@@ -315,9 +328,20 @@ export default function DashboardApp() {
           // If this warp was due to Start (not track selection), prepare to land on home
           if (!pendingTrackPlay) setPendingHomePower(true);
           else {
-            // Warp overlay just finished for a song change: start playback now.
+            // Warp overlay just finished for a song change: fade UI back in with join-alien.mp3
+            try { sfx.play('join', 0.8); } catch {}
+            
+            // Fade in HUD and overlay UI together with audio
+            setShowHUD(true);
+            setBeamEnabled(true);
+            setBeamOnly(false);
+            setShowOverlayUI(true);
+            
+            // Start playback after UI fades in
             if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
-            setPlaySignal((n) => n + 1);
+            setTimeout(() => {
+              setPlaySignal((n) => n + 1);
+            }, 500); // Small delay to let UI fade in before music starts
           }
         }}
         onBasePlaying={() => {
@@ -342,11 +366,40 @@ export default function DashboardApp() {
             setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
             // Keep ambient paused until UI beam + HUD have faded in
             setAmbientSuspended(true);
-            // Begin HUD power sequence: plays join-alien SFX, then beam fade-in, then HUD fade-in
-            // Add brief delay after warp, then immediately start HUD sequence
+            // Begin HUD power sequence with proper timing after warp/zoom effect
+            // Step 1: Start the power sequence after warp completes
             setTimeout(() => {
-              try { triggerHudPower(true); } catch {}
-            }, 400); // Reduced to 400ms for faster HUD appearance
+              try { 
+                // Play join-alien SFX first
+                try { sfx.play('join', 0.9); } catch {}
+                
+                // Step 2: Fade in power, comms & join alien buttons first
+                setTimeout(() => {
+                  setShowOverlayUI(true);
+                  
+                  // Step 3: Then fade in blue light beam
+                  setTimeout(() => {
+                    setBeamEnabled(true);
+                    
+                    // Step 4: Finally fade in HUD display
+                    setTimeout(() => {
+                      setShowHUD(true);
+                      setBeamOnly(false);
+                      setPowerBusy(false);
+                      
+                      // Resume ambient after everything is faded in
+                      if (welcomeOnStartRef.current) {
+                        setTimeout(() => {
+                          setAmbientSuspended(false);
+                        }, 200);
+                      } else {
+                        setAmbientSuspended(false);
+                      }
+                    }, 300); // HUD fade-in delay
+                  }, 200); // Beam fade-in delay
+                }, 150); // UI buttons fade-in delay
+              } catch {} 
+            }, 500); // Initial delay after warp completes
           }
           if (pendingTrackPlay) {
             // Do not start audio here; wait for onFlyEnd so playback begins after warp SFX ends.

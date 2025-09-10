@@ -38,6 +38,7 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
   const warpPlayTimerRef = useRef<number|undefined>(undefined);
   const [showWarp, setShowWarp] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [volume, setVolume] = useState(1.0);
 
   const tracks = ALL;
   const cur = tracks[idx];
@@ -182,33 +183,20 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
   useEffect(() => {
     const a = audioRef.current; if (!a) return;
     if (a.paused) {
-      // Start playing muted immediately, then unmute after warp SFX/overlay
+      // Resume from current position without reloading
       if (warpPlayTimerRef.current !== undefined) { clearTimeout(warpPlayTimerRef.current); warpPlayTimerRef.current = undefined; }
-      const WARP_MS = 1800;
       if (cur?.src) {
-        a.load();
-        try { a.muted = true; a.volume = 0.0; } catch {}
-        a.play().catch(()=>{});
-        warpPlayTimerRef.current = window.setTimeout(() => {
-          const ax = audioRef.current; if (!ax) return;
-          try { ax.muted = false; ax.volume = 1.0; } catch {}
-          ax.play().catch(()=>{});
+        // Don't reload - just resume from current position
+        try { a.muted = false; a.volume = 1.0; } catch {}
+        a.play().then(() => {
           setPlaying(true); onPlayingChange(true); gaTrack("play", { slug: cur.slug });
-          warpPlayTimerRef.current = undefined;
-        }, WARP_MS);
+        }).catch(()=>{});
       } else {
         // Fallback to first with audio
         const withAudio = tracks.findIndex(t => !!t.src);
         if (withAudio >= 0) {
           setIdx(withAudio);
-          // Begin muted immediately, then unmute after warp
-          warpPlayTimerRef.current = window.setTimeout(() => {
-            const a2 = audioRef.current; if (!a2) return;
-            try { a2.muted = false; a2.volume = 1.0; } catch {}
-            a2.play().catch(()=>{});
-            setPlaying(true); onPlayingChange(true); gaTrack("play", { slug: tracks[withAudio].slug });
-            warpPlayTimerRef.current = undefined;
-          }, WARP_MS);
+          // This will trigger index change effect which handles the warp sequence
         }
       }
     } else {
@@ -221,6 +209,15 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
 
   function prev() { uiClick(); setIdx((p) => wrapChannels ? (p - 1 + tracks.length) % tracks.length : Math.max(0, p - 1)); }
   function next() { uiClick(); setIdx((p) => wrapChannels ? (p + 1) % tracks.length : Math.min(tracks.length - 1, p + 1)); }
+  
+  function adjustVolume(delta: number) {
+    const a = audioRef.current; if (!a) return;
+    const newVolume = Math.max(0, Math.min(1, volume + delta));
+    setVolume(newVolume);
+    a.volume = newVolume;
+    uiClick();
+  }
+  
   function toggle() {
     uiClick();
     const a = audioRef.current; if (!a) return;
@@ -229,15 +226,14 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
       const withAudio = tracks.findIndex(t => !!t.src);
       if (withAudio >= 0) {
         setIdx(withAudio);
-        setTimeout(() => {
-          const a2 = audioRef.current; if (!a2) return;
-          a2.load();
-          a2.play().then(()=>{ setPlaying(true); gaTrack("play", { slug: tracks[withAudio].slug }); }).catch(()=>setPlaying(false));
-        }, 0);
+        // Index change will handle loading and playing the new track
       }
       return;
     }
-    if (a.paused) { try { a.muted = false; a.volume = 1.0; } catch {}; a.play().then(()=>{ setPlaying(true); gaTrack("play", { slug: cur.slug }); }).catch(()=>setPlaying(false)); }
+    if (a.paused) { 
+      try { a.muted = false; a.volume = 1.0; } catch {}; 
+      a.play().then(()=>{ setPlaying(true); gaTrack("play", { slug: cur.slug }); }).catch(()=>setPlaying(false)); 
+    }
     else { a.pause(); setPlaying(false); gaTrack("pause", { slug: cur.slug }); }
   }
 
@@ -250,12 +246,16 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
     const onErr = (e: any) => { if (DEBUG_MEDIA) { dwarn('audio event: error', e?.message || e); dumpAudio(a, 'audio:error'); }};
     const onWaiting = () => { if (DEBUG_MEDIA) dlog('audio event: waiting'); };
     const onStalled = () => { if (DEBUG_MEDIA) dlog('audio event: stalled'); };
+    const onVolumeChange = () => { setVolume(a.volume); };
+    
     a.addEventListener('play', onPlay);
     a.addEventListener('pause', onPause);
     a.addEventListener('ended', onEnded);
     a.addEventListener('error', onErr as any);
     a.addEventListener('waiting', onWaiting as any);
     a.addEventListener('stalled', onStalled as any);
+    a.addEventListener('volumechange', onVolumeChange);
+    
     return () => {
       a.removeEventListener('play', onPlay);
       a.removeEventListener('pause', onPause);
@@ -263,6 +263,7 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
       a.removeEventListener('error', onErr as any);
       a.removeEventListener('waiting', onWaiting as any);
       a.removeEventListener('stalled', onStalled as any);
+      a.removeEventListener('volumechange', onVolumeChange);
     };
   }, [audioRef.current]);
 
@@ -308,8 +309,10 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
           });
         }
       } catch {}
-      if (e.key === "ArrowLeft" || e.key === "ArrowUp") { e.preventDefault(); prev(); }
-      else if (e.key === "ArrowRight" || e.key === "ArrowDown") { e.preventDefault(); next(); }
+      if (e.key === "ArrowLeft") { e.preventDefault(); prev(); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); next(); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); adjustVolume(0.1); }
+      else if (e.key === "ArrowDown") { e.preventDefault(); adjustVolume(-0.1); }
       else if (e.code === "Space" || e.key === " " || e.key === "Spacebar") { e.preventDefault(); toggle(); }
       else if (/^[1-9]$/.test(e.key)) {
         const n = Number(e.key) - 1; if (n < tracks.length) { uiClick(); setIdx(n); }
@@ -380,13 +383,12 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
         </div>
       </div>
 
+
       <div className="flex items-center gap-2 mt-3">
         <button onClick={prev}  className="hud-chip" aria-label="Previous">◀</button>
-        {showHUDPlay ? (
-          <button onClick={toggle} className="hud-chip" aria-label="Play/Pause">{playing ? "Pause" : "Play"}</button>
-        ) : null}
         <button onClick={next}  className="hud-chip" aria-label="Next">▶</button>
         <button onClick={() => setPickerOpen((o)=>!o)} className="hud-chip" aria-haspopup="listbox" aria-expanded={pickerOpen} aria-label="Select song">Select</button>
+        <div className="volume-display hud-chip">Vol: {Math.round(volume * 100)}%</div>
       </div>
 
       {pickerOpen ? (
@@ -505,6 +507,13 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
           background: rgba(255,255,255,.06);
         }
         .picker-item.active{ outline:1px solid rgba(255,255,255,.25); }
+        
+        .volume-display{
+          font-size: 10px;
+          padding: 4px 8px;
+          min-width: 60px;
+          text-align: center;
+        }
       `}</style>
     </div>
   );

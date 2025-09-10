@@ -14,6 +14,7 @@ class SFXBus {
     hover: "/audio/hover.mp3",
     click: "/audio/click.mp3",
     join: "/audio/join-alien.mp3",
+    "join-alien": "/audio/join-alien.mp3",
     change: "/audio/change-channel.mp3",
     pause: "/audio/pause.mp3",
     launch: "/audio/launch.mp3",

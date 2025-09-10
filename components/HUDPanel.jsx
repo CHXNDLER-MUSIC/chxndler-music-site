@@ -115,6 +115,10 @@ export default function HUDPanel({
   const [cardFlipped, setCardFlipped] = useState(false);
   // Beam fade: allow external control; default to fade-in on mount
   const [beamOpacity, setBeamOpacity] = useState(0);
+  // Audio progress tracking
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1.0);
   useEffect(() => {
     if (typeof beamEnabled === 'boolean') {
       const t = setTimeout(() => setBeamOpacity(beamEnabled ? 1 : 0), 10);
@@ -154,6 +158,50 @@ export default function HUDPanel({
 
   // Mark mounted for any client-only adjustments; panel is imported with ssr:false
   useEffect(() => { setMounted(true); }, []);
+
+  // Audio progress tracking
+  useEffect(() => {
+    const a = document.querySelector('audio[data-audio-player="1"]');
+    if (!a) return;
+    
+    const onTimeUpdate = () => { setProgress(a.currentTime); };
+    const onDurationChange = () => { setDuration(a.duration || 0); };
+    const onVolumeChange = () => { setVolume(a.volume); };
+    
+    a.addEventListener('timeupdate', onTimeUpdate);
+    a.addEventListener('durationchange', onDurationChange);
+    a.addEventListener('volumechange', onVolumeChange);
+    
+    return () => {
+      a.removeEventListener('timeupdate', onTimeUpdate);
+      a.removeEventListener('durationchange', onDurationChange);
+      a.removeEventListener('volumechange', onVolumeChange);
+    };
+  }, [mounted]);
+
+  // Progress bar click handler
+  const handleProgressClick = (e) => {
+    const a = document.querySelector('audio[data-audio-player="1"]');
+    if (!a || !duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const percentage = clickX / rect.width;
+    const seekTime = percentage * duration;
+    a.currentTime = seekTime;
+    try { sfx.play('click', 0.3); } catch {}
+  };
+
+  // Toggle play/pause
+  const handlePlayPause = () => {
+    const a = document.querySelector('audio[data-audio-player="1"]');
+    if (!a) return;
+    try { sfx.play('click', 0.6); } catch {}
+    if (a.paused) {
+      a.play().catch(() => {});
+    } else {
+      a.pause();
+    }
+  };
   useEffect(() => {
     if (!showCard) return;
     const onKey = (e) => { 
@@ -243,9 +291,9 @@ export default function HUDPanel({
           >
           {/* Background removed: keep HUD box transparent */}
         {/* Single blue outline wrapping the HUD content (amped glow) */}
-        <div className={`relative rounded-2xl border border-[#19E3FF]/90 ring-2 ring-[#19E3FF]/50 ${inConsole ? 'p-2' : 'p-4'}`} style={{
-          background: 'rgba(25,227,255,0.45)',
-          boxShadow: '0 0 50px rgba(25,227,255,0.35), 0 0 70px rgba(25,227,255,0.6), 0 0 24px rgba(25,227,255,0.85)'
+        <div className={`relative rounded-2xl border border-[#19E3FF]/60 ring-2 ring-[#19E3FF]/30 ${inConsole ? 'p-2' : 'p-4'}`} style={{
+          background: 'rgba(25,227,255,0.25)',
+          boxShadow: '0 0 50px rgba(25,227,255,0.20), 0 0 70px rgba(25,227,255,0.35), 0 0 24px rgba(25,227,255,0.50)'
         }}>
           {/* Background removed for transparent HUD */}
           {/* Cover art moved into right column above the song list */}
@@ -265,8 +313,16 @@ export default function HUDPanel({
             })()}
           </div>
           <div
-            className={`grid grid-cols-[1.35fr_0.65fr] gap-6 ${inConsole ? 'p-3' : 'p-8'}`}
-            style={{ opacity: contentOpacity, transition: 'opacity 240ms ease', pointerEvents: contentOpacity > 0.01 ? 'auto' : 'none', minHeight: inConsole ? 260 : 520 }}
+            className={`grid grid-cols-2 gap-4 ${inConsole ? 'p-3' : 'p-8'}`}
+            style={{ 
+              opacity: contentOpacity, 
+              transition: 'opacity 240ms ease', 
+              pointerEvents: contentOpacity > 0.01 ? 'auto' : 'none', 
+              minHeight: inConsole ? 300 : 600,
+              aspectRatio: '1/1',
+              maxWidth: inConsole ? 300 : 600,
+              margin: '0 auto'
+            }}
           >
           {/* Left: title + planet */}
           <div className="flex flex-col gap-6 h-full">
@@ -275,7 +331,7 @@ export default function HUDPanel({
               {/* Hologram panel wrapper to integrate with dashboard styling */}
               <div className="relative">
                 {/* Dynamic 3D with safe fallback to 2D if it errors */}
-                <div className={`relative w-full h-full overflow-visible rounded-[12px] ${inConsole ? 'min-h-[220px]' : 'min-h-[520px]'}`}>
+                <div className={`relative w-full h-full overflow-visible rounded-[12px] ${inConsole ? 'min-h-[280px]' : 'min-h-[560px]'}`}>
                   {/* Keep 3D background clear (no backdrop behind Canvas) */}
                   {/* Title overlay removed from panel; shown under cover art */}
                 {can3D && PlanetSystemComp ? (
@@ -371,30 +427,12 @@ export default function HUDPanel({
               </div>
             </div>
           </div>
-          {/* Right rail: cover art + dropdown list */}
-          <aside className="relative flex flex-col items-end gap-3 translate-x-0">
+          {/* Right rail: cover art + controls */}
+          <aside className="relative flex flex-col items-center gap-2 justify-start">
             <div 
-              className="mt-0 pr-0 self-end mr-1 md:mr-2 lg:mr-3" 
+              className="mt-0 w-full flex justify-center" 
               style={{ 
-                width: inConsole 
-                  ? (() => {
-                      if (typeof window === 'undefined') return 200;
-                      const screenWidth = window.innerWidth;
-                      // Proportional sizing: smaller screens get proportionally smaller covers
-                      // Range: 100px (very small) to 240px (large mobile/small tablet)
-                      const minSize = 100;
-                      const maxSize = 240;
-                      const minWidth = 320; // Minimum expected screen width
-                      const maxWidth = 768; // Where we cap the growth
-                      
-                      if (screenWidth <= minWidth) return minSize;
-                      if (screenWidth >= maxWidth) return maxSize;
-                      
-                      // Linear interpolation between min and max based on screen width
-                      const progress = (screenWidth - minWidth) / (maxWidth - minWidth);
-                      return Math.round(minSize + (maxSize - minSize) * progress);
-                    })()
-                  : 280 
+                maxWidth: inConsole ? 140 : 220
               }}
             >
               {true ? (
@@ -419,52 +457,63 @@ export default function HUDPanel({
                 >
                   {(() => {
                     const src = (!currentId ? DEFAULT_COVER : (track?.cover || DEFAULT_COVER));
-                    const coverSize = inConsole 
-                      ? (() => {
-                          if (typeof window === 'undefined') return 200;
-                          const screenWidth = window.innerWidth;
-                          // Proportional sizing: smaller screens get proportionally smaller covers
-                          // Range: 100px (very small) to 240px (large mobile/small tablet)
-                          const minSize = 100;
-                          const maxSize = 240;
-                          const minWidth = 320; // Minimum expected screen width
-                          const maxWidth = 768; // Where we cap the growth
-                          
-                          if (screenWidth <= minWidth) return minSize;
-                          if (screenWidth >= maxWidth) return maxSize;
-                          
-                          // Linear interpolation between min and max based on screen width
-                          const progress = (screenWidth - minWidth) / (maxWidth - minWidth);
-                          return Math.round(minSize + (maxSize - minSize) * progress);
-                        })()
-                      : 280;
+                    const coverSize = inConsole ? 120 : 180;
                     return <CoverCard src={src} size={coverSize} />;
                   })()}
                 </button>
               ) : null}
             </div>
+            
+            {/* Progress bar and play/pause controls */}
             <div 
-              className="mt-1 pr-0 self-end mr-1 md:mr-2 lg:mr-3" 
+              className="w-full" 
               style={{ 
-                width: inConsole 
-                  ? (() => {
-                      if (typeof window === 'undefined') return 200;
-                      const screenWidth = window.innerWidth;
-                      // Proportional sizing: smaller screens get proportionally smaller covers
-                      // Range: 100px (very small) to 240px (large mobile/small tablet)
-                      const minSize = 100;
-                      const maxSize = 240;
-                      const minWidth = 320; // Minimum expected screen width
-                      const maxWidth = 768; // Where we cap the growth
-                      
-                      if (screenWidth <= minWidth) return minSize;
-                      if (screenWidth >= maxWidth) return maxSize;
-                      
-                      // Linear interpolation between min and max based on screen width
-                      const progress = (screenWidth - minWidth) / (maxWidth - minWidth);
-                      return Math.round(minSize + (maxSize - minSize) * progress);
-                    })()
-                  : 280 
+                maxWidth: inConsole ? 140 : 220
+              }}
+            >
+              {/* Play/Pause button */}
+              <button 
+                onClick={handlePlayPause}
+                className="hud-play-btn"
+                aria-label={playing ? "Pause" : "Play"}
+              >
+                {playing ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="6" y="4" width="4" height="16" rx="1"/>
+                    <rect x="14" y="4" width="4" height="16" rx="1"/>
+                  </svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                )}
+              </button>
+              
+              {/* Progress bar */}
+              <div className="hud-progress-container">
+                <div 
+                  className="hud-progress-bar"
+                  onClick={handleProgressClick}
+                >
+                  <div 
+                    className="hud-progress-fill" 
+                    style={{ 
+                      width: duration > 0 ? `${(progress / duration) * 100}%` : '0%' 
+                    }}
+                  />
+                </div>
+                {duration > 0 && (
+                  <div className="hud-time-display">
+                    {Math.floor(progress / 60)}:{(Math.floor(progress % 60)).toString().padStart(2, '0')} / {Math.floor(duration / 60)}:{(Math.floor(duration % 60)).toString().padStart(2, '0')}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div 
+              className="w-full" 
+              style={{ 
+                maxWidth: inConsole ? 140 : 220
               }}
             >
               <SongDropdown
@@ -481,16 +530,82 @@ export default function HUDPanel({
         </div>
         </motion.div>
       <style jsx>{`
-        .cover-link{ display:block; border-radius:16px; outline:1px solid rgba(25,227,255,.35);
-          box-shadow: 0 0 28px rgba(25,227,255,.25);
+        .cover-link{ display:block; border-radius:16px; outline:1px solid rgba(25,227,255,.20);
+          box-shadow: 0 0 28px rgba(25,227,255,.15);
           transition: transform .15s ease, box-shadow .2s ease, outline-color .2s ease;
         }
         .cover-link:hover{
           transform: scale(1.04);
-          outline-color: rgba(25,227,255,.8);
-          box-shadow: 0 0 52px rgba(25,227,255,.7), 0 0 90px rgba(25,227,255,.45);
+          outline-color: rgba(25,227,255,.50);
+          box-shadow: 0 0 52px rgba(25,227,255,.40), 0 0 90px rgba(25,227,255,.25);
         }
         .cover-link:active{ transform: scale(.98); }
+        
+        /* HUD Progress Bar and Play Button */
+        .hud-play-btn{
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: rgba(25,227,255,.7);
+          border: 1px solid rgba(255,255,255,.3);
+          color: #000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 0 16px rgba(25,227,255,.3);
+          margin: 0 auto 8px auto;
+        }
+        .hud-play-btn:hover{
+          background: rgba(25,227,255,.9);
+          transform: scale(1.08);
+          box-shadow: 0 0 24px rgba(25,227,255,.5);
+          border-color: rgba(255,255,255,.5);
+        }
+        .hud-play-btn:active{
+          transform: scale(0.95);
+        }
+        
+        .hud-progress-container{ 
+          position: relative; 
+          margin-top: 4px;
+        }
+        .hud-progress-bar{
+          position: relative;
+          width: 100%;
+          height: 16px;
+          background: rgba(0,0,0,.4);
+          border-radius: 8px;
+          border: 1px solid rgba(25,227,255,.25);
+          overflow: hidden;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        .hud-progress-bar:hover{
+          border-color: rgba(25,227,255,.5);
+          box-shadow: 0 0 8px rgba(25,227,255,.2);
+        }
+        .hud-progress-fill{
+          position: absolute;
+          left: 0;
+          top: 0;
+          height: 100%;
+          background: linear-gradient(90deg, rgba(25,227,255,.7), rgba(25,227,255,.5));
+          border-radius: 8px;
+          transition: width 0.1s ease;
+          box-shadow: 0 0 8px rgba(25,227,255,.3);
+        }
+        .hud-time-display{
+          position: absolute;
+          right: 0;
+          top: -20px;
+          font-size: 9px;
+          color: rgba(25,227,255,.8);
+          font-family: 'OrbitronLocal', monospace;
+          text-shadow: 0 0 4px rgba(25,227,255,.4);
+          letter-spacing: 0.02em;
+        }
         
         /* Beam animations removed */
       `}</style>
@@ -582,7 +697,7 @@ export default function HUDPanel({
                     cursor: 'pointer'
                   }}
                   onClick={() => { 
-                    try { sfx.play('flip', 0.6); } catch {} 
+                    try { sfx.play('flip', 0.3); } catch {} 
                     setCardFlipped(!cardFlipped); 
                   }}
                 >
@@ -676,8 +791,8 @@ export default function HUDPanel({
       <style jsx>{`
         .card-modal{
           max-width: min(60vw, 360px);
-          background: rgba(25,227,255,0.45);
-          box-shadow: 0 0 60px rgba(25,227,255,0.45), inset 0 0 0 1px rgba(25,227,255,0.35);
+          background: rgba(25,227,255,0.25);
+          box-shadow: 0 0 60px rgba(25,227,255,0.25), inset 0 0 0 1px rgba(25,227,255,0.20);
         }
         .tilt-wrap{ perspective: 1200px; transform-style: preserve-3d; }
         .card-frame{

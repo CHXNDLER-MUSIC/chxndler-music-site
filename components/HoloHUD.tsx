@@ -112,9 +112,9 @@ export default function HoloHUD({
           font-weight: 700; letter-spacing:.02em; line-height: 1.02;
           color: #fff;
           text-shadow:
-            0 0 28px rgba(56,182,255,.45),
+            0 0 28px rgba(56,182,255,.25),
             0 2px 18px rgba(0,0,0,.55);
-          filter: drop-shadow(0 0 6px rgba(56,182,255,.35));
+          filter: drop-shadow(0 0 6px rgba(56,182,255,.20));
         }
         .subtitle{
           margin-top: 8px; font-size: clamp(12px, 1.2vw, 18px);
@@ -127,11 +127,11 @@ export default function HoloHUD({
           position:absolute; top:8vh; right:10vw;
           width: clamp(180px, 22vw, 340px); aspect-ratio:1/1;
           border-radius: 16px; overflow:hidden; transform: perspective(1200px) rotateX(10deg) rotateY(-10deg);
-          box-shadow: 0 0 50px rgba(56,182,255,.35), 0 10px 60px rgba(0,0,0,.6);
-          outline: 1px solid rgba(56,182,255,.55);
+          box-shadow: 0 0 50px rgba(56,182,255,.20), 0 10px 60px rgba(0,0,0,.6);
+          outline: 1px solid rgba(56,182,255,.30);
         }
         .card-glow{ position:absolute; inset:-8%; border-radius:20px; pointer-events:none;
-          box-shadow: 0 0 80px rgba(56,182,255,.35);
+          box-shadow: 0 0 80px rgba(56,182,255,.20);
         }
         .card-img{ width:100%; height:100%; object-fit:cover; filter: saturate(1.05) contrast(1.05) brightness(1.03); }
         .scanlines{ position:absolute; inset:0; pointer-events:none; mix-blend-mode:screen; opacity:.22;
@@ -169,9 +169,9 @@ export default function HoloHUD({
         .song-panel{ position:absolute; right:6vw; top: 30vh; width: clamp(180px, 18vw, 260px);
           padding: 10px; border-radius: 16px; backdrop-filter: blur(12px);
           /* Unified HUD tint to match dashboard */
-          background: rgba(25,227,255,0.45);
-          border: 1px solid rgba(25,227,255,.25);
-          box-shadow: 0 10px 40px rgba(0,0,0,.45), inset 0 0 0 1px rgba(25,227,255,.15);
+          background: rgba(25,227,255,0.25);
+          border: 1px solid rgba(25,227,255,.15);
+          box-shadow: 0 10px 40px rgba(0,0,0,.45), inset 0 0 0 1px rgba(25,227,255,.10);
           pointer-events:auto;
         }
         .song{ display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:12px; color:#fff;

@@ -206,10 +206,8 @@ export default function SteeringWheelOverlay({
           <div
             style={{
               position: "absolute",
-              top: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${vs/2}px + ${jdy}px - 12px)`, // Moved up 12px (was -4px, now -12px)
-              left: vconf.centerHoriz
-                ? `calc(50vw - ${vs/2}px + ${jdx}px)`
-                : `calc(${(pp.leftVw + (vconf.offsetVw || 0))}vw - ${vs/2}px + ${jdx}px)`,
+              top: `calc(50vh - ${joinSize/2}px - 100px)`, // Center vertically and move up 100px
+              left: `calc(50vw - ${joinSize/2}px - 150px)`, // Center horizontally and move left 150px
               zIndex: 92,
               // Prevent any interaction before UI reveal
               pointerEvents: showUI ? 'auto' : 'none',
@@ -267,6 +265,64 @@ export default function SteeringWheelOverlay({
                   <img src="/elements/power.png" alt="" className="power-icon" onError={(e)=>{ try { const img = e.currentTarget; img.onerror = null; img.src = '/elements/lightning.png'; } catch {} }} />
                 </span>
               </button>
+            ) : null}
+          </div>
+        );
+      })()}
+
+      {/* Yellow light beam - positioned to the left */}
+      {(() => {
+        return (
+          <div
+            style={{
+              position: "absolute",
+              top: `calc(50vh - 42px - 80px)`, // Center vertically and move up 80px
+              left: `calc(50vw - 42px - 300px)`, // Center horizontally and move left 300px
+              zIndex: 88,
+              pointerEvents: showUI ? 'auto' : 'none',
+            }}
+          >
+            {showUI ? (
+              <div style={{ opacity: 1, transition: 'opacity 300ms ease', pointerEvents: 'auto' }}>
+                <HoloJoinButton
+                  size={84}
+                  label="Lightning"
+                  iconSrc="/elements/lightning.png"
+                  hubColor="#F2EF1D"
+                  onClick={() => {
+                    try { console.log('Yellow beam activated!'); } catch {}
+                  }}
+                />
+              </div>
+            ) : null}
+          </div>
+        );
+      })()}
+
+      {/* Pink light beam - positioned to the right */}
+      {(() => {
+        return (
+          <div
+            style={{
+              position: "absolute",
+              top: `calc(50vh - 42px + 120px)`, // Center vertically and move down 120px
+              left: `calc(50vw - 42px + 250px)`, // Center horizontally and move right 250px
+              zIndex: 88,
+              pointerEvents: showUI ? 'auto' : 'none',
+            }}
+          >
+            {showUI ? (
+              <div style={{ opacity: 1, transition: 'opacity 300ms ease', pointerEvents: 'auto' }}>
+                <HoloJoinButton
+                  size={84}
+                  label="Heart"
+                  iconSrc="/elements/heart.png"
+                  hubColor="#FC54AF"
+                  onClick={() => {
+                    try { console.log('Pink beam activated!'); } catch {}
+                  }}
+                />
+              </div>
             ) : null}
           </div>
         );
@@ -493,7 +549,7 @@ export default function SteeringWheelOverlay({
         @keyframes powerSheen { 0% { transform: translateX(-130%);} 55% { transform: translateX(130%);} 100% { transform: translateX(130%);} }
       `}</style>
 
-      <audio ref={sfxRef} src="/audio/launch.MP3" preload="auto" />
+      <audio ref={sfxRef} src="/audio/launch.mp3" preload="auto" />
       <audio ref={pauseRef} src="/audio/pause.mp3" preload="auto" />
       <audio ref={hoverRef} preload="auto">
         <source src="/audio/hover.mp3" type="audio/mpeg" />
