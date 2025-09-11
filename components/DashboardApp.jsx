@@ -284,9 +284,9 @@ export default function DashboardApp() {
 
   const lightBeamStyle = useMemo(() => ({
     left: '50%',
-    bottom: '40vh', // Use desktop position for all devices
-    top: '50vh', // Use desktop position for all devices
-    width: 'min(1400px, 85vw)', // Use desktop width for all devices
+    bottom: '40vh', // Lower the base position
+    top: 'calc(3vh + 340px)', // Position to push against blue display (10px shorter)
+    width: '700px', // Wider than blue display to create proper beam shape
     transform: 'translateX(-50%)',
     opacity: beamEnabled ? (cardModalOpen ? 0.3 : 1) : 0,
     transition: 'opacity 300ms ease'
@@ -457,7 +457,7 @@ export default function DashboardApp() {
       <div 
         className="slot-container fixed z-30"
         style={{
-          top: '10vh',
+          top: '3vh',
           left: '50%',
           transform: 'translateX(-50%)', // Centered again
           width: '600px', // Wider display - extended left and right
@@ -536,7 +536,7 @@ export default function DashboardApp() {
               right: '3%', // Reduced from 5% to make beam wider on mobile
               bottom: '0px', 
               top: '0%',
-              clipPath: 'polygon(48% 100%, 52% 100%, 25% 0, 75% 0)',
+              clipPath: 'polygon(48% 100%, 52% 100%, 15% 0, 85% 0)',
               background: `linear-gradient(180deg, 
                 rgba(25,227,255,0.0) 0%, 
                 rgba(25,227,255,0.15) 15%, 
@@ -565,11 +565,11 @@ export default function DashboardApp() {
           className="fixed pointer-events-none z-30 pink-beam-animation"
           style={{
             position: 'fixed',
-            left: '57%', // Moved slightly to the left
-            bottom: '35vh', // Moved slightly higher 
-            top: '55vh', // Adjusted top accordingly  
-            width: 'min(1400px, 85vw)',
-            transform: 'translateX(-40%)', // Adjusted centering
+            left: 'calc(50vw - 200px)', // Position to align with pink panel location (left side)
+            bottom: '30vh', // Higher bottom position to connect to panel
+            top: 'calc(66vh - 320px)', // Connect to bottom of pink panel (join button area minus 320px offset)
+            width: '244px', // Match pink display panelWidth exactly
+            transform: 'translateX(-122px)', // Center alignment adjustment
             opacity: 1, // Always visible when joinAlienOpen is true
             transition: 'opacity 300ms ease'
           }}
@@ -578,11 +578,11 @@ export default function DashboardApp() {
           <div 
             style={{
               position: 'absolute',
-              left: '3%', // Same positioning as blue beam
-              right: '3%', // Same positioning as blue beam
+              left: '0%', // Full width to align with pink display edges
+              right: '0%', // Full width to align with pink display edges
               bottom: '0px', 
               top: '0%',
-              clipPath: 'polygon(80% 100%, 85% 100%, 20% 0, 25% 0)',
+              clipPath: 'polygon(48% 100%, 52% 100%, 100% 0, 0% 0)',
               background: `linear-gradient(180deg, 
                 rgba(252,84,175,0.0) 0%, 
                 rgba(252,84,175,0.15) 15%, 

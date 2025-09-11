@@ -131,7 +131,7 @@ function SystemGroup({ children }: { children: React.ReactNode }) {
     ref.current.rotation.y += 0.02 * dt;
   });
   return (
-    <group ref={ref} rotation={[0.08, -0.04, 0]} position={[0, 0.35, 0]}>
+    <group ref={ref} rotation={[0.08, -0.04, 0]} position={[0, 0.1, 0]}>
       {children}
     </group>
   );
@@ -164,7 +164,7 @@ function ProjectionSweep() {
     }
   `;
   return (
-    <mesh position={[0, 0.35, 0.2]}>
+    <mesh position={[0, 0.1, 0.2]}>
       <planeGeometry args={[9, 6, 1, 1]} />
       {/* @ts-ignore */}
       <shaderMaterial ref={matRef} uniforms={uniforms} vertexShader={vs} fragmentShader={fs} transparent blending={AdditiveBlending} depthWrite={false} />

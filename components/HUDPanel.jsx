@@ -453,38 +453,37 @@ export default function HUDPanel({
             >
               {(() => {
                 const src = (!currentId ? DEFAULT_COVER : (track?.cover || DEFAULT_COVER));
-                const coverSize = inConsole ? 180 : 240;
+                const coverSize = inConsole ? 140 : 180;
                 return <CoverCard src={src} size={coverSize} />;
               })()}
             </button>
           </div>
 
-          {/* Enhanced Media Player - single line layout */}
-          <div className="absolute right-2" style={{ top: inConsole ? '190px' : '250px', width: '35%', height: '40px' }}>
-            <div className="hud-media-player">
-              {/* Single row: Play button, progress bar, and time display */}
-              <div className="flex items-center gap-3">
+          {/* Waveform Media Player - positioned outside padded container to be flush with bottom */}
+          <div className="absolute bottom-0 left-0 right-0" style={{ height: '80px' }}>
+            <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '0 0 8px 8px' }}>
+              <div className="flex items-center gap-4 p-3">
                 <button 
                   onClick={handlePlayPause}
                   className="hud-play-btn-enhanced"
                   aria-label={playing ? "Pause" : "Play"}
                 >
                   {playing ? (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                       <rect x="6" y="4" width="4" height="16" rx="1"/>
                       <rect x="14" y="4" width="4" height="16" rx="1"/>
                     </svg>
                   ) : (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M8 5v14l11-7z"/>
                     </svg>
                   )}
                 </button>
                 
-                {/* Enhanced progress bar with hover scrubbing - takes up most space */}
+                {/* Waveform visualization */}
                 <div className="flex-1">
                   <div 
-                    className="hud-progress-bar-enhanced"
+                    className="waveform-container"
                     onClick={handleProgressClick}
                     onMouseMove={(e) => {
                       const rect = e.currentTarget.getBoundingClientRect();
@@ -493,28 +492,28 @@ export default function HUDPanel({
                       e.currentTarget.style.setProperty('--hover-position', `${hoverPercentage}%`);
                     }}
                   >
-                    {/* Background track */}
-                    <div className="progress-track" />
-                    {/* Progress fill */}
+                    {/* Generate waveform bars */}
+                    {Array.from({ length: 100 }, (_, i) => {
+                      const height = Math.sin(i * 0.3) * 0.5 + Math.random() * 0.5 + 0.3;
+                      const isPlayed = duration > 0 ? (progress / duration * 100) > i : false;
+                      return (
+                        <div
+                          key={i}
+                          className={`waveform-bar ${isPlayed ? 'played' : 'unplayed'}`}
+                          style={{ height: `${height * 100}%` }}
+                        />
+                      );
+                    })}
+                    
+                    {/* Progress indicator */}
                     <div 
-                      className="hud-progress-fill-enhanced" 
-                      style={{ 
-                        width: duration > 0 ? `${(progress / duration) * 100}%` : '0%' 
-                      }}
-                    />
-                    {/* Hover indicator */}
-                    <div className="progress-hover-indicator" />
-                    {/* Progress handle */}
-                    <div 
-                      className="progress-handle"
-                      style={{
-                        left: duration > 0 ? `${(progress / duration) * 100}%` : '0%'
-                      }}
+                      className="waveform-progress"
+                      style={{ width: duration > 0 ? `${(progress / duration) * 100}%` : '0%' }}
                     />
                   </div>
                 </div>
                 
-                {/* Enhanced time display */}
+                {/* Time display */}
                 {duration > 0 && (
                   <div className="hud-time-enhanced">
                     <span className="current-time">
@@ -529,9 +528,10 @@ export default function HUDPanel({
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Song selector positioned at bottom right of HUD display */}
-          <div className="absolute bottom-2 right-2" style={{ width: '35%' }}>
+        {/* Song selector positioned at middle right of HUD display */}
+        <div className="absolute right-2" style={{ top: inConsole ? '160px' : '200px', width: '35%' }}>
             <SongDropdown
               items={resolvedSongs}
               initialActiveId={active || resolvedSongs[0]?.id}
@@ -542,7 +542,6 @@ export default function HUDPanel({
 
 
         {/* bottom-corner buttons removed per design request */}
-        </div>
         </motion.div>
       <style jsx>{`
         .cover-link{ display:block; border-radius:16px; outline:1px solid rgba(25,227,255,.20);
@@ -563,6 +562,69 @@ export default function HUDPanel({
           border: 1px solid rgba(25,227,255,.2);
           border-radius: 8px;
           backdrop-filter: blur(4px);
+        }
+        
+        .hud-waveform-player{
+          position: relative;
+          background: rgba(25,227,255,0.25);
+          border: none;
+          border-top: 1px solid rgba(25,227,255,0.3);
+          border-radius: 8px;
+          backdrop-filter: blur(8px);
+          box-shadow: 0 0 16px rgba(25,227,255,0.15);
+        }
+        
+        .waveform-container{
+          position: relative;
+          height: 40px;
+          display: flex;
+          align-items: end;
+          gap: 1px;
+          cursor: pointer;
+          padding: 4px;
+          border-radius: 4px;
+          background: rgba(0,0,0,0.2);
+        }
+        
+        .waveform-bar{
+          flex: 1;
+          min-height: 2px;
+          border-radius: 1px;
+          transition: all 0.1s ease;
+        }
+        
+        .waveform-bar.played{
+          background: linear-gradient(180deg, 
+            rgba(25,227,255,1) 0%,
+            rgba(25,227,255,0.8) 50%,
+            rgba(25,227,255,1) 100%);
+          box-shadow: 0 0 4px rgba(25,227,255,0.6);
+        }
+        
+        .waveform-bar.unplayed{
+          background: linear-gradient(180deg, 
+            rgba(25,227,255,0.3) 0%,
+            rgba(25,227,255,0.2) 50%,
+            rgba(25,227,255,0.3) 100%);
+        }
+        
+        .waveform-container:hover .waveform-bar.unplayed{
+          background: linear-gradient(180deg, 
+            rgba(25,227,255,0.5) 0%,
+            rgba(25,227,255,0.3) 50%,
+            rgba(25,227,255,0.5) 100%);
+        }
+        
+        .waveform-progress{
+          position: absolute;
+          top: 0;
+          left: 0;
+          height: 100%;
+          background: linear-gradient(90deg, 
+            rgba(25,227,255,0.1) 0%,
+            rgba(25,227,255,0.05) 100%);
+          border-radius: 4px;
+          pointer-events: none;
         }
         
         .hud-play-btn-enhanced{
@@ -682,7 +744,7 @@ export default function HUDPanel({
       `}</style>
       {showCard ? (
         <div
-          className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-start justify-end"
+          className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-center justify-center"
           style={{ padding: '6vh 5vw' }}
           onClick={() => {
             try { sfx.play('/audio/close.mp3', 0.7); } catch {}
