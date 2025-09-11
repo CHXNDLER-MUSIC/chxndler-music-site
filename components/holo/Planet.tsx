@@ -479,15 +479,22 @@ export default function Planet({
 
     if (meshRef.current) {
       const rotSpeed = isHover ? 1.6 : (isMain ? 0.9 : 0.8);
-      meshRef.current.rotation.y += rotSpeed * d;
+      const safeRotSpeed = isFinite(rotSpeed) ? rotSpeed : 0.8;
+      const safeDelta = isFinite(d) ? d : 0.016;
+      meshRef.current.rotation.y += safeRotSpeed * safeDelta;
       // Subtle oscillating pulse on hover (+heart pulse)
-      const hPulse = isHover ? 1 + 0.03 * Math.sin(state.clock.elapsedTime * 6) : 1;
-      const heartPulse = element === 'heart' ? (1 + 0.06 * Math.sin(state.clock.elapsedTime * 2.4)) : 1.0;
-      const finalScale = scaleRef.current * hPulse * heartPulse;
+      const elapsedTime = isFinite(state.clock.elapsedTime) ? state.clock.elapsedTime : 0;
+      const hPulse = isHover ? 1 + 0.03 * Math.sin(elapsedTime * 6) : 1;
+      const heartPulse = element === 'heart' ? (1 + 0.06 * Math.sin(elapsedTime * 2.4)) : 1.0;
+      const safeHPulse = isFinite(hPulse) ? hPulse : 1.0;
+      const safeHeartPulse = isFinite(heartPulse) ? heartPulse : 1.0;
+      const safeScaleRef = isFinite(scaleRef.current) ? scaleRef.current : 1.0;
+      const finalScale = safeScaleRef * safeHPulse * safeHeartPulse;
       const safeScale = isFinite(finalScale) && finalScale > 0 ? finalScale : 1.0;
       meshRef.current.scale.setScalar(safeScale);
       const m: any = (meshRef.current.material as any);
-      if (m && typeof m.opacity === 'number') m.opacity = (isMain ? 0.62 : 0.52) * depthLocal;
+      const safeDepthLocal = isFinite(depthLocal) ? depthLocal : 1.0;
+      if (m && typeof m.opacity === 'number') m.opacity = (isMain ? 0.62 : 0.52) * safeDepthLocal;
       (m as any).clearcoat = 0.25;
     }
     // Throttled state update to refresh HoloMaterial uniforms for depth
@@ -664,16 +671,18 @@ export default function Planet({
       <mesh ref={meshRef}>
         {(() => {
           // Create more diverse and realistic planet shapes based on type and characteristics
-          const shapeVariant = Math.abs(idHash) % 4;
-          const rotationalFlattening = sizeVar * 0.15; // Realistic flattening due to rotation
+          const safeIdHash = isFinite(idHash) ? Math.abs(idHash) : 12345;
+          const shapeVariant = safeIdHash % 4;
+          const safeSizeVar = isFinite(sizeVar) ? sizeVar : 0.5;
+          const rotationalFlattening = safeSizeVar * 0.15; // Realistic flattening due to rotation
           
           if (planetType === 'gas-giant') {
             // Gas giants are oblate due to rapid rotation
-            const oblateness = 0.85 + sizeVar * 0.12; // Jupiter-like flattening
+            const oblateness = 0.85 + safeSizeVar * 0.12; // Jupiter-like flattening
             return <sphereGeometry args={[1, 64, 64]} />;
           } else if (planetType === 'neptune') {
             // Ice giants, slightly less oblate than gas giants
-            const oblateness = 0.90 + sizeVar * 0.08;
+            const oblateness = 0.90 + safeSizeVar * 0.08;
             return <sphereGeometry args={[1, 72, 72]} />;
           } else if (planetType === 'dwarf') {
             // Dwarf planets have more irregular shapes

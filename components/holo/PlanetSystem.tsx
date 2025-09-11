@@ -33,7 +33,8 @@ export default function PlanetSystem({ showAll = false }: { showAll?: boolean })
         dpr={[1, 2]}
         // Pull the camera back and widen FOV so the full system fits
         // Much more horizontal viewpoint: lower camera height and pull back slightly
-        camera={{ position: [0.2, 0.6, 15.5], fov: 40 }}
+        // Zoom out more for CHXNDLER homepage when showAll is true
+        camera={{ position: [0.2, 0.6, showAll ? 22 : 15.5], fov: showAll ? 50 : 40 }}
         gl={{ antialias: true, alpha: true }}
         frameloop="demand"
       >
@@ -174,10 +175,15 @@ function ProjectionSweep() {
 function ZoomOnChange({ focusId }: { focusId: string | null }) {
   // Subtle camera dolly + FOV ease when focus song changes
   const { camera, invalidate } = useThree();
-  const base = React.useRef({ z: 15.5, fov: 40 });
+  // Use different base values based on showAll mode - access via props context
+  const isShowAll = focusId === null;
+  const base = React.useRef({ z: isShowAll ? 22 : 15.5, fov: isShowAll ? 50 : 40 });
   const anim = React.useRef<{ t: number; d: number; active: boolean }>({ t: 0, d: 0.8, active: false });
 
   React.useEffect(() => {
+    // Update base values based on current mode
+    base.current = { z: isShowAll ? 22 : 15.5, fov: isShowAll ? 50 : 40 };
+    
     // Only restart zoom animation if we have a focusId (not in showAll/home mode)
     if (focusId) {
       anim.current.t = 0;
@@ -194,7 +200,7 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
       camera_.updateProjectionMatrix();
       invalidate();
     }
-  }, [focusId, invalidate, camera]);
+  }, [focusId, isShowAll, invalidate, camera]);
 
   useFrame((state, dt) => {
     if (!anim.current.active) return;

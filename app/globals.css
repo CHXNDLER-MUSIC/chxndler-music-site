@@ -80,8 +80,11 @@ html, body {
     0 18px 34px rgba(0,0,0,.55),             /* drop to seat into console */
     inset 0 1px 0 rgba(255,255,255,.18),     /* top bevel */
     inset 0 -10px 24px rgba(0,0,0,.65);      /* inner shade */
-  /* Contain inner visuals so they don’t spill past frame */
+  /* Contain inner visuals so they don't spill past frame */
   overflow: hidden;
+  /* Prevent HUD from shrinking on small screens */
+  min-width: 460px;
+  min-height: 350px;
 }
 
 /* Desktop: slightly deeper right-side concave and wider top taper */

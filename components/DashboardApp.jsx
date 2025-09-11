@@ -378,25 +378,22 @@ export default function DashboardApp() {
                   setTimeout(() => {
                     setBeamEnabled(true);
                     
-                    // Step 4: Finally fade in HUD display
+                    // Step 4: Finally fade in HUD display - much faster
                     setTimeout(() => {
                       setShowHUD(true);
                       setBeamOnly(false);
                       setPowerBusy(false);
                       
-                      // Resume ambient after everything is faded in
-                      if (welcomeOnStartRef.current) {
-                        setTimeout(() => {
-                          setAmbientSuspended(false);
-                        }, 200);
-                      } else {
-                        setAmbientSuspended(false);
-                      }
-                    }, 300); // HUD fade-in delay
-                  }, 200); // Beam fade-in delay
-                }, 150); // UI buttons fade-in delay
+                      // Step 5: Immediately start space-music.mp3 after blue display fades in
+                      setTimeout(() => {
+                        setAmbientSuspended(false); // This will start space-music.mp3
+                      }, 50); // Reduced delay for immediate music start
+                      
+                    }, 100); // Reduced HUD fade-in delay from 300ms to 100ms
+                  }, 50); // Reduced beam fade-in delay from 200ms to 50ms
+                }, 50); // Reduced UI buttons fade-in delay from 150ms to 50ms
               } catch {} 
-            }, 500); // Initial delay after warp completes
+            }, 200); // Reduced initial delay from 500ms to 200ms
           }
           if (pendingTrackPlay) {
             // Do not start audio here; wait for onFlyEnd so playback begins after warp SFX ends.
@@ -428,8 +425,7 @@ export default function DashboardApp() {
           triggerHudPower(undefined); 
         }}
         onLaunch={() => {
-          // Start: hide all UI first, then warp overlay + sound, then land on CHXNDLER homepage
-          // Hide HUD, comms, join, and power buttons during warp
+          // Start: fade out dashboard colors (yellow, pink, blue) and light beams first
           setShowHUD(false);
           setShowOverlayUI(false);
           setBeamEnabled(false);
@@ -446,21 +442,27 @@ export default function DashboardApp() {
             }
           } catch {}
           setIsPlaying(false);
+          
+          // Start warp sequence with warp.mp3 and lightspeed.mp4
           setAllowWarp(true);
           setNextSky(SPACE_SKY);
           setFlySignal((n) => n + 1);
-          // UI will reappear when space.mp4 starts playing via triggerHudPower
+          // UI will reappear when space.mp4 starts playing with join-alien.mp3 and space-music.mp3
         }}
       />
       {/* Removed Join the Aliens dashboard panel per request */}
       </div> {/* Close blur wrapper */}
 
-      <Slot
-        className="slot-container"
-        rects={[
-          // Use desktop layout for all screen sizes
-          { minWidth: 0, top: 10, left: 32.5, width: 35, height: 30 }
-        ]}
+      {/* Fixed positioning for blue display - no viewport scaling */}
+      <div 
+        className="slot-container fixed z-30"
+        style={{
+          top: '10vh',
+          left: '50%',
+          transform: 'translateX(-50%)', // Centered again
+          width: '600px', // Wider display - extended left and right
+          height: '350px', // Fixed pixel height - no shrinking
+        }}
       >
         <div className="relative h-full w-full p-0" style={{ overflow: 'visible' }} suppressHydrationWarning>
           <AnimatePresence mode="wait">
@@ -518,7 +520,7 @@ export default function DashboardApp() {
             unlockPlays={false}
           />
         </div>
-      </Slot>
+      </div>
 
       {/* Responsive upward shooting light beam - wider on mobile to match HUD proportions */}
       {mounted && (beamEnabled || showHUD) ? (
@@ -563,9 +565,9 @@ export default function DashboardApp() {
           className="fixed pointer-events-none z-30 pink-beam-animation"
           style={{
             position: 'fixed',
-            left: '55%',
-            bottom: '40vh', // Use desktop position
-            top: '50vh',
+            left: '57%', // Moved slightly to the left
+            bottom: '35vh', // Moved slightly higher 
+            top: '55vh', // Adjusted top accordingly  
             width: 'min(1400px, 85vw)',
             transform: 'translateX(-40%)', // Adjusted centering
             opacity: 1, // Always visible when joinAlienOpen is true
@@ -580,7 +582,7 @@ export default function DashboardApp() {
               right: '3%', // Same positioning as blue beam
               bottom: '0px', 
               top: '0%',
-              clipPath: 'polygon(48% 100%, 52% 100%, 0% 0, 50% 0)',
+              clipPath: 'polygon(80% 100%, 85% 100%, 20% 0, 25% 0)',
               background: `linear-gradient(180deg, 
                 rgba(252,84,175,0.0) 0%, 
                 rgba(252,84,175,0.15) 15%, 

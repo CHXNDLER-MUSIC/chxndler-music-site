@@ -431,7 +431,7 @@ export default function HUDPanel({
             )}
           </div>
           {/* Cover section at top right */}
-          <div className="absolute top-2 right-2" style={{ width: '45%', display: 'flex', justifyContent: 'flex-end' }}>
+          <div className="absolute top-2 right-2" style={{ width: '35%', display: 'flex', justifyContent: 'flex-end' }}>
             <button
               type="button"
               aria-label="Open song card"
@@ -460,7 +460,7 @@ export default function HUDPanel({
           </div>
 
           {/* Enhanced Media Player - single line layout */}
-          <div className="absolute right-2" style={{ top: inConsole ? '190px' : '250px', width: '45%', height: '40px' }}>
+          <div className="absolute right-2" style={{ top: inConsole ? '190px' : '250px', width: '35%', height: '40px' }}>
             <div className="hud-media-player">
               {/* Single row: Play button, progress bar, and time display */}
               <div className="flex items-center gap-3">
