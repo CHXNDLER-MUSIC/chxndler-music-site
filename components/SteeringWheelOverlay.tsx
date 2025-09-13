@@ -16,6 +16,7 @@ export default function SteeringWheelOverlay({
   showUI = true,
   onPowerToggle,
   onJoinToggle,
+  onBeamColorChange,
 }: {
   logoSrc?: string;
   onLaunch: () => void;
@@ -24,17 +25,24 @@ export default function SteeringWheelOverlay({
   showUI?: boolean;
   onPowerToggle?: () => void;
   onJoinToggle?: (showJoin: boolean) => void;
+  onBeamColorChange?: (color: 'blue' | 'yellow' | 'pink') => void;
 }) {
   const sfxRef = useRef<HTMLAudioElement|null>(null);
   const pauseRef = useRef<HTMLAudioElement|null>(null);
   const hoverRef = useRef<HTMLAudioElement|null>(null);
   const joinAlienRef = useRef<HTMLAudioElement|null>(null);
   const [showJoin, setShowJoin] = useState(false);
+  const [activeBeamColor, setActiveBeamColor] = useState<'blue' | 'yellow' | 'pink'>('blue');
 
   // Notify parent when showJoin changes
   useEffect(() => {
     onJoinToggle?.(showJoin);
   }, [showJoin, onJoinToggle]);
+
+  // Notify parent when beam color changes
+  useEffect(() => {
+    onBeamColorChange?.(activeBeamColor);
+  }, [activeBeamColor, onBeamColorChange]);
   const joinFormRef = useRef<HTMLDivElement|null>(null);
 
   // Close join form when clicking outside (but not on the join alien button itself)
@@ -83,6 +91,7 @@ export default function SteeringWheelOverlay({
     // Simple toggle - just show/hide the pink join alien display
     // Don't trigger blue light or HUD display
     setShowJoin(prevShowJoin => !prevShowJoin);
+    setActiveBeamColor('pink');
   }, [showJoin]);
 
   // Helper function to get responsive values
@@ -166,70 +175,28 @@ export default function SteeringWheelOverlay({
           }}
         />
       </div>
-      {/* Hologram Comms menu — offset from the wheel's top-left */}
-      {(() => {
-        const iconSize = 30;
-        const InstagramIcon = (
-          <img
-            src="/elements/instagram.png"
-            alt="Instagram"
-            width={iconSize}
-            height={iconSize}
-            style={{ objectFit: 'contain' }}
-          />
-        );
-        const TikTokIcon = (
-          <img
-            src="/elements/tiktok.png"
-            alt="TikTok"
-            width={iconSize}
-            height={iconSize}
-            style={{ objectFit: 'contain' }}
-          />
-        );
-        const YouTubeIcon = (
-          <img
-            src="/elements/youtube.png"
-            alt="YouTube"
-            width={iconSize}
-            height={iconSize}
-            style={{ objectFit: 'contain' }}
-          />
-        );
-        const SpotifyIcon = (
-          <img
-            src="/elements/spotify.png"
-            alt="Spotify"
-            width={iconSize}
-            height={iconSize}
-            style={{ objectFit: 'contain' }}
-          />
-        );
-        // Apple Music icon using PNG
-        const AppleMusicIcon = (
-          <img
-            src="/elements/apple.png"
-            alt="Apple Music"
-            width={iconSize}
-            height={iconSize}
-            style={{ objectFit: 'contain' }}
-          />
-        );
-        // Check if mobile for responsive positioning
-        const isMobileComms = typeof window !== 'undefined' && (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-        
-        return (
-          <div
-            style={{
-              position: "absolute",
-              top: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${vs/2}px + ${(getResponsiveValue(POS?.wheel?.comms)?.dyPx ?? 0) - 40}px)`, // Above steering wheel
-              left: `calc(50vw - 120px)`, // Moved even further to the left
-              zIndex: 92,
-              pointerEvents: 'auto',
-            }}
-            aria-hidden={false}
-          >
-            <div style={{ opacity: showUI ? 1 : 0, transition: 'opacity 75ms ease', pointerEvents: showUI ? 'auto' : 'none' }}>
+      {/* Centered buttons container above steering wheel */}
+      <div
+        style={{
+          position: "absolute",
+          top: '60%', // Above steering wheel
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '80px', // Space between buttons
+          zIndex: 92,
+          pointerEvents: showUI ? 'auto' : 'none',
+          opacity: showUI ? 1 : 0,
+          transition: 'opacity 75ms ease',
+        }}
+      >
+        {/* Comms Button */}
+        {(() => {
+          const iconSize = 30;
+          return (
+            <div style={{ pointerEvents: 'auto' }}>
               <HoloHubMenu
                 items={[
                 LINKS.instagram ? { id: 'ig', label: 'Instagram', href: LINKS.instagram, icon: '/elements/instagram.png', color: '#E1306C' } : null,
@@ -242,17 +209,14 @@ export default function SteeringWheelOverlay({
                 hubColor="#F2EF1D"
                 itemSize={84}
                 hubSize={84}
-                // Centered arrangement within the yellow display
-                // All buttons centered around the hub circle
                 angles={{ sp: -36, am: -18, ig: 0, tt: 18, yt: 36 }}
                 onToggle={(isOpen) => {
                   if (isOpen) {
                     console.log('Comms menu opening, hiding other displays');
-                    // Hide HUD if showing
+                    setActiveBeamColor('yellow');
                     if (showUI) {
                       onPowerToggle?.();
                     }
-                    // Hide join alien display if showing
                     if (showJoin) {
                       setShowJoin(false);
                     }
@@ -260,48 +224,62 @@ export default function SteeringWheelOverlay({
                 }}
               />
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
 
-      {/* Hologram Join button — to the right of the steering wheel (pop-out) */}
-      {(() => {
-        const joinCfg: any = getResponsiveValue((POS?.wheel as any)?.join) || {};
-        const joinSize: number = typeof joinCfg.sizePx === 'number' ? joinCfg.sizePx : 84;
-        // Horizontal: allow relative offset from the wheel rim via offsetRightPx; fallback to absolute dxPx; else default (vs + 24)
-        const jdx = (typeof joinCfg.offsetRightPx === 'number')
-          ? (vs + joinCfg.offsetRightPx)
-          : ((typeof joinCfg.dxPx === 'number' && joinCfg.dxPx !== 0) ? joinCfg.dxPx : (vs + 24));
-        const jdy = (typeof joinCfg.dyPx === 'number' && joinCfg.dyPx !== 0) ? joinCfg.dyPx : (Math.round(vs/2 - joinSize/2));
-        // Mobile detection for wider spacing
-        const isMobileJoin = typeof window !== 'undefined' && (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-        
-        return (
-          <div
-            style={{
-              position: "absolute",
-              // Position at 3 o'clock of the steering wheel (directly to the right)
-              top: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${joinSize/2}px)`, // Vertically centered with steering wheel
-              left: `calc(${(pp.leftVw + (vconf.offsetVw || 0))}vw - ${joinSize/2}px + ${vs/2 - 160}px)`, // Moved to the left
-              zIndex: 92,
-              // Prevent any interaction before UI reveal
-              pointerEvents: showUI ? 'auto' : 'none',
-            }}
-          >
-            {showUI ? (
-              <div style={{ opacity: 1, transition: 'opacity 75ms ease', pointerEvents: 'auto' }}>
-                <HoloJoinButton 
-                  size={joinSize} 
-                  label="Join Alien Display" 
-                  iconSrc="/elements/join.png" 
-                  hubColor="#FC54AF" 
-                  onClick={handleJoinAlienToggle}
-                />
-              </div>
-            ) : null}
-          </div>
-        );
-      })()}
+        {/* Power Button */}
+        {(() => {
+          const powerCfg: any = getResponsiveValue((POS?.wheel as any)?.power) || {};
+          const powerSize: number = typeof powerCfg.sizePx === 'number' ? powerCfg.sizePx : 60;
+          return (
+            <div style={{ pointerEvents: 'auto' }}>
+              {onPowerToggle ? (
+                <button
+                  type="button"
+                  className="power-btn"
+                  onMouseEnter={() => { try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
+                  onClick={() => {
+                    setActiveBeamColor('blue');
+                    onPowerToggle?.();
+                  }}
+                  aria-label="Power"
+                  title="Power"
+                  style={{
+                    width: powerSize, 
+                    height: powerSize, 
+                    borderRadius: 9999,
+                    opacity: 1,
+                    transition: 'opacity 300ms ease, transform 150ms ease, box-shadow 200ms ease, filter 180ms ease',
+                    pointerEvents: 'auto',
+                  }}
+                >
+                  <span className="sr-only">Power Button</span>
+                  <span className="power-glyph" aria-hidden>
+                    <img src="/elements/power.png" alt="" className="power-icon" onError={(e)=>{ try { const img = e.currentTarget; img.onerror = null; img.src = '/elements/lightning.png'; } catch {} }} />
+                  </span>
+                </button>
+              ) : null}
+            </div>
+          );
+        })()}
+
+        {/* Join Alien Button */}
+        {(() => {
+          const joinCfg: any = getResponsiveValue((POS?.wheel as any)?.join) || {};
+          const joinSize: number = typeof joinCfg.sizePx === 'number' ? joinCfg.sizePx : 84;
+          return (
+            <div style={{ pointerEvents: 'auto' }}>
+              <HoloJoinButton 
+                size={joinSize} 
+                label="Join Alien Display" 
+                iconSrc="/elements/join.png" 
+                hubColor="#FC54AF" 
+                onClick={handleJoinAlienToggle}
+              />
+            </div>
+          );
+        })()}
+      </div>
 
       {/* Separate Join Aliens Form - positioned up and to the left of join button */}
       {(() => {
@@ -354,120 +332,9 @@ export default function SteeringWheelOverlay({
         );
       })()}
 
-      {/* Power button positioned way down below wheel center, horizontally centered on screen */}
-      {(() => {
-        const powerCfg: any = getResponsiveValue((POS?.wheel as any)?.power) || {};
-        const powerSize: number = typeof powerCfg.sizePx === 'number' ? powerCfg.sizePx : 60;
-        const pdx = (typeof powerCfg.dxPx === 'number') ? powerCfg.dxPx : 0;
-        const pdy = (typeof powerCfg.dyPx === 'number') ? powerCfg.dyPx : 270;
-        const centerHorizontally = powerCfg.centerHoriz === true;
-        return (
-          <div
-            style={{
-              position: "absolute",
-              top: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${vs/2}px + ${pdy}px)`,
-              left: centerHorizontally
-                ? `calc(50vw - ${powerSize/2}px)`
-                : (vconf.centerHoriz
-                  ? `calc(50vw - ${vs/2}px + ${pdx}px - ${powerSize/2}px)`
-                  : `calc(${(pp.leftVw + (vconf.offsetVw || 0))}vw - ${vs/2}px + ${pdx}px - ${powerSize/2}px)`),
-              zIndex: 95,
-              pointerEvents: showUI ? 'auto' : 'none',
-            }}
-          >
-            {showUI && onPowerToggle ? (
-              <button
-                type="button"
-                className="power-btn"
-                onMouseEnter={() => { try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
-                onClick={onPowerToggle}
-                aria-label="Power"
-                title="Power"
-                style={{
-                  width: powerSize, 
-                  height: powerSize, 
-                  borderRadius: 9999,
-                  opacity: 1,
-                  transition: 'opacity 300ms ease, transform 150ms ease, box-shadow 200ms ease, filter 180ms ease',
-                  pointerEvents: 'auto',
-                }}
-              >
-                <span className="sr-only">Power Button</span>
-                <span className="power-glyph" aria-hidden>
-                  <img src="/elements/power.png" alt="" className="power-icon" onError={(e)=>{ try { const img = e.currentTarget; img.onerror = null; img.src = '/elements/lightning.png'; } catch {} }} />
-                </span>
-              </button>
-            ) : null}
-          </div>
-        );
-      })()}
 
 
 
-      {/* Red light beam - downward shooting beam positioned above join alien button */}
-      {(() => {
-        const joinCfg: any = (POS?.wheel as any)?.join || {};
-        const joinSize: number = typeof joinCfg.sizePx === 'number' ? joinCfg.sizePx : 84;
-        // Check if mobile for performance optimizations
-        const isMobile = typeof window !== 'undefined' && (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-        
-        const redBeamStyle = {
-          position: "absolute" as const,
-          // Position above the join alien button, extending downward
-          top: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${joinSize/2}px - ${Math.cos(Math.PI/6) * 120}px + 75px - 120px)`, // Start lower - made beam shorter
-          bottom: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${joinSize/2}px - ${Math.cos(Math.PI/6) * 120}px + 75px + ${joinSize}px)`, // End below button
-          left: `calc(${(pp.leftVw + (vconf.offsetVw || 0))}vw - ${joinSize/2}px + ${Math.sin(Math.PI/6) * 120}px + 50px)`, // Moved more to the left
-          width: 'min(400px, 25vw)', // Responsive width like blue beam but smaller
-          transform: 'translateX(-50%)', // Center the beam
-          zIndex: 88,
-          pointerEvents: 'none' as const,
-          opacity: showUI ? 1 : 0,
-          transition: 'opacity 300ms ease'
-        };
-
-        return (
-          <div
-            className="fixed pointer-events-none red-beam-animation"
-            style={redBeamStyle}
-          >
-            {/* Single main red beam */}
-            <div 
-              style={{
-                position: 'absolute',
-                left: '3%', // Match blue beam margins
-                right: '3%', // Match blue beam margins  
-                top: '0px',
-                bottom: '0%',
-                clipPath: 'polygon(1% 0, 99% 0, 52% 100%, 48% 100%)', // Inverted taper - wide at top, narrow at bottom
-                background: isMobile 
-                  ? // Simplified gradient for mobile performance
-                    `linear-gradient(180deg, 
-                      rgba(255,45,85,0.0) 0%, 
-                      rgba(255,45,85,0.25) 50%, 
-                      rgba(255,45,85,0.0) 100%)`
-                  : // Full complexity for desktop
-                    `linear-gradient(180deg, 
-                      rgba(255,45,85,0.0) 0%, 
-                      rgba(255,45,85,0.15) 15%, 
-                      rgba(255,45,85,0.35) 40%, 
-                      rgba(255,45,85,0.55) 65%, 
-                      rgba(255,45,85,0.35) 85%, 
-                      rgba(255,45,85,0.0) 100%),
-                    repeating-linear-gradient(180deg,
-                      transparent 0px,
-                      rgba(255,45,85,0.1) 20px,
-                      rgba(255,45,85,0.2) 40px,
-                      rgba(255,45,85,0.1) 60px,
-                      transparent 80px)`,
-                backgroundSize: isMobile ? '100% 100%' : '100% 100%, 100% 160px',
-                filter: isMobile ? 'blur(4px)' : 'blur(8px)', // Less blur on mobile
-                mixBlendMode: 'screen',
-                animation: isMobile ? 'redBeamFlow 4s linear infinite' : 'redBeamFlow 3s linear infinite' // Slower on mobile
-              }}
-            />
-          </div>
-        );
-      })()}
 
       {/* Start button anchored on the wheel */}
       <button

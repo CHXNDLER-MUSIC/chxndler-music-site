@@ -55,6 +55,7 @@ export default function DashboardApp() {
   const welcomeOnStartRef = React.useRef(false); // signals that welcome VO should play now
   const [cardModalOpen, setCardModalOpen] = useState(false); // track card modal state for beam dimming
   const [joinAlienOpen, setJoinAlienOpen] = useState(false); // track join alien button state for pink beam
+  const [beamColor, setBeamColor] = useState('blue'); // track active beam color
   const SPACE_SKY = { webm: "/skies/space.webm", mp4: "/skies/space.mp4", key: "space" };
   
 
@@ -276,6 +277,16 @@ export default function DashboardApp() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Helper function to get beam colors based on active beam color
+  const getBeamColors = useMemo(() => {
+    const colorMap = {
+      blue: 'rgba(25,227,255',
+      yellow: 'rgba(242,239,29',
+      pink: 'rgba(252,84,175'
+    };
+    return colorMap[beamColor] || colorMap.blue;
+  }, [beamColor]);
+
   // Memoize expensive style calculations
   const blurWrapperStyle = useMemo(() => ({
     filter: cardModalOpen ? 'blur(2px)' : 'none',
@@ -412,6 +423,7 @@ export default function DashboardApp() {
         playing={isPlaying}
         showUI={showOverlayUI}
         onJoinToggle={setJoinAlienOpen}
+        onBeamColorChange={setBeamColor}
         onPowerToggle={() => { 
           // Manual power toggle should not start new welcome audio, but don't interrupt if it's already playing
           if (!welcomeOnStartRef.current) {
@@ -460,7 +472,7 @@ export default function DashboardApp() {
           top: '3vh',
           left: '50%',
           transform: 'translateX(-50%)', // Centered again
-          width: '600px', // Wider display - extended left and right
+          width: '90%', // Responsive width
           height: '350px', // Fixed pixel height - no shrinking
         }}
       >
@@ -522,10 +534,10 @@ export default function DashboardApp() {
         </div>
       </div>
 
-      {/* Responsive upward shooting light beam - wider on mobile to match HUD proportions */}
+      {/* Light Beam - responsive upward shooting beam that changes color based on active button */}
       {mounted && (beamEnabled || showHUD) ? (
         <div 
-          className="fixed pointer-events-none z-30 light-beam-animation"
+          className="fixed pointer-events-none z-30 light-beam"
           style={lightBeamStyle}
         >
           {/* Single main beam */}
@@ -538,17 +550,17 @@ export default function DashboardApp() {
               top: '0%',
               clipPath: 'polygon(48% 100%, 52% 100%, 15% 0, 85% 0)',
               background: `linear-gradient(180deg, 
-                rgba(25,227,255,0.0) 0%, 
-                rgba(25,227,255,0.15) 15%, 
-                rgba(25,227,255,0.35) 40%, 
-                rgba(25,227,255,0.55) 65%, 
-                rgba(25,227,255,0.35) 85%, 
-                rgba(25,227,255,0.0) 100%),
+                ${getBeamColors},0.0) 0%, 
+                ${getBeamColors},0.15) 15%, 
+                ${getBeamColors},0.35) 40%, 
+                ${getBeamColors},0.55) 65%, 
+                ${getBeamColors},0.35) 85%, 
+                ${getBeamColors},0.0) 100%),
               repeating-linear-gradient(180deg,
                 transparent 0px,
-                rgba(25,227,255,0.1) 20px,
-                rgba(25,227,255,0.2) 40px,
-                rgba(25,227,255,0.1) 60px,
+                ${getBeamColors},0.1) 20px,
+                ${getBeamColors},0.2) 40px,
+                ${getBeamColors},0.1) 60px,
                 transparent 80px)`,
               backgroundSize: '100% 100%, 100% 160px',
               filter: 'blur(8px)',
@@ -559,51 +571,6 @@ export default function DashboardApp() {
         </div>
       ) : null}
 
-      {/* Pink light beam - controlled by join alien button */}
-      {mounted && joinAlienOpen ? (
-        <div 
-          className="fixed pointer-events-none z-30 pink-beam-animation"
-          style={{
-            position: 'fixed',
-            left: 'calc(50vw - 200px)', // Position to align with pink panel location (left side)
-            bottom: '30vh', // Higher bottom position to connect to panel
-            top: 'calc(66vh - 320px)', // Connect to bottom of pink panel (join button area minus 320px offset)
-            width: '244px', // Match pink display panelWidth exactly
-            transform: 'translateX(-122px)', // Center alignment adjustment
-            opacity: 1, // Always visible when joinAlienOpen is true
-            transition: 'opacity 300ms ease'
-          }}
-        >
-          {/* Single main pink beam */}
-          <div 
-            style={{
-              position: 'absolute',
-              left: '0%', // Full width to align with pink display edges
-              right: '0%', // Full width to align with pink display edges
-              bottom: '0px', 
-              top: '0%',
-              clipPath: 'polygon(48% 100%, 52% 100%, 100% 0, 0% 0)',
-              background: `linear-gradient(180deg, 
-                rgba(252,84,175,0.0) 0%, 
-                rgba(252,84,175,0.15) 15%, 
-                rgba(252,84,175,0.35) 40%, 
-                rgba(252,84,175,0.55) 65%, 
-                rgba(252,84,175,0.35) 85%, 
-                rgba(252,84,175,0.0) 100%),
-              repeating-linear-gradient(180deg,
-                transparent 0px,
-                rgba(252,84,175,0.1) 20px,
-                rgba(252,84,175,0.2) 40px,
-                rgba(252,84,175,0.1) 60px,
-                transparent 80px)`,
-              backgroundSize: '100% 100%, 100% 160px',
-              filter: 'blur(8px)',
-              mixBlendMode: 'screen',
-              animation: 'pinkBeamFlow 3s linear infinite'
-            }}
-          />
-        </div>
-      ) : null}
 
       {mounted && showHUD && process.env.NEXT_PUBLIC_HOLOHUD === '1' ? (
         <HoloHUD

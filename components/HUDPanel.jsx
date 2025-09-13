@@ -308,9 +308,9 @@ export default function HUDPanel({
       ref={inConsole ? containerRef : undefined}
     >
       <DevErrorLogger />
-      <div className="w-full h-full flex items-start justify-end pr-16">
+      <div className="w-full h-full flex items-start justify-center">
           <motion.div
-            className={`relative rounded-2xl mr-8`}
+            className={`relative rounded-2xl`}
             // Remove hover glow/scale for the entire HUD display per request
             transition={{ type: "spring", stiffness: 200, damping: 20 }}
             style={inConsole
@@ -460,7 +460,7 @@ export default function HUDPanel({
           </div>
 
           {/* Waveform Media Player - positioned outside padded container to be flush with bottom */}
-          <div className="absolute bottom-0 left-0 right-0" style={{ height: '80px' }}>
+          <div className="absolute -bottom-2 left-2 right-2" style={{ height: '80px' }}>
             <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '0 0 8px 8px' }}>
               <div className="flex items-center gap-4 p-3">
                 <button 

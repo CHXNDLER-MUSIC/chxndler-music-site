@@ -502,7 +502,24 @@ export default function PlanetSystemRaw() {
   
   // Create detailed planet geometry based on planet type
   function createPlanetGeometry(radius: number, geometry: PlanetGeometry) {
+    // Validate inputs to prevent NaN values
+    if (!radius || radius <= 0 || !isFinite(radius)) {
+      console.warn('Invalid radius provided to createPlanetGeometry:', radius);
+      radius = 0.5; // fallback
+    }
+    
     const { segments, scale, deformation, poleFlattening, surfaceRoughness } = geometry;
+    
+    // Validate geometry parameters
+    const safeScale = {
+      x: (scale?.x && isFinite(scale.x) && scale.x > 0) ? scale.x : 1,
+      y: (scale?.y && isFinite(scale.y) && scale.y > 0) ? scale.y : 1,
+      z: (scale?.z && isFinite(scale.z) && scale.z > 0) ? scale.z : 1
+    };
+    
+    const safeDeformation = (deformation && isFinite(deformation)) ? Math.max(0, Math.min(1, deformation)) : 0.05;
+    const safePoleFlattening = (poleFlattening && isFinite(poleFlattening)) ? Math.max(0, Math.min(1, poleFlattening)) : 0.02;
+    const safeSurfaceRoughness = (surfaceRoughness && isFinite(surfaceRoughness)) ? Math.max(0, Math.min(2, surfaceRoughness)) : 0.5;
     
     // Create base sphere geometry with high detail
     const baseGeometry = new THREE.SphereGeometry(
@@ -518,10 +535,20 @@ export default function PlanetSystemRaw() {
     for (let i = 0; i < positions.count; i++) {
       vector.fromBufferAttribute(positions, i);
       
-      // Apply pole flattening (like gas giants)
-      const latitude = Math.asin(vector.y / radius);
+      // Validate vector components
+      if (!isFinite(vector.x) || !isFinite(vector.y) || !isFinite(vector.z)) {
+        console.warn('Invalid vector components detected, skipping vertex:', i);
+        continue;
+      }
+      
+      // Apply pole flattening (like gas giants) with safe math
+      const latitudeInput = Math.max(-1, Math.min(1, vector.y / radius)); // clamp to valid asin range
+      const latitude = Math.asin(latitudeInput);
       const poleEffect = Math.cos(latitude);
-      vector.y *= (1 - poleFlattening * poleEffect);
+      
+      if (isFinite(poleEffect)) {
+        vector.y *= (1 - safePoleFlattening * poleEffect);
+      }
       
       // Apply general deformation with noise
       const noiseValue = 
@@ -529,15 +556,27 @@ export default function PlanetSystemRaw() {
         Math.sin(vector.x * 16) * Math.cos(vector.z * 12) * 0.05 +
         Math.sin(vector.x * 32) * Math.cos(vector.z * 24) * 0.025;
       
-      const deformationFactor = 1 + (noiseValue * deformation * surfaceRoughness);
-      vector.multiplyScalar(deformationFactor);
+      if (isFinite(noiseValue)) {
+        const deformationFactor = 1 + (noiseValue * safeDeformation * safeSurfaceRoughness);
+        if (isFinite(deformationFactor) && deformationFactor > 0) {
+          vector.multiplyScalar(deformationFactor);
+        }
+      }
       
-      // Apply scale
-      vector.x *= scale.x;
-      vector.y *= scale.y;
-      vector.z *= scale.z;
+      // Apply scale with validation
+      vector.x *= safeScale.x;
+      vector.y *= safeScale.y;
+      vector.z *= safeScale.z;
       
-      positions.setXYZ(i, vector.x, vector.y, vector.z);
+      // Final validation before setting position
+      if (isFinite(vector.x) && isFinite(vector.y) && isFinite(vector.z)) {
+        positions.setXYZ(i, vector.x, vector.y, vector.z);
+      } else {
+        console.warn('NaN detected in final vector position, using fallback for vertex:', i);
+        // Use original position as fallback
+        vector.fromBufferAttribute(positions, i);
+        positions.setXYZ(i, vector.x * safeScale.x, vector.y * safeScale.y, vector.z * safeScale.z);
+      }
     }
     
     // Recalculate normals for proper lighting

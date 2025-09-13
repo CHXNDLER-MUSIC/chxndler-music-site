@@ -122,11 +122,11 @@ export default function HoloHUD({
           text-shadow: 0 1px 10px rgba(0,0,0,.4);
         }
 
-        /* Album card (top-right) */
+        /* Album card (centered top) */
         .album-card{
-          position:absolute; top:8vh; right:14vw;
+          position:absolute; top:8vh; left:50%; transform: translateX(-50%) perspective(1200px) rotateX(10deg) rotateY(-10deg);
           width: clamp(160px, 18vw, 280px); aspect-ratio:1/1;
-          border-radius: 16px; overflow:hidden; transform: perspective(1200px) rotateX(10deg) rotateY(-10deg);
+          border-radius: 16px; overflow:hidden;
           box-shadow: 0 0 50px rgba(56,182,255,.20), 0 10px 60px rgba(0,0,0,.6);
           outline: 1px solid rgba(56,182,255,.30);
         }
@@ -138,13 +138,14 @@ export default function HoloHUD({
           background: repeating-linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.08) 1px, rgba(0,0,0,0) 1px, rgba(0,0,0,0) 3px);
         }
 
-        /* Orrery centered above wheel */
+        /* Orrery positioned between one-liner and blue display */
         .orrery{
           position:absolute;
-          left: calc(${POS.wheel.logo.leftVw}vw - 2vw);
-          top: calc(${POS.wheel.logo.topVh}vh - 10vh);
+          left: 50%;
+          transform: translateX(-50%);
+          top: 16vh; /* Positioned after one-liner space */
           width: clamp(200px, 24vw, 420px);
-          height: clamp(120px, 16vw, 280px);
+          height: clamp(100px, 12vw, 200px); /* Compact to fit in available space */
           display:grid; place-items:center;
           filter: drop-shadow(0 0 18px rgba(252,84,175,.35)) drop-shadow(0 0 18px rgba(56,182,255,.25));
         }
@@ -165,18 +166,43 @@ export default function HoloHUD({
         .o3 .planet{ position:absolute; top:48%; left:84%; }
         @keyframes spin { from{ transform: rotate(0deg);} to{ transform: rotate(360deg);} }
 
-        /* Right-side song panel */
-        .song-panel{ position:absolute; right:10vw; top: 30vh; width: clamp(100px, 10vw, 140px);
+        /* Centered song panel */
+        .song-panel{ 
+          position:absolute; 
+          left:50%; 
+          transform: translateX(-50%); 
+          top: 30vh; 
+          width: clamp(100px, 10vw, 140px);
+          max-width: 500px;
           height: clamp(160px, 16vh, 220px);
-          padding: 10px; border-radius: 16px; backdrop-filter: blur(12px);
+          padding: 10px 0; 
+          margin: 0;
+          border-radius: 16px; 
+          backdrop-filter: blur(12px);
           /* Unified HUD tint to match dashboard */
           background: rgba(25,227,255,0.25);
           border: 1px solid rgba(25,227,255,.15);
           box-shadow: 0 10px 40px rgba(0,0,0,.45), inset 0 0 0 1px rgba(25,227,255,.10);
           pointer-events:auto;
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
         }
-        .song{ display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:12px; color:#fff;
-          background: transparent; margin:6px 0; transition: color .12s ease; }
+        .song{ 
+          display:flex; 
+          align-items:center; 
+          justify-content:center;
+          gap:10px; 
+          padding:8px 0; 
+          margin:6px 0; 
+          border-radius:12px; 
+          color:#fff;
+          background: transparent; 
+          transition: color .12s ease; 
+          width: 100%;
+        }
         .song:hover{ outline: none; box-shadow: none; }
         .song .dot{ width:10px; height:10px; border-radius:9999px; background: #38B6FF; box-shadow: 0 0 10px #38B6FFAA; }
         .song .name{ flex:1; font-size: 14px; letter-spacing:.02em; opacity:.9; transition: color .12s ease, text-shadow .15s ease; }

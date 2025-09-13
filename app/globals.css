@@ -179,15 +179,6 @@ html, body {
   }
 }
 
-/* Red beam animation keyframes - flows downward */
-@keyframes redBeamFlow {
-  0% {
-    background-position: 0% 0%, 0% 0%;
-  }
-  100% {
-    background-position: 0% 0%, 0% 160px;
-  }
-}
 
 /* Pink beam animation keyframes - flows upward */
 @keyframes pinkBeamFlow {

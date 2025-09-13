@@ -156,7 +156,7 @@ export default function HoloHubMenu({
         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
         onMouseDown={(e) => { e.stopPropagation(); }}
         onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !open) { e.preventDefault(); onHubClick(); } }}
-        style={{ width: hubSize, height: hubSize, left: -Math.round(hubSize/2), top: -Math.round(hubSize/2) } as React.CSSProperties}
+        style={{ width: hubSize, height: hubSize, position: 'relative' } as React.CSSProperties}
       >
         <span className="hub-glyph mask-element-comms" aria-hidden>
           {/* Comms hologram icon (fill tighter in ring) */}
@@ -229,7 +229,7 @@ export default function HoloHubMenu({
       </div>
 
       <style jsx>{`
-        .holo-hub-wrap{ position: relative; width: 0; height: 0; /* anchored at center via parent */ }
+        .holo-hub-wrap{ position: relative; }
         .beam{ position:absolute; left:-70px; top:-18px; width:140px; height:36px; pointer-events:none; mix-blend-mode:screen;
           background: radial-gradient(closest-side, ${hubColor}66, transparent 70%);
           filter: blur(8px);
