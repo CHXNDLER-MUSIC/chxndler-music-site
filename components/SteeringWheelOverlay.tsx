@@ -30,9 +30,10 @@ export default function SteeringWheelOverlay({
   const sfxRef = useRef<HTMLAudioElement|null>(null);
   const pauseRef = useRef<HTMLAudioElement|null>(null);
   const hoverRef = useRef<HTMLAudioElement|null>(null);
-  const joinAlienRef = useRef<HTMLAudioElement|null>(null);
+  const buttonRef = useRef<HTMLAudioElement|null>(null);
   const [showJoin, setShowJoin] = useState(false);
   const [activeBeamColor, setActiveBeamColor] = useState<'blue' | 'yellow' | 'pink'>('blue');
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Notify parent when showJoin changes
   useEffect(() => {
@@ -44,6 +45,42 @@ export default function SteeringWheelOverlay({
     onBeamColorChange?.(activeBeamColor);
   }, [activeBeamColor, onBeamColorChange]);
   const joinFormRef = useRef<HTMLDivElement|null>(null);
+
+  // Display management function for mutual exclusivity
+  const switchToDisplay = useCallback((targetDisplay: 'blue' | 'yellow' | 'pink') => {
+    if (isTransitioning) return; // Prevent rapid switching
+    
+    setIsTransitioning(true);
+    
+    // First close all other displays
+    const closeOtherDisplays = () => {
+      if (targetDisplay !== 'pink' && showJoin) {
+        setShowJoin(false);
+      }
+      if (targetDisplay !== 'blue' && showUI) {
+        onPowerToggle?.();
+      }
+      // Yellow display (HoloHubMenu) closes itself when onToggle(false) is called
+    };
+    
+    // Close other displays immediately
+    closeOtherDisplays();
+    
+    // Wait for close animations to complete, then open target display
+    setTimeout(() => {
+      setActiveBeamColor(targetDisplay);
+      
+      if (targetDisplay === 'pink' && !showJoin) {
+        setShowJoin(true);
+      } else if (targetDisplay === 'blue' && !showUI) {
+        onPowerToggle?.();
+      }
+      // Yellow display opening is handled by HoloHubMenu component
+      
+      setIsTransitioning(false);
+    }, 150); // Wait for close animation (75ms opacity + buffer)
+    
+  }, [isTransitioning, showJoin, showUI, onPowerToggle]);
 
   // Close join form when clicking outside (but not on the join alien button itself)
   useEffect(() => {
@@ -88,11 +125,21 @@ export default function SteeringWheelOverlay({
   const handleJoinAlienToggle = useCallback(() => {
     console.log('handleJoinAlienToggle called, current showJoin:', showJoin);
     
-    // Simple toggle - just show/hide the pink join alien display
-    // Don't trigger blue light or HUD display
-    setShowJoin(prevShowJoin => !prevShowJoin);
-    setActiveBeamColor('pink');
-  }, [showJoin]);
+    // Play button sound
+    try {
+      const a = buttonRef.current;
+      if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
+    } catch {}
+    
+    // If pink display is already open, close it
+    if (showJoin) {
+      setShowJoin(false);
+      setActiveBeamColor('blue'); // Default back to blue
+    } else {
+      // Open pink display (will close others first)
+      switchToDisplay('pink');
+    }
+  }, [showJoin, switchToDisplay]);
 
   // Helper function to get responsive values
   const getResponsiveValue = (config: any) => {
@@ -136,8 +183,8 @@ export default function SteeringWheelOverlay({
       <div
         style={{
           position: "absolute",
-          // Center horizontally by default, align vertical using play button Y for cockpit fit
-          top: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${vs/2}px)`,
+          // Bottom of wheel video aligned with bottom of screen
+          bottom: "0px",
           left: vconf.centerHoriz
             ? `calc(50vw - ${vs/2}px)`
             : `calc(${(pp.leftVw + (vconf.offsetVw || 0))}vw - ${vs/2}px)`,
@@ -162,7 +209,7 @@ export default function SteeringWheelOverlay({
           softness={(vconf as any)?.softness ?? 0.0}
           saturation={(vconf as any)?.saturation ?? 1.8}
           contrast={(vconf as any)?.contrast ?? 2.0}
-          offsetYRatio={0.08}
+          offsetYRatio={0}
           className="block"
           style={{
             display: 'block',
@@ -171,7 +218,7 @@ export default function SteeringWheelOverlay({
             pointerEvents: 'none',
             background: 'transparent',
             transform: 'scale(0.9)',
-            transformOrigin: 'center',
+            transformOrigin: 'bottom center',
           }}
         />
       </div>
@@ -179,7 +226,7 @@ export default function SteeringWheelOverlay({
       <div
         style={{
           position: "absolute",
-          top: '60%', // Above steering wheel
+          bottom: '40%', // Above steering wheel, bottom-aligned
           left: '50%',
           transform: 'translateX(-50%)',
           display: 'flex',
@@ -212,14 +259,15 @@ export default function SteeringWheelOverlay({
                 angles={{ sp: -36, am: -18, ig: 0, tt: 18, yt: 36 }}
                 onToggle={(isOpen) => {
                   if (isOpen) {
+                    // Play button sound
+                    try {
+                      const a = buttonRef.current;
+                      if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
+                    } catch {}
+                    
                     console.log('Comms menu opening, hiding other displays');
-                    setActiveBeamColor('yellow');
-                    if (showUI) {
-                      onPowerToggle?.();
-                    }
-                    if (showJoin) {
-                      setShowJoin(false);
-                    }
+                    // Use display management for proper sequencing
+                    switchToDisplay('yellow');
                   }
                 }}
               />
@@ -239,8 +287,21 @@ export default function SteeringWheelOverlay({
                   className="power-btn"
                   onMouseEnter={() => { try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
                   onClick={() => {
-                    setActiveBeamColor('blue');
-                    onPowerToggle?.();
+                    // Play button sound
+                    try {
+                      const a = buttonRef.current;
+                      if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
+                    } catch {}
+                    
+                    // Use display management for proper sequencing
+                    if (showUI) {
+                      // If blue display is open, close it
+                      onPowerToggle?.();
+                      setActiveBeamColor('blue'); 
+                    } else {
+                      // Open blue display (will close others first)
+                      switchToDisplay('blue');
+                    }
                   }}
                   aria-label="Power"
                   title="Power"
@@ -281,22 +342,17 @@ export default function SteeringWheelOverlay({
         })()}
       </div>
 
-      {/* Separate Join Aliens Form - positioned up and to the left of join button */}
+      {/* Separate Join Aliens Form - dynamically positioned to align with blue display */}
       {(() => {
-        const joinCfg: any = (POS?.wheel as any)?.join || {};
-        const joinSize: number = typeof joinCfg.sizePx === 'number' ? joinCfg.sizePx : 84;
-        const vs = (POS?.wheel?.sizePx as number) || 108;
-        // Mobile detection for responsive form positioning
-        const isMobileForm = typeof window !== 'undefined' && (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-        
         return (
           <div
             ref={joinFormRef}
             style={{
               position: "absolute",
-              // Position up and to the left of the join button
-              top: `calc(${(pp.topVh + (vconf.offsetVh || 0))}vh - ${joinSize/2}px - 320px)`, // 320px above join button (moved up 20px more)
-              left: `calc(${(pp.leftVw + (vconf.offsetVw || 0))}vw - ${joinSize/2}px + ${isMobileForm ? vs/2 - 80 : vs/2 + 30}px - 155px)`, // Adjust for mobile spacing
+              // Align bottom with blue display bottom, accounting for blue display's 10px bottom padding
+              bottom: `calc(70vh - clamp(160px, 16vh, 220px) - 10px)`,
+              // Position to the left of center, matching blue display alignment strategy
+              left: `calc(50% - clamp(80px, 8vw, 100px)/2 - 244px - 40px)`, // 244px = form width, 40px = gap
               zIndex: 93,
               pointerEvents: showJoin ? 'auto' : 'none',
               opacity: showJoin ? 1 : 0,
@@ -342,7 +398,7 @@ export default function SteeringWheelOverlay({
         className={`pointer-events-auto wheel-play${isStart ? ' chx' : ''}`}
         style={{
           position: "absolute",
-          top: `calc(${pp.topVh}vh - ${(pp.sizePx * 0.95)/2}px - 12px)`, // Moved up 12px (4px more)
+          bottom: `calc(${100 - pp.topVh}vh - ${(pp.sizePx * 0.95)/2}px + 12px)`, // Bottom-aligned responsive positioning
           left: `calc(${pp.leftVw}vw - ${(pp.sizePx * 0.95)/2}px + 10px)`,
           width: pp.sizePx * 0.95,
           height: pp.sizePx * 0.95,
@@ -593,7 +649,7 @@ export default function SteeringWheelOverlay({
         <source src="/audio/hover.mp3" type="audio/mpeg" />
         <source src="/audio/song-select.mp3" type="audio/mpeg" />
       </audio>
-      <audio ref={joinAlienRef} src="/audio/join-alien.mp3" preload="auto" />
+      <audio ref={buttonRef} src="/audio/button.mp3" preload="auto" />
     </div>
   );
 }

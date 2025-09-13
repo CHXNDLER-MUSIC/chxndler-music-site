@@ -152,7 +152,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange }) 
       const id = items[highlight]?.id;
       if (id) { setActiveId(id); onChange?.(id); }
       setOpen(false);
-      // Playback will start after warp SFX delay via MediaDock
+      // Playback will start after warp SFX delay via MediaPlayer
       try { usePlayerStore.getState().setHover(null); } catch {}
     }
   }

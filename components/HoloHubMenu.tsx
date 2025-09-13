@@ -124,13 +124,12 @@ export default function HoloHubMenu({
         return { x: 0, y: 0, angleDeg: 0 };
       }
       
-      // Position buttons to the right side of yellow display with more spacing
-      const spacing = 80; // Increased spacing between buttons
+      // Center buttons horizontally in the screen with spacing
+      const spacing = 80; // Spacing between buttons
       const totalWidth = (n - 1) * spacing;
-      const offsetRight = 120; // Move all buttons even more to the right
-      const startX = offsetRight - totalWidth / 2;
+      const startX = -totalWidth / 2; // Center the group of buttons
       const x = startX + (i * spacing);
-      const y = -260; // Center vertically within the yellow box
+      const y = 0; // Center vertically
       
       return { x, y, angleDeg: 0 };
     });
@@ -237,9 +236,10 @@ export default function HoloHubMenu({
         
         /* Yellow hologram background panel */
         .background-panel{ 
-          position: absolute; 
-          top: -310px; 
-          left: -80px; 
+          position: fixed; 
+          top: 40%; 
+          left: 50%; 
+          transform: translate(-50%, -50%);
           width: 400px; 
           height: 100px; 
           border-radius: 16px; 
@@ -338,7 +338,7 @@ export default function HoloHubMenu({
             drop-shadow(0 0 88px #F2EF1D); }
         @keyframes holoPulse { 0%,100%{ filter: brightness(1) } 50%{ filter: brightness(1.08) } }
 
-        .items{ position:absolute; left:0; top:0; width:0; height:0; pointer-events:${open ? "auto" : "none"}; }
+        .items{ position:fixed; left:50%; top:40%; width:0; height:0; pointer-events:${open ? "auto" : "none"}; }
         /* Radial items: circular hologram chrome around each icon */
         .item{
           position:absolute; border-radius:9999px; left: -22px; top: -22px; width: 44px; height: 44px;

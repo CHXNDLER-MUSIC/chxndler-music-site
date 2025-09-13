@@ -1,7 +1,7 @@
 // components/FastAudioBus.tsx
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import NowPlayingHUD from "./NowPlayingHUD";
+import MediaPlayer from "./MediaPlayer";
 import type { Track } from "@/config/tracks";
 import { tracks as ALL } from "@/config/tracks";
 
@@ -48,7 +48,7 @@ export default function FastAudioBus({ track }: { track?: Track }) {
 
   if (!active) return null;
   return (
-    <NowPlayingHUD
+    <MediaPlayer
       title={active.title}
       progress={progress}
       onToggle={toggle}

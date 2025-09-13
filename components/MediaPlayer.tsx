@@ -5,6 +5,7 @@ import { tracks as ALL, type Track } from "@/config/tracks";
 import { skyFor } from "@/lib/sky";
 import { track as gaTrack } from "@/lib/analytics";
 import { DEBUG_MEDIA, dlog, dwarn, dumpAudio } from "@/lib/debug";
+import { ELEMENT_COLORS, type Element } from "@/lib/planets";
 
 type Props = {
   onSkyChange: (webm: string, mp4: string, key: string) => void;
@@ -22,7 +23,7 @@ type Props = {
   unlockPlays?: boolean;     // if false, gesture unlock will not auto-play
 };
 
-export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange, wrapChannels = true, startSignal = 0, startIndex = 0, playSignal = 0, toggleSignal = 0, showHUDPlay = true, index, onIndexChange, autoPlayOnIndex = true, unlockPlays = true }: Props) {
+export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChange, wrapChannels = true, startSignal = 0, startIndex = 0, playSignal = 0, toggleSignal = 0, showHUDPlay = true, index, onIndexChange, autoPlayOnIndex = true, unlockPlays = true }: Props) {
   const [internalIdx, setInternalIdx] = useState(startIndex);
   const idx = (typeof index === 'number') ? index : internalIdx;
   const setIdx = (val: number | ((p:number)=>number)) => {
@@ -39,9 +40,16 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
   const [showWarp, setShowWarp] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [volume, setVolume] = useState(1.0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [animationTime, setAnimationTime] = useState(0);
 
   const tracks = ALL;
   const cur = tracks[idx];
+  
+  // Get current song's element and color
+  const currentElement = getTrackElement(cur);
+  const currentElementColor = ELEMENT_COLORS[currentElement];
 
   const STEP = useMemo(() => 360 / Math.max(tracks.length, 1), [tracks.length]);
   const [angle, setAngle] = useState(idx * STEP);
@@ -214,7 +222,10 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
     const a = audioRef.current; if (!a) return;
     const newVolume = Math.max(0, Math.min(1, volume + delta));
     setVolume(newVolume);
-    a.volume = newVolume;
+    // Ensure volume is valid before setting on audio element
+    if (isFinite(newVolume) && newVolume >= 0 && newVolume <= 1) {
+      a.volume = newVolume;
+    }
     uiClick();
   }
   
@@ -246,7 +257,12 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
     const onErr = (e: any) => { if (DEBUG_MEDIA) { dwarn('audio event: error', e?.target?.error?.message || e?.target?.error?.code || 'unknown audio error'); dumpAudio(a, 'audio:error'); }};
     const onWaiting = () => { if (DEBUG_MEDIA) dlog('audio event: waiting'); };
     const onStalled = () => { if (DEBUG_MEDIA) dlog('audio event: stalled'); };
-    const onVolumeChange = () => { setVolume(a.volume); };
+    const onVolumeChange = () => { 
+      const vol = Math.max(0, Math.min(1, a.volume)); 
+      setVolume(vol); 
+    };
+    const onTimeUpdate = () => { setCurrentTime(a.currentTime); };
+    const onLoadedMetadata = () => { setDuration(a.duration); };
     
     a.addEventListener('play', onPlay);
     a.addEventListener('pause', onPause);
@@ -255,6 +271,8 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
     a.addEventListener('waiting', onWaiting as any);
     a.addEventListener('stalled', onStalled as any);
     a.addEventListener('volumechange', onVolumeChange);
+    a.addEventListener('timeupdate', onTimeUpdate);
+    a.addEventListener('loadedmetadata', onLoadedMetadata);
     
     return () => {
       a.removeEventListener('play', onPlay);
@@ -264,6 +282,8 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
       a.removeEventListener('waiting', onWaiting as any);
       a.removeEventListener('stalled', onStalled as any);
       a.removeEventListener('volumechange', onVolumeChange);
+      a.removeEventListener('timeupdate', onTimeUpdate);
+      a.removeEventListener('loadedmetadata', onLoadedMetadata);
     };
   }, [audioRef.current]);
 
@@ -322,6 +342,21 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
     return () => window.removeEventListener("keydown", onKey);
   }, [idx, wrapChannels, tracks.length]);
 
+  // Animation loop for waveform when playing
+  useEffect(() => {
+    if (!playing) return;
+    
+    const animate = () => {
+      setAnimationTime(Date.now());
+      if (playing) {
+        requestAnimationFrame(animate);
+      }
+    };
+    
+    const animationId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationId);
+  }, [playing]);
+
   // Dial interactions moved to StationDialOverlay; keep keyboard + prev/next here
   function onWheel(_e: React.WheelEvent) {}
   function onPointerDown(_e: React.PointerEvent) {}
@@ -368,18 +403,178 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
             <div className="text-xs md:text-sm opacity-60 leading-tight line-clamp-2">{cur.subtitle}</div>
           </div>
         </div>
-        <div className="proj" title={cur.title}>
-          <div className="beam" aria-hidden />
-          <div className="plate">
-            <img
-              src={cur.cover}
-              alt={cur.title}
-              className="plate-img"
-              onError={(e) => { (e.currentTarget as HTMLImageElement).src = placeholder; }}
-            />
-            <span className="plate-sheen" aria-hidden />
+        <div className="waveform-container" title={cur.title}>
+          <div className="waveform" aria-label="Audio waveform visualization">
+            {/* Audio Waveform using SVG for smooth curves */}
+            <svg 
+              className="w-full h-full" 
+              viewBox="0 0 800 100" 
+              preserveAspectRatio="none"
+              style={{ background: 'transparent' }}
+            >
+              {/* Background grid lines for audio feel */}
+              <defs>
+                <pattern id="grid" width="20" height="10" patternUnits="userSpaceOnUse">
+                  <path d="M 20 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="0.5"/>
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#grid)" />
+              
+              {/* Generate realistic waveform data */}
+              {(() => {
+                const waveformData = Array.from({ length: 200 }, (_, i) => {
+                  // Use song title as seed for consistent waveform per song
+                  const seed = cur.title.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+                  
+                  // Create realistic audio frequency components
+                  const bassLine = Math.sin((i + seed) * 0.01) * 0.4;           // Bass frequencies
+                  const melody = Math.sin((i + seed) * 0.05 + 2) * 0.3;         // Mid frequencies  
+                  const percussion = Math.sin((i + seed) * 0.15 + 4) * 0.2;     // High frequencies
+                  const vocals = Math.sin((i + seed) * 0.08 + 1) * 0.25;        // Vocal range
+                  const harmonics = Math.sin((i + seed) * 0.3 + 5) * 0.1;       // Harmonics
+                  
+                  // Create natural audio envelope (songs typically start/end quieter)
+                  const fadeIn = Math.min(1, i / 20);
+                  const fadeOut = Math.min(1, (200 - i) / 30);
+                  const envelope = Math.min(fadeIn, fadeOut);
+                  
+                  // Add some natural variation like dynamics in music
+                  const dynamics = Math.sin((i / 200) * Math.PI * 3) * 0.3 + 0.7; // Musical dynamics
+                  
+                  // Combine all elements for realistic audio appearance
+                  const amplitude = Math.abs(bassLine + melody + percussion + vocals + harmonics) * envelope * dynamics;
+                  
+                  return Math.max(0.02, Math.min(0.95, amplitude));
+                });
+                
+                const progress = duration > 0 ? currentTime / duration : 0;
+                
+                return (
+                  <>
+                    {/* Full waveform path */}
+                    <path
+                      d={`M 0 50 ${waveformData.map((amp, i) => {
+                        const x = (i / (waveformData.length - 1)) * 800;
+                        const y1 = 50 - (amp * 35); // Top of wave
+                        const y2 = 50 + (amp * 35); // Bottom of wave
+                        return `L ${x} ${y1} L ${x} ${y2}`;
+                      }).join(' ')} L 800 50`}
+                      fill="none"
+                      stroke="rgba(255,255,255,0.15)"
+                      strokeWidth="1"
+                      opacity="0.8"
+                    />
+                    
+                    {/* Played portion of waveform */}
+                    <path
+                      d={`M 0 50 ${waveformData.slice(0, Math.floor(progress * waveformData.length)).map((amp, i) => {
+                        const x = (i / (waveformData.length - 1)) * 800;
+                        const y1 = 50 - (amp * 35);
+                        const y2 = 50 + (amp * 35);
+                        return `L ${x} ${y1} L ${x} ${y2}`;
+                      }).join(' ')} L ${progress * 800} 50`}
+                      fill="none"
+                      stroke={currentElementColor}
+                      strokeWidth="2"
+                      opacity="1"
+                      style={{
+                        filter: `drop-shadow(0 0 3px ${currentElementColor}66)`,
+                      }}
+                    />
+                    
+                    {/* Animated playing indicator */}
+                    {playing && (
+                      <g>
+                        {/* Pulse effect at current position */}
+                        <circle
+                          cx={progress * 800}
+                          cy="50"
+                          r="3"
+                          fill={currentElementColor}
+                          opacity="0.8"
+                          style={{
+                            filter: `drop-shadow(0 0 6px ${currentElementColor})`,
+                          }}
+                        >
+                          <animate attributeName="r" values="3;8;3" dur="2s" repeatCount="indefinite" />
+                          <animate attributeName="opacity" values="0.8;0.3;0.8" dur="2s" repeatCount="indefinite" />
+                        </circle>
+                        
+                        {/* Moving frequency indicators */}
+                        {[...Array(5)].map((_, i) => (
+                          <rect
+                            key={i}
+                            x={Math.max(0, progress * 800 - 40 + i * 10)}
+                            y={45 + Math.sin(animationTime * 0.002 + i) * 3}
+                            width="2"
+                            height={8 + Math.sin(animationTime * 0.003 + i * 2) * 4}
+                            fill={currentElementColor}
+                            opacity={0.6 - i * 0.1}
+                            rx="1"
+                          />
+                        ))}
+                      </g>
+                    )}
+                  </>
+                );
+              })()}
+            </svg>
+            
+            {/* Time cursor with element icon */}
+            <div
+              className="absolute top-0 h-full flex flex-col items-center justify-center pointer-events-none z-10"
+              style={{
+                left: `${Math.max(0, Math.min(100, (duration > 0 ? currentTime / duration : 0) * 100))}%`,
+                transform: 'translateX(-50%)',
+                width: '32px',
+              }}
+            >
+              {/* Vertical cursor line */}
+              <div 
+                className="w-[2px] h-full opacity-90"
+                style={{
+                  background: `linear-gradient(to bottom, 
+                    transparent 0%, 
+                    ${currentElementColor}AA 10%, 
+                    #ffffff 50%, 
+                    ${currentElementColor}AA 90%, 
+                    transparent 100%)`,
+                  boxShadow: `0 0 8px ${currentElementColor}66, 0 0 16px ${currentElementColor}33`,
+                }}
+              />
+              
+              {/* Element icon at top */}
+              <div 
+                className="absolute -top-2 w-8 h-8 rounded-full flex items-center justify-center border-2"
+                style={{
+                  background: `linear-gradient(135deg, ${currentElementColor}DD, ${currentElementColor}88)`,
+                  borderColor: currentElementColor,
+                  boxShadow: `0 0 16px ${currentElementColor}77, 0 0 32px ${currentElementColor}33`,
+                }}
+              >
+                <img
+                  src={`/elements/${currentElement}.png`}
+                  alt={`${cur.title} element`}
+                  className="w-4 h-4 brightness-150 saturate-125"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/elements/music.png';
+                  }}
+                />
+              </div>
+              
+              {/* Time display */}
+              <div 
+                className="absolute -bottom-6 text-xs font-mono px-2 py-1 rounded"
+                style={{ 
+                  background: `${currentElementColor}22`,
+                  color: currentElementColor,
+                  border: `1px solid ${currentElementColor}44`,
+                }}
+              >
+                {duration > 0 ? Math.floor((currentTime / duration) * 100) : 0}%
+              </div>
+            </div>
           </div>
-          <div className="emitter" aria-hidden />
         </div>
       </div>
 
@@ -488,64 +683,37 @@ export default function MediaDock({ onSkyChange, onPlayingChange, onTrackChange,
       <audio ref={detentRef}   src="/audio/change-channel.mp3" preload="auto" />
 
       <style jsx>{`
-        /* Upward hologram projection rig */
-        .proj{
-          position:relative;
-          /* Scale with container to stay clear of the console-hud clip edges */
-          width: clamp(80px, 25%, 120px);
-          height: clamp(100px, 30%, 150px);
-          display:flex; align-items:flex-end; justify-content:center;
-          perspective:1100px;
+        /* Waveform visualization container */
+        .waveform-container{
+          position: relative;
+          width: clamp(120px, 35%, 180px);
+          height: clamp(80px, 25%, 120px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(0,0,0,0.3);
+          border-radius: 12px;
+          border: 1px solid ${currentElementColor}40;
+          backdrop-filter: blur(8px);
+          overflow: hidden;
         }
-        .emitter{
-          position:absolute; bottom:0; width:70%; height:14px; border-radius:9999px;
-          background: radial-gradient(closest-side, rgba(0,255,170,.8), rgba(0,255,170,.15) 60%, rgba(0,255,170,0) 70%);
-          box-shadow: 0 0 24px rgba(0,255,170,.45), 0 0 46px rgba(0,255,170,.25);
-          filter: saturate(1.1);
+        
+        .waveform {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
-        .beam{
-          position:absolute; left:10%; right:10%; bottom:10px; top:22%; z-index:0;
-          clip-path: polygon(12% 100%, 88% 100%, 98% 0, 2% 0);
-          background: linear-gradient(180deg, rgba(0,255,200,.08), rgba(0,255,200,.16) 40%, rgba(0,255,200,.0) 100%);
-          filter: blur(6px);
-          mix-blend-mode: screen; opacity:.9;
-        }
-        .plate{
-          position:absolute; bottom:38%; width:82%; aspect-ratio:1/1; border-radius:14px;
-          box-shadow:
-            0 10px 26px rgba(0,0,0,.45),
-            0 0 26px rgba(0,255,220,.22),
-            inset 0 1px 0 rgba(255,255,255,.25),
-            inset 0 -8px 18px rgba(0,0,0,.35);
-          transform: rotateX(14deg);
-          overflow:hidden;
-          animation: float 3.6s ease-in-out infinite;
-          z-index:1;
-        }
-        /* Nudge art smaller on wider screens to avoid right-edge clipping */
+        
+        /* Responsive adjustments */
         @media (min-width: 1024px) {
-          .proj{ width: clamp(80px, 24%, 120px); }
-          .plate{ width: 78%; }
+          .waveform-container { width: clamp(140px, 32%, 200px); }
         }
         @media (max-width: 640px) {
-          .proj{ width: clamp(70px, 28%, 110px); }
-          .plate{ width: 80%; }
+          .waveform-container { width: clamp(100px, 40%, 160px); height: clamp(60px, 20%, 100px); }
         }
-        .plate-img{ width:100%; height:100%; object-fit:cover; filter:saturate(1.1) contrast(1.05) brightness(1.03); }
-        .plate:after{ /* scanlines */
-          content:""; position:absolute; inset:0; pointer-events:none;
-          background: repeating-linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.05) 1px, transparent 1px, transparent 3px);
-          mix-blend-mode: screen; opacity:.22;
-        }
-        .plate-sheen{
-          position:absolute; top:-30%; left:-60%; width:60%; height:160%;
-          background: linear-gradient(120deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.28) 50%, rgba(255,255,255,0) 100%);
-          transform: rotate(12deg);
-          filter: blur(1px); opacity:.65; pointer-events:none;
-          animation: sheenMove 4.4s ease-in-out infinite;
-        }
-        @keyframes sheenMove { 0% { transform: translateX(0) rotate(12deg);} 100% { transform: translateX(340%) rotate(12deg);} }
-        @keyframes float { 0%,100% { transform: rotateX(14deg) translateY(0);} 50% { transform: rotateX(14deg) translateY(-6px);} }
 
         .picker{
           max-height: 40vh;
@@ -706,4 +874,19 @@ function degreesFromCenter(x:number, y:number, cx:number, cy:number) {
   const degFromRightCCW = (rad * 180) / Math.PI;
   const degFromUpCW = (450 - degFromRightCCW) % 360;
   return normalize(degFromUpCW);
+}
+
+function getTrackElement(track: Track): Element {
+  const slug = track.slug || "";
+  const s = slug.toLowerCase();
+  // Specific themes first (matching logic from planets.ts)
+  if (s.includes("ocean") || s.includes("tide") || s.includes("wave") || s.includes("sea")) return "water";
+  if (s.includes("heart") || s.includes("love") || s.includes("friends") || s.includes("somebody-to-love")) return "heart";
+  if (s.includes("lightning") || s.includes("lighting") || s.includes("electric") || s.includes("neon") || s.includes("collide") || s.includes("brain") || s.includes("kid") || s.includes("game")) return "lightning";
+  if (s.includes("dark") || s.includes("black") || s.includes("alone") || s.includes("midnight")) return "darkness";
+  if (s.includes("fire") || s.includes("burn")) return "fire";
+  if (s.includes("home") || s.includes("earth") || s.includes("paris") || s.includes("bee")) return "earth";
+  if (s.includes("air") || s.includes("sky")) return "air";
+  // fallback to water for unknown tracks
+  return "water";
 }

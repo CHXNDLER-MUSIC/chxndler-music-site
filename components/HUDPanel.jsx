@@ -491,25 +491,254 @@ export default function HUDPanel({
                       const hoverPercentage = (hoverX / rect.width) * 100;
                       e.currentTarget.style.setProperty('--hover-position', `${hoverPercentage}%`);
                     }}
+                    style={{
+                      // Get current song's element color for border styling
+                      border: `1px solid ${(() => {
+                        const currentSong = resolvedSongs.find(s => s.id === active);
+                        const elementColor = currentSong?.color || '#19E3FF';
+                        const r = parseInt(elementColor.slice(1, 3), 16);
+                        const g = parseInt(elementColor.slice(3, 5), 16);
+                        const b = parseInt(elementColor.slice(5, 7), 16);
+                        return `rgba(${r}, ${g}, ${b}, 0.2)`;
+                      })()}`,
+                    }}
+                    onMouseEnter={(e) => {
+                      const currentSong = resolvedSongs.find(s => s.id === active);
+                      const elementColor = currentSong?.color || '#19E3FF';
+                      const r = parseInt(elementColor.slice(1, 3), 16);
+                      const g = parseInt(elementColor.slice(3, 5), 16);
+                      const b = parseInt(elementColor.slice(5, 7), 16);
+                      e.currentTarget.style.background = 'rgba(0,0,0,0.4)';
+                      e.currentTarget.style.borderColor = `rgba(${r}, ${g}, ${b}, 0.4)`;
+                      e.currentTarget.style.boxShadow = `0 0 12px rgba(${r}, ${g}, ${b}, 0.2)`;
+                    }}
+                    onMouseLeave={(e) => {
+                      const currentSong = resolvedSongs.find(s => s.id === active);
+                      const elementColor = currentSong?.color || '#19E3FF';
+                      const r = parseInt(elementColor.slice(1, 3), 16);
+                      const g = parseInt(elementColor.slice(3, 5), 16);
+                      const b = parseInt(elementColor.slice(5, 7), 16);
+                      e.currentTarget.style.background = 'rgba(0,0,0,0.3)';
+                      e.currentTarget.style.borderColor = `rgba(${r}, ${g}, ${b}, 0.2)`;
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
                   >
-                    {/* Generate waveform bars */}
-                    {Array.from({ length: 100 }, (_, i) => {
-                      const height = Math.sin(i * 0.3) * 0.5 + Math.random() * 0.5 + 0.3;
-                      const isPlayed = duration > 0 ? (progress / duration * 100) > i : false;
-                      return (
-                        <div
-                          key={i}
-                          className={`waveform-bar ${isPlayed ? 'played' : 'unplayed'}`}
-                          style={{ height: `${height * 100}%` }}
-                        />
-                      );
-                    })}
+                    {/* SVG Waveform using smooth curves */}
+                    <svg 
+                      className="w-full h-full" 
+                      viewBox="0 0 400 40" 
+                      preserveAspectRatio="none"
+                      style={{ background: 'transparent' }}
+                    >
+                      {/* Background grid for audio visualization */}
+                      <defs>
+                        {(() => {
+                          // Get current song's element color
+                          const currentSong = resolvedSongs.find(s => s.id === active);
+                          const elementColor = currentSong?.color || '#19E3FF'; // fallback to default cyan
+                          
+                          // Convert hex to rgba for gradients
+                          const hexToRgba = (hex, alpha) => {
+                            const r = parseInt(hex.slice(1, 3), 16);
+                            const g = parseInt(hex.slice(3, 5), 16);
+                            const b = parseInt(hex.slice(5, 7), 16);
+                            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+                          };
+                          
+                          return (
+                            <>
+                              <pattern id="audio-grid" width="10" height="5" patternUnits="userSpaceOnUse">
+                                <path d="M 10 0 L 0 0 0 5" fill="none" stroke={hexToRgba(elementColor, 0.08)} strokeWidth="0.3"/>
+                              </pattern>
+                              <linearGradient id="waveGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stopColor={hexToRgba(elementColor, 0.8)}/>
+                                <stop offset="50%" stopColor={hexToRgba(elementColor, 1)}/>
+                                <stop offset="100%" stopColor={hexToRgba(elementColor, 0.8)}/>
+                              </linearGradient>
+                              <linearGradient id="unplayedGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stopColor={hexToRgba(elementColor, 0.25)}/>
+                                <stop offset="50%" stopColor={hexToRgba(elementColor, 0.35)}/>
+                                <stop offset="100%" stopColor={hexToRgba(elementColor, 0.25)}/>
+                              </linearGradient>
+                            </>
+                          );
+                        })()}
+                      </defs>
+                      <rect width="100%" height="100%" fill="url(#audio-grid)" />
+                      
+                      {/* Generate realistic sound wave data */}
+                      {(() => {
+                        // Create consistent waveform based on current song
+                        const seed = (active || 'default').split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+                        const waveformData = Array.from({ length: 200 }, (_, i) => {
+                          // Create realistic audio frequency components
+                          const bassLine = Math.sin((i + seed) * 0.02) * 0.4;           // Bass frequencies
+                          const melody = Math.sin((i + seed) * 0.08 + 2) * 0.3;         // Mid frequencies  
+                          const percussion = Math.sin((i + seed) * 0.2 + 4) * 0.25;     // High frequencies
+                          const vocals = Math.sin((i + seed) * 0.12 + 1) * 0.35;        // Vocal range
+                          const harmonics = Math.sin((i + seed) * 0.4 + 5) * 0.15;      // Harmonics
+                          
+                          // Create natural audio envelope (songs typically start/end quieter)
+                          const fadeIn = Math.min(1, i / 15);
+                          const fadeOut = Math.min(1, (200 - i) / 25);
+                          const envelope = Math.min(fadeIn, fadeOut);
+                          
+                          // Add musical dynamics
+                          const dynamics = Math.sin((i / 200) * Math.PI * 2.5) * 0.4 + 0.6;
+                          
+                          // Combine all elements for realistic audio appearance
+                          const amplitude = Math.abs(bassLine + melody + percussion + vocals + harmonics) * envelope * dynamics;
+                          
+                          return Math.max(0.05, Math.min(0.9, amplitude));
+                        });
+                        
+                        const progressRatio = duration > 0 ? (progress / duration) : 0;
+                        const progressX = progressRatio * 400;
+                        
+                        return (
+                          <>
+                            {/* Unplayed waveform */}
+                            <path
+                              d={`M 0 20 ${waveformData.map((amp, i) => {
+                                const x = (i / (waveformData.length - 1)) * 400;
+                                const y1 = 20 - (amp * 15); // Top of wave
+                                const y2 = 20 + (amp * 15); // Bottom of wave
+                                return `L ${x} ${y1} L ${x} ${y2}`;
+                              }).join(' ')} L 400 20`}
+                              fill="none"
+                              stroke="url(#unplayedGradient)"
+                              strokeWidth="1.5"
+                              opacity="0.7"
+                            />
+                            
+                            {/* Played portion of waveform with enhanced glow */}
+                            <clipPath id="playedClip">
+                              <rect x="0" y="0" width={progressX} height="40" />
+                            </clipPath>
+                            <path
+                              d={`M 0 20 ${waveformData.map((amp, i) => {
+                                const x = (i / (waveformData.length - 1)) * 400;
+                                const y1 = 20 - (amp * 15);
+                                const y2 = 20 + (amp * 15);
+                                return `L ${x} ${y1} L ${x} ${y2}`;
+                              }).join(' ')} L 400 20`}
+                              fill="none"
+                              stroke="url(#waveGradient)"
+                              strokeWidth="2"
+                              opacity="1"
+                              clipPath="url(#playedClip)"
+                              style={{
+                                filter: 'drop-shadow(0 0 4px rgba(25,227,255,0.6))',
+                              }}
+                            />
+                            
+                            {/* Current position indicator */}
+                            {progressRatio > 0 && (() => {
+                              // Get current song's element color for progress indicator
+                              const currentSong = resolvedSongs.find(s => s.id === active);
+                              const elementColor = currentSong?.color || '#19E3FF';
+                              
+                              // Convert hex to rgba
+                              const hexToRgba = (hex, alpha) => {
+                                const r = parseInt(hex.slice(1, 3), 16);
+                                const g = parseInt(hex.slice(3, 5), 16);
+                                const b = parseInt(hex.slice(5, 7), 16);
+                                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+                              };
+                              
+                              return (
+                                <g>
+                                  {/* Vertical progress line */}
+                                  <line
+                                    x1={progressX}
+                                    y1="2"
+                                    x2={progressX}
+                                    y2="38"
+                                    stroke="rgba(255,255,255,0.9)"
+                                    strokeWidth="2"
+                                    opacity="0.8"
+                                    style={{
+                                      filter: `drop-shadow(0 0 6px ${hexToRgba(elementColor, 0.8)})`,
+                                    }}
+                                  />
+                                  {/* Progress indicator circle */}
+                                  <circle
+                                    cx={progressX}
+                                    cy="20"
+                                    r="3"
+                                    fill={hexToRgba(elementColor, 1)}
+                                    stroke="white"
+                                    strokeWidth="1"
+                                    style={{
+                                      filter: `drop-shadow(0 0 8px ${hexToRgba(elementColor, 0.9)})`,
+                                    }}
+                                  />
+                                  
+                                  {/* Animated pulse when playing */}
+                                  {playing && (
+                                    <circle
+                                      cx={progressX}
+                                      cy="20"
+                                      r="2"
+                                      fill={hexToRgba(elementColor, 0.6)}
+                                    >
+                                      <animate attributeName="r" values="2;6;2" dur="1.5s" repeatCount="indefinite" />
+                                      <animate attributeName="opacity" values="0.6;0.2;0.6" dur="1.5s" repeatCount="indefinite" />
+                                    </circle>
+                                  )}
+                                </g>
+                              );
+                            })()}
+                          </>
+                        );
+                      })()}
+                    </svg>
                     
-                    {/* Progress indicator */}
-                    <div 
-                      className="waveform-progress"
-                      style={{ width: duration > 0 ? `${(progress / duration) * 100}%` : '0%' }}
-                    />
+                    {/* Element icon cursor positioned above progress */}
+                    <div
+                      className="absolute top-0 h-full flex flex-col items-center justify-center pointer-events-none z-10"
+                      style={{
+                        left: `${Math.max(0, Math.min(100, (duration > 0 ? (progress / duration) * 100 : 0)))}%`,
+                        transform: 'translateX(-50%)',
+                        width: '32px',
+                      }}
+                    >
+                      {/* Element icon at cursor position */}
+                      {(() => {
+                        const currentSong = resolvedSongs.find(s => s.id === active);
+                        const elementIcon = currentSong?.icon;
+                        const elementColor = currentSong?.color || '#19E3FF';
+                        if (!elementIcon) return null;
+                        
+                        // Convert hex to rgba
+                        const hexToRgba = (hex, alpha) => {
+                          const r = parseInt(hex.slice(1, 3), 16);
+                          const g = parseInt(hex.slice(3, 5), 16);
+                          const b = parseInt(hex.slice(5, 7), 16);
+                          return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+                        };
+                        
+                        return (
+                          <div 
+                            className="absolute -top-4 w-6 h-6 rounded-full flex items-center justify-center border"
+                            style={{
+                              background: `linear-gradient(135deg, ${hexToRgba(elementColor, 0.9)}, ${hexToRgba(elementColor, 0.6)})`,
+                              borderColor: hexToRgba(elementColor, 1),
+                              boxShadow: `0 0 12px ${hexToRgba(elementColor, 0.7)}, 0 0 24px ${hexToRgba(elementColor, 0.3)}`,
+                            }}
+                          >
+                            <img
+                              src={`/elements/${elementIcon}.png`}
+                              alt={`${currentSong?.title || 'Current song'} element`}
+                              className="w-4 h-4 brightness-150 saturate-125"
+                              onError={(e) => {
+                                e.target.src = '/elements/music.png';
+                              }}
+                            />
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </div>
                 </div>
                 
@@ -577,54 +806,11 @@ export default function HUDPanel({
         .waveform-container{
           position: relative;
           height: 40px;
-          display: flex;
-          align-items: end;
-          gap: 1px;
           cursor: pointer;
-          padding: 4px;
-          border-radius: 4px;
-          background: rgba(0,0,0,0.2);
-        }
-        
-        .waveform-bar{
-          flex: 1;
-          min-height: 2px;
-          border-radius: 1px;
-          transition: all 0.1s ease;
-        }
-        
-        .waveform-bar.played{
-          background: linear-gradient(180deg, 
-            rgba(25,227,255,1) 0%,
-            rgba(25,227,255,0.8) 50%,
-            rgba(25,227,255,1) 100%);
-          box-shadow: 0 0 4px rgba(25,227,255,0.6);
-        }
-        
-        .waveform-bar.unplayed{
-          background: linear-gradient(180deg, 
-            rgba(25,227,255,0.3) 0%,
-            rgba(25,227,255,0.2) 50%,
-            rgba(25,227,255,0.3) 100%);
-        }
-        
-        .waveform-container:hover .waveform-bar.unplayed{
-          background: linear-gradient(180deg, 
-            rgba(25,227,255,0.5) 0%,
-            rgba(25,227,255,0.3) 50%,
-            rgba(25,227,255,0.5) 100%);
-        }
-        
-        .waveform-progress{
-          position: absolute;
-          top: 0;
-          left: 0;
-          height: 100%;
-          background: linear-gradient(90deg, 
-            rgba(25,227,255,0.1) 0%,
-            rgba(25,227,255,0.05) 100%);
-          border-radius: 4px;
-          pointer-events: none;
+          border-radius: 6px;
+          background: rgba(0,0,0,0.3);
+          overflow: hidden;
+          transition: all 0.2s ease;
         }
         
         .hud-play-btn-enhanced{

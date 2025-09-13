@@ -90,15 +90,15 @@ export const POS = {
     // Approximate steering wheel overlay positions (responsive design)
     // Values are in viewport percentages for easy scaling
     // Center horizontally by default so the wheel video aligns from the start
-    logo: { topVh: 66, leftVw: 50, sizePx: 72 },
+    logo: { topVh: 53, leftVw: 50, sizePx: 72 },
     // Play button: responsive sizing for better mobile experience
     play: { 
-      topVh: 88, 
+      topVh: 75, 
       leftVw: 49.7, 
       sizePx: 170,
       // Mobile responsive scaling
-      mobile: { topVh: 90, leftVw: 49.5, sizePx: 140 },
-      tablet: { topVh: 89, leftVw: 49.6, sizePx: 155 },
+      mobile: { topVh: 77, leftVw: 49.5, sizePx: 140 },
+      tablet: { topVh: 76, leftVw: 49.6, sizePx: 155 },
     },
     // Use START button instead of cyan play
     start: true,

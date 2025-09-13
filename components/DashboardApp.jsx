@@ -12,7 +12,7 @@ import dynamic from "next/dynamic";
 const HUDPanel = dynamic(() => import("@/components/HUDPanel"), { ssr: false });
 import HoloHUD from "@/components/HoloHUD";
 import { skyFor, introSky } from "@/lib/sky";
-import MediaDock from "@/components/MediaDock";
+import MediaPlayer from "@/components/MediaPlayer";
 import { sfx } from "@/lib/sfx";
 import { DEBUG_MEDIA, dlog, dwarn, dumpAudio } from "@/lib/debug";
 // import SocialIcons from "@/components/SocialIcons";
@@ -519,7 +519,7 @@ export default function DashboardApp() {
             ) : null}
         </div>
         <div className="hidden">
-          <MediaDock
+          <MediaPlayer
             onSkyChange={(webm, mp4, key) => setNextSky({ webm, mp4, key })}
             onPlayingChange={(p) => { setIsPlaying(p); if (p) setAmbientSuspended(false); }}
             onTrackChange={(t) => { setCurTrack(t); if (userSelected) { setLinks({ spotify: t.spotify || LINKS.spotify, apple: t.apple || LINKS.apple }); } else { setLinks({ spotify: LINKS.spotify, apple: LINKS.apple }); } }}
@@ -549,7 +549,7 @@ export default function DashboardApp() {
               bottom: '0px', 
               top: '0%',
               clipPath: 'polygon(48% 100%, 52% 100%, 15% 0, 85% 0)',
-              background: `linear-gradient(180deg, 
+              backgroundImage: `linear-gradient(180deg, 
                 ${getBeamColors},0.0) 0%, 
                 ${getBeamColors},0.15) 15%, 
                 ${getBeamColors},0.35) 40%, 

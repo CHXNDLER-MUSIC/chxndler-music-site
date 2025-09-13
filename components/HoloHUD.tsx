@@ -171,9 +171,9 @@ export default function HoloHUD({
           position:absolute; 
           left:50%; 
           transform: translateX(-50%); 
-          top: 30vh; 
-          width: clamp(100px, 10vw, 140px);
-          max-width: 500px;
+          bottom: calc(70vh - clamp(160px, 16vh, 220px)); 
+          width: clamp(80px, 8vw, 100px);
+          max-width: 100px;
           height: clamp(160px, 16vh, 220px);
           padding: 10px 0; 
           margin: 0;
