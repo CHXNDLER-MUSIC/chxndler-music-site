@@ -87,6 +87,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Check Supabase connection (if configured)
+    // Treat Supabase as non-critical unless explicitly marked critical via env
+    const SUPABASE_CRITICAL = (process.env.HEALTH_SUPABASE_CRITICAL || '').toLowerCase() === 'true';
     if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
       try {
         const supabaseStartTime = performance.now()
@@ -96,21 +98,25 @@ export async function GET(request: NextRequest) {
         )
         
         // Simple health check - just test the connection
-        const { data, error } = await Promise.race([
+        const race = await Promise.race([
           supabase.from('_health_check').select('*').limit(1),
           new Promise((_, reject) => 
             setTimeout(() => reject(new Error('Timeout')), 3000)
           )
         ]) as any
+        const { data, error } = race || {}
         
         const supabaseLatency = Math.round(performance.now() - supabaseStartTime)
         healthData.performance.apiLatencies.supabase = supabaseLatency
         
+        // If the health table is missing, consider Supabase configured but not fully set up
+        const tableMissing = error && typeof error?.message === 'string' && /_health_check/i.test(error.message)
         healthData.checks.supabase = {
-          status: error ? 'degraded' : 'healthy',
+          status: error ? (tableMissing ? 'configured' : 'degraded') : 'healthy',
           url: process.env.NEXT_PUBLIC_SUPABASE_URL,
           error: error?.message || null,
-          responseTime: supabaseLatency
+          responseTime: supabaseLatency,
+          critical: SUPABASE_CRITICAL
         }
       } catch (error: any) {
         const supabaseLatency = Math.round(performance.now() - supabaseStartTime)
@@ -120,13 +126,15 @@ export async function GET(request: NextRequest) {
           status: 'degraded',
           url: process.env.NEXT_PUBLIC_SUPABASE_URL,
           error: error.message === 'Timeout' ? 'Connection timeout' : error.message,
-          responseTime: supabaseLatency
+          responseTime: supabaseLatency,
+          critical: SUPABASE_CRITICAL
         }
       }
     } else {
       healthData.checks.supabase = {
         status: 'not_configured',
-        message: 'Supabase environment variables not set'
+        message: 'Supabase environment variables not set',
+        critical: false
       }
     }
 
@@ -198,7 +206,10 @@ export async function GET(request: NextRequest) {
   }
 
   // Determine overall status based on checks
-  const checkStatuses = Object.values(healthData.checks).map((check: any) => check.status)
+  // Compute overall considering only critical checks. By default, checks are critical unless marked otherwise.
+  const checkStatuses = Object.values(healthData.checks)
+    .filter((check: any) => check?.critical !== false)
+    .map((check: any) => check.status)
   if (checkStatuses.includes('error') || checkStatuses.includes('unhealthy')) {
     healthData.status = 'unhealthy'
   } else if (checkStatuses.includes('degraded')) {

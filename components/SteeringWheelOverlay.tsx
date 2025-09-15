@@ -40,10 +40,22 @@ export default function SteeringWheelOverlay({
     onJoinToggle?.(showJoin);
   }, [showJoin, onJoinToggle]);
 
-  // Notify parent when beam color changes
+  // Notify parent when beam color changes without coupling to callback identity
+  const onBeamColorChangeRef = useRef<typeof onBeamColorChange>();
+  useEffect(() => { onBeamColorChangeRef.current = onBeamColorChange; }, [onBeamColorChange]);
+  const prevBeamColorRef = useRef<typeof activeBeamColor | null>(null);
+  const didMountRef = useRef(false);
   useEffect(() => {
-    onBeamColorChange?.(activeBeamColor);
-  }, [activeBeamColor, onBeamColorChange]);
+    // Skip notifying parent on initial mount to avoid auto-enabling the blue display/beam
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      prevBeamColorRef.current = activeBeamColor;
+      return;
+    }
+    if (prevBeamColorRef.current === activeBeamColor) return;
+    prevBeamColorRef.current = activeBeamColor;
+    try { onBeamColorChangeRef.current?.(activeBeamColor); } catch {}
+  }, [activeBeamColor]);
   const joinFormRef = useRef<HTMLDivElement|null>(null);
 
   // Display management function for mutual exclusivity
@@ -51,6 +63,25 @@ export default function SteeringWheelOverlay({
     if (isTransitioning) return; // Prevent rapid switching
     
     setIsTransitioning(true);
+    
+    // Check if target display is already open
+    const isTargetAlreadyOpen = 
+      (targetDisplay === 'blue' && showUI && activeBeamColor === 'blue') ||
+      (targetDisplay === 'pink' && showJoin && activeBeamColor === 'pink') ||
+      (targetDisplay === 'yellow' && activeBeamColor === 'yellow');
+    
+    if (isTargetAlreadyOpen) {
+      // If target is already open, just close it
+      if (targetDisplay === 'pink') {
+        setShowJoin(false);
+      } else if (targetDisplay === 'blue') {
+        onPowerToggle?.();
+      }
+      setActiveBeamColor('blue'); // Default back to blue
+      onBeamColorChange?.('blue');
+      setIsTransitioning(false);
+      return;
+    }
     
     // First close all other displays
     const closeOtherDisplays = () => {
@@ -69,6 +100,7 @@ export default function SteeringWheelOverlay({
     // Wait for close animations to complete, then open target display
     setTimeout(() => {
       setActiveBeamColor(targetDisplay);
+      onBeamColorChange?.(targetDisplay);
       
       if (targetDisplay === 'pink' && !showJoin) {
         setShowJoin(true);
@@ -80,7 +112,7 @@ export default function SteeringWheelOverlay({
       setIsTransitioning(false);
     }, 150); // Wait for close animation (75ms opacity + buffer)
     
-  }, [isTransitioning, showJoin, showUI, onPowerToggle]);
+  }, [isTransitioning, showJoin, showUI, activeBeamColor, onPowerToggle, onBeamColorChange]);
 
   // Close join form when clicking outside (but not on the join alien button itself)
   useEffect(() => {
@@ -131,19 +163,19 @@ export default function SteeringWheelOverlay({
       if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
     } catch {}
     
-    // If pink display is already open, close it and fade out beam
+    // Simple toggle: only control pink display and beam
     if (showJoin) {
+      // Close pink display
       setShowJoin(false);
       setActiveBeamColor('blue'); // Default back to blue
-      // Notify parent to fade out beam
       onBeamColorChange?.('blue');
     } else {
-      // Open pink display and fade in pink beam
-      switchToDisplay('pink');
-      // Notify parent to show pink beam
+      // Open pink display
+      setShowJoin(true);
+      setActiveBeamColor('pink');
       onBeamColorChange?.('pink');
     }
-  }, [showJoin, switchToDisplay, onBeamColorChange]);
+  }, [showJoin, onBeamColorChange]);
 
   // Helper function to get responsive values
   const getResponsiveValue = (config: any) => {
@@ -166,7 +198,9 @@ export default function SteeringWheelOverlay({
   const pp = ppConfig;
   // Get responsive wheel video configuration
   const vconf = getResponsiveValue(wheel.video) || { scale: 1.0, offsetVh: 0, offsetVw: 0, centerHoriz: true, debug: false };
-  const basePx = Math.max(lp.sizePx || 72, pp.sizePx || 64);
+  // Wheel video size should not scale with the play button size.
+  // Use the wheel logo/base size only to avoid unintended inflation.
+  const basePx = lp.sizePx || 72;
   const vs = Math.round(basePx * (vconf.scale || 4.0));
 
   // START button variant flag (legacy "boost" fully removed)
@@ -188,7 +222,7 @@ export default function SteeringWheelOverlay({
         style={{
           position: "absolute",
           // Move wheel slightly down from bottom of screen
-          bottom: "-3vh",
+          bottom: "-5vh",
           left: vconf.centerHoriz
             ? `calc(50vw - ${vs/2}px)`
             : `calc(${(pp.leftVw + (vconf.offsetVw || 0))}vw - ${vs/2}px)`,
@@ -230,7 +264,7 @@ export default function SteeringWheelOverlay({
       <div
         style={{
           position: "absolute",
-          bottom: '35%', // Moved down, above steering wheel
+          bottom: '31%', // Moved down, above steering wheel
           left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 92,
@@ -247,7 +281,7 @@ export default function SteeringWheelOverlay({
               {onPowerToggle ? (
                 <button
                   type="button"
-                  className="power-btn"
+                  className={`power-btn ${activeBeamColor === 'blue' && showUI ? 'power-btn-active' : ''}`}
                   onMouseEnter={() => { try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
                   onClick={() => {
                     // Play button sound
@@ -256,14 +290,16 @@ export default function SteeringWheelOverlay({
                       if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
                     } catch {}
                     
-                    // Use display management for proper sequencing
-                    if (showUI) {
-                      // If blue display is open, close it
+                    // Direct power toggle for immediate response
+                    if (showUI && activeBeamColor === 'blue') {
+                      // If blue display is currently open, close it
                       onPowerToggle?.();
                       setActiveBeamColor('blue'); 
                     } else {
-                      // Open blue display (will close others first)
-                      switchToDisplay('blue');
+                      // Turn on blue display immediately
+                      setActiveBeamColor('blue');
+                      onBeamColorChange?.('blue');
+                      onPowerToggle?.();
                     }
                   }}
                   aria-label="Power"
@@ -288,12 +324,12 @@ export default function SteeringWheelOverlay({
         })()}
       </div>
 
-      {/* Comms Button - positioned to the left of pink button on same level */}
+      {/* Comms Button - yellow button positioned to the left, but HoloHubMenu stays centered */}
       <div
         style={{
           position: "absolute",
-          bottom: '35%', // Same vertical level as blue button
-          left: 'calc(50% - 10vh)', // To the left, mirroring pink button position
+          bottom: '31%', // Same vertical level as blue button
+          left: 'calc(50% - 10vh)', // Yellow button to the left for balance
           transform: 'translateX(-50%)',
           zIndex: 92,
           pointerEvents: showUI ? 'auto' : 'none',
@@ -314,7 +350,8 @@ export default function SteeringWheelOverlay({
                 LINKS.apple ? { id: 'am', label: 'Apple Music', href: LINKS.apple, icon: '/elements/apple.png', color: '#FA2D48' } : null,
               ].filter(Boolean) as any}
                 radius={60}
-                hubColor="#F2EF1D"
+                hubColor={activeBeamColor === 'yellow' ? "#F2EF1D" : "#F2EF1D"}
+                isActive={activeBeamColor === 'yellow'}
                 itemSize={68}
                 hubSize={84}
                 angles={{ sp: -36, am: -18, ig: 0, tt: 18, yt: 36 }}
@@ -326,14 +363,13 @@ export default function SteeringWheelOverlay({
                       if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
                     } catch {}
                     
-                    console.log('Comms menu opening, hiding other displays');
+                    console.log('Comms menu opening, using display management');
                     // Use display management for proper sequencing
                     switchToDisplay('yellow');
-                    // Notify parent to show yellow beam
-                    onBeamColorChange?.('yellow');
                   } else {
                     // Menu is closing, fade out beam if it's yellow
                     if (activeBeamColor === 'yellow') {
+                      setActiveBeamColor('blue');
                       onBeamColorChange?.('blue');
                     }
                   }
@@ -348,7 +384,7 @@ export default function SteeringWheelOverlay({
       <div
         style={{
           position: "absolute",
-          bottom: '35%', // Same level as power button
+          bottom: '31%', // Same level as power button
           left: 'calc(50% + 10vh)', // Positioned to the right of center
           transform: 'translateX(-50%)',
           zIndex: 92,
@@ -366,7 +402,8 @@ export default function SteeringWheelOverlay({
                 size={joinSize} 
                 label="Join Alien Display" 
                 iconSrc="/elements/join.png" 
-                hubColor="#FC54AF" 
+                hubColor={activeBeamColor === 'pink' ? "#FC54AF" : "#FC54AF"}
+                isActive={activeBeamColor === 'pink'} 
                 onClick={handleJoinAlienToggle}
               />
             </div>
@@ -381,8 +418,8 @@ export default function SteeringWheelOverlay({
             ref={joinFormRef}
             style={{
               position: "absolute",
-              // Position above blue button area
-              bottom: `calc(35% + 14vh)`,
+              // Position above blue button area, aligned with yellow display
+              bottom: `calc(31% + 16vh)`,
               // Center horizontally on screen
               left: '50%',
               transform: 'translateX(-50%)', // Center the 244px wide panel
@@ -415,6 +452,7 @@ export default function SteeringWheelOverlay({
                   inset 0 -6px 14px rgba(0,0,0,.6)
                 `,
                 backdropFilter: 'blur(10px)',
+                animation: 'pinkPanelPulse 2.6s ease-in-out infinite',
               }}
             >
               <JoinAliens />
@@ -433,7 +471,7 @@ export default function SteeringWheelOverlay({
         className={`pointer-events-auto wheel-play${isStart ? ' chx' : ''}`}
         style={{
           position: "absolute",
-          bottom: `calc(${100 - pp.topVh}vh - ${(pp.sizePx * 0.95)/2}px + 12px)`, // Bottom-aligned responsive positioning
+          bottom: `calc(${100 - pp.topVh}vh - ${(pp.sizePx * 0.95)/2}px - 7vh)`, // Shifted down more
           left: `calc(${pp.leftVw}vw - ${(pp.sizePx * 0.95)/2}px + 10px)`,
           width: pp.sizePx * 0.95,
           height: pp.sizePx * 0.95,
@@ -449,7 +487,12 @@ export default function SteeringWheelOverlay({
         {/* Ring removed for START variant and standard play/pause */}
         <span className="glyph" aria-hidden>
           {isStart ? (
-            <img src="/elements/start.png" alt="Start" className="chx-icon" />
+            <img
+              src="/elements/start.png?v=20250915c"
+              alt="Start"
+              className="chx-icon"
+              onError={(e) => { try { const img = e.currentTarget; img.onerror = null; img.src = '/elements/start.png'; } catch {} }}
+            />
           ) : (
             playing ? (
               <svg viewBox="0 0 24 24" width="52" height="52" fill="currentColor">
@@ -482,20 +525,38 @@ export default function SteeringWheelOverlay({
         }
         /* CHXNDLER element variant: icon-only, transparent background */
         .wheel-play.chx{
-          background: transparent;
-          border: none;
-          box-shadow: none;
+          background: transparent !important;
+          border: none !important;
+          box-shadow: 
+            0 8px 16px rgba(0,0,0,0.4),
+            0 4px 8px rgba(0,0,0,0.3),
+            0 0 20px rgba(25,227,255,0.3);
           position: relative;
           cursor: pointer;
+          transform: translateZ(0);
+          will-change: transform, box-shadow;
+          transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
         }
         /* No halo/glow behind the START icon */
         .wheel-play.chx::before{ display:none; content:none; }
         .wheel-play.chx::after{ display:none; content:none; }
         .chx-icon{ width: 92%; height: 92%; object-fit: contain; display:block; will-change: transform, filter;
-          filter: none;
+          filter: 
+            drop-shadow(0 2px 4px rgba(0,0,0,0.3))
+            drop-shadow(0 4px 8px rgba(0,0,0,0.2))
+            drop-shadow(0 0 12px rgba(25,227,255,0.4));
           animation: none;
+          transition: transform 0.2s ease, filter 0.2s ease;
         }
-        .wheel-play.chx:hover .chx-icon{ animation: none; transform: scale(1.04); filter: none; }
+        .wheel-play.chx:hover .chx-icon{ 
+          animation: none; 
+          transform: scale(1.06) translateY(-2px); 
+          filter: 
+            drop-shadow(0 4px 8px rgba(0,0,0,0.4))
+            drop-shadow(0 8px 16px rgba(0,0,0,0.3))
+            drop-shadow(0 0 20px rgba(25,227,255,0.6))
+            drop-shadow(0 0 40px rgba(25,227,255,0.4));
+        }
         .wheel-play.chx:hover::after{ display:none; }
         @keyframes startPulse {
           0%, 100% { transform: scale(1); filter: saturate(1.25) brightness(1.1) drop-shadow(0 0 8px #19E3FF) drop-shadow(0 0 22px #19E3FF) drop-shadow(0 0 42px #19E3FF); }
@@ -569,8 +630,24 @@ export default function SteeringWheelOverlay({
           box-shadow: 0 14px 36px rgba(0,0,0,.6), 0 0 60px rgba(255,59,48,.98), 0 0 150px rgba(255,59,48,.7), inset 0 2px 0 rgba(255,255,255,.6), inset 0 -8px 20px rgba(0,0,0,.45);
         }
         .wheel-play:active { transform: scale(0.96); }
-        /* CHXNDLER start button hover: outline the icon itself, no circular glow */
-        .wheel-play.chx:hover{ box-shadow: none; transform: none; filter:none; }
+        /* CHXNDLER start button hover: enhanced depth with lifted effect */
+        .wheel-play.chx:hover{ 
+          box-shadow: 
+            0 12px 24px rgba(0,0,0,0.5),
+            0 6px 12px rgba(0,0,0,0.4),
+            0 0 30px rgba(25,227,255,0.5),
+            0 0 60px rgba(25,227,255,0.3);
+          transform: translateY(-3px) translateZ(0);
+          filter: brightness(1.1) saturate(1.2);
+        }
+        .wheel-play.chx:active{ 
+          transform: translateY(-1px) scale(0.98) translateZ(0);
+          box-shadow: 
+            0 4px 8px rgba(0,0,0,0.4),
+            0 2px 4px rgba(0,0,0,0.3),
+            0 0 15px rgba(25,227,255,0.4);
+          transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
         .wheel-play.chx .chx-icon{ transition: transform .12s ease, filter .15s ease; }
         .wheel-play.chx:hover .chx-icon{
           transform: scale(1.04);
@@ -583,7 +660,7 @@ export default function SteeringWheelOverlay({
         }
         
         /* Power button styles */
-        .power-btn{
+        .power-btn{ 
           position: relative;
           display:grid; place-items:center;
           border-radius:9999px;
@@ -593,9 +670,9 @@ export default function SteeringWheelOverlay({
             rgba(25,227,255,0.45);
           border:1px solid rgba(255,255,255,.14);
           box-shadow:
-            0 14px 28px rgba(0,0,0,.6),
-            0 0 15px #19E3FF88,
-            0 0 30px #19E3FF55,
+            0 14px 24px rgba(0,0,0,.55),
+            0 0 12px #19E3FF66,
+            0 0 22px #19E3FF44,
             inset 0 1px 0 rgba(255,255,255,.22),
             inset 0 -6px 14px rgba(0,0,0,.6);
           backdrop-filter: blur(8px);
@@ -603,9 +680,20 @@ export default function SteeringWheelOverlay({
           transition: transform .15s ease, box-shadow .2s ease, filter .18s ease;
           animation: powerPulse 2.6s ease-in-out infinite;
         }
-        .power-btn::before{ /* outer halo to match hubs */
+        /* When blue is selected/active: tone down glow and stop pulsing */
+        .power-btn.power-btn-active{
+          animation: none;
+          box-shadow:
+            0 10px 22px rgba(0,0,0,.5),
+            0 0 10px #19E3FF55,
+            0 0 18px #19E3FF44,
+            inset 0 1px 0 rgba(255,255,255,.22),
+            inset 0 -6px 14px rgba(0,0,0,.6);
+          filter: brightness(1.0) saturate(1.02);
+        }
+        .power-btn::before{ /* outer halo to match hubs (subtle) */
           content:""; position:absolute; inset:-1%; border-radius:9999px; pointer-events:none;
-          box-shadow: 0 0 20px #19E3FFCC, 0 0 35px #19E3FF88;
+          box-shadow: 0 0 14px #19E3FF88, 0 0 24px #19E3FF55;
         }
         .power-btn::after{ /* sheen + scanlines */
           content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none; mix-blend-mode:screen; opacity:.6;
@@ -618,34 +706,87 @@ export default function SteeringWheelOverlay({
         .power-glyph{ position:relative; display:inline-flex; align-items:center; justify-content:center; color:#fff;
           /* Blue glow coming through the icon */
           mix-blend-mode: screen;
-          filter: brightness(1.1) saturate(1.2)
-            drop-shadow(0 0 18px #19E3FF)
-            drop-shadow(0 0 42px #19E3FF);
+          filter: brightness(1.06) saturate(1.1)
+            drop-shadow(0 0 10px #19E3FF)
+            drop-shadow(0 0 22px #19E3FF);
         }
         .power-icon{ width: 86%; height: 86%; object-fit: contain; display:block; filter:
-          saturate(1.1) brightness(1.05)
-          drop-shadow(0 0 16px #19E3FF)
-          drop-shadow(0 0 36px #19E3FF);
+          saturate(1.05) brightness(1.03)
+          drop-shadow(0 0 8px #19E3FF)
+          drop-shadow(0 0 18px #19E3FF);
         }
         /* Inner cyan glow masked to the power symbol shape */
         .power-glyph::before{
           content:""; position:absolute; inset:14%; pointer-events:none; mix-blend-mode:screen;
           background: radial-gradient(closest-side, #19E3FFCC, #19E3FF55 60%, transparent 78%);
-          filter: blur(6px) saturate(1.15) brightness(1.05);
+          filter: blur(5px) saturate(1.05) brightness(1.02);
         }
         .power-btn:hover{
           transform: scale(1.07);
           box-shadow:
-            0 18px 34px rgba(0,0,0,.68),
-            0 0 25px #19E3FF,
-            0 0 60px #19E3FFAA,
-            inset 0 1px 0 rgba(255,255,255,.28),
-            inset 0 -8px 18px rgba(0,0,0,.65);
-          filter: brightness(1.08) saturate(1.15);
+            0 18px 30px rgba(0,0,0,.6),
+            0 0 18px #19E3FFAA,
+            0 0 40px #19E3FF77,
+          inset 0 1px 0 rgba(255,255,255,.28),
+          inset 0 -8px 18px rgba(0,0,0,.65);
+          filter: brightness(1.04) saturate(1.08);
         }
         .power-btn:active{ transform: scale(.96); }
         @keyframes powerPulse{ 0%,100%{ filter: brightness(1) } 50%{ filter: brightness(1.08) } }
         @keyframes powerSheen { 0% { transform: translateX(-130%);} 55% { transform: translateX(130%);} 100% { transform: translateX(130%);} }
+        
+        /* Synchronized panel pulsing effects */
+        @keyframes pinkPanelPulse {
+          0%, 100% { 
+            filter: brightness(1) saturate(1);
+            box-shadow: 
+              0 18px 36px rgba(0,0,0,.5), 
+              0 0 42px #FC54AFAA, 
+              0 0 100px #FC54AF55, 
+              inset 0 2px 0 rgba(255,255,255,.2), 
+              inset 0 -6px 14px rgba(0,0,0,.6);
+          }
+          50% { 
+            filter: brightness(1.06) saturate(1.1);
+            box-shadow: 
+              0 18px 36px rgba(0,0,0,.5), 
+              0 0 52px #FC54AFCC, 
+              0 0 120px #FC54AF77, 
+              inset 0 2px 0 rgba(255,255,255,.25), 
+              inset 0 -6px 14px rgba(0,0,0,.6);
+          }
+        }
+        
+        /* Enhanced glow effects when beam is active */
+        .power-btn-active {
+          animation: powerActiveGlow 2s ease-in-out infinite, powerPulse 2.6s ease-in-out infinite;
+          box-shadow:
+            0 14px 28px rgba(0,0,0,.6),
+            0 0 25px #19E3FF,
+            0 0 50px #19E3FFCC,
+            0 0 80px #19E3FF88,
+            inset 0 1px 0 rgba(255,255,255,.22),
+            inset 0 -6px 14px rgba(0,0,0,.6);
+        }
+        .power-btn-active::before {
+          box-shadow: 0 0 30px #19E3FFFF, 0 0 60px #19E3FFAA, 0 0 100px #19E3FF66;
+        }
+        @keyframes powerActiveGlow {
+          0%, 100% { 
+            filter: brightness(1.2) saturate(1.3);
+            transform: scale(1);
+          }
+          50% { 
+            filter: brightness(1.4) saturate(1.5);
+            transform: scale(1.02);
+          }
+        }
+
+        /* Beam flow animation for light beam */
+        @keyframes beamFlow {
+          0% { background-position: 0% 0%, 0% 0px; }
+          100% { background-position: 0% 0%, 0% 160px; }
+        }
         
         /* 3D Planet System Animations */
         @keyframes centralPulse {

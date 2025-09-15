@@ -50,7 +50,7 @@ html, body {
 
 /* Cockpit background (responsive frame that adapts to screen size) */
 .cockpit-bg{
-  background-image: url("/cockpit/cockpit.png");
+  background-image: url("/cockpit/cockpit.png?v=2");
   background-position: center;
   /* Responsive background sizing for better mobile experience */
   background-size: cover;
@@ -163,7 +163,7 @@ html, body {
 .bg-element-comms { background-image: url('/elements/comms.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
 .bg-element-join { background-image: url('/elements/join.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
 .bg-element-power { background-image: url('/elements/power.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
-.bg-element-start { background-image: url('/elements/start.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-start { background-image: url('/elements/start.png?v=20250915c'); background-size: contain; background-repeat: no-repeat; background-position: center; }
 
 /* Mask image classes for stable URLs */
 .mask-element-power::before { -webkit-mask-image: url('/elements/power.png'); mask-image: url('/elements/power.png'); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-size: contain; mask-size: contain; -webkit-mask-position: center; mask-position: center; }
@@ -189,6 +189,5 @@ html, body {
     background-position: 0% 0%, 0% -160px;
   }
 }
-
 
 

@@ -98,27 +98,56 @@ const fs = /* glsl */ `
     return mix(a,b,u.x)+ (c-a)*u.y*(1.0-u.x)+ (d-b)*u.x*u.y;
   }
   
-  // Enhanced grid lines with holographic distortion
+  // Ultra-enhanced grid lines with multi-layer holographic distortion
   float gridMask(vec2 uv, float cellsX, float cellsY, float width){
-    // Add holographic distortion
-    vec2 distortedUV = uv + vec2(
-      0.002 * sin(uTime * 2.0 + uv.y * 20.0),
-      0.001 * cos(uTime * 1.5 + uv.x * 15.0)
+    // Multi-layer holographic distortion for more realistic hologram appearance
+    vec2 wave1 = vec2(
+      0.003 * sin(uTime * 2.0 + uv.y * 20.0 + uv.x * 5.0),
+      0.002 * cos(uTime * 1.5 + uv.x * 15.0 + uv.y * 8.0)
+    );
+    vec2 wave2 = vec2(
+      0.001 * sin(uTime * 3.2 + uv.y * 35.0),
+      0.0015 * cos(uTime * 2.8 + uv.x * 25.0)
+    );
+    vec2 wave3 = vec2(
+      0.0008 * sin(uTime * 4.1 + (uv.x + uv.y) * 40.0),
+      0.0006 * cos(uTime * 3.7 + (uv.x - uv.y) * 30.0)
     );
     
+    vec2 distortedUV = uv + wave1 + wave2 + wave3;
+    
+    // Multiple grid frequencies for layered depth
     float gx = abs(fract(distortedUV.x * cellsX) - 0.5);
     float gy = abs(fract(distortedUV.y * cellsY) - 0.5);
-    float lx = smoothstep(0.5 - width, 0.5, gx);
-    float ly = smoothstep(0.5 - width, 0.5, gy);
-    return max(lx, ly);
+    
+    // Enhanced smoothstep for sharper but anti-aliased lines
+    float lx = 1.0 - smoothstep(0.5 - width * 2.0, 0.5 - width * 0.5, gx);
+    float ly = 1.0 - smoothstep(0.5 - width * 2.0, 0.5 - width * 0.5, gy);
+    
+    // Combine with multiplicative blending for more realistic intersection
+    return lx * ly + max(lx, ly) * 0.3;
   }
   
-  // Holographic interference patterns
+  // Advanced holographic interference patterns with laser coherence
   float interference(vec2 uv, float time) {
-    float wave1 = sin(uv.x * 30.0 + time * 3.0);
-    float wave2 = sin(uv.y * 25.0 + time * 2.5);
-    float wave3 = sin((uv.x + uv.y) * 20.0 + time * 4.0);
-    return (wave1 + wave2 + wave3) * 0.333;
+    // Primary interference from coherent laser beams
+    float wave1 = sin(uv.x * 45.0 + time * 3.0 + uv.y * 8.0);
+    float wave2 = sin(uv.y * 38.0 + time * 2.5 + uv.x * 6.0);
+    float wave3 = sin((uv.x + uv.y) * 28.0 + time * 4.0);
+    float wave4 = sin((uv.x - uv.y) * 32.0 + time * 3.8);
+    
+    // Secondary harmonics for depth
+    float harm1 = sin(uv.x * 90.0 + time * 6.0) * 0.3;
+    float harm2 = sin(uv.y * 76.0 + time * 5.0) * 0.25;
+    
+    // Constructive and destructive interference
+    float primary = (wave1 + wave2 + wave3 + wave4) * 0.25;
+    float secondary = (harm1 + harm2) * 0.5;
+    
+    // Beat frequencies for realistic hologram flicker
+    float beat = sin(time * 0.8) * 0.1;
+    
+    return (primary + secondary + beat) * 0.8;
   }
   
   // Chromatic aberration effect
@@ -134,11 +163,19 @@ const fs = /* glsl */ `
     vec3 viewDir = vec3(0.0,0.0,1.0);
     float fr = fresnelTerm(vNormal, viewDir, uFresnelPower);
 
-    // Enhanced scanlines with multiple frequencies
-    float scans1 = sin((vUv.y + uTime * 0.4) * 800.0) * 0.5 + 0.5;
-    float scans2 = sin((vUv.y + uTime * 0.8) * 400.0) * 0.3 + 0.5;
-    float scans3 = sin((vUv.y - uTime * 0.6) * 1200.0) * 0.2 + 0.5;
-    float scanMask = mix(1.0, scans1 * scans2 * scans3, uScanIntensity);
+    // Ultra-enhanced scanlines with realistic CRT phosphor decay
+    float scans1 = pow(sin((vUv.y + uTime * 0.4) * 1200.0) * 0.5 + 0.5, 0.8);
+    float scans2 = pow(sin((vUv.y + uTime * 0.8) * 600.0) * 0.3 + 0.5, 1.2);
+    float scans3 = pow(sin((vUv.y - uTime * 0.6) * 1800.0) * 0.2 + 0.5, 1.5);
+    float scans4 = sin((vUv.y + uTime * 0.3) * 2400.0) * 0.15 + 0.5;
+    
+    // Interlaced effect for authentic display appearance
+    float interlace = step(0.5, fract(vUv.y * 300.0));
+    
+    // Phosphor persistence effect
+    float phosphor = exp(-mod(vUv.y * 600.0 + uTime * 100.0, 1.0) * 8.0) * 0.3 + 0.7;
+    
+    float scanMask = mix(1.0, scans1 * scans2 * scans3 * scans4 * (0.8 + interlace * 0.2) * phosphor, uScanIntensity);
 
     // Enhanced shimmer with multiple octaves
     float shimmer = 0.05 * noise(vUv * 40.0 + uTime * 0.6) + 
@@ -150,10 +187,14 @@ const fs = /* glsl */ `
     float sweep2 = smoothstep(0.35, 0.45, 0.5 + 0.3 * sin(uTime * 0.8 + vUv.x * 4.0 + vUv.y * 2.0));
     float sweep3 = smoothstep(0.4, 0.48, 0.5 + 0.4 * sin(uTime * 1.5 + (vUv.x + vUv.y) * 8.0));
     
-    // Enhanced grid system
-    float grid = gridMask(vUv, 20.0, 10.0, 0.05);
-    float gridFine = gridMask(vUv + vec2(0.002 * sin(uTime), 0.001 * cos(uTime * 1.3)), 60.0, 30.0, 0.018);
-    float gridUltraFine = gridMask(vUv * 2.0 + vec2(0.001 * sin(uTime * 2.0)), 120.0, 60.0, 0.008);
+    // Ultra-enhanced multi-layer grid system with parallax depth
+    float grid = gridMask(vUv, 25.0, 12.0, 0.045);
+    float gridFine = gridMask(vUv + vec2(0.003 * sin(uTime * 1.2), 0.002 * cos(uTime * 1.5)), 75.0, 35.0, 0.015);
+    float gridUltraFine = gridMask(vUv * 2.0 + vec2(0.0015 * sin(uTime * 2.2), 0.001 * cos(uTime * 1.8)), 150.0, 70.0, 0.006);
+    float gridMicro = gridMask(vUv * 3.0 + vec2(0.0008 * sin(uTime * 3.1), 0.0006 * cos(uTime * 2.7)), 300.0, 140.0, 0.003);
+    
+    // Dynamic grid fade based on viewing angle for realistic hologram depth
+    float gridDepth = fr * 0.8 + 0.2;
 
     // Holographic interference
     float interf = interference(vUv, uTime) * 0.15;
@@ -169,15 +210,20 @@ const fs = /* glsl */ `
     vec3 col = uBaseColor * (0.6 + shimmer);
     col = mix(col, uGlowColor * chromatic, fr * 0.8);
     
-    // Add all holographic effects
-    col += uGlowColor * 0.8 * grid;
-    col += uGlowColor * 0.5 * gridFine;
-    col += uGlowColor * 0.25 * gridUltraFine;
-    col += uGlowColor * 0.3 * sweep1;
-    col += uGlowColor * 0.2 * sweep2;
-    col += uGlowColor * 0.15 * sweep3;
-    col += uGlowColor * interf;
-    col += uGlowColor * 0.6 * dataStream;
+    // Add all enhanced holographic effects with depth weighting
+    col += uGlowColor * 0.9 * grid * gridDepth;
+    col += uGlowColor * 0.6 * gridFine * gridDepth;
+    col += uGlowColor * 0.35 * gridUltraFine * gridDepth;
+    col += uGlowColor * 0.2 * gridMicro * gridDepth;
+    col += uGlowColor * 0.35 * sweep1;
+    col += uGlowColor * 0.25 * sweep2;
+    col += uGlowColor * 0.18 * sweep3;
+    col += uGlowColor * interf * 1.2;
+    col += uGlowColor * 0.7 * dataStream;
+    
+    // Additional holographic depth cueing
+    float depthCue = smoothstep(0.2, 0.8, fr);
+    col += uGlowColor * depthCue * 0.1;
     
     // Apply final effects
     col *= scanMask * uBrighten;

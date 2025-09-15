@@ -17,7 +17,8 @@ import { sfx } from "@/lib/sfx";
 import { DEBUG_MEDIA, dlog, dwarn, dumpAudio } from "@/lib/debug";
 // import SocialIcons from "@/components/SocialIcons";
 // import StreamingButtons from "@/components/StreamingButtons";
-import NeonCockpitRim from "@/components/NeonCockpitRim";
+// import NeonCockpitRim from "@/components/NeonCockpitRim";
+import CockpitWindowRim from "@/components/CockpitWindowRim";
 import { LINKS, POS } from "@/config/cockpit";
 import { tracks } from "@/config/tracks";
 import { buildPlanetSongs } from "@/lib/planets";
@@ -25,6 +26,8 @@ import { usePlayerStore } from "@/store/usePlayerStore";
 // import JoinAliensBox from "@/components/JoinAliensBox";
 import PrewarmThree from "@/components/PrewarmThree";
 import { track } from "@/lib/analytics";
+// import CockpitAmbientLights from "@/components/CockpitAmbientLights";
+import PreloadMedia from "@/components/PreloadMedia";
 
 export default function DashboardApp() {
   const [channelIdx, setChannelIdx] = useState(0);
@@ -32,7 +35,7 @@ export default function DashboardApp() {
   const [sky, setSky] = useState(introSky);
   const [links, setLinks] = useState({ spotify: LINKS.spotify, apple: LINKS.apple });
   const [userSelected, setUserSelected] = useState(false);
-  const [curTrack, setCurTrack] = useState(tracks[0]);
+  const [curTrack, setCurTrack] = useState(tracks.find(t => t.title === "WE'RE JUST FRIENDS") || tracks[0]);
   const [playSignal, setPlaySignal] = useState(0);
   const [toggleSignal, setToggleSignal] = useState(0);
   const [flySignal, setFlySignal] = useState(0);
@@ -49,13 +52,18 @@ export default function DashboardApp() {
   const [homeIntroEnabled, setHomeIntroEnabled] = useState(true);
   const [pendingHomePower, setPendingHomePower] = useState(false);
   const [pendingTrackPlay, setPendingTrackPlay] = useState(false);
+  const [audioReady, setAudioReady] = useState(false);
+  const [skyReady, setSkyReady] = useState(false);
   const trackPlayTimerRef = React.useRef(undefined);
   const [ambientSuspended, setAmbientSuspended] = useState(false);
   const [firstStartDone, setFirstStartDone] = useState(false);
+  const [welcomeHasPlayed, setWelcomeHasPlayed] = useState(false); // tracks if welcome has ever been played
   const welcomeOnStartRef = React.useRef(false); // signals that welcome VO should play now
   const [cardModalOpen, setCardModalOpen] = useState(false); // track card modal state for beam dimming
   const [joinAlienOpen, setJoinAlienOpen] = useState(false); // track join alien button state for pink beam
   const [beamColor, setBeamColor] = useState('blue'); // track active beam color
+  const [showDimmingOverlay, setShowDimmingOverlay] = useState(true); // show dimming overlay on initial load
+  const [beamTransitioning, setBeamTransitioning] = useState(false); // prevent rapid beam changes
   const SPACE_SKY = { webm: "/skies/space.webm", mp4: "/skies/space.mp4", key: "space" };
   
 
@@ -185,6 +193,7 @@ export default function DashboardApp() {
       } catch {}
       // Update selected channel.
       setChannelIdx(idx);
+      if (DEBUG_MEDIA) dlog('onSongChange: set channelIdx to', idx, 'for track', tracks[idx]?.title);
       // Prime the hidden audio element within this click to satisfy autoplay policies.
       // Start it muted so actual audio output only occurs after warp completes.
       try {
@@ -200,6 +209,8 @@ export default function DashboardApp() {
       // Defer audio start until lightspeed overlay finishes AND the target sky video is playing.
       // Mark this as a pending track play and let SkyboxVideo's onBasePlaying trigger it.
       setPendingTrackPlay(true);
+      setAudioReady(false);
+      setSkyReady(false);
       // Trigger lightspeed overlay + warp SFX and switch sky.
       setAllowWarp(true);
       setNextSky(skyFor(tracks[idx].slug));
@@ -228,18 +239,18 @@ export default function DashboardApp() {
     } catch {}
   }, [holoSongs]);
   React.useEffect(() => {
-    if (!curTrack) return;
+    if (!curTrack || homeMode) return;
     const slug = (curTrack.slug || "").toLowerCase();
     if (slug) {
       try { usePlayerStore.getState().setMain(slug); } catch {}
     }
-  }, [curTrack]);
+  }, [curTrack?.slug, homeMode]);
 
   // Only update sky when track changes; do not auto-warp
   React.useEffect(() => {
     if (!mounted) return;
     if (curTrack) setNextSky(skyFor(curTrack.slug));
-  }, [mounted, curTrack]);
+  }, [mounted, curTrack?.slug]);
 
   useEffect(() => { setMounted(true); }, []);
   // Disable auto actions on random interactions; nothing should trigger on click/touch/move
@@ -259,23 +270,94 @@ export default function DashboardApp() {
     };
   }, []);
 
-  // Handle beam color control for pink and yellow buttons
+  // Handle beam color control with mutual exclusion between displays
   const handleBeamToggle = React.useCallback((color) => {
+    if (beamTransitioning) return; // Prevent rapid changes during transitions
     if (color === 'pink') {
-      // Fade in pink beam
-      setBeamColor('pink');
-      setBeamEnabled(true);
+      if (beamColor === 'pink' && joinAlienOpen) {
+        // Already showing pink - toggle off
+        setJoinAlienOpen(false);
+        setBeamEnabled(false);
+        setTimeout(() => setBeamColor('blue'), 300);
+      } else {
+        // Switch to pink - close other displays first
+        setBeamTransitioning(true);
+        const hasActiveDisplay = showHUD || joinAlienOpen;
+        if (hasActiveDisplay) {
+          // Fade out current display first
+          setShowHUD(false);
+          setJoinAlienOpen(false);
+          // Wait for fade out, then switch beam and show pink display
+          setTimeout(() => {
+            setBeamColor('pink');
+            setBeamEnabled(true);
+            setTimeout(() => {
+              setJoinAlienOpen(true);
+              setBeamTransitioning(false);
+            }, 100);
+          }, 200);
+        } else {
+          // No display active - directly show pink
+          setBeamColor('pink');
+          setBeamEnabled(true);
+          setJoinAlienOpen(true);
+          setTimeout(() => setBeamTransitioning(false), 100);
+        }
+      }
     } else if (color === 'yellow') {
-      // Fade in yellow beam
-      setBeamColor('yellow');
-      setBeamEnabled(true);
+      if (beamColor === 'yellow') {
+        // Already showing yellow - keep beam but close menu (yellow menu closes itself)
+        // Beam stays yellow and enabled
+      } else {
+        // Switch to yellow - close other displays first
+        const hasActiveDisplay = showHUD || joinAlienOpen;
+        if (hasActiveDisplay) {
+          // Fade out current display first
+          setShowHUD(false);
+          setJoinAlienOpen(false);
+          // Wait for fade out, then switch beam (yellow menu opens itself)
+          setTimeout(() => {
+            setBeamColor('yellow');
+            setBeamEnabled(true);
+          }, 200);
+        } else {
+          // No display active - directly show yellow
+          setBeamColor('yellow');
+          setBeamEnabled(true);
+        }
+      }
+    } else if (color === 'blue') {
+      if (beamColor === 'blue' && showHUD) {
+        // Already showing blue - toggle off
+        setShowHUD(false);
+        setBeamEnabled(false);
+      } else {
+        // Switch to blue - close other displays first and always show HUD
+        const hasActiveDisplay = joinAlienOpen;
+        if (hasActiveDisplay) {
+          // Fade out current display first
+          setJoinAlienOpen(false);
+          // Wait for fade out, then switch beam and show blue display
+          setTimeout(() => {
+            setBeamColor('blue');
+            setBeamEnabled(true);
+            setShowHUD(true); // Always show HUD for blue
+          }, 200);
+        } else {
+          // No display active - directly show blue HUD
+          setJoinAlienOpen(false); // Ensure other displays are closed
+          setBeamColor('blue');
+          setBeamEnabled(true);
+          setShowHUD(true); // Always show HUD for blue
+        }
+      }
     } else if (beamColor === 'pink' || beamColor === 'yellow') {
-      // Only fade out if currently showing pink or yellow beam
+      // Close current non-blue display
+      setJoinAlienOpen(false);
       setBeamEnabled(false);
-      // Reset to blue after fade out
       setTimeout(() => setBeamColor('blue'), 300);
     }
-  }, [beamColor]);
+  }, [beamColor, showHUD, joinAlienOpen]);
 
   // Spacebar and Pause key toggle for music play/pause
   React.useEffect(() => {
@@ -297,14 +379,50 @@ export default function DashboardApp() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Helper function to get beam colors based on active beam color
-  const getBeamColors = useMemo(() => {
-    const colorMap = {
-      blue: 'rgba(25,227,255',
-      yellow: 'rgba(242,239,29',
-      pink: 'rgba(252,84,175'
+  // Helper function to get beam gradient based on active beam color
+  const getBeamGradient = useMemo(() => {
+    const gradients = {
+      blue: `linear-gradient(180deg, 
+        rgba(25,227,255, 0.0) 0%, 
+        rgba(25,227,255, 0.15) 15%, 
+        rgba(25,227,255, 0.35) 40%, 
+        rgba(25,227,255, 0.55) 65%, 
+        rgba(25,227,255, 0.35) 85%, 
+        rgba(25,227,255, 0.0) 100%),
+      repeating-linear-gradient(180deg,
+        transparent 0px,
+        rgba(25,227,255, 0.1) 20px,
+        rgba(25,227,255, 0.2) 40px,
+        rgba(25,227,255, 0.1) 60px,
+        transparent 80px)`,
+      yellow: `linear-gradient(180deg, 
+        rgba(242,239,29, 0.0) 0%, 
+        rgba(242,239,29, 0.15) 15%, 
+        rgba(242,239,29, 0.35) 40%, 
+        rgba(242,239,29, 0.55) 65%, 
+        rgba(242,239,29, 0.35) 85%, 
+        rgba(242,239,29, 0.0) 100%),
+      repeating-linear-gradient(180deg,
+        transparent 0px,
+        rgba(242,239,29, 0.1) 20px,
+        rgba(242,239,29, 0.2) 40px,
+        rgba(242,239,29, 0.1) 60px,
+        transparent 80px)`,
+      pink: `linear-gradient(180deg, 
+        rgba(252,84,175, 0.0) 0%, 
+        rgba(252,84,175, 0.15) 15%, 
+        rgba(252,84,175, 0.35) 40%, 
+        rgba(252,84,175, 0.55) 65%, 
+        rgba(252,84,175, 0.35) 85%, 
+        rgba(252,84,175, 0.0) 100%),
+      repeating-linear-gradient(180deg,
+        transparent 0px,
+        rgba(252,84,175, 0.1) 20px,
+        rgba(252,84,175, 0.2) 40px,
+        rgba(252,84,175, 0.1) 60px,
+        transparent 80px)`
     };
-    return colorMap[beamColor] || colorMap.blue;
+    return gradients[beamColor] || gradients.blue;
   }, [beamColor]);
 
   // Memoize expensive style calculations
@@ -313,17 +431,29 @@ export default function DashboardApp() {
     transition: 'filter 300ms ease'
   }), [cardModalOpen]);
 
-  const lightBeamStyle = useMemo(() => ({
-    left: '50%',
-    bottom: '40vh', // Lower the base position
-    top: 'calc(3vh + min(90%, 600px) + 10px)', // Position to push against blue display (10px gap)
-    width: '700px', // Wider than blue display to create proper beam shape
-    transform: 'translateX(-50%)',
-    opacity: beamEnabled ? (cardModalOpen ? 0.3 : 1) : 0,
-    transition: 'opacity 300ms ease'
-  }), [beamEnabled, cardModalOpen]);
+  const lightBeamStyle = useMemo(() => {
+    // Compute height in pixels on client to avoid over-constrained top/bottom issues
+    const heightPx = (() => {
+      if (typeof window === 'undefined') return '84px'; // Increased default height
+      const vh = window.innerHeight || 800;
+      const hudBottomFromTop = 0.03 * vh + Math.min(0.9 * vh, 600) + 10; // 3vh + min(90%, 600px) + 10px
+      const bottom = 0.35 * vh; // 35vh
+      const h = Math.max(80, Math.round(vh - hudBottomFromTop - bottom + 60)); // Reduced height for shorter beam
+      return `${h}px`;
+    })();
+    return {
+      left: '50%',
+      bottom: '38vh', // Shifted down further from steering wheel area
+      height: heightPx,
+      width: '400px', // Wider beam for better visual impact
+      transform: 'translate3d(-50%,0,0)',
+      opacity: (beamEnabled || showHUD) ? (cardModalOpen ? 0.3 : 1) : 0,
+      transition: 'opacity 400ms ease-in-out'
+    };
+  }, [beamEnabled, showHUD, cardModalOpen]);
 
   if (!mounted) return null;
+  const SHOW_CENTER_BEAM = true; // Enable center light beam
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white max-w-screen overflow-x-hidden">
       <div 
@@ -331,7 +461,7 @@ export default function DashboardApp() {
         style={blurWrapperStyle}
       >
         <PrewarmThree />
-        <AmbientSpace ambientSrc="/audio/space-music.mp3" introSrc={homeMode && homeIntroEnabled ? "/audio/welcome-to-the-heartverse.mp3" : undefined} playingMusic={isPlaying} suspend={warpActive || ambientSuspended} />
+        <AmbientSpace ambientSrc="/audio/space-music.mp3" introSrc={homeMode && homeIntroEnabled && !welcomeHasPlayed ? "/audio/welcome-to-the-heartverse.mp3" : undefined} playingMusic={isPlaying} suspend={warpActive || ambientSuspended} />
       <SkyboxVideo
         brightness={0.95}
         srcWebm={sky.webm}
@@ -339,6 +469,9 @@ export default function DashboardApp() {
         videoKey={sky.key}
         flySignal={flySignal}
         allowWarp={allowWarp}
+        holdLightspeed={pendingTrackPlay}
+        readyToReveal={pendingTrackPlay ? (audioReady && skyReady) : true}
+        minDurationMs={3000}
         offsetY="-1vh"
         onFlyStart={() => {
           setWarpActive(true);
@@ -352,12 +485,18 @@ export default function DashboardApp() {
         onFlyEnd={() => {
           setWarpActive(false);
           setAllowWarp(false);
-          if (nextSky) { setSky(nextSky); setNextSky(null); }
+          if (nextSky) { 
+            if (DEBUG_MEDIA) dlog('onFlyEnd: switching to sky', nextSky.key); 
+            setSky(nextSky); setNextSky(null); 
+          }
           // If this warp was due to Start (not track selection), prepare to land on home
           if (!pendingTrackPlay) setPendingHomePower(true);
           else {
             // Warp overlay just finished for a song change: fade UI back in with join-alien.mp3
             try { sfx.play('join', 0.8); } catch {}
+            
+            // Clear pending track play state first
+            setPendingTrackPlay(false);
             
             // Fade in HUD and overlay UI together with audio
             setShowHUD(true);
@@ -365,15 +504,17 @@ export default function DashboardApp() {
             setBeamOnly(false);
             setShowOverlayUI(true);
             
-            // Start playback after UI fades in
+            // Start playback immediately - the track index should already be set from onSongChange
             if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
             setTimeout(() => {
+              if (DEBUG_MEDIA) dlog('onFlyEnd: triggering playSignal after warp, channelIdx=', channelIdx);
               setPlaySignal((n) => n + 1);
-            }, 500); // Small delay to let UI fade in before music starts
+            }, 100); // Reduced delay to ensure faster playback start
           }
         }}
         onBasePlaying={() => {
           if (DEBUG_MEDIA) dlog('Sky base video playing');
+          setSkyReady(true);
           if (pendingHomePower) {
             // Start path: ensure main track audio stays stopped on landing
             try {
@@ -384,49 +525,44 @@ export default function DashboardApp() {
             setPendingHomePower(false);
             // Now that space.mp4 is playing
             setHomeMode(true);
+            // Clear any selected planet for home mode
+            try { usePlayerStore.setState({ mainId: null }); } catch {}
             // First Start: enable welcome VO to play over ambient once space-music is in
-            if (!firstStartDone) {
+            if (!firstStartDone && !welcomeHasPlayed) {
               welcomeOnStartRef.current = true; // signal power-up not to cancel it
               setHomeIntroEnabled(true);
               setFirstStartDone(true);
+              setWelcomeHasPlayed(true); // mark that welcome will play/has played
             }
             setUserSelected(false);
             setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
             // Keep ambient paused until UI beam + HUD have faded in
             setAmbientSuspended(true);
-            // Begin HUD power sequence with proper timing after warp/zoom effect
-            // Step 1: Start the power sequence after warp completes
+            // Begin HUD power sequence with optimized timing for faster response
+            // Minimal delay for immediate UI feedback after warp completes
             setTimeout(() => {
               try { 
-                // Play join-alien SFX first
-                try { sfx.play('join', 0.9); } catch {}
+                // Play button SFX and immediately start UI fade-in for faster response
+                try { sfx.play('button', 0.9); } catch {}
                 
-                // Step 2: Fade in power, comms & join alien buttons first
+                // Fade in all elements immediately with SFX for snappy response
+                setShowOverlayUI(true);
+                setBeamEnabled(true);
+                setShowHUD(true);
+                setBeamOnly(false);
+                setPowerBusy(false);
+                
+                // Start space-music.mp3 and welcome audio shortly after UI elements start fading in
                 setTimeout(() => {
-                  setShowOverlayUI(true);
-                  
-                  // Step 3: Then fade in blue light beam
-                  setTimeout(() => {
-                    setBeamEnabled(true);
-                    
-                    // Step 4: Finally fade in HUD display - much faster
-                    setTimeout(() => {
-                      setShowHUD(true);
-                      setBeamOnly(false);
-                      setPowerBusy(false);
-                      
-                      // Step 5: Immediately start space-music.mp3 after blue display fades in
-                      setTimeout(() => {
-                        setAmbientSuspended(false); // This will start space-music.mp3
-                      }, 50); // Reduced delay for immediate music start
-                      
-                    }, 100); // Reduced HUD fade-in delay from 300ms to 100ms
-                  }, 50); // Reduced beam fade-in delay from 200ms to 50ms
-                }, 50); // Reduced UI buttons fade-in delay from 150ms to 50ms
+                  setAmbientSuspended(false); // This will start space-music.mp3 and welcome-to-the-heartverse.mp3
+                }, 100); // Reduced delay for faster audio start
+                
               } catch {} 
-            }, 200); // Reduced initial delay from 500ms to 200ms
+            }, 50); // Reduced from 200ms to 50ms for much faster response
           }
           if (pendingTrackPlay) {
+            // Set audioReady to ensure warp can end (fallback if MediaPlayer onAudioReady doesn't fire)
+            setAudioReady(true);
             // Do not start audio here; wait for onFlyEnd so playback begins after warp SFX ends.
             // Clear any pending fallback timers; onFlyEnd will trigger play immediately.
             if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
@@ -434,8 +570,14 @@ export default function DashboardApp() {
         }}
       />
 
-      <div className="cockpit-bg fixed inset-0 z-20 pointer-events-none" aria-hidden="true" />
-      <NeonCockpitRim />
+      <div 
+        className="fixed inset-0 z-20 pointer-events-none cockpit-bg"
+        aria-hidden="true" 
+      />
+      {/* Neon rim disabled: only show window trim lights */}
+      {/* <NeonCockpitRim /> */}
+      {/* Music-reactive trim around cockpit windows */}
+      {/* <CockpitWindowRim currentTrack={curTrack} isPlaying={isPlaying} mounted={mounted} /> */}
 
       {/* Social + Streaming buttons removed per request */}
       <SteeringWheelOverlay
@@ -457,6 +599,9 @@ export default function DashboardApp() {
           triggerHudPower(undefined); 
         }}
         onLaunch={() => {
+          // Hide dimming overlay when start is clicked
+          setShowDimmingOverlay(false);
+          
           // Start: fade out dashboard colors (yellow, pink, blue) and light beams first
           setShowHUD(false);
           setShowOverlayUI(false);
@@ -475,6 +620,9 @@ export default function DashboardApp() {
           } catch {}
           setIsPlaying(false);
           
+          // Set flag to indicate we should go to home mode after warp
+          setPendingHomePower(true);
+          
           // Start warp sequence with warp.mp3 and lightspeed.mp4
           setAllowWarp(true);
           setNextSky(SPACE_SKY);
@@ -490,8 +638,8 @@ export default function DashboardApp() {
         className="slot-container fixed z-30"
         style={{
           bottom: `calc(100vh - (3vh + min(90%, 600px)))`, // Position bottom of display at top of light beam
-          left: '50%',
-          transform: 'translateX(-50%)', // Centered again
+          left: '50%', // Centered on screen
+          transform: 'translateX(-50%)', 
           width: 'min(90%, 600px)', // Responsive width with 600px max
           height: 'min(90%, 600px)', // Dynamic height with 600px max
         }}
@@ -508,9 +656,9 @@ export default function DashboardApp() {
                 exit={{ opacity: 0 }}
                 transition={{ 
                   type: 'spring',
-                  damping: 20,
-                  stiffness: 100,
-                  duration: 0.8
+                  damping: 25,
+                  stiffness: 200,
+                  duration: 0.3
                 }}
               >
                 <HUDPanel
@@ -534,17 +682,22 @@ export default function DashboardApp() {
                 aria-label="Activate HUD"
                 title="Activate HUD"
                 style={{ background:'transparent', zIndex: 30, cursor:'pointer' }}
-                onClick={() => { setHomeMode(true); setHomeIntroEnabled(false); setUserSelected(false); setLinks({ spotify: LINKS.spotify, apple: LINKS.apple }); triggerHudPower(true); }}
+                onClick={() => { setHomeMode(true); try { usePlayerStore.setState({ mainId: null }); } catch {} setHomeIntroEnabled(false); setUserSelected(false); setLinks({ spotify: LINKS.spotify, apple: LINKS.apple }); triggerHudPower(true); }}
               />
             ) : null}
         </div>
         <div className="hidden">
-          <MediaPlayer
-            onSkyChange={(webm, mp4, key) => setNextSky({ webm, mp4, key })}
-            onPlayingChange={(p) => { setIsPlaying(p); if (p) setAmbientSuspended(false); }}
-            onTrackChange={(t) => { setCurTrack(t); if (userSelected) { setLinks({ spotify: t.spotify || LINKS.spotify, apple: t.apple || LINKS.apple }); } else { setLinks({ spotify: LINKS.spotify, apple: LINKS.apple }); } }}
-            playSignal={playSignal}
-            toggleSignal={toggleSignal}
+        <MediaPlayer
+          onSkyChange={(webm, mp4, key) => setNextSky({ webm, mp4, key })}
+          onPlayingChange={(p) => { setIsPlaying(p); if (p) setAmbientSuspended(false); }}
+          onAudioReady={() => setAudioReady(true)}
+          onTrackChange={(t) => { 
+            if (DEBUG_MEDIA) dlog('MediaPlayer onTrackChange:', t?.title, 'slug:', t?.slug); 
+            setCurTrack(t); 
+            if (userSelected) { setLinks({ spotify: t.spotify || LINKS.spotify, apple: t.apple || LINKS.apple }); } else { setLinks({ spotify: LINKS.spotify, apple: LINKS.apple }); } 
+          }}
+          playSignal={playSignal}
+          toggleSignal={toggleSignal}
             showHUDPlay={false}
             index={channelIdx}
             onIndexChange={(i)=> setChannelIdx(i)}
@@ -554,40 +707,45 @@ export default function DashboardApp() {
         </div>
       </div>
 
-      {/* Light Beam - responsive upward shooting beam that changes color based on active button */}
-      {mounted && (beamEnabled || showHUD) ? (
+      {/* Light Beam - keep mounted to avoid animation resets/flicker; control via opacity */}
+      {SHOW_CENTER_BEAM && mounted ? (
         <div 
-          className="fixed pointer-events-none z-30 light-beam"
+          className="fixed pointer-events-none z-[95] light-beam"
           style={lightBeamStyle}
         >
           {/* Single main beam */}
           <div 
             style={{
               position: 'absolute',
-              left: '3%', // Reduced from 5% to make beam wider on mobile
-              right: '3%', // Reduced from 5% to make beam wider on mobile
+              left: '5%',
+              right: '5%',
               bottom: '0px', 
               top: '0%',
               clipPath: 'polygon(48% 100%, 52% 100%, 15% 0, 85% 0)',
-              backgroundImage: `linear-gradient(180deg, 
-                ${getBeamColors},0.0) 0%, 
-                ${getBeamColors},0.15) 15%, 
-                ${getBeamColors},0.35) 40%, 
-                ${getBeamColors},0.55) 65%, 
-                ${getBeamColors},0.35) 85%, 
-                ${getBeamColors},0.0) 100%),
-              repeating-linear-gradient(180deg,
-                transparent 0px,
-                ${getBeamColors},0.1) 20px,
-                ${getBeamColors},0.2) 40px,
-                ${getBeamColors},0.1) 60px,
-                transparent 80px)`,
+              backgroundImage: getBeamGradient,
               backgroundSize: '100% 100%, 100% 160px',
-              filter: 'blur(8px)',
+              filter: 'blur(4px)',
               mixBlendMode: 'screen',
-              animation: 'beamFlow 3s linear infinite'
+              animation: 'beamFlow 3s linear infinite',
+              animationPlayState: (beamEnabled || showHUD) ? 'running' : 'paused',
+              willChange: 'background-position'
             }}
           />
+          
+          {/* Add CSS transitions for smooth color changes */}
+          <style jsx>{`
+            .light-beam {
+              transition: opacity 300ms ease-out;
+              will-change: opacity;
+            }
+            .light-beam * {
+              transition: filter 300ms ease-out;
+            }
+            @keyframes beamFlow {
+              0% { background-position: 0% 0%, 0% 0px; }
+              100% { background-position: 0% 0%, 0% -160px; }
+            }
+          `}</style>
         </div>
       ) : null}
 
@@ -599,6 +757,70 @@ export default function DashboardApp() {
           onToggle={() => setToggleSignal((n) => n + 1)}
         />
       ) : null}
+
+      {/* Ambient wash disabled: only window trim lights */}
+      {false && (
+        <CockpitAmbientLights 
+          currentTrack={curTrack}
+          isPlaying={isPlaying}
+          mounted={mounted}
+        />
+      )}
+
+      {/* Dimming Overlay with Animated Spotlight on Start Button */}
+      {mounted && showDimmingOverlay ? (
+        (() => {
+          // Helper function to get responsive values (matching SteeringWheelOverlay logic)
+          const getResponsiveValue = (config) => {
+            if (!config) return config;
+            const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+            const isTablet = typeof window !== 'undefined' && window.innerWidth > 768 && window.innerWidth <= 1024;
+            
+            if (isMobile && config.mobile) {
+              return { ...config, ...config.mobile };
+            } else if (isTablet && config.tablet) {
+              return { ...config, ...config.tablet };
+            }
+            return config;
+          };
+
+          const wheel = POS?.wheel || {};
+          const lp = wheel.logo || { topVh: 66, leftVw: 26, sizePx: 72 };
+          const ppConfig = getResponsiveValue(wheel.play) || { topVh: lp.topVh, leftVw: lp.leftVw, sizePx: Math.round(lp.sizePx * 0.9) };
+          const pp = ppConfig;
+
+          // Calculate exact button center position (matching SteeringWheelOverlay positioning)
+          const buttonCenterX = `calc(${pp.leftVw}vw - ${(pp.sizePx * 0.95)/2}px + 10px + ${(pp.sizePx * 0.95)/2}px)`;
+          // SteeringWheelOverlay positions the button using bottom: calc(${100 - pp.topVh}vh - ${(pp.sizePx * 0.95)/2}px - 4vh)
+          // Convert to top-based center: 100vh - bottom_offset - half_button_height + adjustment
+          const buttonCenterY = `calc(100vh - (${100 - pp.topVh}vh - ${(pp.sizePx * 0.95)/2}px - 4vh) - ${(pp.sizePx * 0.95)/2}px + 3vh)`;
+          
+          return (
+            <div className="fixed inset-0 z-[100] pointer-events-none">
+              {/* Base dimming layer with clean spotlight cutout */}
+              <div 
+                className="absolute inset-0"
+                style={{
+                  background: `
+                    radial-gradient(
+                      circle at ${buttonCenterX} ${buttonCenterY},
+                      transparent ${pp.sizePx * 0.35}px,
+                      rgba(0, 0, 0, 0.85) ${pp.sizePx * 0.55}px,
+                      rgba(0, 0, 0, 0.95) 100%
+                    )
+                  `,
+                  transition: 'opacity 500ms ease-out'
+                }}
+              />
+              
+              
+            </div>
+          );
+        })()
+      ) : null}
+
+      {/* Background preloader: covers + first ~5s of audio/skies */}
+      {mounted ? <PreloadMedia maxImage={8} maxAudio={3} maxVideo={2} /> : null}
 
     </main>
   );

@@ -11,6 +11,7 @@ type Props = {
   onSkyChange: (webm: string, mp4: string, key: string) => void;
   onPlayingChange: (playing: boolean) => void;
   onTrackChange?: (track: Track) => void;
+  onAudioReady?: (ready: boolean) => void; // notifies when audio can play (canplaythrough)
   wrapChannels?: boolean;
   startSignal?: number;    // increments to force start
   startIndex?: number;     // default 0
@@ -23,13 +24,16 @@ type Props = {
   unlockPlays?: boolean;     // if false, gesture unlock will not auto-play
 };
 
-export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChange, wrapChannels = true, startSignal = 0, startIndex = 0, playSignal = 0, toggleSignal = 0, showHUDPlay = true, index, onIndexChange, autoPlayOnIndex = true, unlockPlays = true }: Props) {
+export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChange, onAudioReady, wrapChannels = true, startSignal = 0, startIndex = 0, playSignal = 0, toggleSignal = 0, showHUDPlay = true, index, onIndexChange, autoPlayOnIndex = true, unlockPlays = true }: Props) {
   const [internalIdx, setInternalIdx] = useState(startIndex);
   const idx = (typeof index === 'number') ? index : internalIdx;
   const setIdx = (val: number | ((p:number)=>number)) => {
     const next = typeof val === 'function' ? (val as (p:number)=>number)(idx) : val;
     if (onIndexChange) onIndexChange(next); else setInternalIdx(next);
   };
+  // Define tracks and current track before any memoized computations that depend on them
+  const tracks = ALL;
+  const cur = tracks[idx];
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement|null>(null);
   const uiClickRef = useRef<HTMLAudioElement|null>(null);
@@ -43,9 +47,33 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [animationTime, setAnimationTime] = useState(0);
-
-  const tracks = ALL;
-  const cur = tracks[idx];
+  // Structured sections and derived chorus times
+  const sections = useMemo(() => {
+    const secs = (cur as any)?.sections as { time: number; label: string; kind?: string }[] | undefined;
+    if (Array.isArray(secs) && secs.length > 0) {
+      return secs
+        .filter(s => s && typeof s.time === 'number' && isFinite(s.time) && s.time >= 0 && typeof s.label === 'string')
+        .sort((a,b) => a.time - b.time);
+    }
+    const ch = (cur as any)?.choruses as number[] | undefined;
+    if (Array.isArray(ch) && ch.length > 0) {
+      return ch
+        .filter(n => typeof n === 'number' && isFinite(n) && n >= 0)
+        .sort((a,b)=>a-b)
+        .map((t, i) => ({ time: t, label: `Chorus ${i+1}`, kind: 'chorus' as const }));
+    }
+    return [] as { time: number; label: string; kind?: string }[];
+  }, [cur]);
+  const chorusTimes: number[] = useMemo(() => sections.filter(s => (s.kind||'').toLowerCase() === 'chorus').map(s => s.time), [sections]);
+  const currentSection = useMemo(() => {
+    if (!sections.length) return null as null | { time:number; label:string; kind?: string };
+    const t = currentTime;
+    let curSec: any = null;
+    for (let i = 0; i < sections.length; i++) {
+      if (sections[i].time <= t + 0.05) curSec = sections[i]; else break;
+    }
+    return curSec;
+  }, [sections, currentTime]);
   
   // Get current song's element and color
   const currentElement = getTrackElement(cur);
@@ -54,7 +82,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const STEP = useMemo(() => 360 / Math.max(tracks.length, 1), [tracks.length]);
   const [angle, setAngle] = useState(idx * STEP);
 
-  useEffect(() => { if (onPlayingChange) onPlayingChange(playing); }, [playing, onPlayingChange]);
+  // Notify parent only when `playing` changes; avoid depending on inline callbacks
+  const onPlayingChangeRef = useRef(onPlayingChange);
+  useEffect(() => { onPlayingChangeRef.current = onPlayingChange; }, [onPlayingChange]);
+  useEffect(() => { try { onPlayingChangeRef.current && onPlayingChangeRef.current(playing); } catch {} }, [playing]);
 
   // External "start" signal: only act when startSignal increments (>0).
   // Prevent auto-start on initial mount.
@@ -263,7 +294,9 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     };
     const onTimeUpdate = () => { setCurrentTime(a.currentTime); };
     const onLoadedMetadata = () => { setDuration(a.duration); };
-    
+    const onCanPlayThrough = () => { try { onAudioReady && onAudioReady(true); } catch {} };
+    const onCanPlay = () => { try { onAudioReady && onAudioReady(true); } catch {} };
+
     a.addEventListener('play', onPlay);
     a.addEventListener('pause', onPause);
     a.addEventListener('ended', onEnded);
@@ -273,7 +306,9 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     a.addEventListener('volumechange', onVolumeChange);
     a.addEventListener('timeupdate', onTimeUpdate);
     a.addEventListener('loadedmetadata', onLoadedMetadata);
-    
+    a.addEventListener('canplaythrough', onCanPlayThrough as any);
+    a.addEventListener('canplay', onCanPlay as any);
+
     return () => {
       a.removeEventListener('play', onPlay);
       a.removeEventListener('pause', onPause);
@@ -284,8 +319,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       a.removeEventListener('volumechange', onVolumeChange);
       a.removeEventListener('timeupdate', onTimeUpdate);
       a.removeEventListener('loadedmetadata', onLoadedMetadata);
+      a.removeEventListener('canplaythrough', onCanPlayThrough as any);
+      a.removeEventListener('canplay', onCanPlay as any);
     };
-  }, [audioRef.current]);
+  }, []);
 
   useEffect(() => {
     // Prime audio on first real user pointer/touch interaction to satisfy autoplay
@@ -507,6 +544,35 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 );
               })()}
             </svg>
+            {/* Section markers (verse/chorus/bridge/intro/outro) */}
+            {duration > 0 && sections.length > 0 && (
+              <div className="section-markers" aria-hidden>
+                {sections.map((s, i) => {
+                  const pct = Math.max(0, Math.min(100, (s.time / duration) * 100));
+                  if (pct <= 0 || pct >= 100) return null;
+                  const kind = (s.kind || '').toLowerCase();
+                  const klass = kind ? `section-marker ${kind}` : 'section-marker';
+                  return (
+                    <button
+                      key={`${cur.slug}-section-${i}`}
+                      type="button"
+                      className={klass}
+                      style={{ left: `${pct}%` }}
+                      title={`${s.label} (${Math.round(s.time)}s)`}
+                      onClick={() => {
+                        const a = audioRef.current; if (!a || !duration) return;
+                        a.currentTime = Math.max(0, Math.min(duration - 0.2, s.time));
+                        a.play().catch(()=>{});
+                        setPlaying(true);
+                        gaTrack("seek_section", { slug: cur.slug, index: i, kind: kind || 'section', label: s.label, seconds: s.time });
+                      }}
+                    >
+                      <span className="sr-only">Jump to {s.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             
             {/* Time cursor with element icon */}
             <div
@@ -530,7 +596,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 }}
               />
               
-              {/* Time display */}
+              {/* Time + section display */}
               <div 
                 className="absolute -bottom-6 text-xs font-mono px-2 py-1 rounded"
                 style={{ 
@@ -541,6 +607,18 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               >
                 {duration > 0 ? Math.floor((currentTime / duration) * 100) : 0}%
               </div>
+              {currentSection ? (
+                <div 
+                  className="absolute -top-6 text-[10px] font-mono px-2 py-0.5 rounded"
+                  style={{ 
+                    background: 'rgba(0,0,0,0.35)',
+                    color: '#fff',
+                    border: '1px solid rgba(255,255,255,0.2)'
+                  }}
+                >
+                  {currentSection.label}
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -583,6 +661,27 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             </svg>
           </button>
         </div>
+        {chorusTimes.length > 0 && (
+          <button
+            onClick={() => {
+              const a = audioRef.current; if (!a || !duration) return;
+              const now = a.currentTime;
+              const next = chorusTimes.find((t) => t > now + 0.75) ?? chorusTimes[0];
+              a.currentTime = Math.max(0, Math.min(duration - 0.2, next));
+              a.play().catch(()=>{});
+              setPlaying(true);
+              gaTrack("jump_chorus", { slug: cur.slug, seconds: next });
+            }}
+            className="selector-btn"
+            aria-label="Jump to chorus"
+            title="Jump to chorus"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
+              <path d="M4 4h2v16H4zM8 12l10 6V6z" />
+            </svg>
+            <span>Chorus</span>
+          </button>
+        )}
         
         <button 
           onClick={() => setPickerOpen((o)=>!o)} 
@@ -674,6 +773,29 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           align-items: center;
           justify-content: center;
         }
+
+        /* Section markers */
+        .section-markers { position: absolute; inset: 0; pointer-events: none; }
+        .section-marker {
+          position: absolute;
+          top: 6px;
+          bottom: 6px;
+          width: 8px;
+          margin-left: -4px; /* center align */
+          background: linear-gradient(180deg, #888, #bbb);
+          border: 0;
+          border-radius: 999px;
+          opacity: 0.7;
+          box-shadow: 0 0 8px rgba(255,255,255,0.4), 0 0 16px rgba(255,255,255,0.2);
+          cursor: pointer;
+          pointer-events: auto;
+        }
+        .section-marker:hover { opacity: 1; transform: translateY(-1px); }
+        .section-marker.chorus{ background: linear-gradient(180deg, #FC54AF, #19E3FF); box-shadow: 0 0 8px #FC54AFCC, 0 0 16px #19E3FF88; }
+        .section-marker.verse{ background: linear-gradient(180deg, #19E3FF, #38B6FF); box-shadow: 0 0 8px #19E3FF99, 0 0 16px #38B6FF66; }
+        .section-marker.bridge{ background: linear-gradient(180deg, #F2EF1D, #FFC800); box-shadow: 0 0 8px #F2EF1DB3, 0 0 16px #FFC8007A; }
+        .section-marker.intro{ background: linear-gradient(180deg, #A0AEC0, #E2E8F0); }
+        .section-marker.outro{ background: linear-gradient(180deg, #A0AEC0, #718096); }
         
         /* Responsive adjustments */
         @media (min-width: 1024px) {

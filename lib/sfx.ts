@@ -21,6 +21,7 @@ class SFXBus {
     select: "/audio/song-select.mp3",
     warp: "/audio/warp.mp3",
     flip: "/audio/flip.mp3",
+    button: "/audio/button.mp3",
   };
 
   private ensure() {

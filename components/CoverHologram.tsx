@@ -74,7 +74,7 @@ export default function CoverHologram({ src, title }: { src: string; title: stri
       {showCard ? (
         <div
           className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-start justify-end"
-          style={{ padding: '6vh 5vw' }}
+          style={{ padding: '2vh 5vw' }}
           onClick={() => {
             try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
             setShowCard(false);
@@ -192,13 +192,13 @@ export default function CoverHologram({ src, title }: { src: string; title: stri
       
       <style jsx>{`
         .card-modal{
-          max-width: min(60vw, 360px);
+          max-width: min(60vw, 320px);
           background: rgba(25,227,255,0.45);
           box-shadow: 0 0 60px rgba(25,227,255,0.45), inset 0 0 0 1px rgba(25,227,255,0.35);
         }
         .tilt-wrap{ perspective: 1200px; transform-style: preserve-3d; }
         .card-frame{
-          position:relative; border-radius: 16px; padding: 8px; background: rgba(0,0,0,.35);
+          position:relative; border-radius: 16px; padding: 8px; background: transparent;
           outline: 1px solid rgba(25,227,255,.4);
           box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 0 36px rgba(25,227,255,.35);
         }

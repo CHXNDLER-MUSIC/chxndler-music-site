@@ -440,7 +440,7 @@ export default function HUDPanel({
             {can3D && PlanetSystemComp ? (
               <div className="relative w-full h-full">
                 <ErrorBoundary fallback={null} onError={(e)=>{ if (String(e?.name||'').includes('IndexSizeError')) { try { console.warn('Disabling 3D due to IndexSizeError'); } catch {} } setThreeFailed((e && (e.message||e.name)) || 'Render error'); setCan3D(false); }}>
-                  <PlanetSystemComp showAll={!currentId} />
+                  <PlanetSystemComp showAll={!currentId} onSongChange={onSongChange} />
                 </ErrorBoundary>
               </div>
             ) : (
@@ -725,6 +725,34 @@ export default function HUDPanel({
                     >
                       {/* Element icon at cursor position */}
                       {(() => {
+                        // Use CHXNDLER element when in home mode (no specific song selected)
+                        if (!currentId) {
+                          const elementIcon = 'chxndler';
+                          const elementColor = '#19E3FF';
+                          
+                          // Convert hex to rgba
+                          const hexToRgba = (hex, alpha) => {
+                            const r = parseInt(hex.slice(1, 3), 16);
+                            const g = parseInt(hex.slice(3, 5), 16);
+                            const b = parseInt(hex.slice(5, 7), 16);
+                            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+                          };
+                          
+                          return (
+                            <img
+                              src={`/elements/${elementIcon}.png`}
+                              alt="CHXNDLER element"
+                              className="w-8 h-8 brightness-150 saturate-125"
+                              style={{
+                                filter: `drop-shadow(0 0 14px ${hexToRgba(elementColor, 1)}) drop-shadow(0 0 32px ${hexToRgba(elementColor, 0.8)}) drop-shadow(0 0 64px ${hexToRgba(elementColor, 0.35)})`,
+                              }}
+                              onError={(e) => {
+                                e.target.src = '/elements/music.png';
+                              }}
+                            />
+                          );
+                        }
+                        
                         const currentSong = resolvedSongs.find(s => s.id === active);
                         const elementIcon = currentSong?.icon;
                         const elementColor = currentSong?.color || '#19E3FF';
@@ -944,8 +972,8 @@ export default function HUDPanel({
       `}</style>
       {showCard ? (
         <div
-          className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-center justify-center"
-          style={{ padding: '6vh 5vw' }}
+          className="fixed inset-0 z-[120] flex items-center justify-center backdrop-blur-sm"
+          style={{ padding: '6vh 5vw', background: 'transparent' }}
           onClick={() => {
             try { sfx.play('/audio/close.mp3', 0.7); } catch {}
             try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
@@ -956,7 +984,7 @@ export default function HUDPanel({
           }}
         >
           <div
-            className="relative rounded-2xl p-4 card-modal"
+            className="relative rounded-2xl p-3 card-modal"
             onClick={(e)=> e.stopPropagation()}
           >
             {(() => {
@@ -1123,13 +1151,13 @@ export default function HUDPanel({
       ) : null}
       <style jsx>{`
         .card-modal{
-          max-width: min(60vw, 360px);
+          max-width: min(55vw, 280px);
           background: rgba(25,227,255,0.25);
           box-shadow: 0 0 60px rgba(25,227,255,0.25), inset 0 0 0 1px rgba(25,227,255,0.20);
         }
         .tilt-wrap{ perspective: 1200px; transform-style: preserve-3d; }
         .card-frame{
-          position:relative; border-radius: 16px; padding: 8px; background: rgba(0,0,0,.35);
+          position:relative; border-radius: 16px; padding: 6px; background: rgba(25,227,255,0.10);
           outline: 1px solid rgba(25,227,255,.4);
           box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 0 36px rgba(25,227,255,.35);
         }

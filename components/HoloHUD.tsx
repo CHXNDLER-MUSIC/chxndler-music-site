@@ -48,9 +48,7 @@ export default function HoloHUD({
 
       {/* Center: Orrery above steering wheel */}
       <div className="orrery" aria-label="Song worlds orrery">
-        <div className="planet main">
-          <div className="ring" />
-        </div>
+        {/* Main planet removed to avoid single planet focus */}
         <div className="orbit o1"><div className="planet p1" /></div>
         <div className="orbit o2"><div className="planet p2" /></div>
         <div className="orbit o3"><div className="planet p3" /></div>
@@ -129,6 +127,7 @@ export default function HoloHUD({
           border-radius: 16px; overflow:hidden;
           box-shadow: 0 0 50px rgba(56,182,255,.20), 0 10px 60px rgba(0,0,0,.6);
           outline: 1px solid rgba(56,182,255,.30);
+          animation: albumCardPulse 2.6s ease-in-out infinite;
         }
         .card-glow{ position:absolute; inset:-8%; border-radius:20px; pointer-events:none;
           box-shadow: 0 0 80px rgba(56,182,255,.20);
@@ -151,6 +150,7 @@ export default function HoloHUD({
         }
         .planet{ position:absolute; border-radius:9999px; background: radial-gradient(50% 60% at 40% 35%, rgba(255,255,255,.8), rgba(252,84,175,.45) 35%, rgba(10,10,30,.0) 65%);
           box-shadow: inset 0 -10px 24px rgba(0,0,0,.5), 0 0 22px rgba(252,84,175,.4);
+          animation: planetGlow 2.6s ease-in-out infinite;
         }
         .planet.main{ width: 88px; height: 88px; }
         .planet.p1{ width: 20px; height: 20px; background: radial-gradient(60% 60% at 40% 35%, rgba(255,255,255,.9), rgba(56,182,255,.55) 45%, rgba(10,10,30,.0) 70%); }
@@ -189,6 +189,7 @@ export default function HoloHUD({
           flex-direction: column;
           align-items: center;
           justify-content: center;
+          animation: bluePanelPulse 2.6s ease-in-out infinite;
         }
         .song{ 
           display:flex; 
@@ -223,6 +224,49 @@ export default function HoloHUD({
         .play-btn:hover{ transform: translateZ(0) scale(1.04); }
         .play-btn:active{ transform: scale(.98); }
         .play-btn svg{ fill:#fff; }
+        
+        /* Synchronized blue panel pulsing */
+        @keyframes bluePanelPulse {
+          0%, 100% { 
+            filter: brightness(1) saturate(1);
+            box-shadow: 
+              0 10px 40px rgba(0,0,0,.45), 
+              inset 0 0 0 1px rgba(25,227,255,.10);
+          }
+          50% { 
+            filter: brightness(1.06) saturate(1.1);
+            box-shadow: 
+              0 10px 40px rgba(0,0,0,.45), 
+              0 0 30px rgba(25,227,255,.25),
+              inset 0 0 0 1px rgba(25,227,255,.15);
+          }
+        }
+        
+        /* Synchronized planet and orrery glow */
+        @keyframes planetGlow {
+          0%, 100% { 
+            filter: brightness(1) saturate(1);
+          }
+          50% { 
+            filter: brightness(1.08) saturate(1.15);
+          }
+        }
+        
+        /* Synchronized album card pulsing */
+        @keyframes albumCardPulse {
+          0%, 100% { 
+            box-shadow: 
+              0 0 50px rgba(56,182,255,.20), 
+              0 10px 60px rgba(0,0,0,.6);
+            outline: 1px solid rgba(56,182,255,.30);
+          }
+          50% { 
+            box-shadow: 
+              0 0 65px rgba(56,182,255,.30), 
+              0 10px 60px rgba(0,0,0,.6);
+            outline: 1px solid rgba(56,182,255,.40);
+          }
+        }
       `}</style>
     </div>
   );

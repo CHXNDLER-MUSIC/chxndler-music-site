@@ -8,8 +8,12 @@ export default function SongList() {
   const { songs, mainId, hoverId, setHover, setMain } = usePlayerStore();
   const { activeId, setActiveId, handleKeyDown, next, prev } = useCycleList(songs, mainId || undefined, (id) => setMain(id));
 
-  useEffect(() => { if (mainId && mainId !== activeId) setActiveId(mainId); }, [mainId]);
-  useEffect(() => { if (activeId) setHover(activeId); }, [activeId]);
+  useEffect(() => { if (mainId && mainId !== activeId) setActiveId(mainId); }, [mainId, activeId]);
+  // Avoid redundant hover updates to prevent churn in consumers that react to hover changes
+  useEffect(() => {
+    if (!activeId) return;
+    if (hoverId !== activeId) setHover(activeId);
+  }, [activeId, hoverId, setHover]);
 
   // Scroll-driven hover highlight: choose the item closest to the list's vertical center
   const containerRef = useRef<HTMLDivElement | null>(null);

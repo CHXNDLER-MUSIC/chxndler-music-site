@@ -2,7 +2,7 @@
 export const BUILD_TAG = "Cockpit v3.2 — integrated";
 
 export const PATHS = {
-  cockpit: "/cockpit/cockpit.png",
+  cockpit: "/cockpit/cockpit.png?v=" + Date.now(),
   fallbackBackdrop: "/cockpit/ocean-girl.png",
   logoFallback: "/logo/CHXNDLER_Logo.png",
 };
@@ -126,15 +126,15 @@ export const POS = {
       mobile: { dyPx: 220, sizePx: 50 },
       tablet: { dyPx: 245, sizePx: 55 },
     },
-    // Video overlay with responsive scaling
+    // Video overlay with responsive scaling (match prior visual size)
     video: { 
-      scale: 3.8, 
+      scale: 9.2, 
       offsetVh: -15, 
       offsetVw: 0, 
       centerHoriz: true, 
       debug: false,
-      mobile: { scale: 3.2, offsetVh: -10 },
-      tablet: { scale: 3.5, offsetVh: -12 },
+      mobile: { scale: 7.8, offsetVh: -10 },
+      tablet: { scale: 8.5, offsetVh: -12 },
     },
   },
 };

@@ -14,6 +14,9 @@ export default function SkyboxVideo({
   onFlyEnd,
   allowWarp = false,
   onBasePlaying,
+  holdLightspeed = false,
+  readyToReveal = false,
+  minDurationMs = 1200,
 }:{
   brightness?: number;
   srcWebm?: string;
@@ -25,6 +28,9 @@ export default function SkyboxVideo({
   onFlyEnd?: () => void;
   allowWarp?: boolean; // if false, disables warp sfx/overlay even when flySignal changes
   onBasePlaying?: () => void; // fires when base sky video is playing (useful after warp)
+  holdLightspeed?: boolean; // if true, keep lightspeed overlay visible until readyToReveal becomes true
+  readyToReveal?: boolean;  // when holdLightspeed, hide overlay when this becomes true
+  minDurationMs?: number;   // minimum duration the lightspeed overlay should remain visible
 }) {
   // Default to visible to avoid missing sky if loadeddata doesn't fire
   const [ready, setReady] = useState(true);
@@ -36,8 +42,14 @@ export default function SkyboxVideo({
   const lsRef = useRef<HTMLVideoElement|null>(null);
   const basePlayNotified = React.useRef<string | null>(null);
   const lsTimerRef = useRef<number | undefined>(undefined);
+  const lsStartRef = useRef<number | null>(null);
   const flyEndCalledRef = useRef(false);
   const firstRunRef = useRef(true);
+  // Stable refs for callback props to avoid effect thrash on each render
+  const onFlyEndRef = useRef(onFlyEnd);
+  const onBasePlayingRef = useRef(onBasePlaying);
+  React.useEffect(() => { onFlyEndRef.current = onFlyEnd; }, [onFlyEnd]);
+  React.useEffect(() => { onBasePlayingRef.current = onBasePlaying; }, [onBasePlaying]);
   
   // Brief zoom/blur to simulate flying to another world
   React.useEffect(() => {
@@ -50,23 +62,29 @@ export default function SkyboxVideo({
     // Trigger lightspeed overlay clip
     try {
       setShowLightspeed(true);
+      lsStartRef.current = Date.now();
       const v = lsRef.current;
       if (v) { v.currentTime = 0; void v.play().catch(()=>{}); }
       try { sfx.play('warp', 0.7); } catch {}
       flyEndCalledRef.current = false;
       if (onFlyStart) try { onFlyStart(); } catch {}
-      if (lsTimerRef.current !== undefined) window.clearTimeout(lsTimerRef.current);
-      // Reduced lightspeed overlay duration for faster song video appearance
-      lsTimerRef.current = window.setTimeout(() => {
-        setShowLightspeed(false);
-        lsTimerRef.current = undefined;
-        if (!flyEndCalledRef.current && onFlyEnd) { try { onFlyEnd(); } catch {} }
-        flyEndCalledRef.current = true;
-      }, 1200); // Reduced from 1800ms to 1200ms
+      if (!holdLightspeed) {
+        if (lsTimerRef.current !== undefined) window.clearTimeout(lsTimerRef.current);
+        // Timed lightspeed overlay when not holding for readiness
+        lsTimerRef.current = window.setTimeout(() => {
+          setShowLightspeed(false);
+          lsTimerRef.current = undefined;
+          if (!flyEndCalledRef.current && onFlyEndRef.current) { try { onFlyEndRef.current(); } catch {} }
+          flyEndCalledRef.current = true;
+        }, Math.max(0, minDurationMs));
+      } else {
+        // When holding for readiness, ensure overlay remains until readyToReveal becomes true
+        if (lsTimerRef.current !== undefined) { window.clearTimeout(lsTimerRef.current); lsTimerRef.current = undefined; }
+      }
     } catch {}
 
     return () => { clearTimeout(t); if (lsTimerRef.current !== undefined) { window.clearTimeout(lsTimerRef.current); lsTimerRef.current = undefined; } };
-  }, [flySignal, allowWarp]);
+  }, [flySignal, allowWarp, holdLightspeed, minDurationMs]);
 
   // Disable auto warp on initial page open unless allowWarp is true
   React.useEffect(() => {
@@ -75,17 +93,39 @@ export default function SkyboxVideo({
     firstRunRef.current = false;
     try {
       setShowLightspeed(true);
+      lsStartRef.current = Date.now();
       const v = lsRef.current;
       if (v) { v.currentTime = 0; void v.play().catch(()=>{}); }
       try { sfx.play('warp', 0.7); } catch {}
-      if (lsTimerRef.current !== undefined) window.clearTimeout(lsTimerRef.current);
-      lsTimerRef.current = window.setTimeout(() => {
-        setShowLightspeed(false);
-        lsTimerRef.current = undefined;
-      }, 1200); // Reduced from 1800ms to 1200ms for faster video appearance
+      if (!holdLightspeed) {
+        if (lsTimerRef.current !== undefined) window.clearTimeout(lsTimerRef.current);
+        lsTimerRef.current = window.setTimeout(() => {
+          setShowLightspeed(false);
+          lsTimerRef.current = undefined;
+        }, Math.max(0, minDurationMs));
+      } else {
+        if (lsTimerRef.current !== undefined) { window.clearTimeout(lsTimerRef.current); lsTimerRef.current = undefined; }
+      }
     } catch {}
     return () => { if (lsTimerRef.current !== undefined) { window.clearTimeout(lsTimerRef.current); lsTimerRef.current = undefined; } };
-  }, [allowWarp]);
+  }, [allowWarp, holdLightspeed, minDurationMs]);
+
+  // When holding overlay, hide it as soon as readyToReveal is true
+  React.useEffect(() => {
+    if (!holdLightspeed) return;
+    if (!showLightspeed) return;
+    if (!readyToReveal) return;
+    const startedAt = lsStartRef.current || Date.now();
+    const elapsed = Date.now() - startedAt;
+    const remain = Math.max(0, minDurationMs - elapsed);
+    if (lsTimerRef.current !== undefined) { window.clearTimeout(lsTimerRef.current); lsTimerRef.current = undefined; }
+    lsTimerRef.current = window.setTimeout(() => {
+      setShowLightspeed(false);
+      lsTimerRef.current = undefined;
+      if (!flyEndCalledRef.current && onFlyEndRef.current) { try { onFlyEndRef.current(); } catch {} }
+      flyEndCalledRef.current = true;
+    }, remain);
+  }, [holdLightspeed, readyToReveal, showLightspeed, minDurationMs]);
 
   // Pause base sky video while lightspeed overlay is active
   React.useEffect(() => {
@@ -127,11 +167,11 @@ export default function SkyboxVideo({
       if (showLightspeed) return; // ignore while overlay is visible
       if (basePlayNotified.current === key) return;
       basePlayNotified.current = key;
-      try { if (DEBUG_MEDIA) dlog('Skybox base video onplaying', { key, srcMp4 }); onBasePlaying && onBasePlaying(); } catch {}
+      try { if (DEBUG_MEDIA) dlog('Skybox base video onplaying', { key, srcMp4 }); onBasePlayingRef.current && onBasePlayingRef.current(); } catch {}
     };
     base.addEventListener('playing', onPlaying);
     return () => { base.removeEventListener('playing', onPlaying); };
-  }, [videoKey, onBasePlaying, showLightspeed]);
+  }, [videoKey, showLightspeed, srcMp4]);
 
   return (
     /* z-10 so it's above any page bg image; HUD slots are z>=30 */
@@ -174,6 +214,7 @@ export default function SkyboxVideo({
           <video
             ref={lsRef}
             autoPlay
+            loop={holdLightspeed && !readyToReveal}
             muted
             playsInline
             preload="auto"
@@ -183,7 +224,7 @@ export default function SkyboxVideo({
             // @ts-ignore
             disableRemotePlayback
             tabIndex={-1}
-            onEnded={() => { setShowLightspeed(false); if (!flyEndCalledRef.current && onFlyEnd) { try { onFlyEnd(); } catch {} } flyEndCalledRef.current = true; }}
+            onEnded={() => { setShowLightspeed(false); if (!flyEndCalledRef.current && onFlyEndRef.current) { try { onFlyEndRef.current(); } catch {} } flyEndCalledRef.current = true; }}
             className="absolute inset-0 h-full w-full object-cover"
             style={{ filter: `brightness(${Math.max(0.9, brightness)})`, mixBlendMode: 'screen' as any }}
           >

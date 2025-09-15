@@ -30,7 +30,7 @@ type Sat = {
   weatherData?: WeatherSystem;
 };
 
-export default function PlanetSystemRaw() {
+export default function PlanetSystemRaw({ showAll = false, onSongChange }: { showAll?: boolean; onSongChange?: (id: string) => void }) {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -1085,6 +1085,43 @@ export default function PlanetSystemRaw() {
     };
     tick();
 
+    // Mouse interaction for planet selection
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    const onMouseClick = (event: MouseEvent) => {
+      if (!onSongChange) return;
+
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      
+      // Check intersections with planet meshes
+      const planetMeshes: THREE.Mesh[] = [];
+      const planetIds: string[] = [];
+      
+      satsRef.current.forEach(sat => {
+        if (sat.mesh) {
+          planetMeshes.push(sat.mesh);
+          planetIds.push(sat.id);
+        }
+      });
+
+      const intersects = raycaster.intersectObjects(planetMeshes);
+      
+      if (intersects.length > 0) {
+        const clickedMeshIndex = planetMeshes.indexOf(intersects[0].object as THREE.Mesh);
+        if (clickedMeshIndex >= 0) {
+          const planetId = planetIds[clickedMeshIndex];
+          onSongChange(planetId);
+        }
+      }
+    };
+
+    renderer.domElement.addEventListener('click', onMouseClick);
+
     // Resize
     const onResize = () => {
       if (!mount) return;
@@ -1100,6 +1137,7 @@ export default function PlanetSystemRaw() {
     return () => {
       try { if (rafRef.current) cancelAnimationFrame(rafRef.current); } catch {}
       try { ro.disconnect(); } catch {}
+      try { renderer.domElement.removeEventListener('click', onMouseClick); } catch {}
       try { if (rendererRef.current) { rendererRef.current.dispose(); rendererRef.current.forceContextLoss?.(); } } catch {}
       try { if (mount && renderer.domElement.parentNode === mount) mount.removeChild(renderer.domElement); } catch {}
       // Cleanup central planet
@@ -1126,7 +1164,7 @@ export default function PlanetSystemRaw() {
     // Build system from songs when available
     const sys = groupRef.current; if (!sys) return;
     if (!songs || !songs.length) return;
-    const focusId = mainId || songs[0]?.id;
+    const focusId = showAll ? null : mainId;
     // Clear existing satellites
     for (const s of satsRef.current) {
       try { sys.remove(s.mesh); (s.mesh.geometry as any)?.dispose?.(); (s.mesh.material as any)?.dispose?.(); } catch {}
@@ -1197,23 +1235,28 @@ export default function PlanetSystemRaw() {
       addSatLocal(id, planetData, r, speed, a0);
     });
     // After building, compute a focus rotation so the selected planet is front-center
-    try {
-      const sat = satsRef.current.find(s => s.id === focusId);
-      if (sat) {
-        const cur = sys.rotation.y;
-        const desired = Math.PI / 2 - sat.a;
-        let delta = ((desired - cur + Math.PI) % (Math.PI * 2));
-        if (delta < 0) delta += Math.PI * 2;
-        delta -= Math.PI;
-        focusTargetRy.current = cur + delta;
-      }
-    } catch {}
+    if (focusId) {
+      try {
+        const sat = satsRef.current.find(s => s.id === focusId);
+        if (sat) {
+          const cur = sys.rotation.y;
+          const desired = Math.PI / 2 - sat.a;
+          let delta = ((desired - cur + Math.PI) % (Math.PI * 2));
+          if (delta < 0) delta += Math.PI * 2;
+          delta -= Math.PI;
+          focusTargetRy.current = cur + delta;
+        }
+      } catch {}
+    } else {
+      // Clear focus when showing all planets (homepage mode)
+      focusTargetRy.current = null;
+    }
     // Update main planet
-    const mainEntry = songs.find(s => s.id === focusId) || songs[0];
+    const mainEntry = focusId ? songs.find(s => s.id === focusId) : null;
     const main = mainRef.current.mesh;
     if (main) main.visible = false; // no separate central planet; every song has its own
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [songs, mainId, layout && Object.keys(layout).join(',')]);
+  }, [songs, mainId, showAll, layout && Object.keys(layout).join(',')]);
 
   // When the selected song changes, create central planet and update orbital system
   useEffect(() => {

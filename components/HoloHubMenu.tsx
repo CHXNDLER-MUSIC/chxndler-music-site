@@ -21,6 +21,7 @@ export default function HoloHubMenu({
   hubSize = 72,
   angles,
   onToggle,
+  isActive = false,
 }: {
   items?: HubItem[];
   radius?: number;
@@ -31,6 +32,7 @@ export default function HoloHubMenu({
   // Optional explicit angle mapping per item id (degrees; -90 = 12 o'clock, 0 = 3 o'clock)
   angles?: Record<string, number>;
   onToggle?: (isOpen: boolean) => void;
+  isActive?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -173,7 +175,7 @@ export default function HoloHubMenu({
       <button
         ref={hubRef}
         type="button"
-        className={`hub ${open ? "on" : ""}`}
+        className={`hub ${open ? "on" : ""} ${isActive ? "hub-active" : ""}`}
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label={open ? "Close Comms" : "Open Comms"}
@@ -261,15 +263,19 @@ export default function HoloHubMenu({
           filter: blur(8px);
         }
         
-        /* Fixed container truly centered on screen */
+        /* Fixed container aligned with yellow display: centered and bottom-aligned */
         .panel-wrap{
           position: fixed;
-          left: 50%; top: 50%; transform: translate(-50%, -50%);
+          bottom: calc(35% + 14vh); /* match Join Aliens (pink) panel baseline */
+          left: calc(50% + 8vh); /* Shifted right to match yellow display positioning */
+          transform: translateX(-50%);
           width: 400px; height: 80px;
           pointer-events: ${open ? 'auto' : 'none'};
-          z-index: 10;
+          z-index: 93; /* ensure above controls, similar to pink panel */
           border-radius: 16px; /* ensure clipping shape matches */
           overflow: hidden; /* keep buttons contained within the yellow display */
+          opacity: ${open ? 1 : 0};
+          transition: opacity 200ms ease, transform 220ms cubic-bezier(0.2,0.8,0.2,1);
         }
         /* Yellow hologram background panel */
         .background-panel{ 
@@ -291,9 +297,7 @@ export default function HoloHubMenu({
             inset 0 -6px 14px rgba(242,239,29,.2);
           backdrop-filter: blur(10px);
           -webkit-backdrop-filter: blur(10px);
-          opacity: ${open ? 1 : 0};
-          transform: ${open ? 'scale(1)' : 'scale(0.98)'};
-          transition: opacity 200ms ease, transform 220ms cubic-bezier(0.2,0.8,0.2,1);
+          animation: ${open ? 'yellowPanelPulse 2.6s ease-in-out infinite' : 'none'};
         }
         
         /* Items fill panel; we will center via each item's left/top 50% + translate */
@@ -316,10 +320,10 @@ export default function HoloHubMenu({
             rgba(242,239,29,0.18);
           border:1px solid #F2EF1D44;
           box-shadow:
-            0 14px 28px rgba(0,0,0,.7),
-            0 0 32px #F2EF1DCC,
-            0 0 80px #F2EF1D88,
-            0 0 140px #F2EF1D44,
+            0 12px 24px rgba(0,0,0,.6),
+            0 0 22px #F2EF1DBB,
+            0 0 56px #F2EF1D66,
+            0 0 100px #F2EF1D33,
             inset 0 2px 0 rgba(255,255,255,.25),
             inset 0 -6px 14px rgba(0,0,0,.6),
             inset 0 0 20px #F2EF1D22;
@@ -329,11 +333,11 @@ export default function HoloHubMenu({
           transition: transform 150ms ease, box-shadow 200ms ease, filter 180ms ease;
         }
         .hub::before{ content:""; position:absolute; inset:-2%; border-radius:9999px; pointer-events:none;
-          /* Enhanced yellow halo glow */
+          /* Subtler yellow halo glow */
           box-shadow: 
-            0 0 40px #F2EF1DDD, 
-            0 0 80px #F2EF1D99,
-            0 0 120px #F2EF1D55;
+            0 0 26px #F2EF1DDD, 
+            0 0 56px #F2EF1D88,
+            0 0 90px #F2EF1D44;
           animation: holoHalo 3.2s ease-in-out infinite;
         }
         .hub::after{ content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none; mix-blend-mode:screen; opacity:.8;
@@ -344,21 +348,60 @@ export default function HoloHubMenu({
           transform: translateX(-130%);
           animation: holoSheen 2.8s ease-in-out infinite;
         }
-        .hub:hover{ transform: scale(1.07); box-shadow:
-            0 18px 34px rgba(0,0,0,.75),
-            0 0 50px #F2EF1DFF,
-            0 0 120px #F2EF1DCC,
-            0 0 200px #F2EF1D77,
+        .hub:hover{ transform: scale(1.06); box-shadow:
+            0 16px 30px rgba(0,0,0,.68),
+            0 0 34px #F2EF1DEE,
+            0 0 90px #F2EF1DBB,
+            0 0 150px #F2EF1D55,
             inset 0 2px 0 rgba(255,255,255,.35), 
             inset 0 -8px 18px rgba(0,0,0,.65),
             inset 0 0 30px #F2EF1D33;
-          filter: brightness(1.12) saturate(1.25);
+          filter: brightness(1.06) saturate(1.15);
+        }
+        /* Selected/open state: calmer than hover */
+        .hub.on{
+          transform: none;
+          box-shadow:
+            0 12px 26px rgba(0,0,0,.6),
+            0 0 20px #F2EF1DBB,
+            0 0 40px #F2EF1D66,
+            inset 0 2px 0 rgba(255,255,255,.25),
+            inset 0 -6px 14px rgba(0,0,0,.6),
+            inset 0 0 20px #F2EF1D22;
+          filter: brightness(1.0) saturate(1.06);
         }
         @keyframes holoHalo { 
           0%, 100% { opacity: 0.8; transform: scale(1); } 
           50% { opacity: 1; transform: scale(1.05); } 
         }
         .hub:active{ transform: scale(.96); }
+        .hub-active {
+          animation: hubActiveGlow 2s ease-in-out infinite, holoPulse 2.6s ease-in-out infinite;
+          box-shadow:
+            0 14px 28px rgba(0,0,0,.7),
+            0 0 50px #F2EF1DFF,
+            0 0 100px #F2EF1DCC,
+            0 0 150px #F2EF1D88,
+            inset 0 2px 0 rgba(255,255,255,.25),
+            inset 0 -6px 14px rgba(0,0,0,.6),
+            inset 0 0 20px #F2EF1D22;
+        }
+        .hub-active::before {
+          box-shadow: 
+            0 0 60px #F2EF1DFF, 
+            0 0 120px #F2EF1DCC,
+            0 0 180px #F2EF1D88;
+        }
+        @keyframes hubActiveGlow {
+          0%, 100% { 
+            filter: brightness(1.3) saturate(1.4);
+            transform: scale(1);
+          }
+          50% { 
+            filter: brightness(1.5) saturate(1.6);
+            transform: scale(1.02);
+          }
+        }
         .hub-icon{ object-fit: contain; display:block; transition: filter 180ms ease, transform 180ms ease; mix-blend-mode: screen;
           filter: saturate(1.24) brightness(1.08)
             drop-shadow(0 0 24px #F2EF1D)
@@ -368,6 +411,28 @@ export default function HoloHubMenu({
             drop-shadow(0 0 32px #F2EF1D)
             drop-shadow(0 0 88px #F2EF1D); }
         @keyframes holoPulse { 0%,100%{ filter: brightness(1) } 50%{ filter: brightness(1.08) } }
+        
+        /* Synchronized yellow panel pulsing */
+        @keyframes yellowPanelPulse {
+          0%, 100% { 
+            filter: brightness(1) saturate(1);
+            box-shadow: 
+              0 18px 36px rgba(0,0,0,.5), 
+              0 0 42px #F2EF1DDD, 
+              0 0 100px #F2EF1DAA, 
+              inset 0 2px 0 rgba(255,255,255,.3), 
+              inset 0 -6px 14px rgba(242,239,29,.2);
+          }
+          50% { 
+            filter: brightness(1.06) saturate(1.1);
+            box-shadow: 
+              0 18px 36px rgba(0,0,0,.5), 
+              0 0 52px #F2EF1DFF, 
+              0 0 120px #F2EF1DCC, 
+              inset 0 2px 0 rgba(255,255,255,.35), 
+              inset 0 -6px 14px rgba(242,239,29,.25);
+          }
+        }
 
         /* old .items rule replaced by centered .items inside panel-wrap */
         /* Radial items: circular hologram chrome around each icon */

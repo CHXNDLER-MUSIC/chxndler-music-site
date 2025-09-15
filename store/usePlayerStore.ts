@@ -21,7 +21,7 @@ let state: State = {
   hoverId: null,
   initSongs: (songs: Song[]) => {
     if (state.songs.length === 0) {
-      setState({ songs, mainId: songs[0]?.id ?? null, prevMainId: null });
+      setState({ songs, prevMainId: null });
     } else {
       setState({ songs });
     }
@@ -43,8 +43,9 @@ function subscribe(l: () => void) { listeners.add(l); return () => listeners.del
 
 export function usePlayerStore<T = State>(selector?: (s: State) => T): T {
   const getSnapshot = React.useCallback(() => state, []);
-  const snap = (React as any).useSyncExternalStore
-    ? (React as any).useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
+  const useSyncExternalStore = (React as any).useSyncExternalStore;
+  const snap = useSyncExternalStore && typeof useSyncExternalStore === 'function'
+    ? useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
     : state; // fallback without SSR correctness
   return (selector ? selector(snap) : (snap as unknown as T));
 }
