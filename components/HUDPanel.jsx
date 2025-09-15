@@ -114,6 +114,11 @@ export default function HUDPanel({
   const [cardFlipped, setCardFlipped] = useState(false);
   // Beam fade: allow external control; default to fade-in on mount
   const [beamOpacity, setBeamOpacity] = useState(0);
+  // Refs for dynamic planet placement above player
+  const innerRef = useRef(null);
+  const planetRef = useRef(null);
+  const playerRef = useRef(null);
+  const [planetBottom, setPlanetBottom] = useState(88);
   // Audio progress tracking
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -295,6 +300,28 @@ export default function HUDPanel({
   // Fallback: if songs not provided, build from tracks
   const resolvedSongs = songs && songs.length ? songs : buildPlanetSongs().hudSongs;
 
+  // Dynamically place planet container directly above the media player
+  useLayoutEffect(() => {
+    const measure = () => {
+      try {
+        const inner = innerRef.current;
+        const player = playerRef.current;
+        if (!inner || !player) return;
+        const ir = inner.getBoundingClientRect();
+        const pr = player.getBoundingClientRect();
+        const gap = 8; // px space between planet and player
+        const b = Math.max(0, ir.bottom - pr.top + gap);
+        setPlanetBottom(b);
+      } catch {}
+    };
+    measure();
+    const ro = new ResizeObserver(() => measure());
+    if (innerRef.current) ro.observe(innerRef.current);
+    if (playerRef.current) ro.observe(playerRef.current);
+    window.addEventListener('resize', measure);
+    return () => { try { ro.disconnect(); } catch {}; window.removeEventListener('resize', measure); };
+  }, [inConsole]);
+
   return (
     <motion.section
       className={
@@ -338,6 +365,7 @@ export default function HUDPanel({
               width: '100%',
               height: '100%'
             }}
+            ref={innerRef}
           >
           {/* Element icon at top left */}
           <div className="absolute z-40" style={{ left: 8, top: 8, pointerEvents: 'none' }}>
@@ -403,8 +431,12 @@ export default function HUDPanel({
             {(!currentId ? 'Welcome to the HEARTVERSE - a home for ALIENS, where misfits and dreamers live free.' : (track?.subtitle || ''))}
           </div>
 
-          {/* 3D planets extending from left to media player */}
-          <div className="absolute bottom-2 left-2" style={{ width: '65%', height: '60%' }}>
+          {/* 3D planets — anchored directly above media player */}
+          <div
+            ref={planetRef}
+            className="absolute left-2"
+            style={{ width: '65%', top: inConsole ? 48 : 64, bottom: planetBottom }}
+          >
             {can3D && PlanetSystemComp ? (
               <div className="relative w-full h-full">
                 <ErrorBoundary fallback={null} onError={(e)=>{ if (String(e?.name||'').includes('IndexSizeError')) { try { console.warn('Disabling 3D due to IndexSizeError'); } catch {} } setThreeFailed((e && (e.message||e.name)) || 'Render error'); setCan3D(false); }}>
@@ -459,8 +491,8 @@ export default function HUDPanel({
             </button>
           </div>
 
-          {/* Waveform Media Player - positioned outside padded container to be flush with bottom */}
-          <div className="absolute -bottom-2 left-2 right-2" style={{ height: '80px' }}>
+          {/* Waveform Media Player - extend to edges of blue display */}
+          <div ref={playerRef} className="absolute -bottom-6 -left-2 -right-2" style={{ height: '80px' }}>
             <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '0 0 8px 8px' }}>
               <div className="flex items-center gap-4 p-3">
                 <button 
@@ -648,19 +680,7 @@ export default function HUDPanel({
                               
                               return (
                                 <g>
-                                  {/* Vertical progress line */}
-                                  <line
-                                    x1={progressX}
-                                    y1="2"
-                                    x2={progressX}
-                                    y2="38"
-                                    stroke="rgba(255,255,255,0.9)"
-                                    strokeWidth="2"
-                                    opacity="0.8"
-                                    style={{
-                                      filter: `drop-shadow(0 0 6px ${hexToRgba(elementColor, 0.8)})`,
-                                    }}
-                                  />
+                                  {/* Vertical progress line removed per design */}
                                   {/* Progress indicator circle */}
                                   <circle
                                     cx={progressX}
@@ -719,23 +739,17 @@ export default function HUDPanel({
                         };
                         
                         return (
-                          <div 
-                            className="absolute -top-4 w-6 h-6 rounded-full flex items-center justify-center border"
+                          <img
+                            src={`/elements/${elementIcon}.png`}
+                            alt={`${currentSong?.title || 'Current song'} element`}
+                            className="w-8 h-8 brightness-150 saturate-125"
                             style={{
-                              background: `linear-gradient(135deg, ${hexToRgba(elementColor, 0.9)}, ${hexToRgba(elementColor, 0.6)})`,
-                              borderColor: hexToRgba(elementColor, 1),
-                              boxShadow: `0 0 12px ${hexToRgba(elementColor, 0.7)}, 0 0 24px ${hexToRgba(elementColor, 0.3)}`,
+                              filter: `drop-shadow(0 0 14px ${hexToRgba(elementColor, 1)}) drop-shadow(0 0 32px ${hexToRgba(elementColor, 0.8)}) drop-shadow(0 0 64px ${hexToRgba(elementColor, 0.35)})`,
                             }}
-                          >
-                            <img
-                              src={`/elements/${elementIcon}.png`}
-                              alt={`${currentSong?.title || 'Current song'} element`}
-                              className="w-4 h-4 brightness-150 saturate-125"
-                              onError={(e) => {
-                                e.target.src = '/elements/music.png';
-                              }}
-                            />
-                          </div>
+                            onError={(e) => {
+                              e.target.src = '/elements/music.png';
+                            }}
+                          />
                         );
                       })()}
                     </div>

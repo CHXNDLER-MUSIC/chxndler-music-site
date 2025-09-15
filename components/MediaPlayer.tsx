@@ -315,25 +315,13 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         const ae = (document.activeElement as HTMLElement | null);
         if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || (ae as any).isContentEditable)) return;
       } catch {}
-      // Prime audio on first interaction to satisfy autoplay policies
-      try {
-        const a = audioRef.current;
-        if (a && a.paused) {
-          // Ensure element is loaded and attempt to start playback; fallback to muted start then unmute
-          try { a.load(); } catch {}
-          a.play().catch(() => {
-            try {
-              a.muted = true;
-              a.play().then(() => { setTimeout(() => { try { a.muted = false; } catch {} }, 50); }).catch(() => {});
-            } catch {}
-          });
-        }
-      } catch {}
+      // Do not force-load on keydown; this can reset currentTime.
+      // Space/Enter handlers below will attempt play() as a user gesture.
       if (e.key === "ArrowLeft") { e.preventDefault(); prev(); }
       else if (e.key === "ArrowRight") { e.preventDefault(); next(); }
       else if (e.key === "ArrowUp") { e.preventDefault(); adjustVolume(0.1); }
       else if (e.key === "ArrowDown") { e.preventDefault(); adjustVolume(-0.1); }
-      else if (e.code === "Space" || e.key === " " || e.key === "Spacebar") { e.preventDefault(); toggle(); }
+      // Do not handle Space here to avoid double-toggles with DashboardApp
       else if (/^[1-9]$/.test(e.key)) {
         const n = Number(e.key) - 1; if (n < tracks.length) { uiClick(); setIdx(n); }
       }
@@ -529,38 +517,18 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 width: '32px',
               }}
             >
-              {/* Vertical cursor line */}
-              <div 
-                className="w-[2px] h-full opacity-90"
-                style={{
-                  background: `linear-gradient(to bottom, 
-                    transparent 0%, 
-                    ${currentElementColor}AA 10%, 
-                    #ffffff 50%, 
-                    ${currentElementColor}AA 90%, 
-                    transparent 100%)`,
-                  boxShadow: `0 0 8px ${currentElementColor}66, 0 0 16px ${currentElementColor}33`,
+              {/* Vertical cursor line removed per design */}
+              
+              {/* Element-shaped cursor icon */}
+              <img
+                src={`/elements/${currentElement}.png`}
+                alt={`${cur.title} element`}
+                className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 transform w-8 h-8 brightness-150 saturate-125"
+                style={{ filter: `drop-shadow(0 0 14px ${currentElementColor}) drop-shadow(0 0 32px ${currentElementColor}AA) drop-shadow(0 0 64px ${currentElementColor}55)` }}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/elements/music.png';
                 }}
               />
-              
-              {/* Element icon at top */}
-              <div 
-                className="absolute -top-2 w-8 h-8 rounded-full flex items-center justify-center border-2"
-                style={{
-                  background: `linear-gradient(135deg, ${currentElementColor}DD, ${currentElementColor}88)`,
-                  borderColor: currentElementColor,
-                  boxShadow: `0 0 16px ${currentElementColor}77, 0 0 32px ${currentElementColor}33`,
-                }}
-              >
-                <img
-                  src={`/elements/${currentElement}.png`}
-                  alt={`${cur.title} element`}
-                  className="w-4 h-4 brightness-150 saturate-125"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/elements/music.png';
-                  }}
-                />
-              </div>
               
               {/* Time display */}
               <div 

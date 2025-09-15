@@ -209,35 +209,15 @@ export default function MediaPlayer({
                 width: '32px',
               }}
             >
-              {/* Vertical cursor line */}
-              <div 
-                className="w-[2px] h-full opacity-90"
-                style={{
-                  background: `linear-gradient(to bottom, 
-                    transparent 0%, 
-                    ${elementColor}AA 10%, 
-                    #ffffff 50%, 
-                    ${elementColor}AA 90%, 
-                    transparent 100%)`,
-                  boxShadow: `0 0 8px ${elementColor}66, 0 0 16px ${elementColor}33`,
-                }}
-              />
+              {/* Vertical cursor line removed per design */}
               
-              {/* Element icon at top */}
-              <div 
-                className="absolute -top-2 w-8 h-8 rounded-full flex items-center justify-center border-2"
-                style={{
-                  background: `linear-gradient(135deg, ${elementColor}DD, ${elementColor}88)`,
-                  borderColor: elementColor,
-                  boxShadow: `0 0 16px ${elementColor}77, 0 0 32px ${elementColor}33`,
-                }}
-              >
-                <img
-                  src={getSongIcon(title)}
-                  alt={`${title} element`}
-                  className="w-4 h-4 brightness-150 saturate-125"
-                />
-              </div>
+              {/* Element-shaped cursor icon */}
+              <img
+                src={getSongIcon(title)}
+                alt={`${title} element`}
+                className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 transform w-8 h-8 brightness-150 saturate-125"
+                style={{ filter: `drop-shadow(0 0 14px ${elementColor}) drop-shadow(0 0 32px ${elementColor}AA) drop-shadow(0 0 64px ${elementColor}55)` }}
+              />
               
               {/* Time display */}
               <div 

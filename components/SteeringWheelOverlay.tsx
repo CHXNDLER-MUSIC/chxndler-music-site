@@ -131,15 +131,19 @@ export default function SteeringWheelOverlay({
       if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
     } catch {}
     
-    // If pink display is already open, close it
+    // If pink display is already open, close it and fade out beam
     if (showJoin) {
       setShowJoin(false);
       setActiveBeamColor('blue'); // Default back to blue
+      // Notify parent to fade out beam
+      onBeamColorChange?.('blue');
     } else {
-      // Open pink display (will close others first)
+      // Open pink display and fade in pink beam
       switchToDisplay('pink');
+      // Notify parent to show pink beam
+      onBeamColorChange?.('pink');
     }
-  }, [showJoin, switchToDisplay]);
+  }, [showJoin, switchToDisplay, onBeamColorChange]);
 
   // Helper function to get responsive values
   const getResponsiveValue = (config: any) => {
@@ -183,8 +187,8 @@ export default function SteeringWheelOverlay({
       <div
         style={{
           position: "absolute",
-          // Bottom of wheel video aligned with bottom of screen
-          bottom: "0px",
+          // Move wheel slightly down from bottom of screen
+          bottom: "-3vh",
           left: vconf.centerHoriz
             ? `calc(50vw - ${vs/2}px)`
             : `calc(${(pp.leftVw + (vconf.offsetVw || 0))}vw - ${vs/2}px)`,
@@ -222,60 +226,19 @@ export default function SteeringWheelOverlay({
           }}
         />
       </div>
-      {/* Centered buttons container above steering wheel */}
+      {/* Power Button - centered */}
       <div
         style={{
           position: "absolute",
-          bottom: '40%', // Above steering wheel, bottom-aligned
+          bottom: '35%', // Moved down, above steering wheel
           left: '50%',
           transform: 'translateX(-50%)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '80px', // Space between buttons
           zIndex: 92,
           pointerEvents: showUI ? 'auto' : 'none',
           opacity: showUI ? 1 : 0,
           transition: 'opacity 75ms ease',
         }}
       >
-        {/* Comms Button */}
-        {(() => {
-          const iconSize = 30;
-          return (
-            <div style={{ pointerEvents: 'auto' }}>
-              <HoloHubMenu
-                items={[
-                LINKS.instagram ? { id: 'ig', label: 'Instagram', href: LINKS.instagram, icon: '/elements/instagram.png', color: '#E1306C' } : null,
-                LINKS.tiktok ? { id: 'tt', label: 'TikTok', href: LINKS.tiktok, icon: '/elements/tiktok.png', color: '#69C9D0' } : null,
-                LINKS.youtube ? { id: 'yt', label: 'YouTube', href: LINKS.youtube, icon: '/elements/youtube.png', color: '#FF0000' } : null,
-                LINKS.spotify ? { id: 'sp', label: 'Spotify', href: LINKS.spotify, icon: '/elements/spotify.png', color: '#1DB954' } : null,
-                LINKS.apple ? { id: 'am', label: 'Apple Music', href: LINKS.apple, icon: '/elements/apple.png', color: '#FA2D48' } : null,
-              ].filter(Boolean) as any}
-                radius={60}
-                hubColor="#F2EF1D"
-                itemSize={84}
-                hubSize={84}
-                angles={{ sp: -36, am: -18, ig: 0, tt: 18, yt: 36 }}
-                onToggle={(isOpen) => {
-                  if (isOpen) {
-                    // Play button sound
-                    try {
-                      const a = buttonRef.current;
-                      if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
-                    } catch {}
-                    
-                    console.log('Comms menu opening, hiding other displays');
-                    // Use display management for proper sequencing
-                    switchToDisplay('yellow');
-                  }
-                }}
-              />
-            </div>
-          );
-        })()}
-
-        {/* Power Button */}
         {(() => {
           const powerCfg: any = getResponsiveValue((POS?.wheel as any)?.power) || {};
           const powerSize: number = typeof powerCfg.sizePx === 'number' ? powerCfg.sizePx : 60;
@@ -323,8 +286,77 @@ export default function SteeringWheelOverlay({
             </div>
           );
         })()}
+      </div>
 
-        {/* Join Alien Button */}
+      {/* Comms Button - positioned to the left of pink button on same level */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: '35%', // Same vertical level as blue button
+          left: 'calc(50% - 10vh)', // To the left, mirroring pink button position
+          transform: 'translateX(-50%)',
+          zIndex: 92,
+          pointerEvents: showUI ? 'auto' : 'none',
+          opacity: showUI ? 1 : 0,
+          transition: 'opacity 75ms ease',
+        }}
+      >
+        {(() => {
+          const iconSize = 30;
+          return (
+            <div style={{ pointerEvents: 'auto' }}>
+              <HoloHubMenu
+                items={[
+                LINKS.instagram ? { id: 'ig', label: 'Instagram', href: LINKS.instagram, icon: '/elements/instagram.png', color: '#E1306C' } : null,
+                LINKS.tiktok ? { id: 'tt', label: 'TikTok', href: LINKS.tiktok, icon: '/elements/tiktok.png', color: '#69C9D0' } : null,
+                LINKS.youtube ? { id: 'yt', label: 'YouTube', href: LINKS.youtube, icon: '/elements/youtube.png', color: '#FF0000' } : null,
+                LINKS.spotify ? { id: 'sp', label: 'Spotify', href: LINKS.spotify, icon: '/elements/spotify.png', color: '#1DB954' } : null,
+                LINKS.apple ? { id: 'am', label: 'Apple Music', href: LINKS.apple, icon: '/elements/apple.png', color: '#FA2D48' } : null,
+              ].filter(Boolean) as any}
+                radius={60}
+                hubColor="#F2EF1D"
+                itemSize={68}
+                hubSize={84}
+                angles={{ sp: -36, am: -18, ig: 0, tt: 18, yt: 36 }}
+                onToggle={(isOpen) => {
+                  if (isOpen) {
+                    // Play button sound
+                    try {
+                      const a = buttonRef.current;
+                      if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
+                    } catch {}
+                    
+                    console.log('Comms menu opening, hiding other displays');
+                    // Use display management for proper sequencing
+                    switchToDisplay('yellow');
+                    // Notify parent to show yellow beam
+                    onBeamColorChange?.('yellow');
+                  } else {
+                    // Menu is closing, fade out beam if it's yellow
+                    if (activeBeamColor === 'yellow') {
+                      onBeamColorChange?.('blue');
+                    }
+                  }
+                }}
+              />
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* Join Alien Button - positioned to the right of power button */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: '35%', // Same level as power button
+          left: 'calc(50% + 10vh)', // Positioned to the right of center
+          transform: 'translateX(-50%)',
+          zIndex: 92,
+          pointerEvents: showUI ? 'auto' : 'none',
+          opacity: showUI ? 1 : 0,
+          transition: 'opacity 75ms ease',
+        }}
+      >
         {(() => {
           const joinCfg: any = getResponsiveValue((POS?.wheel as any)?.join) || {};
           const joinSize: number = typeof joinCfg.sizePx === 'number' ? joinCfg.sizePx : 84;
@@ -349,10 +381,11 @@ export default function SteeringWheelOverlay({
             ref={joinFormRef}
             style={{
               position: "absolute",
-              // Align bottom with blue display bottom, accounting for blue display's 10px bottom padding
-              bottom: `calc(70vh - clamp(160px, 16vh, 220px) - 10px)`,
-              // Position to the left of center, matching blue display alignment strategy
-              left: `calc(50% - clamp(80px, 8vw, 100px)/2 - 244px - 40px)`, // 244px = form width, 40px = gap
+              // Position above blue button area
+              bottom: `calc(35% + 14vh)`,
+              // Center horizontally on screen
+              left: '50%',
+              transform: 'translateX(-50%)', // Center the 244px wide panel
               zIndex: 93,
               pointerEvents: showJoin ? 'auto' : 'none',
               opacity: showJoin ? 1 : 0,
@@ -362,7 +395,9 @@ export default function SteeringWheelOverlay({
             {/* Join form panel */}
             <div
               style={{
-                width: 244,
+                width: 'min(244px, calc(100vw - 32px))', // Responsive width with 16px margin on each side
+                maxWidth: '244px', // Maintain original size on larger screens
+                minWidth: '200px', // Ensure minimum usable width
                 borderRadius: '16px',
                 padding: '12px',
                 color: '#fff',

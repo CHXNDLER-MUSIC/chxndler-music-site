@@ -116,7 +116,7 @@ export default function HoloHubMenu({
   }, [onToggle]);
 
   // Compute positions; when closed, items sit on hub (0,0)
-  // For open state, arrange items in a horizontal line
+  // For open state, arrange items in a single horizontal line within the yellow panel
   const positions = useMemo(() => {
     const n = entries.length || 1;
     return entries.map((it, i) => {
@@ -124,16 +124,42 @@ export default function HoloHubMenu({
         return { x: 0, y: 0, angleDeg: 0 };
       }
       
-      // Center buttons horizontally in the screen with spacing
-      const spacing = 80; // Spacing between buttons
-      const totalWidth = (n - 1) * spacing;
-      const startX = -totalWidth / 2; // Center the group of buttons
-      const x = startX + (i * spacing);
-      const y = 0; // Center vertically
+      // Arrange all buttons in a single horizontal line within the 400px wide yellow panel
+      const panelWidth = 400;
+      const buttonSizes = entries.map(entry => entry.id === 'tt' ? itemSize * 0.75 : itemSize);
+      const currentButtonSize = buttonSizes[i];
+      const totalButtonWidth = buttonSizes.reduce((sum, size) => sum + size, 0);
+      const maxAvailableWidth = panelWidth - 40; // Leave 20px margin on each side
+      
+      // Calculate spacing between buttons - ensure we don't exceed panel width
+      let spacing = 0;
+      if (n > 1) {
+        const maxSpacing = (maxAvailableWidth - totalButtonWidth) / (n - 1);
+        spacing = Math.max(8, Math.min(itemSize * 0.3, maxSpacing)); // Min 8px, max 30% of itemSize
+      }
+      
+      // Calculate total width and ensure it fits
+      let totalWidth = totalButtonWidth + (spacing * (n - 1));
+      if (totalWidth > maxAvailableWidth) {
+        // If still too wide, reduce spacing to minimum
+        spacing = Math.max(4, (maxAvailableWidth - totalButtonWidth) / (n - 1));
+        totalWidth = totalButtonWidth + (spacing * (n - 1));
+      }
+      
+      // Center the entire group within the panel
+      const startX = -totalWidth / 2;
+      let currentX = startX;
+      
+      // Calculate position for current button
+      for (let j = 0; j < i; j++) {
+        currentX += buttonSizes[j] + spacing;
+      }
+      const x = currentX + currentButtonSize / 2;
+      const y = 0; // All buttons on same vertical plane
       
       return { x, y, angleDeg: 0 };
     });
-  }, [entries, open]);
+  }, [entries, open, itemSize]);
 
   return (
     <div
@@ -170,13 +196,13 @@ export default function HoloHubMenu({
         <span className="sr-only">{open ? "Close Comms Display" : "Comms"}</span>
       </button>
 
-      {/* Yellow hologram background panel */}
-      {open && (
+      {/* Centered yellow panel + items container */}
+      <div className="panel-wrap" aria-hidden={!open}>
+        {/* Yellow hologram background panel */}
         <div className="background-panel" aria-hidden />
-      )}
 
-      {/* Horizontal line items */}
-      <div className="items" role="menu" aria-hidden={!open}>
+        {/* Horizontal line items */}
+        <div className="items" role="menu" aria-hidden={!open}>
         {entries.map((it, i) => {
           const pos = positions[i];
           const atRest = open;
@@ -196,7 +222,9 @@ export default function HoloHubMenu({
               tabIndex={open ? 0 : -1}
               data-id={it.id}
               style={{
-                transform: `translate(${atRest ? pos.x : 0}px, ${atRest ? pos.y : 0}px) scale(${open ? 1 : 0.85})`,
+                left: '50%',
+                top: '50%',
+                transform: `translate(${atRest ? pos.x : 0}px, ${atRest ? pos.y : 0}px) translate(-50%, -50%) scale(${open ? 1 : 0.85})`,
                 opacity: open ? 1 : 0,
                 // use CSS var for tint so hover styles can reference it
                 ['--tint' as any]: tint,
@@ -206,8 +234,6 @@ export default function HoloHubMenu({
                 borderColor: `${tint}AA`,
                 width: `${size}px`,
                 height: `${size}px`,
-                left: `-${half}px`,
-                top: `-${half}px`,
               }}
               onClick={(e) => { e.stopPropagation(); try { sfx.play('join', 0.9); } catch {}; runItem(it); }}
               onMouseDown={(e) => { e.stopPropagation(); }}
@@ -225,6 +251,7 @@ export default function HoloHubMenu({
             </button>
           );
         })}
+        </div>
       </div>
 
       <style jsx>{`
@@ -234,16 +261,23 @@ export default function HoloHubMenu({
           filter: blur(8px);
         }
         
+        /* Fixed container truly centered on screen */
+        .panel-wrap{
+          position: fixed;
+          left: 50%; top: 50%; transform: translate(-50%, -50%);
+          width: 400px; height: 80px;
+          pointer-events: ${open ? 'auto' : 'none'};
+          z-index: 10;
+          border-radius: 16px; /* ensure clipping shape matches */
+          overflow: hidden; /* keep buttons contained within the yellow display */
+        }
         /* Yellow hologram background panel */
         .background-panel{ 
-          position: fixed; 
-          top: 40%; 
-          left: 50%; 
-          transform: translate(-50%, -50%);
-          width: 400px; 
-          height: 100px; 
+          position: absolute; 
+          inset: 0;
           border-radius: 16px; 
           pointer-events: none;
+          overflow: hidden; /* Ensure buttons stay within panel */
           background:
             linear-gradient(180deg, #F2EF1D44, #F2EF1D33),
             radial-gradient(120% 100% at 50% -10%, rgba(242,239,29,.15), rgba(242,239,29,.05) 42%),
@@ -257,16 +291,13 @@ export default function HoloHubMenu({
             inset 0 -6px 14px rgba(242,239,29,.2);
           backdrop-filter: blur(10px);
           -webkit-backdrop-filter: blur(10px);
-          opacity: 0;
-          transform: translateY(6px) scale(0.98);
+          opacity: ${open ? 1 : 0};
+          transform: ${open ? 'scale(1)' : 'scale(0.98)'};
           transition: opacity 200ms ease, transform 220ms cubic-bezier(0.2,0.8,0.2,1);
         }
         
-        .items:not([aria-hidden="true"]) ~ .background-panel,
-        .background-panel{
-          opacity: 1;
-          transform: translateY(0) scale(1);
-        }
+        /* Items fill panel; we will center via each item's left/top 50% + translate */
+        .items{ position:absolute; inset:0; pointer-events:${open ? "auto" : "none"}; z-index: 11; }
         /* Hologram hub button */
         .hub-glyph{ position: relative; display:inline-flex; }
         /* Inner glow masked to the comms icon shape so color shines "through" */
@@ -338,10 +369,10 @@ export default function HoloHubMenu({
             drop-shadow(0 0 88px #F2EF1D); }
         @keyframes holoPulse { 0%,100%{ filter: brightness(1) } 50%{ filter: brightness(1.08) } }
 
-        .items{ position:fixed; left:50%; top:40%; width:0; height:0; pointer-events:${open ? "auto" : "none"}; }
+        /* old .items rule replaced by centered .items inside panel-wrap */
         /* Radial items: circular hologram chrome around each icon */
         .item{
-          position:absolute; border-radius:9999px; left: -22px; top: -22px; width: 44px; height: 44px;
+          position:absolute; border-radius:9999px; width: 44px; height: 44px;
           display:grid; place-items:center; color:#fff; cursor:pointer;
           /* Lighter, glassy base with subtle tint */
           background:
@@ -370,7 +401,7 @@ export default function HoloHubMenu({
           transform: translateX(-130%);
           animation: holoSheen 2.8s ease-in-out infinite;
         }
-        .item:hover{ transform: translate(var(--tx,0), var(--ty,0)) scale(1.06); box-shadow:
+        .item:hover{ transform: translate(var(--tx,0), var(--ty,0)) translate(-50%, -50%) scale(1.06); box-shadow:
             0 16px 30px rgba(0,0,0,.65),
             0 0 50px var(--tint, #38B6FF),
             0 0 120px var(--tint, #38B6FF),
@@ -394,7 +425,7 @@ export default function HoloHubMenu({
           backdrop-filter: none !important;
           -webkit-backdrop-filter: none !important;
           filter: brightness(1.08) !important;
-          transform: translate(var(--tx,0), var(--ty,0)) scale(1.04) !important; /* Maintain position with scale */
+          transform: translate(var(--tx,0), var(--ty,0)) translate(-50%, -50%) scale(1.04) !important; /* Maintain position with scale */
         }
         .item[data-id="ig"]::before, .item[data-id="tt"]::before, .item[data-id="yt"]::before, .item[data-id="sp"]::before, .item[data-id="am"]::before,
         .item[data-id="ig"]:hover::before, .item[data-id="tt"]:hover::before, .item[data-id="yt"]:hover::before, .item[data-id="sp"]:hover::before, .item[data-id="am"]:hover::before,
@@ -432,7 +463,7 @@ export default function HoloHubMenu({
           filter: brightness(1.1);
         }
         @keyframes holoCore {}
-        .item:active{ transform: translate(var(--tx,0), var(--ty,0)) scale(0.95); }
+        .item:active{ transform: translate(var(--tx,0), var(--ty,0)) translate(-50%, -50%) scale(0.95); }
         /* Focus ring should follow the item's own tint, not the hub color */
         .item:focus{ outline: 2px solid var(--tint, #38B6FF); outline-offset: 2px; }
         @keyframes holoSheen { 0% { transform: translateX(-130%); } 55% { transform: translateX(130%);} 100% { transform: translateX(130%);} }

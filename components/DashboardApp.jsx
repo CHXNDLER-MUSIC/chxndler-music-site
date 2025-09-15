@@ -259,15 +259,35 @@ export default function DashboardApp() {
     };
   }, []);
 
+  // Handle beam color control for pink and yellow buttons
+  const handleBeamToggle = React.useCallback((color) => {
+    if (color === 'pink') {
+      // Fade in pink beam
+      setBeamColor('pink');
+      setBeamEnabled(true);
+    } else if (color === 'yellow') {
+      // Fade in yellow beam
+      setBeamColor('yellow');
+      setBeamEnabled(true);
+    } else if (beamColor === 'pink' || beamColor === 'yellow') {
+      // Only fade out if currently showing pink or yellow beam
+      setBeamEnabled(false);
+      // Reset to blue after fade out
+      setTimeout(() => setBeamColor('blue'), 300);
+    }
+  }, [beamColor]);
+
   // Spacebar and Pause key toggle for music play/pause
   React.useEffect(() => {
     const handleKeyDown = (e) => {
-      // Trigger on spacebar (not in input fields) or pause key (anywhere)
-      const isSpacebar = e.code === 'Space' && !['INPUT', 'TEXTAREA'].includes(e.target?.tagName);
-      const isPauseKey = e.code === 'Pause';
+      // Trigger on spacebar (not in input fields) or pause/media keys (anywhere)
+      const tag = (e.target?.tagName || '').toUpperCase();
+      const inTextField = tag === 'INPUT' || tag === 'TEXTAREA' || (e.target?.isContentEditable === true);
+      const isSpacebar = !inTextField && (e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar');
+      const isPauseKey = e.code === 'Pause' || e.code === 'MediaPlayPause' || e.key === 'MediaPlayPause';
       
       if (isSpacebar || isPauseKey) {
-        e.preventDefault(); // Prevent default behavior
+        e.preventDefault(); // Prevent default behavior (scroll/click on focused buttons)
         setToggleSignal((n) => n + 1); // Trigger music toggle
         try { sfx.play('click', 0.6); } catch {} // Optional click sound feedback
       }
@@ -296,7 +316,7 @@ export default function DashboardApp() {
   const lightBeamStyle = useMemo(() => ({
     left: '50%',
     bottom: '40vh', // Lower the base position
-    top: 'calc(3vh + 340px)', // Position to push against blue display (10px shorter)
+    top: 'calc(3vh + min(90%, 600px) + 10px)', // Position to push against blue display (10px gap)
     width: '700px', // Wider than blue display to create proper beam shape
     transform: 'translateX(-50%)',
     opacity: beamEnabled ? (cardModalOpen ? 0.3 : 1) : 0,
@@ -423,7 +443,7 @@ export default function DashboardApp() {
         playing={isPlaying}
         showUI={showOverlayUI}
         onJoinToggle={setJoinAlienOpen}
-        onBeamColorChange={setBeamColor}
+        onBeamColorChange={handleBeamToggle}
         onPowerToggle={() => { 
           // Manual power toggle should not start new welcome audio, but don't interrupt if it's already playing
           if (!welcomeOnStartRef.current) {
@@ -465,15 +485,15 @@ export default function DashboardApp() {
       {/* Removed Join the Aliens dashboard panel per request */}
       </div> {/* Close blur wrapper */}
 
-      {/* Fixed positioning for blue display - no viewport scaling */}
+      {/* Fixed positioning for blue display - positioned directly above light beam */}
       <div 
         className="slot-container fixed z-30"
         style={{
-          top: '3vh',
+          bottom: `calc(100vh - (3vh + min(90%, 600px)))`, // Position bottom of display at top of light beam
           left: '50%',
           transform: 'translateX(-50%)', // Centered again
-          width: '90%', // Responsive width
-          height: '350px', // Fixed pixel height - no shrinking
+          width: 'min(90%, 600px)', // Responsive width with 600px max
+          height: 'min(90%, 600px)', // Dynamic height with 600px max
         }}
       >
         <div className="relative h-full w-full p-0" style={{ overflow: 'visible' }} suppressHydrationWarning>
