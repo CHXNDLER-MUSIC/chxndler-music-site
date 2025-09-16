@@ -972,8 +972,14 @@ export default function HUDPanel({
       `}</style>
       {showCard ? (
         <div
-          className="fixed inset-0 z-[120] flex items-center justify-center backdrop-blur-sm"
-          style={{ padding: '6vh 5vw', background: 'transparent' }}
+          className="fixed inset-0 z-[120] flex items-end justify-center backdrop-blur-sm"
+          style={{ 
+            paddingBottom: 'calc(31% + 8vh)', // Position bottom of card above blue button (31% + buffer)
+            paddingLeft: '5vw', 
+            paddingRight: '5vw', 
+            paddingTop: '6vh',
+            background: 'transparent' 
+          }}
           onClick={() => {
             try { sfx.play('/audio/close.mp3', 0.7); } catch {}
             try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}

@@ -290,17 +290,12 @@ export default function SteeringWheelOverlay({
                       if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
                     } catch {}
                     
-                    // Direct power toggle for immediate response
-                    if (showUI && activeBeamColor === 'blue') {
-                      // If blue display is currently open, close it
-                      onPowerToggle?.();
-                      setActiveBeamColor('blue'); 
-                    } else {
-                      // Turn on blue display immediately
-                      setActiveBeamColor('blue');
-                      onBeamColorChange?.('blue');
-                      onPowerToggle?.();
-                    }
+                    // Always ensure beam turns blue when blue button is clicked
+                    setActiveBeamColor('blue');
+                    onBeamColorChange?.('blue');
+                    
+                    // Toggle the blue display
+                    onPowerToggle?.();
                   }}
                   aria-label="Power"
                   title="Power"
@@ -363,9 +358,14 @@ export default function SteeringWheelOverlay({
                       if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
                     } catch {}
                     
-                    console.log('Comms menu opening, using display management');
-                    // Use display management for proper sequencing
-                    switchToDisplay('yellow');
+                    console.log('Comms menu opening, direct yellow control');
+                    // Close other displays first (especially blue display)
+                    if (showUI) {
+                      onPowerToggle?.(); // This will close the blue display
+                    }
+                    // Set yellow beam
+                    setActiveBeamColor('yellow');
+                    onBeamColorChange?.('yellow');
                   } else {
                     // Menu is closing, fade out beam if it's yellow
                     if (activeBeamColor === 'yellow') {
@@ -418,8 +418,8 @@ export default function SteeringWheelOverlay({
             ref={joinFormRef}
             style={{
               position: "absolute",
-              // Position above blue button area, aligned with yellow display
-              bottom: `calc(31% + 16vh)`,
+              // Position directly above blue button
+              bottom: `calc(31% + 5vh)`, // Reduced gap to position directly above blue button
               // Center horizontally on screen
               left: '50%',
               transform: 'translateX(-50%)', // Center the 244px wide panel

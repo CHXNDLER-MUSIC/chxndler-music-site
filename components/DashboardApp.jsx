@@ -212,8 +212,10 @@ export default function DashboardApp() {
       setAudioReady(false);
       setSkyReady(false);
       // Trigger lightspeed overlay + warp SFX and switch sky.
+      const newSky = skyFor(tracks[idx].slug);
+      if (DEBUG_MEDIA) dlog('onSongChange: setting nextSky to', newSky);
       setAllowWarp(true);
-      setNextSky(skyFor(tracks[idx].slug));
+      setNextSky(newSky);
       setFlySignal((n) => n + 1);
       // Extra safety: schedule a fallback play signal in case base video 'playing' isn't fired (same-sky key or race)
       try {
@@ -270,94 +272,68 @@ export default function DashboardApp() {
     };
   }, []);
 
-  // Handle beam color control with mutual exclusion between displays
+  // Handle beam color control with strict mutual exclusion between displays
   const handleBeamToggle = React.useCallback((color) => {
     if (beamTransitioning) return; // Prevent rapid changes during transitions
+    
+    // Always close ALL displays first, then open the target display
+    const closeAllDisplays = () => {
+      setShowHUD(false);
+      setJoinAlienOpen(false);
+      setBeamEnabled(false);
+    };
+    
     if (color === 'pink') {
       if (beamColor === 'pink' && joinAlienOpen) {
         // Already showing pink - toggle off
-        setJoinAlienOpen(false);
-        setBeamEnabled(false);
-        setTimeout(() => setBeamColor('blue'), 300);
-      } else {
-        // Switch to pink - close other displays first
         setBeamTransitioning(true);
-        const hasActiveDisplay = showHUD || joinAlienOpen;
-        if (hasActiveDisplay) {
-          // Fade out current display first
-          setShowHUD(false);
-          setJoinAlienOpen(false);
-          // Wait for fade out, then switch beam and show pink display
-          setTimeout(() => {
-            setBeamColor('pink');
-            setBeamEnabled(true);
-            setTimeout(() => {
-              setJoinAlienOpen(true);
-              setBeamTransitioning(false);
-            }, 100);
-          }, 200);
-        } else {
-          // No display active - directly show pink
+        closeAllDisplays();
+        setTimeout(() => {
+          setBeamColor('blue');
+          setBeamTransitioning(false);
+        }, 150);
+      } else {
+        // Switch to pink - close everything first
+        setBeamTransitioning(true);
+        closeAllDisplays();
+        setTimeout(() => {
           setBeamColor('pink');
           setBeamEnabled(true);
           setJoinAlienOpen(true);
-          setTimeout(() => setBeamTransitioning(false), 100);
-        }
+          setBeamTransitioning(false);
+        }, 150);
       }
     } else if (color === 'yellow') {
       if (beamColor === 'yellow') {
-        // Already showing yellow - keep beam but close menu (yellow menu closes itself)
-        // Beam stays yellow and enabled
+        // Already showing yellow - keep beam active but menu will close itself
+        // Do nothing - let yellow menu handle its own toggle
       } else {
-        // Switch to yellow - close other displays first
-        const hasActiveDisplay = showHUD || joinAlienOpen;
-        if (hasActiveDisplay) {
-          // Fade out current display first
-          setShowHUD(false);
-          setJoinAlienOpen(false);
-          // Wait for fade out, then switch beam (yellow menu opens itself)
-          setTimeout(() => {
-            setBeamColor('yellow');
-            setBeamEnabled(true);
-          }, 200);
-        } else {
-          // No display active - directly show yellow
+        // Switch to yellow - close everything first
+        closeAllDisplays();
+        setTimeout(() => {
           setBeamColor('yellow');
           setBeamEnabled(true);
-        }
+          // Yellow menu will open itself
+        }, 150);
       }
     } else if (color === 'blue') {
       if (beamColor === 'blue' && showHUD) {
         // Already showing blue - toggle off
-        setShowHUD(false);
-        setBeamEnabled(false);
+        closeAllDisplays();
+        setTimeout(() => {
+          setBeamColor('blue'); // Keep blue as default
+        }, 100);
       } else {
-        // Switch to blue - close other displays first and always show HUD
-        const hasActiveDisplay = joinAlienOpen;
-        if (hasActiveDisplay) {
-          // Fade out current display first
-          setJoinAlienOpen(false);
-          // Wait for fade out, then switch beam and show blue display
-          setTimeout(() => {
-            setBeamColor('blue');
-            setBeamEnabled(true);
-            setShowHUD(true); // Always show HUD for blue
-          }, 200);
-        } else {
-          // No display active - directly show blue HUD
-          setJoinAlienOpen(false); // Ensure other displays are closed
+        // Switch to blue - close everything first
+        closeAllDisplays();
+        setTimeout(() => {
           setBeamColor('blue');
           setBeamEnabled(true);
-          setShowHUD(true); // Always show HUD for blue
-        }
+          setShowHUD(true);
+        }, 150);
       }
-    } else if (beamColor === 'pink' || beamColor === 'yellow') {
-      // Close current non-blue display
-      setJoinAlienOpen(false);
-      setBeamEnabled(false);
-      setTimeout(() => setBeamColor('blue'), 300);
     }
-  }, [beamColor, showHUD, joinAlienOpen]);
+  }, [beamColor, showHUD, joinAlienOpen, beamTransitioning]);
 
   // Spacebar and Pause key toggle for music play/pause
   React.useEffect(() => {
@@ -378,6 +354,14 @@ export default function DashboardApp() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Compute effective playing state: true if main track OR space music is playing
+  const effectivelyPlaying = useMemo(() => {
+    // Main track is playing
+    if (isPlaying) return true;
+    // Space music is playing when not suspended and not main track playing
+    return !ambientSuspended && !warpActive && !isPlaying;
+  }, [isPlaying, ambientSuspended, warpActive]);
 
   // Helper function to get beam gradient based on active beam color
   const getBeamGradient = useMemo(() => {
@@ -461,7 +445,7 @@ export default function DashboardApp() {
         style={blurWrapperStyle}
       >
         <PrewarmThree />
-        <AmbientSpace ambientSrc="/audio/space-music.mp3" introSrc={homeMode && homeIntroEnabled && !welcomeHasPlayed ? "/audio/welcome-to-the-heartverse.mp3" : undefined} playingMusic={isPlaying} suspend={warpActive || ambientSuspended} />
+        <AmbientSpace ambientSrc="/audio/space-music.mp3" introSrc={homeMode && homeIntroEnabled ? "/audio/welcome-to-the-heartverse.mp3" : undefined} playingMusic={isPlaying} suspend={warpActive || ambientSuspended} />
       <SkyboxVideo
         brightness={0.95}
         srcWebm={sky.webm}
@@ -469,8 +453,8 @@ export default function DashboardApp() {
         videoKey={sky.key}
         flySignal={flySignal}
         allowWarp={allowWarp}
-        holdLightspeed={pendingTrackPlay}
-        readyToReveal={pendingTrackPlay ? (audioReady && skyReady) : true}
+        holdLightspeed={false}
+        readyToReveal={true}
         minDurationMs={3000}
         offsetY="-1vh"
         onFlyStart={() => {
@@ -483,11 +467,16 @@ export default function DashboardApp() {
           setIsPlaying(false);
         }}
         onFlyEnd={() => {
+          if (DEBUG_MEDIA) dlog('onFlyEnd: called with nextSky=', nextSky, 'pendingTrackPlay=', pendingTrackPlay);
           setWarpActive(false);
           setAllowWarp(false);
           if (nextSky) { 
-            if (DEBUG_MEDIA) dlog('onFlyEnd: switching to sky', nextSky.key); 
-            setSky(nextSky); setNextSky(null); 
+            if (DEBUG_MEDIA) dlog('onFlyEnd: switching from sky', sky.key, 'to', nextSky.key); 
+            setSky(nextSky); setNextSky(null);
+            // Reset skyReady since we're switching to a new sky
+            setSkyReady(false);
+          } else {
+            if (DEBUG_MEDIA) dlog('onFlyEnd: no nextSky to switch to, staying on', sky.key);
           }
           // If this warp was due to Start (not track selection), prepare to land on home
           if (!pendingTrackPlay) setPendingHomePower(true);
@@ -495,7 +484,7 @@ export default function DashboardApp() {
             // Warp overlay just finished for a song change: fade UI back in with join-alien.mp3
             try { sfx.play('join', 0.8); } catch {}
             
-            // Clear pending track play state first
+            // Clear pending track play state
             setPendingTrackPlay(false);
             
             // Fade in HUD and overlay UI together with audio
@@ -513,7 +502,7 @@ export default function DashboardApp() {
           }
         }}
         onBasePlaying={() => {
-          if (DEBUG_MEDIA) dlog('Sky base video playing');
+          if (DEBUG_MEDIA) dlog('Sky base video playing, pendingTrackPlay:', pendingTrackPlay, 'pendingHomePower:', pendingHomePower);
           setSkyReady(true);
           if (pendingHomePower) {
             // Start path: ensure main track audio stays stopped on landing
@@ -561,9 +550,6 @@ export default function DashboardApp() {
             }, 50); // Reduced from 200ms to 50ms for much faster response
           }
           if (pendingTrackPlay) {
-            // Set audioReady to ensure warp can end (fallback if MediaPlayer onAudioReady doesn't fire)
-            setAudioReady(true);
-            // Do not start audio here; wait for onFlyEnd so playback begins after warp SFX ends.
             // Clear any pending fallback timers; onFlyEnd will trigger play immediately.
             if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
           }
@@ -602,12 +588,12 @@ export default function DashboardApp() {
           // Hide dimming overlay when start is clicked
           setShowDimmingOverlay(false);
           
-          // Start: fade out dashboard colors (yellow, pink, blue) and light beams first
-          setShowHUD(false);
-          setShowOverlayUI(false);
-          setBeamEnabled(false);
+          // ALWAYS trigger warp sequence when start button is pressed
+          // Reset any track selection state to ensure we go to homepage
+          setUserSelected(false);
+          setHomeMode(false); // Will be set to true after warp completes
           
-          // Hard-stop any main track audio so Start never blips a song
+          // Stop any playing audio and clear track state
           try {
             const a = document.querySelector('audio[data-audio-player="1"]');
             if (a) {
@@ -620,14 +606,24 @@ export default function DashboardApp() {
           } catch {}
           setIsPlaying(false);
           
+          // Clear any selected planet for homepage
+          try { usePlayerStore.setState({ mainId: null }); } catch {}
+          
+          // Fade out all UI elements before warp
+          setShowHUD(false);
+          setShowOverlayUI(false);
+          setBeamEnabled(false);
+          
           // Set flag to indicate we should go to home mode after warp
           setPendingHomePower(true);
           
-          // Start warp sequence with warp.mp3 and lightspeed.mp4
+          // ALWAYS start warp sequence to take user to CHXNDLER homepage
           setAllowWarp(true);
-          setNextSky(SPACE_SKY);
+          setNextSky(SPACE_SKY); // Always go to space sky for homepage
           setFlySignal((n) => n + 1);
-          // UI will reappear when space.mp4 starts playing with join-alien.mp3 and space-music.mp3
+          
+          // Reset to homepage defaults
+          setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
         }}
       />
       {/* Removed Join the Aliens dashboard panel per request */}
@@ -753,7 +749,7 @@ export default function DashboardApp() {
       {mounted && showHUD && process.env.NEXT_PUBLIC_HOLOHUD === '1' ? (
         <HoloHUD
           track={curTrack}
-          playing={isPlaying}
+          playing={effectivelyPlaying}
           onToggle={() => setToggleSignal((n) => n + 1)}
         />
       ) : null}

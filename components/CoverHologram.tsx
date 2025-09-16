@@ -73,8 +73,8 @@ export default function CoverHologram({ src, title }: { src: string; title: stri
       
       {showCard ? (
         <div
-          className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-start justify-end"
-          style={{ padding: '2vh 5vw' }}
+          className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-end justify-end"
+          style={{ paddingRight: '5vw', paddingBottom: 'calc(31% + 8vh)', paddingLeft: '5vw', paddingTop: '2vh' }}
           onClick={() => {
             try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
             setShowCard(false);
