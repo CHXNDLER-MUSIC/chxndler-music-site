@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Default positioning: make all elements relative by default.
+   This helps ensure absolutely positioned children anchor to their
+   nearest parent without needing per-component `relative` classes. */
+@layer base {
+  *, *::before, *::after { position: relative; }
+}
+
 /* Local fonts (place files in /public/fonts) */
 /* Inter — optional local files; will fallback to system if missing */
 @font-face {
@@ -189,5 +196,4 @@ html, body {
     background-position: 0% 0%, 0% -160px;
   }
 }
-
 

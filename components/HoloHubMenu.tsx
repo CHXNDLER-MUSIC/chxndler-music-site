@@ -14,12 +14,11 @@ type HubItem = {
 
 export default function HoloHubMenu({
   items = [],
-  radius = 110,
+  radius: _radius = 110,
   hubColor = "#FC54AF",
   className,
   itemSize = 60,
   hubSize = 72,
-  angles,
   onToggle,
   isActive = false,
 }: {
@@ -30,7 +29,6 @@ export default function HoloHubMenu({
   itemSize?: number;
   hubSize?: number;
   // Optional explicit angle mapping per item id (degrees; -90 = 12 o'clock, 0 = 3 o'clock)
-  angles?: Record<string, number>;
   onToggle?: (isOpen: boolean) => void;
   isActive?: boolean;
 }) {
@@ -44,21 +42,7 @@ export default function HoloHubMenu({
   // Cap at 6 items, evenly spaced 60deg, start at -90deg (top)
   const entries = useMemo(() => items.slice(0, 6), [items]);
 
-  // Responsive radius: keep on-screen on narrow displays
-  const [effRadius, setEffRadius] = useState(radius);
-  useEffect(() => {
-    function recompute() {
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const dim = Math.min(vw, vh);
-      // Reserve ~140px for hub/button area; never below 60
-      const maxR = Math.max(60, Math.floor(dim / 2) - 140);
-      setEffRadius(Math.min(radius, maxR));
-    }
-    recompute();
-    window.addEventListener("resize", recompute);
-    return () => window.removeEventListener("resize", recompute);
-  }, [radius]);
+  // Responsive radius logic was unused; removed effRadius state
 
   // Outside click closes the menu
   useEffect(() => {
@@ -121,7 +105,7 @@ export default function HoloHubMenu({
   // For open state, arrange items in a single horizontal line within the yellow panel
   const positions = useMemo(() => {
     const n = entries.length || 1;
-    return entries.map((it, i) => {
+    return entries.map((_, i) => {
       if (!open) {
         return { x: 0, y: 0, angleDeg: 0 };
       }
@@ -212,8 +196,6 @@ export default function HoloHubMenu({
           const isFirst = i === 0;
           const isLast = i === entries.length - 1;
           const size = it.id === 'tt' ? itemSize * 0.75 : itemSize; // Make TikTok smaller
-          const half = Math.round(size / 2);
-          const iconPx = size;
           return (
             <button
               key={it.id}

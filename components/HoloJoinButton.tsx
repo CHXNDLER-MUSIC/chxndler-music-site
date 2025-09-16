@@ -1,5 +1,6 @@
 "use client";
 import React, { useRef } from "react";
+import { BEAM_TOP_RATIO, BEAM_WIDTH_RATIO, BEAM_HEIGHT_RATIO, BEAM_LEFT_OFFSET_RATIO } from "@/lib/joinBeam";
 import { sfx } from "@/lib/sfx";
 
 export default function HoloJoinButton({
@@ -21,7 +22,7 @@ export default function HoloJoinButton({
 }) {
   const sfxRef = useRef<HTMLAudioElement | null>(null);
 
-  function handleActivate(e: React.MouseEvent | React.KeyboardEvent) {
+  function handleActivate() {
     try { const a = sfxRef.current; if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); } } catch {}
     if (typeof onClick === "function") { try { onClick(); } catch {} }
     else if (href) {
@@ -38,7 +39,7 @@ export default function HoloJoinButton({
         aria-label={label}
         onClick={handleActivate as any}
         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleActivate(e); } }}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleActivate(); } }}
         style={{ width: size, height: size }}
       >
         <span className="hub-glyph" aria-hidden>
@@ -54,7 +55,7 @@ export default function HoloJoinButton({
       </button>
       <style jsx>{`
         .join-wrap{ position: relative; }
-        .beam{ position:absolute; left:-${Math.round(size*0.5)}px; top:${Math.round(size*0.26)}px; width:${Math.round(size*2)}px; height:${Math.round(size*0.5)}px; pointer-events:none; mix-blend-mode:screen;
+        .beam{ position:absolute; left:-${Math.round(size*BEAM_LEFT_OFFSET_RATIO)}px; top:${Math.round(size*BEAM_TOP_RATIO)}px; width:${Math.round(size*BEAM_WIDTH_RATIO)}px; height:${Math.round(size*BEAM_HEIGHT_RATIO)}px; pointer-events:none; mix-blend-mode:screen;
           clip-path: polygon(50% 100%, 90% 0, 10% 0);
           background: linear-gradient(180deg, ${hubColor}12, ${hubColor}22 30%, ${hubColor}08 70%, ${hubColor}00 100%);
           filter: blur(6px);

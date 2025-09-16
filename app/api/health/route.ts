@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   const startTime = performance.now()
   const healthData: any = {
     timestamp: new Date().toISOString(),
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
             setTimeout(() => reject(new Error('Timeout')), 3000)
           )
         ]) as any
-        const { data, error } = race || {}
+        const { error } = race || {}
         
         const supabaseLatency = Math.round(performance.now() - supabaseStartTime)
         healthData.performance.apiLatencies.supabase = supabaseLatency
@@ -260,7 +260,7 @@ export async function GET(request: NextRequest) {
 }
 
 // Also support HEAD requests for lightweight health checks
-export async function HEAD(request: NextRequest) {
+export async function HEAD() {
   try {
     const startTime = performance.now()
     

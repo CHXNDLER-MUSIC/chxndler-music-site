@@ -74,14 +74,9 @@ export default function HoloHUD({
         type="button"
         className={`play-btn ${playing ? "on" : ""}`}
         onClick={() => {
+          // Delegate playback control to the main controller
+          // This ensures music only starts after the sky MP4 is playing
           try { onToggle(); } catch {}
-          try {
-            const a = document.querySelector<HTMLAudioElement>('audio[data-audio-player="1"]');
-            if (a) {
-              try { a.muted = false; if (a.volume === 0) a.volume = 1.0; } catch {}
-              if (playing) a.pause(); else void a.play();
-            }
-          } catch {}
         }}
         aria-label={playing ? "Pause" : "Play"}
       >

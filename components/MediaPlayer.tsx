@@ -38,7 +38,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const audioRef = useRef<HTMLAudioElement|null>(null);
   const uiClickRef = useRef<HTMLAudioElement|null>(null);
   const detentRef = useRef<HTMLAudioElement|null>(null);
-  const dialRef = useRef<HTMLDivElement|null>(null);
   const warpTimerRef = useRef<number|undefined>(undefined);
   const warpPlayTimerRef = useRef<number|undefined>(undefined);
   const [showWarp, setShowWarp] = useState(false);
@@ -79,8 +78,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const currentElement = getTrackElement(cur);
   const currentElementColor = ELEMENT_COLORS[currentElement];
 
-  const STEP = useMemo(() => 360 / Math.max(tracks.length, 1), [tracks.length]);
-  const [angle, setAngle] = useState(idx * STEP);
 
   // Notify parent only when `playing` changes; avoid depending on inline callbacks
   const onPlayingChangeRef = useRef(onPlayingChange);
@@ -120,7 +117,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     const s = skyFor(cur.slug);
     if (onSkyChange) onSkyChange(s.webm, s.mp4, s.key);
     if (onTrackChange) onTrackChange(cur);
-    setAngle(normalize(idx * STEP));
     gaTrack("track_change", { title: cur.title, slug: cur.slug, idx });
     detent(); // detent SFX
     // Trigger warp flash overlay briefly when locking into a station
@@ -383,10 +379,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   }, [playing]);
 
   // Dial interactions moved to StationDialOverlay; keep keyboard + prev/next here
-  function onWheel(_e: React.WheelEvent) {}
-  function onPointerDown(_e: React.PointerEvent) {}
-  function onPointerMove(_e: React.PointerEvent) {}
-  function onPointerUp(_e: React.PointerEvent) {}
 
   // mobile swipe
   const touchStart = useRef<{x:number;y:number}|null>(null);
@@ -400,23 +392,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     if (dx < 0) next(); else prev();
   }
 
-  // ALBUM ART PLACEHOLDER (auto, no file needed)
-  const placeholder = useMemo(() => {
-    const title = encodeURIComponent(cur.title);
-    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='512' height='512'>
-      <defs>
-        <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
-          <stop stop-color='#0b0f1a' offset='0'/>
-          <stop stop-color='#1a2240' offset='1'/>
-        </linearGradient>
-      </defs>
-      <rect width='100%' height='100%' fill='url(#g)'/>
-      <circle cx='50%' cy='50%' r='180' fill='none' stroke='rgba(255,255,255,.25)' stroke-width='6'/>
-      <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'
-            fill='white' font-size='28' font-family='OrbitronLocal, Orbitron, sans-serif'>${title}</text>
-    </svg>`;
-    return `data:image/svg+xml;utf8,${svg}`;
-  }, [cur.title]);
+  
 
   return (
     <div className="hud-card console-hud h-full w-full" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} aria-label="Media dock">
@@ -958,13 +934,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
 }
 
 /* utils */
-function normalize(a: number) { a = a % 360; if (a < 0) a += 360; return a; }
-function degreesFromCenter(x:number, y:number, cx:number, cy:number) {
-  const rad = Math.atan2(y - cy, x - cx);
-  const degFromRightCCW = (rad * 180) / Math.PI;
-  const degFromUpCW = (450 - degFromRightCCW) % 360;
-  return normalize(degFromUpCW);
-}
+ 
 
 function getTrackElement(track: Track): Element {
   const slug = track.slug || "";

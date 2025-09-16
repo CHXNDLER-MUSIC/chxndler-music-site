@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Group, Mesh, AdditiveBlending, Color, DataTexture, RGBAFormat, UnsignedByteType, RepeatWrapping, Vector2, Vector3, Texture, TextureLoader, MathUtils, CanvasTexture } from "three";
+import { Group, Mesh, AdditiveBlending, Color, DataTexture, RGBAFormat, UnsignedByteType, RepeatWrapping, Vector2, Vector3, Texture, TextureLoader, MathUtils } from "three";
 import { useFrame } from "@react-three/fiber";
 import HoloMaterial from "@/components/HoloMaterial";
-import { usePlayerStore } from "@/store/usePlayerStore";
 import type { Song } from "@/data/songs";
 import { usePlanetLayout } from "@/lib/planetLayout";
 import { registerPlanet, unregisterPlanet } from "@/lib/planetRegistry";
@@ -43,8 +42,6 @@ export default function Planet({
   const worldPosRef = useRef(new Vector3());
   const [depthFactor, setDepthFactor] = useState(1.0);
 
-  const { mainId, hoverId } = usePlayerStore((s) => ({ mainId: s.mainId, hoverId: s.hoverId }));
-  
   // Deterministic jitter so orbiting planets don't overlap perfectly
   const idHash = useMemo(() => {
     let h = 0;
@@ -679,16 +676,15 @@ export default function Planet({
           // Create more diverse and realistic planet shapes based on type and characteristics
           const safeIdHash = isFinite(idHash) ? Math.abs(idHash) : 12345;
           const shapeVariant = safeIdHash % 4;
-          const safeSizeVar = isFinite(sizeVar) ? sizeVar : 0.5;
-          const rotationalFlattening = safeSizeVar * 0.15; // Realistic flattening due to rotation
+          // Realistic flattening due to rotation (computed if needed)
           
           if (planetType === 'gas-giant') {
             // Gas giants are oblate due to rapid rotation
-            const oblateness = 0.85 + safeSizeVar * 0.12; // Jupiter-like flattening
+            // Jupiter-like flattening
             return <sphereGeometry args={[1, 64, 64]} />;
           } else if (planetType === 'neptune') {
             // Ice giants, slightly less oblate than gas giants
-            const oblateness = 0.90 + safeSizeVar * 0.08;
+            // Slight oblateness
             return <sphereGeometry args={[1, 72, 72]} />;
           } else if (planetType === 'dwarf') {
             // Dwarf planets have more irregular shapes

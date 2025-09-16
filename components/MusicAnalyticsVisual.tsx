@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getClickAnalyticsLocal, type ClickData } from "../lib/analytics";
+import { getClickAnalyticsLocal } from "../lib/analytics";
 
 interface MusicStats {
   // Button Categories
@@ -251,7 +251,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                       Social Media
                     </h3>
                     <div className="space-y-3">
-                      {stats.socialButtons.map((button, index) => (
+                      {stats.socialButtons.map((button) => (
                         <div key={button.button} className="flex justify-between items-center">
                           <span className="text-white font-medium">{button.button}</span>
                           <span className="text-pink-400 font-bold">{button.count} clicks</span>
@@ -269,7 +269,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                       Control Buttons
                     </h3>
                     <div className="space-y-3">
-                      {stats.controlButtons.map((button, index) => (
+                      {stats.controlButtons.map((button) => (
                         <div key={button.button} className="flex justify-between items-center">
                           <span className="text-white font-medium">{button.button}</span>
                           <span className="text-cyan-400 font-bold">{button.count} clicks</span>
@@ -287,7 +287,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                       Music Platforms
                     </h3>
                     <div className="space-y-3">
-                      {stats.musicButtons.map((button, index) => (
+                      {stats.musicButtons.map((button) => (
                         <div key={button.button} className="flex justify-between items-center">
                           <span className="text-white font-medium">{button.button}</span>
                           <span className="text-green-400 font-bold">{button.count} clicks</span>

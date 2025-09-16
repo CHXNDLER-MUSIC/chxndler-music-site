@@ -1157,7 +1157,8 @@ export default function HUDPanel({
       ) : null}
       <style jsx>{`
         .card-modal{
-          max-width: min(55vw, 280px);
+          /* Slightly reduce modal card size after pop-out */
+          max-width: min(55vw, 260px);
           background: rgba(25,227,255,0.25);
           box-shadow: 0 0 60px rgba(25,227,255,0.25), inset 0 0 0 1px rgba(25,227,255,0.20);
         }

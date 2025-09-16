@@ -52,10 +52,9 @@ const formatUptime = (seconds: number) => {
 interface HealthStatusWidgetProps {
   isOpen: boolean;
   onToggle: () => void;
-  compact?: boolean;
 }
 
-export default function HealthStatusWidget({ isOpen, onToggle, compact = false }: HealthStatusWidgetProps) {
+export default function HealthStatusWidget({ isOpen, onToggle }: HealthStatusWidgetProps) {
   const [healthData, setHealthData] = useState<HealthData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

@@ -53,7 +53,7 @@ function pickPlanetType(element: Element, slug: string): PlanetType {
   }
 }
 
-function generateWeatherSystem(type: PlanetType, element: Element): WeatherSystem | undefined {
+function generateWeatherSystem(type: PlanetType, _element: Element): WeatherSystem | undefined {
   switch (type) {
     case "gas_giant":
       return {
@@ -171,7 +171,7 @@ function generateWeatherSystem(type: PlanetType, element: Element): WeatherSyste
   }
 }
 
-function generatePlanetGeometry(type: PlanetType, element: Element, index: number): PlanetGeometry {
+function generatePlanetGeometry(type: PlanetType, element: Element, _index: number): PlanetGeometry {
   const baseSegments = 128; // High-definition base
   
   switch (type) {

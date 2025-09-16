@@ -662,7 +662,7 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
     // Cloud Layers
     const cloudLayers: THREE.Mesh[] = [];
     if (planetData.weather?.cloudLayers) {
-      planetData.weather.cloudLayers.forEach((cloudLayer, index) => {
+      planetData.weather.cloudLayers.forEach((cloudLayer) => {
         const cloudGeometry = new THREE.SphereGeometry(
           radius * cloudLayer.height,
           Math.max(32, geometry.segments.widthSegments / 2),
@@ -687,7 +687,7 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
     }[] = [];
     
     if (planetData.weather?.storms) {
-      planetData.weather.storms.forEach((storm, index) => {
+      planetData.weather.storms.forEach((storm) => {
         // Create storm geometry on planet surface
         const stormGeometry = new THREE.PlaneGeometry(
           radius * storm.size * 2,
@@ -1152,7 +1152,7 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
   }, []);
 
   // Sync planets to songs from the global store for closer match to previous visuals
-  const { songs, mainId, prevMainId, hoverId } = usePlayerStore((s) => ({ songs: s.songs, mainId: s.mainId, prevMainId: s.prevMainId, hoverId: s.hoverId }));
+  const { songs, mainId, hoverId } = usePlayerStore((s) => ({ songs: s.songs, mainId: s.mainId, hoverId: s.hoverId }));
   const hoverRef = useRef<string | null>(null);
   useEffect(() => { hoverRef.current = hoverId || null; }, [hoverId]);
   // Compute layout with much larger spacing
@@ -1252,7 +1252,7 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       focusTargetRy.current = null;
     }
     // Update main planet
-    const mainEntry = focusId ? songs.find(s => s.id === focusId) : null;
+    // const mainEntry = focusId ? songs.find(s => s.id === focusId) : null;
     const main = mainRef.current.mesh;
     if (main) main.visible = false; // no separate central planet; every song has its own
   // eslint-disable-next-line react-hooks/exhaustive-deps

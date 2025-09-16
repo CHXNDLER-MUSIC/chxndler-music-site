@@ -6,8 +6,7 @@ import { AdditiveBlending, Group as ThreeGroup } from "three";
 // drei removed to avoid external asset/preset loading that can abort in some runtimes
 import { usePlayerStore } from "@/store/usePlayerStore";
 import Planet from "@/components/holo/Planet";
-import { usePlanetLayout, computePlanetLayout } from "@/lib/planetLayout";
-import ReactDOM from "react-dom";
+import { computePlanetLayout } from "@/lib/planetLayout";
 import { getEntriesByRing } from "@/lib/planetRegistry";
 
 function InvalidateOnState() {
@@ -140,7 +139,7 @@ function SystemGroup({ children }: { children: React.ReactNode }) {
 function ProjectionSweep() {
   // A tall, faint vertical stripe that sweeps left-to-right in front of the system
   const matRef = React.useRef<any>(null);
-  useFrame((state, dt) => {
+  useFrame((_, dt) => {
     if (!matRef.current) return;
     matRef.current.uniforms.uTime.value += dt;
   });
@@ -202,7 +201,7 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
     }
   }, [focusId, isShowAll, invalidate, camera]);
 
-  useFrame((state, dt) => {
+  useFrame((_, dt) => {
     if (!anim.current.active) return;
     // progress 0..1 with ease in/out
     const t = Math.min(1, anim.current.t / anim.current.d);

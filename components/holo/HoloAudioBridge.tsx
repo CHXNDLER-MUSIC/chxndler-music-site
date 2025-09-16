@@ -4,7 +4,7 @@ import { tracks } from "@/config/tracks";
 import { usePlayerStore } from "@/store/usePlayerStore";
 
 export default function HoloAudioBridge() {
-  const { songs, mainId } = usePlayerStore((s) => ({ songs: s.songs, mainId: s.mainId }));
+  const { mainId } = usePlayerStore((s) => ({ mainId: s.mainId }));
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [idx, setIdx] = useState(0);
   const order = useMemo(() => tracks, []);
@@ -48,4 +48,3 @@ export default function HoloAudioBridge() {
     <audio ref={audioRef} data-audio-player="1" preload="auto" />
   );
 }
-

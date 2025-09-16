@@ -7,6 +7,7 @@ Next.js 14 app that presents a cockpit-style music experience: masked skybox vid
 - Install: `npm install`
 - Dev: `npm run dev` (http://localhost:3000)
 - Build: `npm run build` / `npm start`
+- Lint (no px): `npm run lint:no-px`
 
 ## Environment (optional)
 - `NEXT_PUBLIC_GA_ID` — GA4 Measurement ID (e.g., `G-XXXXXXX`)
@@ -22,6 +23,9 @@ Next.js 14 app that presents a cockpit-style music experience: masked skybox vid
 - `config/` — central configuration for links, tracks, positions, UI tokens
 - `lib/` — small utilities (analytics, slug, sky paths)
 - `public/` — static assets (`/tracks`, `/cover`, `/skies`, etc.)
+
+## Sizing and units
+This project prefers device‑independent sizing. Avoid hard‑coded `px` values in CSS, Tailwind arbitrary values, and inline styles. Use `rem`/`em`/`%`/`vw`/`vh` or Tailwind scale utilities instead. See `CODESTYLE.md` for details and run `npm run lint:no-px` to audit.
 
 ## Tracks & Assets
 - Tracks are defined in `config/tracks.ts`. Defaults map to existing files:

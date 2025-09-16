@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getClickAnalytics, getMusicAnalytics, clearClickAnalytics } from "../lib/analytics";
+// Removed unused analytics imports
 import MusicAnalyticsDashboard from "./MusicAnalyticsDashboard";
 import ABTestingDashboard from "./ABTestingDashboard";
 import AnalyticsDashboard from "./AnalyticsDashboard";

@@ -17,7 +17,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === 'POST') {
     try {
-      const { event, data, timestamp, sessionId, userAgent, url, referrer } = req.body;
+      const { event, data, sessionId, userAgent, url, referrer } = req.body;
 
       // Determine which table to use based on event type
       let result;

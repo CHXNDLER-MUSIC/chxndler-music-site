@@ -13,6 +13,7 @@
     "set:openai": "bash scripts/set-openai-key.sh",
     "purge:secret": "bash scripts/purge-secret.sh",
     "scan:secrets": "bash scripts/secret-scan.sh",
+    "lint:no-px": "node scripts/lint-no-px.mjs",
     "hooks:enable": "git config core.hooksPath .githooks && chmod +x .githooks/pre-commit scripts/secret-scan.sh"
   },
   "dependencies": {

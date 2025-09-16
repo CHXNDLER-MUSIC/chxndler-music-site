@@ -29,7 +29,6 @@ export function Slot({
   const lastW = React.useRef<number>(vw);
 
   React.useEffect(() => {
-    const vv = (typeof window !== 'undefined' && (window as any).visualViewport) ? (window as any).visualViewport : null;
     const onWindow = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;

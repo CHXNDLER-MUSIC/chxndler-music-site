@@ -1,5 +1,6 @@
 "use client";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { BEAM_TOP_RATIO, BEAM_WIDTH_RATIO, BEAM_HEIGHT_RATIO, BEAM_LEFT_OFFSET_RATIO } from "@/lib/joinBeam";
 import { sfx } from "@/lib/sfx";
 import JoinAliens from "@/components/JoinAliens";
 
@@ -22,7 +23,6 @@ export default function HoloJoinPopout({
   const rootRef = useRef<HTMLDivElement | null>(null);
   const hubRef = useRef<HTMLButtonElement | null>(null);
   // Removed auto-focus to avoid triggering browser autofill
-  const firstInputRef = useRef<HTMLInputElement | null>(null);
   const clickRef = useRef<HTMLAudioElement | null>(null);
 
   // Outside click closes
@@ -104,7 +104,7 @@ export default function HoloJoinPopout({
 
       <style jsx>{`
         .join-pop-wrap{ position:relative; pointer-events:auto; }
-        .beam{ position:absolute; left:-${Math.round(size*0.5)}px; top:${Math.round(size*0.26)}px; width:${Math.round(size*2)}px; height:${Math.round(size*0.5)}px; pointer-events:none; mix-blend-mode:screen;
+        .beam{ position:absolute; left:-${Math.round(size*BEAM_LEFT_OFFSET_RATIO)}px; top:${Math.round(size*BEAM_TOP_RATIO)}px; width:${Math.round(size*BEAM_WIDTH_RATIO)}px; height:${Math.round(size*BEAM_HEIGHT_RATIO)}px; pointer-events:none; mix-blend-mode:screen;
           clip-path: polygon(50% 100%, 90% 0, 10% 0);
           background: linear-gradient(180deg, ${hubColor}12, ${hubColor}22 30%, ${hubColor}08 70%, ${hubColor}00 100%);
           filter: blur(6px);
@@ -139,7 +139,8 @@ export default function HoloJoinPopout({
 
         .panel{ position:absolute; pointer-events:${open ? 'auto' : 'none'}; opacity:0; transition: opacity 200ms ease, transform 220ms cubic-bezier(0.2,0.8,0.2,1); }
         .panel.left{ right: calc(100% + 10px); top: 50%; transform-origin: right center; transform: translate(-24px, 12px) scale(0.98); }
-        .panel.above{ bottom: calc(100% + 10px); left: 50%; transform-origin: center bottom; transform: translate(-50%, 6px) scale(0.98); }
+        /* Align the panel bottom directly to the beam top when above */
+        .panel.above{ bottom: ${Math.round(size - size*BEAM_TOP_RATIO)}px; left: 50%; transform-origin: center bottom; transform: translate(-50%, 6px) scale(0.98); }
         .panel.open.left{ opacity:1; transform: translate(-24px, 6px) scale(1); }
         .panel.open.above{ opacity:1; transform: translate(-50%, 0) scale(1); }
         .panel-inner{ border-radius: 16px; padding: 12px; color:#fff; background:

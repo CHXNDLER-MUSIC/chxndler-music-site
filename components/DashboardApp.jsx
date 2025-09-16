@@ -217,11 +217,15 @@ export default function DashboardApp() {
       setAllowWarp(true);
       setNextSky(newSky);
       setFlySignal((n) => n + 1);
-      // Extra safety: schedule a fallback play signal in case base video 'playing' isn't fired (same-sky key or race)
+      // Extra safety: light fallback — only triggers if sky is already playing after ~1.85s
+      // This preserves the guarantee that music won't start until the MP4 sky is playing.
       try {
         if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
         trackPlayTimerRef.current = window.setTimeout(() => {
-          setPlaySignal((n) => n + 1);
+          if (skyReady && !warpActive) {
+            setPlaySignal((n) => n + 1);
+            setPendingTrackPlay(false);
+          }
           trackPlayTimerRef.current = undefined;
         }, 1850);
       } catch {}
@@ -416,25 +420,31 @@ export default function DashboardApp() {
   }), [cardModalOpen]);
 
   const lightBeamStyle = useMemo(() => {
-    // Compute height in pixels on client to avoid over-constrained top/bottom issues
-    const heightPx = (() => {
-      if (typeof window === 'undefined') return '84px'; // Increased default height
+    // Beam height scales with viewport but remains stable
+    const beamHeightPx = (() => {
+      if (typeof window === 'undefined') return 100; // SSR/default
       const vh = window.innerHeight || 800;
-      const hudBottomFromTop = 0.03 * vh + Math.min(0.9 * vh, 600) + 10; // 3vh + min(90%, 600px) + 10px
-      const bottom = 0.35 * vh; // 35vh
-      const h = Math.max(80, Math.round(vh - hudBottomFromTop - bottom + 60)); // Reduced height for shorter beam
-      return `${h}px`;
+      // 8% of vh, clamped between 80px and 140px
+      return Math.max(80, Math.min(140, Math.round(vh * 0.08)));
     })();
     return {
       left: '50%',
       bottom: '38vh', // Shifted down further from steering wheel area
-      height: heightPx,
+      height: `${beamHeightPx}px`,
       width: '400px', // Wider beam for better visual impact
       transform: 'translate3d(-50%,0,0)',
       opacity: (beamEnabled || showHUD) ? (cardModalOpen ? 0.3 : 1) : 0,
       transition: 'opacity 400ms ease-in-out'
     };
   }, [beamEnabled, showHUD, cardModalOpen]);
+
+  // Position blue display (HUD) so its bottom touches the top of the light beam
+  const hudBottom = useMemo(() => {
+    if (typeof window === 'undefined') return 'calc(38vh + 100px)';
+    const vh = window.innerHeight || 800;
+    const beamHeightPx = Math.max(80, Math.min(140, Math.round(vh * 0.08)));
+    return `calc(38vh + ${beamHeightPx}px)`;
+  }, []);
 
   if (!mounted) return null;
   const SHOW_CENTER_BEAM = true; // Enable center light beam
@@ -483,22 +493,25 @@ export default function DashboardApp() {
           else {
             // Warp overlay just finished for a song change: fade UI back in with join-alien.mp3
             try { sfx.play('join', 0.8); } catch {}
-            
-            // Clear pending track play state
-            setPendingTrackPlay(false);
-            
+
             // Fade in HUD and overlay UI together with audio
             setShowHUD(true);
             setBeamEnabled(true);
             setBeamOnly(false);
             setShowOverlayUI(true);
-            
-            // Start playback immediately - the track index should already be set from onSongChange
+
+            // Start playback only when the base sky MP4 is confirmed playing
+            // If the sky is already ready now, trigger immediately; otherwise, wait for onBasePlaying
             if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
             setTimeout(() => {
-              if (DEBUG_MEDIA) dlog('onFlyEnd: triggering playSignal after warp, channelIdx=', channelIdx);
-              setPlaySignal((n) => n + 1);
-            }, 100); // Reduced delay to ensure faster playback start
+              if (skyReady) {
+                if (DEBUG_MEDIA) dlog('onFlyEnd: skyReady true; triggering playSignal after warp, channelIdx=', channelIdx);
+                setPlaySignal((n) => n + 1);
+                setPendingTrackPlay(false);
+              } else if (DEBUG_MEDIA) {
+                dlog('onFlyEnd: sky not ready yet; waiting for onBasePlaying to trigger audio');
+              }
+            }, 120);
           }
         }}
         onBasePlaying={() => {
@@ -552,6 +565,13 @@ export default function DashboardApp() {
           if (pendingTrackPlay) {
             // Clear any pending fallback timers; onFlyEnd will trigger play immediately.
             if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
+          }
+          // For track changes: only trigger music when warp has ended and we are pending a track play
+          if (pendingTrackPlay && !warpActive) {
+            if (DEBUG_MEDIA) dlog('onBasePlaying: triggering playSignal after sky is ready and warp ended');
+            if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
+            setPlaySignal((n) => n + 1);
+            setPendingTrackPlay(false);
           }
         }}
       />
@@ -633,7 +653,7 @@ export default function DashboardApp() {
       <div 
         className="slot-container fixed z-30"
         style={{
-          bottom: `calc(100vh - (3vh + min(90%, 600px)))`, // Position bottom of display at top of light beam
+          bottom: hudBottom, // Bottom of blue display touches top of light beam
           left: '50%', // Centered on screen
           transform: 'translateX(-50%)', 
           width: 'min(90%, 600px)', // Responsive width with 600px max

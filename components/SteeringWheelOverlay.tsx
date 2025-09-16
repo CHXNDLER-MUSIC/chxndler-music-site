@@ -1,15 +1,13 @@
 "use client";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import HoloHubMenu from "@/components/HoloHubMenu";
 import LumaKeyVideo from "@/components/LumaKeyVideo";
-import HoloJoinPopout from "@/components/HoloJoinPopout";
 import HoloJoinButton from "@/components/HoloJoinButton";
+import { BEAM_TOP_RATIO } from "@/lib/joinBeam";
 import JoinAliens from "@/components/JoinAliens";
 import { LINKS } from "@/config/cockpit";
 
 export default function SteeringWheelOverlay({
-  logoSrc = "/logo/CHXNDLER_Logo.png",
   onLaunch,
   POS,
   playing,
@@ -18,7 +16,6 @@ export default function SteeringWheelOverlay({
   onJoinToggle,
   onBeamColorChange,
 }: {
-  logoSrc?: string;
   onLaunch: () => void;
   POS: any;
   playing?: boolean;
@@ -58,61 +55,7 @@ export default function SteeringWheelOverlay({
   }, [activeBeamColor]);
   const joinFormRef = useRef<HTMLDivElement|null>(null);
 
-  // Display management function for mutual exclusivity
-  const switchToDisplay = useCallback((targetDisplay: 'blue' | 'yellow' | 'pink') => {
-    if (isTransitioning) return; // Prevent rapid switching
-    
-    setIsTransitioning(true);
-    
-    // Check if target display is already open
-    const isTargetAlreadyOpen = 
-      (targetDisplay === 'blue' && showUI && activeBeamColor === 'blue') ||
-      (targetDisplay === 'pink' && showJoin && activeBeamColor === 'pink') ||
-      (targetDisplay === 'yellow' && activeBeamColor === 'yellow');
-    
-    if (isTargetAlreadyOpen) {
-      // If target is already open, just close it
-      if (targetDisplay === 'pink') {
-        setShowJoin(false);
-      } else if (targetDisplay === 'blue') {
-        onPowerToggle?.();
-      }
-      setActiveBeamColor('blue'); // Default back to blue
-      onBeamColorChange?.('blue');
-      setIsTransitioning(false);
-      return;
-    }
-    
-    // First close all other displays
-    const closeOtherDisplays = () => {
-      if (targetDisplay !== 'pink' && showJoin) {
-        setShowJoin(false);
-      }
-      if (targetDisplay !== 'blue' && showUI) {
-        onPowerToggle?.();
-      }
-      // Yellow display (HoloHubMenu) closes itself when onToggle(false) is called
-    };
-    
-    // Close other displays immediately
-    closeOtherDisplays();
-    
-    // Wait for close animations to complete, then open target display
-    setTimeout(() => {
-      setActiveBeamColor(targetDisplay);
-      onBeamColorChange?.(targetDisplay);
-      
-      if (targetDisplay === 'pink' && !showJoin) {
-        setShowJoin(true);
-      } else if (targetDisplay === 'blue' && !showUI) {
-        onPowerToggle?.();
-      }
-      // Yellow display opening is handled by HoloHubMenu component
-      
-      setIsTransitioning(false);
-    }, 150); // Wait for close animation (75ms opacity + buffer)
-    
-  }, [isTransitioning, showJoin, showUI, activeBeamColor, onPowerToggle, onBeamColorChange]);
+  // Display management handled inline by button handlers
 
   // Close join form when clicking outside (but not on the join alien button itself)
   useEffect(() => {
@@ -198,10 +141,32 @@ export default function SteeringWheelOverlay({
   const pp = ppConfig;
   // Get responsive wheel video configuration
   const vconf = getResponsiveValue(wheel.video) || { scale: 1.0, offsetVh: 0, offsetVw: 0, centerHoriz: true, debug: false };
-  // Wheel video size should not scale with the play button size.
-  // Use the wheel logo/base size only to avoid unintended inflation.
-  const basePx = lp.sizePx || 72;
-  const vs = Math.round(basePx * (vconf.scale || 4.0));
+  // Viewport-aware scaling for wheel video, start button, and hub buttons
+  const [vmin, setVmin] = useState<number>(() => {
+    if (typeof window === 'undefined') return 800;
+    return Math.min(window.innerWidth, window.innerHeight);
+  });
+  useEffect(() => {
+    const onResize = () => setVmin(Math.min(window.innerWidth, window.innerHeight));
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
+  // Scale targets tuned for typical desktop/tablet/phone ranges
+  const startSize = Math.round(clamp(vmin * 0.12, 56, 144)); // START button diameter
+  const vs = Math.round(clamp(vmin * 0.36, 260, 560));       // wheel.mp4 square size
+  const yellowHubSize = Math.round(clamp(vmin * 0.085, 56, 112));
+  const yellowItemSize = Math.round(clamp(vmin * 0.07, 44, 96));
+  // Unified responsive offsets so all three buttons (blue/yellow/pink)
+  // stay aligned and symmetric across screen sizes
+  const buttonOffsetPx = Math.round(clamp(vmin * 0.12, 72, 140));
+  const buttonsBottomPercent = (() => {
+    if (typeof window === 'undefined') return 31;
+    const w = window.innerWidth;
+    if (w <= 420) return 28; // slightly lower on small phones
+    if (w <= 768) return 29; // tablets/large phones
+    return 31;               // desktop
+  })();
 
   // START button variant flag (legacy "boost" fully removed)
   const isStart = Boolean(
@@ -264,7 +229,7 @@ export default function SteeringWheelOverlay({
       <div
         style={{
           position: "absolute",
-          bottom: '31%', // Moved down, above steering wheel
+          bottom: `${buttonsBottomPercent}%`, // Unified vertical baseline
           left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 92,
@@ -323,8 +288,8 @@ export default function SteeringWheelOverlay({
       <div
         style={{
           position: "absolute",
-          bottom: '31%', // Same vertical level as blue button
-          left: 'calc(50% - 10vh)', // Yellow button to the left for balance
+          bottom: `${buttonsBottomPercent}%`, // Same vertical level as blue button
+          left: `calc(50% - ${buttonOffsetPx}px)`, // Symmetric horizontal offset
           transform: 'translateX(-50%)',
           zIndex: 92,
           pointerEvents: showUI ? 'auto' : 'none',
@@ -333,7 +298,6 @@ export default function SteeringWheelOverlay({
         }}
       >
         {(() => {
-          const iconSize = 30;
           return (
             <div style={{ pointerEvents: 'auto' }}>
               <HoloHubMenu
@@ -344,11 +308,11 @@ export default function SteeringWheelOverlay({
                 LINKS.spotify ? { id: 'sp', label: 'Spotify', href: LINKS.spotify, icon: '/elements/spotify.png', color: '#1DB954' } : null,
                 LINKS.apple ? { id: 'am', label: 'Apple Music', href: LINKS.apple, icon: '/elements/apple.png', color: '#FA2D48' } : null,
               ].filter(Boolean) as any}
-                radius={60}
+                radius={Math.round(clamp(vmin * 0.09, 48, 120))}
                 hubColor={activeBeamColor === 'yellow' ? "#F2EF1D" : "#F2EF1D"}
                 isActive={activeBeamColor === 'yellow'}
-                itemSize={68}
-                hubSize={84}
+                itemSize={yellowItemSize}
+                hubSize={yellowHubSize}
                 angles={{ sp: -36, am: -18, ig: 0, tt: 18, yt: 36 }}
                 onToggle={(isOpen) => {
                   if (isOpen) {
@@ -384,8 +348,8 @@ export default function SteeringWheelOverlay({
       <div
         style={{
           position: "absolute",
-          bottom: '31%', // Same level as power button
-          left: 'calc(50% + 10vh)', // Positioned to the right of center
+          bottom: `${buttonsBottomPercent}%`, // Same level as power button
+          left: `calc(50% + ${buttonOffsetPx}px)`, // Symmetric horizontal offset
           transform: 'translateX(-50%)',
           zIndex: 92,
           pointerEvents: showUI ? 'auto' : 'none',
@@ -394,8 +358,7 @@ export default function SteeringWheelOverlay({
         }}
       >
         {(() => {
-          const joinCfg: any = getResponsiveValue((POS?.wheel as any)?.join) || {};
-          const joinSize: number = typeof joinCfg.sizePx === 'number' ? joinCfg.sizePx : 84;
+          const joinSize: number = Math.round(clamp(vmin * 0.085, 56, 112));
           return (
             <div style={{ pointerEvents: 'auto' }}>
               <HoloJoinButton 
@@ -411,18 +374,22 @@ export default function SteeringWheelOverlay({
         })()}
       </div>
 
-      {/* Separate Join Aliens Form - dynamically positioned to align with blue display */}
+      {/* Separate Join Aliens Form - align bottom directly above the pink beam */}
       {(() => {
+        // Compute vertical offset so the panel's bottom sits at the top of the join beam
+        const joinSize: number = Math.round(clamp(vmin * 0.085, 56, 112));
+        const beamTopFromTopPx = Math.round(joinSize * BEAM_TOP_RATIO); // matches HoloJoinButton beam top
+        const bottomOffsetPx = Math.round(joinSize - beamTopFromTopPx); // distance from hub bottom to beam top
         return (
           <div
             ref={joinFormRef}
             style={{
               position: "absolute",
-              // Position directly above blue button
-              bottom: `calc(31% + 5vh)`, // Reduced gap to position directly above blue button
-              // Center horizontally on screen
-              left: '50%',
-              transform: 'translateX(-50%)', // Center the 244px wide panel
+              // Bottom of panel sits directly above the pink beam under the Join hub
+              bottom: `calc(${buttonsBottomPercent}% + ${bottomOffsetPx}px)`,
+              // Center horizontally to the Join hub/button position
+              left: `calc(50% + ${buttonOffsetPx}px)`,
+              transform: 'translateX(-50%)',
               zIndex: 93,
               pointerEvents: showJoin ? 'auto' : 'none',
               opacity: showJoin ? 1 : 0,
@@ -471,10 +438,15 @@ export default function SteeringWheelOverlay({
         className={`pointer-events-auto wheel-play${isStart ? ' chx' : ''}`}
         style={{
           position: "absolute",
-          bottom: `calc(${100 - pp.topVh}vh - ${(pp.sizePx * 0.95)/2}px - 7vh)`, // Shifted down more
-          left: `calc(${pp.leftVw}vw - ${(pp.sizePx * 0.95)/2}px + 10px)`,
-          width: pp.sizePx * 0.95,
-          height: pp.sizePx * 0.95,
+          // Center the Start button over the wheel center, scaling with viewport
+          bottom: vconf.centerHoriz
+            ? `calc(-5vh + ${(vs/2 - (startSize * 0.95)/2)}px)`
+            : `calc(-5vh + ${(vs/2 - (startSize * 0.95)/2)}px)`,
+          left: vconf.centerHoriz
+            ? `calc(50vw - ${(startSize * 0.95)/2}px)`
+            : `calc(${(pp.leftVw + (vconf.offsetVw || 0))}vw - ${(startSize * 0.95)/2}px)`,
+          width: startSize * 0.95,
+          height: startSize * 0.95,
           borderRadius: 9999,
           transform: "none",
           zIndex: 90,
