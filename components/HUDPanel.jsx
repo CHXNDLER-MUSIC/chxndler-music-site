@@ -335,14 +335,14 @@ export default function HUDPanel({
       ref={inConsole ? containerRef : undefined}
     >
       <DevErrorLogger />
-      <div className="w-full h-full flex items-start justify-center">
+      <div className="w-full h-full flex items-end justify-center">
           <motion.div
             className={`relative rounded-2xl`}
             // Remove hover glow/scale for the entire HUD display per request
             transition={{ type: "spring", stiffness: 200, damping: 20 }}
             style={inConsole
-              ? { width: '100%', height: '100%', transform: 'perspective(1200px) rotateX(6deg)', transformOrigin: 'center', marginTop: 48 }
-              : { transform: 'perspective(1200px) rotateX(6deg)', marginTop: 48 }
+              ? { width: '100%', height: '100%', transform: 'perspective(1200px) rotateX(6deg)', transformOrigin: 'center', marginTop: 0 }
+              : { transform: 'perspective(1200px) rotateX(6deg)', marginTop: 0 }
             }
           >
           {/* Background removed: keep HUD box transparent */}
@@ -806,7 +806,17 @@ export default function HUDPanel({
             <SongDropdown
               items={resolvedSongs}
               initialActiveId={active || resolvedSongs[0]?.id}
-              onChange={(id)=>{ setActive(id); onSongChange?.(id); try { if (usePlayerStore?.getState) usePlayerStore.getState().setMain(id); } catch {} }}
+              onChange={(id) => {
+                setActive(id);
+                onSongChange?.(id);
+                try {
+                  if (usePlayerStore?.getState) {
+                    usePlayerStore.getState().setMain(id);
+                  }
+                } catch (error) {
+                  console.error('Failed to update player store:', error);
+                }
+              }}
             />
           </div>
         </div>

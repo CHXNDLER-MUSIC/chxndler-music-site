@@ -65,7 +65,10 @@ export default function SkyboxVideo({
       lsStartRef.current = Date.now();
       const v = lsRef.current;
       if (v) { v.currentTime = 0; void v.play().catch(()=>{}); }
-      try { sfx.play('warp', 0.7); } catch {}
+      // Delay warp SFX slightly to sync with lightspeed video
+      setTimeout(() => {
+        try { sfx.play('warp', 0.7); } catch {}
+      }, 100);
       flyEndCalledRef.current = false;
       if (onFlyStart) try { onFlyStart(); } catch {}
       if (!holdLightspeed) {
@@ -96,7 +99,10 @@ export default function SkyboxVideo({
       lsStartRef.current = Date.now();
       const v = lsRef.current;
       if (v) { v.currentTime = 0; void v.play().catch(()=>{}); }
-      try { sfx.play('warp', 0.7); } catch {}
+      // Delay warp SFX slightly to sync with lightspeed video
+      setTimeout(() => {
+        try { sfx.play('warp', 0.7); } catch {}
+      }, 100);
       if (!holdLightspeed) {
         if (lsTimerRef.current !== undefined) window.clearTimeout(lsTimerRef.current);
         lsTimerRef.current = window.setTimeout(() => {

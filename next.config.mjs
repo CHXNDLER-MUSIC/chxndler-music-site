@@ -1,3 +1,6 @@
+// Only apply aggressive caching in production to avoid stale code/assets in dev
+const isProd = process.env.NODE_ENV === 'production';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -5,6 +8,7 @@ const nextConfig = {
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },
   async headers() {
+    if (!isProd) return [];
     return [
       // Cache Next.js build artifacts aggressively
       {

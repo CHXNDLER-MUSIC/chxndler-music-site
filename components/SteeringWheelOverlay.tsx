@@ -3,7 +3,6 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import HoloHubMenu from "@/components/HoloHubMenu";
 import LumaKeyVideo from "@/components/LumaKeyVideo";
 import HoloJoinButton from "@/components/HoloJoinButton";
-import { BEAM_TOP_RATIO } from "@/lib/joinBeam";
 import JoinAliens from "@/components/JoinAliens";
 import { LINKS } from "@/config/cockpit";
 
@@ -24,13 +23,11 @@ export default function SteeringWheelOverlay({
   onJoinToggle?: (showJoin: boolean) => void;
   onBeamColorChange?: (color: 'blue' | 'yellow' | 'pink') => void;
 }) {
-  const sfxRef = useRef<HTMLAudioElement|null>(null);
   const pauseRef = useRef<HTMLAudioElement|null>(null);
   const hoverRef = useRef<HTMLAudioElement|null>(null);
   const buttonRef = useRef<HTMLAudioElement|null>(null);
   const [showJoin, setShowJoin] = useState(false);
   const [activeBeamColor, setActiveBeamColor] = useState<'blue' | 'yellow' | 'pink'>('blue');
-  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Notify parent when showJoin changes
   useEffect(() => {
@@ -98,7 +95,6 @@ export default function SteeringWheelOverlay({
   }
 
   const handleJoinAlienToggle = useCallback(() => {
-    console.log('handleJoinAlienToggle called, current showJoin:', showJoin);
     
     // Play button sound
     try {
@@ -153,10 +149,11 @@ export default function SteeringWheelOverlay({
   }, []);
   const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
   // Scale targets tuned for typical desktop/tablet/phone ranges
-  const startSize = Math.round(clamp(vmin * 0.12, 56, 144)); // START button diameter
-  const vs = Math.round(clamp(vmin * 0.36, 260, 560));       // wheel.mp4 square size
+  // Larger defaults to match the original wheel visual size
+  const startSize = Math.round(clamp(vmin * 0.14, 64, 180)); // START button diameter
+  const vs = Math.round(clamp(vmin * 0.75, 480, 980));       // wheel.mp4 square size
   const yellowHubSize = Math.round(clamp(vmin * 0.085, 56, 112));
-  const yellowItemSize = Math.round(clamp(vmin * 0.07, 44, 96));
+  const yellowItemSize = Math.round(clamp(vmin * 0.095, 58, 120));
   // Unified responsive offsets so all three buttons (blue/yellow/pink)
   // stay aligned and symmetric across screen sizes
   const buttonOffsetPx = Math.round(clamp(vmin * 0.12, 72, 140));
@@ -180,7 +177,13 @@ export default function SteeringWheelOverlay({
       className="absolute inset-0 pointer-events-none"
       aria-hidden
       suppressHydrationWarning
-      style={{ position: 'absolute', inset: 0, zIndex: 80, pointerEvents: 'none' }}
+      style={{
+        position: 'absolute', inset: 0, zIndex: 80, pointerEvents: 'none',
+        // Shared CSS vars so other components can align to the button baseline responsively
+        ['--buttons-bottom' as any]: `${buttonsBottomPercent}%`,
+        ['--button-offset-px' as any]: `${buttonOffsetPx}px`,
+        ['--panel-gap-px' as any]: `${Math.round(yellowHubSize * 0.7)}px`,
+      }}
     >
       {/* Wheel video projection aligned to cockpit wheel area */}
       <div
@@ -220,7 +223,8 @@ export default function SteeringWheelOverlay({
             height: vs,
             pointerEvents: 'none',
             background: 'transparent',
-            transform: 'scale(0.9)',
+            // Render at 1:1 scale to preserve intended size
+            transform: 'scale(1.0)',
             transformOrigin: 'bottom center',
           }}
         />
@@ -284,12 +288,12 @@ export default function SteeringWheelOverlay({
         })()}
       </div>
 
-      {/* Comms Button - yellow button positioned to the left, but HoloHubMenu stays centered */}
+      {/* Comms Button - yellow hub positioned slightly to the right of center */}
       <div
         style={{
           position: "absolute",
           bottom: `${buttonsBottomPercent}%`, // Same vertical level as blue button
-          left: `calc(50% - ${buttonOffsetPx}px)`, // Symmetric horizontal offset
+          left: `calc(50% - ${buttonOffsetPx}px)`, // Full offset to the left of center
           transform: 'translateX(-50%)',
           zIndex: 92,
           pointerEvents: showUI ? 'auto' : 'none',
@@ -314,6 +318,8 @@ export default function SteeringWheelOverlay({
                 itemSize={yellowItemSize}
                 hubSize={yellowHubSize}
                 angles={{ sp: -36, am: -18, ig: 0, tt: 18, yt: 36 }}
+                anchorBottomPercent={buttonsBottomPercent}
+                anchorOffsetPx={buttonOffsetPx}
                 onToggle={(isOpen) => {
                   if (isOpen) {
                     // Play button sound
@@ -321,8 +327,6 @@ export default function SteeringWheelOverlay({
                       const a = buttonRef.current;
                       if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
                     } catch {}
-                    
-                    console.log('Comms menu opening, direct yellow control');
                     // Close other displays first (especially blue display)
                     if (showUI) {
                       onPowerToggle?.(); // This will close the blue display
@@ -349,7 +353,7 @@ export default function SteeringWheelOverlay({
         style={{
           position: "absolute",
           bottom: `${buttonsBottomPercent}%`, // Same level as power button
-          left: `calc(50% + ${buttonOffsetPx}px)`, // Symmetric horizontal offset
+          left: `calc(50% + ${buttonOffsetPx}px)`, // Symmetric horizontal offset to the right
           transform: 'translateX(-50%)',
           zIndex: 92,
           pointerEvents: showUI ? 'auto' : 'none',
@@ -374,21 +378,19 @@ export default function SteeringWheelOverlay({
         })()}
       </div>
 
-      {/* Separate Join Aliens Form - align bottom directly above the pink beam */}
+      {/* Separate Join Aliens Form - bottom should be at exact same position as blue display */}
       {(() => {
-        // Compute vertical offset so the panel's bottom sits at the top of the join beam
-        const joinSize: number = Math.round(clamp(vmin * 0.085, 56, 112));
-        const beamTopFromTopPx = Math.round(joinSize * BEAM_TOP_RATIO); // matches HoloJoinButton beam top
-        const bottomOffsetPx = Math.round(joinSize - beamTopFromTopPx); // distance from hub bottom to beam top
+        // Position pink display to match blue display positioning - a little lower
+        const beamBottomCss = 'calc(var(--debug-beam-bottom) - 120px)';
         return (
           <div
             ref={joinFormRef}
             style={{
-              position: "absolute",
-              // Bottom of panel sits directly above the pink beam under the Join hub
-              bottom: `calc(${buttonsBottomPercent}% + ${bottomOffsetPx}px)`,
-              // Center horizontally to the Join hub/button position
-              left: `calc(50% + ${buttonOffsetPx}px)`,
+              position: "fixed",
+              // Bottom at exact same position as blue display
+              bottom: beamBottomCss,
+              // Center horizontally in the viewport (always centered)
+              left: '50%',
               transform: 'translateX(-50%)',
               zIndex: 93,
               pointerEvents: showJoin ? 'auto' : 'none',
@@ -399,8 +401,8 @@ export default function SteeringWheelOverlay({
             {/* Join form panel */}
             <div
               style={{
-                width: 'min(244px, calc(100vw - 32px))', // Responsive width with 16px margin on each side
-                maxWidth: '244px', // Maintain original size on larger screens
+                width: 'min(320px, calc(100vw - 32px))', // Responsive width with 16px margin on each side
+                maxWidth: '320px', // Slightly wider default for balance with yellow panel
                 minWidth: '200px', // Ensure minimum usable width
                 borderRadius: '16px',
                 padding: '12px',
@@ -432,23 +434,19 @@ export default function SteeringWheelOverlay({
 
 
 
-      {/* Start button anchored on the wheel */}
+      {/* Start button positioned directly on top of the wheel */}
       <button
         onClick={handleLaunch}
         className={`pointer-events-auto wheel-play${isStart ? ' chx' : ''}`}
         style={{
           position: "absolute",
-          // Center the Start button over the wheel center, scaling with viewport
-          bottom: vconf.centerHoriz
-            ? `calc(-5vh + ${(vs/2 - (startSize * 0.95)/2)}px)`
-            : `calc(-5vh + ${(vs/2 - (startSize * 0.95)/2)}px)`,
-          left: vconf.centerHoriz
-            ? `calc(50vw - ${(startSize * 0.95)/2}px)`
-            : `calc(${(pp.leftVw + (vconf.offsetVw || 0))}vw - ${(startSize * 0.95)/2}px)`,
+          // Position directly on top of the wheel surface
+          bottom: `calc(-5vh + ${vs * 0.3}px)`,
+          left: '50%',
           width: startSize * 0.95,
           height: startSize * 0.95,
           borderRadius: 9999,
-          transform: "none",
+          transform: `translate(-50%, 0)`,
           zIndex: 90,
         }}
         onMouseEnter={() => { try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
@@ -791,7 +789,6 @@ export default function SteeringWheelOverlay({
       `}</style>
 
 
-      <audio ref={sfxRef} src="/audio/launch.mp3" preload="auto" />
       <audio ref={pauseRef} src="/audio/pause.mp3" preload="auto" />
       <audio ref={hoverRef} preload="auto">
         <source src="/audio/hover.mp3" type="audio/mpeg" />

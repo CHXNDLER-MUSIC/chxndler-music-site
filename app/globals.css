@@ -44,12 +44,44 @@
 @font-face { font-family: 'OrbitronLocal'; src: url('/fonts/orbitron-400.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
 @font-face { font-family: 'OrbitronLocal'; src: url('/fonts/orbitron-600.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; }
 @font-face { font-family: 'OrbitronLocal'; src: url('/fonts/orbitron-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
-:root { --font-orbitron: OrbitronLocal; }
+:root {
+  --font-orbitron: OrbitronLocal;
+  /* Shared beam alignment variables */
+  --beam-bottom: 38vh;
+  --beam-height: clamp(80px, 8vh, 140px);
+  --beam-top: calc(38vh + clamp(80px, 8vh, 140px));
+  --beam-touch-nudge: 6px;
+  
+  /* Debug values - let's try simpler positioning */
+  --debug-beam-bottom: 310px;
+  --debug-beam-height: 100px;
+  --debug-beam-top: calc(310px + 100px);
+}
 html, body { 
   height: 100%; 
   background:#000; 
   color:#fff; 
   overflow-x: hidden; /* Prevent horizontal scrolling */
+  /* Prevent layout shift during load */
+  min-width: 100vw;
+  position: relative;
+}
+
+/* Smooth loading transitions to prevent layout shift */
+body {
+  transition: background-color 0.3s ease;
+}
+
+/* Ensure main container fills screen immediately */
+main {
+  min-height: 100vh;
+  min-width: 100vw;
+  background: #000;
+}
+
+/* Prevent flash of unstyled content */
+.cockpit-bg {
+  transition: opacity 0.3s ease;
 }
 * { -webkit-tap-highlight-color: transparent; }
 
@@ -186,6 +218,10 @@ html, body {
   }
 }
 
+/* Light beam element transitions */
+.light-beam { transition: opacity 300ms ease-out; will-change: opacity; }
+.light-beam * { transition: filter 300ms ease-out; }
+
 
 /* Pink beam animation keyframes - flows upward */
 @keyframes pinkBeamFlow {
@@ -196,4 +232,3 @@ html, body {
     background-position: 0% 0%, 0% -160px;
   }
 }
-

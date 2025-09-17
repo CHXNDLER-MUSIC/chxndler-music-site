@@ -297,23 +297,36 @@ export default function CockpitAmbientLights({ currentTrack, isPlaying, mounted 
     return baseValue + (average / 255) * 0.8;
   };
 
-  // Generate light positions around the cockpit
+  // Calculate blue button position and beam area to position lights above it
+  const getButtonBottomPercent = () => {
+    if (typeof window === 'undefined') return 31;
+    const w = window.innerWidth;
+    if (w <= 420) return 28; // small phones
+    if (w <= 768) return 29; // tablets/large phones  
+    return 31; // desktop
+  };
+  
+  const buttonBottomPercent = getButtonBottomPercent();
+  const buttonTopPercent = 100 - buttonBottomPercent; // Convert from bottom to top positioning
+  const beamTopPercent = Math.max(buttonTopPercent - 15, 5); // Position lights well above button beam
+  
+  // Generate light positions around the cockpit - positioned relative to blue button
   const lightPositions = [
-    // Left side lights
-    { x: '8%', y: '25%', frequency: [0, 0.2] as [number, number], colorIndex: 0 },
-    { x: '5%', y: '45%', frequency: [0.2, 0.4] as [number, number], colorIndex: 1 },
-    { x: '3%', y: '65%', frequency: [0.1, 0.3] as [number, number], colorIndex: 2 },
-    { x: '7%', y: '80%', frequency: [0.3, 0.5] as [number, number], colorIndex: 3 },
+    // Left side lights - positioned above blue button beam
+    { x: '8%', y: `${Math.max(beamTopPercent - 20, 3)}%`, frequency: [0, 0.2] as [number, number], colorIndex: 0 },
+    { x: '5%', y: `${Math.max(beamTopPercent - 10, 8)}%`, frequency: [0.2, 0.4] as [number, number], colorIndex: 1 },
+    { x: '3%', y: `${Math.max(beamTopPercent + 5, 18)}%`, frequency: [0.1, 0.3] as [number, number], colorIndex: 2 },
+    { x: '7%', y: `${Math.max(beamTopPercent + 20, 35)}%`, frequency: [0.3, 0.5] as [number, number], colorIndex: 3 },
     
-    // Right side lights
-    { x: '92%', y: '25%', frequency: [0.4, 0.6] as [number, number], colorIndex: 1 },
-    { x: '95%', y: '45%', frequency: [0.5, 0.7] as [number, number], colorIndex: 2 },
-    { x: '97%', y: '65%', frequency: [0.6, 0.8] as [number, number], colorIndex: 0 },
-    { x: '93%', y: '80%', frequency: [0.7, 1.0] as [number, number], colorIndex: 3 },
+    // Right side lights - positioned above blue button beam  
+    { x: '92%', y: `${Math.max(beamTopPercent - 20, 3)}%`, frequency: [0.4, 0.6] as [number, number], colorIndex: 1 },
+    { x: '95%', y: `${Math.max(beamTopPercent - 10, 8)}%`, frequency: [0.5, 0.7] as [number, number], colorIndex: 2 },
+    { x: '97%', y: `${Math.max(beamTopPercent + 5, 18)}%`, frequency: [0.6, 0.8] as [number, number], colorIndex: 0 },
+    { x: '93%', y: `${Math.max(beamTopPercent + 20, 35)}%`, frequency: [0.7, 1.0] as [number, number], colorIndex: 3 },
     
-    // Top accent lights
-    { x: '25%', y: '8%', frequency: [0.8, 1.0] as [number, number], colorIndex: 2 },
-    { x: '75%', y: '8%', frequency: [0.0, 0.2] as [number, number], colorIndex: 1 },
+    // Top accent lights - always at the very top
+    { x: '25%', y: '2%', frequency: [0.8, 1.0] as [number, number], colorIndex: 2 },
+    { x: '75%', y: '2%', frequency: [0.0, 0.2] as [number, number], colorIndex: 1 },
   ];
 
   if (!mounted) return null;

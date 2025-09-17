@@ -18,7 +18,7 @@ Next.js 14 app that presents a cockpit-style music experience: masked skybox vid
 - `app/` — App Router pages and layout. The home page composes:
   - `components/SkyboxVideo` — masked video background
   - `components/SocialDock` — social link rail (from `config/socials.ts`)
-  - `components/MediaDockFrame` — wraps a lightweight player HUD
+  - `components/MediaPlayer` — primary lightweight player HUD
 - `components/` — UI components (HUD, rails, buttons, etc.)
 - `config/` — central configuration for links, tracks, positions, UI tokens
 - `lib/` — small utilities (analytics, slug, sky paths)
@@ -34,7 +34,7 @@ This project prefers device‑independent sizing. Avoid hard‑coded `px` values
 - Background sky video on the landing page uses `/skies/ocean-girl.mp4` (with a `.webm` source if available).
 
 ## Notes / TODO
-- The classic, more feature-rich dial player (`components/MediaDock.jsx`) is available but not mounted on the home page. The lightweight HUD (`FastAudioBus`) is used by default.
-- If you add more skybox videos per track, wire `MediaDock` to the page and connect its `onSkyChange` to `SkyboxVideo` (already done in the current setup).
+- The app uses the lightweight `components/MediaPlayer` by default.
+- If you add more skybox videos per track, ensure the player updates `SkyboxVideo` when the active song changes.
 - SFX: The code currently reuses `/tracks/launch.MP3` for UI click/detent/launch to avoid 404s. To customize, place files in `public/ui/` as `click.mp3`, `detent.mp3`, `launch.mp3` and update references.
-- Some legacy components/configs exist (`CockpitHUD`, `DashboardRails`, `config/cockpit.js`) and can be removed or re-integrated based on the desired UX.
+- Some legacy configs exist and can be re-integrated based on the desired UX.

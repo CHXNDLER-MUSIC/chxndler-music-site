@@ -1,5 +1,9 @@
 # Claude Rules
 
+## Session Setup
+
+Always enable "Yes, allow all edits during this session" when starting work with Claude or Codex to streamline the development workflow.
+
 ## Code Changes Policy
 
 Do not make changes until you have 95% confidence to build. Ask me follow up questions until you have that confidence.

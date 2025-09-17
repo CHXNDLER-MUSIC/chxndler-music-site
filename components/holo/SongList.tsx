@@ -4,11 +4,16 @@ import React, { useEffect, useRef } from "react";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import { useCycleList } from "@/lib/useCycleList";
 
-export default function SongList() {
+export default function SongList({ onSongChange }: { onSongChange?: (id: string) => void }) {
   const { songs, mainId, hoverId, setHover, setMain } = usePlayerStore();
   const { activeId, setActiveId, handleKeyDown, next, prev } = useCycleList(songs, mainId || undefined, (id) => setMain(id));
 
-  useEffect(() => { if (mainId && mainId !== activeId) setActiveId(mainId); }, [mainId, activeId]);
+  useEffect(() => { 
+    if (mainId && mainId !== activeId) {
+      setActiveId(mainId); 
+    }
+  }, [mainId, activeId, setActiveId]);
+  
   // Avoid redundant hover updates to prevent churn in consumers that react to hover changes
   useEffect(() => {
     if (!activeId) return;
@@ -72,10 +77,17 @@ export default function SongList() {
             onMouseLeave={() => setHover(null)}
             onFocus={() => setHover(s.id)}
             onBlur={() => setHover(null)}
-            onClick={() => setMain(s.id)}
-            onTouchStart={() => {
+            onClick={() => {
               setHover(s.id);
               setMain(s.id);
+              onSongChange?.(s.id);
+            }}
+            onTouchStart={(e) => {
+              // Prevent both touch and click events from firing
+              e.preventDefault();
+              setHover(s.id);
+              setMain(s.id);
+              onSongChange?.(s.id);
             }}
             className={`w-full text-left px-3 py-2 mb-2 rounded-lg transition
               ring-1 backdrop-blur-sm

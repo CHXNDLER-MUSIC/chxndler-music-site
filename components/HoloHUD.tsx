@@ -161,13 +161,14 @@ export default function HoloHUD({
         .o3 .planet{ position:absolute; top:48%; left:84%; }
         @keyframes spin { from{ transform: rotate(0deg);} to{ transform: rotate(360deg);} }
 
-        /* Centered song panel */
+        /* Centered song panel (blue display) */
         .song-panel{ 
           position:absolute; 
           left:50%; 
           transform: translateX(-50%); 
-          bottom: calc(70vh - clamp(160px, 16vh, 220px)); 
-          width: clamp(80px, 8vw, 100px);
+          /* Align above the shared button baseline; CSS vars set by SteeringWheelOverlay */
+          bottom: calc(var(--buttons-bottom, 31%) + var(--panel-gap-px, 72px)); 
+          width: clamp(80px, 18vw, 120px);
           max-width: 100px;
           height: clamp(160px, 16vh, 220px);
           padding: 10px 0; 

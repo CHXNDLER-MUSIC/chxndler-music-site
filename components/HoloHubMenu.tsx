@@ -21,6 +21,8 @@ export default function HoloHubMenu({
   hubSize = 72,
   onToggle,
   isActive = false,
+  anchorBottomPercent,
+  anchorOffsetPx,
 }: {
   items?: HubItem[];
   radius?: number;
@@ -31,6 +33,9 @@ export default function HoloHubMenu({
   // Optional explicit angle mapping per item id (degrees; -90 = 12 o'clock, 0 = 3 o'clock)
   onToggle?: (isOpen: boolean) => void;
   isActive?: boolean;
+  // Anchor the yellow panel relative to the yellow hub button
+  anchorBottomPercent?: number; // baseline (same as buttons)
+  anchorOffsetPx?: number;      // horizontal offset from center (same as buttons)
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -38,6 +43,9 @@ export default function HoloHubMenu({
   const firstItemRef = useRef<HTMLButtonElement | null>(null);
   const lastItemRef = useRef<HTMLButtonElement | null>(null);
   const joinRef = useRef<HTMLAudioElement | null>(null);
+
+  // Position yellow panel to match blue display positioning - a little lower
+  const beamBottomCss = 'calc(var(--debug-beam-bottom) - 120px)';
 
   // Cap at 6 items, evenly spaced 60deg, start at -90deg (top)
   const entries = useMemo(() => items.slice(0, 6), [items]);
@@ -110,8 +118,9 @@ export default function HoloHubMenu({
         return { x: 0, y: 0, angleDeg: 0 };
       }
       
-      // Arrange all buttons in a single horizontal line within the 400px wide yellow panel
-      const panelWidth = 400;
+      // Arrange all buttons in a single horizontal line within the panel width (responsive)
+      const vw = (typeof window !== 'undefined') ? window.innerWidth : 1024;
+      const panelWidth = Math.min(400, Math.max(240, vw - 32));
       const buttonSizes = entries.map(entry => entry.id === 'tt' ? itemSize * 0.75 : itemSize);
       const currentButtonSize = buttonSizes[i];
       const totalButtonWidth = buttonSizes.reduce((sum, size) => sum + size, 0);
@@ -183,7 +192,26 @@ export default function HoloHubMenu({
       </button>
 
       {/* Centered yellow panel + items container */}
-      <div className="panel-wrap" aria-hidden={!open}>
+      <div
+        className="panel-wrap"
+        aria-hidden={!open}
+        style={{
+          // Bottom of yellow display touches bottom of the central light beam
+          position: 'fixed',
+          bottom: beamBottomCss,
+          // Center the yellow display perfectly on screen
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: `min(400px, calc(100vw - 32px))`,
+          height: 80,
+          pointerEvents: open ? 'auto' : 'none',
+          zIndex: 93,
+          borderRadius: 16,
+          overflow: 'hidden',
+          opacity: open ? 1 : 0,
+          transition: 'opacity 200ms ease, transform 220ms cubic-bezier(0.2,0.8,0.2,1)'
+        } as React.CSSProperties}
+      >
         {/* Yellow hologram background panel */}
         <div className="background-panel" aria-hidden />
 
@@ -245,20 +273,7 @@ export default function HoloHubMenu({
           filter: blur(8px);
         }
         
-        /* Fixed container aligned with yellow display: centered and bottom-aligned */
-        .panel-wrap{
-          position: fixed;
-          bottom: calc(35% + 14vh); /* match Join Aliens (pink) panel baseline */
-          left: calc(50% + 8vh); /* Shifted right to match yellow display positioning */
-          transform: translateX(-50%);
-          width: 400px; height: 80px;
-          pointer-events: ${open ? 'auto' : 'none'};
-          z-index: 93; /* ensure above controls, similar to pink panel */
-          border-radius: 16px; /* ensure clipping shape matches */
-          overflow: hidden; /* keep buttons contained within the yellow display */
-          opacity: ${open ? 1 : 0};
-          transition: opacity 200ms ease, transform 220ms cubic-bezier(0.2,0.8,0.2,1);
-        }
+        /* panel-wrap positioning now handled via inline style for responsiveness */
         /* Yellow hologram background panel */
         .background-panel{ 
           position: absolute; 

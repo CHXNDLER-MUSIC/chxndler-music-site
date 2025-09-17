@@ -103,6 +103,36 @@ class SFXBus {
       src.start(0);
     } catch {}
   }
+
+  // Play SFX and return a promise that resolves when it ends.
+  // Falls back to a timeout based on buffer duration (or 1000ms if unavailable).
+  async playAndWait(key: string, volume = 1.0): Promise<void> {
+    const ctx = this.ensure();
+    try { if (ctx && ctx.state === 'suspended') await ctx.resume().catch(()=>{}); } catch {}
+    try {
+      if (!ctx) { // No AudioContext; best effort delay
+        await new Promise((r) => setTimeout(r, 1000));
+        return;
+      }
+      const buf = this.buffers[key] || (await this.load(key));
+      if (!buf) { await new Promise((r) => setTimeout(r, 1000)); return; }
+      const src = ctx.createBufferSource();
+      const gain = ctx.createGain();
+      gain.gain.value = Math.max(0, Math.min(1, volume));
+      src.buffer = buf;
+      src.connect(gain).connect(ctx.destination);
+      return await new Promise<void>((resolve) => {
+        try {
+          src.onended = () => resolve();
+          src.start(0);
+        } catch {
+          setTimeout(resolve, Math.max(200, Math.floor((buf.duration || 1) * 1000)));
+        }
+      });
+    } catch {
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+  }
 }
 
 export const sfx = new SFXBus();

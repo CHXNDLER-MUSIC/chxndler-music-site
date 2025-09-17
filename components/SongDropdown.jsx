@@ -229,8 +229,21 @@ export default function SongDropdown({ items = [], initialActiveId, onChange }) 
                     song_title: s.title,
                     song_icon: s.icon || 'none'
                   });
-                  setActiveId(s.id); onChange?.(s.id); setOpen(false);
-                  try { setTimeout(() => usePlayerStore.getState().setHover(null), 0); } catch{}
+                  setActiveId(s.id); 
+                  if (onChange) {
+                    onChange(s.id);
+                  }
+                  setOpen(false);
+                  try { 
+                    setTimeout(() => {
+                      const state = usePlayerStore.getState();
+                      if (state) {
+                        state.setHover(null);
+                      }
+                    }, 0); 
+                  } catch(error) {
+                    console.error('Failed to clear hover state:', error);
+                  }
                 }}
               >
                 <span className="shrink-0">

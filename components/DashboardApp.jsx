@@ -195,15 +195,22 @@ export default function DashboardApp() {
       setChannelIdx(idx);
       if (DEBUG_MEDIA) dlog('onSongChange: set channelIdx to', idx, 'for track', tracks[idx]?.title);
       // Prime the hidden audio element within this click to satisfy autoplay policies.
-      // Start it muted so actual audio output only occurs after warp completes.
+      // Play briefly while muted to establish permission, then pause for warp.
       try {
         const audioEl = document.querySelector('audio[data-audio-player="1"]');
         const src = tracks[idx]?.src || '';
         if (audioEl && src) {
           if (audioEl.getAttribute('src') !== src) audioEl.setAttribute('src', src);
           audioEl.muted = true; audioEl.volume = 0.0;
-          audioEl.play().catch(()=>{});
-          if (DEBUG_MEDIA) { dlog('onSongChange: primed muted play', { src }); dumpAudio(audioEl, 'onSongChange:prime'); }
+          // Play briefly to prime autoplay permission, then pause until after warp
+          audioEl.play().then(() => {
+            audioEl.pause();
+            audioEl.currentTime = 0;
+            if (DEBUG_MEDIA) dlog('onSongChange: primed autoplay permission');
+          }).catch((e) => {
+            if (DEBUG_MEDIA) dwarn('autoplay prime failed', e?.name, e?.message);
+          });
+          if (DEBUG_MEDIA) { dlog('onSongChange: set audio source and primed', { src }); dumpAudio(audioEl, 'onSongChange:prime'); }
         }
       } catch {}
       // Defer audio start until lightspeed overlay finishes AND the target sky video is playing.
@@ -217,25 +224,30 @@ export default function DashboardApp() {
       setAllowWarp(true);
       setNextSky(newSky);
       setFlySignal((n) => n + 1);
-      // Extra safety: light fallback — only triggers if sky is already playing after ~1.85s
-      // This preserves the guarantee that music won't start until the MP4 sky is playing.
+      // Extra safety fallback: only triggers if sky is already playing after sufficient time
+      // This ensures music won't start until the MP4 sky is confirmed playing
       try {
         if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
         trackPlayTimerRef.current = window.setTimeout(() => {
           if (skyReady && !warpActive) {
+            if (DEBUG_MEDIA) dlog('Fallback timer: sky confirmed ready, triggering audio play');
             setPlaySignal((n) => n + 1);
             setPendingTrackPlay(false);
+          } else if (DEBUG_MEDIA) {
+            dlog('Fallback timer: sky not ready yet, skyReady=', skyReady, 'warpActive=', warpActive);
           }
           trackPlayTimerRef.current = undefined;
-        }, 1850);
+        }, 3000); // Increased from 1850ms to 3000ms to give more time for MP4 to load
       } catch {}
     }
   }
 
+  // Trigger a fly transition on channel index changes that did not come from an explicit user song selection.
+  // SongList/gesture-driven changes call onSongChange which triggers its own fly.
   React.useEffect(() => { 
     if (!mounted) return;
-    setFlySignal((n)=> n + 1); 
-  }, [channelIdx, mounted]);
+    if (!userSelected) setFlySignal((n)=> n + 1); 
+  }, [channelIdx, mounted, userSelected]);
   const { hudSongs, holoSongs } = React.useMemo(() => buildPlanetSongs(), []);
   React.useEffect(() => {
     try {
@@ -251,6 +263,8 @@ export default function DashboardApp() {
       try { usePlayerStore.getState().setMain(slug); } catch {}
     }
   }, [curTrack?.slug, homeMode]);
+
+  // Note: Song selection is now handled directly by calling onSongChange from user gestures
 
   // Only update sky when track changes; do not auto-warp
   React.useEffect(() => {
@@ -420,36 +434,37 @@ export default function DashboardApp() {
   }), [cardModalOpen]);
 
   const lightBeamStyle = useMemo(() => {
-    // Beam height scales with viewport but remains stable
-    const beamHeightPx = (() => {
-      if (typeof window === 'undefined') return 100; // SSR/default
-      const vh = window.innerHeight || 800;
-      // 8% of vh, clamped between 80px and 140px
-      return Math.max(80, Math.min(140, Math.round(vh * 0.08)));
-    })();
+    // Use CSS variables for shared alignment - temporarily use debug values
     return {
       left: '50%',
-      bottom: '38vh', // Shifted down further from steering wheel area
-      height: `${beamHeightPx}px`,
-      width: '400px', // Wider beam for better visual impact
+      bottom: 'var(--debug-beam-bottom)',
+      height: 'var(--debug-beam-height)',
+      width: '400px',
       transform: 'translate3d(-50%,0,0)',
       opacity: (beamEnabled || showHUD) ? (cardModalOpen ? 0.3 : 1) : 0,
       transition: 'opacity 400ms ease-in-out'
     };
   }, [beamEnabled, showHUD, cardModalOpen]);
 
-  // Position blue display (HUD) so its bottom touches the top of the light beam
+  // Position blue display (HUD) a little lower
   const hudBottom = useMemo(() => {
-    if (typeof window === 'undefined') return 'calc(38vh + 100px)';
-    const vh = window.innerHeight || 800;
-    const beamHeightPx = Math.max(80, Math.min(140, Math.round(vh * 0.08)));
-    return `calc(38vh + ${beamHeightPx}px)`;
+    // Position a little lower than before
+    return 'calc(var(--debug-beam-bottom) - 120px)';
   }, []);
 
-  if (!mounted) return null;
+  // Provide CSS variables globally (avoids any runtime style factory edge cases)
+
+  if (!mounted) {
+    // Return a black screen with proper dimensions while loading
+    return (
+      <main className="relative min-h-screen overflow-hidden bg-black text-white max-w-screen overflow-x-hidden" style={{ minWidth: '100vw', minHeight: '100vh' }}>
+        <div className="absolute inset-0 bg-black" />
+      </main>
+    );
+  }
   const SHOW_CENTER_BEAM = true; // Enable center light beam
   return (
-    <main className="relative min-h-screen overflow-hidden bg-black text-white max-w-screen overflow-x-hidden">
+    <main className="relative min-h-screen overflow-hidden bg-black text-white max-w-screen overflow-x-hidden" style={{ minWidth: '100vw', minHeight: '100vh' }}>
       <div 
         className="absolute inset-0"
         style={blurWrapperStyle}
@@ -488,30 +503,12 @@ export default function DashboardApp() {
           } else {
             if (DEBUG_MEDIA) dlog('onFlyEnd: no nextSky to switch to, staying on', sky.key);
           }
-          // If this warp was due to Start (not track selection), prepare to land on home
-          if (!pendingTrackPlay) setPendingHomePower(true);
+          // If this warp was due to Start (not track selection), prepare to land on home.
+          // For song selections (userSelected), do not fall back to home even if timers race.
+          if (!pendingTrackPlay && !userSelected) setPendingHomePower(true);
           else {
-            // Warp overlay just finished for a song change: fade UI back in with join-alien.mp3
-            try { sfx.play('join', 0.8); } catch {}
-
-            // Fade in HUD and overlay UI together with audio
-            setShowHUD(true);
-            setBeamEnabled(true);
-            setBeamOnly(false);
-            setShowOverlayUI(true);
-
-            // Start playback only when the base sky MP4 is confirmed playing
-            // If the sky is already ready now, trigger immediately; otherwise, wait for onBasePlaying
-            if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
-            setTimeout(() => {
-              if (skyReady) {
-                if (DEBUG_MEDIA) dlog('onFlyEnd: skyReady true; triggering playSignal after warp, channelIdx=', channelIdx);
-                setPlaySignal((n) => n + 1);
-                setPendingTrackPlay(false);
-              } else if (DEBUG_MEDIA) {
-                dlog('onFlyEnd: sky not ready yet; waiting for onBasePlaying to trigger audio');
-              }
-            }, 120);
+            // Only start UI fade-in and audio sequencing when the base sky MP4 is confirmed playing via onBasePlaying
+            if (DEBUG_MEDIA) dlog('onFlyEnd: warp complete, deferring UI fade-in and audio until onBasePlaying');
           }
         }}
         onBasePlaying={() => {
@@ -568,10 +565,24 @@ export default function DashboardApp() {
           }
           // For track changes: only trigger music when warp has ended and we are pending a track play
           if (pendingTrackPlay && !warpActive) {
-            if (DEBUG_MEDIA) dlog('onBasePlaying: triggering playSignal after sky is ready and warp ended');
+            // Begin UI fade-in now that MP4 is confirmed playing
+            setShowHUD(true);
+            setBeamEnabled(true);
+            setBeamOnly(false);
+            setShowOverlayUI(true);
+
+            // Play the button SFX first, then start the song MP3 only after it finishes
             if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
-            setPlaySignal((n) => n + 1);
-            setPendingTrackPlay(false);
+            try {
+              sfx.playAndWait('button', 0.9).then(() => {
+                if (DEBUG_MEDIA) dlog('onBasePlaying: button SFX finished; starting song MP3');
+                setPlaySignal((n) => n + 1);
+                setPendingTrackPlay(false);
+              });
+            } catch {
+              // Fallback: if sfx fails, start after a safe delay
+              setTimeout(() => { setPlaySignal((n) => n + 1); setPendingTrackPlay(false); }, 1200);
+            }
           }
         }}
       />
@@ -598,11 +609,8 @@ export default function DashboardApp() {
             // Only disable welcome intro if it's not currently playing
             setHomeIntroEnabled(false);
           }
-          // Hide join alien display if it's showing (mutual exclusion)
-          if (joinAlienOpen) {
-            setJoinAlienOpen(false);
-          }
-          triggerHudPower(undefined); 
+          // Blue button behavior is now handled entirely by handleBeamToggle('blue')
+          // No need to call triggerHudPower since beam system manages everything
         }}
         onLaunch={() => {
           // Hide dimming overlay when start is clicked
@@ -747,21 +755,7 @@ export default function DashboardApp() {
               willChange: 'background-position'
             }}
           />
-          
-          {/* Add CSS transitions for smooth color changes */}
-          <style jsx>{`
-            .light-beam {
-              transition: opacity 300ms ease-out;
-              will-change: opacity;
-            }
-            .light-beam * {
-              transition: filter 300ms ease-out;
-            }
-            @keyframes beamFlow {
-              0% { background-position: 0% 0%, 0% 0px; }
-              100% { background-position: 0% 0%, 0% -160px; }
-            }
-          `}</style>
+          {/* Light-beam styles moved to globals to avoid nested styled-jsx */}
         </div>
       ) : null}
 
@@ -805,11 +799,14 @@ export default function DashboardApp() {
           const ppConfig = getResponsiveValue(wheel.play) || { topVh: lp.topVh, leftVw: lp.leftVw, sizePx: Math.round(lp.sizePx * 0.9) };
           const pp = ppConfig;
 
-          // Calculate exact button center position (matching SteeringWheelOverlay positioning)
-          const buttonCenterX = `calc(${pp.leftVw}vw - ${(pp.sizePx * 0.95)/2}px + 10px + ${(pp.sizePx * 0.95)/2}px)`;
-          // SteeringWheelOverlay positions the button using bottom: calc(${100 - pp.topVh}vh - ${(pp.sizePx * 0.95)/2}px - 4vh)
-          // Convert to top-based center: 100vh - bottom_offset - half_button_height + adjustment
-          const buttonCenterY = `calc(100vh - (${100 - pp.topVh}vh - ${(pp.sizePx * 0.95)/2}px - 4vh) - ${(pp.sizePx * 0.95)/2}px + 3vh)`;
+          // Calculate exact button center position (matching SteeringWheelOverlay actual positioning)
+          // SteeringWheelOverlay positions button at: bottom: calc(-5vh + ${vs * 0.3}px), left: 50%
+          const vs = Math.round(Math.min(Math.min(window.innerWidth, window.innerHeight) * 0.70, 980));
+          const startSize = Math.round(Math.min(Math.max(Math.min(window.innerWidth, window.innerHeight) * 0.14, 64), 180));
+          
+          const buttonCenterX = '50%'; // Button is centered horizontally
+          // Convert bottom positioning to top: 100vh - bottom_offset - half_button_height  
+          const buttonCenterY = `calc(100vh - (-5vh + ${vs * 0.3}px) - ${(startSize * 0.95)/2}px)`;
           
           return (
             <div className="fixed inset-0 z-[100] pointer-events-none">
@@ -820,8 +817,8 @@ export default function DashboardApp() {
                   background: `
                     radial-gradient(
                       circle at ${buttonCenterX} ${buttonCenterY},
-                      transparent ${pp.sizePx * 0.35}px,
-                      rgba(0, 0, 0, 0.85) ${pp.sizePx * 0.55}px,
+                      transparent ${(startSize * 0.95) * 0.35}px,
+                      rgba(0, 0, 0, 0.85) ${(startSize * 0.95) * 0.55}px,
                       rgba(0, 0, 0, 0.95) 100%
                     )
                   `,

@@ -8,6 +8,8 @@ import "./globals.css";
 
 import ClickTracker from "../components/ClickTracker";
 import AnalyticsWidget from "../components/AnalyticsWidget";
+import DevBadge from "../components/DevBadge";
+import BuildInfoFooter from "../components/BuildInfoFooter";
 
 export default function RootLayout({ children }) {
   const gaId = process.env.NEXT_PUBLIC_GA_ID;            // e.g., G-XXXXXXX
@@ -68,7 +70,9 @@ export default function RootLayout({ children }) {
       <body className={`font-sans`}>
         <ClickTracker />
         <AnalyticsWidget />
+        <DevBadge />
         {children}
+        <BuildInfoFooter />
 
         {/* Meta Pixel <noscript> */}
         {mpId ? (
