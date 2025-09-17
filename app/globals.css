@@ -46,17 +46,154 @@
 @font-face { font-family: 'OrbitronLocal'; src: url('/fonts/orbitron-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
 :root {
   --font-orbitron: OrbitronLocal;
-  /* Shared beam alignment variables */
-  --beam-bottom: 38vh;
-  --beam-height: clamp(80px, 8vh, 140px);
-  --beam-top: calc(38vh + clamp(80px, 8vh, 140px));
-  --beam-touch-nudge: 6px;
+  /* Breakpoint-Specific Beam Positioning System */
   
-  /* Debug values - let's try simpler positioning */
-  --debug-beam-bottom: 310px;
-  --debug-beam-height: 100px;
-  --debug-beam-top: calc(310px + 100px);
+  /* Mobile First: Phone Layout (320px - 767px) */
+  /* Optimized for thumb reach and smaller screens */
+  --beam-bottom-base: 220px;
+  --beam-height: 70px;
+  --display-gap: 6px;
+  --panel-gap: 8px;
+  --touch-zone-height: 44px; /* iOS minimum touch target */
+  
+  /* Calculated beam boundaries */
+  --beam-bottom: var(--beam-bottom-base);
+  --beam-top: calc(var(--beam-bottom-base) + var(--beam-height));
+  
+  /* Display touch points - all displays anchor to these */
+  --display-touch-top: var(--beam-top);
+  --display-touch-bottom: var(--beam-bottom);
+  
+  /* Mobile-specific display sizing */
+  --display-width: min(280px, calc(100vw - 24px));
+  --display-border-radius: 12px;
 }
+
+/* Tablet Layout (768px - 1023px) */
+/* Optimized for landscape orientation and larger touch targets */
+@media (min-width: 768px) {
+  :root {
+    --beam-bottom-base: 280px;
+    --beam-height: 90px;
+    --display-gap: 8px;
+    --panel-gap: 12px;
+    --touch-zone-height: 48px;
+    
+    /* Tablet-specific display sizing */
+    --display-width: min(360px, calc(100vw - 32px));
+    --display-border-radius: 14px;
+    
+    /* Enhanced beam visual properties for tablets */
+    --beam-blur: 12px;
+    --beam-spread: 1.2;
+  }
+}
+
+/* Desktop Layout (1024px+) */
+/* Optimized for mouse interaction and larger screens */
+@media (min-width: 1024px) {
+  :root {
+    --beam-bottom-base: 320px;
+    --beam-height: 100px;
+    --display-gap: 10px;
+    --panel-gap: 16px;
+    --touch-zone-height: 40px; /* Smaller for precise mouse clicks */
+    
+    /* Desktop-specific display sizing */
+    --display-width: min(400px, calc(100vw - 48px));
+    --display-border-radius: 16px;
+    
+    /* Enhanced beam visual properties for desktop */
+    --beam-blur: 16px;
+    --beam-spread: 1.4;
+    --beam-glow-intensity: 1.5;
+  }
+}
+
+/* Large Desktop Layout (1440px+) */
+/* Enhanced spacing and proportions for large screens */
+@media (min-width: 1440px) {
+  :root {
+    --beam-bottom-base: 360px;
+    --beam-height: 110px;
+    --display-gap: 12px;
+    --panel-gap: 20px;
+    
+    /* Large desktop display sizing */
+    --display-width: min(480px, calc(100vw - 64px));
+    --display-border-radius: 18px;
+    
+    /* Enhanced visual effects for large screens */
+    --beam-glow-intensity: 2.0;
+    --beam-spread: 1.6;
+  }
+}
+
+/* Ultra-wide Desktop Layout (1920px+) */
+/* Maximum spacing and enhanced visual effects */
+@media (min-width: 1920px) {
+  :root {
+    --beam-bottom-base: 400px;
+    --beam-height: 120px;
+    --display-gap: 16px;
+    --panel-gap: 24px;
+    
+    /* Ultra-wide display sizing */
+    --display-width: min(520px, calc(100vw - 80px));
+    --display-border-radius: 20px;
+  }
+}
+
+/* Device-Specific Touch Optimizations */
+/* Mobile: Larger buttons for finger touch */
+@media (max-width: 767px) {
+  .hub-button, .holo-button {
+    min-height: var(--touch-zone-height);
+    min-width: var(--touch-zone-height);
+  }
+  
+  /* Increase touch target spacing on mobile */
+  .items .item {
+    width: 48px !important;
+    height: 48px !important;
+  }
+}
+
+/* Tablet: Medium-sized optimized buttons */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .hub-button, .holo-button {
+    min-height: var(--touch-zone-height);
+    min-width: var(--touch-zone-height);
+  }
+  
+  /* Enhanced hover states for tablets with cursor support */
+  @media (hover: hover) {
+    .hub-button:hover, .holo-button:hover {
+      transform: scale(1.05);
+      transition: transform 150ms ease;
+    }
+  }
+}
+
+/* Desktop: Precise mouse interaction */
+@media (min-width: 1024px) {
+  .hub-button, .holo-button {
+    min-height: var(--touch-zone-height);
+    min-width: var(--touch-zone-height);
+  }
+  
+  /* Enhanced hover and focus states for desktop */
+  .hub-button:hover, .holo-button:hover {
+    transform: scale(1.1);
+    transition: transform 120ms ease;
+  }
+  
+  .hub-button:focus, .holo-button:focus {
+    outline: 2px solid rgba(252, 84, 175, 0.5);
+    outline-offset: 2px;
+  }
+}
+
 html, body { 
   height: 100%; 
   background:#000; 

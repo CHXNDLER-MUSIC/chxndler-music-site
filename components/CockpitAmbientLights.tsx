@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import { ELEMENT_COLORS, type Element } from "@/lib/planets";
-import type { Track } from "@/config/tracks";
+import type { Track } from "@/lib/songs-consolidated";
 
 interface Props {
   currentTrack?: Track;
@@ -235,7 +235,7 @@ export default function CockpitAmbientLights({ currentTrack, isPlaying, mounted 
         setAnalyser(analyserNode);
         setDataArray(dataArray);
       } catch (error) {
-        console.warn('Audio analysis setup failed:', error);
+    if (process.env.NODE_ENV !== 'production') { /* eslint-disable-next-line no-console */ console.warn('Audio analysis setup failed:', error); }
         // Fallback to time-based animation without audio analysis
       }
     };

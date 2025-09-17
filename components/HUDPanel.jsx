@@ -25,6 +25,7 @@ import SongDropdown from "@/components/SongDropdown";
 import DevErrorLogger from "@/components/DevErrorLogger";
 import PlanetSystemRaw from "@/components/holo/PlanetSystemRaw";
 import { sfx } from "@/lib/sfx";
+import { DEBUG_MEDIA, dlog, dwarn } from "@/lib/debug";
 import { ElementIcon as OptimizedElementIcon } from "@/lib/elementIcons";
 
 // Use system font stack to avoid network font fetches during build
@@ -167,21 +168,20 @@ export default function HUDPanel({
   useEffect(() => {
     const findAndConnectAudio = () => {
       const a = document.querySelector('audio[data-audio-player="1"]');
-      console.log('Looking for audio element:', a);
+      if (DEBUG_MEDIA) dlog('HUDPanel: finding audio element', a);
       if (!a) {
         // Try again in a moment if audio element not found
         setTimeout(findAndConnectAudio, 100);
         return;
       }
-      
-      console.log('Found audio element, connecting listeners');
+      if (DEBUG_MEDIA) dlog('HUDPanel: found audio element, connecting listeners');
       
       const onTimeUpdate = () => { 
-        console.log('Time update:', a.currentTime);
+        if (DEBUG_MEDIA) dlog('HUDPanel: timeupdate', a.currentTime);
         setProgress(a.currentTime); 
       };
       const onDurationChange = () => { 
-        console.log('Duration changed:', a.duration);
+        if (DEBUG_MEDIA) dlog('HUDPanel: durationchange', a.duration);
         setDuration(a.duration || 0); 
       };
       const onVolumeChange = () => { setVolume(a.volume); };
@@ -211,16 +211,16 @@ export default function HUDPanel({
   // Progress bar click handler
   const handleProgressClick = (e) => {
     const a = document.querySelector('audio[data-audio-player="1"]');
-    console.log('Progress click - audio element:', a, 'duration:', duration);
+    if (DEBUG_MEDIA) dlog('HUDPanel: progress click', { hasAudio: !!a, duration });
     if (!a || !duration) {
-      console.log('Cannot seek - no audio element or duration');
+      if (DEBUG_MEDIA) dlog('HUDPanel: cannot seek — missing audio or duration');
       return;
     }
     const rect = e.currentTarget.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const percentage = clickX / rect.width;
     const seekTime = percentage * duration;
-    console.log('Seeking to:', seekTime, 'seconds (', percentage * 100, '%)');
+    if (DEBUG_MEDIA) dlog('HUDPanel: seeking', { seekTime, percent: percentage * 100 });
     a.currentTime = seekTime;
     try { sfx.play('click', 0.3); } catch {}
   };
@@ -439,7 +439,7 @@ export default function HUDPanel({
           >
             {can3D && PlanetSystemComp ? (
               <div className="relative w-full h-full">
-                <ErrorBoundary fallback={null} onError={(e)=>{ if (String(e?.name||'').includes('IndexSizeError')) { try { console.warn('Disabling 3D due to IndexSizeError'); } catch {} } setThreeFailed((e && (e.message||e.name)) || 'Render error'); setCan3D(false); }}>
+                <ErrorBoundary fallback={null} onError={(e)=>{ if (String(e?.name||'').includes('IndexSizeError')) { try { if (DEBUG_MEDIA) dwarn('Disabling 3D due to IndexSizeError'); } catch {} } setThreeFailed((e && (e.message||e.name)) || 'Render error'); setCan3D(false); }}>
                   <PlanetSystemComp showAll={!currentId} onSongChange={onSongChange} />
                 </ErrorBoundary>
               </div>
@@ -814,8 +814,9 @@ export default function HUDPanel({
                     usePlayerStore.getState().setMain(id);
                   }
                 } catch (error) {
-                  console.error('Failed to update player store:', error);
+                  if (DEBUG_MEDIA) dwarn('HUDPanel: failed to update player store', error);
                 }
+                // Stay in place; DashboardApp.onSongChange handles switch without spotlight/route
               }}
             />
           </div>

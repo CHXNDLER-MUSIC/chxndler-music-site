@@ -504,7 +504,7 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
   function createPlanetGeometry(radius: number, geometry: PlanetGeometry) {
     // Validate inputs to prevent NaN values
     if (!radius || radius <= 0 || !isFinite(radius)) {
-      console.warn('Invalid radius provided to createPlanetGeometry:', radius);
+      if (process.env.NODE_ENV !== 'production') { /* eslint-disable-next-line no-console */ console.warn('Invalid radius provided to createPlanetGeometry:', radius); }
       radius = 0.5; // fallback
     }
     
@@ -537,7 +537,7 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       
       // Validate vector components
       if (!isFinite(vector.x) || !isFinite(vector.y) || !isFinite(vector.z)) {
-        console.warn('Invalid vector components detected, skipping vertex:', i);
+        if (process.env.NODE_ENV !== 'production') { /* eslint-disable-next-line no-console */ console.warn('Invalid vector components detected, skipping vertex:', i); }
         continue;
       }
       
@@ -572,7 +572,7 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       if (isFinite(vector.x) && isFinite(vector.y) && isFinite(vector.z)) {
         positions.setXYZ(i, vector.x, vector.y, vector.z);
       } else {
-        console.warn('NaN detected in final vector position, using fallback for vertex:', i);
+        if (process.env.NODE_ENV !== 'production') { /* eslint-disable-next-line no-console */ console.warn('NaN detected in final vector position, using fallback for vertex:', i); }
         // Use original position as fallback
         vector.fromBufferAttribute(positions, i);
         positions.setXYZ(i, vector.x * safeScale.x, vector.y * safeScale.y, vector.z * safeScale.z);

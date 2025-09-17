@@ -28,7 +28,7 @@ export default function JoinAliens() {
       setPhone("");
       setStatus("ok");
     } catch (e) {
-      console.error("Join submit failed", e);
+      if (process.env.NODE_ENV !== 'production') { /* eslint-disable-next-line no-console */ console.error("Join submit failed", e); }
       setStatus("error");
     }
   }

@@ -106,14 +106,17 @@ export default function Planet({
   
   // Debug: Log planet types so user can see the system working
   if (isMain) {
-    console.log(`🪐 MAIN PLANET: "${song.title}" -> Type: ${planetType}, Size: ${sizeVar.toFixed(2)}, Element: ${element}, Color: ${color}`);
+    if (process.env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
+      console.log(`🪐 MAIN PLANET: "${song.title}" -> Type: ${planetType}, Size: ${sizeVar.toFixed(2)}, Element: ${element}, Color: ${color}`);
+    }
   }
   
   const sizeMultipliers = {
-    'dwarf': 0.15 + sizeVar * 0.4,       // 0.15-0.55x - highly varied small sizes
-    'terrestrial': 0.6 + sizeVar * 0.8,  // 0.6-1.4x - varied earth-like sizes
-    'neptune': 2.2 + sizeVar * 1.8,      // 2.2-4.0x - varied ice giant sizes
-    'gas-giant': 5.0 + sizeVar * 6.0     // 5.0-11.0x - dramatically varied massive sizes
+    'dwarf': 0.08 + sizeVar * 0.5,       // 0.08-0.58x - extremely varied tiny to small sizes
+    'terrestrial': 0.5 + sizeVar * 1.2,  // 0.5-1.7x - highly varied earth-like sizes
+    'neptune': 2.8 + sizeVar * 2.5,      // 2.8-5.3x - dramatically varied ice giant sizes
+    'gas-giant': 6.0 + sizeVar * 8.0     // 6.0-14.0x - extremely varied massive gas giant sizes
   };
   
   const satelliteSizeJitter = (sizeMultipliers[planetType] || 1.0) * (0.8 + (titleLength || 0) * 0.02);
@@ -124,9 +127,9 @@ export default function Planet({
   // Larger outward nudge on hover
   const orbitTarget = isMain ? 0 : (isMoon ? 2.0 : ringBase) + jitter + (isHover ? 1.0 : 0);
   const base = (song.planet?.radius || 1.0) * BASE_SCALE;
-  // Ultra-dramatic size differences with more variation
-  const MAIN_MULT = planetType === 'gas-giant' ? (50.0 + sizeVar * 30.0) : planetType === 'neptune' ? (30.0 + sizeVar * 20.0) : planetType === 'terrestrial' ? (18.0 + sizeVar * 12.0) : (8.0 + sizeVar * 8.0);
-  const ORBIT_MULT = isMoon ? (0.08 + sizeVar * 0.08) : (planetType === 'gas-giant' ? (1.4 + sizeVar * 0.8) : planetType === 'neptune' ? (1.0 + sizeVar * 0.6) : planetType === 'terrestrial' ? (0.7 + sizeVar * 0.5) : (0.3 + sizeVar * 0.4));
+  // Ultra-dramatic size differences with extreme variation for holographic effect
+  const MAIN_MULT = planetType === 'gas-giant' ? (80.0 + sizeVar * 50.0) : planetType === 'neptune' ? (45.0 + sizeVar * 35.0) : planetType === 'terrestrial' ? (25.0 + sizeVar * 20.0) : (12.0 + sizeVar * 15.0);
+  const ORBIT_MULT = isMoon ? (0.05 + sizeVar * 0.12) : (planetType === 'gas-giant' ? (2.2 + sizeVar * 1.5) : planetType === 'neptune' ? (1.5 + sizeVar * 1.0) : planetType === 'terrestrial' ? (0.9 + sizeVar * 0.8) : (0.4 + sizeVar * 0.6));
   const HOVER_MULT = 1.25;
   const scaleTarget = Math.max(0.01, isMain
     ? base * MAIN_MULT * mainSizeJitter
@@ -201,34 +204,44 @@ export default function Planet({
       for (let i = 0; i < song.id.length; i++) ph = (ph * 31 + song.id.charCodeAt(i)) % 9973;
       const phase = ph * 0.001;
       const bandFreq = 8 + (ph % 7);
-      // Ultra-advanced multi-octave noise for ultra-realistic terrain
+      // Ultra-advanced multi-octave noise for ultra-realistic terrain with holographic surface patterns
       const noise = (x: number, y: number) => {
-        // Primary landform noise (continents, major features)
+        // Primary landform noise (continents, major features) with holographic interference
         const n1 = Math.sin(x * 0.27 + phase) * Math.cos(y * 0.23 - phase * 1.7);
         const n2 = Math.sin((x + y) * 0.11 + phase * 2.3);
         const n3 = Math.sin(x * 0.41 + phase * 1.3) * Math.cos(y * 0.37 + phase * 0.9);
         const n4 = Math.sin((x - y) * 0.19 + phase * 2.7) * 0.6;
         
-        // Medium-scale features (mountain ranges, river systems)
+        // Medium-scale features (mountain ranges, river systems) with digital artifacts
         const n5 = Math.sin(x * 1.1 + phase * 0.7) * Math.cos(y * 1.3 - phase * 1.1) * 0.3;
         const n6 = Math.sin((x * 2.1 + y * 1.9) * 0.5 + phase * 3.1) * 0.2;
         
-        // Fine-scale details (local terrain, small-scale geology)
+        // Fine-scale details (local terrain, small-scale geology) with scan line interference
         const n7 = Math.sin(x * 3.7 + phase * 1.2) * Math.cos(y * 4.1 - phase * 0.8) * 0.15;
         const n8 = Math.sin((x * 5.3 - y * 4.7) * 0.3 + phase * 2.8) * 0.1;
         
-        // Ultra-fine surface texture
+        // Ultra-fine surface texture with holographic noise
         const n9 = Math.sin(x * 8.9 + phase * 0.9) * Math.cos(y * 9.7 + phase * 1.5) * 0.08;
         const n10 = Math.sin((x * 12.1 + y * 11.3) * 0.2 + phase * 4.2) * 0.05;
         
-        // Combine all octaves with appropriate weights
-        // Micro-detail surface features (enhanced realism)
+        // Micro-detail surface features (enhanced realism) with digital grid patterns
         const n11 = Math.sin(x * 15.7 + phase * 1.8) * Math.cos(y * 16.3 - phase * 2.1) * 0.03;
         const n12 = Math.sin((x * 21.1 - y * 19.7) * 0.15 + phase * 5.2) * 0.02;
         const n13 = Math.sin(x * 28.3 + phase * 2.7) * Math.cos(y * 31.1 + phase * 3.3) * 0.015;
         
-        // Combine all octaves with appropriate weights
-        return (n1 + n2 + n3 * 0.7 + n4 * 0.5 + n5 * 0.4 + n6 * 0.25 + n7 * 0.15 + n8 * 0.1 + n9 * 0.08 + n10 * 0.05 + n11 * 0.03 + n12 * 0.02 + n13 * 0.015) * 0.22;
+        // Add holographic surface pattern overlays
+        const holoGrid1 = Math.sin(x * 45.0 + phase * 3.0) * Math.sin(y * 45.0 + phase * 2.5) * 0.008;
+        const holoGrid2 = Math.sin(x * 90.0 + phase * 4.0) * Math.sin(y * 90.0 + phase * 3.5) * 0.004;
+        const holoScanlines = Math.sin(y * 180.0 + phase * 5.0) * 0.006;
+        
+        // Digital artifact patterns (like holographic projection errors)
+        const digitalNoise1 = Math.floor(Math.sin(x * 25.0 + phase) * 4.0) / 4.0 * 0.01;
+        const digitalNoise2 = Math.floor(Math.sin(y * 30.0 + phase * 1.5) * 3.0) / 3.0 * 0.008;
+        
+        // Combine all octaves with appropriate weights plus holographic effects
+        return (n1 + n2 + n3 * 0.7 + n4 * 0.5 + n5 * 0.4 + n6 * 0.25 + n7 * 0.15 + n8 * 0.1 + 
+                n9 * 0.08 + n10 * 0.05 + n11 * 0.03 + n12 * 0.02 + n13 * 0.015 + 
+                holoGrid1 + holoGrid2 + holoScanlines + digitalNoise1 + digitalNoise2) * 0.22;
       };
       let p = 0; let idx = 0;
       for (let j = 0; j < size; j++) {
@@ -310,29 +323,63 @@ export default function Planet({
           const mixT = Math.min(1, Math.max(0, bands * 0.85 + (n + 0.5) * 0.15));
           // Base color from bands
           const c = dark.clone().lerp(light, mixT);
-          // Enhanced crater and geological features
+          // Enhanced crater and geological features with planet-type specific patterns
           const nx = Math.sin((i + ph) * 0.045) * Math.cos((j - ph) * 0.04) * 0.5 + 0.5;
           const secondaryNoise = Math.sin((i * 1.3 + ph) * 0.067) * Math.cos((j * 1.1 - ph) * 0.052) * 0.3 + 0.5;
           const combinedNoise = (nx * 0.7 + secondaryNoise * 0.3);
           
-          // Large impact craters
+          // Planet-type specific surface features
+          let surfacePattern = 0;
+          if (planetType === 'gas-giant') {
+            // Gas giants have banded atmospheric patterns
+            surfacePattern = Math.sin(lat * 15.0 + phase * 2.0) * 0.3 + 
+                           Math.sin(lat * 25.0 + phase * 3.0) * 0.2 +
+                           Math.sin(lat * 40.0 + phase * 1.5) * 0.1;
+          } else if (planetType === 'neptune') {
+            // Ice giants have swirling storm patterns
+            surfacePattern = Math.sin((i + j) * 0.08 + phase * 2.0) * Math.cos(lat * 8.0) * 0.25 +
+                           Math.sin(i * 0.12 + j * 0.15 + phase) * 0.15;
+          } else if (planetType === 'dwarf') {
+            // Dwarf planets have more chaotic, irregular surfaces
+            surfacePattern = Math.sin(i * 0.25 + j * 0.23 + phase) * Math.cos(i * 0.19 + phase * 1.5) * 0.4 +
+                           Math.floor(Math.sin(i * 0.08 + j * 0.07) * 5.0) / 5.0 * 0.2;
+          } else {
+            // Terrestrial planets have continent-like features
+            surfacePattern = Math.sin(i * 0.03 + j * 0.025 + phase) * Math.cos(lat * 6.0) * 0.3 +
+                           Math.sin(lat * 12.0 + phase * 2.0) * 0.2;
+          }
+          
+          // Add holographic projection artifacts
+          const holoArtifact1 = Math.floor(Math.sin(i * 0.4 + phase) * 8.0) / 8.0 * 0.05;
+          const holoArtifact2 = Math.floor(Math.sin(j * 0.35 + phase * 1.3) * 6.0) / 6.0 * 0.03;
+          const scanLineArtifact = Math.sin(j * 2.0) > 0.8 ? 0.04 : 0.0;
+          
+          // Large impact craters with holographic distortion
           const largeCraters = Math.max(0, (combinedNoise - 0.75) / 0.25);
           const craterRims = Math.max(0, Math.min(1, (combinedNoise - 0.72) / 0.06)) - Math.max(0, (combinedNoise - 0.78) / 0.04);
           
-          // Medium craters and erosion patterns
+          // Medium craters and erosion patterns with planet-specific variations
           const mediumFeatures = Math.max(0, (combinedNoise - 0.45) / 0.55);
-          const spots = Math.pow(mediumFeatures, 0.8);
-          const core = Math.pow(largeCraters, 1.2);
-          const rims = craterRims * 1.5;
+          const spots = Math.pow(mediumFeatures, planetType === 'dwarf' ? 0.6 : 0.8);
+          const core = Math.pow(largeCraters, planetType === 'gas-giant' ? 0.8 : 1.2);
+          const rims = craterRims * (planetType === 'dwarf' ? 2.0 : 1.5);
           // Realistic surface albedo and material properties
           const surfaceAlbedo = isGasGiant ? 0.9 : isNeptune ? 0.8 : isWater ? 0.4 : isEarth ? 0.7 : isDark ? 0.1 : 0.6;
           let craterShadeMax = (1.0 - surfaceAlbedo) * (isGasGiant ? 0.2 : 0.8);
           let rimBrightness = surfaceAlbedo * (isGasGiant ? 0.1 : 0.4);
           
-          const shade = 1.0 - (craterShadeMax * spots + 0.25 * core) + (rimBrightness * rims);
-          const finalR = Math.floor(Math.max(0, Math.min(255, c.r * 255 * shade)));
-          const finalG = Math.floor(Math.max(0, Math.min(255, c.g * 255 * shade)));
-          const finalB = Math.floor(Math.max(0, Math.min(255, c.b * 255 * shade)));
+          // Combine all surface features with holographic effects
+          const shade = 1.0 - (craterShadeMax * spots + 0.25 * core) + (rimBrightness * rims) + 
+                       surfacePattern * 0.3 + holoArtifact1 + holoArtifact2 + scanLineArtifact;
+          
+          // Apply enhanced color with holographic tinting
+          const holoTint = planetType === 'gas-giant' ? 1.05 : 
+                          planetType === 'neptune' ? 1.03 : 
+                          planetType === 'dwarf' ? 0.95 : 1.0;
+          
+          const finalR = Math.floor(Math.max(0, Math.min(255, c.r * 255 * shade * holoTint)));
+          const finalG = Math.floor(Math.max(0, Math.min(255, c.g * 255 * shade * holoTint)));
+          const finalB = Math.floor(Math.max(0, Math.min(255, c.b * 255 * shade * holoTint)));
           
           dataColor[p] = finalR;
           dataColor[p + 1] = finalG;
@@ -859,30 +906,78 @@ export default function Planet({
           depthWrite
         />
         
-        {/* Holographic wireframe overlay for sci-fi effect */}
+        {/* Enhanced holographic wireframe overlay with size-based complexity */}
         <mesh scale={1.001}>
-          <sphereGeometry args={[1, 32, 16]} />
+          <sphereGeometry args={[1, 
+            planetType === 'gas-giant' ? 48 : 
+            planetType === 'neptune' ? 40 : 
+            planetType === 'terrestrial' ? 32 : 24, 
+            planetType === 'gas-giant' ? 24 : 
+            planetType === 'neptune' ? 20 : 
+            planetType === 'terrestrial' ? 16 : 12]} />
           <meshBasicMaterial 
             color={new Color(color).lerp(new Color('#FFFFFF'), 0.6)}
             transparent
-            opacity={0.12}
+            opacity={planetType === 'gas-giant' ? 0.18 : 
+                     planetType === 'neptune' ? 0.15 : 0.12}
             wireframe
             depthWrite={false}
             blending={AdditiveBlending}
           />
         </mesh>
         
-        {/* Holographic scanlines effect */}
+        {/* Holographic scanlines effect with planet-specific intensity */}
         <mesh scale={1.002}>
           <sphereGeometry args={[1, 64, 64]} />
           <meshBasicMaterial
             color={new Color(color).lerp(new Color('#FFFFFF'), 0.8)}
             transparent
-            opacity={0.08}
+            opacity={planetType === 'gas-giant' ? 0.12 : 
+                     planetType === 'neptune' ? 0.10 : 
+                     planetType === 'terrestrial' ? 0.08 : 0.06}
             depthWrite={false}
             blending={AdditiveBlending}
           />
         </mesh>
+        
+        {/* Size-based holographic detail layers for massive planets */}
+        {planetType === 'gas-giant' && (
+          <>
+            <mesh scale={1.003}>
+              <sphereGeometry args={[1, 80, 80]} />
+              <meshBasicMaterial
+                color={new Color(color).lerp(new Color('#FFFF00'), 0.4)}
+                transparent
+                opacity={0.06}
+                depthWrite={false}
+                blending={AdditiveBlending}
+              />
+            </mesh>
+            <mesh scale={1.004}>
+              <sphereGeometry args={[1, 96, 96]} />
+              <meshBasicMaterial
+                color={new Color(color).lerp(new Color('#00FFFF'), 0.5)}
+                transparent
+                opacity={0.04}
+                depthWrite={false}
+                blending={AdditiveBlending}
+              />
+            </mesh>
+          </>
+        )}
+        
+        {planetType === 'neptune' && (
+          <mesh scale={1.003}>
+            <sphereGeometry args={[1, 64, 64]} />
+            <meshBasicMaterial
+              color={new Color(color).lerp(new Color('#AACCFF'), 0.6)}
+              transparent
+              opacity={0.05}
+              depthWrite={false}
+              blending={AdditiveBlending}
+            />
+          </mesh>
+        )}
       </mesh>
 
       {/* Holographic interference patterns */}

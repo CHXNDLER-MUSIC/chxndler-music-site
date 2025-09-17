@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { tracks } from "@/config/tracks";
+import { tracks } from "@/lib/songs-consolidated";
 import { skyFor, introSky } from "@/lib/sky";
 
 type Props = {

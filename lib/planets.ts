@@ -1,4 +1,4 @@
-import { tracks } from "@/config/tracks";
+import { tracks } from "@/lib/songs-consolidated";
 import { slugify } from "@/lib/slug";
 
 export type Element = "water" | "fire" | "earth" | "air" | "heart" | "lightning" | "darkness";

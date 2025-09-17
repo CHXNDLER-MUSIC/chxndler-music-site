@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import type { Track } from "@/config/tracks";
+import type { Track } from "@/lib/songs-consolidated";
 import { POS } from "@/config/cockpit";
 
 export default function HoloHUD({

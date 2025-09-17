@@ -242,7 +242,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange }) 
                       }
                     }, 0); 
                   } catch(error) {
-                    console.error('Failed to clear hover state:', error);
+                  if (process.env.NODE_ENV !== 'production') { /* eslint-disable-next-line no-console */ console.error('Failed to clear hover state:', error); }
                   }
                 }}
               >

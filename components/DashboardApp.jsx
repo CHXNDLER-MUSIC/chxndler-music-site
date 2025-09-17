@@ -14,28 +14,22 @@ import HoloHUD from "@/components/HoloHUD";
 import { skyFor, introSky } from "@/lib/sky";
 import MediaPlayer from "@/components/MediaPlayer";
 import { sfx } from "@/lib/sfx";
-import { DEBUG_MEDIA, dlog, dwarn, dumpAudio } from "@/lib/debug";
-// import SocialIcons from "@/components/SocialIcons";
-// import StreamingButtons from "@/components/StreamingButtons";
-// import NeonCockpitRim from "@/components/NeonCockpitRim";
-import CockpitWindowRim from "@/components/CockpitWindowRim";
 import { LINKS, POS } from "@/config/cockpit";
-import { tracks } from "@/config/tracks";
+import { tracks } from "@/lib/songs-consolidated";
 import { buildPlanetSongs } from "@/lib/planets";
 import { usePlayerStore } from "@/store/usePlayerStore";
-// import JoinAliensBox from "@/components/JoinAliensBox";
 import PrewarmThree from "@/components/PrewarmThree";
 import { track } from "@/lib/analytics";
-// import CockpitAmbientLights from "@/components/CockpitAmbientLights";
 import PreloadMedia from "@/components/PreloadMedia";
+import { slugify } from "@/lib/slug";
 
-export default function DashboardApp() {
+export default function DashboardApp({ initialSlug } = {}) {
   const [channelIdx, setChannelIdx] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [sky, setSky] = useState(introSky);
   const [links, setLinks] = useState({ spotify: LINKS.spotify, apple: LINKS.apple });
   const [userSelected, setUserSelected] = useState(false);
-  const [curTrack, setCurTrack] = useState(tracks.find(t => t.title === "WE'RE JUST FRIENDS") || tracks[0]);
+  const [curTrack, setCurTrack] = useState(tracks.find(t => t.slug === initialSlug) || tracks.find(t => t.title === "WE'RE JUST FRIENDS") || tracks[0]);
   const [playSignal, setPlaySignal] = useState(0);
   const [toggleSignal, setToggleSignal] = useState(0);
   const [flySignal, setFlySignal] = useState(0);
@@ -47,18 +41,21 @@ export default function DashboardApp() {
   const [beamEnabled, setBeamEnabled] = useState(false);
   const [powerBusy, setPowerBusy] = useState(false);
   const [showOverlayUI, setShowOverlayUI] = useState(false); // comms + join buttons
-  const [allowWarp, setAllowWarp] = useState(false);
+  const [allowWarp, setAllowWarp] = useState(true); // show initial lightspeed overlay
+  const [landingMode, setLandingMode] = useState(true); // initial screen state
+  const [landingRevealReady, setLandingRevealReady] = useState(false); // when true, allow initial overlay to hide
   const [homeMode, setHomeMode] = useState(false);
   const [homeIntroEnabled, setHomeIntroEnabled] = useState(true);
   const [pendingHomePower, setPendingHomePower] = useState(false);
   const [pendingTrackPlay, setPendingTrackPlay] = useState(false);
-  const [audioReady, setAudioReady] = useState(false);
-  const [skyReady, setSkyReady] = useState(false);
   const trackPlayTimerRef = React.useRef(undefined);
   const [ambientSuspended, setAmbientSuspended] = useState(false);
   const [firstStartDone, setFirstStartDone] = useState(false);
   const [welcomeHasPlayed, setWelcomeHasPlayed] = useState(false); // tracks if welcome has ever been played
   const welcomeOnStartRef = React.useRef(false); // signals that welcome VO should play now
+  const startButtonWarpRef = React.useRef(false); // prevents double warp when start button is clicked
+  // Ensure song MP3 starts only after button SFX finishes; start SFX at warp end
+  const buttonSfxWaitRef = React.useRef(null);
   const [cardModalOpen, setCardModalOpen] = useState(false); // track card modal state for beam dimming
   const [joinAlienOpen, setJoinAlienOpen] = useState(false); // track join alien button state for pink beam
   const [beamColor, setBeamColor] = useState('blue'); // track active beam color
@@ -149,104 +146,30 @@ export default function DashboardApp() {
   }, [powerBusy, beamEnabled, showHUD]);
 
   function onSongChange(id){
-    const slug = id;
-    const idx = tracks.findIndex(t => (t.slug||"") === slug || (t.slug||"").startsWith(slug));
-    if (idx >= 0) {
-      // Track song selection from HUD
-      const selectedTrack = tracks[idx];
-      try {
-        track('song_selected', { 
-          song_slug: slug,
-          payload: { 
-            song_title: selectedTrack?.title || slug,
-            source: 'hud_panel',
-            track_index: idx
-          } 
-        });
-      } catch {}
-      
-      setUserSelected(true);
-      setHomeMode(false);
-      setAmbientSuspended(true);
-      
-      // FADE OUT: Hide HUD, comms, power, and join alien elements before warp
-      setShowHUD(false);
-      setShowOverlayUI(false);
-      setBeamEnabled(false);
-      
-      // Immediately reflect selection in HUD (title/cover/subtitle)
-      try {
-        const t = tracks[idx];
-        if (t) {
-          setCurTrack(t);
-          setLinks({ spotify: t.spotify || LINKS.spotify, apple: t.apple || LINKS.apple });
-        }
-      } catch {}
-      // Stop all audio immediately
-      try {
-        const a = document.querySelector('audio[data-audio-player="1"]');
-        if (a) {
-          a.pause();
-          // Prime autoplay permission within this gesture without output
-          try { a.muted = true; a.play().then(()=>{ a.pause(); a.currentTime = 0; }).catch((e)=>{ if (DEBUG_MEDIA) dwarn('gesture prime rejected', e?.name, e?.message); }); } catch {}
-        }
-      } catch {}
-      // Update selected channel.
-      setChannelIdx(idx);
-      if (DEBUG_MEDIA) dlog('onSongChange: set channelIdx to', idx, 'for track', tracks[idx]?.title);
-      // Prime the hidden audio element within this click to satisfy autoplay policies.
-      // Play briefly while muted to establish permission, then pause for warp.
-      try {
-        const audioEl = document.querySelector('audio[data-audio-player="1"]');
-        const src = tracks[idx]?.src || '';
-        if (audioEl && src) {
-          if (audioEl.getAttribute('src') !== src) audioEl.setAttribute('src', src);
-          audioEl.muted = true; audioEl.volume = 0.0;
-          // Play briefly to prime autoplay permission, then pause until after warp
-          audioEl.play().then(() => {
-            audioEl.pause();
-            audioEl.currentTime = 0;
-            if (DEBUG_MEDIA) dlog('onSongChange: primed autoplay permission');
-          }).catch((e) => {
-            if (DEBUG_MEDIA) dwarn('autoplay prime failed', e?.name, e?.message);
-          });
-          if (DEBUG_MEDIA) { dlog('onSongChange: set audio source and primed', { src }); dumpAudio(audioEl, 'onSongChange:prime'); }
-        }
-      } catch {}
-      // Defer audio start until lightspeed overlay finishes AND the target sky video is playing.
-      // Mark this as a pending track play and let SkyboxVideo's onBasePlaying trigger it.
-      setPendingTrackPlay(true);
-      setAudioReady(false);
-      setSkyReady(false);
-      // Trigger lightspeed overlay + warp SFX and switch sky.
-      const newSky = skyFor(tracks[idx].slug);
-      if (DEBUG_MEDIA) dlog('onSongChange: setting nextSky to', newSky);
-      setAllowWarp(true);
-      setNextSky(newSky);
-      setFlySignal((n) => n + 1);
-      // Extra safety fallback: only triggers if sky is already playing after sufficient time
-      // This ensures music won't start until the MP4 sky is confirmed playing
-      try {
-        if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
-        trackPlayTimerRef.current = window.setTimeout(() => {
-          if (skyReady && !warpActive) {
-            if (DEBUG_MEDIA) dlog('Fallback timer: sky confirmed ready, triggering audio play');
-            setPlaySignal((n) => n + 1);
-            setPendingTrackPlay(false);
-          } else if (DEBUG_MEDIA) {
-            dlog('Fallback timer: sky not ready yet, skyReady=', skyReady, 'warpActive=', warpActive);
-          }
-          trackPlayTimerRef.current = undefined;
-        }, 3000); // Increased from 1850ms to 3000ms to give more time for MP4 to load
-      } catch {}
-    }
+    // In-app song change without spotlight/beam/route reloads
+    const slug = slugify(String(id || ''));
+    let idx = tracks.findIndex(t => (t.slug || '').toLowerCase() === slug);
+    if (idx < 0) idx = tracks.findIndex(t => (t.title || '').toLowerCase().includes(slug));
+    if (idx < 0) return;
+
+    // Mark as user-driven to suppress fly/warp flashes on index change
+    setUserSelected(true);
+    setHomeMode(false);
+
+    // Update HUD copy and streaming links
+    const t = tracks[idx];
+    setCurTrack(t);
+    setLinks({ spotify: t.spotify || LINKS.spotify, apple: t.apple || LINKS.apple });
+
+    // Switch MediaPlayer channel; MediaPlayer handles audio swap without reloading page
+    setChannelIdx(idx);
   }
 
   // Trigger a fly transition on channel index changes that did not come from an explicit user song selection.
   // SongList/gesture-driven changes call onSongChange which triggers its own fly.
   React.useEffect(() => { 
     if (!mounted) return;
-    if (!userSelected) setFlySignal((n)=> n + 1); 
+    if (!userSelected && !startButtonWarpRef.current) setFlySignal((n)=> n + 1); 
   }, [channelIdx, mounted, userSelected]);
   const { hudSongs, holoSongs } = React.useMemo(() => buildPlanetSongs(), []);
   React.useEffect(() => {
@@ -266,13 +189,48 @@ export default function DashboardApp() {
 
   // Note: Song selection is now handled directly by calling onSongChange from user gestures
 
-  // Only update sky when track changes; do not auto-warp
-  React.useEffect(() => {
-    if (!mounted) return;
-    if (curTrack) setNextSky(skyFor(curTrack.slug));
-  }, [mounted, curTrack?.slug]);
+  // (Removed) implicit sky change on track change to avoid accidental warps.
 
   useEffect(() => { setMounted(true); }, []);
+
+  // If an initial slug is provided (route-based song page), orchestrate warp + playback
+  useEffect(() => {
+    if (!mounted) return;
+    if (!initialSlug) return;
+    if (startButtonWarpRef.current) return; // Skip if start button is handling warp
+    const t = tracks.find((x) => x.slug === initialSlug);
+    if (!t) return;
+    // Mirror onSongChange sequencing but for route entry
+    setCurTrack(t);
+    setUserSelected(true);
+    setHomeMode(false);
+    setLinks({ spotify: t.spotify || LINKS.spotify, apple: t.apple || LINKS.apple });
+    // Hide UI before warp
+    setShowHUD(false);
+    setShowOverlayUI(false);
+    setBeamEnabled(false);
+    setAmbientSuspended(true);
+    // Select channel index for MediaPlayer
+    const idx = tracks.findIndex((x) => (x.slug || '').toLowerCase() === (t.slug || '').toLowerCase());
+    if (idx >= 0) setChannelIdx(idx);
+    // Prime hidden audio element for autoplay (muted)
+    try {
+      const audioEl = document.querySelector('audio[data-audio-player="1"]');
+      const src = t?.src || '';
+      if (audioEl && src) {
+        if (audioEl.getAttribute('src') !== src) audioEl.setAttribute('src', src);
+        audioEl.muted = true; (audioEl).volume = 0.0;
+        audioEl.play().then(() => { (audioEl).pause(); (audioEl).currentTime = 0; }).catch(()=>{});
+      }
+    } catch {}
+    // Defer audio until warp completes and base sky is playing
+    try { buttonSfxWaitRef.current = null; } catch {}
+    setPendingTrackPlay(true);
+    // Trigger warp overlay and switch sky to this song
+    setAllowWarp(true);
+    setNextSky(skyFor(t.slug));
+    setFlySignal((n) => n + 1);
+  }, [mounted, initialSlug]);
   // Disable auto actions on random interactions; nothing should trigger on click/touch/move
   React.useEffect(() => { /* intentionally empty */ }, [mounted]);
 
@@ -301,6 +259,13 @@ export default function DashboardApp() {
       setBeamEnabled(false);
     };
     
+    if (color === 'off') {
+      // Explicit request to turn everything off without switching to blue display
+      closeAllDisplays();
+      setBeamColor('blue'); // reset baseline without opening HUD
+      return;
+    }
+
     if (color === 'pink') {
       if (beamColor === 'pink' && joinAlienOpen) {
         // Already showing pink - toggle off
@@ -434,22 +399,23 @@ export default function DashboardApp() {
   }), [cardModalOpen]);
 
   const lightBeamStyle = useMemo(() => {
-    // Use CSS variables for shared alignment - temporarily use debug values
+    // Position the light beam independently (higher), using global CSS variable
     return {
       left: '50%',
-      bottom: 'var(--debug-beam-bottom)',
-      height: 'var(--debug-beam-height)',
-      width: '400px',
+      bottom: 'var(--beam-bottom)',
+      height: 'var(--beam-height)',
+      width: 'var(--display-width)',
       transform: 'translate3d(-50%,0,0)',
       opacity: (beamEnabled || showHUD) ? (cardModalOpen ? 0.3 : 1) : 0,
       transition: 'opacity 400ms ease-in-out'
     };
   }, [beamEnabled, showHUD, cardModalOpen]);
 
-  // Position blue display (HUD) a little lower
+  // Position the blue display lower (closer to the wheel/buttons)
+  // Align to the buttons baseline with a larger downward offset
   const hudBottom = useMemo(() => {
-    // Position a little lower than before
-    return 'calc(var(--debug-beam-bottom) - 120px)';
+    // Move the HUD further down from the buttons baseline (~120px by default)
+    return 'calc(var(--buttons-bottom, 31%) - var(--hud-offset-px, 120px))';
   }, []);
 
   // Provide CSS variables globally (avoids any runtime style factory edge cases)
@@ -479,7 +445,9 @@ export default function DashboardApp() {
         flySignal={flySignal}
         allowWarp={allowWarp}
         holdLightspeed={false}
-        readyToReveal={true}
+        // On first screen: keep lightspeed looping until Start is clicked
+        holdLightspeed={landingMode}
+        readyToReveal={landingRevealReady}
         minDurationMs={3000}
         offsetY="-1vh"
         onFlyStart={() => {
@@ -487,33 +455,53 @@ export default function DashboardApp() {
           // Stop any currently playing track as soon as warp begins
           try {
             const a = document.querySelector('audio[data-audio-player="1"]');
-            if (a) { a.pause(); if (DEBUG_MEDIA) dlog('onFlyStart: paused main audio'); }
+            if (a) { a.pause(); }
           } catch {}
           setIsPlaying(false);
         }}
         onFlyEnd={() => {
-          if (DEBUG_MEDIA) dlog('onFlyEnd: called with nextSky=', nextSky, 'pendingTrackPlay=', pendingTrackPlay);
           setWarpActive(false);
           setAllowWarp(false);
+          setLandingMode(false); // leave landing mode after first warp
+          // Reset start button warp flag to allow normal effects to resume
+          startButtonWarpRef.current = false;
+          // If a track play is pending, begin UI fade-in immediately at warp end
+          // and start the button SFX right away so it completes before music starts
+          if (pendingTrackPlay) {
+            try {
+              // Cancel any fallback that might race with our sequencing
+              if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
+            } catch {}
+            // Reveal UI elements together (beam + HUD + buttons) now
+            setShowHUD(true);
+            setBeamEnabled(true);
+            setBeamOnly(false);
+            setShowOverlayUI(true);
+            // Kick off button SFX now (right after warp)
+            try { buttonSfxWaitRef.current = sfx.playAndWait('button', 0.9); } catch { buttonSfxWaitRef.current = null; }
+            // Safety: if base video readiness callback is delayed, start music after a grace period
+            try {
+              if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); }
+              trackPlayTimerRef.current = window.setTimeout(() => {
+                if (pendingTrackPlay) {
+                  setPlaySignal((n) => n + 1);
+                  setPendingTrackPlay(false);
+                }
+                trackPlayTimerRef.current = undefined;
+              }, 4500);
+            } catch {}
+          }
           if (nextSky) { 
-            if (DEBUG_MEDIA) dlog('onFlyEnd: switching from sky', sky.key, 'to', nextSky.key); 
             setSky(nextSky); setNextSky(null);
-            // Reset skyReady since we're switching to a new sky
-            setSkyReady(false);
-          } else {
-            if (DEBUG_MEDIA) dlog('onFlyEnd: no nextSky to switch to, staying on', sky.key);
           }
           // If this warp was due to Start (not track selection), prepare to land on home.
           // For song selections (userSelected), do not fall back to home even if timers race.
           if (!pendingTrackPlay && !userSelected) setPendingHomePower(true);
           else {
             // Only start UI fade-in and audio sequencing when the base sky MP4 is confirmed playing via onBasePlaying
-            if (DEBUG_MEDIA) dlog('onFlyEnd: warp complete, deferring UI fade-in and audio until onBasePlaying');
           }
         }}
         onBasePlaying={() => {
-          if (DEBUG_MEDIA) dlog('Sky base video playing, pendingTrackPlay:', pendingTrackPlay, 'pendingHomePower:', pendingHomePower);
-          setSkyReady(true);
           if (pendingHomePower) {
             // Start path: ensure main track audio stays stopped on landing
             try {
@@ -550,6 +538,7 @@ export default function DashboardApp() {
                 setShowHUD(true);
                 setBeamOnly(false);
                 setPowerBusy(false);
+                setLandingRevealReady(true); // allow initial lightspeed loop to hide
                 
                 // Start space-music.mp3 and welcome audio shortly after UI elements start fading in
                 setTimeout(() => {
@@ -565,23 +554,21 @@ export default function DashboardApp() {
           }
           // For track changes: only trigger music when warp has ended and we are pending a track play
           if (pendingTrackPlay && !warpActive) {
-            // Begin UI fade-in now that MP4 is confirmed playing
-            setShowHUD(true);
-            setBeamEnabled(true);
-            setBeamOnly(false);
-            setShowOverlayUI(true);
-
-            // Play the button SFX first, then start the song MP3 only after it finishes
+            // UI has already been revealed at warp end. Now, only start the song MP3
+            // after the button SFX has finished.
             if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
+            const startSong = () => { setPlaySignal((n) => n + 1); setPendingTrackPlay(false); buttonSfxWaitRef.current = null; };
             try {
-              sfx.playAndWait('button', 0.9).then(() => {
-                if (DEBUG_MEDIA) dlog('onBasePlaying: button SFX finished; starting song MP3');
-                setPlaySignal((n) => n + 1);
-                setPendingTrackPlay(false);
-              });
+              const p = buttonSfxWaitRef.current;
+              if (p && typeof p.then === 'function') {
+                p.then(startSong).catch(() => { setTimeout(startSong, 200); });
+              } else {
+                // If SFX wasn't started, play it now and wait
+                sfx.playAndWait('button', 0.9).then(startSong).catch(() => setTimeout(startSong, 1000));
+              }
             } catch {
-              // Fallback: if sfx fails, start after a safe delay
-              setTimeout(() => { setPlaySignal((n) => n + 1); setPendingTrackPlay(false); }, 1200);
+              // Fallback: if SFX path fails, delay slightly before starting
+              setTimeout(startSong, 600);
             }
           }
         }}
@@ -591,12 +578,6 @@ export default function DashboardApp() {
         className="fixed inset-0 z-20 pointer-events-none cockpit-bg"
         aria-hidden="true" 
       />
-      {/* Neon rim disabled: only show window trim lights */}
-      {/* <NeonCockpitRim /> */}
-      {/* Music-reactive trim around cockpit windows */}
-      {/* <CockpitWindowRim currentTrack={curTrack} isPlaying={isPlaying} mounted={mounted} /> */}
-
-      {/* Social + Streaming buttons removed per request */}
       <SteeringWheelOverlay
         POS={POS}
         playing={isPlaying}
@@ -615,11 +596,16 @@ export default function DashboardApp() {
         onLaunch={() => {
           // Hide dimming overlay when start is clicked
           setShowDimmingOverlay(false);
+          // Allow the initial lightspeed loop to hide when we kick off warp
+          setLandingRevealReady(true);
           
           // ALWAYS trigger warp sequence when start button is pressed
-          // Reset any track selection state to ensure we go to homepage
+          // Reset any track selection state to ensure we go to homepage BEFORE setting warp flag
           setUserSelected(false);
           setHomeMode(false); // Will be set to true after warp completes
+          
+          // Set flag to prevent double warp from automatic effects AFTER state changes
+          startButtonWarpRef.current = true;
           
           // Stop any playing audio and clear track state
           try {
@@ -654,7 +640,6 @@ export default function DashboardApp() {
           setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
         }}
       />
-      {/* Removed Join the Aliens dashboard panel per request */}
       </div> {/* Close blur wrapper */}
 
       {/* Fixed positioning for blue display - positioned directly above light beam */}
@@ -706,7 +691,16 @@ export default function DashboardApp() {
                 aria-label="Activate HUD"
                 title="Activate HUD"
                 style={{ background:'transparent', zIndex: 30, cursor:'pointer' }}
-                onClick={() => { setHomeMode(true); try { usePlayerStore.setState({ mainId: null }); } catch {} setHomeIntroEnabled(false); setUserSelected(false); setLinks({ spotify: LINKS.spotify, apple: LINKS.apple }); triggerHudPower(true); }}
+                onClick={() => {
+                  // Spotlight should only appear on first/opening screen
+                  setShowDimmingOverlay(false);
+                  setHomeMode(true);
+                  try { usePlayerStore.setState({ mainId: null }); } catch {}
+                  setHomeIntroEnabled(false);
+                  setUserSelected(false);
+                  setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
+                  triggerHudPower(true);
+                }}
               />
             ) : null}
         </div>
@@ -714,9 +708,9 @@ export default function DashboardApp() {
         <MediaPlayer
           onSkyChange={(webm, mp4, key) => setNextSky({ webm, mp4, key })}
           onPlayingChange={(p) => { setIsPlaying(p); if (p) setAmbientSuspended(false); }}
-          onAudioReady={() => setAudioReady(true)}
+          onAudioReady={() => {}}
           onTrackChange={(t) => { 
-            if (DEBUG_MEDIA) dlog('MediaPlayer onTrackChange:', t?.title, 'slug:', t?.slug); 
+ 
             setCurTrack(t); 
             if (userSelected) { setLinks({ spotify: t.spotify || LINKS.spotify, apple: t.apple || LINKS.apple }); } else { setLinks({ spotify: LINKS.spotify, apple: LINKS.apple }); } 
           }}
@@ -768,14 +762,6 @@ export default function DashboardApp() {
         />
       ) : null}
 
-      {/* Ambient wash disabled: only window trim lights */}
-      {false && (
-        <CockpitAmbientLights 
-          currentTrack={curTrack}
-          isPlaying={isPlaying}
-          mounted={mounted}
-        />
-      )}
 
       {/* Dimming Overlay with Animated Spotlight on Start Button */}
       {mounted && showDimmingOverlay ? (
@@ -800,13 +786,14 @@ export default function DashboardApp() {
           const pp = ppConfig;
 
           // Calculate exact button center position (matching SteeringWheelOverlay actual positioning)
-          // SteeringWheelOverlay positions button at: bottom: calc(-5vh + ${vs * 0.3}px), left: 50%
+          // SteeringWheelOverlay positions button at: bottom: calc(-5vh + ${vs * 0.3}px - 32px), left: 50%
           const vs = Math.round(Math.min(Math.min(window.innerWidth, window.innerHeight) * 0.70, 980));
           const startSize = Math.round(Math.min(Math.max(Math.min(window.innerWidth, window.innerHeight) * 0.14, 64), 180));
           
           const buttonCenterX = '50%'; // Button is centered horizontally
-          // Convert bottom positioning to top: 100vh - bottom_offset - half_button_height  
-          const buttonCenterY = `calc(100vh - (-5vh + ${vs * 0.3}px) - ${(startSize * 0.95)/2}px)`;
+          // Convert bottom positioning to top: 100vh - bottom_offset - half_button_height
+          const bottomExpr = `-5vh + ${vs * 0.3}px - 32px`;
+          const buttonCenterY = `calc(100vh - (${bottomExpr}) - ${(startSize * 1.02)/2}px)`;
           
           return (
             <div className="fixed inset-0 z-[100] pointer-events-none">
@@ -817,8 +804,8 @@ export default function DashboardApp() {
                   background: `
                     radial-gradient(
                       circle at ${buttonCenterX} ${buttonCenterY},
-                      transparent ${(startSize * 0.95) * 0.35}px,
-                      rgba(0, 0, 0, 0.85) ${(startSize * 0.95) * 0.55}px,
+                      transparent ${(startSize * 1.02) * 0.35}px,
+                      rgba(0, 0, 0, 0.85) ${(startSize * 1.02) * 0.35 + 2}px,
                       rgba(0, 0, 0, 0.95) 100%
                     )
                   `,

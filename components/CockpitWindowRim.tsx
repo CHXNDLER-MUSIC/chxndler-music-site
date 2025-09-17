@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import { ELEMENT_COLORS, type Element } from "@/lib/planets";
-import type { Track } from "@/config/tracks";
+import type { Track } from "@/lib/songs-consolidated";
 
 type Props = {
   currentTrack?: Track;
@@ -124,7 +124,7 @@ export default function CockpitWindowRim({ currentTrack, isPlaying, mounted }: P
   const copyPoly = () => {
     const s = polygonCss;
     try { navigator.clipboard.writeText(s); } catch {}
-    try { console.log('RIM polygon:', s); } catch {}
+    try { if (process.env.NODE_ENV !== 'production') { /* eslint-disable-next-line no-console */ console.log('RIM polygon:', s); } } catch {}
   };
 
   useEffect(() => {

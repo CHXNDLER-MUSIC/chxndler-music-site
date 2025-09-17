@@ -3,6 +3,7 @@
 import React from "react";
 
 export default function DevErrorLogger() {
+  if (process.env.NODE_ENV === 'production') return null;
   React.useEffect(() => {
     const onErr = (e: ErrorEvent) => {
       // Surface more detail in console when Next overlay is terse
@@ -22,4 +23,3 @@ export default function DevErrorLogger() {
   }, []);
   return null;
 }
-

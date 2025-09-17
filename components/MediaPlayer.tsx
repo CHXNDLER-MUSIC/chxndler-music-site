@@ -1,11 +1,13 @@
 "use client";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { tracks as ALL, type Track } from "@/config/tracks";
+import { tracks as ALL, type Track } from "@/lib/songs-consolidated";
 import { skyFor } from "@/lib/sky";
 import { track as gaTrack } from "@/lib/analytics";
 import { DEBUG_MEDIA, dlog, dwarn, dumpAudio } from "@/lib/debug";
 import { ELEMENT_COLORS, type Element } from "@/lib/planets";
+import { retryMediaPlay, playWithAutoplayFallback } from "@/lib/media-retry";
+import { MediaStateMachine, type MediaState } from "@/lib/media-state-machine";
 
 type Props = {
   onSkyChange: (webm: string, mp4: string, key: string) => void;
@@ -35,6 +37,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const tracks = ALL;
   const cur = tracks[idx];
   const [playing, setPlaying] = useState(false);
+  
+  // Initialize media state machine
+  const stateMachine = useRef(new MediaStateMachine());
+  const [mediaState, setMediaState] = useState<MediaState>('idle');
   const audioRef = useRef<HTMLAudioElement|null>(null);
   const uiClickRef = useRef<HTMLAudioElement|null>(null);
   const detentRef = useRef<HTMLAudioElement|null>(null);
@@ -78,6 +84,20 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const currentElement = getTrackElement(cur);
   const currentElementColor = ELEMENT_COLORS[currentElement];
 
+  // Subscribe to state machine changes
+  useEffect(() => {
+    const unsubscribe = stateMachine.current.onStateChange((state, context) => {
+      setMediaState(state);
+      setPlaying(context.isPlaying);
+      
+      if (DEBUG_MEDIA) {
+        dlog('Media state changed:', { state, context });
+      }
+    });
+    
+    return unsubscribe;
+  }, []);
+
 
   // Notify parent only when `playing` changes; avoid depending on inline callbacks
   const onPlayingChangeRef = useRef(onPlayingChange);
@@ -103,22 +123,25 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   useEffect(() => {
     const a = audioRef.current; if (!a) return;
     if (DEBUG_MEDIA) { dlog('index change', { idx, title: cur?.title, slug: cur?.slug, autoPlayOnIndex }); dumpAudio(a, 'onIndexChange:before'); }
+    
+    // Send load song event to state machine
+    if (cur.src) {
+      stateMachine.current.send({ 
+        type: 'LOAD_SONG', 
+        payload: { slug: cur.slug, src: cur.src } 
+      });
+    }
+    
     // Clear any pending delayed plays from prior index changes
     if (warpPlayTimerRef.current !== undefined) { clearTimeout(warpPlayTimerRef.current); warpPlayTimerRef.current = undefined; }
-    // Avoid resetting playback unless the new source isn't ready yet
-    try { if (a.readyState < 2 /* HAVE_CURRENT_DATA */) a.load(); } catch {}
-    // Do not force-stop audio when external controller will start it (autoPlayOnIndex=false)
-    if (autoPlayOnIndex) setPlaying(false);
-    if (cur.src && autoPlayOnIndex) {
-      // Begin playback muted immediately (allowed by autoplay policies), then unmute after warp
-      try { a.muted = true; a.volume = 0.0; } catch {}
-      a.play().catch(()=>{});
-    } // else: leave current playback state as-is (DashboardApp coordinates play)
+    
+    // Update sky and notify parent components
     const s = skyFor(cur.slug);
     if (onSkyChange) onSkyChange(s.webm, s.mp4, s.key);
     if (onTrackChange) onTrackChange(cur);
     gaTrack("track_change", { title: cur.title, slug: cur.slug, idx });
     detent(); // detent SFX
+    
     // Trigger warp flash overlay briefly when locking into a station
     try { setShowWarp(true); } catch {}
     if (warpTimerRef.current !== undefined) clearTimeout(warpTimerRef.current);
@@ -129,12 +152,24 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       const WARP_MS = 1800;
       warpPlayTimerRef.current = window.setTimeout(() => {
         const a2 = audioRef.current; if (!a2) return;
-        try { a2.muted = false; a2.volume = 1.0; } catch {}
-        // Already playing muted; just mark playing and ensure it continues
-        a2.play().catch(()=>{});
-        setPlaying(true);
+        
+        // Use retry logic for post-warp play
+        playWithAutoplayFallback(a2, {
+          maxRetries: 2,
+          onRetry: (attempt, error) => {
+            if (DEBUG_MEDIA) dwarn(`autoPlay retry ${attempt}`, error?.name, error?.message);
+          }
+        })
+          .then(() => {
+            stateMachine.current.send({ type: 'PLAY' });
+            if (DEBUG_MEDIA) dlog('autoPlayOnIndex successful after warp');
+          })
+          .catch((error) => {
+            if (DEBUG_MEDIA) dwarn('autoPlayOnIndex failed after retries', error);
+            stateMachine.current.send({ type: 'ERROR', payload: { error } });
+          });
+        
         warpPlayTimerRef.current = undefined;
-        if (DEBUG_MEDIA) { dlog('autoPlayOnIndex unmute+play after warp'); dumpAudio(a2, 'onIndexChange:autoPlay'); }
       }, WARP_MS);
     }
   }, [idx, autoPlayOnIndex]); // eslint-disable-line
@@ -159,39 +194,22 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           if (DEBUG_MEDIA) dlog('playSignal: set src', want);
         }
       } catch {}
-      // Avoid unconditional load() here — it can reset playback right after warp.
-      // Only load if the element isn't ready to play the current source yet.
-      try {
-        if (a.readyState < 2 /* HAVE_CURRENT_DATA */) a.load();
-      } catch {}
-      // Try direct play; if blocked, fall back to muted-start then unmute shortly
-      try { a.muted = false; a.volume = 1.0; } catch {}
-      if (DEBUG_MEDIA) { dlog('playSignal: attempting direct play'); dumpAudio(a, 'playSignal:before'); }
-      a.play()
-        .then(() => {
-          // Guard: some browsers may resolve but stay paused; recheck shortly
-          setTimeout(() => {
-            const ax = audioRef.current; if (!ax) return;
-            if (!ax.paused) { if (DEBUG_MEDIA) dlog('playSignal: direct play confirmed'); setPlaying(true); if (onPlayingChange) onPlayingChange(true); gaTrack("play", { slug: cur.slug }); return; }
-            // Fallback if still paused
-            try {
-              ax.muted = true; ax.volume = 0.0;
-              ax.play().then(() => {
-                setTimeout(() => { try { ax.muted = false; ax.volume = 1.0; } catch {} }, 80);
-                setPlaying(true); if (onPlayingChange) onPlayingChange(true); gaTrack("play", { slug: cur.slug });
-              }).catch((e) => { if (DEBUG_MEDIA) dwarn('playSignal: muted fallback rejected', e?.name, e?.message); setPlaying(false); });
-            } catch { setPlaying(false); }
-          }, 120);
+      
+      // Use improved retry logic with autoplay fallback
+      playWithAutoplayFallback(a, {
+        maxRetries: 3,
+        onRetry: (attempt, error) => {
+          if (DEBUG_MEDIA) dwarn(`playSignal: retry attempt ${attempt}`, error?.name, error?.message);
+        }
+      })
+        .then(({ muted }) => {
+          if (DEBUG_MEDIA) dlog('playSignal: play successful', { muted });
+          stateMachine.current.send({ type: 'PLAY' });
+          gaTrack("play", { slug: cur.slug });
         })
-        .catch((e) => {
-          if (DEBUG_MEDIA) dwarn('playSignal: direct play rejected', e?.name, e?.message);
-          try {
-            a.muted = true; a.volume = 0.0;
-            a.play().then(() => {
-              setTimeout(() => { try { a.muted = false; a.volume = 1.0; } catch {} }, 80);
-              setPlaying(true); if (onPlayingChange) onPlayingChange(true); gaTrack("play", { slug: cur.slug });
-            }).catch((e2) => { if (DEBUG_MEDIA) dwarn('playSignal: muted fallback rejected', e2?.name, e2?.message); setPlaying(false); });
-          } catch { setPlaying(false); }
+        .catch((error) => {
+          if (DEBUG_MEDIA) dwarn('playSignal: all retries failed', error?.name, error?.message);
+          stateMachine.current.send({ type: 'ERROR', payload: { error } });
         });
       return;
     }
@@ -269,10 +287,27 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       return;
     }
     if (a.paused) { 
-      try { a.muted = false; a.volume = 1.0; } catch {}; 
-      a.play().then(()=>{ setPlaying(true); gaTrack("play", { slug: cur.slug }); }).catch(()=>setPlaying(false)); 
+      // Use retry logic for play
+      playWithAutoplayFallback(a, {
+        maxRetries: 2,
+        onRetry: (attempt, error) => {
+          if (DEBUG_MEDIA) dwarn(`toggle play retry ${attempt}`, error?.name, error?.message);
+        }
+      })
+        .then(() => {
+          stateMachine.current.send({ type: 'PLAY' });
+          gaTrack("play", { slug: cur.slug });
+        })
+        .catch((error) => {
+          if (DEBUG_MEDIA) dwarn('toggle play failed after retries', error);
+          stateMachine.current.send({ type: 'ERROR', payload: { error } });
+        });
     }
-    else { a.pause(); setPlaying(false); gaTrack("pause", { slug: cur.slug }); }
+    else { 
+      a.pause(); 
+      stateMachine.current.send({ type: 'PAUSE' });
+      gaTrack("pause", { slug: cur.slug }); 
+    }
   }
 
   useEffect(() => {

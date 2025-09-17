@@ -21,7 +21,7 @@ export default function SteeringWheelOverlay({
   showUI?: boolean;
   onPowerToggle?: () => void;
   onJoinToggle?: (showJoin: boolean) => void;
-  onBeamColorChange?: (color: 'blue' | 'yellow' | 'pink') => void;
+  onBeamColorChange?: (color: 'blue' | 'yellow' | 'pink' | 'off') => void;
 }) {
   const pauseRef = useRef<HTMLAudioElement|null>(null);
   const hoverRef = useRef<HTMLAudioElement|null>(null);
@@ -104,10 +104,10 @@ export default function SteeringWheelOverlay({
     
     // Simple toggle: only control pink display and beam
     if (showJoin) {
-      // Close pink display
+      // Close pink display without auto-opening blue display
       setShowJoin(false);
-      setActiveBeamColor('blue'); // Default back to blue
-      onBeamColorChange?.('blue');
+      setActiveBeamColor('blue'); // local state back to blue tint
+      onBeamColorChange?.('off'); // tell parent to turn displays off, not open blue
     } else {
       // Open pink display
       setShowJoin(true);
@@ -151,7 +151,8 @@ export default function SteeringWheelOverlay({
   // Scale targets tuned for typical desktop/tablet/phone ranges
   // Larger defaults to match the original wheel visual size
   const startSize = Math.round(clamp(vmin * 0.14, 64, 180)); // START button diameter
-  const vs = Math.round(clamp(vmin * 0.75, 480, 980));       // wheel.mp4 square size
+  // Make wheel responsive on small screens: lower min and slightly reduce scale factor
+  const vs = Math.round(clamp(vmin * 0.70, 280, 980));       // wheel.mp4 square size
   const yellowHubSize = Math.round(clamp(vmin * 0.085, 56, 112));
   const yellowItemSize = Math.round(clamp(vmin * 0.095, 58, 120));
   // Unified responsive offsets so all three buttons (blue/yellow/pink)
@@ -183,6 +184,7 @@ export default function SteeringWheelOverlay({
         ['--buttons-bottom' as any]: `${buttonsBottomPercent}%`,
         ['--button-offset-px' as any]: `${buttonOffsetPx}px`,
         ['--panel-gap-px' as any]: `${Math.round(yellowHubSize * 0.7)}px`,
+        ['--hud-offset-px' as any]: `10px`,
       }}
     >
       {/* Wheel video projection aligned to cockpit wheel area */}
@@ -239,7 +241,8 @@ export default function SteeringWheelOverlay({
           zIndex: 92,
           pointerEvents: showUI ? 'auto' : 'none',
           opacity: showUI ? 1 : 0,
-          transition: 'opacity 75ms ease',
+          // Match beam (400ms) and HUD (300ms) fade timing
+          transition: 'opacity 350ms ease',
         }}
       >
         {(() => {
@@ -298,7 +301,8 @@ export default function SteeringWheelOverlay({
           zIndex: 92,
           pointerEvents: showUI ? 'auto' : 'none',
           opacity: showUI ? 1 : 0,
-          transition: 'opacity 75ms ease',
+          // Match beam (400ms) and HUD (300ms) fade timing
+          transition: 'opacity 350ms ease',
         }}
       >
         {(() => {
@@ -335,10 +339,10 @@ export default function SteeringWheelOverlay({
                     setActiveBeamColor('yellow');
                     onBeamColorChange?.('yellow');
                   } else {
-                    // Menu is closing, fade out beam if it's yellow
+                    // Menu is closing: turn displays off without auto-opening blue
                     if (activeBeamColor === 'yellow') {
                       setActiveBeamColor('blue');
-                      onBeamColorChange?.('blue');
+                      onBeamColorChange?.('off');
                     }
                   }
                 }}
@@ -358,7 +362,8 @@ export default function SteeringWheelOverlay({
           zIndex: 92,
           pointerEvents: showUI ? 'auto' : 'none',
           opacity: showUI ? 1 : 0,
-          transition: 'opacity 75ms ease',
+          // Match beam (400ms) and HUD (300ms) fade timing
+          transition: 'opacity 350ms ease',
         }}
       >
         {(() => {
@@ -378,16 +383,16 @@ export default function SteeringWheelOverlay({
         })()}
       </div>
 
-      {/* Separate Join Aliens Form - bottom should be at exact same position as blue display */}
+      {/* Separate Join Aliens Form - bottom should touch the light beam top */}
       {(() => {
-        // Position pink display to match blue display positioning - a little lower
-        const beamBottomCss = 'calc(var(--debug-beam-bottom) - 120px)';
+        // Position pink display using unified touch point system
+        const beamBottomCss = 'var(--display-touch-top)';
         return (
           <div
             ref={joinFormRef}
             style={{
               position: "fixed",
-              // Bottom at exact same position as blue display
+              // Bottom directly at beam top
               bottom: beamBottomCss,
               // Center horizontally in the viewport (always centered)
               left: '50%',
@@ -395,16 +400,15 @@ export default function SteeringWheelOverlay({
               zIndex: 93,
               pointerEvents: showJoin ? 'auto' : 'none',
               opacity: showJoin ? 1 : 0,
-              transition: 'opacity 75ms ease',
+              // Match surrounding UI fade for consistency
+              transition: 'opacity 350ms ease',
             }}
           >
             {/* Join form panel */}
             <div
               style={{
-                width: 'min(320px, calc(100vw - 32px))', // Responsive width with 16px margin on each side
-                maxWidth: '320px', // Slightly wider default for balance with yellow panel
-                minWidth: '200px', // Ensure minimum usable width
-                borderRadius: '16px',
+                width: 'var(--display-width)', // Responsive width using breakpoint variables
+                borderRadius: 'var(--display-border-radius)',
                 padding: '12px',
                 color: '#fff',
                 background: `
@@ -441,10 +445,12 @@ export default function SteeringWheelOverlay({
         style={{
           position: "absolute",
           // Position directly on top of the wheel surface
-          bottom: `calc(-5vh + ${vs * 0.3}px)`,
+          // Move the START button slightly lower for better alignment
+          bottom: `calc(-5vh + ${vs * 0.3}px - 32px)`,
           left: '50%',
-          width: startSize * 0.95,
-          height: startSize * 0.95,
+          // Slightly larger start button for better prominence
+          width: startSize * 1.02,
+          height: startSize * 1.02,
           borderRadius: 9999,
           transform: `translate(-50%, 0)`,
           zIndex: 90,

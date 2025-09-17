@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { tracks } from "@/config/tracks";
+import { tracks } from "@/lib/songs-consolidated";
 import { usePlayerStore } from "@/store/usePlayerStore";
 
 export default function HoloAudioBridge() {

@@ -98,6 +98,46 @@ const fs = /* glsl */ `
     return mix(a,b,u.x)+ (c-a)*u.y*(1.0-u.x)+ (d-b)*u.x*u.y;
   }
   
+  // Enhanced holographic instability and power fluctuations
+  float holoFlicker(float time) {
+    // Primary power fluctuation (like old projectors)
+    float powerFlicker = 0.95 + 0.05 * sin(time * 0.8 + sin(time * 1.3) * 2.0);
+    
+    // Random electrical interference
+    float interference = 0.98 + 0.02 * sin(time * 12.0 + sin(time * 23.0));
+    
+    // Occasional major glitches
+    float glitch = step(0.98, hash(vec2(floor(time * 2.0), 0.0))) * 
+                   (0.3 + 0.7 * sin(time * 50.0));
+    
+    return powerFlicker * interference * (1.0 - glitch);
+  }
+  
+  // Holographic projection depth distortion
+  float holoDepthWarp(vec2 uv, float time) {
+    // Simulate the way holograms shift with viewing angle
+    float warp1 = sin(uv.x * 15.0 + time * 2.0 + uv.y * 5.0) * 0.003;
+    float warp2 = cos(uv.y * 12.0 + time * 1.5 + uv.x * 8.0) * 0.002;
+    float warp3 = sin((uv.x + uv.y) * 20.0 + time * 3.0) * 0.001;
+    
+    return warp1 + warp2 + warp3;
+  }
+  
+  // Coherent laser interference patterns
+  float laserInterference(vec2 uv, float time) {
+    // Multiple coherent laser beams creating interference
+    float beam1 = sin(uv.x * 80.0 + time * 4.0 + uv.y * 15.0);
+    float beam2 = sin(uv.y * 75.0 + time * 3.5 + uv.x * 20.0);
+    float beam3 = sin((uv.x + uv.y) * 55.0 + time * 5.0);
+    float beam4 = sin((uv.x - uv.y) * 65.0 + time * 4.5);
+    
+    // Beat patterns from slightly different frequencies
+    float beat1 = sin(time * 0.3) * 0.2;
+    float beat2 = cos(time * 0.7) * 0.15;
+    
+    return (beam1 + beam2 + beam3 + beam4) * 0.25 + beat1 + beat2;
+  }
+  
   // Ultra-enhanced grid lines with multi-layer holographic distortion
   float gridMask(vec2 uv, float cellsX, float cellsY, float width){
     // Multi-layer holographic distortion for more realistic hologram appearance
@@ -162,79 +202,106 @@ const fs = /* glsl */ `
   void main(){
     vec3 viewDir = vec3(0.0,0.0,1.0);
     float fr = fresnelTerm(vNormal, viewDir, uFresnelPower);
+    
+    // Apply holographic instability
+    float flicker = holoFlicker(uTime);
+    
+    // Apply depth warping to UV coordinates
+    vec2 warpedUV = vUv + vec2(holoDepthWarp(vUv, uTime));
+    
+    // Enhanced laser interference
+    float laser = laserInterference(warpedUV, uTime) * 0.08;
 
-    // Ultra-enhanced scanlines with realistic CRT phosphor decay
-    float scans1 = pow(sin((vUv.y + uTime * 0.4) * 1200.0) * 0.5 + 0.5, 0.8);
-    float scans2 = pow(sin((vUv.y + uTime * 0.8) * 600.0) * 0.3 + 0.5, 1.2);
-    float scans3 = pow(sin((vUv.y - uTime * 0.6) * 1800.0) * 0.2 + 0.5, 1.5);
-    float scans4 = sin((vUv.y + uTime * 0.3) * 2400.0) * 0.15 + 0.5;
+    // Ultra-enhanced scanlines with realistic CRT phosphor decay and flicker
+    float scans1 = pow(sin((warpedUV.y + uTime * 0.4) * 1200.0) * 0.5 + 0.5, 0.8);
+    float scans2 = pow(sin((warpedUV.y + uTime * 0.8) * 600.0) * 0.3 + 0.5, 1.2);
+    float scans3 = pow(sin((warpedUV.y - uTime * 0.6) * 1800.0) * 0.2 + 0.5, 1.5);
+    float scans4 = sin((warpedUV.y + uTime * 0.3) * 2400.0) * 0.15 + 0.5;
     
-    // Interlaced effect for authentic display appearance
-    float interlace = step(0.5, fract(vUv.y * 300.0));
+    // Interlaced effect with holographic instability
+    float interlace = step(0.5, fract(warpedUV.y * 300.0));
     
-    // Phosphor persistence effect
-    float phosphor = exp(-mod(vUv.y * 600.0 + uTime * 100.0, 1.0) * 8.0) * 0.3 + 0.7;
+    // Enhanced phosphor persistence with flicker
+    float phosphor = exp(-mod(warpedUV.y * 600.0 + uTime * 100.0, 1.0) * 8.0) * 0.3 + 0.7;
     
-    float scanMask = mix(1.0, scans1 * scans2 * scans3 * scans4 * (0.8 + interlace * 0.2) * phosphor, uScanIntensity);
+    float scanMask = mix(1.0, scans1 * scans2 * scans3 * scans4 * (0.8 + interlace * 0.2) * phosphor * flicker, uScanIntensity);
 
-    // Enhanced shimmer with multiple octaves
-    float shimmer = 0.05 * noise(vUv * 40.0 + uTime * 0.6) + 
-                   0.03 * noise(vUv * 80.0 + uTime * 1.2) +
-                   0.02 * noise(vUv * 160.0 + uTime * 0.9);
+    // Enhanced shimmer with holographic instability
+    float shimmer = (0.05 * noise(warpedUV * 40.0 + uTime * 0.6) + 
+                    0.03 * noise(warpedUV * 80.0 + uTime * 1.2) +
+                    0.02 * noise(warpedUV * 160.0 + uTime * 0.9)) * flicker;
 
-    // Multiple sweeping bands
-    float sweep1 = smoothstep(0.42, 0.5, 0.5 + 0.5 * sin(uTime * 1.2 + vUv.y * 6.28318));
-    float sweep2 = smoothstep(0.35, 0.45, 0.5 + 0.3 * sin(uTime * 0.8 + vUv.x * 4.0 + vUv.y * 2.0));
-    float sweep3 = smoothstep(0.4, 0.48, 0.5 + 0.4 * sin(uTime * 1.5 + (vUv.x + vUv.y) * 8.0));
+    // Multiple sweeping bands with depth warping
+    float sweep1 = smoothstep(0.42, 0.5, 0.5 + 0.5 * sin(uTime * 1.2 + warpedUV.y * 6.28318));
+    float sweep2 = smoothstep(0.35, 0.45, 0.5 + 0.3 * sin(uTime * 0.8 + warpedUV.x * 4.0 + warpedUV.y * 2.0));
+    float sweep3 = smoothstep(0.4, 0.48, 0.5 + 0.4 * sin(uTime * 1.5 + (warpedUV.x + warpedUV.y) * 8.0));
     
-    // Ultra-enhanced multi-layer grid system with parallax depth
-    float grid = gridMask(vUv, 25.0, 12.0, 0.045);
-    float gridFine = gridMask(vUv + vec2(0.003 * sin(uTime * 1.2), 0.002 * cos(uTime * 1.5)), 75.0, 35.0, 0.015);
-    float gridUltraFine = gridMask(vUv * 2.0 + vec2(0.0015 * sin(uTime * 2.2), 0.001 * cos(uTime * 1.8)), 150.0, 70.0, 0.006);
-    float gridMicro = gridMask(vUv * 3.0 + vec2(0.0008 * sin(uTime * 3.1), 0.0006 * cos(uTime * 2.7)), 300.0, 140.0, 0.003);
+    // Ultra-enhanced multi-layer grid system with holographic distortion
+    float grid = gridMask(warpedUV, 25.0, 12.0, 0.045) * flicker;
+    float gridFine = gridMask(warpedUV + vec2(0.003 * sin(uTime * 1.2), 0.002 * cos(uTime * 1.5)), 75.0, 35.0, 0.015) * flicker;
+    float gridUltraFine = gridMask(warpedUV * 2.0 + vec2(0.0015 * sin(uTime * 2.2), 0.001 * cos(uTime * 1.8)), 150.0, 70.0, 0.006) * flicker;
+    float gridMicro = gridMask(warpedUV * 3.0 + vec2(0.0008 * sin(uTime * 3.1), 0.0006 * cos(uTime * 2.7)), 300.0, 140.0, 0.003) * flicker;
     
-    // Dynamic grid fade based on viewing angle for realistic hologram depth
+    // Dynamic grid fade based on viewing angle with enhanced depth
     float gridDepth = fr * 0.8 + 0.2;
 
-    // Holographic interference
-    float interf = interference(vUv, uTime) * 0.15;
+    // Enhanced holographic interference
+    float interf = interference(warpedUV, uTime) * 0.15 * flicker;
     
-    // Chromatic aberration
-    vec3 chromatic = chromaticAberration(vUv, fr);
+    // Chromatic aberration with instability
+    vec3 chromatic = chromaticAberration(warpedUV, fr) * flicker;
     
-    // Data stream effect
-    float dataStream = step(0.98, hash13(vec3(floor(vUv * 50.0), floor(uTime * 10.0)))) * 
-                      smoothstep(0.0, 0.1, sin(uTime * 8.0 + vUv.y * 30.0));
+    // Data stream effect with flickering
+    float dataStream = step(0.98, hash13(vec3(floor(warpedUV * 50.0), floor(uTime * 10.0)))) * 
+                      smoothstep(0.0, 0.1, sin(uTime * 8.0 + warpedUV.y * 30.0)) * flicker;
 
-    // Enhanced color mixing
+    // Holographic projection lines (like light beams)
+    float projectionLines = 0.0;
+    for(int i = 0; i < 5; i++) {
+      float angle = float(i) * 0.628318 + uTime * 0.5;
+      vec2 dir = vec2(cos(angle), sin(angle));
+      float line = 1.0 - smoothstep(0.0, 0.01, abs(dot(warpedUV - 0.5, dir)));
+      projectionLines += line * 0.02;
+    }
+
+    // Enhanced color mixing with holographic effects
     vec3 col = uBaseColor * (0.6 + shimmer);
     col = mix(col, uGlowColor * chromatic, fr * 0.8);
     
-    // Add all enhanced holographic effects with depth weighting
-    col += uGlowColor * 0.9 * grid * gridDepth;
-    col += uGlowColor * 0.6 * gridFine * gridDepth;
-    col += uGlowColor * 0.35 * gridUltraFine * gridDepth;
-    col += uGlowColor * 0.2 * gridMicro * gridDepth;
-    col += uGlowColor * 0.35 * sweep1;
-    col += uGlowColor * 0.25 * sweep2;
-    col += uGlowColor * 0.18 * sweep3;
-    col += uGlowColor * interf * 1.2;
-    col += uGlowColor * 0.7 * dataStream;
+    // Add all enhanced holographic effects with instability
+    col += uGlowColor * 1.2 * grid * gridDepth;
+    col += uGlowColor * 0.8 * gridFine * gridDepth;
+    col += uGlowColor * 0.5 * gridUltraFine * gridDepth;
+    col += uGlowColor * 0.3 * gridMicro * gridDepth;
+    col += uGlowColor * 0.35 * sweep1 * flicker;
+    col += uGlowColor * 0.25 * sweep2 * flicker;
+    col += uGlowColor * 0.18 * sweep3 * flicker;
+    col += uGlowColor * interf * 1.5;
+    col += uGlowColor * 0.9 * dataStream;
+    col += uGlowColor * laser * 2.0;
+    col += uGlowColor * projectionLines * 3.0;
     
-    // Additional holographic depth cueing
-    float depthCue = smoothstep(0.2, 0.8, fr);
-    col += uGlowColor * depthCue * 0.1;
+    // Additional holographic depth cueing with flicker
+    float depthCue = smoothstep(0.2, 0.8, fr) * flicker;
+    col += uGlowColor * depthCue * 0.15;
     
-    // Apply final effects
-    col *= scanMask * uBrighten;
+    // Apply holographic power fluctuations
+    col *= scanMask * uBrighten * flicker;
     
-    // Add slight color noise for realism
-    col += vec3(
-      hash(vUv + uTime) - 0.5,
-      hash(vUv * 1.1 + uTime * 1.1) - 0.5,
-      hash(vUv * 0.9 + uTime * 0.9) - 0.5
-    ) * 0.01;
+    // Enhanced noise with holographic characteristics
+    vec3 holoNoise = vec3(
+      hash(warpedUV + uTime) - 0.5,
+      hash(warpedUV * 1.1 + uTime * 1.1) - 0.5,
+      hash(warpedUV * 0.9 + uTime * 0.9) - 0.5
+    ) * 0.015 * flicker;
+    
+    col += holoNoise;
+    
+    // Add occasional holographic "refresh" effect
+    float refresh = step(0.995, hash(vec2(floor(uTime * 0.5), 0.0))) * 
+                   sin(uTime * 100.0) * 0.1;
+    col += uGlowColor * refresh;
 
-    gl_FragColor = vec4(col, uAlpha);
+    gl_FragColor = vec4(col, uAlpha * flicker);
   }
 `;

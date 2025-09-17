@@ -44,8 +44,9 @@ export default function HoloHubMenu({
   const lastItemRef = useRef<HTMLButtonElement | null>(null);
   const joinRef = useRef<HTMLAudioElement | null>(null);
 
-  // Position yellow panel to match blue display positioning - a little lower
-  const beamBottomCss = 'calc(var(--debug-beam-bottom) - 120px)';
+  // Position yellow panel using unified touch point system
+  // Bottom of display touches the beam top dynamically
+  const beamBottomCss = 'var(--display-touch-top)';
 
   // Cap at 6 items, evenly spaced 60deg, start at -90deg (top)
   const entries = useMemo(() => items.slice(0, 6), [items]);
@@ -202,11 +203,11 @@ export default function HoloHubMenu({
           // Center the yellow display perfectly on screen
           left: '50%',
           transform: 'translateX(-50%)',
-          width: `min(400px, calc(100vw - 32px))`,
+          width: `var(--display-width)`,
           height: 80,
           pointerEvents: open ? 'auto' : 'none',
           zIndex: 93,
-          borderRadius: 16,
+          borderRadius: `var(--display-border-radius)`,
           overflow: 'hidden',
           opacity: open ? 1 : 0,
           transition: 'opacity 200ms ease, transform 220ms cubic-bezier(0.2,0.8,0.2,1)'
