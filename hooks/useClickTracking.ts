@@ -6,7 +6,7 @@ import { trackClick, generateClickId, storeClickData, type ClickData } from "../
 // Enhanced element identification function
 function identifyElement(element: HTMLElement): string {
   const text = element.textContent?.toLowerCase().trim() || '';
-  const className = element.className?.toLowerCase() || '';
+  const className = String(element.className || '').toLowerCase();
   const href = element.getAttribute('href')?.toLowerCase() || '';
   const ariaLabel = element.getAttribute('aria-label')?.toLowerCase() || '';
   const title = element.getAttribute('title')?.toLowerCase() || '';
@@ -99,7 +99,7 @@ export function useClickTracking() {
         timestamp: Date.now(),
         element: {
           tagName: target.tagName.toLowerCase(),
-          className: target.className || "",
+          className: String(target.className || ""),
           id: target.id || "",
           textContent: target.textContent?.trim().slice(0, 100) || "",
           href: target.getAttribute('href') || undefined,

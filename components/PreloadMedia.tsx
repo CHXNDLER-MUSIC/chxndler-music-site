@@ -32,7 +32,11 @@ export default function PreloadMedia({ maxImage = 6, maxAudio = 3, maxVideo = 2,
     // Always include intro + default space
     if (introSky?.mp4) skySet.add(introSky.mp4);
     skySet.add("/skies/space.mp4");
-    const videos = Array.from(skySet);
+    // Ensure space.mp4 is preloaded first for fastest home landing
+    const videos = [
+      '/skies/space.mp4',
+      ...Array.from(skySet).filter((v) => v !== '/skies/space.mp4')
+    ];
 
     // Simple concurrency helper
     async function runQueue<T>(items: T[], worker: (item: T) => Promise<void>, concurrency: number) {
@@ -137,4 +141,3 @@ export default function PreloadMedia({ maxImage = 6, maxAudio = 3, maxVideo = 2,
 
   return null;
 }
-

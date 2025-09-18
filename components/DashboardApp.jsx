@@ -41,13 +41,16 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [beamEnabled, setBeamEnabled] = useState(false);
   const [powerBusy, setPowerBusy] = useState(false);
   const [showOverlayUI, setShowOverlayUI] = useState(false); // comms + join buttons
-  const [allowWarp, setAllowWarp] = useState(true); // show initial lightspeed overlay
+  // Gate overlay + HUD power-up until Start is pressed (or deep link)
+  const [uiUnlocked, setUiUnlocked] = useState(false);
+  const [allowWarp, setAllowWarp] = useState(false); // show initial lightspeed overlay
   const [landingMode, setLandingMode] = useState(true); // initial screen state
   const [landingRevealReady, setLandingRevealReady] = useState(false); // when true, allow initial overlay to hide
   const [homeMode, setHomeMode] = useState(false);
   const [homeIntroEnabled, setHomeIntroEnabled] = useState(true);
   const [pendingHomePower, setPendingHomePower] = useState(false);
   const [pendingTrackPlay, setPendingTrackPlay] = useState(false);
+  const [pendingOverlayReveal, setPendingOverlayReveal] = useState(false); // wait to show overlay until warp SFX ends
   const trackPlayTimerRef = React.useRef(undefined);
   const [ambientSuspended, setAmbientSuspended] = useState(false);
   const [firstStartDone, setFirstStartDone] = useState(false);
@@ -66,6 +69,8 @@ export default function DashboardApp({ initialSlug } = {}) {
 
   // Centralized HUD power sequencing: play SFX then run beam/HUD fades
   const triggerHudPower = React.useCallback((turnOn) => {
+    // Prevent HUD/beam/buttons enabling before Start press
+    if (!uiUnlocked) return;
     if (powerBusy) return;
     setPowerBusy(true);
     const turningOn = typeof turnOn === 'boolean' ? turnOn : (!beamEnabled && !showHUD);
@@ -143,7 +148,7 @@ export default function DashboardApp({ initialSlug } = {}) {
         setTimeout(() => { setShowHUD(false); setPowerBusy(false); }, 50); // unmount HUD right after
       }, 150); // Reduced to match faster HUD fade-in timing for consistency
     }
-  }, [powerBusy, beamEnabled, showHUD]);
+  }, [powerBusy, beamEnabled, showHUD, uiUnlocked]);
 
   function onSongChange(id){
     // In-app song change without spotlight/beam/route reloads
@@ -166,15 +171,26 @@ export default function DashboardApp({ initialSlug } = {}) {
     
     // Trigger warp sequence with new song's sky
     setAllowWarp(true);
-    setNextSky(skyFor(t.slug));
+    // Switch base sky immediately so it loads while lightspeed overlay plays
+    setSky(skyFor(t.slug));
+    setNextSky(null);
     setFlySignal((n) => n + 1);
   }
 
-  // Trigger a fly transition on channel index changes that did not come from an explicit user song selection.
-  // SongList/gesture-driven changes call onSongChange which triggers its own fly.
-  React.useEffect(() => { 
+  // Trigger a fly transition only when the channel index actually changes (not on initial mount)
+  // and only if it wasn't driven by an explicit user selection. This prevents the initial
+  // page load from auto-revealing the UI before the Start button is clicked.
+  // JS file: avoid TypeScript generics here
+  const prevIdxRef = React.useRef(null);
+  React.useEffect(() => {
     if (!mounted) return;
-    if (!userSelected && !startButtonWarpRef.current && !warpActive) setFlySignal((n)=> n + 1); 
+    // Skip first run to avoid triggering on initial mount
+    if (prevIdxRef.current === null) { prevIdxRef.current = channelIdx; return; }
+    // Only trigger when index changes implicitly (e.g., auto-advance), not when user selected
+    if (!userSelected && !startButtonWarpRef.current && !warpActive && prevIdxRef.current !== channelIdx) {
+      setFlySignal((n) => n + 1);
+    }
+    prevIdxRef.current = channelIdx;
   }, [channelIdx, mounted, userSelected, warpActive]);
   const { hudSongs, holoSongs } = React.useMemo(() => buildPlanetSongs(), []);
   React.useEffect(() => {
@@ -205,6 +221,8 @@ export default function DashboardApp({ initialSlug } = {}) {
     if (startButtonWarpRef.current) return; // Skip if start button is handling warp
     const t = tracks.find((x) => x.slug === initialSlug);
     if (!t) return;
+    // Deep link unlocks overlay UI so buttons can show after warp
+    setUiUnlocked(true);
     // Mirror onSongChange sequencing but for route entry
     setCurTrack(t);
     setUserSelected(true);
@@ -238,6 +256,8 @@ export default function DashboardApp({ initialSlug } = {}) {
   }, [mounted, initialSlug]);
   // Disable auto actions on random interactions; nothing should trigger on click/touch/move
   React.useEffect(() => { /* intentionally empty */ }, [mounted]);
+
+  // Removed deferral: switch base sky earlier so it loads under the lightspeed overlay.
 
   // Listen for card modal events to dim light beam
   React.useEffect(() => {
@@ -411,10 +431,11 @@ export default function DashboardApp({ initialSlug } = {}) {
       height: 'var(--beam-height)',
       width: 'var(--display-width)',
       transform: 'translate3d(-50%,0,0)',
-      opacity: (beamEnabled || showHUD) ? (cardModalOpen ? 0.3 : 1) : 0,
+      // Tie beam visibility to overlay UI being shown and Start having been pressed
+      opacity: (uiUnlocked && showOverlayUI && (beamEnabled || showHUD)) ? (cardModalOpen ? 0.3 : 1) : 0,
       transition: 'opacity 400ms ease-in-out'
     };
-  }, [beamEnabled, showHUD, cardModalOpen]);
+  }, [beamEnabled, showHUD, cardModalOpen, uiUnlocked, showOverlayUI]);
 
   // Position the blue display lower (closer to the wheel/buttons)
   // Align to the buttons baseline with a larger downward offset
@@ -449,12 +470,31 @@ export default function DashboardApp({ initialSlug } = {}) {
         videoKey={sky.key}
         flySignal={flySignal}
         allowWarp={allowWarp}
-        holdLightspeed={false}
-        // On first screen: keep lightspeed looping until Start is clicked
-        holdLightspeed={landingMode}
-        readyToReveal={landingRevealReady}
+        // Keep the lightspeed overlay visible until overlay UI appears
+        holdLightspeed={true}
+        readyToReveal={uiUnlocked && showOverlayUI}
         minDurationMs={3000}
         offsetY="-1vh"
+        onWarpSfxEnd={() => {
+          // If we're landing on home via Start, reveal overlay/UI after warp finishes
+          if (pendingOverlayReveal) {
+            // Switch background sky in the same render pass for simultaneous reveal
+            try {
+              if (nextSky) { setSky(nextSky); setNextSky(null); }
+            } catch {}
+            // Play the button sound exactly at reveal time
+            try { sfx.play('button', 0.9); } catch {}
+            try { setShowOverlayUI(true); } catch {}
+            try { setBeamEnabled(true); } catch {}
+            try { setShowHUD(true); } catch {}
+            try { setBeamOnly(false); } catch {}
+            try { setPowerBusy(false); } catch {}
+            try { setLandingRevealReady(true); } catch {}
+            // Resume ambient slightly after UI fades begin for smoothness
+            setTimeout(() => { setAmbientSuspended(false); }, 100);
+            setPendingOverlayReveal(false);
+          }
+        }}
         onFlyStart={() => {
           setWarpActive(true);
           // Stop any currently playing track as soon as warp begins
@@ -496,9 +536,7 @@ export default function DashboardApp({ initialSlug } = {}) {
               }, 4500);
             } catch {}
           }
-          if (nextSky) { 
-            setSky(nextSky); setNextSky(null);
-          }
+          // Defer applying nextSky until overlay UI is visible so base stays lightspeed
           // If this warp was due to Start (not track selection), prepare to land on home.
           // For song selections (userSelected), do not fall back to home even if timers race.
           if (!pendingTrackPlay && !userSelected) setPendingHomePower(true);
@@ -530,28 +568,8 @@ export default function DashboardApp({ initialSlug } = {}) {
             setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
             // Keep ambient paused until UI beam + HUD have faded in
             setAmbientSuspended(true);
-            // Begin HUD power sequence with optimized timing for faster response
-            // Minimal delay for immediate UI feedback after warp completes
-            setTimeout(() => {
-              try { 
-                // Play button SFX and immediately start UI fade-in for faster response
-                try { sfx.play('button', 0.9); } catch {}
-                
-                // Fade in all elements immediately with SFX for snappy response
-                setShowOverlayUI(true);
-                setBeamEnabled(true);
-                setShowHUD(true);
-                setBeamOnly(false);
-                setPowerBusy(false);
-                setLandingRevealReady(true); // allow initial lightspeed loop to hide
-                
-                // Start space-music.mp3 and welcome audio shortly after UI elements start fading in
-                setTimeout(() => {
-                  setAmbientSuspended(false); // This will start space-music.mp3 and welcome-to-the-heartverse.mp3
-                }, 100); // Reduced delay for faster audio start
-                
-              } catch {} 
-            }, 50); // Reduced from 200ms to 50ms for much faster response
+            // Defer overlay/UI reveal until warp SFX has finished
+            setPendingOverlayReveal(true);
           }
           if (pendingTrackPlay) {
             // Clear any pending fallback timers; onFlyEnd will trigger play immediately.
@@ -586,7 +604,7 @@ export default function DashboardApp({ initialSlug } = {}) {
       <SteeringWheelOverlay
         POS={POS}
         playing={isPlaying}
-        showUI={showOverlayUI}
+        showUI={uiUnlocked && showOverlayUI}
         onJoinToggle={setJoinAlienOpen}
         onBeamColorChange={handleBeamToggle}
         onPowerToggle={() => { 
@@ -599,6 +617,10 @@ export default function DashboardApp({ initialSlug } = {}) {
           // No need to call triggerHudPower since beam system manages everything
         }}
         onLaunch={() => {
+          // For Start flow: reveal overlay only after warp.mp3 finishes
+          setPendingOverlayReveal(true);
+          // Unlock overlay UI/HUD sequencing on Start press
+          setUiUnlocked(true);
           // Hide dimming overlay when start is clicked
           setShowDimmingOverlay(false);
           // Allow the initial lightspeed loop to hide when we kick off warp
@@ -638,7 +660,9 @@ export default function DashboardApp({ initialSlug } = {}) {
           
           // ALWAYS start warp sequence to take user to CHXNDLER homepage
           setAllowWarp(true);
-          setNextSky(SPACE_SKY); // Always go to space sky for homepage
+          // Switch to space sky immediately so the base video can preload under lightspeed
+          setSky(SPACE_SKY);
+          setNextSky(null);
           setFlySignal((n) => n + 1);
           
           // Reset to homepage defaults
@@ -659,35 +683,26 @@ export default function DashboardApp({ initialSlug } = {}) {
         }}
       >
         <div className="relative h-full w-full p-0" style={{ overflow: 'visible' }} suppressHydrationWarning>
-          <AnimatePresence mode="wait">
-            {showHUD && (
-              <motion.div 
-                key="hud-panel"
-                className="absolute inset-0 p-0" 
-                suppressHydrationWarning
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ 
-                  type: 'spring',
-                  damping: 25,
-                  stiffness: 200,
-                  duration: 0.3
-                }}
-              >
-                <HUDPanel
-                  inConsole
-                  songs={hudSongs}
-                  onSongChange={onSongChange}
-                  track={curTrack}
-                  currentId={homeMode ? undefined : curTrack?.slug}
-                  playing={isPlaying}
-                  beamOnly={beamOnly}
-                  beamEnabled={beamEnabled}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* Pre-mount HUDPanel; reveal via opacity so it is ready instantly */}
+          <motion.div
+            className="absolute inset-0 p-0"
+            suppressHydrationWarning
+            initial={{ opacity: 0 }}
+            animate={{ opacity: (uiUnlocked && showOverlayUI && showHUD) ? 1 : 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200, duration: 0.3 }}
+            style={{ pointerEvents: (uiUnlocked && showOverlayUI && showHUD) ? 'auto' : 'none', visibility: (uiUnlocked && showOverlayUI) ? 'visible' : 'hidden' }}
+          >
+            <HUDPanel
+              inConsole
+              songs={hudSongs}
+              onSongChange={onSongChange}
+              track={curTrack}
+              currentId={homeMode ? undefined : curTrack?.slug}
+              playing={isPlaying}
+              beamOnly={beamOnly}
+              beamEnabled={beamEnabled}
+            />
+          </motion.div>
             {/* Click-to-activate overlay on opening screen: turn HUD on when area is tapped */}
             {!showHUD ? (
               <button
@@ -697,6 +712,8 @@ export default function DashboardApp({ initialSlug } = {}) {
                 title="Activate HUD"
                 style={{ background:'transparent', zIndex: 30, cursor:'pointer' }}
                 onClick={() => {
+                  // Ignore taps before Start is pressed
+                  if (!uiUnlocked) return;
                   // Spotlight should only appear on first/opening screen
                   setShowDimmingOverlay(false);
                   setHomeMode(true);
@@ -759,7 +776,7 @@ export default function DashboardApp({ initialSlug } = {}) {
       ) : null}
 
 
-      {mounted && showHUD && process.env.NEXT_PUBLIC_HOLOHUD === '1' ? (
+      {mounted && uiUnlocked && showOverlayUI && showHUD && process.env.NEXT_PUBLIC_HOLOHUD === '1' ? (
         <HoloHUD
           track={curTrack}
           playing={effectivelyPlaying}

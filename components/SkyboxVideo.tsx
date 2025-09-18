@@ -17,6 +17,7 @@ export default function SkyboxVideo({
   holdLightspeed = false,
   readyToReveal = false,
   minDurationMs = 1200,
+  onWarpSfxEnd,
 }:{
   brightness?: number;
   srcWebm?: string;
@@ -31,6 +32,7 @@ export default function SkyboxVideo({
   holdLightspeed?: boolean; // if true, keep lightspeed overlay visible until readyToReveal becomes true
   readyToReveal?: boolean;  // when holdLightspeed, hide overlay when this becomes true
   minDurationMs?: number;   // minimum duration the lightspeed overlay should remain visible
+  onWarpSfxEnd?: () => void; // callback after warp SFX finishes
 }) {
   // Default to visible to avoid missing sky if loadeddata doesn't fire
   const [ready, setReady] = useState(true);
@@ -64,10 +66,14 @@ export default function SkyboxVideo({
       setShowLightspeed(true);
       lsStartRef.current = Date.now();
       const v = lsRef.current;
-      if (v) { v.currentTime = 0; void v.play().catch(()=>{}); }
-      // Delay warp SFX slightly to sync with lightspeed video
+      if (v) { try { v.currentTime = 0; } catch {} void v.play().catch(()=>{}); }
+      // Delay warp SFX slightly to sync with lightspeed video, and notify when it ends
       setTimeout(() => {
-        try { sfx.play('warp', 0.7); } catch {}
+        try {
+          sfx.playAndWait('warp', 0.7).then(() => {
+            try { onWarpSfxEnd && onWarpSfxEnd(); } catch {}
+          }).catch(() => { try { onWarpSfxEnd && onWarpSfxEnd(); } catch {} });
+        } catch { try { onWarpSfxEnd && onWarpSfxEnd(); } catch {} }
       }, 100);
       flyEndCalledRef.current = false;
       if (onFlyStart) try { onFlyStart(); } catch {}
@@ -98,10 +104,14 @@ export default function SkyboxVideo({
       setShowLightspeed(true);
       lsStartRef.current = Date.now();
       const v = lsRef.current;
-      if (v) { v.currentTime = 0; void v.play().catch(()=>{}); }
-      // Delay warp SFX slightly to sync with lightspeed video
+      if (v) { try { v.currentTime = 0; } catch {} void v.play().catch(()=>{}); }
+      // Delay warp SFX slightly to sync with lightspeed video, and notify when it ends
       setTimeout(() => {
-        try { sfx.play('warp', 0.7); } catch {}
+        try {
+          sfx.playAndWait('warp', 0.7).then(() => {
+            try { onWarpSfxEnd && onWarpSfxEnd(); } catch {}
+          }).catch(() => { try { onWarpSfxEnd && onWarpSfxEnd(); } catch {} });
+        } catch { try { onWarpSfxEnd && onWarpSfxEnd(); } catch {} }
       }, 100);
       if (!holdLightspeed) {
         if (lsTimerRef.current !== undefined) window.clearTimeout(lsTimerRef.current);

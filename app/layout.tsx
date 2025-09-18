@@ -28,6 +28,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preload" as="image" href="/elements/youtube.png" />
         <link rel="preload" as="image" href="/elements/spotify.png" />
         <link rel="preload" as="image" href="/elements/apple.png" />
+        {/* Preload critical sky videos to minimize first transition latency */}
+        <link rel="preload" as="video" href="/skies/space.mp4" type="video/mp4" />
+        <link rel="preload" as="video" href="/skies/space.webm" type="video/webm" />
         {gaId ? (
           <>
             {/* eslint-disable-next-line @next/next/no-sync-scripts */}
@@ -64,4 +67,3 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
-
