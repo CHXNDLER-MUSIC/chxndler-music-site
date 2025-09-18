@@ -163,14 +163,19 @@ export default function DashboardApp({ initialSlug } = {}) {
 
     // Switch MediaPlayer channel; MediaPlayer handles audio swap without reloading page
     setChannelIdx(idx);
+    
+    // Trigger warp sequence with new song's sky
+    setAllowWarp(true);
+    setNextSky(skyFor(t.slug));
+    setFlySignal((n) => n + 1);
   }
 
   // Trigger a fly transition on channel index changes that did not come from an explicit user song selection.
   // SongList/gesture-driven changes call onSongChange which triggers its own fly.
   React.useEffect(() => { 
     if (!mounted) return;
-    if (!userSelected && !startButtonWarpRef.current) setFlySignal((n)=> n + 1); 
-  }, [channelIdx, mounted, userSelected]);
+    if (!userSelected && !startButtonWarpRef.current && !warpActive) setFlySignal((n)=> n + 1); 
+  }, [channelIdx, mounted, userSelected, warpActive]);
   const { hudSongs, holoSongs } = React.useMemo(() => buildPlanetSongs(), []);
   React.useEffect(() => {
     try {

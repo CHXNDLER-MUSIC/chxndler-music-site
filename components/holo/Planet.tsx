@@ -41,6 +41,9 @@ export default function Planet({
   const phaseTargetRef = useRef(0);
   const worldPosRef = useRef(new Vector3());
   const [depthFactor, setDepthFactor] = useState(1.0);
+  const [glitchActive, setGlitchActive] = useState(false);
+  const [glitchOpacity, setGlitchOpacity] = useState(1.0);
+  const glitchTimerRef = useRef<number | undefined>(undefined);
 
   // Deterministic jitter so orbiting planets don't overlap perfectly
   const idHash = useMemo(() => {
@@ -113,10 +116,10 @@ export default function Planet({
   }
   
   const sizeMultipliers = {
-    'dwarf': 0.08 + sizeVar * 0.5,       // 0.08-0.58x - extremely varied tiny to small sizes
-    'terrestrial': 0.5 + sizeVar * 1.2,  // 0.5-1.7x - highly varied earth-like sizes
-    'neptune': 2.8 + sizeVar * 2.5,      // 2.8-5.3x - dramatically varied ice giant sizes
-    'gas-giant': 6.0 + sizeVar * 8.0     // 6.0-14.0x - extremely varied massive gas giant sizes
+    'dwarf': 0.15 + sizeVar * 0.8,       // 0.15-0.95x - varied tiny to small sizes, more visible
+    'terrestrial': 0.8 + sizeVar * 1.8,  // 0.8-2.6x - highly varied earth-like sizes, more dramatic
+    'neptune': 3.2 + sizeVar * 3.5,      // 3.2-6.7x - dramatically varied ice giant sizes, larger
+    'gas-giant': 8.0 + sizeVar * 12.0    // 8.0-20.0x - extremely varied massive gas giant sizes, much larger
   };
   
   const satelliteSizeJitter = (sizeMultipliers[planetType] || 1.0) * (0.8 + (titleLength || 0) * 0.02);
@@ -161,7 +164,13 @@ export default function Planet({
     const getAngle = () => (layoutAngle0 + angleRef.current + phaseOffsetRef.current);
     const addPhase = (delta: number) => { phaseTargetRef.current += delta; };
     registerPlanet({ id: song.id, ringIndex, getWorldPosition, getAngle, addPhase });
-    return () => unregisterPlanet(song.id);
+    return () => {
+      unregisterPlanet(song.id);
+      // Cleanup glitch timer
+      if (glitchTimerRef.current !== undefined) {
+        clearTimeout(glitchTimerRef.current);
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [song.id, layout?.ringIndex, layoutAngle0]);
 
@@ -551,6 +560,30 @@ export default function Planet({
     if (Number.isFinite(depthLocal) && Math.abs(depthLocal - depthFactor) > 0.03) {
       setDepthFactor(depthLocal);
     }
+
+    // Random holographic glitch effects
+    if (!glitchActive && Math.random() < (isMain ? 0.0008 : 0.0003)) {
+      setGlitchActive(true);
+      const glitchDuration = 150 + Math.random() * 200; // 150-350ms
+      
+      // Clear any existing timer
+      if (glitchTimerRef.current !== undefined) {
+        clearTimeout(glitchTimerRef.current);
+      }
+      
+      glitchTimerRef.current = window.setTimeout(() => {
+        setGlitchActive(false);
+        setGlitchOpacity(1.0);
+        glitchTimerRef.current = undefined;
+      }, glitchDuration);
+    }
+
+    // Animate glitch opacity
+    if (glitchActive) {
+      const glitchTime = elapsedTime * 50; // Fast oscillation
+      const glitchPattern = Math.sin(glitchTime) * Math.cos(glitchTime * 1.7) * Math.sin(glitchTime * 0.3);
+      setGlitchOpacity(0.3 + Math.abs(glitchPattern) * 0.7);
+    }
     // Slow-moving cloud layer for parallax realism
     if (cloudsRef.current) {
       cloudsRef.current.rotation.y += 0.12 * d;
@@ -753,157 +786,50 @@ export default function Planet({
             }
           }
         })()}
-        <meshPhysicalMaterial
-          map={colorTex}
-          normalMap={normalTex}
-          roughnessMap={roughTex}
-          displacementMap={normalTex}
-          displacementScale={
-            planetType === 'gas-giant' ? 0.008 :
-            planetType === 'neptune' ? 0.015 :
-            planetType === 'dwarf' ? 0.045 : // Very pronounced features for small irregular bodies
-            element === 'magic' ? 0.035 :
-            element === 'water' ? 0.018 :
-            element === 'fire' ? 0.032 : // Volcanic terrain
-            isDark ? 0.042 : 0.025 // More dramatic surface features overall
+        <HoloMaterial
+          baseColor={baseColor}
+          glowColor={innerColor}
+          scanIntensity={
+            planetType === 'gas-giant' ? (isMain ? 0.9 : (isHover ? 0.85 : 0.75)) :
+            planetType === 'neptune' ? (isMain ? 0.8 : (isHover ? 0.75 : 0.65)) :
+            planetType === 'dwarf' ? (isMain ? 0.65 : (isHover ? 0.6 : 0.5)) :
+            element === 'lightning' ? (isMain ? 1.0 : (isHover ? 0.95 : 0.85)) :
+            element === 'fire' ? (isMain ? 0.85 : (isHover ? 0.8 : 0.7)) :
+            element === 'water' ? (isMain ? 0.75 : (isHover ? 0.7 : 0.6)) :
+            element === 'magic' ? (isMain ? 1.05 : (isHover ? 1.0 : 0.9)) :
+            isMain ? 0.8 : (isHover ? 0.75 : 0.65)
           }
-          color={"white"}
-          // Ultra-realistic material properties by planet type and composition
-          metalness={
-            planetType === 'gas-giant' ? (sizeVar * 0.02) : // Trace metals in atmosphere
-            planetType === 'neptune' ? (0.01 + sizeVar * 0.04) : // Ice with metallic cores
-            planetType === 'dwarf' ? (0.6 + sizeVar * 0.3) : // High metal content
-            element === 'lightning' ? (0.7 + sizeVar * 0.2) : // Conductive materials
-            element === 'water' ? (0.02 + sizeVar * 0.08) : // Minerals in water
-            element === 'magic' ? (0.3 + sizeVar * 0.4) : // Crystalline structures
-            element === 'fire' ? (0.4 + sizeVar * 0.4) : // Volcanic metals
-            isDark ? (0.8 + sizeVar * 0.15) : // Heavy metals
-            0.15 + sizeVar * 0.25 // Standard rocky composition
+          fresnelPower={
+            (isMain ? 2.2 : 2.6) * 
+            (planetType === 'gas-giant' ? 0.8 : 
+             planetType === 'neptune' ? 0.85 : 
+             planetType === 'dwarf' ? 1.2 : 
+             element === 'darkness' ? 1.15 : 
+             element === 'lightning' ? 0.95 : 
+             element === 'water' ? 0.85 : 1.0)
           }
-          roughness={
-            planetType === 'gas-giant' ? (0.05 + sizeVar * 0.1) : // Smooth gas flows
-            planetType === 'neptune' ? (0.15 + sizeVar * 0.2) : // Icy surfaces
-            planetType === 'dwarf' ? (0.7 + sizeVar * 0.25) : // Rough, cratered
-            element === 'water' ? (0.08 + sizeVar * 0.12) : // Smooth when liquid
-            element === 'magic' ? (0.3 + sizeVar * 0.6) : // Highly variable
-            element === 'fire' ? (0.55 + sizeVar * 0.3) : // Molten/volcanic
-            element === 'lightning' ? (0.4 + sizeVar * 0.3) : // Glassy from plasma
-            isDark ? (0.85 + sizeVar * 0.1) : // Very rough
-            0.6 + sizeVar * 0.3 // Standard rocky roughness
+          brighten={
+            (isMain ? 1.6 : (isHover ? 1.7 : 1.5)) * 
+            (planetType === 'gas-giant' ? 1.2 : 
+             planetType === 'neptune' ? 1.15 : 
+             planetType === 'dwarf' ? 0.95 : 
+             element === 'fire' ? 1.25 : 
+             element === 'lightning' ? 1.2 : 
+             element === 'magic' ? 1.3 : 
+             element === 'water' ? 1.0 : 1.05)
           }
-          clearcoat={
-            planetType === 'gas-giant' ? 0.9 : 
-            planetType === 'neptune' ? 0.8 : 
-            element === 'water' ? 0.95 : 
-            element === 'lightning' ? 0.7 : 
-            element === 'magic' ? 0.1 : 0.3
+          alpha={
+            (isMain ? 0.55 : (isHover ? 0.6 : 0.45)) * 
+            (planetType === 'gas-giant' ? 1.3 : 
+             planetType === 'neptune' ? 1.2 : 
+             planetType === 'dwarf' ? 0.9 : 
+             element === 'darkness' ? 1.0 : 
+             element === 'water' ? 1.25 : 
+             element === 'lightning' ? 1.3 : 
+             element === 'magic' ? 1.4 : 1.1) *
+            (glitchActive ? glitchOpacity : 1.0)
           }
-          clearcoatRoughness={
-            planetType === 'gas-giant' ? 0.05 : 
-            planetType === 'neptune' ? 0.08 : 
-            element === 'water' ? 0.05 : 
-            element === 'lightning' ? 0.2 : 0.5
-          }
-          normalScale={new Vector2(
-            planetType === 'gas-giant' ? 0.6 : 
-            planetType === 'neptune' ? 1.2 : 
-            element === 'magic' ? 2.8 : 
-            element === 'water' ? 0.8 : 
-            isDark ? 2.2 : 1.8,
-            planetType === 'gas-giant' ? 0.6 : 
-            planetType === 'neptune' ? 1.2 : 
-            element === 'magic' ? 2.8 : 
-            element === 'water' ? 0.8 : 
-            isDark ? 2.2 : 1.8
-          )}
-          envMapIntensity={
-            planetType === 'gas-giant' ? 2.5 : 
-            planetType === 'neptune' ? 2.0 : 
-            element === 'water' ? 2.2 : 
-            element === 'lightning' ? 1.5 : 
-            element === 'magic' ? 1.8 : 1.2
-          }
-          transmission={
-            planetType === 'gas-giant' ? 0.25 : 
-            planetType === 'neptune' ? 0.2 : 
-            element === 'water' ? 0.18 : 0
-          }
-          thickness={
-            planetType === 'gas-giant' ? 0.5 : 
-            planetType === 'neptune' ? 0.4 : 
-            element === 'water' ? 0.35 : 0
-          }
-          ior={
-            planetType === 'gas-giant' ? 1.1 : 
-            planetType === 'neptune' ? 1.2 : 
-            element === 'water' ? 1.33 : 
-            element === 'lightning' ? 1.4 : 
-            element === 'magic' ? 1.45 : 1.5
-          }
-          // Enhanced subsurface scattering for organic-looking planets
-          subsurfaceColor={
-            planetType === 'gas-giant' ? new Color(color).multiplyScalar(0.8) :
-            element === 'water' ? new Color('#87CEEB') :
-            element === 'fire' ? new Color('#FF4500') :
-            element === 'magic' ? new Color('#DDA0DD') :
-            new Color(color).multiplyScalar(0.6)
-          }
-          attenuationDistance={
-            planetType === 'gas-giant' ? 0.1 :
-            element === 'water' ? 0.05 :
-            element === 'fire' ? 0.03 :
-            0.08
-          }
-          attenuationColor={
-            planetType === 'gas-giant' ? new Color(color).lerp(new Color('#FFFFFF'), 0.3) :
-            element === 'water' ? new Color('#E6F7FF') :
-            element === 'fire' ? new Color('#FFB347') :
-            element === 'magic' ? new Color('#E6E6FA') :
-            new Color(color).lerp(new Color('#FFFFFF'), 0.2)
-          }
-          emissive={
-            planetType === 'gas-giant' ? new Color(color).multiplyScalar(0.1) : 
-            element === 'fire' ? new Color('#441100') : 
-            element === 'lightning' ? new Color('#002244') : 
-            isDark ? new Color('#220000') : new Color('#000000')
-          }
-          emissiveIntensity={
-            planetType === 'gas-giant' ? 0.15 : 
-            element === 'fire' ? 0.2 : 
-            element === 'lightning' ? 0.12 : 
-            isDark ? 0.08 : 0
-          }
-          sheen={
-            planetType === 'gas-giant' ? 0.4 : 
-            planetType === 'neptune' ? 0.35 : 
-            element === 'water' ? 0.5 : 
-            element === 'lightning' ? 0.3 : 0
-          }
-          sheenRoughness={
-            element === 'water' ? 0.1 : 
-            planetType === 'gas-giant' ? 0.05 : 0.8
-          }
-          sheenColor={
-            planetType === 'gas-giant' ? new Color(color).lerp(new Color('#FFFFFF'), 0.3) : 
-            planetType === 'neptune' ? new Color('#AAEEFF') : 
-            element === 'water' ? new Color('#E6F7FF') : 
-            element === 'lightning' ? new Color('#CCFFFF') : new Color('#000000')
-          }
-          specularIntensity={
-            planetType === 'gas-giant' ? 1.2 : 
-            planetType === 'neptune' ? 1.0 : 
-            element === 'water' ? 1.1 : 
-            element === 'lightning' ? 0.9 : 0.2
-          }
-          specularColor={
-            planetType === 'gas-giant' ? new Color(color).lerp(new Color('#FFFFFF'), 0.7) : 
-            planetType === 'neptune' ? new Color('#DDFFFF') : 
-            element === 'water' ? new Color('#FFFFFF') : 
-            element === 'lightning' ? new Color('#AAEEFF') : new Color('#888888')
-          }
-          transparent
-          opacity={isMain ? 0.45 : 0.35}
-          depthWrite
+          depthFactor={depthFactor}
         />
         
         {/* Enhanced holographic wireframe overlay with size-based complexity */}
@@ -1001,36 +927,75 @@ export default function Planet({
                  element === 'magic' ? new Color('#00FFFF') : 
                  new Color(color).lerp(new Color('#FFFFFF'), 0.9)}
           transparent
-          opacity={0.04}
+          opacity={glitchActive ? 0.15 * glitchOpacity : 0.04}
           depthWrite={false}
           blending={AdditiveBlending}
           side={2}
         />
       </mesh>
 
-      {/* Ultra-realistic atmospheric scattering with Rayleigh and Mie effects */}
+      {/* Glitch overlay - only visible during glitch */}
+      {glitchActive && (
+        <>
+          <mesh scale={1.012}>
+            <sphereGeometry args={[1, 12, 6]} />
+            <meshBasicMaterial
+              color={new Color('#FF0000')}
+              transparent
+              opacity={0.2 * glitchOpacity}
+              depthWrite={false}
+              blending={AdditiveBlending}
+              wireframe
+            />
+          </mesh>
+          <mesh scale={1.015}>
+            <sphereGeometry args={[1, 8, 4]} />
+            <meshBasicMaterial
+              color={new Color('#00FF00')}
+              transparent
+              opacity={0.15 * glitchOpacity}
+              depthWrite={false}
+              blending={AdditiveBlending}
+              wireframe
+            />
+          </mesh>
+          <mesh scale={1.018}>
+            <sphereGeometry args={[1, 6, 3]} />
+            <meshBasicMaterial
+              color={new Color('#0000FF')}
+              transparent
+              opacity={0.1 * glitchOpacity}
+              depthWrite={false}
+              blending={AdditiveBlending}
+              wireframe
+            />
+          </mesh>
+        </>
+      )}
+
+      {/* Holographic atmospheric glow layers - much more transparent */}
       <mesh scale={1.045}>
-        <sphereGeometry args={[1, 96, 96]} />
-        <meshLambertMaterial
+        <sphereGeometry args={[1, 64, 64]} />
+        <meshBasicMaterial
           color={
-            planetType === 'gas-giant' ? new Color(color).lerp(new Color('#FFFFFF'), 0.7) :
-            planetType === 'neptune' ? new Color('#87CEEB').lerp(new Color('#FFFFFF'), 0.4) :
-            element === 'water' ? new Color('#B0E0E6').lerp(new Color('#E6F7FF'), 0.5) :
-            element === 'fire' ? new Color('#FFB347').lerp(new Color('#FF6B35'), 0.4) :
-            element === 'lightning' ? new Color('#E0E6FF').lerp(new Color('#CCFFFF'), 0.6) :
-            element === 'magic' ? new Color('#8FBC8F').lerp(new Color('#DDA0DD'), 0.5) :
-            element === 'darkness' ? new Color('#2F2F4F').lerp(new Color('#000000'), 0.7) :
-            new Color(color).lerp(new Color('#FFFFFF'), 0.5)
+            planetType === 'gas-giant' ? new Color(color).lerp(new Color('#FFFFFF'), 0.8) :
+            planetType === 'neptune' ? new Color('#87CEEB').lerp(new Color('#FFFFFF'), 0.6) :
+            element === 'water' ? new Color('#B0E0E6').lerp(new Color('#E6F7FF'), 0.7) :
+            element === 'fire' ? new Color('#FFB347').lerp(new Color('#FF6B35'), 0.6) :
+            element === 'lightning' ? new Color('#E0E6FF').lerp(new Color('#CCFFFF'), 0.8) :
+            element === 'magic' ? new Color('#8FBC8F').lerp(new Color('#DDA0DD'), 0.7) :
+            element === 'darkness' ? new Color('#2F2F4F').lerp(new Color('#000000'), 0.5) :
+            new Color(color).lerp(new Color('#FFFFFF'), 0.7)
           }
           transparent
           opacity={
-            planetType === 'gas-giant' ? 0.25 :
-            planetType === 'neptune' ? 0.20 :
-            element === 'water' ? 0.18 :
-            element === 'fire' ? 0.16 :
-            element === 'lightning' ? 0.22 :
-            element === 'magic' ? 0.19 :
-            0.14
+            planetType === 'gas-giant' ? 0.08 :
+            planetType === 'neptune' ? 0.06 :
+            element === 'water' ? 0.05 :
+            element === 'fire' ? 0.07 :
+            element === 'lightning' ? 0.09 :
+            element === 'magic' ? 0.06 :
+            0.04
           }
           side={2} // BackSide for rim effect
           depthWrite={false}
@@ -1038,59 +1003,29 @@ export default function Planet({
         />
       </mesh>
 
-      {/* Secondary atmospheric layer for depth */}
+      {/* Secondary holographic glow layer */}
       <mesh scale={1.075}>
-        <sphereGeometry args={[1, 64, 64]} />
-        <meshLambertMaterial
+        <sphereGeometry args={[1, 48, 48]} />
+        <meshBasicMaterial
           color={
-            planetType === 'gas-giant' ? new Color(color).lerp(new Color('#FFFFFF'), 0.85) :
+            planetType === 'gas-giant' ? new Color(color).lerp(new Color('#FFFFFF'), 0.9) :
             planetType === 'neptune' ? new Color('#CCDDFF') :
             element === 'water' ? new Color('#E6F7FF') :
             element === 'fire' ? new Color('#FFDDAA') :
             element === 'lightning' ? new Color('#F0F8FF') :
             element === 'magic' ? new Color('#E6E6FA') :
             element === 'darkness' ? new Color('#1A1A2E') :
-            new Color(color).lerp(new Color('#FFFFFF'), 0.75)
+            new Color(color).lerp(new Color('#FFFFFF'), 0.85)
           }
           transparent
           opacity={
-            planetType === 'gas-giant' ? 0.15 :
-            planetType === 'neptune' ? 0.12 :
-            element === 'water' ? 0.10 :
-            element === 'fire' ? 0.08 :
-            element === 'lightning' ? 0.12 :
-            element === 'magic' ? 0.08 :
-            0.06
-          }
-          side={2}
-          depthWrite={false}
-          blending={AdditiveBlending}
-        />
-      </mesh>
-
-      {/* Tertiary atmospheric halo for ultra-realism */}
-      <mesh scale={1.12}>
-        <sphereGeometry args={[1, 48, 48]} />
-        <meshLambertMaterial
-          color={
-            planetType === 'gas-giant' ? new Color('#FFFFFF') :
-            planetType === 'neptune' ? new Color('#E6F3FF') :
-            element === 'water' ? new Color('#F0F8FF') :
-            element === 'fire' ? new Color('#FFF0E6') :
-            element === 'lightning' ? new Color('#F8F8FF') :
-            element === 'magic' ? new Color('#F5F0FF') :
-            element === 'darkness' ? new Color('#0A0A0F') :
-            new Color('#FFFFFF')
-          }
-          transparent
-          opacity={
-            planetType === 'gas-giant' ? 0.08 :
-            planetType === 'neptune' ? 0.06 :
-            element === 'water' ? 0.05 :
-            element === 'fire' ? 0.04 :
-            element === 'lightning' ? 0.07 :
-            element === 'magic' ? 0.04 :
-            0.03
+            planetType === 'gas-giant' ? 0.04 :
+            planetType === 'neptune' ? 0.03 :
+            element === 'water' ? 0.025 :
+            element === 'fire' ? 0.035 :
+            element === 'lightning' ? 0.045 :
+            element === 'magic' ? 0.03 :
+            0.02
           }
           side={2}
           depthWrite={false}
@@ -1160,80 +1095,61 @@ export default function Planet({
         </points>
       ) : null}
 
-      {/* Planet-type specific atmospheric layers with realistic scaling and composition */}
+      {/* Holographic atmospheric data overlay - very subtle */}
       <mesh ref={cloudsRef} scale={
-        planetType === 'gas-giant' ? (1.035 + sizeVar * 0.02) : // Massive gas envelopes
-        planetType === 'neptune' ? (1.025 + sizeVar * 0.015) : // Thick ice atmospheres
-        planetType === 'dwarf' ? (1.002 + sizeVar * 0.003) : // Minimal atmospheres
-        element === 'water' ? (1.018 + sizeVar * 0.01) : // Water vapor
-        element === 'magic' ? (1.012 + sizeVar * 0.02) : // Ethereal atmosphere
-        element === 'fire' ? (1.022 + sizeVar * 0.015) : // Volcanic gases
-        element === 'lightning' ? (1.015 + sizeVar * 0.01) : // Ionized atmosphere
-        element === 'darkness' ? (1.008 + sizeVar * 0.005) : // Thin, dark atmosphere
-        1.008 + sizeVar * 0.007 // Standard thin atmosphere
+        planetType === 'gas-giant' ? (1.025 + sizeVar * 0.015) : 
+        planetType === 'neptune' ? (1.015 + sizeVar * 0.01) : 
+        planetType === 'dwarf' ? (1.002 + sizeVar * 0.002) : 
+        element === 'water' ? (1.012 + sizeVar * 0.008) : 
+        element === 'magic' ? (1.008 + sizeVar * 0.012) : 
+        element === 'fire' ? (1.018 + sizeVar * 0.01) : 
+        element === 'lightning' ? (1.01 + sizeVar * 0.008) : 
+        element === 'darkness' ? (1.005 + sizeVar * 0.003) : 
+        1.006 + sizeVar * 0.005
       }>
-        <sphereGeometry args={[1, 64, 64]} />
-        <meshStandardMaterial 
+        <sphereGeometry args={[1, 48, 48]} />
+        <meshBasicMaterial 
           color={
-            planetType === 'gas-giant' ? new Color(color).lerp(new Color('#FFFFFF'), 0.5 + sizeVar * 0.2) : 
-            planetType === 'neptune' ? new Color("#CCDDFF").lerp(new Color(color), sizeVar * 0.3) : 
-            planetType === 'dwarf' ? new Color(color).lerp(new Color('#888888'), 0.7) : // Dusty
-            element === 'water' ? new Color("#E6F7FF").lerp(new Color('#87CEEB'), sizeVar * 0.4) : 
-            element === 'fire' ? new Color("#FFE6CC").lerp(new Color('#FF4500'), sizeVar * 0.3) : 
-            element === 'lightning' ? new Color("#F0F8FF").lerp(new Color('#9400D3'), sizeVar * 0.2) : 
-            element === 'magic' ? new Color(color).lerp(new Color('#DDA0DD'), 0.4 + sizeVar * 0.3) :
-            element === 'darkness' ? new Color("#1A1A2E").lerp(new Color('#8B0000'), sizeVar * 0.4) : 
-            new Color('white').lerp(new Color(color), 0.3 + sizeVar * 0.2)
+            planetType === 'gas-giant' ? new Color(color).lerp(new Color('#FFFFFF'), 0.8) : 
+            planetType === 'neptune' ? new Color("#CCDDFF").lerp(new Color(color), 0.5) : 
+            planetType === 'dwarf' ? new Color(color).lerp(new Color('#888888'), 0.8) : 
+            element === 'water' ? new Color("#E6F7FF") : 
+            element === 'fire' ? new Color("#FFE6CC") : 
+            element === 'lightning' ? new Color("#F0F8FF") : 
+            element === 'magic' ? new Color(color).lerp(new Color('#DDA0DD'), 0.7) :
+            element === 'darkness' ? new Color("#1A1A2E") : 
+            new Color('white').lerp(new Color(color), 0.6)
           } 
           transparent 
           opacity={
-            planetType === 'gas-giant' ? (0.18 + sizeVar * 0.08) : // Dense atmospheres
-            planetType === 'neptune' ? (0.14 + sizeVar * 0.06) : // Thick ice clouds
-            planetType === 'dwarf' ? (0.02 + sizeVar * 0.02) : // Very thin
-            element === 'water' ? (0.11 + sizeVar * 0.05) : // Water vapor opacity
-            element === 'magic' ? (0.05 + sizeVar * 0.08) : // Shimmering magical atmosphere
-            element === 'fire' ? (0.09 + sizeVar * 0.06) : // Volcanic haze
-            element === 'lightning' ? (0.08 + sizeVar * 0.05) : // Ionized glow
-            element === 'darkness' ? (0.06 + sizeVar * 0.03) : // Dark shroud
-            0.04 + sizeVar * 0.03 // Standard atmosphere
+            planetType === 'gas-giant' ? 0.06 : 
+            planetType === 'neptune' ? 0.05 : 
+            planetType === 'dwarf' ? 0.015 : 
+            element === 'water' ? 0.04 : 
+            element === 'magic' ? 0.03 : 
+            element === 'fire' ? 0.05 : 
+            element === 'lightning' ? 0.045 : 
+            element === 'darkness' ? 0.025 : 
+            0.025
           } 
-          map={cloudsTex} 
           depthWrite={false}
-          // Add realistic atmospheric properties
-          roughness={planetType === 'gas-giant' ? 0.95 : 0.85}
-          metalness={element === 'lightning' ? 0.1 : 0.0}
-          emissive={
-            element === 'fire' ? new Color('#FF4500').multiplyScalar(0.05) :
-            element === 'lightning' ? new Color('#9400D3').multiplyScalar(0.03) :
-            planetType === 'gas-giant' ? new Color(color).multiplyScalar(0.02) :
-            new Color('#000000')
-          }
+          blending={AdditiveBlending}
         />
       </mesh>
       
-      {/* Planet-type specific advanced atmospheric effects */}
+      {/* Minimal holographic atmospheric effects */}
       {planetType === 'gas-giant' && (
         <>
-          {/* Dense gaseous layers with banding */}
-          <mesh scale={1.035}>
-            <sphereGeometry args={[1, 64, 64]} />
-            <meshStandardMaterial 
-              color={new Color(color).lerp(new Color('#FFFFFF'), 0.4)} 
+          {/* Holographic gas bands */}
+          <mesh scale={1.02}>
+            <sphereGeometry args={[1, 32, 16]} />
+            <meshBasicMaterial 
+              color={new Color(color).lerp(new Color('#FFFFFF'), 0.8)} 
               transparent 
-              opacity={0.08} 
+              opacity={0.03} 
               depthWrite={false}
               blending={AdditiveBlending}
-            />
-          </mesh>
-          {/* Upper atmosphere glow */}
-          <mesh scale={1.055}>
-            <sphereGeometry args={[1, 64, 64]} />
-            <meshStandardMaterial 
-              color={new Color(color).lerp(new Color('#FFFFFF'), 0.7)} 
-              transparent 
-              opacity={0.04} 
-              depthWrite={false}
-              blending={AdditiveBlending}
+              wireframe
             />
           </mesh>
         </>
@@ -1241,55 +1157,16 @@ export default function Planet({
       
       {planetType === 'neptune' && (
         <>
-          {/* Ice crystal atmosphere */}
-          <mesh scale={1.030}>
-            <sphereGeometry args={[1, 64, 64]} />
-            <meshStandardMaterial 
+          {/* Holographic ice crystal lattice */}
+          <mesh scale={1.015}>
+            <sphereGeometry args={[1, 24, 12]} />
+            <meshBasicMaterial 
               color={"#AACCFF"} 
               transparent 
-              opacity={0.06} 
+              opacity={0.025} 
               depthWrite={false}
               blending={AdditiveBlending}
-              metalness={0.1}
-              roughness={0.3}
-            />
-          </mesh>
-          {/* Methane haze */}
-          <mesh scale={1.048}>
-            <sphereGeometry args={[1, 64, 64]} />
-            <meshStandardMaterial 
-              color={"#DDDDFF"} 
-              transparent 
-              opacity={0.03} 
-              depthWrite={false}
-              blending={AdditiveBlending}
-            />
-          </mesh>
-        </>
-      )}
-      
-      {element === 'fire' && (
-        <>
-          {/* Molten surface glow */}
-          <mesh scale={1.022}>
-            <sphereGeometry args={[1, 64, 64]} />
-            <meshStandardMaterial 
-              color={"#FF6B35"} 
-              transparent 
-              opacity={0.035} 
-              depthWrite={false}
-              blending={AdditiveBlending}
-            />
-          </mesh>
-          {/* Volcanic atmosphere */}
-          <mesh scale={1.042}>
-            <sphereGeometry args={[1, 64, 64]} />
-            <meshStandardMaterial 
-              color={"#FF4444"} 
-              transparent 
-              opacity={0.02} 
-              depthWrite={false}
-              blending={AdditiveBlending}
+              wireframe
             />
           </mesh>
         </>
@@ -1297,26 +1174,16 @@ export default function Planet({
       
       {element === 'lightning' && (
         <>
-          {/* Electromagnetic field */}
-          <mesh scale={1.028}>
-            <sphereGeometry args={[1, 64, 64]} />
-            <meshStandardMaterial 
+          {/* Holographic electromagnetic field lines */}
+          <mesh scale={1.018}>
+            <sphereGeometry args={[1, 20, 10]} />
+            <meshBasicMaterial 
               color={"#00FFFF"} 
               transparent 
-              opacity={0.025} 
+              opacity={0.035} 
               depthWrite={false}
               blending={AdditiveBlending}
-            />
-          </mesh>
-          {/* Ionosphere */}
-          <mesh scale={1.050}>
-            <sphereGeometry args={[1, 64, 64]} />
-            <meshStandardMaterial 
-              color={"#AAEEFF"} 
-              transparent 
-              opacity={0.012} 
-              depthWrite={false}
-              blending={AdditiveBlending}
+              wireframe
             />
           </mesh>
         </>
@@ -1324,18 +1191,16 @@ export default function Planet({
       
       {element === 'water' && planetType === 'terrestrial' && (
         <>
-          {/* Ocean world shimmer */}
-          <mesh scale={1.012}>
-            <sphereGeometry args={[1, 64, 64]} />
-            <meshStandardMaterial 
+          {/* Holographic fluid flow patterns */}
+          <mesh scale={1.01}>
+            <sphereGeometry args={[1, 28, 14]} />
+            <meshBasicMaterial 
               color={"#E6F7FF"} 
               transparent 
-              opacity={0.05} 
+              opacity={0.025} 
               depthWrite={false}
-              metalness={0.15}
-              roughness={0.05}
-              clearcoat={0.8}
-              clearcoatRoughness={0.1}
+              blending={AdditiveBlending}
+              wireframe
             />
           </mesh>
         </>
@@ -1343,39 +1208,165 @@ export default function Planet({
       
       {element === 'darkness' && (
         <>
-          {/* Shadow void aura */}
-          <mesh scale={1.018}>
-            <sphereGeometry args={[1, 64, 64]} />
-            <meshStandardMaterial 
+          {/* Holographic void distortion */}
+          <mesh scale={1.012}>
+            <sphereGeometry args={[1, 16, 8]} />
+            <meshBasicMaterial 
               color={"#1A1A2E"} 
-              transparent 
-              opacity={0.04} 
-              depthWrite={false}
-            />
-          </mesh>
-          {/* Dark matter field */}
-          <mesh scale={1.038}>
-            <sphereGeometry args={[1, 64, 64]} />
-            <meshStandardMaterial 
-              color={"#0D0D1F"} 
               transparent 
               opacity={0.02} 
               depthWrite={false}
+              wireframe
             />
           </mesh>
         </>
       )}
       
-      {/* Holographic data streams for main planet */}
-      {isMain && (
+      {/* Planet-type specific holographic components */}
+      {isMain && planetType === 'gas-giant' && (
         <group>
-          {/* Data stream rings */}
+          {/* Massive gas giant data streams with interactive pulsing */}
+          <mesh rotation={[Math.PI / 4, 0, 0]} scale={1.8}>
+            <ringGeometry args={[1.3, 1.4, 128]} />
+            <meshBasicMaterial
+              color={new Color(color).lerp(new Color('#FFD700'), 0.6)}
+              transparent
+              opacity={isHover ? 0.55 : 0.35}
+              depthWrite={false}
+              blending={AdditiveBlending}
+              side={2}
+            />
+          </mesh>
+          <mesh rotation={[-Math.PI / 3, Math.PI / 2, 0]} scale={2.2}>
+            <ringGeometry args={[1.5, 1.6, 128]} />
+            <meshBasicMaterial
+              color={new Color(color).lerp(new Color('#00FFFF'), 0.7)}
+              transparent
+              opacity={isHover ? 0.4 : 0.25}
+              depthWrite={false}
+              blending={AdditiveBlending}
+              side={2}
+            />
+          </mesh>
+          <mesh rotation={[Math.PI / 6, -Math.PI / 4, Math.PI / 8]} scale={2.6}>
+            <ringGeometry args={[1.7, 1.8, 128]} />
+            <meshBasicMaterial
+              color={new Color(color).lerp(new Color('#FFFFFF'), 0.8)}
+              transparent
+              opacity={isHover ? 0.25 : 0.15}
+              depthWrite={false}
+              blending={AdditiveBlending}
+              side={2}
+            />
+          </mesh>
+          {/* Atmospheric turbulence effects */}
+          <mesh scale={1.1}>
+            <sphereGeometry args={[1, 24, 12]} />
+            <meshBasicMaterial
+              color={new Color(color).lerp(new Color('#FFA500'), 0.5)}
+              transparent
+              opacity={0.08}
+              depthWrite={false}
+              blending={AdditiveBlending}
+              wireframe
+            />
+          </mesh>
+          
+          {/* Animated atmospheric storm particles */}
+          <points>
+            <bufferGeometry>
+              {(() => { 
+                const stormParticles = generateStormParticles(song.id, 'gas-giant'); 
+                return (
+                  // @ts-ignore
+                  <bufferAttribute attach="attributes-position" array={stormParticles} count={stormParticles.length/3} itemSize={3} />
+                ); 
+              })()}
+            </bufferGeometry>
+            <pointsMaterial 
+              size={0.015} 
+              color={new Color(color).lerp(new Color('#FFD700'), 0.4)} 
+              transparent 
+              opacity={0.6}
+              depthWrite={false} 
+              sizeAttenuation 
+              blending={AdditiveBlending} 
+            />
+          </points>
+          
+          {/* Secondary storm layer with different motion */}
+          <points>
+            <bufferGeometry>
+              {(() => { 
+                const stormParticles2 = generateStormParticles(song.id + '_2', 'gas-giant'); 
+                return (
+                  // @ts-ignore
+                  <bufferAttribute attach="attributes-position" array={stormParticles2} count={stormParticles2.length/3} itemSize={3} />
+                ); 
+              })()}
+            </bufferGeometry>
+            <pointsMaterial 
+              size={0.008} 
+              color={new Color(color).lerp(new Color('#00FFFF'), 0.6)} 
+              transparent 
+              opacity={0.4}
+              depthWrite={false} 
+              sizeAttenuation 
+              blending={AdditiveBlending} 
+            />
+          </points>
+        </group>
+      )}
+
+      {isMain && planetType === 'neptune' && (
+        <group>
+          {/* Ice giant crystalline structures with interactive feedback */}
+          <mesh rotation={[Math.PI / 3, 0, 0]} scale={1.4}>
+            <ringGeometry args={[1.1, 1.2, 96]} />
+            <meshBasicMaterial
+              color={'#AACCFF'}
+              transparent
+              opacity={isHover ? 0.45 : 0.3}
+              depthWrite={false}
+              blending={AdditiveBlending}
+              side={2}
+            />
+          </mesh>
+          <mesh rotation={[-Math.PI / 4, Math.PI / 3, 0]} scale={1.7}>
+            <ringGeometry args={[1.25, 1.35, 96]} />
+            <meshBasicMaterial
+              color={'#CCDDFF'}
+              transparent
+              opacity={isHover ? 0.3 : 0.2}
+              depthWrite={false}
+              blending={AdditiveBlending}
+              side={2}
+            />
+          </mesh>
+          {/* Ice crystal formations with interactive intensity */}
+          <mesh scale={1.05}>
+            <icosahedronGeometry args={[1, 2]} />
+            <meshBasicMaterial
+              color={'#E6F3FF'}
+              transparent
+              opacity={isHover ? 0.18 : 0.12}
+              depthWrite={false}
+              blending={AdditiveBlending}
+              wireframe
+            />
+          </mesh>
+        </group>
+      )}
+
+      {isMain && planetType === 'terrestrial' && (
+        <group>
+          {/* Earth-like technological data streams with interactive feedback */}
           <mesh rotation={[Math.PI / 4, 0, 0]} scale={1.2}>
             <ringGeometry args={[1.1, 1.15, 64]} />
             <meshBasicMaterial
               color={new Color(color).lerp(new Color('#00FFFF'), 0.5)}
               transparent
-              opacity={0.25}
+              opacity={isHover ? 0.4 : 0.25}
               depthWrite={false}
               blending={AdditiveBlending}
               side={2}
@@ -1386,21 +1377,267 @@ export default function Planet({
             <meshBasicMaterial
               color={new Color(color).lerp(new Color('#FFFFFF'), 0.7)}
               transparent
-              opacity={0.15}
+              opacity={isHover ? 0.25 : 0.15}
               depthWrite={false}
               blending={AdditiveBlending}
               side={2}
             />
           </mesh>
-          <mesh rotation={[Math.PI / 6, -Math.PI / 4, Math.PI / 8]} scale={1.6}>
-            <ringGeometry args={[1.3, 1.35, 64]} />
+          {/* Continental outlines with interactive intensity */}
+          <mesh scale={1.02}>
+            <sphereGeometry args={[1, 32, 16]} />
             <meshBasicMaterial
-              color={new Color(color).lerp(new Color('#FFFF00'), 0.4)}
+              color={new Color(color).lerp(new Color('#00FF00'), 0.3)}
+              transparent
+              opacity={isHover ? 0.15 : 0.1}
+              depthWrite={false}
+              blending={AdditiveBlending}
+              wireframe
+            />
+          </mesh>
+        </group>
+      )}
+
+      {isMain && planetType === 'dwarf' && (
+        <group>
+          {/* Compact asteroid-like formations with interactive feedback */}
+          <mesh rotation={[Math.PI / 5, 0, 0]} scale={0.9}>
+            <ringGeometry args={[0.95, 1.0, 48]} />
+            <meshBasicMaterial
+              color={new Color(color).lerp(new Color('#FF6B35'), 0.4)}
+              transparent
+              opacity={isHover ? 0.45 : 0.3}
+              depthWrite={false}
+              blending={AdditiveBlending}
+              side={2}
+            />
+          </mesh>
+          <mesh rotation={[-Math.PI / 7, Math.PI / 4, 0]} scale={1.1}>
+            <ringGeometry args={[1.05, 1.1, 48]} />
+            <meshBasicMaterial
+              color={new Color(color).lerp(new Color('#FFFFFF'), 0.6)}
+              transparent
+              opacity={isHover ? 0.3 : 0.2}
+              depthWrite={false}
+              blending={AdditiveBlending}
+              side={2}
+            />
+          </mesh>
+          {/* Irregular rocky structure with interactive intensity */}
+          <mesh scale={1.01}>
+            <dodecahedronGeometry args={[1, 1]} />
+            <meshBasicMaterial
+              color={new Color(color).lerp(new Color('#8B4513'), 0.4)}
+              transparent
+              opacity={isHover ? 0.22 : 0.15}
+              depthWrite={false}
+              blending={AdditiveBlending}
+              wireframe
+            />
+          </mesh>
+        </group>
+      )}
+
+      {/* Element-specific holographic effects for main planets */}
+      {isMain && element === 'lightning' && (
+        <group>
+          {/* Electrical discharge patterns */}
+          <mesh scale={1.3}>
+            <sphereGeometry args={[1, 16, 8]} />
+            <meshBasicMaterial
+              color={'#9400D3'}
+              transparent
+              opacity={0.2}
+              depthWrite={false}
+              blending={AdditiveBlending}
+              wireframe
+            />
+          </mesh>
+          <mesh scale={1.5}>
+            <sphereGeometry args={[1, 24, 12]} />
+            <meshBasicMaterial
+              color={'#00FFFF'}
               transparent
               opacity={0.1}
               depthWrite={false}
               blending={AdditiveBlending}
-              side={2}
+              wireframe
+            />
+          </mesh>
+        </group>
+      )}
+
+      {isMain && element === 'fire' && (
+        <group>
+          {/* Volcanic energy streams with interactive intensity */}
+          <mesh scale={1.25}>
+            <sphereGeometry args={[1, 20, 10]} />
+            <meshBasicMaterial
+              color={'#FF4500'}
+              transparent
+              opacity={isHover ? 0.28 : 0.18}
+              depthWrite={false}
+              blending={AdditiveBlending}
+              wireframe
+            />
+          </mesh>
+          <mesh scale={1.4}>
+            <icosahedronGeometry args={[1, 1]} />
+            <meshBasicMaterial
+              color={'#FFB347'}
+              transparent
+              opacity={isHover ? 0.18 : 0.12}
+              depthWrite={false}
+              blending={AdditiveBlending}
+              wireframe
+            />
+          </mesh>
+          
+          {/* Animated volcanic eruption particles */}
+          <points>
+            <bufferGeometry>
+              {(() => { 
+                const volcanicParticles = generateVolcanicParticles(song.id); 
+                return (
+                  // @ts-ignore
+                  <bufferAttribute attach="attributes-position" array={volcanicParticles} count={volcanicParticles.length/3} itemSize={3} />
+                ); 
+              })()}
+            </bufferGeometry>
+            <pointsMaterial 
+              size={0.012} 
+              color={'#FF4500'} 
+              transparent 
+              opacity={0.8}
+              depthWrite={false} 
+              sizeAttenuation 
+              blending={AdditiveBlending} 
+            />
+          </points>
+          
+          {/* Lava flow particles */}
+          <points>
+            <bufferGeometry>
+              {(() => { 
+                const lavaParticles = generateVolcanicParticles(song.id + '_lava'); 
+                return (
+                  // @ts-ignore
+                  <bufferAttribute attach="attributes-position" array={lavaParticles} count={lavaParticles.length/3} itemSize={3} />
+                ); 
+              })()}
+            </bufferGeometry>
+            <pointsMaterial 
+              size={0.008} 
+              color={'#FFB347'} 
+              transparent 
+              opacity={0.6}
+              depthWrite={false} 
+              sizeAttenuation 
+              blending={AdditiveBlending} 
+            />
+          </points>
+          
+          {/* Sparks and ember effects */}
+          <points>
+            <bufferGeometry>
+              {(() => { 
+                const emberParticles = generateVolcanicParticles(song.id + '_ember'); 
+                return (
+                  // @ts-ignore
+                  <bufferAttribute attach="attributes-position" array={emberParticles} count={emberParticles.length/3} itemSize={3} />
+                ); 
+              })()}
+            </bufferGeometry>
+            <pointsMaterial 
+              size={0.004} 
+              color={'#FFFF00'} 
+              transparent 
+              opacity={0.9}
+              depthWrite={false} 
+              sizeAttenuation 
+              blending={AdditiveBlending} 
+            />
+          </points>
+        </group>
+      )}
+
+      {isMain && element === 'water' && (
+        <group>
+          {/* Fluid dynamics visualization */}
+          <mesh scale={1.15}>
+            <sphereGeometry args={[1, 32, 16]} />
+            <meshBasicMaterial
+              color={'#00CED1'}
+              transparent
+              opacity={0.15}
+              depthWrite={false}
+              blending={AdditiveBlending}
+              wireframe
+            />
+          </mesh>
+          <mesh scale={1.35}>
+            <sphereGeometry args={[1, 48, 24]} />
+            <meshBasicMaterial
+              color={'#87CEEB'}
+              transparent
+              opacity={0.08}
+              depthWrite={false}
+              blending={AdditiveBlending}
+              wireframe
+            />
+          </mesh>
+        </group>
+      )}
+
+      {isMain && element === 'magic' && (
+        <group>
+          {/* Mystical energy patterns */}
+          <mesh scale={1.4}>
+            <octahedronGeometry args={[1, 2]} />
+            <meshBasicMaterial
+              color={'#DDA0DD'}
+              transparent
+              opacity={0.2}
+              depthWrite={false}
+              blending={AdditiveBlending}
+              wireframe
+            />
+          </mesh>
+          <mesh scale={1.6}>
+            <tetrahedronGeometry args={[1, 2]} />
+            <meshBasicMaterial
+              color={'#E6E6FA'}
+              transparent
+              opacity={0.12}
+              depthWrite={false}
+              blending={AdditiveBlending}
+              wireframe
+            />
+          </mesh>
+        </group>
+      )}
+
+      {isMain && element === 'darkness' && (
+        <group>
+          {/* Shadow void effects */}
+          <mesh scale={1.2}>
+            <sphereGeometry args={[1, 12, 6]} />
+            <meshBasicMaterial
+              color={'#8B0000'}
+              transparent
+              opacity={0.25}
+              depthWrite={false}
+              wireframe
+            />
+          </mesh>
+          <mesh scale={1.45}>
+            <sphereGeometry args={[1, 18, 9]} />
+            <meshBasicMaterial
+              color={'#2F2F4F'}
+              transparent
+              opacity={0.15}
+              depthWrite={false}
+              wireframe
             />
           </mesh>
         </group>
@@ -1440,6 +1677,101 @@ function sprinklePositions(seedStr: string) {
       z = r * Math.sin(phi) * Math.sin(theta);
     }
     arr[i * 3] = x; arr[i * 3 + 1] = y; arr[i * 3 + 2] = z;
+  }
+  return arr;
+}
+
+// Generate atmospheric storm particles for gas giants
+function generateStormParticles(seedStr: string, planetType: string) {
+  let h = 0;
+  for (let i = 0; i < seedStr.length; i++) h = (h * 31 + seedStr.charCodeAt(i)) | 0;
+  function rnd() { h ^= h << 13; h ^= h >> 17; h ^= h << 5; return (h >>> 0) / 4294967296; }
+  
+  const count = planetType === 'gas-giant' ? 800 : 400;
+  const arr = new Float32Array(count * 3);
+  
+  for (let i = 0; i < count; i++) {
+    // Create swirling storm bands at different latitudes
+    const lat = (rnd() - 0.5) * Math.PI; // -π/2 to π/2
+    const lon = rnd() * 2 * Math.PI; // 0 to 2π
+    const r = 1.02 + rnd() * 0.15; // Particles close to surface with some altitude variation
+    
+    // Add storm band concentrations
+    const bandStrength = Math.abs(Math.sin(lat * 3.0)) * 0.8 + 0.2;
+    if (rnd() > bandStrength) continue; // Skip particles not in storm bands
+    
+    // Convert spherical to cartesian with atmospheric swirl
+    const x = r * Math.cos(lat) * Math.cos(lon + Math.sin(lat * 2.0) * 0.3);
+    const y = r * Math.sin(lat) + (rnd() - 0.5) * 0.05; // Small vertical jitter
+    const z = r * Math.cos(lat) * Math.sin(lon + Math.sin(lat * 2.0) * 0.3);
+    
+    arr[i * 3] = x;
+    arr[i * 3 + 1] = y;
+    arr[i * 3 + 2] = z;
+  }
+  return arr;
+}
+
+// Generate volcanic particle effects for fire planets
+function generateVolcanicParticles(seedStr: string) {
+  let h = 0;
+  for (let i = 0; i < seedStr.length; i++) h = (h * 31 + seedStr.charCodeAt(i)) | 0;
+  function rnd() { h ^= h << 13; h ^= h >> 17; h ^= h << 5; return (h >>> 0) / 4294967296; }
+  
+  const count = 400;
+  const arr = new Float32Array(count * 3);
+  
+  for (let i = 0; i < count; i++) {
+    if (seedStr.includes('_ember')) {
+      // Sparse, high-altitude sparks
+      const theta = rnd() * 2 * Math.PI;
+      const phi = Math.acos(2 * rnd() - 1);
+      const r = 1.15 + rnd() * 0.4; // Higher altitude
+      
+      const x = r * Math.sin(phi) * Math.cos(theta);
+      const y = r * Math.cos(phi);
+      const z = r * Math.sin(phi) * Math.sin(theta);
+      
+      arr[i * 3] = x;
+      arr[i * 3 + 1] = y;
+      arr[i * 3 + 2] = z;
+    } else if (seedStr.includes('_lava')) {
+      // Dense, surface-hugging lava flows
+      const theta = rnd() * 2 * Math.PI;
+      const phi = Math.acos(2 * rnd() - 1);
+      const r = 1.01 + rnd() * 0.05; // Close to surface
+      
+      // Concentrate in equatorial and mid-latitude bands (volcanic zones)
+      const latBias = Math.abs(Math.cos(phi)) > 0.3 ? 1.0 : 0.3;
+      if (rnd() > latBias) continue;
+      
+      const x = r * Math.sin(phi) * Math.cos(theta);
+      const y = r * Math.cos(phi);
+      const z = r * Math.sin(phi) * Math.sin(theta);
+      
+      arr[i * 3] = x;
+      arr[i * 3 + 1] = y;
+      arr[i * 3 + 2] = z;
+    } else {
+      // Primary volcanic eruptions - medium altitude, localized hotspots
+      const hotspots = 6 + Math.floor(rnd() * 4); // 6-9 volcanic hotspots
+      const hotspotIndex = Math.floor(rnd() * hotspots);
+      const baseTheta = (hotspotIndex / hotspots) * 2 * Math.PI;
+      const basePhi = Math.PI * 0.5 + (rnd() - 0.5) * Math.PI * 0.8; // Favor equatorial regions
+      
+      // Add jitter around hotspot location
+      const theta = baseTheta + (rnd() - 0.5) * 0.6;
+      const phi = basePhi + (rnd() - 0.5) * 0.4;
+      const r = 1.03 + rnd() * 0.25; // Variable eruption height
+      
+      const x = r * Math.sin(phi) * Math.cos(theta);
+      const y = r * Math.cos(phi);
+      const z = r * Math.sin(phi) * Math.sin(theta);
+      
+      arr[i * 3] = x;
+      arr[i * 3 + 1] = y;
+      arr[i * 3 + 2] = z;
+    }
   }
   return arr;
 }

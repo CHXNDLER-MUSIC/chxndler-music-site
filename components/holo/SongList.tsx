@@ -61,7 +61,7 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
       aria-label="Songs"
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      className="h-[54vh] md:h-[58vh] overflow-y-auto pr-1 custom-scroll w-full"
+      className="h-[54vh] md:h-[58vh] overflow-y-auto overflow-x-hidden pr-1 custom-scroll w-full"
     >
       {songs.map((s) => {
         const isMain = s.id === mainId;
