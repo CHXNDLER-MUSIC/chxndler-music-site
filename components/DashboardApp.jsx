@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import SkyboxVideo from "@/components/SkyboxVideo";
 import AmbientSpace from "@/components/AmbientSpace";
@@ -437,12 +438,8 @@ export default function DashboardApp({ initialSlug } = {}) {
     };
   }, [beamEnabled, showHUD, cardModalOpen, uiUnlocked, showOverlayUI]);
 
-  // Position the blue display lower (closer to the wheel/buttons)
-  // Align to the buttons baseline with a larger downward offset
-  const hudBottom = useMemo(() => {
-    // Move the HUD further down from the buttons baseline (~120px by default)
-    return 'calc(var(--buttons-bottom, 31%) - var(--hud-offset-px, 120px))';
-  }, []);
+  // Position the blue display so its bottom touches the light beam top
+  const hudBottom = useMemo(() => 'var(--display-touch-top)', []);
 
   // Provide CSS variables globally (avoids any runtime style factory edge cases)
 
@@ -671,81 +668,86 @@ export default function DashboardApp({ initialSlug } = {}) {
       />
       </div> {/* Close blur wrapper */}
 
-      {/* Fixed positioning for blue display - positioned directly above light beam */}
-      <div 
-        className="slot-container fixed z-30"
-        style={{
-          bottom: hudBottom, // Bottom of blue display touches top of light beam
-          left: '50%', // Centered on screen
-          transform: 'translateX(-50%)', 
-          width: 'min(90%, 600px)', // Responsive width with 600px max
-          height: 'min(90%, 600px)', // Dynamic height with 600px max
-        }}
-      >
-        <div className="relative h-full w-full p-0" style={{ overflow: 'visible' }} suppressHydrationWarning>
-          {/* Pre-mount HUDPanel; reveal via opacity so it is ready instantly */}
-          <motion.div
-            className="absolute inset-0 p-0"
-            suppressHydrationWarning
-            initial={{ opacity: 0 }}
-            animate={{ opacity: (uiUnlocked && showOverlayUI && showHUD) ? 1 : 0 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200, duration: 0.3 }}
-            style={{ pointerEvents: (uiUnlocked && showOverlayUI && showHUD) ? 'auto' : 'none', visibility: (uiUnlocked && showOverlayUI) ? 'visible' : 'hidden' }}
+      {/* Blue display rendered as overlay sibling via portal */}
+      {typeof window !== 'undefined' ? createPortal(
+        (
+          <div 
+            className="slot-container"
+            style={{
+              position: 'fixed',
+              bottom: hudBottom,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 'var(--display-width)',
+              height: 'var(--display-width)',
+              zIndex: 93,
+              borderRadius: 'var(--display-border-radius)'
+            }}
           >
-            <HUDPanel
-              inConsole
-              songs={hudSongs}
-              onSongChange={onSongChange}
-              track={curTrack}
-              currentId={homeMode ? undefined : curTrack?.slug}
-              playing={isPlaying}
-              beamOnly={beamOnly}
-              beamEnabled={beamEnabled}
-            />
-          </motion.div>
-            {/* Click-to-activate overlay on opening screen: turn HUD on when area is tapped */}
-            {!showHUD ? (
-              <button
-                type="button"
-                className="absolute inset-0 pointer-events-auto"
-                aria-label="Activate HUD"
-                title="Activate HUD"
-                style={{ background:'transparent', zIndex: 30, cursor:'pointer' }}
-                onClick={() => {
-                  // Ignore taps before Start is pressed
-                  if (!uiUnlocked) return;
-                  // Spotlight should only appear on first/opening screen
-                  setShowDimmingOverlay(false);
-                  setHomeMode(true);
-                  try { usePlayerStore.setState({ mainId: null }); } catch {}
-                  setHomeIntroEnabled(false);
-                  setUserSelected(false);
-                  setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
-                  triggerHudPower(true);
+            <div className="relative h-full w-full p-0" style={{ overflow: 'visible' }} suppressHydrationWarning>
+              {/* Pre-mount HUDPanel; reveal via opacity so it is ready instantly */}
+              <motion.div
+                className="absolute inset-0 p-0"
+                suppressHydrationWarning
+                initial={{ opacity: 0 }}
+                animate={{ opacity: (uiUnlocked && showOverlayUI && showHUD) ? 1 : 0 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200, duration: 0.3 }}
+                style={{ pointerEvents: (uiUnlocked && showOverlayUI && showHUD) ? 'auto' : 'none', visibility: (uiUnlocked && showOverlayUI) ? 'visible' : 'hidden' }}
+              >
+                <HUDPanel
+                  inConsole
+                  songs={hudSongs}
+                  onSongChange={onSongChange}
+                  track={curTrack}
+                  currentId={homeMode ? undefined : curTrack?.slug}
+                  playing={isPlaying}
+                  beamOnly={beamOnly}
+                  beamEnabled={beamEnabled}
+                />
+              </motion.div>
+              {!showHUD ? (
+                <button
+                  type="button"
+                  className="absolute inset-0 pointer-events-auto"
+                  aria-label="Activate HUD"
+                  title="Activate HUD"
+                  style={{ background:'transparent', zIndex: 30, cursor:'pointer' }}
+                  onClick={() => {
+                    if (!uiUnlocked) return;
+                    setShowDimmingOverlay(false);
+                    setHomeMode(true);
+                    try { usePlayerStore.setState({ mainId: null }); } catch {}
+                    setHomeIntroEnabled(false);
+                    setUserSelected(false);
+                    setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
+                    triggerHudPower(true);
+                  }}
+                />
+              ) : null}
+            </div>
+            <div className="hidden">
+              <MediaPlayer
+                onSkyChange={(webm, mp4, key) => setNextSky({ webm, mp4, key })}
+                onPlayingChange={(p) => { setIsPlaying(p); if (p) setAmbientSuspended(false); }}
+                onAudioReady={() => {}}
+                onTrackChange={(t) => { 
+
+                  setCurTrack(t); 
+                  if (userSelected) { setLinks({ spotify: t.spotify || LINKS.spotify, apple: t.apple || LINKS.apple }); } else { setLinks({ spotify: LINKS.spotify, apple: LINKS.apple }); } 
                 }}
+                playSignal={playSignal}
+                toggleSignal={toggleSignal}
+                showHUDPlay={false}
+                index={channelIdx}
+                onIndexChange={(i)=> setChannelIdx(i)}
+                autoPlayOnIndex={false}
+                unlockPlays={false}
               />
-            ) : null}
-        </div>
-        <div className="hidden">
-        <MediaPlayer
-          onSkyChange={(webm, mp4, key) => setNextSky({ webm, mp4, key })}
-          onPlayingChange={(p) => { setIsPlaying(p); if (p) setAmbientSuspended(false); }}
-          onAudioReady={() => {}}
-          onTrackChange={(t) => { 
- 
-            setCurTrack(t); 
-            if (userSelected) { setLinks({ spotify: t.spotify || LINKS.spotify, apple: t.apple || LINKS.apple }); } else { setLinks({ spotify: LINKS.spotify, apple: LINKS.apple }); } 
-          }}
-          playSignal={playSignal}
-          toggleSignal={toggleSignal}
-            showHUDPlay={false}
-            index={channelIdx}
-            onIndexChange={(i)=> setChannelIdx(i)}
-            autoPlayOnIndex={false}
-            unlockPlays={false}
-          />
-        </div>
-      </div>
+            </div>
+          </div>
+        ),
+        document.body
+      ) : null}
 
       {/* Light Beam - keep mounted to avoid animation resets/flicker; control via opacity */}
       {SHOW_CENTER_BEAM && mounted ? (

@@ -1,5 +1,6 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sfx";
 
 type HubItem = {
@@ -47,6 +48,8 @@ export default function HoloHubMenu({
   // Position yellow panel using unified touch point system
   // Bottom of display touches the beam top dynamically
   const beamBottomCss = 'var(--display-touch-top)';
+  // Panel height derived from icon size + padding, no hard-coded viewport checks
+  const panelHeight = useMemo(() => Math.round((itemSize || 60) + 24), [itemSize]);
 
   // Cap at 6 items, evenly spaced 60deg, start at -90deg (top)
   const entries = useMemo(() => items.slice(0, 6), [items]);
@@ -204,13 +207,16 @@ export default function HoloHubMenu({
           left: '50%',
           transform: 'translateX(-50%)',
           width: `var(--display-width)`,
-          height: 80,
+          // Height based on item size so the glass edge consistently meets the beam tip
+          height: panelHeight,
           pointerEvents: open ? 'auto' : 'none',
           zIndex: 93,
           borderRadius: `var(--display-border-radius)`,
           overflow: 'hidden',
           opacity: open ? 1 : 0,
-          transition: 'opacity 200ms ease, transform 220ms cubic-bezier(0.2,0.8,0.2,1)'
+          transition: 'opacity 200ms ease, transform 220ms cubic-bezier(0.2,0.8,0.2,1)',
+          // Hide inline instance; we will render via portal as a sibling overlay
+          display: 'none'
         } as React.CSSProperties}
       >
         {/* Yellow hologram background panel */}
@@ -266,6 +272,79 @@ export default function HoloHubMenu({
         })}
         </div>
       </div>
+
+      {/* Portal-rendered yellow panel so it is not nested under the hub button */}
+      {typeof window !== 'undefined' ? createPortal(
+        (
+          <div
+            className="panel-wrap"
+            aria-hidden={!open}
+            style={{
+              position: 'fixed',
+              bottom: beamBottomCss,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: `var(--display-width)`,
+              height: panelHeight,
+              pointerEvents: open ? 'auto' : 'none',
+              zIndex: 93,
+              borderRadius: `var(--display-border-radius)`,
+              overflow: 'hidden',
+              opacity: open ? 1 : 0,
+              transition: 'opacity 200ms ease, transform 220ms cubic-bezier(0.2,0.8,0.2,1)'
+            } as React.CSSProperties}
+          >
+            <div className="background-panel" aria-hidden />
+            <div className="items" role="menu" aria-hidden={!open}>
+              {entries.map((it, i) => {
+                const pos = positions[i];
+                const atRest = open;
+                const tint = it.color || "#38B6FF";
+                const isFirst = i === 0;
+                const isLast = i === entries.length - 1;
+                const size = it.id === 'tt' ? itemSize * 0.75 : itemSize; // Make TikTok smaller
+                return (
+                  <button
+                    key={it.id}
+                    ref={isFirst ? firstItemRef : isLast ? lastItemRef : undefined}
+                    type="button"
+                    className="item"
+                    role="menuitem"
+                    tabIndex={open ? 0 : -1}
+                    data-id={it.id}
+                    style={{
+                      left: '50%',
+                      top: '50%',
+                      transform: `translate(${atRest ? pos.x : 0}px, ${atRest ? pos.y : 0}px) translate(-50%, -50%) scale(${open ? 1 : 0.85})`,
+                      opacity: open ? 1 : 0,
+                      ['--tint' as any]: tint,
+                      ['--tx' as any]: `${atRest ? pos.x : 0}px`,
+                      ['--ty' as any]: `${atRest ? pos.y : 0}px`,
+                      borderColor: `${tint}AA`,
+                      width: `${size}px`,
+                      height: `${size}px`,
+                    }}
+                    onClick={(e) => { e.stopPropagation(); try { sfx.play('join', 0.9); } catch {}; runItem(it); }}
+                    onMouseDown={(e) => { e.stopPropagation(); }}
+                    onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                    title={it.label}
+                  >
+                    <span className="icon" aria-hidden>
+                      {typeof it.icon === 'string' ? (
+                        <img src={String(it.icon)} alt="" />
+                      ) : (
+                        it.icon || <span className="dot" />
+                      )}
+                    </span>
+                    <span className="sr-only">{it.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ),
+        document.body
+      ) : null}
 
       <style jsx>{`
         .holo-hub-wrap{ position: relative; }

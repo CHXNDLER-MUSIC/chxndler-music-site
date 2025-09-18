@@ -341,7 +341,7 @@ export default function HUDPanel({
             // Remove hover glow/scale for the entire HUD display per request
             transition={{ type: "spring", stiffness: 200, damping: 20 }}
             style={inConsole
-              ? { width: '100%', height: '100%', transform: 'perspective(1200px) rotateX(6deg)', transformOrigin: 'center', marginTop: 0 }
+              ? { width: '100%', transform: 'perspective(1200px) rotateX(6deg)', transformOrigin: 'center', marginTop: 0 }
               : { transform: 'perspective(1200px) rotateX(6deg)', marginTop: 0 }
             }
           >
