@@ -313,7 +313,15 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   useEffect(() => {
     // Keep local playing state in sync with the audio element's real state
     const a = audioRef.current; if (!a) return;
-    const onPlay = () => { if (DEBUG_MEDIA) dlog('audio event: play'); setPlaying(true); };
+    const onPlay = () => {
+      // Ignore unlock/priming plays that are muted or effectively silent
+      const mutedOrSilent = (() => {
+        try { return a.muted || a.volume <= 0.0001; } catch { return false; }
+      })();
+      if (DEBUG_MEDIA) dlog('audio event: play', { muted: a.muted, volume: a.volume, ignored: mutedOrSilent });
+      if (mutedOrSilent) return;
+      setPlaying(true);
+    };
     const onPause = () => { if (DEBUG_MEDIA) dlog('audio event: pause'); setPlaying(false); };
     const onEnded = () => { if (DEBUG_MEDIA) dlog('audio event: ended'); setPlaying(false); };
     const onErr = (e: any) => { if (DEBUG_MEDIA) { dwarn('audio event: error', e?.target?.error?.message || e?.target?.error?.code || 'unknown audio error'); dumpAudio(a, 'audio:error'); }};
@@ -356,17 +364,26 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   }, []);
 
   useEffect(() => {
-    // Prime audio on first real user pointer/touch interaction to satisfy autoplay
+    // Prime audio on first real user interaction to satisfy autoplay policies,
+    // but do NOT actually start music. We play muted briefly, then pause.
     const unlock = () => {
       const a = audioRef.current; if (!a) return;
       try { a.load(); } catch {}
-      if (!unlockPlays) return;
-      a.play().catch(() => {
-        try {
-          a.muted = true;
-          a.play().then(() => { setTimeout(() => { try { a.muted = false; } catch {} }, 60); }).catch(()=>{});
-        } catch {}
-      });
+      try {
+        a.muted = true;
+        a.play()
+          .then(() => {
+            // Briefly run to unlock, then pause and reset silently
+            setTimeout(() => {
+              try { a.pause(); } catch {}
+              try { a.currentTime = 0; } catch {}
+              try { a.muted = false; } catch {}
+            }, 60);
+          })
+          .catch(() => {
+            // Ignore; some browsers may still block without a direct gesture
+          });
+      } catch {}
     };
     window.addEventListener('pointerdown', unlock, { once: true } as any);
     window.addEventListener('touchstart', unlock, { once: true } as any);
@@ -374,7 +391,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       window.removeEventListener('pointerdown', unlock as any);
       window.removeEventListener('touchstart', unlock as any);
     };
-  }, [unlockPlays]);
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

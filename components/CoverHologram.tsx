@@ -73,8 +73,8 @@ export default function CoverHologram({ src, title }: { src: string; title: stri
       
       {showCard ? (
         <div
-          className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-end justify-end"
-          style={{ paddingRight: '5vw', paddingBottom: 'calc(31% + 8vh)', paddingLeft: '5vw', paddingTop: '2vh' }}
+          className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-end justify-center"
+          style={{ paddingRight: '5vw', paddingBottom: 'calc(var(--buttons-bottom, 31%) + var(--panel-gap-px, 72px))', paddingLeft: '5vw', paddingTop: '2vh' }}
           onClick={() => {
             try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
             setShowCard(false);
@@ -84,44 +84,6 @@ export default function CoverHologram({ src, title }: { src: string; title: stri
             className="relative rounded-2xl p-4 card-modal"
             onClick={(e)=> e.stopPropagation()}
           >
-            <div className="mb-3 flex justify-center">
-              <div className="ocean-cta-wrap relative">
-                <a
-                  href="https://buy.stripe.com/cNi14oetz6p76Bbgxx4gg0k"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-ocean"
-                  title="Collect this card"
-                  onClick={(e) => {
-                    try { e.preventDefault(); } catch {}
-                    
-                    // Track collect card button click
-                    try {
-                      track('collect_card_clicked', { 
-                        song_slug: title?.toLowerCase().replace(/\s+/g, '-'),
-                        card_src: src,
-                        payload: { 
-                          song_title: title,
-                          card_image: src,
-                          stripe_url: e.currentTarget.href 
-                        } 
-                      });
-                    } catch {}
-                    
-                    try {
-                      const el = e.currentTarget;
-                      el.classList.remove('is-rippling');
-                      void el.offsetWidth;
-                      el.classList.add('is-rippling');
-                      setTimeout(() => { window.open(el.href, '_blank', 'noopener,noreferrer'); }, 520);
-                    } catch { window.open((e.currentTarget || {}).href, '_blank', 'noopener,noreferrer'); }
-                  }}
-                >
-                  <span className="btn-label">COLLECT CARD</span>
-                  <span className="btn-ripple" aria-hidden />
-                </a>
-              </div>
-            </div>
             <div className="tilt-wrap">
               <div className="card-frame">
                 <div 
@@ -174,6 +136,44 @@ export default function CoverHologram({ src, title }: { src: string; title: stri
                   </div>
                 </div>
                 <span className="frame-sheen" aria-hidden />
+              </div>
+            </div>
+            <div className="mt-3 flex justify-center">
+              <div className="ocean-cta-wrap relative">
+                <a
+                  href="https://buy.stripe.com/cNi14oetz6p76Bbgxx4gg0k"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-ocean"
+                  title="Collect this card"
+                  onClick={(e) => {
+                    try { e.preventDefault(); } catch {}
+                    
+                    // Track collect card button click
+                    try {
+                      track('collect_card_clicked', { 
+                        song_slug: title?.toLowerCase().replace(/\s+/g, '-'),
+                        card_src: src,
+                        payload: { 
+                          song_title: title,
+                          card_image: src,
+                          stripe_url: e.currentTarget.href 
+                        } 
+                      });
+                    } catch {}
+                    
+                    try {
+                      const el = e.currentTarget;
+                      el.classList.remove('is-rippling');
+                      void el.offsetWidth;
+                      el.classList.add('is-rippling');
+                      setTimeout(() => { window.open(el.href, '_blank', 'noopener,noreferrer'); }, 520);
+                    } catch { window.open((e.currentTarget || {}).href, '_blank', 'noopener,noreferrer'); }
+                  }}
+                >
+                  <span className="btn-label">COLLECT CARD</span>
+                  <span className="btn-ripple" aria-hidden />
+                </a>
               </div>
             </div>
             <button

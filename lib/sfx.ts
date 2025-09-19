@@ -8,6 +8,8 @@ class SFXBus {
   private buffers: BufferMap = {};
   private primed = false;
   private loading: Record<string, Promise<AudioBuffer> | undefined> = {};
+  // Gate SFX until Start button unlocks the UI
+  private enabled = false;
 
   // Minimal preset map from keys to public audio assets
   private files: Record<string, string> = {
@@ -37,6 +39,19 @@ class SFXBus {
       this.ctx = null;
     }
     return this.ctx;
+  }
+
+  // External toggle so app can enable sounds after Start is clicked
+  setEnabled(v: boolean) {
+    this.enabled = !!v;
+    try { (window as any).__CHX_UI_UNLOCKED = this.enabled; } catch {}
+  }
+  private isEnabled(): boolean {
+    try {
+      // Allow enabling via global flag as a secondary path
+      if (typeof window !== 'undefined' && (window as any).__CHX_UI_UNLOCKED === true) return true;
+    } catch {}
+    return this.enabled === true;
   }
 
   attachUnlock() {
@@ -90,6 +105,7 @@ class SFXBus {
   }
 
   async play(key: string, volume = 1.0) {
+    if (!this.isEnabled()) return;
     const ctx = this.ensure();
     if (!ctx) return;
     try {
@@ -107,6 +123,7 @@ class SFXBus {
   // Play SFX and return a promise that resolves when it ends.
   // Falls back to a timeout based on buffer duration (or 1000ms if unavailable).
   async playAndWait(key: string, volume = 1.0): Promise<void> {
+    if (!this.isEnabled()) return Promise.resolve();
     const ctx = this.ensure();
     try { if (ctx && ctx.state === 'suspended') await ctx.resume().catch(()=>{}); } catch {}
     try {

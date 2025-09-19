@@ -110,98 +110,148 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       varying vec2 vUv;
       varying vec3 vWorldPosition;
       
-      // Noise functions for surface detail
-      float noise(vec3 p) {
-        return fract(sin(dot(p, vec3(12.9898, 78.233, 45.164))) * 43758.5453);
+      // Simplex noise utilities (matches cloud shader for coherence)
+      vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+      vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+      vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
+      vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+      float snoise(vec3 v) {
+        const vec2 C = vec2(1.0/6.0, 1.0/3.0);
+        const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+        vec3 i = floor(v + dot(v, C.yyy));
+        vec3 x0 = v - i + dot(i, C.xxx);
+        vec3 g = step(x0.yzx, x0.xyz);
+        vec3 l = 1.0 - g;
+        vec3 i1 = min(g.xyz, l.zxy);
+        vec3 i2 = max(g.xyz, l.zxy);
+        vec3 x1 = x0 - i1 + C.xxx;
+        vec3 x2 = x0 - i2 + C.yyy;
+        vec3 x3 = x0 - D.yyy;
+        i = mod289(i);
+        vec4 p = permute(permute(permute(i.z + vec4(0.0, i1.z, i2.z, 1.0)) + i.y + vec4(0.0, i1.y, i2.y, 1.0)) + i.x + vec4(0.0, i1.x, i2.x, 1.0));
+        float n_ = 0.142857142857;
+        vec3 ns = n_ * D.wyz - D.xzx;
+        vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+        vec4 x_ = floor(j * ns.z);
+        vec4 y_ = floor(j - 7.0 * x_);
+        vec4 x = x_ *ns.x + ns.yyyy;
+        vec4 y = y_ *ns.x + ns.yyyy;
+        vec4 h = 1.0 - abs(x) - abs(y);
+        vec4 b0 = vec4(x.xy, y.xy);
+        vec4 b1 = vec4(x.zw, y.zw);
+        vec4 s0 = floor(b0)*2.0 + 1.0;
+        vec4 s1 = floor(b1)*2.0 + 1.0;
+        vec4 sh = -step(h, vec4(0.0));
+        vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;
+        vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
+        vec3 p0 = vec3(a0.xy, h.x);
+        vec3 p1 = vec3(a0.zw, h.y);
+        vec3 p2 = vec3(a1.xy, h.z);
+        vec3 p3 = vec3(a1.zw, h.w);
+        vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));
+        p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+        vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+        m = m * m;
+        return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
       }
-      
       float fbm(vec3 p) {
-        float value = 0.0;
-        float amplitude = 0.5;
-        for (int i = 0; i < 4; i++) {
-          value += amplitude * noise(p);
-          p *= 2.0;
-          amplitude *= 0.5;
-        }
-        return value;
+        float v = 0.0; float a = 0.5; vec3 s = p;
+        for (int i = 0; i < 5; i++) { v += a * snoise(s); s *= 2.0; a *= 0.5; }
+        return 0.5 + 0.5 * v;
       }
-      
-      vec3 getTerrainColor(vec2 uv, float planetType) {
-        vec3 baseColor = uBaseColor;
-        float height = fbm(vec3(uv * 8.0, uTime * 0.1));
-        
-        if (planetType < 1.5) { // terrestrial
-          vec3 water = vec3(0.2, 0.4, 0.8);
-          vec3 land = vec3(0.3, 0.6, 0.2);
-          vec3 mountain = vec3(0.5, 0.4, 0.3);
-          
-          if (height < 0.3) return mix(water, baseColor, 0.3);
-          else if (height < 0.6) return mix(land, baseColor, 0.4);
-          else return mix(mountain, baseColor, 0.5);
-        }
-        else if (planetType < 2.5) { // gas_giant
-          float bands = sin(uv.y * 20.0 + uTime) * 0.5 + 0.5;
-          return mix(baseColor, baseColor * 1.5, bands * 0.3);
-        }
-        else if (planetType < 3.5) { // ice_world
-          vec3 ice = vec3(0.8, 0.9, 1.0);
-          return mix(ice, baseColor, 0.6 + height * 0.2);
-        }
-        else if (planetType < 4.5) { // desert
-          vec3 sand = vec3(0.8, 0.6, 0.3);
-          return mix(sand, baseColor, 0.4 + height * 0.3);
-        }
-        else if (planetType < 5.5) { // ocean
-          vec3 deepWater = vec3(0.1, 0.2, 0.4);
-          vec3 shallowWater = vec3(0.3, 0.5, 0.7);
-          return mix(deepWater, shallowWater, height);
-        }
-        else if (planetType < 6.5) { // volcanic
-          vec3 lava = vec3(1.0, 0.3, 0.1);
-          vec3 rock = vec3(0.2, 0.1, 0.1);
-          float lavaFlow = sin(uTime * 2.0 + height * 10.0) * 0.5 + 0.5;
-          return mix(rock, lava, lavaFlow * 0.6);
-        }
-        else if (planetType < 7.5) { // crystal
-          float crystal = sin(uv.x * 30.0 + uv.y * 20.0 + uTime) * 0.5 + 0.5;
-          return baseColor * (1.0 + crystal * 0.8);
-        }
-        else if (planetType < 8.5) { // toxic
-          vec3 poison = vec3(0.5, 0.8, 0.2);
-          return mix(poison, baseColor, 0.7);
-        }
-        else { // metal
-          float panels = step(0.5, fract(uv.x * 10.0)) * step(0.5, fract(uv.y * 10.0));
-          return mix(baseColor * 0.5, baseColor, panels);
-        }
+      float ridged(vec3 p) {
+        float v = 0.0; float a = 0.5; vec3 s = p;
+        for (int i = 0; i < 4; i++) { float n = snoise(s); v += a * (1.0 - abs(n)); s *= 2.0; a *= 0.5; }
+        return clamp(v, 0.0, 1.0);
+      }
+
+      // Quick saturation boost approximation
+      vec3 saturateColor(vec3 color, float amt) {
+        float luma = dot(color, vec3(0.299, 0.587, 0.114));
+        return mix(vec3(luma), color, 1.0 + amt);
       }
       
       void main() {
         vec3 normal = normalize(vNormal);
         vec3 viewDirection = normalize(vViewPosition);
+        vec3 nrm = normalize(vWorldPosition);
+        float lat = asin(clamp(nrm.y, -1.0, 1.0));
+        float lon = atan(nrm.z, nrm.x);
         
-        // Surface coloring based on planet type
-        vec3 surfaceColor = getTerrainColor(vUv, uPlanetType);
+        // Compute coherent noise-driven height for realism
+        float height = fbm(vec3(lon * 2.5, lat * 3.0, uTime * 0.02));
+        float ridges = ridged(vec3(lon * 6.0, lat * 6.5, uTime * 0.03));
+        float continents = smoothstep(0.42, 0.58, height);
+        float mountains = smoothstep(0.65, 0.9, ridges);
         
-        // Lighting calculation
+        // Temperature by latitude (colder near poles)
+        float temp = 1.0 - smoothstep(0.6, 1.0, abs(sin(lat)));
+        
+        // Gas giant branch
+        vec3 surfaceColor;
+        float waterMask = 0.0;
+        if (uPlanetType < 2.5) {
+          float bands = sin(lat * 18.0 + uTime * 0.4) * 0.5 + 0.5;
+          float turb = fbm(vec3(lon * 8.0, lat * 20.0, uTime * 0.5));
+          vec3 hi = saturateColor(uBaseColor * (1.2 + 0.2 * turb), 0.35);
+          vec3 lo = uBaseColor * (0.8 + 0.1 * turb);
+          surfaceColor = mix(lo, hi, bands);
+        } else {
+          // Terrestrial-like branch: water/land/mountain/snow
+          float sea = 0.5; // sea level
+          float h = height * 1.1 - 0.05;
+          waterMask = step(h, sea);
+          // Base palettes
+          vec3 deepWater = vec3(0.02, 0.1, 0.25);
+          vec3 shallowWater = vec3(0.08, 0.3, 0.55);
+          vec3 sand = vec3(0.76, 0.7, 0.5);
+          vec3 grass = vec3(0.22, 0.55, 0.28);
+          vec3 rock = vec3(0.42, 0.38, 0.36);
+          vec3 snow = vec3(0.95, 0.97, 1.0);
+          
+          vec3 landColor = mix(sand, grass, smoothstep(sea, sea + 0.08, h));
+          landColor = mix(landColor, rock, mountains);
+          float snowLine = mix(0.85, 0.65, temp); // more snow near poles
+          landColor = mix(landColor, snow, smoothstep(snowLine, 1.0, h));
+          vec3 waterColor = mix(deepWater, shallowWater, smoothstep(sea - 0.15, sea, h));
+          surfaceColor = mix(waterColor, landColor, 1.0 - waterMask);
+          // Tint by element color
+          surfaceColor = mix(surfaceColor, uBaseColor, 0.18);
+          surfaceColor = saturateColor(surfaceColor, 0.25);
+        }
+        
+        // Lighting calculation (softer for hologram look)
         vec3 lightDirection = normalize(vec3(1.0, 1.0, 1.0));
         float NdotL = max(dot(normal, lightDirection), 0.0);
         
-        // Fresnel effect for atmosphere
-        float fresnel = pow(1.0 - abs(dot(normal, viewDirection)), 2.0);
-        vec3 atmosphereGlow = uAtmosphereColor * fresnel * uAtmosphereDensity;
+        // Stronger Fresnel for hologram rim
+        float fresnel = pow(1.0 - abs(dot(normal, viewDirection)), 2.2);
+        vec3 atmosphereGlow = uAtmosphereColor * fresnel * (uAtmosphereDensity * 1.0);
         
-        // Combine surface and atmosphere
-        vec3 finalColor = surfaceColor * (0.3 + 0.7 * NdotL) + atmosphereGlow + uEmissive;
+        // Specular highlight — stronger over water, softer over land
+        vec3 halfV = normalize(lightDirection + viewDirection);
+        float specStrength = mix(0.15, 0.6, waterMask);
+        float spec = pow(max(dot(normal, halfV), 0.0), mix(24.0, 80.0, waterMask)) * specStrength;
         
+        // Combine surface and atmosphere with subtle base tint
+        vec3 baseTint = uBaseColor * 0.6;
+        vec3 finalColor = surfaceColor * (0.28 + 0.60 * NdotL) + atmosphereGlow + uEmissive + baseTint * 0.12 + vec3(spec);
+
         // Add metallic reflection
         if (uMetallic > 0.5) {
           vec3 reflectDirection = reflect(-viewDirection, normal);
           float spec = pow(max(dot(reflectDirection, lightDirection), 0.0), 32.0);
           finalColor += vec3(1.0) * spec * uMetallic;
         }
-        
-        gl_FragColor = vec4(finalColor, 1.0);
+        // Subtle hologram artifacts: very faint scanline + occasional sparkle
+        float scan = 0.02 * sin((vWorldPosition.y + uTime * 2.0) * 120.0);
+        float sparkle = step(0.9985, fract(sin(dot(vWorldPosition.xy, vec2(12.9898,78.233)) + uTime * 40.0) * 43758.5453));
+        finalColor *= 1.0 + scan;
+        finalColor += vec3(0.08) * sparkle;
+
+        // Hologram transparency with fresnel edge emphasis but stronger core color
+        float alpha = clamp(0.5 + fresnel * 0.28 + scan * 0.12, 0.38, 0.88);
+        gl_FragColor = vec4(finalColor, alpha);
       }
     `;
     
@@ -209,7 +259,10 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       uniforms,
       vertexShader,
       fragmentShader,
-      side: THREE.FrontSide
+      side: THREE.FrontSide,
+      transparent: true,
+      blending: THREE.NormalBlending,
+      depthWrite: false
     });
   }
   
@@ -588,8 +641,18 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
   // Helper to add a realistic satellite mesh to the current system group
   function addSatLocal(id: string, planetData: any, r = 6.0, speed = 0.25, a = Math.random() * Math.PI * 2) {
     const sys = groupRef.current; if (!sys) return;
-    
-    const radius = planetData.radius || 0.42;
+    // Add subtle per-planet size variation for a more organic feel
+    const sizeJitter = 0.75 + Math.random() * 0.8; // 0.75x .. 1.55x
+    const radius = (planetData.radius || 0.42) * sizeJitter;
+
+    // Strengthen element-specific atmosphere hues for heart/lightning
+    const element = (planetData && (planetData as any).element) || null;
+    const tunedAtmosphere = planetData.atmosphere ? {
+      ...planetData.atmosphere,
+      color: (element === 'heart') ? '#FF6BCD' : (element === 'lightning') ? '#FFD84D' : planetData.atmosphere.color,
+      glow: (element === 'heart') ? Math.max(planetData.atmosphere.glow || 0, 1.3) : (element === 'lightning') ? Math.max(planetData.atmosphere.glow || 0, 1.6) : (planetData.atmosphere.glow || 1.0),
+    } : undefined;
+    const tunedPlanetData = { ...planetData, atmosphere: tunedAtmosphere };
     const geometry = planetData.geometry || {
       segments: { widthSegments: 128, heightSegments: 128 },
       scale: { x: 1, y: 1, z: 1 },
@@ -600,13 +663,13 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
     
     // Main planet with detailed geometry
     const planetGeometry = createPlanetGeometry(radius, geometry);
-    const material = makePlanetMaterial(planetData);
+    const material = makePlanetMaterial(tunedPlanetData);
     const mesh = new THREE.Mesh(planetGeometry, material);
     
     // Atmosphere
     let atmosphereMesh: THREE.Mesh | undefined;
-    if (planetData.atmosphere) {
-      const atmosphereMat = makeAtmosphereMaterial(planetData);
+    if (tunedPlanetData.atmosphere) {
+      const atmosphereMat = makeAtmosphereMaterial(tunedPlanetData);
       if (atmosphereMat) {
         const atmosphereGeometry = new THREE.SphereGeometry(radius * 1.05, geometry.segments.widthSegments / 2, geometry.segments.heightSegments / 2);
         atmosphereMesh = new THREE.Mesh(atmosphereGeometry, atmosphereMat);
@@ -633,6 +696,14 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       ringMesh.rotation.x = Math.PI / 2;
       mesh.add(ringMesh);
     }
+
+    // Hologram wireframe shell for added holographic feel
+    try {
+      const wireGeo = new THREE.SphereGeometry(radius * 1.01, Math.max(24, geometry.segments.widthSegments / 4), Math.max(16, geometry.segments.heightSegments / 4));
+      const wireMat = new THREE.MeshBasicMaterial({ color: 0x19E3FF, wireframe: true, transparent: true, opacity: 0.18, blending: THREE.AdditiveBlending, depthWrite: false });
+      const wire = new THREE.Mesh(wireGeo, wireMat);
+      mesh.add(wire);
+    } catch {}
     
     // Moons
     const moons: THREE.Mesh[] = [];
@@ -1279,8 +1350,16 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
     
     // Create new central planet as a larger, higher quality version
     const centralRadius = sat.baseRadius * 2.0;
+    // Strengthen element-specific atmosphere for the central planet as well
+    const element = (planetData && (planetData as any).element) || null;
+    const tunedAtmosphere = planetData.atmosphere ? {
+      ...planetData.atmosphere,
+      color: (element === 'heart') ? '#FF6BCD' : (element === 'lightning') ? '#FFD84D' : planetData.atmosphere.color,
+      glow: (element === 'heart') ? Math.max(planetData.atmosphere.glow || 0, 1.3) : (element === 'lightning') ? Math.max(planetData.atmosphere.glow || 0, 1.6) : (planetData.atmosphere.glow || 1.0),
+    } : undefined;
     const enhancedPlanetData = {
       ...planetData,
+      atmosphere: tunedAtmosphere,
       radius: centralRadius
     };
     
@@ -1307,6 +1386,14 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       }
     }
     
+    // Hologram wireframe shell on central planet
+    try {
+      const wireGeo = new THREE.SphereGeometry(centralRadius * 1.01, 48, 32);
+      const wireMat = new THREE.MeshBasicMaterial({ color: 0x19E3FF, wireframe: true, transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false });
+      const wire = new THREE.Mesh(wireGeo, wireMat);
+      centralMesh.add(wire);
+    } catch {}
+
     // Add rings to central planet if it has them
     if (enhancedPlanetData.rings) {
       const rings = enhancedPlanetData.rings;

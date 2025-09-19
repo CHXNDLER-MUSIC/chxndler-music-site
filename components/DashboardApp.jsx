@@ -42,6 +42,7 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [beamEnabled, setBeamEnabled] = useState(false);
   const [powerBusy, setPowerBusy] = useState(false);
   const [showOverlayUI, setShowOverlayUI] = useState(false); // comms + join buttons
+  const [uiCloseSignal, setUiCloseSignal] = useState(0); // increment to force-close buttons/menus during warp
   // Gate overlay + HUD power-up until Start is pressed (or deep link)
   const [uiUnlocked, setUiUnlocked] = useState(false);
   const [allowWarp, setAllowWarp] = useState(false); // show initial lightspeed overlay
@@ -53,7 +54,8 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [pendingTrackPlay, setPendingTrackPlay] = useState(false);
   const [pendingOverlayReveal, setPendingOverlayReveal] = useState(false); // wait to show overlay until warp SFX ends
   const trackPlayTimerRef = React.useRef(undefined);
-  const [ambientSuspended, setAmbientSuspended] = useState(false);
+  // Keep ambient fully silent until Start is clicked
+  const [ambientSuspended, setAmbientSuspended] = useState(true);
   const [firstStartDone, setFirstStartDone] = useState(false);
   const [welcomeHasPlayed, setWelcomeHasPlayed] = useState(false); // tracks if welcome has ever been played
   const welcomeOnStartRef = React.useRef(false); // signals that welcome VO should play now
@@ -102,26 +104,7 @@ export default function DashboardApp({ initialSlug } = {}) {
             setAmbientSuspended(false); // allow AmbientSpace to resume ambient immediately
           }
         }, 150); // Further reduced to 150ms for even faster HUD fade-in after Start button
-        // Only manage welcome audio during initial startup sequence, not manual power toggle
-        if (pendingHomePower) {
-          // Simulate SFX end callbacks without relying on an <audio> element
-          const onSfxEndMs = 1200;
-          setTimeout(() => {
-            if (!welcomeOnStartRef.current) {
-              try {
-                const intro = document.querySelector('audio[data-intro="1"]');
-                if (intro && typeof (intro).pause === 'function') {
-                  (intro).pause();
-                  try { (intro).currentTime = 0; } catch {}
-                }
-              } catch {}
-              setHomeIntroEnabled(false);
-            }
-            setTimeout(() => { welcomeOnStartRef.current = false; }, 6000);
-          }, onSfxEndMs);
-          // Fallback if timers were throttled
-          setTimeout(() => { welcomeOnStartRef.current = false; }, 2600);
-        }
+        // Do not cancel welcome VO here; reveal path (onWarpSfxEnd) manages it
       } else {
         // Turning off: play join-alien SFX when powering down
         try { sfx.play('join', 0.9); } catch {}
@@ -135,10 +118,8 @@ export default function DashboardApp({ initialSlug } = {}) {
       // 1) Mount HUD hidden
       setShowHUD(true);
       setBeamOnly(true);
-      // Keep ambient paused until HUD fades in, but don't interrupt welcome audio if playing
-      if (!welcomeOnStartRef.current) {
-        try { setAmbientSuspended(true); } catch {}
-      }
+      // Keep ambient paused until HUD fades in; reveal path will resume and play VO if needed
+      try { setAmbientSuspended(true); } catch {}
       // Do not start beam yet; will start after SFX ends (above)
     } else {
       // Powering off: play SFX immediately (done above), then fade beam out first,
@@ -169,6 +150,21 @@ export default function DashboardApp({ initialSlug } = {}) {
 
     // Switch MediaPlayer channel; MediaPlayer handles audio swap without reloading page
     setChannelIdx(idx);
+    // Proactively point the hidden audio element at the selected track so that
+    // any subsequent play trigger (after warp/base video) uses the correct song.
+    try {
+      const audioEl = document.querySelector('audio[data-audio-player="1"]');
+      const src = t?.src || '';
+      if (audioEl && src) {
+        if (audioEl.getAttribute('src') !== src) audioEl.setAttribute('src', src);
+        audioEl.muted = true; audioEl.volume = 0.0;
+        // Prime buffer quietly to satisfy autoplay policies later
+        audioEl.play().then(() => { try { audioEl.pause(); audioEl.currentTime = 0; } catch {} }).catch(()=>{});
+      }
+    } catch {}
+    // After user selects a song, we want to warp and then start playback
+    // once the warp completes and base sky is confirmed playing.
+    setPendingTrackPlay(true);
     
     // Trigger warp sequence with new song's sky
     setAllowWarp(true);
@@ -344,9 +340,10 @@ export default function DashboardApp({ initialSlug } = {}) {
     }
   }, [beamColor, showHUD, joinAlienOpen, beamTransitioning]);
 
-  // Spacebar and Pause key toggle for music play/pause
+  // Spacebar and Pause key toggle for music play/pause (disabled until Start unlocks UI)
   React.useEffect(() => {
     const handleKeyDown = (e) => {
+      if (!uiUnlocked) return; // Ignore all media key input before Start
       // Trigger on spacebar (not in input fields) or pause/media keys (anywhere)
       const tag = (e.target?.tagName || '').toUpperCase();
       const inTextField = tag === 'INPUT' || tag === 'TEXTAREA' || (e.target?.isContentEditable === true);
@@ -362,7 +359,13 @@ export default function DashboardApp({ initialSlug } = {}) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [uiUnlocked]);
+
+  // Enable SFX globally only after Start unlocks the UI
+  React.useEffect(() => {
+    try { sfx.setEnabled(!!uiUnlocked); } catch {}
+    try { (window).__CHX_UI_UNLOCKED = !!uiUnlocked; } catch {}
+  }, [uiUnlocked]);
 
   // Compute effective playing state: true if main track OR space music is playing
   const effectivelyPlaying = useMemo(() => {
@@ -432,11 +435,11 @@ export default function DashboardApp({ initialSlug } = {}) {
       height: 'var(--beam-height)',
       width: 'var(--display-width)',
       transform: 'translate3d(-50%,0,0)',
-      // Tie beam visibility to overlay UI being shown and Start having been pressed
-      opacity: (uiUnlocked && showOverlayUI && (beamEnabled || showHUD)) ? (cardModalOpen ? 0.3 : 1) : 0,
+      // Tie beam visibility to overlay UI being shown and Start having been pressed, and hide during warp
+      opacity: (uiUnlocked && showOverlayUI && (beamEnabled || showHUD) && !warpActive) ? (cardModalOpen ? 0.3 : 1) : 0,
       transition: 'opacity 400ms ease-in-out'
     };
-  }, [beamEnabled, showHUD, cardModalOpen, uiUnlocked, showOverlayUI]);
+  }, [beamEnabled, showHUD, cardModalOpen, uiUnlocked, showOverlayUI, warpActive]);
 
   // Position the blue display so its bottom touches the light beam top
   const hudBottom = useMemo(() => 'var(--display-touch-top)', []);
@@ -475,6 +478,20 @@ export default function DashboardApp({ initialSlug } = {}) {
         onWarpSfxEnd={() => {
           // If we're landing on home via Start, reveal overlay/UI after warp finishes
           if (pendingOverlayReveal) {
+            // Ensure we are in home mode (CHXNDLER) before revealing HUD
+            try { setHomeMode(true); } catch {}
+            try { setUserSelected(false); } catch {}
+            try { usePlayerStore.setState({ mainId: null }); } catch {}
+            try { setLinks({ spotify: LINKS.spotify, apple: LINKS.apple }); } catch {}
+            // Enable welcome VO once if Start requested it and it hasn't played yet
+            try {
+              if (welcomeOnStartRef.current && !welcomeHasPlayed) {
+                setHomeIntroEnabled(true);
+                setWelcomeHasPlayed(true);
+              } else {
+                setHomeIntroEnabled(false);
+              }
+            } catch {}
             // Switch background sky in the same render pass for simultaneous reveal
             try {
               if (nextSky) { setSky(nextSky); setNextSky(null); }
@@ -488,7 +505,12 @@ export default function DashboardApp({ initialSlug } = {}) {
             try { setPowerBusy(false); } catch {}
             try { setLandingRevealReady(true); } catch {}
             // Resume ambient slightly after UI fades begin for smoothness
-            setTimeout(() => { setAmbientSuspended(false); }, 100);
+            setTimeout(() => { 
+              setAmbientSuspended(false); 
+              try { window.dispatchEvent(new Event('ambient:play')); } catch {}
+            }, 100);
+            // Clear one-time flag to avoid repeats on later Starts
+            try { welcomeOnStartRef.current = false; } catch {}
             setPendingOverlayReveal(false);
           }
         }}
@@ -568,12 +590,10 @@ export default function DashboardApp({ initialSlug } = {}) {
             // Defer overlay/UI reveal until warp SFX has finished
             setPendingOverlayReveal(true);
           }
-          if (pendingTrackPlay) {
-            // Clear any pending fallback timers; onFlyEnd will trigger play immediately.
-            if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
-          }
           // For track changes: only trigger music when warp has ended and we are pending a track play
           if (pendingTrackPlay && !warpActive) {
+            // Clear any pending fallback timers now that we'll start playback here
+            if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
             // UI has already been revealed at warp end. Now, only start the song MP3
             // after the button SFX has finished.
             if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
@@ -601,9 +621,11 @@ export default function DashboardApp({ initialSlug } = {}) {
       <SteeringWheelOverlay
         POS={POS}
         playing={isPlaying}
-        showUI={uiUnlocked && showOverlayUI}
+        showUI={uiUnlocked && showOverlayUI && !warpActive}
         onJoinToggle={setJoinAlienOpen}
         onBeamColorChange={handleBeamToggle}
+        closeAllSignal={uiCloseSignal}
+        suspendUI={warpActive}
         onPowerToggle={() => { 
           // Manual power toggle should not start new welcome audio, but don't interrupt if it's already playing
           if (!welcomeOnStartRef.current) {
@@ -614,6 +636,8 @@ export default function DashboardApp({ initialSlug } = {}) {
           // No need to call triggerHudPower since beam system manages everything
         }}
         onLaunch={() => {
+          // Mark welcome VO to play exactly once on first Start
+          if (!welcomeHasPlayed) { welcomeOnStartRef.current = true; }
           // For Start flow: reveal overlay only after warp.mp3 finishes
           setPendingOverlayReveal(true);
           // Unlock overlay UI/HUD sequencing on Start press
@@ -690,9 +714,9 @@ export default function DashboardApp({ initialSlug } = {}) {
                 className="absolute inset-0 p-0"
                 suppressHydrationWarning
                 initial={{ opacity: 0 }}
-                animate={{ opacity: (uiUnlocked && showOverlayUI && showHUD) ? 1 : 0 }}
+                animate={{ opacity: (uiUnlocked && showOverlayUI && showHUD && !warpActive) ? 1 : 0 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200, duration: 0.3 }}
-                style={{ pointerEvents: (uiUnlocked && showOverlayUI && showHUD) ? 'auto' : 'none', visibility: (uiUnlocked && showOverlayUI) ? 'visible' : 'hidden' }}
+                style={{ pointerEvents: (uiUnlocked && showOverlayUI && showHUD && !warpActive) ? 'auto' : 'none', visibility: (uiUnlocked && showOverlayUI) ? 'visible' : 'hidden' }}
               >
                 <HUDPanel
                   inConsole
@@ -783,6 +807,9 @@ export default function DashboardApp({ initialSlug } = {}) {
           track={curTrack}
           playing={effectivelyPlaying}
           onToggle={() => setToggleSignal((n) => n + 1)}
+          onSelect={(slug) => {
+            try { onSongChange(slug); } catch {}
+          }}
         />
       ) : null}
 

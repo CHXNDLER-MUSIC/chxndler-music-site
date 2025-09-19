@@ -12,8 +12,8 @@ function ElementIcon({ name }) {
   const colorFor = (key) => {
     const k = String(key || '').toLowerCase();
     if (k.includes('water')) return '#38B6FF';
-    if (k.includes('heart')) return '#FC54AF';
-    if (k.includes('lightning') || k.includes('electric')) return '#F2EF1D';
+  if (k.includes('heart')) return '#FF2FB2';
+  if (k.includes('lightning') || k.includes('electric')) return '#FFC700';
     if (k.includes('earth')) return '#F2EF1D';
     if (k.includes('air')) return '#8BF9FF';
     if (k.includes('dark')) return '#000000';

@@ -54,8 +54,10 @@ export default function SkyboxVideo({
   React.useEffect(() => { onBasePlayingRef.current = onBasePlaying; }, [onBasePlaying]);
   
   // Brief zoom/blur to simulate flying to another world
+  // Do not trigger on initial mount; only on subsequent flySignal changes
+  const flyInitRef = React.useRef(false);
   React.useEffect(() => {
-    // Always honor explicit fly signals; allowWarp only gates auto-warp on initial load.
+    if (!flyInitRef.current) { flyInitRef.current = true; return; }
     if (typeof flySignal !== 'number') return;
     // Brief camera zoom/blur
     setFlying(true);
@@ -93,7 +95,7 @@ export default function SkyboxVideo({
     } catch {}
 
     return () => { clearTimeout(t); if (lsTimerRef.current !== undefined) { window.clearTimeout(lsTimerRef.current); lsTimerRef.current = undefined; } };
-  }, [flySignal, holdLightspeed, minDurationMs]);
+  }, [flySignal]);
 
   // Disable auto warp on initial page open unless allowWarp is true
   React.useEffect(() => {

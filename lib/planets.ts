@@ -4,13 +4,13 @@ import { slugify } from "@/lib/slug";
 export type Element = "water" | "fire" | "earth" | "air" | "heart" | "lightning" | "darkness";
 
 export const ELEMENT_COLORS: Record<Element, string> = {
-  water: "#38B6FF", // cyan/blue
-  fire: "#FC54AF",  // neon magenta (brand-leaning fire)
-  earth: "#F2EF1D", // neon yellow
-  air: "#8BF9FF",   // light cyan
-  heart: "#FC54AF", // pink/magenta
-  lightning: "#F2EF1D", // bright bolt yellow
-  darkness: "#000000", // deep black
+  water: "#38B6FF",    // cyan/blue
+  fire: "#FC54AF",     // neon magenta (brand-leaning fire)
+  earth: "#F2EF1D",    // neon yellow
+  air: "#8BF9FF",      // light cyan
+  heart: "#FF2FB2",    // stronger pink/magenta
+  lightning: "#FFC700", // deeper, richer yellow (golden)
+  darkness: "#000000",  // deep black
 };
 
 function pickElement(slug: string, index: number): Element {

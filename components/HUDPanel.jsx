@@ -55,8 +55,8 @@ function ElementIcon({ name, size = 18, glow = true }) {
     const k = String(key).toLowerCase();
     if (k.includes("chxndler")) return "#19E3FF"; // brand cyan
     if (k.includes("water")) return "#38B6FF";      // cyan
-    if (k.includes("heart")) return "#FC54AF";      // pink
-    if (k.includes("lightning") || k.includes("electric")) return "#F2EF1D"; // yellow
+    if (k.includes("heart")) return "#FF2FB2";      // stronger pink
+    if (k.includes("lightning") || k.includes("electric")) return "#FFC700"; // deeper yellow
     if (k.includes("earth")) return "#F2EF1D";     // reuse neon yellow
     if (k.includes("air")) return "#8BF9FF";       // light cyan
     if (k.includes("dark")) return "#000000";      // deep black
@@ -431,11 +431,11 @@ export default function HUDPanel({
             {(!currentId ? 'Welcome to the HEARTVERSE - a home for ALIENS, where misfits and dreamers live free.' : (track?.subtitle || ''))}
           </div>
 
-          {/* 3D planets — anchored directly above media player */}
+          {/* 3D planets — extend to the inner edges of the blue display (bleed over padding) */}
           <div
             ref={planetRef}
-            className="absolute left-2"
-            style={{ width: '65%', top: inConsole ? 48 : 64, bottom: planetBottom }}
+            className={inConsole ? "absolute -left-2 -right-2" : "absolute -left-4 -right-4"}
+            style={{ top: inConsole ? 48 : 64, bottom: planetBottom }}
           >
             {can3D && PlanetSystemComp ? (
               <div className="relative w-full h-full">
@@ -983,12 +983,11 @@ export default function HUDPanel({
       `}</style>
       {showCard ? (
         <div
-          className="fixed inset-0 z-[120] flex items-end justify-center backdrop-blur-sm"
+          className="fixed inset-0 z-[120] flex items-center justify-center backdrop-blur-sm"
           style={{ 
-            paddingBottom: 'calc(31% + 8vh)', // Position bottom of card above blue button (31% + buffer)
+            // Removed bottom padding tied to HUD buttons baseline to center modal
             paddingLeft: '5vw', 
             paddingRight: '5vw', 
-            paddingTop: '6vh',
             background: 'transparent' 
           }}
           onClick={() => {
@@ -1004,68 +1003,6 @@ export default function HUDPanel({
             className="relative rounded-2xl p-3 card-modal"
             onClick={(e)=> e.stopPropagation()}
           >
-            {(() => {
-              try {
-                const home = !currentId;
-                const slug = home ? '' : (track?.slug || active || '');
-                // Map track slugs to purchase links
-                const BUY_LINKS = {
-                  'alone': 'https://buy.stripe.com/dRmfZiclr5l3e3Ddll4gg0i',
-                  'always-on-my-mind': 'https://buy.stripe.com/9B6cN61GN28R0cN5ST4gg04',
-                  'baby': 'https://buy.stripe.com/aFacN64SZ4gZcZz8114gg0a',
-                  'be-my-bee-acoustic': 'https://buy.stripe.com/aFacN64SZ4gZcZz8114gg0a',
-                  'brain-freeze': 'https://buy.stripe.com/8x2aEYfxD00JcZza994gg0h',
-                  'collide': 'https://buy.stripe.com/7sY3cw5X3fZH0cN0yz4gg05',
-                  'colors-of-our-home': 'https://buy.stripe.com/5kQ00k2KRfZH9Nn1CD4gg0j',
-                  'i-might-fall-in-love-with-you': 'https://buy.stripe.com/aFa8wQdpv7tb1gR1CD4gg0c',
-                  'kid-forever': 'https://buy.stripe.com/00wfZibhnfZH4t3dll4gg0g',
-                  'letting-go': 'https://buy.stripe.com/3cI9AU85b00J9Nna994gg0d',
-                  'mr-brightside': 'https://buy.stripe.com/8x25kEetz8xf0cN8114gg02',
-                  'mr-brightside-killers-cover': 'https://buy.stripe.com/8x25kEetz8xf0cN8114gg02',
-                  'ocean-girl': 'https://buy.stripe.com/dRmbJ24SZ00J6Bb9554gg00',
-                  'ocean-girl-acoustic': 'https://buy.stripe.com/aFaeVeclr28R3oZftt4gg09',
-                  'ocean-girl-remix': 'https://buy.stripe.com/dRmeVeetz8xf0cNchh4gg08',
-                  'somebody-to-love': 'https://buy.stripe.com/4gM00kgBH4gZaRr1CD4gg0e',
-                  'tienes-un-amigo': 'https://buy.stripe.com/cNibJ2gBH3cV8Jjgxx4gg0f',
-                  'were-just-friends': 'https://buy.stripe.com/14A14o99fbJrbVv8114gg0b',
-                  'were-just-friends-mickey-jas-remix': 'https://buy.stripe.com/aFa5kE3OV14N3oZchh4gg06',
-                  'were-just-friends-dmvrco-remix': 'https://buy.stripe.com/28EdRa0CJ5l38Jj9554gg03',
-                };
-                const url = slug ? BUY_LINKS[slug] : (home ? 'https://buy.stripe.com/cNi14oetz6p76Bbgxx4gg0k' : undefined);
-                if (url) {
-                  return (
-                    <div className="mb-3 flex justify-center">
-                      <div className="ocean-cta-wrap relative">
-                        <a
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="btn-ocean"
-                          title="Collect this card"
-                          onClick={(e) => {
-                            try { e.preventDefault(); } catch {}
-                            try { sfx.play('click', 0.6); } catch {}
-                            try {
-                              const el = e.currentTarget;
-                              el.classList.remove('is-rippling');
-                              // force reflow to restart animation
-                              // @ts-ignore
-                              void el.offsetWidth;
-                              el.classList.add('is-rippling');
-                              setTimeout(() => { window.open(el.href, '_blank', 'noopener,noreferrer'); }, 520);
-                            } catch { window.open((e.currentTarget || {}).href, '_blank', 'noopener,noreferrer'); }
-                          }}
-                        >
-                          <span className="btn-label">COLLECT CARD</span>
-                          <span className="btn-ripple" aria-hidden />
-                        </a>
-                      </div>
-                    </div>
-                  );
-                }
-              } catch {}
-              return null;
-            })()}
             <div className="tilt-wrap">
               <div className="card-frame">
                 <div 
@@ -1148,6 +1085,68 @@ export default function HUDPanel({
                 <span className="frame-sheen" aria-hidden />
               </div>
             </div>
+            {(() => {
+              try {
+                const home = !currentId;
+                const slug = home ? '' : (track?.slug || active || '');
+                // Map track slugs to purchase links
+                const BUY_LINKS = {
+                  'alone': 'https://buy.stripe.com/dRmfZiclr5l3e3Ddll4gg0i',
+                  'always-on-my-mind': 'https://buy.stripe.com/9B6cN61GN28R0cN5ST4gg04',
+                  'baby': 'https://buy.stripe.com/aFacN64SZ4gZcZz8114gg0a',
+                  'be-my-bee-acoustic': 'https://buy.stripe.com/aFacN64SZ4gZcZz8114gg0a',
+                  'brain-freeze': 'https://buy.stripe.com/8x2aEYfxD00JcZza994gg0h',
+                  'collide': 'https://buy.stripe.com/7sY3cw5X3fZH0cN0yz4gg05',
+                  'colors-of-our-home': 'https://buy.stripe.com/5kQ00k2KRfZH9Nn1CD4gg0j',
+                  'i-might-fall-in-love-with-you': 'https://buy.stripe.com/aFa8wQdpv7tb1gR1CD4gg0c',
+                  'kid-forever': 'https://buy.stripe.com/00wfZibhnfZH4t3dll4gg0g',
+                  'letting-go': 'https://buy.stripe.com/3cI9AU85b00J9Nna994gg0d',
+                  'mr-brightside': 'https://buy.stripe.com/8x25kEetz8xf0cN8114gg02',
+                  'mr-brightside-killers-cover': 'https://buy.stripe.com/8x25kEetz8xf0cN8114gg02',
+                  'ocean-girl': 'https://buy.stripe.com/dRmbJ24SZ00J6Bb9554gg00',
+                  'ocean-girl-acoustic': 'https://buy.stripe.com/aFaeVeclr28R3oZftt4gg09',
+                  'ocean-girl-remix': 'https://buy.stripe.com/dRmeVeetz8xf0cNchh4gg08',
+                  'somebody-to-love': 'https://buy.stripe.com/4gM00kgBH4gZaRr1CD4gg0e',
+                  'tienes-un-amigo': 'https://buy.stripe.com/cNibJ2gBH3cV8Jjgxx4gg0f',
+                  'were-just-friends': 'https://buy.stripe.com/14A14o99fbJrbVv8114gg0b',
+                  'were-just-friends-mickey-jas-remix': 'https://buy.stripe.com/aFa5kE3OV14N3oZchh4gg06',
+                  'were-just-friends-dmvrco-remix': 'https://buy.stripe.com/28EdRa0CJ5l38Jj9554gg03',
+                };
+                const url = slug ? BUY_LINKS[slug] : (home ? 'https://buy.stripe.com/cNi14oetz6p76Bbgxx4gg0k' : undefined);
+                if (url) {
+                  return (
+                    <div className="mt-3 flex justify-center">
+                      <div className="ocean-cta-wrap relative">
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-ocean"
+                          title="Collect this card"
+                          onClick={(e) => {
+                            try { e.preventDefault(); } catch {}
+                            try { sfx.play('click', 0.6); } catch {}
+                            try {
+                              const el = e.currentTarget;
+                              el.classList.remove('is-rippling');
+                              // force reflow to restart animation
+                              // @ts-ignore
+                              void el.offsetWidth;
+                              el.classList.add('is-rippling');
+                              setTimeout(() => { window.open(el.href, '_blank', 'noopener,noreferrer'); }, 520);
+                            } catch { window.open((e.currentTarget || {}).href, '_blank', 'noopener,noreferrer'); }
+                          }}
+                        >
+                          <span className="btn-label">COLLECT CARD</span>
+                          <span className="btn-ripple" aria-hidden />
+                        </a>
+                      </div>
+                    </div>
+                  );
+                }
+              } catch {}
+              return null;
+            })()}
             {/* Streaming buttons removed per request */}
             <button
               type="button"

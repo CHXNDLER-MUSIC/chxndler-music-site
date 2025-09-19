@@ -24,6 +24,8 @@ export default function HoloHubMenu({
   isActive = false,
   anchorBottomPercent,
   anchorOffsetPx,
+  closeSignal = 0,
+  suspend = false,
 }: {
   items?: HubItem[];
   radius?: number;
@@ -37,6 +39,10 @@ export default function HoloHubMenu({
   // Anchor the yellow panel relative to the yellow hub button
   anchorBottomPercent?: number; // baseline (same as buttons)
   anchorOffsetPx?: number;      // horizontal offset from center (same as buttons)
+  // Increment to force-close the yellow panel (e.g., during warp)
+  closeSignal?: number;
+  // Temporarily hide panel contents without changing open state
+  suspend?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -70,6 +76,14 @@ export default function HoloHubMenu({
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
   }, [open]);
+
+  // Close the menu when an external close signal is sent (e.g., warp start)
+  useEffect(() => {
+    if (open) {
+      setOpen(false);
+      try { onToggle?.(false); } catch {}
+    }
+  }, [closeSignal]);
 
   // ESC closes the menu and returns focus to hub
   useEffect(() => {
@@ -198,7 +212,7 @@ export default function HoloHubMenu({
       {/* Centered yellow panel + items container */}
       <div
         className="panel-wrap"
-        aria-hidden={!open}
+        aria-hidden={!open || suspend}
         style={{
           // Bottom of yellow display touches bottom of the central light beam
           position: 'fixed',
@@ -209,11 +223,11 @@ export default function HoloHubMenu({
           width: `var(--display-width)`,
           // Height based on item size so the glass edge consistently meets the beam tip
           height: panelHeight,
-          pointerEvents: open ? 'auto' : 'none',
+          pointerEvents: open && !suspend ? 'auto' : 'none',
           zIndex: 93,
           borderRadius: `var(--display-border-radius)`,
           overflow: 'hidden',
-          opacity: open ? 1 : 0,
+          opacity: open && !suspend ? 1 : 0,
           transition: 'opacity 200ms ease, transform 220ms cubic-bezier(0.2,0.8,0.2,1)',
           // Hide inline instance; we will render via portal as a sibling overlay
           display: 'none'
@@ -278,7 +292,7 @@ export default function HoloHubMenu({
         (
           <div
             className="panel-wrap"
-            aria-hidden={!open}
+            aria-hidden={!open || suspend}
             style={{
               position: 'fixed',
               bottom: beamBottomCss,
@@ -286,11 +300,11 @@ export default function HoloHubMenu({
               transform: 'translateX(-50%)',
               width: `var(--display-width)`,
               height: panelHeight,
-              pointerEvents: open ? 'auto' : 'none',
+              pointerEvents: open && !suspend ? 'auto' : 'none',
               zIndex: 93,
               borderRadius: `var(--display-border-radius)`,
               overflow: 'hidden',
-              opacity: open ? 1 : 0,
+              opacity: open && !suspend ? 1 : 0,
               transition: 'opacity 200ms ease, transform 220ms cubic-bezier(0.2,0.8,0.2,1)'
             } as React.CSSProperties}
           >

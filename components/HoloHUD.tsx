@@ -7,10 +7,12 @@ export default function HoloHUD({
   track,
   playing,
   onToggle,
+  onSelect,
 }: {
   track: Track | null;
   playing: boolean;
   onToggle: () => void;
+  onSelect?: (slug: string) => void;
 }) {
   const title = track?.title || "";
   const subtitle = (track as any)?.subtitle || "";
@@ -61,12 +63,22 @@ export default function HoloHUD({
           { k: "baby", label: "Baby" },
           { k: "be-my-bee", label: "Be My Bee" },
           { k: "ocean-girl", label: "Ocean Girl" },
-        ].map((s) => (
-          <div key={s.k} className={`song ${s.k === "ocean-girl" && highlight ? "active" : ""}`}>
-            <span className="dot" />
-            <span className="name">{s.label}</span>
-          </div>
-        ))}
+        ].map((s) => {
+          const isActive = (track?.slug === s.k);
+          return (
+            <button
+              key={s.k}
+              type="button"
+              className={`song ${isActive ? "active" : ""}`}
+              onClick={() => { try { onSelect && onSelect(s.k); } catch {} }}
+              aria-pressed={isActive}
+              aria-label={`Select ${s.label}`}
+            >
+              <span className="dot" />
+              <span className="name">{s.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Left of wheel: play/pause button */}
@@ -199,6 +211,8 @@ export default function HoloHUD({
           background: transparent; 
           transition: color .12s ease; 
           width: 100%;
+          border: 0; 
+          cursor: pointer;
         }
         .song:hover{ outline: none; box-shadow: none; }
         .song .dot{ width:10px; height:10px; border-radius:9999px; background: #38B6FF; box-shadow: 0 0 10px #38B6FFAA; }
