@@ -985,24 +985,44 @@ export default function HUDPanel({
         <div
           className="fixed inset-0 z-[120] flex items-center justify-center backdrop-blur-sm"
           style={{ 
-            // Removed bottom padding tied to HUD buttons baseline to center modal
-            paddingLeft: '5vw', 
-            paddingRight: '5vw', 
-            background: 'transparent' 
-          }}
-          onClick={() => {
-            try { sfx.play('/audio/close.mp3', 0.7); } catch {}
-            try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
-            setShowCard(false);
-            // Dispatch event to notify DashboardApp that card modal closed
-            const event = new CustomEvent('hideCoverCard');
-            window.dispatchEvent(event);
+            background: 'transparent'
           }}
         >
           <div
-            className="relative rounded-2xl p-3 card-modal"
-            onClick={(e)=> e.stopPropagation()}
+            style={{ 
+              // Container matches exact blue display dimensions and position
+              position: 'absolute',
+              width: 'var(--display-width)',
+              height: 'calc(var(--display-touch-top) - var(--display-touch-bottom))',
+              top: 'var(--display-touch-bottom)',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'flex-end',
+              alignItems: 'center'
+            }}
+            onClick={() => {
+              try { sfx.play('/audio/close.mp3', 0.7); } catch {}
+              try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
+              setShowCard(false);
+              // Dispatch event to notify DashboardApp that card modal closed
+              const event = new CustomEvent('hideCoverCard');
+              window.dispatchEvent(event);
+            }}
           >
+            <div
+              className="relative rounded-2xl p-3 card-modal"
+              style={{
+                maxWidth: '220px',
+                maxHeight: '310px',
+                width: 'auto',
+                height: 'auto',
+                marginBottom: '-60px',
+                paddingTop: '60px'
+              }}
+              onClick={(e)=> e.stopPropagation()}
+            >
             <div className="tilt-wrap">
               <div className="card-frame">
                 <div 
@@ -1094,6 +1114,7 @@ export default function HUDPanel({
                   'alone': 'https://buy.stripe.com/dRmfZiclr5l3e3Ddll4gg0i',
                   'always-on-my-mind': 'https://buy.stripe.com/9B6cN61GN28R0cN5ST4gg04',
                   'baby': 'https://buy.stripe.com/aFacN64SZ4gZcZz8114gg0a',
+                  'be-my-bee': 'https://buy.stripe.com/cNi14oetz6p76Bbgxx4gg0k',
                   'be-my-bee-acoustic': 'https://buy.stripe.com/aFacN64SZ4gZcZz8114gg0a',
                   'brain-freeze': 'https://buy.stripe.com/8x2aEYfxD00JcZza994gg0h',
                   'collide': 'https://buy.stripe.com/7sY3cw5X3fZH0cN0yz4gg05',
@@ -1115,7 +1136,7 @@ export default function HUDPanel({
                 const url = slug ? BUY_LINKS[slug] : (home ? 'https://buy.stripe.com/cNi14oetz6p76Bbgxx4gg0k' : undefined);
                 if (url) {
                   return (
-                    <div className="mt-3 flex justify-center">
+                    <div className="absolute top-3 left-1/2 transform -translate-x-1/2 z-10">
                       <div className="ocean-cta-wrap relative">
                         <a
                           href={url}
@@ -1137,7 +1158,7 @@ export default function HUDPanel({
                             } catch { window.open((e.currentTarget || {}).href, '_blank', 'noopener,noreferrer'); }
                           }}
                         >
-                          <span className="btn-label">COLLECT CARD</span>
+                          <span className="btn-label" style={{ whiteSpace: 'nowrap' }}>COLLECT CARD</span>
                           <span className="btn-ripple" aria-hidden />
                         </a>
                       </div>
@@ -1162,15 +1183,19 @@ export default function HUDPanel({
               className="absolute -top-3 -right-3 rounded-full bg-[#19E3FF] text-black font-bold w-8 h-8 shadow-[0_0_20px_rgba(25,227,255,0.8)]"
               title="Close"
             >×</button>
+            </div>
           </div>
         </div>
       ) : null}
       <style jsx>{`
         .card-modal{
-          /* Slightly reduce modal card size after pop-out */
-          max-width: min(55vw, 260px);
+          /* Container now handles dimensions, card fills container */
           background: rgba(25,227,255,0.25);
           box-shadow: 0 0 60px rgba(25,227,255,0.25), inset 0 0 0 1px rgba(25,227,255,0.20);
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
         }
         .tilt-wrap{ perspective: 1200px; transform-style: preserve-3d; }
         .card-frame{

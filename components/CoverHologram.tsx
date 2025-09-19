@@ -138,7 +138,7 @@ export default function CoverHologram({ src, title }: { src: string; title: stri
                 <span className="frame-sheen" aria-hidden />
               </div>
             </div>
-            <div className="mt-3 flex justify-center">
+            <div className="absolute top-3 left-1/2 transform -translate-x-1/2 z-10">
               <div className="ocean-cta-wrap relative">
                 <a
                   href="https://buy.stripe.com/cNi14oetz6p76Bbgxx4gg0k"

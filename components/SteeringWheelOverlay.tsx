@@ -34,6 +34,13 @@ export default function SteeringWheelOverlay({
   const buttonRef = useRef<HTMLAudioElement|null>(null);
   const [showJoin, setShowJoin] = useState(false);
   const [activeBeamColor, setActiveBeamColor] = useState<'blue' | 'yellow' | 'pink'>('blue');
+  const [mounted, setMounted] = useState(false);
+
+  // Set mounted after component mounts to prevent immediate hover sounds
+  useEffect(() => {
+    const timer = setTimeout(() => setMounted(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Notify parent when showJoin changes
   useEffect(() => {
@@ -107,6 +114,7 @@ export default function SteeringWheelOverlay({
   }
 
   const handleJoinAlienToggle = useCallback(() => {
+    if (!showUI) return;
     
     // Play button sound
     try {
@@ -126,7 +134,7 @@ export default function SteeringWheelOverlay({
       setActiveBeamColor('pink');
       onBeamColorChange?.('pink');
     }
-  }, [showJoin, onBeamColorChange]);
+  }, [showJoin, onBeamColorChange, showUI]);
 
   // Helper function to get responsive values
   const getResponsiveValue = (config: any) => {
@@ -225,10 +233,10 @@ export default function SteeringWheelOverlay({
         <LumaKeyVideo
           srcMp4="/cockpit/wheel.mp4"
           srcAlt="/wheel.mp4"
-          threshold={(vconf as any)?.threshold ?? 0.08}
-          softness={(vconf as any)?.softness ?? 0.02}
-          saturation={(vconf as any)?.saturation ?? 1.6}
-          contrast={(vconf as any)?.contrast ?? 1.8}
+          threshold={(vconf as any)?.threshold ?? 0.01}
+          softness={(vconf as any)?.softness ?? 0.005}
+          saturation={(vconf as any)?.saturation ?? 1.8}
+          contrast={(vconf as any)?.contrast ?? 2.2}
           offsetYRatio={0}
           className="block"
           style={{
@@ -266,8 +274,9 @@ export default function SteeringWheelOverlay({
                 <button
                   type="button"
                   className={`power-btn ${activeBeamColor === 'blue' && showUI ? 'power-btn-active' : ''}`}
-                  onMouseEnter={() => { try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
+                  onMouseEnter={() => { if (!showUI || !mounted) return; try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
                   onClick={() => {
+                    if (!showUI) return;
                     // Play button sound
                     try {
                       const a = buttonRef.current;
@@ -339,6 +348,7 @@ export default function SteeringWheelOverlay({
                 closeSignal={closeAllSignal}
                 suspend={suspendUI}
                 onToggle={(isOpen) => {
+                  if (!showUI) return;
                   if (isOpen) {
                     // Play button sound
                     try {
@@ -469,7 +479,7 @@ export default function SteeringWheelOverlay({
           transform: `translate(-50%, 0)`,
           zIndex: 90,
         }}
-        onMouseEnter={() => { try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
+        onMouseEnter={() => { if (!mounted) return; try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
         aria-label={isStart ? "Start" : (playing ? "Pause" : "Play")}
         title={isStart ? "Start" : (playing ? "Pause" : "Play")}
       >
@@ -504,11 +514,6 @@ export default function SteeringWheelOverlay({
           display:grid; place-items:center; font-size:22px; font-weight:700; color:#00ffd0;
           /* Transparent face: remove dark circle behind the wheel */
           background: transparent;
-          box-shadow:
-            0 0 32px rgba(0,255,180,.75),
-            0 0 88px rgba(0,255,180,.55),
-            inset 0 2px 0 rgba(255,255,255,.35),
-            inset 0 0 24px rgba(0,255,200,.22);
           border:1px solid rgba(255,255,255,.18);
           transition: transform .12s ease, box-shadow .18s ease, filter .18s ease;
           overflow: visible;
@@ -517,10 +522,6 @@ export default function SteeringWheelOverlay({
         .wheel-play.chx{
           background: transparent !important;
           border: none !important;
-          box-shadow: 
-            0 8px 16px rgba(0,0,0,0.4),
-            0 4px 8px rgba(0,0,0,0.3),
-            0 0 20px rgba(25,227,255,0.3);
           position: relative;
           cursor: pointer;
           transform: translateZ(0);

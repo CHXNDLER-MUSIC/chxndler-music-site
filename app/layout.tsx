@@ -4,7 +4,6 @@ import React from "react";
 import ClickTracker from "@/components/ClickTracker";
 import AnalyticsWidget from "@/components/AnalyticsWidget";
 import DevBadge from "@/components/DevBadge";
-import BuildInfoFooter from "@/components/BuildInfoFooter";
 import { AudioProvider } from "@/app/providers/AudioProvider";
 
 export const metadata: Metadata = {
@@ -56,7 +55,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AnalyticsWidget />
           <DevBadge />
           {children}
-          <BuildInfoFooter />
         </AudioProvider>
         {mpId ? (
           <noscript>

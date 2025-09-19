@@ -18,7 +18,7 @@ export default function HoloHubMenu({
   radius: _radius = 110,
   hubColor = "#FC54AF",
   className,
-  itemSize = 60,
+  itemSize = 68,
   hubSize = 72,
   onToggle,
   isActive = false,

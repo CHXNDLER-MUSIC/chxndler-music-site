@@ -61,11 +61,12 @@
   --beam-top: calc(var(--beam-bottom-base) + var(--beam-height));
   
   /* Display touch points - all displays anchor to these */
-  --display-touch-top: var(--beam-top);
+  /* Adjust display-touch-top to overlap slightly with beam for visual continuity */
+  --display-touch-top: calc(var(--beam-top) - 8px);
   --display-touch-bottom: var(--beam-bottom);
   
   /* Mobile-specific display sizing */
-  --display-width: min(280px, calc(100vw - 24px));
+  --display-width: min(320px, calc(100vw - 16px));
   --display-border-radius: 12px;
 }
 
@@ -80,7 +81,7 @@
     --touch-zone-height: 48px;
     
     /* Tablet-specific display sizing */
-    --display-width: min(360px, calc(100vw - 32px));
+    --display-width: min(420px, calc(100vw - 24px));
     --display-border-radius: 14px;
     
     /* Enhanced beam visual properties for tablets */
@@ -100,7 +101,7 @@
     --touch-zone-height: 40px; /* Smaller for precise mouse clicks */
     
     /* Desktop-specific display sizing */
-    --display-width: min(400px, calc(100vw - 48px));
+    --display-width: min(480px, calc(100vw - 32px));
     --display-border-radius: 16px;
     
     /* Enhanced beam visual properties for desktop */
@@ -120,7 +121,7 @@
     --panel-gap: 20px;
     
     /* Large desktop display sizing */
-    --display-width: min(480px, calc(100vw - 64px));
+    --display-width: min(560px, calc(100vw - 48px));
     --display-border-radius: 18px;
     
     /* Enhanced visual effects for large screens */
@@ -139,7 +140,7 @@
     --panel-gap: 24px;
     
     /* Ultra-wide display sizing */
-    --display-width: min(520px, calc(100vw - 80px));
+    --display-width: min(600px, calc(100vw - 64px));
     --display-border-radius: 20px;
   }
 }

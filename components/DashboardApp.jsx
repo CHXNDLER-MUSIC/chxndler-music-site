@@ -184,11 +184,12 @@ export default function DashboardApp({ initialSlug } = {}) {
     // Skip first run to avoid triggering on initial mount
     if (prevIdxRef.current === null) { prevIdxRef.current = channelIdx; return; }
     // Only trigger when index changes implicitly (e.g., auto-advance), not when user selected
-    if (!userSelected && !startButtonWarpRef.current && !warpActive && prevIdxRef.current !== channelIdx) {
+    // Also ensure UI is unlocked before allowing automatic warps
+    if (!userSelected && !startButtonWarpRef.current && !warpActive && uiUnlocked && prevIdxRef.current !== channelIdx) {
       setFlySignal((n) => n + 1);
     }
     prevIdxRef.current = channelIdx;
-  }, [channelIdx, mounted, userSelected, warpActive]);
+  }, [channelIdx, mounted, userSelected, warpActive, uiUnlocked]);
   const { hudSongs, holoSongs } = React.useMemo(() => buildPlanetSongs(), []);
   React.useEffect(() => {
     try {
@@ -209,7 +210,11 @@ export default function DashboardApp({ initialSlug } = {}) {
 
   // (Removed) implicit sky change on track change to avoid accidental warps.
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { 
+    setMounted(true);
+    // Explicitly disable SFX on mount until Start is pressed
+    try { sfx.setEnabled(false); } catch {}
+  }, []);
 
   // If an initial slug is provided (route-based song page), orchestrate warp + playback
   useEffect(() => {
@@ -220,6 +225,8 @@ export default function DashboardApp({ initialSlug } = {}) {
     if (!t) return;
     // Deep link unlocks overlay UI so buttons can show after warp
     setUiUnlocked(true);
+    // Enable SFX when unlocking UI for deep links
+    try { sfx.setEnabled(true); } catch {}
     // Mirror onSongChange sequencing but for route entry
     setCurTrack(t);
     setUserSelected(true);
@@ -547,7 +554,9 @@ export default function DashboardApp({ initialSlug } = {}) {
             try {
               if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); }
               trackPlayTimerRef.current = window.setTimeout(() => {
+                console.log('DashboardApp: fallback timer fired', { pendingTrackPlay });
                 if (pendingTrackPlay) {
+                  console.log('DashboardApp: fallback timer starting song');
                   setPlaySignal((n) => n + 1);
                   setPendingTrackPlay(false);
                 }
@@ -564,6 +573,7 @@ export default function DashboardApp({ initialSlug } = {}) {
           }
         }}
         onBasePlaying={() => {
+          console.log('DashboardApp: onBasePlaying called', { pendingTrackPlay, warpActive });
           if (pendingHomePower) {
             // Start path: ensure main track audio stays stopped on landing
             try {
@@ -590,14 +600,20 @@ export default function DashboardApp({ initialSlug } = {}) {
             // Defer overlay/UI reveal until warp SFX has finished
             setPendingOverlayReveal(true);
           }
-          // For track changes: only trigger music when warp has ended and we are pending a track play
-          if (pendingTrackPlay && !warpActive) {
+          // For track changes: trigger music when we are pending a track play
+          // Allow playback even if warpActive is still true to handle race conditions with onFlyEnd
+          if (pendingTrackPlay) {
             // Clear any pending fallback timers now that we'll start playback here
             if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
             // UI has already been revealed at warp end. Now, only start the song MP3
             // after the button SFX has finished.
             if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
-            const startSong = () => { setPlaySignal((n) => n + 1); setPendingTrackPlay(false); buttonSfxWaitRef.current = null; };
+            const startSong = () => { 
+              console.log('DashboardApp: startSong called, incrementing playSignal');
+              setPlaySignal((n) => n + 1); 
+              setPendingTrackPlay(false); 
+              buttonSfxWaitRef.current = null; 
+            };
             try {
               const p = buttonSfxWaitRef.current;
               if (p && typeof p.then === 'function') {

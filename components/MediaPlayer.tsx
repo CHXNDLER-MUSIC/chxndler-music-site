@@ -135,6 +135,16 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     // Clear any pending delayed plays from prior index changes
     if (warpPlayTimerRef.current !== undefined) { clearTimeout(warpPlayTimerRef.current); warpPlayTimerRef.current = undefined; }
     
+    // Stop current song before starting warp sequence
+    try {
+      a.pause();
+      a.currentTime = 0;
+      setPlaying(false);
+      if (onPlayingChange) onPlayingChange(false);
+    } catch (e) {
+      if (DEBUG_MEDIA) dwarn('Failed to stop current song', e);
+    }
+    
     // Update sky and notify parent components
     const s = skyFor(cur.slug);
     if (onSkyChange) onSkyChange(s.webm, s.mp4, s.key);
@@ -763,6 +773,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           loop
           preload="auto"
           playsInline
+          muted
+          autoPlay={false}
           onError={() => {
             const a = audioRef.current; if (!a) return;
             if (DEBUG_MEDIA) { dwarn('audio tag onError'); dumpAudio(a, 'audio:onError'); }
@@ -775,7 +787,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
 
       {/* SFX: reuse an existing asset to avoid 404; you can provide distinct files in /public/ui */}
       <audio ref={uiClickRef}  src="/audio/click.mp3" preload="auto" />
-      <audio ref={detentRef}   src="/audio/change-channel.mp3" preload="auto" />
+      <audio ref={detentRef}   src="/audio/warp.mp3" preload="auto" />
 
       <style jsx>{`
         /* Waveform visualization container */

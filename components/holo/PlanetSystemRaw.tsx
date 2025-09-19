@@ -44,6 +44,16 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
   const spinSpeedRef = useRef<number>(0.0025);
   // Central planet system: selected planet becomes stationary at center
   const centralPlanetRef = useRef<{ id: string | null; mesh: THREE.Mesh | null; originalSat: Sat | null }>({ id: null, mesh: null, originalSat: null });
+  // Camera animation for smooth focus transitions
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const targetCameraPos = useRef<THREE.Vector3>(new THREE.Vector3(0, 1.2, 16.0));
+  const targetCameraLookAt = useRef<THREE.Vector3>(new THREE.Vector3(0, 0, 0));
+  const cameraTransitionSpeed = useRef<number>(0.08);
+  
+  // Particle system for gravitational connections
+  const particleSystemRef = useRef<THREE.Points | null>(null);
+  const connectionLinesRef = useRef<THREE.LineSegments[]>([]);
+  const particleUniforms = useRef<{ uTime: { value: number }; uCentralPos: { value: THREE.Vector3 }; uCentralColor: { value: THREE.Color } } | null>(null);
 
   // Create realistic planet material based on planet type and properties
   function makePlanetMaterial(planetData: any) {
@@ -553,6 +563,175 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
     return typeMap[type] || 1;
   }
   
+  // Create particle system for gravitational connections
+  function createGravitationalParticles(scene: THREE.Scene, centralPlanetColor: string = '#38B6FF') {
+    const particleCount = 2000;
+    const geometry = new THREE.BufferGeometry();
+    
+    // Create particle positions along orbital paths
+    const positions = new Float32Array(particleCount * 3);
+    const velocities = new Float32Array(particleCount * 3);
+    const phases = new Float32Array(particleCount);
+    const distances = new Float32Array(particleCount);
+    
+    for (let i = 0; i < particleCount; i++) {
+      const i3 = i * 3;
+      
+      // Distribute particles along different orbital distances
+      const orbitRadius = 2.5 + Math.random() * 8.5; // 2.5 to 11
+      const angle = Math.random() * Math.PI * 2;
+      const height = (Math.random() - 0.5) * 0.8;
+      
+      positions[i3] = Math.cos(angle) * orbitRadius;
+      positions[i3 + 1] = height;
+      positions[i3 + 2] = Math.sin(angle) * orbitRadius;
+      
+      // Velocity for orbital motion
+      velocities[i3] = -Math.sin(angle) * 0.02 / orbitRadius; // Slower for outer orbits
+      velocities[i3 + 1] = (Math.random() - 0.5) * 0.005;
+      velocities[i3 + 2] = Math.cos(angle) * 0.02 / orbitRadius;
+      
+      phases[i] = Math.random() * Math.PI * 2;
+      distances[i] = orbitRadius;
+    }
+    
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+    geometry.setAttribute('phase', new THREE.BufferAttribute(phases, 1));
+    geometry.setAttribute('distance', new THREE.BufferAttribute(distances, 1));
+    
+    // Particle shader material
+    const uniforms = {
+      uTime: { value: 0 },
+      uCentralPos: { value: new THREE.Vector3(0, 0, 1.2) },
+      uCentralColor: { value: new THREE.Color(centralPlanetColor) },
+      uSize: { value: 3.0 }
+    };
+    
+    particleUniforms.current = uniforms;
+    
+    const vertexShader = `
+      attribute vec3 velocity;
+      attribute float phase;
+      attribute float distance;
+      
+      uniform float uTime;
+      uniform vec3 uCentralPos;
+      uniform float uSize;
+      
+      varying float vAlpha;
+      varying float vDistanceFactor;
+      
+      void main() {
+        vec3 pos = position;
+        
+        // Orbital motion
+        pos += velocity * uTime * 20.0;
+        
+        // Oscillating pull toward center
+        vec3 toCentral = uCentralPos - pos;
+        float distToCentral = length(toCentral);
+        float pullStrength = 0.1 / (1.0 + distToCentral * 0.5);
+        pos += normalize(toCentral) * sin(uTime * 2.0 + phase) * pullStrength;
+        
+        // Distance-based alpha for depth effect
+        vDistanceFactor = 1.0 / (1.0 + distance * 0.1);
+        vAlpha = vDistanceFactor * (0.3 + 0.7 * sin(uTime * 3.0 + phase));
+        
+        vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+        gl_Position = projectionMatrix * mvPosition;
+        
+        // Distance-based size
+        gl_PointSize = uSize * vDistanceFactor * (1.0 + sin(uTime * 4.0 + phase) * 0.3);
+      }
+    `;
+    
+    const fragmentShader = `
+      uniform vec3 uCentralColor;
+      varying float vAlpha;
+      varying float vDistanceFactor;
+      
+      void main() {
+        // Circular particle shape
+        vec2 center = gl_PointCoord - vec2(0.5);
+        float dist = length(center);
+        if (dist > 0.5) discard;
+        
+        // Soft circular gradient
+        float alpha = (1.0 - dist * 2.0) * vAlpha;
+        
+        // Color mixing between central planet color and cyan energy
+        vec3 energyColor = mix(vec3(0.1, 0.9, 1.0), uCentralColor, vDistanceFactor * 0.6);
+        
+        gl_FragColor = vec4(energyColor, alpha * 0.8);
+      }
+    `;
+    
+    const material = new THREE.ShaderMaterial({
+      uniforms,
+      vertexShader,
+      fragmentShader,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    
+    const particles = new THREE.Points(geometry, material);
+    scene.add(particles);
+    particleSystemRef.current = particles;
+    
+    return particles;
+  }
+  
+  // Create connection lines between central planet and orbiting planets
+  function createConnectionLines(scene: THREE.Scene, satellites: Sat[], centralPos: THREE.Vector3, centralColor: string = '#38B6FF') {
+    // Clear existing lines
+    connectionLinesRef.current.forEach(line => {
+      scene.remove(line);
+      line.geometry.dispose();
+      (line.material as THREE.Material).dispose();
+    });
+    connectionLinesRef.current = [];
+    
+    satellites.forEach(sat => {
+      if (!sat.mesh.visible) return; // Skip hidden satellites
+      
+      const points = [];
+      const segmentCount = 20;
+      
+      // Create curved connection from central planet to satellite
+      for (let i = 0; i <= segmentCount; i++) {
+        const t = i / segmentCount;
+        const satellitePos = sat.mesh.position;
+        
+        // Bezier-like curve with gravitational pull effect
+        const midPoint = new THREE.Vector3()
+          .lerpVectors(centralPos, satellitePos, 0.5)
+          .add(new THREE.Vector3(0, Math.sin(t * Math.PI) * 0.8, 0));
+        
+        const point = new THREE.Vector3()
+          .lerpVectors(centralPos, satellitePos, t)
+          .lerp(midPoint, Math.sin(t * Math.PI) * 0.4);
+        
+        points.push(point);
+      }
+      
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      
+      // Create gradient material
+      const material = new THREE.LineBasicMaterial({
+        color: new THREE.Color(centralColor),
+        transparent: true,
+        opacity: 0.15,
+        blending: THREE.AdditiveBlending
+      });
+      
+      const line = new THREE.Line(geometry, material);
+      scene.add(line);
+      connectionLinesRef.current.push(line as any);
+    });
+  }
+  
   // Create detailed planet geometry based on planet type
   function createPlanetGeometry(radius: number, geometry: PlanetGeometry) {
     // Validate inputs to prevent NaN values
@@ -825,6 +1004,7 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
     const camera = new THREE.PerspectiveCamera(35, width / height, 0.1, 120);
     camera.position.set(0, 1.2, 16.0);
     camera.lookAt(0, 0, 0); // Look directly at center
+    cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setClearColor(0x000000, 0);
@@ -959,16 +1139,35 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       const hov = hoverRef.current;
       const centralPlanet = centralPlanetRef.current;
       
+      // Update camera focus for smooth transitions
+      const camera = cameraRef.current;
+      if (camera) {
+        // Smoothly animate camera position to target
+        camera.position.lerp(targetCameraPos.current, cameraTransitionSpeed.current);
+        
+        // Smoothly animate camera look-at target
+        const currentLookAt = new THREE.Vector3();
+        camera.getWorldDirection(currentLookAt);
+        currentLookAt.add(camera.position);
+        
+        const targetLookDirection = targetCameraLookAt.current.clone().sub(camera.position).normalize();
+        const currentLookDirection = currentLookAt.sub(camera.position).normalize();
+        
+        currentLookDirection.lerp(targetLookDirection, cameraTransitionSpeed.current);
+        const newLookAt = camera.position.clone().add(currentLookDirection);
+        camera.lookAt(newLookAt);
+      }
+
       // Update central planet if it exists
       if (centralPlanet.mesh) {
         const hovered = !!hov && centralPlanet.id === hov;
         const osc = hovered ? (1 + 0.06 * Math.sin(t * 3.2)) : 1;
-        const targetScale = (hovered ? 1.6 : 1.4) * osc; // Central planet is much larger
+        const targetScale = (hovered ? 1.8 : 1.6) * osc; // Central planet is much larger
         const ms = centralPlanet.mesh.scale;
         ms.x += (targetScale - ms.x) * 0.18;
         ms.y = ms.x; ms.z = ms.x;
         // Position central planet slightly forward for better visibility
-        centralPlanet.mesh.position.set(0, 0, 1.5);
+        centralPlanet.mesh.position.set(0, 0, 1.2);
         // Gentle rotation for the central planet
         centralPlanet.mesh.rotation.y += 0.003;
         
@@ -1125,6 +1324,36 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
           }
         } catch {}
       });
+      // Update particle system
+      if (particleSystemRef.current && particleUniforms.current) {
+        try {
+          particleUniforms.current.uTime.value = t;
+          
+          // Update central position if we have a central planet
+          if (centralPlanet.mesh) {
+            particleUniforms.current.uCentralPos.value.copy(centralPlanet.mesh.position);
+            // Update particle visibility and intensity based on central planet
+            const visibility = centralPlanet.mesh.visible ? 1.0 : 0.0;
+            particleSystemRef.current.material.opacity = visibility * 0.8;
+          } else {
+            // Fade out particles when no central planet
+            particleSystemRef.current.material.opacity *= 0.95;
+          }
+        } catch {}
+      }
+      
+      // Update connection lines
+      if (connectionLinesRef.current.length > 0 && centralPlanet.mesh) {
+        connectionLinesRef.current.forEach((line, index) => {
+          if (line && line.material) {
+            // Animate line opacity with breathing effect
+            const baseOpacity = 0.15;
+            const breath = Math.sin(t * 2.0 + index * 0.5) * 0.05;
+            (line.material as any).opacity = baseOpacity + breath;
+          }
+        });
+      }
+      
       // Update holo sweep shader time
       try { if (sweepUniforms.current) sweepUniforms.current.uTime.value = t; } catch {}
       // Apply focus-or-spin for the system group
@@ -1219,6 +1448,20 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
           centralPlanet.mesh.material?.dispose();
         }
       } catch {}
+      // Cleanup particle system
+      try {
+        if (particleSystemRef.current) {
+          particleSystemRef.current.geometry?.dispose();
+          (particleSystemRef.current.material as THREE.Material)?.dispose();
+        }
+      } catch {}
+      // Cleanup connection lines
+      try {
+        connectionLinesRef.current.forEach(line => {
+          line.geometry?.dispose();
+          (line.material as THREE.Material)?.dispose();
+        });
+      } catch {}
     };
   }, []);
 
@@ -1253,6 +1496,28 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       try { sys.remove(centralPlanet.mesh); } catch {}
       centralPlanetRef.current = { id: null, mesh: null, originalSat: null };
     }
+    
+    // Clear connection lines when rebuilding
+    connectionLinesRef.current.forEach(line => {
+      try { 
+        if (sys.parent) (sys.parent as THREE.Scene).remove(line);
+        line.geometry.dispose();
+        (line.material as THREE.Material).dispose();
+      } catch {}
+    });
+    connectionLinesRef.current = [];
+    
+    // Reset camera to overview position when showing all planets
+    if (showAll || !focusId) {
+      targetCameraPos.current.set(0, 1.2, 16.0);
+      targetCameraLookAt.current.set(0, 0, 0);
+      cameraTransitionSpeed.current = 0.08;
+      
+      // Fade out particle system when no focus
+      if (particleSystemRef.current) {
+        (particleSystemRef.current.material as any).opacity = 0.2;
+      }
+    }
 
     // Build orbit ring guides per ring index using layout radii
     if (layout) {
@@ -1266,15 +1531,51 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
         const prev = ringMaxByIndex.get(lay.ringIndex);
         if (!prev || r > prev.r) ringMaxByIndex.set(lay.ringIndex, { r, tiltDeg: lay.tiltDeg ?? 8 });
       });
-      const ringMat = new THREE.MeshBasicMaterial({ color: 0x19e3ff, transparent: true, opacity: 0.12, depthWrite: false });
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x19e3ff, transparent: true, opacity: 0.35, depthWrite: false });
+      const gridLineMat = new THREE.LineBasicMaterial({ color: 0x19e3ff, transparent: true, opacity: 0.25 });
       const indices = Array.from(ringMaxByIndex.keys()).sort((a, b) => a - b);
+      
+      // Create radial grid lines emanating from center
+      const radialLineCount = 12;
+      const maxRadius = Math.max(...Array.from(ringMaxByIndex.values()).map(v => v.r));
+      for (let i = 0; i < radialLineCount; i++) {
+        const angle = (i / radialLineCount) * Math.PI * 2;
+        const lineGeometry = new THREE.BufferGeometry();
+        const points = [
+          new THREE.Vector3(0, 0, 0),
+          new THREE.Vector3(Math.cos(angle) * maxRadius, 0, Math.sin(angle) * maxRadius)
+        ];
+        lineGeometry.setFromPoints(points);
+        const radialLine = new THREE.Line(lineGeometry, gridLineMat.clone());
+        sys.add(radialLine);
+        ringsRef.current.push(radialLine as any);
+      }
+      
       for (const idx of indices) {
         const { r, tiltDeg } = ringMaxByIndex.get(idx)!;
         const g = new THREE.Group();
         g.rotation.x = -Math.PI / 2 + (tiltDeg * Math.PI / 180);
-        const geom = new THREE.RingGeometry(Math.max(0, r - 0.02), r + 0.02, 128);
+        
+        // Main orbital ring with increased thickness
+        const geom = new THREE.RingGeometry(Math.max(0, r - 0.03), r + 0.03, 128);
         const mesh = new THREE.Mesh(geom, ringMat.clone());
         g.add(mesh);
+        
+        // Add additional orbital path indicators - thinner inner and outer guides
+        if (r > 1) {
+          const innerGuideGeom = new THREE.RingGeometry(Math.max(0, r * 0.85 - 0.01), r * 0.85 + 0.01, 64);
+          const innerGuideMesh = new THREE.Mesh(innerGuideGeom, new THREE.MeshBasicMaterial({ 
+            color: 0x19e3ff, transparent: true, opacity: 0.15, depthWrite: false 
+          }));
+          g.add(innerGuideMesh);
+          
+          const outerGuideGeom = new THREE.RingGeometry(r * 1.15 - 0.01, r * 1.15 + 0.01, 64);
+          const outerGuideMesh = new THREE.Mesh(outerGuideGeom, new THREE.MeshBasicMaterial({ 
+            color: 0x19e3ff, transparent: true, opacity: 0.15, depthWrite: false 
+          }));
+          g.add(outerGuideMesh);
+        }
+        
         sys.add(g);
         ringsRef.current.push(g);
       }
@@ -1459,8 +1760,8 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
     }
     
     // Position forward from center for prominent display
-    centralMesh.position.set(0, 0, 1.5);
-    centralMesh.scale.set(1.4, 1.4, 1.4); // Start even larger
+    centralMesh.position.set(0, 0, 1.2);
+    centralMesh.scale.set(1.6, 1.6, 1.6); // Start even larger
     sys.add(centralMesh);
     
     // Update central planet reference
@@ -1469,6 +1770,43 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       mesh: centralMesh,
       originalSat: sat
     };
+    
+    // Set camera to focus on the central planet with cinematic positioning
+    const planetColor = new THREE.Color(enhancedPlanetData.color || '#38B6FF');
+    const isWarmColor = planetColor.r > 0.6 || (planetColor.r + planetColor.g) > 1.0;
+    
+    // Dynamic camera positioning based on planet characteristics
+    const baseDistance = 12.0; // Increased from 8.5 for more breathing room
+    const focusDistance = baseDistance * (isWarmColor ? 1.1 : 0.95); // Slightly further for warm colors
+    const heightOffset = isWarmColor ? 2.2 : 1.8; // Increased height for better overview
+    
+    // Set target camera position - zoomed out for better composition
+    targetCameraPos.current.set(0, heightOffset, focusDistance);
+    targetCameraLookAt.current.set(0, 0, 1.2); // Look at central planet position
+    
+    // Faster transition for focus changes
+    cameraTransitionSpeed.current = 0.12;
+    
+    // Create particle system for gravitational effects
+    if (!particleSystemRef.current) {
+      const scene = sys.parent as THREE.Scene;
+      if (scene) {
+        createGravitationalParticles(scene, enhancedPlanetData.color || '#38B6FF');
+      }
+    } else {
+      // Update existing particle system color
+      if (particleUniforms.current) {
+        particleUniforms.current.uCentralColor.value.set(enhancedPlanetData.color || '#38B6FF');
+        particleUniforms.current.uCentralPos.value.set(0, 0, 1.2);
+      }
+    }
+    
+    // Create connection lines to orbiting planets
+    const scene = sys.parent as THREE.Scene;
+    if (scene) {
+      const visibleSatellites = satsRef.current.filter(sat => sat.mesh.visible);
+      createConnectionLines(scene, visibleSatellites, new THREE.Vector3(0, 0, 1.2), enhancedPlanetData.color || '#38B6FF');
+    }
     
     // Reset system rotation to face forward since central planet is now at origin
     focusTargetRy.current = 0;
