@@ -192,12 +192,17 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
 
   // External play signal: play current track if it has audio; otherwise jump to first with local audio
   useEffect(() => {
+    if (playSignal === 0) return; // Don't run on initial mount
+    console.log('MediaPlayer: playSignal effect triggered with signal:', playSignal, 'current track:', cur?.title);
     const a = audioRef.current; if (!a) return;
     if (cur?.src) {
       // Ensure the audio element is pointing at the current track source
       try {
         const want = String(cur.src || "");
-        if (want && a.getAttribute("src") !== want) {
+        const current = a.getAttribute("src") || a.src;
+        console.log('MediaPlayer: playSignal - want src:', want, 'current src:', current);
+        if (want && current !== want) {
+          console.log('MediaPlayer: Setting new audio src:', want);
           a.setAttribute("src", want);
           // If we swapped the src, load the new one to be safe
           try { a.load(); } catch {}
@@ -378,20 +383,42 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     // but do NOT actually start music. We play muted briefly, then pause.
     const unlock = () => {
       const a = audioRef.current; if (!a) return;
-      try { a.load(); } catch {}
+      
+      // Store original source and clear it to prevent actual song from playing
+      const originalSrc = a.src;
+      try { 
+        a.removeAttribute('src');
+        a.load(); 
+      } catch {}
+      
       try {
         a.muted = true;
+        a.volume = 0; // Extra safety
         a.play()
           .then(() => {
             // Briefly run to unlock, then pause and reset silently
             setTimeout(() => {
               try { a.pause(); } catch {}
               try { a.currentTime = 0; } catch {}
-              try { a.muted = false; } catch {}
-            }, 60);
+              // Restore original source after unlock
+              try { 
+                if (originalSrc) {
+                  a.src = originalSrc;
+                }
+                a.muted = false; 
+                a.volume = 1;
+              } catch {}
+            }, 100);
           })
           .catch(() => {
-            // Ignore; some browsers may still block without a direct gesture
+            // Restore state on error
+            try { 
+              if (originalSrc) {
+                a.src = originalSrc;
+              }
+              a.muted = false; 
+              a.volume = 1;
+            } catch {}
           });
       } catch {}
     };

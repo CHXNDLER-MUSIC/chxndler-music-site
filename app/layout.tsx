@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import React from "react";
 import ClickTracker from "@/components/ClickTracker";
 import AnalyticsWidget from "@/components/AnalyticsWidget";
-import DevBadge from "@/components/DevBadge";
 import { AudioProvider } from "@/app/providers/AudioProvider";
 
 export const metadata: Metadata = {
@@ -53,7 +52,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AudioProvider>
           <ClickTracker />
           <AnalyticsWidget />
-          <DevBadge />
           {children}
         </AudioProvider>
         {mpId ? (

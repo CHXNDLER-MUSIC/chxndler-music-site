@@ -88,6 +88,8 @@ export default function DashboardApp({ initialSlug } = {}) {
         // Keep ambient paused until after HUD fades in
         // Start light beam immediately with audio
         try { setBeamEnabled(true); } catch {}
+        // Don't suspend ambient during UI transitions - let it play through
+        setAmbientSuspended(false); // Allow ambient to continue playing during UI changes
         // Fade HUD in shortly after beam starts fading in (faster response)
         setTimeout(() => {
           setShowHUD(true);
@@ -95,14 +97,6 @@ export default function DashboardApp({ initialSlug } = {}) {
           setPowerBusy(false);
           // Ensure overlay UI is visible after HUD fades in (in case of race conditions)
           setShowOverlayUI(true);
-          // If welcome audio should play, delay ambient resumption for better timing
-          if (welcomeOnStartRef.current) {
-            setTimeout(() => {
-              setAmbientSuspended(false); // Resume ambient and trigger welcome VO after HUD fade
-            }, 200); // Small delay after HUD fade completes to ensure smooth transition
-          } else {
-            setAmbientSuspended(false); // allow AmbientSpace to resume ambient immediately
-          }
         }, 150); // Further reduced to 150ms for even faster HUD fade-in after Start button
         // Do not cancel welcome VO here; reveal path (onWarpSfxEnd) manages it
       } else {
@@ -118,8 +112,7 @@ export default function DashboardApp({ initialSlug } = {}) {
       // 1) Mount HUD hidden
       setShowHUD(true);
       setBeamOnly(true);
-      // Keep ambient paused until HUD fades in; reveal path will resume and play VO if needed
-      try { setAmbientSuspended(true); } catch {}
+      // Don't pause ambient during power transitions - let it continue smoothly
       // Do not start beam yet; will start after SFX ends (above)
     } else {
       // Powering off: play SFX immediately (done above), then fade beam out first,
@@ -137,7 +130,11 @@ export default function DashboardApp({ initialSlug } = {}) {
     const slug = slugify(String(id || ''));
     let idx = tracks.findIndex(t => (t.slug || '').toLowerCase() === slug);
     if (idx < 0) idx = tracks.findIndex(t => (t.title || '').toLowerCase().includes(slug));
-    if (idx < 0) return;
+    if (idx < 0) {
+      console.warn('DashboardApp: onSongChange - track not found for id:', id, 'slug:', slug);
+      return;
+    }
+    console.log('DashboardApp: onSongChange called with id:', id, 'found track idx:', idx, 'track:', tracks[idx]?.title);
 
     // Mark as user-driven to suppress fly/warp flashes on index change
     setUserSelected(true);
@@ -155,13 +152,36 @@ export default function DashboardApp({ initialSlug } = {}) {
     try {
       const audioEl = document.querySelector('audio[data-audio-player="1"]');
       const src = t?.src || '';
+      console.log('DashboardApp: Setting up audio element for track:', t?.title, 'src:', src);
       if (audioEl && src) {
-        if (audioEl.getAttribute('src') !== src) audioEl.setAttribute('src', src);
-        audioEl.muted = true; audioEl.volume = 0.0;
+        // Reset audio element state first
+        audioEl.pause();
+        audioEl.currentTime = 0;
+        
+        if (audioEl.getAttribute('src') !== src) {
+          console.log('DashboardApp: Updating audio src from', audioEl.getAttribute('src'), 'to', src);
+          audioEl.setAttribute('src', src);
+          try { audioEl.load(); } catch {}
+        }
+        
         // Prime buffer quietly to satisfy autoplay policies later
-        audioEl.play().then(() => { try { audioEl.pause(); audioEl.currentTime = 0; } catch {} }).catch(()=>{});
+        audioEl.muted = true; 
+        audioEl.volume = 0.0;
+        audioEl.play().then(() => { 
+          try { 
+            audioEl.pause(); 
+            audioEl.currentTime = 0; 
+            audioEl.muted = false;
+            audioEl.volume = 1.0;
+            console.log('DashboardApp: Audio priming successful for', t?.title);
+          } catch {} 
+        }).catch((e) => {
+          console.warn('DashboardApp: Audio priming failed for', t?.title, e);
+        });
       }
-    } catch {}
+    } catch (e) {
+      console.error('DashboardApp: Error setting up audio element:', e);
+    }
     // After user selects a song, we want to warp and then start playback
     // once the warp completes and base sky is confirmed playing.
     setPendingTrackPlay(true);
@@ -236,7 +256,7 @@ export default function DashboardApp({ initialSlug } = {}) {
     setShowHUD(false);
     setShowOverlayUI(false);
     setBeamEnabled(false);
-    setAmbientSuspended(true);
+    // Don't suspend ambient during route transitions
     // Select channel index for MediaPlayer
     const idx = tracks.findIndex((x) => (x.slug || '').toLowerCase() === (t.slug || '').toLowerCase());
     if (idx >= 0) setChannelIdx(idx);
@@ -378,9 +398,9 @@ export default function DashboardApp({ initialSlug } = {}) {
   const effectivelyPlaying = useMemo(() => {
     // Main track is playing
     if (isPlaying) return true;
-    // Space music is playing when not suspended and not main track playing
-    return !ambientSuspended && !warpActive && !isPlaying;
-  }, [isPlaying, ambientSuspended, warpActive]);
+    // Space music is playing when not suspended (warp doesn't stop space music, just fades it)
+    return !ambientSuspended;
+  }, [isPlaying, ambientSuspended]);
 
   // Helper function to get beam gradient based on active beam color
   const getBeamGradient = useMemo(() => {
@@ -469,7 +489,7 @@ export default function DashboardApp({ initialSlug } = {}) {
         style={blurWrapperStyle}
       >
         <PrewarmThree />
-        <AmbientSpace ambientSrc="/audio/space-music.mp3" introSrc={homeMode && homeIntroEnabled ? "/audio/welcome-to-the-heartverse.mp3" : undefined} playingMusic={isPlaying} suspend={warpActive || ambientSuspended} />
+        <AmbientSpace ambientSrc="/audio/space-music.mp3" introSrc={homeMode && homeIntroEnabled ? "/audio/welcome-to-the-heartverse.mp3" : undefined} playingMusic={isPlaying} suspend={ambientSuspended} />
       <SkyboxVideo
         brightness={0.95}
         srcWebm={sky.webm}
@@ -511,11 +531,9 @@ export default function DashboardApp({ initialSlug } = {}) {
             try { setBeamOnly(false); } catch {}
             try { setPowerBusy(false); } catch {}
             try { setLandingRevealReady(true); } catch {}
-            // Resume ambient slightly after UI fades begin for smoothness
-            setTimeout(() => { 
-              setAmbientSuspended(false); 
-              try { window.dispatchEvent(new Event('ambient:play')); } catch {}
-            }, 100);
+            // Ambient should already be playing - just ensure it's not suspended
+            setAmbientSuspended(false); 
+            try { window.dispatchEvent(new Event('ambient:play')); } catch {}
             // Clear one-time flag to avoid repeats on later Starts
             try { welcomeOnStartRef.current = false; } catch {}
             setPendingOverlayReveal(false);
@@ -595,8 +613,7 @@ export default function DashboardApp({ initialSlug } = {}) {
             }
             setUserSelected(false);
             setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
-            // Keep ambient paused until UI beam + HUD have faded in
-            setAmbientSuspended(true);
+            // Let ambient continue during UI transitions for smoother experience
             // Defer overlay/UI reveal until warp SFX has finished
             setPendingOverlayReveal(true);
           }
@@ -608,23 +625,55 @@ export default function DashboardApp({ initialSlug } = {}) {
             // UI has already been revealed at warp end. Now, only start the song MP3
             // after the button SFX has finished.
             if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
+            
+            // Add a final failsafe timer - if song doesn't start within 3 seconds, force it
+            const failsafeTimer = setTimeout(() => {
+              if (pendingTrackPlay) {
+                console.warn('DashboardApp: Failsafe timer triggered - forcing song start');
+                setPlaySignal((n) => n + 1);
+                setPendingTrackPlay(false);
+              }
+            }, 3000);
             const startSong = () => { 
-              console.log('DashboardApp: startSong called, incrementing playSignal');
-              setPlaySignal((n) => n + 1); 
+              console.log('DashboardApp: startSong called, incrementing playSignal from', playSignal, 'to', playSignal + 1);
+              console.log('DashboardApp: Current track:', curTrack?.title, 'src:', curTrack?.src);
+              clearTimeout(failsafeTimer); // Clear the failsafe timer
+              setPlaySignal((n) => {
+                console.log('DashboardApp: playSignal updated from', n, 'to', n + 1);
+                return n + 1;
+              }); 
               setPendingTrackPlay(false); 
               buttonSfxWaitRef.current = null; 
             };
             try {
               const p = buttonSfxWaitRef.current;
               if (p && typeof p.then === 'function') {
-                p.then(startSong).catch(() => { setTimeout(startSong, 200); });
+                // Wait for button SFX to complete, but with a timeout
+                Promise.race([
+                  p,
+                  new Promise(resolve => setTimeout(resolve, 1200)) // Max 1.2s wait for SFX
+                ]).then(startSong).catch(() => {
+                  console.warn('DashboardApp: button SFX failed, starting song anyway');
+                  startSong();
+                });
               } else {
-                // If SFX wasn't started, play it now and wait
-                sfx.playAndWait('button', 0.9).then(startSong).catch(() => setTimeout(startSong, 1000));
+                // If SFX wasn't started, play it briefly and then start song
+                try {
+                  sfx.playAndWait('button', 0.9).then(() => {
+                    setTimeout(startSong, 100); // Small delay after SFX
+                  }).catch(() => {
+                    console.warn('DashboardApp: button SFX playAndWait failed, starting song immediately');
+                    startSong();
+                  });
+                } catch {
+                  // If SFX completely fails, start song immediately
+                  startSong();
+                }
               }
             } catch {
-              // Fallback: if SFX path fails, delay slightly before starting
-              setTimeout(startSong, 600);
+              // Fallback: if anything fails, start the song
+              console.warn('DashboardApp: SFX handling failed, starting song immediately');
+              startSong();
             }
           }
         }}

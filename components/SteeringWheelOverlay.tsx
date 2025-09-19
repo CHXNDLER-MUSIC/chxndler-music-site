@@ -233,10 +233,10 @@ export default function SteeringWheelOverlay({
         <LumaKeyVideo
           srcMp4="/cockpit/wheel.mp4"
           srcAlt="/wheel.mp4"
-          threshold={(vconf as any)?.threshold ?? 0.01}
-          softness={(vconf as any)?.softness ?? 0.005}
-          saturation={(vconf as any)?.saturation ?? 1.8}
-          contrast={(vconf as any)?.contrast ?? 2.2}
+          threshold={(vconf as any)?.threshold ?? 0.03}
+          softness={(vconf as any)?.softness ?? 0.015}
+          saturation={(vconf as any)?.saturation ?? 1.0}
+          contrast={(vconf as any)?.contrast ?? 1.1}
           offsetYRatio={0}
           className="block"
           style={{
