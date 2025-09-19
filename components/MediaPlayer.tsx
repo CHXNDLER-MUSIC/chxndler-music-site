@@ -193,7 +193,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   // External play signal: play current track if it has audio; otherwise jump to first with local audio
   useEffect(() => {
     if (playSignal === 0) return; // Don't run on initial mount
-    console.log('MediaPlayer: playSignal effect triggered with signal:', playSignal, 'current track:', cur?.title);
+    console.log('MediaPlayer: playSignal effect triggered with signal:', playSignal, 'current track:', cur?.title, 'src:', cur?.src);
     const a = audioRef.current; if (!a) return;
     if (cur?.src) {
       // Ensure the audio element is pointing at the current track source
@@ -210,19 +210,30 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         }
       } catch {}
       
+      // Ensure audio is unmuted and has proper volume before playing
+      try {
+        a.muted = false;
+        a.volume = 1.0;
+        console.log('MediaPlayer: Unmuted audio element for', cur?.title);
+      } catch {}
+      
       // Use improved retry logic with autoplay fallback
+      console.log('MediaPlayer: Attempting to play audio for', cur?.title);
       playWithAutoplayFallback(a, {
         maxRetries: 3,
         onRetry: (attempt, error) => {
+          console.log(`MediaPlayer: playSignal retry attempt ${attempt}`, error?.name, error?.message);
           if (DEBUG_MEDIA) dwarn(`playSignal: retry attempt ${attempt}`, error?.name, error?.message);
         }
       })
         .then(({ muted }) => {
+          console.log('MediaPlayer: Play successful for', cur?.title, { muted });
           if (DEBUG_MEDIA) dlog('playSignal: play successful', { muted });
           stateMachine.current.send({ type: 'PLAY' });
           gaTrack("play", { slug: cur.slug });
         })
         .catch((error) => {
+          console.error('MediaPlayer: Play failed for', cur?.title, error?.name, error?.message);
           if (DEBUG_MEDIA) dwarn('playSignal: all retries failed', error?.name, error?.message);
           stateMachine.current.send({ type: 'ERROR', payload: { error } });
         });

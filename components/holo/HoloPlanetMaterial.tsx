@@ -56,7 +56,7 @@ const HoloPlanetMat = shaderMaterial(
       
       // subtle nebula-like speckles
       float s = hash31(n * 47.0 + vec3(0.123, 0.456, 0.789));
-      float speck = step(0.975, s) * (0.4 + 0.6 * fract(sin(s * 123.45 + uTime * 0.5)));
+      float speck = step(0.975, s) * (0.4 + 0.6 * fract(sin(s * 123.45)));
       col += uSpeckle * speck * (0.5 + 0.5 * center);
       
       // directional darkening (bottom-left)

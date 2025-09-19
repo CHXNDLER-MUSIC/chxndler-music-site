@@ -88,8 +88,11 @@ export default function DashboardApp({ initialSlug } = {}) {
         // Keep ambient paused until after HUD fades in
         // Start light beam immediately with audio
         try { setBeamEnabled(true); } catch {}
-        // Don't suspend ambient during UI transitions - let it play through
-        setAmbientSuspended(false); // Allow ambient to continue playing during UI changes
+        // Only unsuspend ambient during UI transitions if we're in home mode
+        // Don't unsuspend if user has selected a specific song
+        if (homeMode) {
+          setAmbientSuspended(false); // Allow ambient to continue playing during UI changes
+        }
         // Fade HUD in shortly after beam starts fading in (faster response)
         setTimeout(() => {
           setShowHUD(true);
@@ -136,55 +139,55 @@ export default function DashboardApp({ initialSlug } = {}) {
     }
     console.log('DashboardApp: onSongChange called with id:', id, 'found track idx:', idx, 'track:', tracks[idx]?.title);
 
+    // STEP 1: Stop all music immediately when song is selected
+    console.log('DashboardApp: Stopping all music for song change');
+    
+    // Stop main music player audio
+    try {
+      const audioEl = document.querySelector('audio[data-audio-player="1"]');
+      if (audioEl) {
+        audioEl.pause();
+        audioEl.currentTime = 0;
+      }
+    } catch (e) {
+      console.warn('DashboardApp: Error stopping main audio:', e);
+    }
+    
+    // IMMEDIATELY stop ambient space music - don't wait for fade
+    try {
+      const ambientEl = document.querySelector('audio[data-ambient="1"]');
+      if (ambientEl) {
+        ambientEl.pause();
+        ambientEl.currentTime = 0;
+        console.log('DashboardApp: Ambient space music stopped immediately');
+      }
+    } catch (e) {
+      console.warn('DashboardApp: Error stopping ambient audio:', e);
+    }
+    
+    // Stop ambient space music by setting isPlaying to false 
+    setIsPlaying(false);
+    
+    // Force ambient suspension during song change sequence
+    setAmbientSuspended(true);
+
     // Mark as user-driven to suppress fly/warp flashes on index change
     setUserSelected(true);
     setHomeMode(false);
 
-    // Update HUD copy and streaming links
+    // Get track and update links immediately to avoid race conditions
     const t = tracks[idx];
     setCurTrack(t);
     setLinks({ spotify: t.spotify || LINKS.spotify, apple: t.apple || LINKS.apple });
 
-    // Switch MediaPlayer channel; MediaPlayer handles audio swap without reloading page
+    // Switch MediaPlayer channel; MediaPlayer handles audio swap and loading
     setChannelIdx(idx);
-    // Proactively point the hidden audio element at the selected track so that
-    // any subsequent play trigger (after warp/base video) uses the correct song.
-    try {
-      const audioEl = document.querySelector('audio[data-audio-player="1"]');
-      const src = t?.src || '';
-      console.log('DashboardApp: Setting up audio element for track:', t?.title, 'src:', src);
-      if (audioEl && src) {
-        // Reset audio element state first
-        audioEl.pause();
-        audioEl.currentTime = 0;
-        
-        if (audioEl.getAttribute('src') !== src) {
-          console.log('DashboardApp: Updating audio src from', audioEl.getAttribute('src'), 'to', src);
-          audioEl.setAttribute('src', src);
-          try { audioEl.load(); } catch {}
-        }
-        
-        // Prime buffer quietly to satisfy autoplay policies later
-        audioEl.muted = true; 
-        audioEl.volume = 0.0;
-        audioEl.play().then(() => { 
-          try { 
-            audioEl.pause(); 
-            audioEl.currentTime = 0; 
-            audioEl.muted = false;
-            audioEl.volume = 1.0;
-            console.log('DashboardApp: Audio priming successful for', t?.title);
-          } catch {} 
-        }).catch((e) => {
-          console.warn('DashboardApp: Audio priming failed for', t?.title, e);
-        });
-      }
-    } catch (e) {
-      console.error('DashboardApp: Error setting up audio element:', e);
-    }
-    // After user selects a song, we want to warp and then start playback
-    // once the warp completes and base sky is confirmed playing.
-    setPendingTrackPlay(true);
+    
+    // Use a simple timeout to trigger playSignal after warp completes
+    setTimeout(() => {
+      console.log('DashboardApp: Triggering playSignal for selected song:', t.title);
+      setPlaySignal((n) => n + 1);
+    }, 2500); // Slightly longer than MediaPlayer's warp delay
     
     // Trigger warp sequence with new song's sky
     setAllowWarp(true);
@@ -379,14 +382,37 @@ export default function DashboardApp({ initialSlug } = {}) {
       
       if (isSpacebar || isPauseKey) {
         e.preventDefault(); // Prevent default behavior (scroll/click on focused buttons)
-        setToggleSignal((n) => n + 1); // Trigger music toggle
+        
+        if (homeMode) {
+          // On homepage: control ambient space music instead of main music player
+          try {
+            const ambient = document.querySelector('audio[data-ambient="1"]');
+            if (ambient) {
+              if (ambient.paused) {
+                // Dispatch event to tell AmbientSpace this is a user play
+                window.dispatchEvent(new CustomEvent('ambient:userPlay'));
+                ambient.play().catch(() => {});
+              } else {
+                // Dispatch event to tell AmbientSpace this is a user pause
+                window.dispatchEvent(new CustomEvent('ambient:userPause'));
+                ambient.pause();
+              }
+            }
+          } catch (error) {
+            console.warn('Failed to toggle ambient audio:', error);
+          }
+        } else {
+          // Not on homepage: control main music player
+          setToggleSignal((n) => n + 1); // Trigger music toggle
+        }
+        
         try { sfx.play('click', 0.6); } catch {} // Optional click sound feedback
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [uiUnlocked]);
+  }, [uiUnlocked, homeMode]);
 
   // Enable SFX globally only after Start unlocks the UI
   React.useEffect(() => {
@@ -579,7 +605,7 @@ export default function DashboardApp({ initialSlug } = {}) {
                   setPendingTrackPlay(false);
                 }
                 trackPlayTimerRef.current = undefined;
-              }, 4500);
+              }, 2000);
             } catch {}
           }
           // Defer applying nextSky until overlay UI is visible so base stays lightspeed
@@ -591,7 +617,7 @@ export default function DashboardApp({ initialSlug } = {}) {
           }
         }}
         onBasePlaying={() => {
-          console.log('DashboardApp: onBasePlaying called', { pendingTrackPlay, warpActive });
+          console.log('DashboardApp: onBasePlaying called', { pendingTrackPlay, warpActive, pendingHomePower, userSelected, homeMode });
           if (pendingHomePower) {
             // Start path: ensure main track audio stays stopped on landing
             try {
@@ -613,6 +639,8 @@ export default function DashboardApp({ initialSlug } = {}) {
             }
             setUserSelected(false);
             setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
+            // Unsuspend ambient music when returning to home mode
+            setAmbientSuspended(false);
             // Let ambient continue during UI transitions for smoother experience
             // Defer overlay/UI reveal until warp SFX has finished
             setPendingOverlayReveal(true);
@@ -643,7 +671,7 @@ export default function DashboardApp({ initialSlug } = {}) {
                 return n + 1;
               }); 
               setPendingTrackPlay(false); 
-              buttonSfxWaitRef.current = null; 
+              buttonSfxWaitRef.current = null;
             };
             try {
               const p = buttonSfxWaitRef.current;
@@ -722,6 +750,7 @@ export default function DashboardApp({ initialSlug } = {}) {
           
           // Stop any playing audio and clear track state
           try {
+            // Stop main music player audio
             const a = document.querySelector('audio[data-audio-player="1"]');
             if (a) {
               a.pause();
@@ -729,6 +758,13 @@ export default function DashboardApp({ initialSlug } = {}) {
               try { a.muted = true; } catch {}
               try { a.removeAttribute('src'); } catch {}
               try { a.load(); } catch {}
+            }
+            
+            // Stop ambient space music
+            const ambient = document.querySelector('audio[data-ambient="1"]');
+            if (ambient) {
+              ambient.pause();
+              try { ambient.currentTime = 0; } catch {}
             }
           } catch {}
           setIsPlaying(false);
@@ -817,7 +853,14 @@ export default function DashboardApp({ initialSlug } = {}) {
             <div className="hidden">
               <MediaPlayer
                 onSkyChange={(webm, mp4, key) => setNextSky({ webm, mp4, key })}
-                onPlayingChange={(p) => { setIsPlaying(p); if (p) setAmbientSuspended(false); }}
+                onPlayingChange={(p) => { 
+                  setIsPlaying(p); 
+                  // Only unsuspend ambient when song stops AND we're in home mode
+                  // If user selected a specific song, ambient should stay suspended
+                  if (!p && homeMode) {
+                    setAmbientSuspended(false);
+                  }
+                }}
                 onAudioReady={() => {}}
                 onTrackChange={(t) => { 
 

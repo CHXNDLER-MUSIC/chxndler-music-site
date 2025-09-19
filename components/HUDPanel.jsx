@@ -485,8 +485,7 @@ export default function HUDPanel({
             >
               {(() => {
                 const src = (!currentId ? DEFAULT_COVER : (track?.cover || DEFAULT_COVER));
-                const coverSize = inConsole ? 140 : 180;
-                return <CoverCard src={src} size={coverSize} />;
+                return <CoverCard src={src} responsive={true} />;
               })()}
             </button>
           </div>
@@ -808,6 +807,18 @@ export default function HUDPanel({
               initialActiveId={active || resolvedSongs[0]?.id}
               onChange={(id) => {
                 setActive(id);
+                
+                // Stop ambient space music when switching songs
+                try {
+                  const ambient = document.querySelector('audio[data-ambient="1"]');
+                  if (ambient) {
+                    ambient.pause();
+                    ambient.currentTime = 0;
+                  }
+                } catch (error) {
+                  if (DEBUG_MEDIA) dwarn('HUDPanel: failed to stop ambient audio', error);
+                }
+                
                 onSongChange?.(id);
                 try {
                   if (usePlayerStore?.getState) {

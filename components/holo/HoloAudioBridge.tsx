@@ -20,6 +20,26 @@ export default function HoloAudioBridge() {
   useEffect(() => {
     const a = audioRef.current; if (!a) return;
     const cur = order[idx]; if (!cur) return;
+    
+    // Stop current song before loading new one
+    try {
+      a.pause();
+      a.currentTime = 0;
+    } catch (e) {
+      // Silently handle any errors during stop
+    }
+    
+    // Also stop ambient space music when switching songs
+    try {
+      const ambient = document.querySelector('audio[data-ambient="1"]');
+      if (ambient) {
+        ambient.pause();
+        ambient.currentTime = 0;
+      }
+    } catch (e) {
+      // Silently handle any errors during ambient stop
+    }
+    
     a.src = cur.src || "";
     a.load();
     if (cur.src) {

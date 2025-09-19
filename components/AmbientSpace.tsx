@@ -24,6 +24,7 @@ export default function AmbientSpace({
   const lastTimeRef = useRef<number>(0);
   const stuckSinceRef = useRef<number|undefined>(undefined);
   const fadeDownTimerRef = useRef<number|undefined>(undefined);
+  const userPausedRef = useRef<boolean>(false); // Track if user manually paused
   const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
   function cancelFade() {
@@ -224,11 +225,28 @@ export default function AmbientSpace({
     return cancelFade;
   }, [playingMusic, suspend, volume]);
 
+  // Listen for user pause/play events
+  useEffect(() => {
+    const onUserPause = () => {
+      userPausedRef.current = true;
+    };
+    const onUserPlay = () => {
+      userPausedRef.current = false;
+    };
+    window.addEventListener('ambient:userPause', onUserPause);
+    window.addEventListener('ambient:userPlay', onUserPlay);
+    return () => {
+      window.removeEventListener('ambient:userPause', onUserPause);
+      window.removeEventListener('ambient:userPlay', onUserPlay);
+    };
+  }, []);
+
   // Keep ambient playing on home: if it ever pauses/ends while not suspended and no track is playing, resume it.
   useEffect(() => {
     const amb = ambRef.current; if (!amb) return;
     const tryResume = () => {
-      if (playingMusic || suspend) return;
+      // Don't auto-resume if user manually paused, or if music is playing, or if suspended
+      if (playingMusic || suspend || userPausedRef.current) return;
       try { amb.muted = false; } catch {}
       amb.play().catch(()=>{});
     };
@@ -239,7 +257,7 @@ export default function AmbientSpace({
     // Also periodically ensure it's playing in case of transient blockers
     const id = window.setInterval(() => {
       // Only try resume if audio appears to be stopped/paused unexpectedly
-      if (amb && amb.paused && !playingMusic && !suspend) {
+      if (amb && amb.paused && !playingMusic && !suspend && !userPausedRef.current) {
         console.log('Periodic check: audio unexpectedly paused, attempting resume');
         tryResume();
       }

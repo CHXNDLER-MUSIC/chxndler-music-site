@@ -58,6 +58,58 @@ export default function Planet({
   // Create dramatic size differences like real planets
   const planetType = sizeVar < 0.15 ? 'dwarf' : sizeVar < 0.4 ? 'terrestrial' : sizeVar < 0.75 ? 'neptune' : 'gas-giant';
   
+  // Generate varied shapes for each planet
+  const shapeVar = ((idHash * 7) % 997) / 997; // Different hash for shape variation
+  const planetShape = shapeVar < 0.3 ? 'sphere' : shapeVar < 0.5 ? 'ellipsoid' : shapeVar < 0.7 ? 'oblate' : shapeVar < 0.85 ? 'irregular' : 'asteroid';
+  
+  // Shape-based geometry parameters
+  const shapeParams = useMemo(() => {
+    const baseDetail = planetType === 'gas-giant' ? 64 : planetType === 'neptune' ? 48 : planetType === 'terrestrial' ? 32 : 24;
+    
+    switch (planetShape) {
+      case 'ellipsoid':
+        return {
+          scaleX: 1.0 + (shapeVar - 0.3) * 0.8, // 1.0 - 1.8x stretch
+          scaleY: 1.0,
+          scaleZ: 0.6 + shapeVar * 0.7, // 0.6 - 1.3x compression
+          widthSegments: baseDetail,
+          heightSegments: baseDetail
+        };
+      case 'oblate':
+        return {
+          scaleX: 1.2 + shapeVar * 0.6, // Flattened poles
+          scaleY: 0.7 + shapeVar * 0.4,
+          scaleZ: 1.2 + shapeVar * 0.6,
+          widthSegments: baseDetail,
+          heightSegments: Math.max(16, baseDetail * 0.7)
+        };
+      case 'irregular':
+        return {
+          scaleX: 0.8 + shapeVar * 0.9,
+          scaleY: 0.7 + shapeVar * 1.1,
+          scaleZ: 0.9 + shapeVar * 0.8,
+          widthSegments: Math.max(12, baseDetail * 0.5),
+          heightSegments: Math.max(8, baseDetail * 0.3)
+        };
+      case 'asteroid':
+        return {
+          scaleX: 0.6 + shapeVar * 1.2,
+          scaleY: 0.5 + shapeVar * 1.3,
+          scaleZ: 0.7 + shapeVar * 1.0,
+          widthSegments: Math.max(8, baseDetail * 0.25),
+          heightSegments: Math.max(6, baseDetail * 0.2)
+        };
+      default: // sphere
+        return {
+          scaleX: 1.0,
+          scaleY: 1.0,
+          scaleZ: 1.0,
+          widthSegments: baseDetail,
+          heightSegments: baseDetail
+        };
+    }
+  }, [planetShape, planetType, shapeVar]);
+  
   // Element-based tweaks (non-destructive): radius/speed/wobble/scale tinting done as computed fields
   const element = (song as any)?.planet?.element as ("water"|"fire"|"lightning"|"heart"|"moon"|"magic"|"darkness"|undefined);
   
@@ -111,15 +163,24 @@ export default function Planet({
   if (isMain) {
     if (process.env.NODE_ENV !== 'production') {
       // eslint-disable-next-line no-console
-      console.log(`🪐 MAIN PLANET: "${song.title}" -> Type: ${planetType}, Size: ${sizeVar.toFixed(2)}, Element: ${element}, Color: ${color}`);
+      console.log(`🪐 MAIN PLANET: "${song.title}" -> Type: ${planetType}, Shape: ${planetShape}, Size: ${sizeVar.toFixed(2)}, Element: ${element}, Color: ${color}`);
     }
   }
   
+  // Enhanced size variation system with shape-based modifiers
+  const shapeSizeModifier = {
+    'sphere': 1.0,
+    'ellipsoid': 0.9 + shapeVar * 0.3,    // 0.9-1.2x - elongated shapes appear larger
+    'oblate': 0.85 + shapeVar * 0.4,      // 0.85-1.25x - flattened shapes vary more
+    'irregular': 0.7 + shapeVar * 0.8,    // 0.7-1.5x - irregular shapes highly varied
+    'asteroid': 0.3 + shapeVar * 1.2      // 0.3-1.5x - asteroid size is very unpredictable
+  }[planetShape] || 1.0;
+
   const sizeMultipliers = {
-    'dwarf': 0.15 + sizeVar * 0.8,       // 0.15-0.95x - varied tiny to small sizes, more visible
-    'terrestrial': 0.8 + sizeVar * 1.8,  // 0.8-2.6x - highly varied earth-like sizes, more dramatic
-    'neptune': 3.2 + sizeVar * 3.5,      // 3.2-6.7x - dramatically varied ice giant sizes, larger
-    'gas-giant': 8.0 + sizeVar * 12.0    // 8.0-20.0x - extremely varied massive gas giant sizes, much larger
+    'dwarf': (0.1 + sizeVar * 1.2) * shapeSizeModifier,       // 0.1-1.3x - more extreme tiny to medium range
+    'terrestrial': (0.6 + sizeVar * 2.4) * shapeSizeModifier, // 0.6-3.0x - much more varied earth-like sizes
+    'neptune': (2.8 + sizeVar * 4.5) * shapeSizeModifier,     // 2.8-7.3x - ice giants with extreme variation
+    'gas-giant': (6.0 + sizeVar * 16.0) * shapeSizeModifier   // 6.0-22.0x - truly massive gas giants with huge range
   };
   
   const satelliteSizeJitter = (sizeMultipliers[planetType] || 1.0) * (0.8 + (titleLength || 0) * 0.02);
@@ -131,8 +192,23 @@ export default function Planet({
   const orbitTarget = isMain ? 0 : (isMoon ? 2.0 : ringBase) + jitter + (isHover ? 1.0 : 0);
   const base = (song.planet?.radius || 1.0) * BASE_SCALE;
   // Ultra-dramatic size differences with extreme variation for holographic effect
-  const MAIN_MULT = planetType === 'gas-giant' ? (80.0 + sizeVar * 50.0) : planetType === 'neptune' ? (45.0 + sizeVar * 35.0) : planetType === 'terrestrial' ? (25.0 + sizeVar * 20.0) : (12.0 + sizeVar * 15.0);
-  const ORBIT_MULT = isMoon ? (0.05 + sizeVar * 0.12) : (planetType === 'gas-giant' ? (2.2 + sizeVar * 1.5) : planetType === 'neptune' ? (1.5 + sizeVar * 1.0) : planetType === 'terrestrial' ? (0.9 + sizeVar * 0.8) : (0.4 + sizeVar * 0.6));
+  const shapeBasedMainMult = {
+    'gas-giant': 90.0 + sizeVar * 70.0 + shapeVar * 30.0,     // 90-190x - truly massive with shape variation
+    'neptune': 50.0 + sizeVar * 45.0 + shapeVar * 20.0,       // 50-115x - large ice giants
+    'terrestrial': 28.0 + sizeVar * 25.0 + shapeVar * 15.0,   // 28-68x - varied terrestrial worlds
+    'dwarf': 8.0 + sizeVar * 20.0 + shapeVar * 12.0           // 8-40x - small but highly varied
+  };
+  const MAIN_MULT = shapeBasedMainMult[planetType] || (25.0 + sizeVar * 20.0);
+  
+  const shapeBasedOrbitMult = isMoon 
+    ? (0.03 + sizeVar * 0.15 + shapeVar * 0.08) 
+    : {
+        'gas-giant': 2.5 + sizeVar * 2.0 + shapeVar * 1.0,    // 2.5-5.5x - large orbital planets
+        'neptune': 1.8 + sizeVar * 1.3 + shapeVar * 0.7,      // 1.8-3.8x - medium-large orbital
+        'terrestrial': 1.0 + sizeVar * 1.0 + shapeVar * 0.5,  // 1.0-2.5x - varied terrestrial orbital
+        'dwarf': 0.3 + sizeVar * 0.8 + shapeVar * 0.4         // 0.3-1.5x - small orbital bodies
+      }[planetType] || (0.9 + sizeVar * 0.8);
+  const ORBIT_MULT = shapeBasedOrbitMult;
   const HOVER_MULT = 1.25;
   const scaleTarget = Math.max(0.01, isMain
     ? base * MAIN_MULT * mainSizeJitter
@@ -751,39 +827,34 @@ export default function Planet({
       {/* Outer glow shell removed per request (no aura around planets) */}
 
       {/* Core planet body with enhanced high-detail geometry and realistic shapes */}
-      <mesh ref={meshRef}>
+      <mesh 
+        ref={meshRef}
+        scale={[shapeParams.scaleX, shapeParams.scaleY, shapeParams.scaleZ]}
+      >
         {(() => {
-          // Create more diverse and realistic planet shapes based on type and characteristics
-          const safeIdHash = isFinite(idHash) ? Math.abs(idHash) : 12345;
-          const shapeVariant = safeIdHash % 4;
-          // Realistic flattening due to rotation (computed if needed)
-          
-          if (planetType === 'gas-giant') {
-            // Gas giants are oblate due to rapid rotation
-            // Jupiter-like flattening
-            return <sphereGeometry args={[1, 64, 64]} />;
-          } else if (planetType === 'neptune') {
-            // Ice giants, slightly less oblate than gas giants
-            // Slight oblateness
-            return <sphereGeometry args={[1, 72, 72]} />;
-          } else if (planetType === 'dwarf') {
-            // Dwarf planets have more irregular shapes
-            switch (shapeVariant) {
-              case 0: return <dodecahedronGeometry args={[1, 4]} />; // Rocky, angular
-              case 1: return <icosahedronGeometry args={[1, 4]} />; // More rounded
-              case 2: return <octahedronGeometry args={[1, 5]} />; // Crystalline structure
-              default: 
-                // Potato-shaped (highly irregular)
-                return <sphereGeometry args={[1, 16, 12]} />; // Low-poly for irregularity
+          // Use shape-based geometry parameters for realistic varied planet shapes
+          if (planetShape === 'asteroid') {
+            // Very irregular, low-poly shapes for asteroids
+            const safeIdHash = isFinite(idHash) ? Math.abs(idHash) : 12345;
+            const variant = safeIdHash % 3;
+            switch (variant) {
+              case 0: return <dodecahedronGeometry args={[1, 1]} />; // Angular rocky
+              case 1: return <icosahedronGeometry args={[1, 1]} />; // Less angular
+              default: return <octahedronGeometry args={[1, 2]} />; // Crystalline
+            }
+          } else if (planetShape === 'irregular') {
+            // Moderately irregular for dwarf planets and small bodies
+            const safeIdHash = isFinite(idHash) ? Math.abs(idHash) : 12345;
+            const variant = safeIdHash % 4;
+            switch (variant) {
+              case 0: return <dodecahedronGeometry args={[1, 3]} />; // Rocky, more detailed
+              case 1: return <icosahedronGeometry args={[1, 3]} />; // Geodesic
+              case 2: return <octahedronGeometry args={[1, 4]} />; // Crystalline structure
+              default: return <sphereGeometry args={[1, shapeParams.widthSegments, shapeParams.heightSegments]} />; // Low-poly sphere
             }
           } else {
-            // Terrestrial planets - mostly spherical but with geological variation
-            switch (shapeVariant) {
-              case 0: return <sphereGeometry args={[1, 96, 96]} />; // High detail sphere
-              case 1: return <sphereGeometry args={[1, 88, 88]} />; // Slightly less detail
-              case 2: return <icosahedronGeometry args={[1, 6]} />; // Geodesic appearance
-              default: return <sphereGeometry args={[1, 80, 80]} />; // Standard sphere
-            }
+            // All other shapes use sphereGeometry with different segment counts and scaling
+            return <sphereGeometry args={[1, shapeParams.widthSegments, shapeParams.heightSegments]} />;
           }
         })()}
         <HoloMaterial

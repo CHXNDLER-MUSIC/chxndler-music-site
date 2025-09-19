@@ -1174,13 +1174,11 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
         // Drive planet shader uniforms
         try {
           const u: any = (centralPlanet.mesh.material as any).uniforms;
-          if (u && u.uTime) u.uTime.value = t;
           
           // Update atmosphere and weather for central planet
           centralPlanet.mesh.children.forEach(child => {
             if (child instanceof THREE.Mesh && child.material) {
               const childU: any = (child.material as any).uniforms;
-              if (childU && childU.uTime) childU.uTime.value = t;
               if (childU && childU.uGlow) {
                 childU.uGlow.value += (((hovered ? 1.8 : 1.2)) - childU.uGlow.value) * 0.18;
               }
@@ -1231,12 +1229,10 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
         // Update planet shader uniforms
         try {
           const u: any = (s.mesh.material as any).uniforms || s.mat.uniforms;
-          if (u && u.uTime) u.uTime.value = t;
           
           // Update atmosphere if present
           if (s.atmosphereMesh && s.atmosphereMesh.material) {
             const atmU: any = (s.atmosphereMesh.material as any).uniforms;
-            if (atmU && atmU.uTime) atmU.uTime.value = t;
             if (atmU && atmU.uGlow) {
               atmU.uGlow.value += (((hovered ? 1.5 : 1.0)) - atmU.uGlow.value) * 0.18;
             }
@@ -1268,9 +1264,6 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
           if (s.cloudLayers && s.cloudLayers.length > 0) {
             s.cloudLayers.forEach((cloudLayer, idx) => {
               const cloudU: any = (cloudLayer.material as any).uniforms;
-              if (cloudU && cloudU.uTime) {
-                cloudU.uTime.value = t;
-              }
               // Each cloud layer rotates at different speeds
               cloudLayer.rotation.y += 0.002 + idx * 0.001;
               cloudLayer.rotation.x += 0.0005;
@@ -1281,9 +1274,6 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
           if (s.stormSystems && s.stormSystems.length > 0 && s.weatherData) {
             s.stormSystems.forEach((storm, idx) => {
               const stormU: any = (storm.mesh.material as any).uniforms;
-              if (stormU && stormU.uTime) {
-                stormU.uTime.value = t;
-              }
               
               // Storm lifecycle management
               storm.age += 0.016;
