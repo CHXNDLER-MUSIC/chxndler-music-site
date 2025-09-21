@@ -118,13 +118,13 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
       
       // Generic collect card or cover art
       else if (label.includes('🎴 Collect Card')) {
-        const songKey = 'unknown';
-        collectCardClicks[songKey] = collectCardClicks[songKey] || { count: 0, title: 'Unknown Song' };
+        const songKey = 'chxndler';
+        collectCardClicks[songKey] = collectCardClicks[songKey] || { count: 0, title: 'CHXNDLER' };
         collectCardClicks[songKey].count++;
         totalInteractions++;
       } else if (label.includes('🖼️ Cover Art')) {
-        const songKey = 'unknown';
-        coverClicks[songKey] = coverClicks[songKey] || { count: 0, title: 'Unknown Song' };
+        const songKey = 'chxndler';
+        coverClicks[songKey] = coverClicks[songKey] || { count: 0, title: 'CHXNDLER' };
         coverClicks[songKey].count++;
         totalInteractions++;
       }

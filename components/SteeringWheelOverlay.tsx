@@ -35,6 +35,7 @@ export default function SteeringWheelOverlay({
   const [showJoin, setShowJoin] = useState(false);
   const [activeBeamColor, setActiveBeamColor] = useState<'blue' | 'yellow' | 'pink'>('blue');
   const [mounted, setMounted] = useState(false);
+  const [startSpotlight, setStartSpotlight] = useState(true);
 
   // Set mounted after component mounts to prevent immediate hover sounds
   useEffect(() => {
@@ -102,6 +103,8 @@ export default function SteeringWheelOverlay({
     const willPause = !!playing;
     // Trigger toggle action first so downstream can open streaming links within a user gesture
     try { onLaunch(); } catch {}
+    // After first click, permanently disable the start spotlight
+    if (startSpotlight) setStartSpotlight(false);
     // Then play context-appropriate SFX without blocking the gesture
     // Remove launch sound on start press; keep pause sound only when pausing
     try {
@@ -168,23 +171,66 @@ export default function SteeringWheelOverlay({
     return () => window.removeEventListener('resize', onResize);
   }, []);
   const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
+  // Current viewport width helper
+  const vw = (typeof window !== 'undefined') ? window.innerWidth : 1200;
   // Scale targets tuned for typical desktop/tablet/phone ranges
-  // Larger defaults to match the original wheel visual size
-  const startSize = Math.round(clamp(vmin * 0.14, 64, 180)); // START button diameter
-  // Make wheel responsive on small screens: lower min and slightly reduce scale factor
-  const vs = Math.round(clamp(vmin * 0.70, 280, 980));       // wheel.mp4 square size
+  // Ensure Start button isn't too small on phones
+  const startBase = vmin * (vw <= 480 ? 0.19 : vw <= 768 ? 0.17 : 0.16);
+  const startSize = Math.round(clamp(startBase, vw <= 480 ? 112 : 92, 210)); // increased minimums for better tap targets
+  // Make wheel responsive with better minimum size scaling for small screens
+  // Increase scale on narrower viewports so the wheel doesn't shrink as much
+  const scaleFactor = (() => {
+    // Keep scale ≤ 1; shrink less across the board
+    if (vw <= 480) return 1.00;   // phones: lock to vmin (no shrink)
+    if (vw <= 768) return 0.98;   // large phones / small tablets
+    if (vw <= 1024) return 0.95;  // tablets
+    return 0.90;                  // desktop default
+  })();
+  // Increase minimum floors so the wheel stays larger on small screens
+  const vsMin = (
+    vw <= 480 ? 680 :
+    vw <= 768 ? 620 :
+    460
+  );
+  // Base wheel size before global scale
+  const vsBase = Math.round(clamp(vmin * (scaleFactor * 0.97), vsMin, 980));
+  // Apply global 80% size reduction to the wheel
+  const vs = Math.round(vsBase * 0.8); // wheel.mp4 square size at 80%
   const yellowHubSize = Math.round(clamp(vmin * 0.085, 56, 112));
   const yellowItemSize = Math.round(clamp(vmin * 0.095, 58, 120));
+  // Resolve power (blue) button size responsively so beam can be positioned relative to it
+  const powerCfgGlobal: any = getResponsiveValue((POS?.wheel as any)?.power) || {};
+  const powerSizePx: number = typeof powerCfgGlobal.sizePx === 'number' ? powerCfgGlobal.sizePx : 60;
   // Unified responsive offsets so all three buttons (blue/yellow/pink)
   // stay aligned and symmetric across screen sizes
   const buttonOffsetPx = Math.round(clamp(vmin * 0.12, 72, 140));
   const buttonsBottomPercent = (() => {
     if (typeof window === 'undefined') return 31;
     const w = window.innerWidth;
-    if (w <= 420) return 28; // slightly lower on small phones
-    if (w <= 768) return 29; // tablets/large phones
+    if (w <= 420) return 32; // higher on small phones for better thumb reach
+    if (w <= 768) return 33; // higher on tablets/large phones
     return 31;               // desktop
   })();
+
+  // Sync key CSS variables to :root so portal-rendered elements can align to the blue button
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const root = document.documentElement;
+    try {
+      root.style.setProperty('--buttons-bottom', `${buttonsBottomPercent}%`);
+      root.style.setProperty('--panel-gap-px', `${Math.round(yellowHubSize * 0.7)}px`);
+      // Position the beam relative to the actual blue button size
+      // Ensure the entire beam (height ≈72px) sits fully above the blue button
+      // Gap = power button size + beam height + small safety margin (accounts for translateY(8px))
+      const BEAM_HEIGHT = 72;
+      const SAFETY_MARGIN = 12; // includes hover/translate allowance
+      const beamGap = Math.round(powerSizePx + BEAM_HEIGHT + SAFETY_MARGIN);
+      root.style.setProperty('--power-size-px', `${powerSizePx}px`);
+      root.style.setProperty('--beam-gap-px', `${beamGap}px`);
+      // Optional: keep display width/border radius in sync if needed by other overlays
+      // These are already defined responsively in CSS; no need to override here unless desired.
+    } catch {}
+  }, [buttonsBottomPercent, yellowHubSize, powerSizePx]);
 
   // START button variant flag (legacy "boost" fully removed)
   const isStart = Boolean(
@@ -211,8 +257,8 @@ export default function SteeringWheelOverlay({
       <div
         style={{
           position: "absolute",
-          // Move wheel slightly down from bottom of screen
-          bottom: "-5vh",
+          // Nudge wheel slightly higher
+          bottom: "-3vh",
           left: vconf.centerHoriz
             ? `calc(50vw - ${vs/2}px)`
             : `calc(${(pp.leftVw + (vconf.offsetVw || 0))}vw - ${vs/2}px)`,
@@ -257,7 +303,7 @@ export default function SteeringWheelOverlay({
           position: "absolute",
           bottom: `${buttonsBottomPercent}%`, // Unified vertical baseline
           left: '50%',
-          transform: 'translateX(-50%)',
+          transform: 'translate(-50%, 8px)',
           zIndex: 92,
           pointerEvents: showUI ? 'auto' : 'none',
           opacity: showUI ? 1 : 0,
@@ -317,8 +363,8 @@ export default function SteeringWheelOverlay({
         style={{
           position: "absolute",
           bottom: `${buttonsBottomPercent}%`, // Same vertical level as blue button
-          left: `calc(50% - ${buttonOffsetPx}px)`, // Full offset to the left of center
-          transform: 'translateX(-50%)',
+          left: `calc(50% - ${buttonOffsetPx}px - 10px)`, // Nudge slightly further left
+          transform: 'translate(-50%, 8px)',
           zIndex: 92,
           pointerEvents: showUI ? 'auto' : 'none',
           opacity: showUI ? 1 : 0,
@@ -381,8 +427,8 @@ export default function SteeringWheelOverlay({
         style={{
           position: "absolute",
           bottom: `${buttonsBottomPercent}%`, // Same level as power button
-          left: `calc(50% + ${buttonOffsetPx}px)`, // Symmetric horizontal offset to the right
-          transform: 'translateX(-50%)',
+          left: `calc(50% + ${buttonOffsetPx}px + 10px)`, // Nudge slightly further right
+          transform: 'translate(-50%, 8px)',
           zIndex: 92,
           pointerEvents: showUI ? 'auto' : 'none',
           opacity: showUI ? 1 : 0,
@@ -416,8 +462,8 @@ export default function SteeringWheelOverlay({
             ref={joinFormRef}
             style={{
               position: "fixed",
-              // Bottom directly at beam top
-              bottom: beamBottomCss,
+              // Bottom of pink display should touch the light beam top
+              bottom: 'var(--display-touch-top)',
               // Center horizontally in the viewport (always centered)
               left: '50%',
               transform: 'translateX(-50%)',
@@ -431,7 +477,7 @@ export default function SteeringWheelOverlay({
             {/* Join form panel */}
             <div
               style={{
-                width: 'var(--display-width)', // Responsive width using breakpoint variables
+                width: 'calc(var(--display-width) + 32px)', // Match widened display width across panels
                 borderRadius: 'var(--display-border-radius)',
                 padding: '12px',
                 color: '#fff',
@@ -465,12 +511,12 @@ export default function SteeringWheelOverlay({
       {/* Start button positioned directly on top of the wheel */}
       <button
         onClick={handleLaunch}
-        className={`pointer-events-auto wheel-play${isStart ? ' chx' : ''}`}
+        className={`pointer-events-auto wheel-play${isStart ? ' chx' : ''}${startSpotlight ? '' : ' no-spotlight'}`}
         style={{
           position: "absolute",
           // Position directly on top of the wheel surface
-          // Move the START button slightly lower for better alignment
-          bottom: `calc(-5vh + ${vs * 0.3}px - 32px)`,
+          // Move START button slightly further downward
+          bottom: `calc(-2vh + ${vs * 0.35}px - 72px)`,
           left: '50%',
           // Slightly larger start button for better prominence
           width: startSize * 1.02,
@@ -528,9 +574,27 @@ export default function SteeringWheelOverlay({
           will-change: transform, box-shadow;
           transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
         }
-        /* No halo/glow behind the START icon */
-        .wheel-play.chx::before{ display:none; content:none; }
-        .wheel-play.chx::after{ display:none; content:none; }
+        /* Spotlight halo around the full START button */
+        .wheel-play.chx::before{
+          content:""; position:absolute; inset:-20%; border-radius:9999px; pointer-events:none;
+          /* Soft, even spotlight that wraps the full circle */
+          background:
+            radial-gradient(closest-side, rgba(25,227,255,0.65), rgba(25,227,255,0.24) 64%, rgba(25,227,255,0) 100%);
+          box-shadow:
+            0 0 40px rgba(25,227,255,.70),
+            0 0 110px rgba(25,227,255,.55),
+            0 0 180px rgba(25,227,255,.40);
+          mix-blend-mode: screen;
+          filter: blur(3px) brightness(1.03) saturate(1.08);
+          animation: startHalo 2.2s ease-in-out infinite;
+        }
+        /* Subtle inner sheen following the circular mask */
+        .wheel-play.chx::after{
+          content:""; position:absolute; inset:-4%; border-radius:9999px; pointer-events:none; mix-blend-mode:screen; opacity:.85;
+          background:
+            linear-gradient(120deg, rgba(255,255,255,.20), rgba(255,255,255,0) 60%),
+            repeating-linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.10) 1px, rgba(0,0,0,0) 1px, rgba(0,0,0,0) 3px);
+        }
         .chx-icon{ width: 92%; height: 92%; object-fit: contain; display:block; will-change: transform, filter;
           filter: 
             drop-shadow(0 2px 4px rgba(0,0,0,0.3))
@@ -548,7 +612,10 @@ export default function SteeringWheelOverlay({
             drop-shadow(0 0 20px rgba(25,227,255,0.6))
             drop-shadow(0 0 40px rgba(25,227,255,0.4));
         }
-        .wheel-play.chx:hover::after{ display:none; }
+        .wheel-play.chx:hover::before{ filter: blur(2px) brightness(1.06) saturate(1.12); }
+        /* Disable spotlight after first click */
+        .wheel-play.chx.no-spotlight::before,
+        .wheel-play.chx.no-spotlight::after{ display:none; content:none; }
         @keyframes startPulse {
           0%, 100% { transform: scale(1); filter: saturate(1.25) brightness(1.1) drop-shadow(0 0 8px #19E3FF) drop-shadow(0 0 22px #19E3FF) drop-shadow(0 0 42px #19E3FF); }
           50% { transform: scale(1.08); filter: saturate(1.5) brightness(1.22) drop-shadow(0 0 16px #19E3FF) drop-shadow(0 0 40px #19E3FF) drop-shadow(0 0 84px #19E3FF); }

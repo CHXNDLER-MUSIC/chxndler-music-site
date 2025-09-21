@@ -46,6 +46,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const detentRef = useRef<HTMLAudioElement|null>(null);
   const warpTimerRef = useRef<number|undefined>(undefined);
   const warpPlayTimerRef = useRef<number|undefined>(undefined);
+  const isInitialMountRef = useRef(true);
+  const intentionalPlayRef = useRef(false); // Track when play is intentionally triggered
   const [showWarp, setShowWarp] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [volume, setVolume] = useState(1.0);
@@ -113,6 +115,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     setTimeout(() => {
       try { if (a.readyState < 2) a.load(); } catch {}
       if (cur.src) {
+        intentionalPlayRef.current = true; // Mark as intentional play
         a.play().then(() => { setPlaying(true); gaTrack("play", { slug: cur.slug }); })
                  .catch(() => setPlaying(false));
       }
@@ -136,11 +139,12 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     if (warpPlayTimerRef.current !== undefined) { clearTimeout(warpPlayTimerRef.current); warpPlayTimerRef.current = undefined; }
     
     // Stop current song before starting warp sequence
+    // But only if this isn't part of an intended playback sequence
     try {
-      a.pause();
-      a.currentTime = 0;
-      setPlaying(false);
-      if (onPlayingChange) onPlayingChange(false);
+      if (!a.paused && autoPlayOnIndex) {
+        // Don't reset currentTime to 0 when changing songs - let it transition smoothly
+        a.pause();
+      }
     } catch (e) {
       if (DEBUG_MEDIA) dwarn('Failed to stop current song', e);
     }
@@ -150,38 +154,59 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     if (onSkyChange) onSkyChange(s.webm, s.mp4, s.key);
     if (onTrackChange) onTrackChange(cur);
     gaTrack("track_change", { title: cur.title, slug: cur.slug, idx });
-    detent(); // detent SFX
+    // Only play detent SFX if this is not the initial load and user has interacted
+    if (startSignal > 0 || playSignal > 0 || toggleSignal > 0) {
+      detent(); // detent SFX
+    }
     
     // Trigger warp flash overlay briefly when locking into a station
     try { setShowWarp(true); } catch {}
     if (warpTimerRef.current !== undefined) clearTimeout(warpTimerRef.current);
     warpTimerRef.current = window.setTimeout(() => { setShowWarp(false); warpTimerRef.current = undefined; }, 820);
 
-    // Optionally delay music start to allow warp SFX; align with overlay (≈1800ms)
-    if (cur.src && autoPlayOnIndex) {
-      const WARP_MS = 1800;
-      warpPlayTimerRef.current = window.setTimeout(() => {
-        const a2 = audioRef.current; if (!a2) return;
-        
-        // Use retry logic for post-warp play
-        playWithAutoplayFallback(a2, {
-          maxRetries: 2,
-          onRetry: (attempt, error) => {
-            if (DEBUG_MEDIA) dwarn(`autoPlay retry ${attempt}`, error?.name, error?.message);
-          }
-        })
-          .then(() => {
-            stateMachine.current.send({ type: 'PLAY' });
-            if (DEBUG_MEDIA) dlog('autoPlayOnIndex successful after warp');
+    // Always load the song when index changes, but only auto-play if autoPlayOnIndex is true
+    if (cur.src) {
+      // Always set up the audio element with the new source
+      try {
+        const want = String(cur.src || "");
+        const current = a.getAttribute("src") || a.src;
+        if (want && current !== want) {
+          a.setAttribute("src", want);
+          try { a.load(); } catch {}
+          if (DEBUG_MEDIA) dlog('index change: set src', want);
+        }
+      } catch {}
+      
+      // Only auto-play if autoPlayOnIndex is enabled AND not initial mount
+      if (autoPlayOnIndex && !isInitialMountRef.current) {
+        const WARP_MS = 1800;
+        warpPlayTimerRef.current = window.setTimeout(() => {
+          const a2 = audioRef.current; if (!a2) return;
+          
+          // Use retry logic for post-warp play
+          intentionalPlayRef.current = true; // Mark as intentional play
+          playWithAutoplayFallback(a2, {
+            maxRetries: 2,
+            onRetry: (attempt, error) => {
+              if (DEBUG_MEDIA) dwarn(`autoPlay retry ${attempt}`, error?.name, error?.message);
+            }
           })
-          .catch((error) => {
-            if (DEBUG_MEDIA) dwarn('autoPlayOnIndex failed after retries', error);
-            stateMachine.current.send({ type: 'ERROR', payload: { error } });
-          });
-        
-        warpPlayTimerRef.current = undefined;
-      }, WARP_MS);
+            .then(() => {
+              stateMachine.current.send({ type: 'PLAY' });
+              if (DEBUG_MEDIA) dlog('autoPlayOnIndex successful after warp');
+            })
+            .catch((error) => {
+              if (DEBUG_MEDIA) dwarn('autoPlayOnIndex failed after retries', error);
+              stateMachine.current.send({ type: 'ERROR', payload: { error } });
+            });
+          
+          warpPlayTimerRef.current = undefined;
+        }, WARP_MS);
+      }
     }
+    
+    // Mark that we've completed the initial mount
+    isInitialMountRef.current = false;
   }, [idx, autoPlayOnIndex]); // eslint-disable-line
 
   // Cleanup any pending warp timers on unmount
@@ -193,16 +218,21 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   // External play signal: play current track if it has audio; otherwise jump to first with local audio
   useEffect(() => {
     if (playSignal === 0) return; // Don't run on initial mount
-    console.log('MediaPlayer: playSignal effect triggered with signal:', playSignal, 'current track:', cur?.title, 'src:', cur?.src);
-    const a = audioRef.current; if (!a) return;
+    console.log('🎵 MediaPlayer: playSignal effect triggered with signal:', playSignal, 'current track:', cur?.title, 'src:', cur?.src);
+    console.log('🎵 MediaPlayer: Audio element exists:', !!audioRef.current, 'Index:', index);
+    const a = audioRef.current; 
+    if (!a) {
+      console.error('🎵 MediaPlayer: No audio element found!');
+      return;
+    }
     if (cur?.src) {
       // Ensure the audio element is pointing at the current track source
       try {
         const want = String(cur.src || "");
         const current = a.getAttribute("src") || a.src;
-        console.log('MediaPlayer: playSignal - want src:', want, 'current src:', current);
+        console.log('🎵 MediaPlayer: playSignal - want src:', want, 'current src:', current);
         if (want && current !== want) {
-          console.log('MediaPlayer: Setting new audio src:', want);
+          console.log('🎵 MediaPlayer: Setting new audio src:', want);
           a.setAttribute("src", want);
           // If we swapped the src, load the new one to be safe
           try { a.load(); } catch {}
@@ -218,7 +248,9 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       } catch {}
       
       // Use improved retry logic with autoplay fallback
-      console.log('MediaPlayer: Attempting to play audio for', cur?.title);
+      console.log('🎵 MediaPlayer: Attempting to play audio for', cur?.title, 'src:', cur?.src);
+      console.log('🎵 MediaPlayer: Audio ready state:', a.readyState, 'duration:', a.duration, 'current time:', a.currentTime);
+      intentionalPlayRef.current = true; // Mark as intentional play
       playWithAutoplayFallback(a, {
         maxRetries: 3,
         onRetry: (attempt, error) => {
@@ -227,13 +259,14 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         }
       })
         .then(({ muted }) => {
-          console.log('MediaPlayer: Play successful for', cur?.title, { muted });
+          console.log('🎵 MediaPlayer: Play successful for', cur?.title, { muted });
+          console.log('🎵 MediaPlayer: Audio element state - paused:', a.paused, 'volume:', a.volume, 'muted:', a.muted);
           if (DEBUG_MEDIA) dlog('playSignal: play successful', { muted });
           stateMachine.current.send({ type: 'PLAY' });
           gaTrack("play", { slug: cur.slug });
         })
         .catch((error) => {
-          console.error('MediaPlayer: Play failed for', cur?.title, error?.name, error?.message);
+          console.error('🔴 MediaPlayer: Play failed for', cur?.title, error?.name, error?.message);
           if (DEBUG_MEDIA) dwarn('playSignal: all retries failed', error?.name, error?.message);
           stateMachine.current.send({ type: 'ERROR', payload: { error } });
         });
@@ -253,10 +286,38 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         // As above, only load if needed to avoid resetting mid-play when already correct
         try { if (a2.readyState < 2) a2.load(); } catch {}
         try { a2.muted = false; a2.volume = 1.0; } catch {}
+        intentionalPlayRef.current = true; // Mark as intentional play
         a2.play().then(() => { if (DEBUG_MEDIA) dlog('playSignal: fallback first-with-audio played'); setPlaying(true); if (onPlayingChange) onPlayingChange(true); gaTrack("play", { slug: tracks[withAudio].slug }); }).catch((e)=>{ if (DEBUG_MEDIA) dwarn('playSignal: fallback play rejected', e?.name, e?.message); setPlaying(false); });
       }, 0);
     }
   }, [playSignal]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Debug function to test audio manually (accessible from browser console)
+  useEffect(() => {
+    window.testAudio = () => {
+      const a = audioRef.current;
+      if (!a) {
+        console.error('No audio element found');
+        return;
+      }
+      console.log('🔍 Audio element test:', {
+        src: a.src,
+        paused: a.paused,
+        volume: a.volume,
+        muted: a.muted,
+        readyState: a.readyState,
+        duration: a.duration,
+        currentTime: a.currentTime
+      });
+      console.log('🔍 Attempting manual play...');
+      a.play().then(() => {
+        console.log('✅ Manual play successful');
+      }).catch(err => {
+        console.error('❌ Manual play failed:', err);
+      });
+    };
+    return () => { delete window.testAudio; };
+  }, []);
 
   // External toggle signal from steering wheel: if paused, play current (or first with audio); if playing, pause
   useEffect(() => {
@@ -267,6 +328,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       if (cur?.src) {
         // Don't reload - just resume from current position
         try { a.muted = false; a.volume = 1.0; } catch {}
+        intentionalPlayRef.current = true; // Mark as intentional play
         a.play().then(() => {
           setPlaying(true); if (onPlayingChange) onPlayingChange(true); gaTrack("play", { slug: cur.slug });
         }).catch(()=>{});
@@ -314,6 +376,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     }
     if (a.paused) { 
       // Use retry logic for play
+      intentionalPlayRef.current = true; // Mark as intentional play
       playWithAutoplayFallback(a, {
         maxRetries: 2,
         onRetry: (attempt, error) => {
@@ -339,16 +402,46 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   useEffect(() => {
     // Keep local playing state in sync with the audio element's real state
     const a = audioRef.current; if (!a) return;
+    
+    // Store original pause method for cleanup
+    const originalPause = a.pause.bind(a);
+    
+    // SAFETY: Ensure audio is paused on mount to prevent auto-play
+    // But only if no play signals are pending to avoid interrupting intentional playback
+    try {
+      if (startSignal === 0 && playSignal === 0 && toggleSignal === 0 && !autoPlayOnIndex) {
+        a.pause();
+        a.currentTime = 0;
+      }
+    } catch {}
+    
     const onPlay = () => {
       // Ignore unlock/priming plays that are muted or effectively silent
       const mutedOrSilent = (() => {
         try { return a.muted || a.volume <= 0.0001; } catch { return false; }
       })();
       if (DEBUG_MEDIA) dlog('audio event: play', { muted: a.muted, volume: a.volume, ignored: mutedOrSilent });
+      
+      // SAFETY: If this is an unwanted auto-play (no signals triggered AND autoPlayOnIndex is disabled AND not intentionally started), pause immediately
+      if (!mutedOrSilent && startSignal === 0 && playSignal === 0 && toggleSignal === 0 && !autoPlayOnIndex && !intentionalPlayRef.current) {
+        if (DEBUG_MEDIA) dwarn('Unexpected auto-play detected, pausing audio');
+        try {
+          a.pause();
+          a.currentTime = 0;
+          return;
+        } catch {}
+      }
+      
+      // Clear the intentional play flag once the play event fires
+      intentionalPlayRef.current = false;
+      
       if (mutedOrSilent) return;
       setPlaying(true);
     };
-    const onPause = () => { if (DEBUG_MEDIA) dlog('audio event: pause'); setPlaying(false); };
+    const onPause = () => { 
+      if (DEBUG_MEDIA) dlog('audio event: pause for', cur?.title); 
+      setPlaying(false); 
+    };
     const onEnded = () => { if (DEBUG_MEDIA) dlog('audio event: ended'); setPlaying(false); };
     const onErr = (e: any) => { if (DEBUG_MEDIA) { dwarn('audio event: error', e?.target?.error?.message || e?.target?.error?.code || 'unknown audio error'); dumpAudio(a, 'audio:error'); }};
     const onWaiting = () => { if (DEBUG_MEDIA) dlog('audio event: waiting'); };
@@ -375,6 +468,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     a.addEventListener('canplay', onCanPlay as any);
 
     return () => {
+      // Restore original pause method
+      if (originalPause) {
+        a.pause = originalPause;
+      }
       a.removeEventListener('play', onPlay);
       a.removeEventListener('pause', onPause);
       a.removeEventListener('ended', onEnded);
@@ -638,6 +735,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                       onClick={() => {
                         const a = audioRef.current; if (!a || !duration) return;
                         a.currentTime = Math.max(0, Math.min(duration - 0.2, s.time));
+                        intentionalPlayRef.current = true; // Mark as intentional play
                         a.play().catch(()=>{});
                         setPlaying(true);
                         gaTrack("seek_section", { slug: cur.slug, index: i, kind: kind || 'section', label: s.label, seconds: s.time });
@@ -744,6 +842,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               const now = a.currentTime;
               const next = chorusTimes.find((t) => t > now + 0.75) ?? chorusTimes[0];
               a.currentTime = Math.max(0, Math.min(duration - 0.2, next));
+              intentionalPlayRef.current = true; // Mark as intentional play
               a.play().catch(()=>{});
               setPlaying(true);
               gaTrack("jump_chorus", { slug: cur.slug, seconds: next });
@@ -790,7 +889,15 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 role="option"
                 aria-selected={i === idx}
                 className={`picker-item ${i===idx ? 'active' : ''}`}
-                onClick={()=>{ setIdx(i); setPickerOpen(false); }}
+                onClick={()=>{ 
+                  const wasChanged = i !== idx;
+                  const selectedTrack = tracks[i];
+                  setIdx(i); 
+                  setPickerOpen(false);
+                  
+                  // The index change effect will handle playing after warp delay
+                  // No need for duplicate timer logic here
+                }}
                 title={t.title}
               >
                 <span className="truncate">{t.title}</span>
@@ -811,7 +918,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           loop
           preload="auto"
           playsInline
-          muted
+          muted={false}
           autoPlay={false}
           onError={() => {
             const a = audioRef.current; if (!a) return;

@@ -3,14 +3,14 @@
 export default function CoverCard({ src = "/cover/ocean-girl.png", label, size = 120, responsive = false }) {
   // If responsive is true, use responsive classes similar to song listing scaling
   const responsiveClasses = responsive 
-    ? "w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 lg:w-36 lg:h-36"
+    ? "w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32"
     : "";
     
   return (
     <div className="flex flex-col items-start">
       <div
-        className={`relative rounded-[12px] overflow-hidden border-2 border-[#19E3FF]/90 shadow-[0_0_26px_rgba(25,227,255,0.45)] ${responsiveClasses}`}
-        style={responsive ? {} : { width: size, height: size }}
+        className={`relative rounded-[12px] overflow-hidden border-2 border-[#19E3FF]/90 shadow-[0_0_28px_rgba(25,227,255,0.45)] ${responsiveClasses}`}
+        style={responsive ? {} : { width: size - 10, height: size - 10 }}
       >
         <img
           src={src}

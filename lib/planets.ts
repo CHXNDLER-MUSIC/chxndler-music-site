@@ -605,6 +605,8 @@ export type HoloSong = {
     textureUrl?: string; 
     element?: Element;
     type: PlanetType;
+    // Deterministic visual seed so the same song always looks the same
+    seed?: number;
     atmosphere?: {
       color: string;
       density: number;
@@ -629,6 +631,76 @@ export type HoloSong = {
 };
 
 export function buildPlanetSongs(): { hudSongs: HudSong[]; holoSongs: HoloSong[] } {
+  // Deterministic numeric seed from slug (stable across reloads)
+  const seedFromSlug = (slug: string) => {
+    let h = 2166136261; // FNV-1a base
+    for (let i = 0; i < slug.length; i++) {
+      h ^= slug.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    // Map to 0..1000 range for shader seed usage
+    return Math.abs(h % 1000) + 1;
+  };
+
+  // Per-song personality overrides to give each world a unique vibe
+  const SONG_OVERRIDES: Record<string, Partial<{
+    type: PlanetType;
+    atmosphere: { color: string; density: number; glow: number };
+    surface: { roughness: number; metallic: number; emissive: string; normalStrength: number };
+    rings: { innerRadius: number; outerRadius: number; color: string; opacity: number } | null;
+    moons: number;
+    weather: WeatherSystem;
+    geometry: PlanetGeometry;
+  }>> = {
+    'ocean-girl': {
+      type: 'ocean',
+      atmosphere: { color: '#19E3FF', density: 0.55, glow: 1.1 },
+      surface: { roughness: 0.12, metallic: 0.02, emissive: '#002244', normalStrength: 0.6 },
+      rings: null, // clean ocean world
+      moons: 2,
+    },
+    'mr-brightside': {
+      type: 'volcanic',
+      atmosphere: { color: '#FF4444', density: 0.6, glow: 1.4 },
+      surface: { roughness: 0.9, metallic: 0.15, emissive: '#FF2200', normalStrength: 1.2 },
+      rings: { innerRadius: 1.18, outerRadius: 1.65, color: '#FF6B6B', opacity: 0.35 },
+      moons: 0,
+    },
+    'game-boy-heart': {
+      type: 'crystal',
+      atmosphere: { color: '#F2EF1D', density: 0.45, glow: 1.6 },
+      surface: { roughness: 0.35, metallic: 0.65, emissive: '#1B1B1B', normalStrength: 0.9 },
+      rings: { innerRadius: 1.35, outerRadius: 1.95, color: '#F2EF1D', opacity: 0.5 },
+      moons: 1,
+    },
+    'kid-forever': {
+      type: 'gas_giant',
+      atmosphere: { color: '#F2EF1D', density: 0.75, glow: 1.4 },
+      rings: { innerRadius: 1.25, outerRadius: 1.9, color: '#F2EF1D', opacity: 0.45 },
+      moons: 4,
+    },
+    'brain-freeze': {
+      type: 'ice_world',
+      atmosphere: { color: '#8BF9FF', density: 0.5, glow: 1.0 },
+      surface: { roughness: 0.28, metallic: 0.05, emissive: '#001122', normalStrength: 0.95 },
+      rings: null,
+      moons: 1,
+    },
+    'house-party': {
+      type: 'crystal',
+      atmosphere: { color: '#F2EF1D', density: 0.6, glow: 1.8 },
+      surface: { roughness: 0.42, metallic: 0.5, emissive: '#2e1e00', normalStrength: 0.8 },
+      rings: { innerRadius: 1.2, outerRadius: 1.8, color: '#F2EF1D', opacity: 0.55 },
+      moons: 2,
+    },
+    'alone': {
+      type: 'volcanic',
+      atmosphere: { color: '#8B5A8B', density: 0.45, glow: 1.2 },
+      surface: { roughness: 0.8, metallic: 0.2, emissive: '#2a002a', normalStrength: 1.1 },
+      rings: null,
+      moons: 1,
+    }
+  };
   // Explicit song→element mapping (by title); favors precise control over heuristics
   const PAIRS: Array<[string, Element]> = [
     ["ALONE", "darkness"],
@@ -697,6 +769,17 @@ export function buildPlanetSongs(): { hudSongs: HudSong[]; holoSongs: HoloSong[]
 
     const planetType = pickPlanetType(element, id);
     const planetProps = generatePlanetProperties(element, planetType, radius, i);
+    // Merge song-specific overrides for more personality
+    const override = SONG_OVERRIDES[id] || {};
+    const merged = {
+      type: override.type || planetType,
+      atmosphere: override.atmosphere || planetProps.atmosphere,
+      surface: override.surface || planetProps.surface,
+      rings: (override.rings === null) ? undefined : (override.rings || planetProps.rings),
+      moons: override.moons ?? planetProps.moons,
+      weather: override.weather || planetProps.weather,
+      geometry: override.geometry || planetProps.geometry,
+    };
     
     holoSongs.push({
       id,
@@ -710,11 +793,14 @@ export function buildPlanetSongs(): { hudSongs: HudSong[]; holoSongs: HoloSong[]
         orbitSpeed, 
         tilt, 
         element,
-        type: planetType,
-        atmosphere: planetProps.atmosphere,
-        surface: planetProps.surface,
-        rings: planetProps.rings,
-        moons: planetProps.moons
+        type: merged.type,
+        seed: seedFromSlug(id),
+        atmosphere: merged.atmosphere,
+        surface: merged.surface,
+        rings: merged.rings,
+        moons: merged.moons,
+        weather: merged.weather,
+        geometry: merged.geometry,
       },
     });
   });

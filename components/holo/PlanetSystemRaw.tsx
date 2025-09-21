@@ -55,16 +55,23 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
   const connectionLinesRef = useRef<THREE.LineSegments[]>([]);
   const particleUniforms = useRef<{ uTime: { value: number }; uCentralPos: { value: THREE.Vector3 }; uCentralColor: { value: THREE.Color } } | null>(null);
 
-  // Create realistic planet material based on planet type and properties
+  // Create ultra-realistic planet material based on planet type and properties
   function makePlanetMaterial(planetData: any) {
     const color = new THREE.Color(planetData.color || '#38B6FF');
     const surface = planetData.surface || {};
     const type = planetData.type || 'terrestrial';
     const geometry = planetData.geometry || {};
+    // Stable per-planet seed to avoid unintended color/texture shifts over time
+    const seed = typeof planetData.seed === 'number' ? planetData.seed : Math.random() * 1000;
+    
+    // Enhanced planet-specific properties for more realism
+    const planetTypeData = getPlanetTypeData(type);
+    const enhancedSurface = { ...planetTypeData.surface, ...surface };
     
     // High-quality geometry settings
     const uniforms = {
       uTime: { value: 0 },
+      uSeed: { value: seed },
       uBaseColor: { value: color },
       uEmissive: { value: new THREE.Color(surface.emissive || '#000000') },
       uRoughness: { value: surface.roughness || 0.5 },
@@ -103,6 +110,7 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
     const fragmentShader = `
       uniform float uTime;
       uniform vec3 uBaseColor;
+      uniform float uSeed;
       uniform vec3 uEmissive;
       uniform float uRoughness;
       uniform float uMetallic;
@@ -189,8 +197,9 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
         float lon = atan(nrm.z, nrm.x);
         
         // Compute coherent noise-driven height for realism
-        float height = fbm(vec3(lon * 2.5, lat * 3.0, uTime * 0.02));
-        float ridges = ridged(vec3(lon * 6.0, lat * 6.5, uTime * 0.03));
+        // Use a stable per-planet seed so surface patterns do not change over time
+        float height = fbm(vec3(lon * 2.5, lat * 3.0, uSeed));
+        float ridges = ridged(vec3(lon * 6.0, lat * 6.5, uSeed));
         float continents = smoothstep(0.42, 0.58, height);
         float mountains = smoothstep(0.65, 0.9, ridges);
         
@@ -201,33 +210,142 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
         vec3 surfaceColor;
         float waterMask = 0.0;
         if (uPlanetType < 2.5) {
-          float bands = sin(lat * 18.0 + uTime * 0.4) * 0.5 + 0.5;
-          float turb = fbm(vec3(lon * 8.0, lat * 20.0, uTime * 0.5));
-          vec3 hi = saturateColor(uBaseColor * (1.2 + 0.2 * turb), 0.35);
-          vec3 lo = uBaseColor * (0.8 + 0.1 * turb);
+          // Stable band patterns without time animation
+          float bands = sin(lat * 18.0 + uSeed * 0.1) * 0.5 + 0.5;
+          float turb = fbm(vec3(lon * 8.0, lat * 20.0, uSeed));
+          
+          // More detailed atmospheric layers for gas giants
+          float layer1 = sin(lat * 32.0 + uSeed * 0.2) * 0.3 + 0.7;
+          float layer2 = sin(lat * 12.0 + uSeed * 0.15) * 0.2 + 0.8;
+          float stormPattern = ridged(vec3(lon * 4.0, lat * 8.0, uSeed + 50.0));
+          
+          vec3 hi = saturateColor(uBaseColor * (1.2 + 0.3 * turb + 0.15 * stormPattern), 0.4);
+          vec3 lo = uBaseColor * (0.7 + 0.15 * turb);
+          vec3 mid = uBaseColor * (0.9 + 0.1 * layer2);
+          
+          // Complex layered appearance
           surfaceColor = mix(lo, hi, bands);
+          surfaceColor = mix(surfaceColor, mid, layer1 * 0.6);
         } else {
-          // Terrestrial-like branch: water/land/mountain/snow
+          // Enhanced terrestrial planets with planet-type specific features
           float sea = 0.5; // sea level
           float h = height * 1.1 - 0.05;
           waterMask = step(h, sea);
-          // Base palettes
-          vec3 deepWater = vec3(0.02, 0.1, 0.25);
-          vec3 shallowWater = vec3(0.08, 0.3, 0.55);
-          vec3 sand = vec3(0.76, 0.7, 0.5);
-          vec3 grass = vec3(0.22, 0.55, 0.28);
-          vec3 rock = vec3(0.42, 0.38, 0.36);
-          vec3 snow = vec3(0.95, 0.97, 1.0);
           
-          vec3 landColor = mix(sand, grass, smoothstep(sea, sea + 0.08, h));
-          landColor = mix(landColor, rock, mountains);
-          float snowLine = mix(0.85, 0.65, temp); // more snow near poles
-          landColor = mix(landColor, snow, smoothstep(snowLine, 1.0, h));
-          vec3 waterColor = mix(deepWater, shallowWater, smoothstep(sea - 0.15, sea, h));
-          surfaceColor = mix(waterColor, landColor, 1.0 - waterMask);
-          // Tint by element color
-          surfaceColor = mix(surfaceColor, uBaseColor, 0.18);
-          surfaceColor = saturateColor(surfaceColor, 0.25);
+          // Planet-type specific terrain generation
+          vec3 surfaceA, surfaceB, surfaceC;
+          
+          if (uPlanetType >= 3.5 && uPlanetType < 4.5) { // Ice worlds
+            vec3 ice = vec3(0.85, 0.90, 0.95);
+            vec3 deepIce = vec3(0.60, 0.75, 0.90);
+            vec3 rock = vec3(0.30, 0.25, 0.22);
+            vec3 cracks = vec3(0.20, 0.40, 0.60);
+            
+            float iceCracks = ridged(vec3(lon * 25.0, lat * 20.0, uSeed + 400.0));
+            float exposed = smoothstep(0.7, 0.9, mountains);
+            
+            surfaceColor = mix(deepIce, ice, smoothstep(0.2, 0.8, height));
+            surfaceColor = mix(surfaceColor, cracks, iceCracks * 0.4);
+            surfaceColor = mix(surfaceColor, rock, exposed * 0.6);
+            
+          } else if (uPlanetType >= 4.5 && uPlanetType < 5.5) { // Desert worlds
+            vec3 sand = vec3(0.8, 0.6, 0.3);
+            vec3 darkSand = vec3(0.5, 0.4, 0.2);
+            vec3 rock = vec3(0.4, 0.3, 0.25);
+            vec3 dunes = vec3(0.9, 0.7, 0.4);
+            
+            float dunePattern = fbm(vec3(lon * 8.0, lat * 12.0, uSeed + 350.0));
+            float rockFormations = ridged(vec3(lon * 20.0, lat * 16.0, uSeed + 450.0));
+            
+            surfaceColor = mix(darkSand, sand, smoothstep(0.2, 0.8, height));
+            surfaceColor = mix(surfaceColor, dunes, dunePattern * 0.5);
+            surfaceColor = mix(surfaceColor, rock, rockFormations * 0.7);
+            
+          } else if (uPlanetType >= 5.5 && uPlanetType < 6.5) { // Ocean worlds
+            vec3 deepOcean = vec3(0.01, 0.08, 0.20);
+            vec3 shallowOcean = vec3(0.05, 0.25, 0.45);
+            vec3 coral = vec3(0.15, 0.45, 0.35);
+            vec3 islands = vec3(0.6, 0.55, 0.4);
+            
+            // Coral reefs and underwater features
+            float coralMask = ridged(vec3(lon * 15.0, lat * 15.0, uSeed + 100.0));
+            vec3 waterColor = mix(deepOcean, shallowOcean, smoothstep(sea - 0.2, sea, h));
+            waterColor = mix(waterColor, coral, coralMask * (1.0 - waterMask) * 0.4);
+            vec3 landColor = mix(islands, coral, coralMask * 0.3);
+            surfaceColor = mix(waterColor, landColor, 1.0 - waterMask);
+            
+          } else if (uPlanetType >= 6.5 && uPlanetType < 7.5) { // Volcanic worlds
+            vec3 lava = vec3(0.8, 0.2, 0.1);
+            vec3 cooledLava = vec3(0.15, 0.10, 0.08);
+            vec3 ash = vec3(0.25, 0.22, 0.20);
+            vec3 hotSpots = vec3(1.0, 0.4, 0.0);
+            
+            // Volcanic activity patterns
+            float volcanic = ridged(vec3(lon * 12.0, lat * 8.0, uSeed + 200.0));
+            float lavaFlows = fbm(vec3(lon * 20.0, lat * 16.0, uSeed + 300.0));
+            
+            surfaceColor = mix(cooledLava, ash, smoothstep(0.3, 0.7, height));
+            surfaceColor = mix(surfaceColor, lava, volcanic * 0.6);
+            surfaceColor = mix(surfaceColor, hotSpots, lavaFlows * volcanic * 0.3);
+            
+          } else if (uPlanetType >= 7.5 && uPlanetType < 8.5) { // Crystal worlds
+            vec3 crystal = vec3(0.8, 0.9, 1.0);
+            vec3 darkCrystal = vec3(0.4, 0.5, 0.7);
+            vec3 prisms = vec3(0.9, 0.8, 1.0);
+            vec3 energy = vec3(0.6, 0.9, 1.0);
+            
+            float crystalPattern = ridged(vec3(lon * 18.0, lat * 18.0, uSeed + 500.0));
+            float facets = fbm(vec3(lon * 35.0, lat * 35.0, uSeed + 600.0));
+            
+            surfaceColor = mix(darkCrystal, crystal, smoothstep(0.3, 0.8, height));
+            surfaceColor = mix(surfaceColor, prisms, crystalPattern * 0.7);
+            surfaceColor = mix(surfaceColor, energy, facets * crystalPattern * 0.4);
+            
+          } else if (uPlanetType >= 8.5 && uPlanetType < 9.5) { // Toxic worlds
+            vec3 toxicGreen = vec3(0.3, 0.6, 0.2);
+            vec3 acidPools = vec3(0.6, 0.8, 0.1);
+            vec3 poison = vec3(0.8, 0.9, 0.3);
+            vec3 sludge = vec3(0.2, 0.3, 0.1);
+            
+            float toxic = fbm(vec3(lon * 14.0, lat * 14.0, uSeed + 700.0));
+            float corrosion = ridged(vec3(lon * 22.0, lat * 22.0, uSeed + 800.0));
+            
+            surfaceColor = mix(sludge, toxicGreen, smoothstep(0.2, 0.7, height));
+            surfaceColor = mix(surfaceColor, acidPools, toxic * 0.6);
+            surfaceColor = mix(surfaceColor, poison, corrosion * toxic * 0.4);
+            
+          } else if (uPlanetType >= 9.5 && uPlanetType < 10.5) { // Metal worlds
+            vec3 darkMetal = vec3(0.15, 0.15, 0.18);
+            vec3 brightMetal = vec3(0.6, 0.6, 0.65);
+            vec3 rust = vec3(0.4, 0.25, 0.15);
+            vec3 chrome = vec3(0.8, 0.8, 0.85);
+            
+            float metalPattern = ridged(vec3(lon * 16.0, lat * 16.0, uSeed + 900.0));
+            float corrosion = fbm(vec3(lon * 24.0, lat * 24.0, uSeed + 1000.0));
+            
+            surfaceColor = mix(darkMetal, brightMetal, smoothstep(0.4, 0.8, height));
+            surfaceColor = mix(surfaceColor, rust, corrosion * 0.5);
+            surfaceColor = mix(surfaceColor, chrome, metalPattern * 0.3);
+            
+          } else { // Default terrestrial
+            vec3 deepWater = vec3(0.02, 0.1, 0.25);
+            vec3 shallowWater = vec3(0.08, 0.3, 0.55);
+            vec3 sand = vec3(0.76, 0.7, 0.5);
+            vec3 grass = vec3(0.22, 0.55, 0.28);
+            vec3 rock = vec3(0.42, 0.38, 0.36);
+            vec3 snow = vec3(0.95, 0.97, 1.0);
+            
+            vec3 landColor = mix(sand, grass, smoothstep(sea, sea + 0.08, h));
+            landColor = mix(landColor, rock, mountains);
+            float snowLine = mix(0.85, 0.65, temp);
+            landColor = mix(landColor, snow, smoothstep(snowLine, 1.0, h));
+            vec3 waterColor = mix(deepWater, shallowWater, smoothstep(sea - 0.15, sea, h));
+            surfaceColor = mix(waterColor, landColor, 1.0 - waterMask);
+          }
+          
+          // Subtle element color tinting
+          surfaceColor = mix(surfaceColor, uBaseColor, 0.12);
+          surfaceColor = saturateColor(surfaceColor, 0.2);
         }
         
         // Lighting calculation (softer for hologram look)
@@ -243,24 +361,23 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
         float specStrength = mix(0.15, 0.6, waterMask);
         float spec = pow(max(dot(normal, halfV), 0.0), mix(24.0, 80.0, waterMask)) * specStrength;
         
-        // Combine surface and atmosphere with subtle base tint
-        vec3 baseTint = uBaseColor * 0.6;
-        vec3 finalColor = surfaceColor * (0.28 + 0.60 * NdotL) + atmosphereGlow + uEmissive + baseTint * 0.12 + vec3(spec);
+        // Combine surface and atmosphere with stable lighting
+        vec3 baseTint = uBaseColor * 0.4;
+        vec3 finalColor = surfaceColor * (0.35 + 0.65 * NdotL) + atmosphereGlow + uEmissive + baseTint * 0.08 + vec3(spec);
 
-        // Add metallic reflection
+        // Add metallic reflection for appropriate planet types
         if (uMetallic > 0.5) {
           vec3 reflectDirection = reflect(-viewDirection, normal);
-          float spec = pow(max(dot(reflectDirection, lightDirection), 0.0), 32.0);
-          finalColor += vec3(1.0) * spec * uMetallic;
+          float metalSpec = pow(max(dot(reflectDirection, lightDirection), 0.0), 32.0);
+          finalColor += vec3(1.0) * metalSpec * uMetallic;
         }
-        // Subtle hologram artifacts: very faint scanline + occasional sparkle
-        float scan = 0.02 * sin((vWorldPosition.y + uTime * 2.0) * 120.0);
-        float sparkle = step(0.9985, fract(sin(dot(vWorldPosition.xy, vec2(12.9898,78.233)) + uTime * 40.0) * 43758.5453));
-        finalColor *= 1.0 + scan;
-        finalColor += vec3(0.08) * sparkle;
+        
+        // Stable surface detail enhancement based on planet seed
+        float detailNoise = fbm(vec3(lon * 40.0, lat * 40.0, uSeed + 1000.0));
+        finalColor *= (0.92 + 0.16 * detailNoise);
 
-        // Hologram transparency with fresnel edge emphasis but stronger core color
-        float alpha = clamp(0.5 + fresnel * 0.28 + scan * 0.12, 0.38, 0.88);
+        // Stable transparency with realistic atmosphere edge
+        float alpha = clamp(0.55 + fresnel * 0.25, 0.45, 0.85);
         gl_FragColor = vec4(finalColor, alpha);
       }
     `;
@@ -316,7 +433,9 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
         float fresnel = pow(1.0 - abs(dot(normal, viewDirection)), 1.5);
         float alpha = fresnel * uDensity * 0.8;
         
-        vec3 glowColor = uColor * uGlow;
+        // Gentle brightness pulse for atmosphere without hue shift
+        float pulse = 0.04 * sin(uTime * 0.8);
+        vec3 glowColor = uColor * uGlow * (1.0 + pulse);
         
         gl_FragColor = vec4(glowColor, alpha);
       }
@@ -346,6 +465,174 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       'metal': 9
     };
     return typeMap[type] || 1;
+  }
+  
+  // Enhanced planet type data for ultra-realistic worlds
+  function getPlanetTypeData(type: PlanetType) {
+    const typeData = {
+      terrestrial: {
+        surface: {
+          roughness: 0.6,
+          metallic: 0.1,
+          normalStrength: 1.2,
+          emissive: '#000000',
+          landMass: 0.35,
+          oceanDepth: 0.8,
+          mountainHeight: 0.25,
+          plateauSize: 0.15
+        },
+        colors: {
+          ocean: '#1a4b84',
+          land: '#8B4513',
+          vegetation: '#228B22',
+          snow: '#F8F8FF',
+          desert: '#DEB887'
+        }
+      },
+      gas_giant: {
+        surface: {
+          roughness: 0.2,
+          metallic: 0.0,
+          normalStrength: 0.8,
+          emissive: '#001122',
+          bandCount: 12,
+          stormSize: 0.3,
+          atmosphereThickness: 2.5
+        },
+        colors: {
+          primaryBand: '#FF6B35',
+          secondaryBand: '#4A90E2',
+          storm: '#8B0000',
+          glow: '#FFD700'
+        }
+      },
+      ice_world: {
+        surface: {
+          roughness: 0.8,
+          metallic: 0.3,
+          normalStrength: 1.5,
+          emissive: '#001133',
+          iceThickness: 0.9,
+          crackDensity: 0.4,
+          reflectivity: 0.95
+        },
+        colors: {
+          ice: '#B0E0E6',
+          deepIce: '#4682B4',
+          cracks: '#00008B',
+          aurora: '#00FF7F'
+        }
+      },
+      desert: {
+        surface: {
+          roughness: 0.9,
+          metallic: 0.05,
+          normalStrength: 1.8,
+          emissive: '#331100',
+          duneSize: 0.2,
+          rockFormations: 0.3,
+          oasisCount: 0.02
+        },
+        colors: {
+          sand: '#DEB887',
+          rock: '#8B4513',
+          mesa: '#CD853F',
+          oasis: '#228B22'
+        }
+      },
+      ocean: {
+        surface: {
+          roughness: 0.1,
+          metallic: 0.0,
+          normalStrength: 0.6,
+          emissive: '#000033',
+          waveHeight: 0.05,
+          islandSize: 0.08,
+          coralReefs: 0.12,
+          deepTrenches: 0.6
+        },
+        colors: {
+          shallowWater: '#40E0D0',
+          deepWater: '#191970',
+          foam: '#F0F8FF',
+          coral: '#FF7F50'
+        }
+      },
+      volcanic: {
+        surface: {
+          roughness: 1.2,
+          metallic: 0.2,
+          normalStrength: 2.0,
+          emissive: '#FF4500',
+          lavaFlows: 0.25,
+          craterSize: 0.35,
+          ashClouds: 0.4,
+          temperature: 1.8
+        },
+        colors: {
+          lava: '#FF4500',
+          cooledLava: '#2F4F4F',
+          ash: '#696969',
+          magma: '#DC143C'
+        }
+      },
+      crystal: {
+        surface: {
+          roughness: 0.05,
+          metallic: 0.9,
+          normalStrength: 3.0,
+          emissive: '#4B0082',
+          crystalSize: 0.4,
+          facetCount: 8,
+          prismEffect: 1.5,
+          resonance: 2.2
+        },
+        colors: {
+          primaryCrystal: '#9932CC',
+          secondaryCrystal: '#00CED1',
+          energy: '#FFFF00',
+          core: '#FF00FF'
+        }
+      },
+      toxic: {
+        surface: {
+          roughness: 0.7,
+          metallic: 0.3,
+          normalStrength: 1.4,
+          emissive: '#228B22',
+          acidPools: 0.3,
+          poisonGas: 0.6,
+          corrosion: 0.8,
+          bioLuminescence: 1.2
+        },
+        colors: {
+          toxic: '#ADFF2F',
+          acid: '#32CD32',
+          poison: '#9ACD32',
+          decay: '#556B2F'
+        }
+      },
+      metal: {
+        surface: {
+          roughness: 0.3,
+          metallic: 0.95,
+          normalStrength: 1.0,
+          emissive: '#1C1C1C',
+          corrosion: 0.15,
+          wireframe: 0.05,
+          panels: 0.4,
+          machinery: 0.25
+        },
+        colors: {
+          steel: '#708090',
+          copper: '#B87333',
+          gold: '#FFD700',
+          rust: '#CD853F'
+        }
+      }
+    };
+    
+    return typeData[type] || typeData.terrestrial;
   }
   
   // Create cloud layer material
@@ -831,7 +1118,7 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       color: (element === 'heart') ? '#FF6BCD' : (element === 'lightning') ? '#FFD84D' : planetData.atmosphere.color,
       glow: (element === 'heart') ? Math.max(planetData.atmosphere.glow || 0, 1.3) : (element === 'lightning') ? Math.max(planetData.atmosphere.glow || 0, 1.6) : (planetData.atmosphere.glow || 1.0),
     } : undefined;
-    const tunedPlanetData = { ...planetData, atmosphere: tunedAtmosphere };
+    const tunedPlanetData = { ...planetData, atmosphere: tunedAtmosphere, seed: (planetData.seed ?? Math.random() * 1000) };
     const geometry = planetData.geometry || {
       segments: { widthSegments: 128, heightSegments: 128 },
       scale: { x: 1, y: 1, z: 1 },
@@ -1664,7 +1951,7 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
     };
     
     const centralGeo = createPlanetGeometry(centralRadius, centralGeometry);
-    const centralMat = makePlanetMaterial(enhancedPlanetData);
+    const centralMat = makePlanetMaterial({ ...enhancedPlanetData, seed: (enhancedPlanetData as any).seed ?? Math.random() * 1000 });
     const centralMesh = new THREE.Mesh(centralGeo, centralMat);
     
     // Add atmosphere to central planet if it has one

@@ -10,61 +10,117 @@ function identifyElement(element: HTMLElement): string {
   const href = element.getAttribute('href')?.toLowerCase() || '';
   const ariaLabel = element.getAttribute('aria-label')?.toLowerCase() || '';
   const title = element.getAttribute('title')?.toLowerCase() || '';
+  const dataId = element.getAttribute('data-id')?.toLowerCase() || '';
   const tagName = element.tagName.toLowerCase();
+  const parentElement = element.parentElement;
+  const parentClass = String(parentElement?.className || '').toLowerCase();
 
-  // Social Media Buttons
-  if (text.includes('instagram') || href.includes('instagram') || className.includes('instagram') || title.includes('instagram')) {
+  // Beam Color Buttons (Power/Blue, Comms/Yellow, Join/Pink)
+  if (ariaLabel.includes('power') || title.includes('power') || className.includes('power-btn')) {
+    return '⚡ Power Button';
+  }
+  if (ariaLabel.includes('join alien') || text.includes('join') || className.includes('join') || title.includes('join')) {
+    return '🚀 Join Aliens';
+  }
+  // Check if this is a social media button first, then fall back to general comms hub
+  if ((className.includes('holo-hub') || className.includes('yellow') || parentClass.includes('yellow') || 
+      (element.closest && element.closest('[class*="holo-hub"]'))) && 
+      !dataId && !title.includes('instagram') && !title.includes('tiktok') && !title.includes('youtube') && 
+      !title.includes('spotify') && !title.includes('apple')) {
+    return '📡 Comms Hub';
+  }
+
+  // Social Media Buttons (enhanced with data-id detection)
+  if (text.includes('instagram') || href.includes('instagram') || className.includes('instagram') || title.includes('instagram') || dataId === 'ig') {
     return '📱 Instagram';
   }
-  if (text.includes('tiktok') || href.includes('tiktok') || className.includes('tiktok') || title.includes('tiktok')) {
+  if (text.includes('tiktok') || href.includes('tiktok') || className.includes('tiktok') || title.includes('tiktok') || dataId === 'tt') {
     return '📱 TikTok';
   }
-  if (text.includes('youtube') || href.includes('youtube') || className.includes('youtube') || title.includes('youtube')) {
+  if (text.includes('youtube') || href.includes('youtube') || className.includes('youtube') || title.includes('youtube') || dataId === 'yt') {
     return '📱 YouTube';
   }
-  if (text.includes('spotify') || href.includes('spotify') || className.includes('spotify') || title.includes('spotify')) {
+  if (text.includes('spotify') || href.includes('spotify') || className.includes('spotify') || title.includes('spotify') || dataId === 'sp') {
     return '🎵 Spotify';
   }
-  if ((text.includes('apple') && (text.includes('music') || href.includes('music'))) || href.includes('apple') || className.includes('apple') || title.includes('apple')) {
+  if ((text.includes('apple') && (text.includes('music') || href.includes('music'))) || href.includes('apple') || className.includes('apple') || title.includes('apple') || dataId === 'am') {
     return '🎵 Apple Music';
   }
 
-  // Control Buttons
-  if (text.includes('power') || className.includes('power') || ariaLabel.includes('power') || title.includes('power')) {
-    return '⚡ Power Button';
-  }
-  if (text.includes('join') || className.includes('join') || title.includes('join') || text.includes('alien')) {
-    return '🚀 Join Aliens';
-  }
-  if (text.includes('comms') || className.includes('comms') || title.includes('comms')) {
-    return '📡 Comms Hub';
-  }
-  if ((text.includes('start') || className.includes('start')) && !text.includes('music')) {
+  // Start/Play Button
+  if ((text.includes('start') || className.includes('start') || className.includes('wheel-play')) && !text.includes('music')) {
     return '🎮 Start Button';
   }
-  if (text.includes('play') || text.includes('pause') || className.includes('wheel-play') || className.includes('play')) {
+  if (text.includes('play') || text.includes('pause') || className.includes('play')) {
     return '▶️ Play/Pause';
   }
 
-  // Song/Music Related
-  if (text.includes('ocean girl') || text.includes('oceangirl') || href.includes('ocean-girl')) {
-    if (text.includes('collect') || className.includes('collect') || className.includes('btn-ocean')) {
-      return '🎴 Collect Card: Ocean Girl';
+  // All Songs - Check for specific song titles and slugs (from songs-consolidated.ts)
+  const songPatterns = [
+    { pattern: ['game boy heart', 'gameboy', 'game-boy', 'ゲームボーイ'], name: 'Game Boy Heart' },
+    { pattern: ['kid forever', 'kidforever', 'kid-forever', '永遠の子供'], name: 'Kid Forever' },
+    { pattern: ['brain freeze', 'brainfreeze', 'brain-freeze'], name: 'Brain Freeze' },
+    { pattern: ['mickey jas remix', 'mickey-jas', 'mickeyjasremix'], name: 'We\'re Just Friends (Mickey Jas Remix)' },
+    { pattern: ['be my bee', 'bemybee', 'be-my-bee'], name: 'Be My Bee' },
+    { pattern: ['we\'re just friends', 'were just friends', 'just friends', 'friends'], name: 'We\'re Just Friends' },
+    { pattern: ['paris'], name: 'Paris' },
+    { pattern: ['pokémon', 'pokemon'], name: 'Pokémon' },
+    { pattern: ['alien', 'house party', 'houseparty', 'house-party'], name: 'Alien (House Party)' },
+    { pattern: ['dmvrco remix', 'dmvrco', 'dmvrcoremix'], name: 'We\'re Just Friends (DMVRCO Remix)' },
+    { pattern: ['baby'], name: 'Baby' },
+    { pattern: ['ocean girl', 'oceangirl', 'ocean-girl'], name: 'Ocean Girl' },
+    { pattern: ['alone'], name: 'Alone' },
+    { pattern: ['always on my mind', 'alwaysonmymind', 'always-on'], name: 'Always On My Mind' },
+    { pattern: ['believe in me', 'believeinme', 'believe-in'], name: 'Believe In Me' },
+    { pattern: ['collide'], name: 'Collide' },
+    { pattern: ['colors of our home', 'colorsofourhome', 'colors-of'], name: 'Colors Of Our Home' },
+    { pattern: ['cookies'], name: 'Cookies' },
+    { pattern: ['do you want to play house', 'playhouse', 'play-house'], name: 'Do You Want To Play House' },
+    { pattern: ['feeling this', 'blink-182', 'blink182', 'feeling-this'], name: 'Feeling This (Blink-182 Cover)' },
+    { pattern: ['home'], name: 'Home' },
+    { pattern: ['i might fall in love', 'mightfall', 'fall-in-love'], name: 'I Might Fall In Love With You' },
+    { pattern: ['letting go', 'lettinggo', 'letting-go'], name: 'Letting Go' },
+    { pattern: ['little black heart', 'blackheart', 'little-black'], name: 'Little Black Heart' },
+    { pattern: ['love'], name: 'Love' },
+    { pattern: ['merry go round', 'merrygoround', 'merry-go'], name: 'Merry Go Round' },
+    { pattern: ['mr brightside', 'mrbrightside', 'killers', 'brightside'], name: 'Mr. Brightside (Killers Cover)' },
+    { pattern: ['neon skies', 'neonskies', 'neon-skies'], name: 'Neon Skies' },
+    { pattern: ['somebody to love', 'somebodytolove', 'somebody-to'], name: 'Somebody To Love' },
+    { pattern: ['studio'], name: 'Studio' },
+    { pattern: ['they feel too', 'theyfeeltoo', 'they-feel'], name: 'They Feel Too' },
+    { pattern: ['tienes un amigo', 'tienesun', 'amigo'], name: 'Tienes Un Amigo' }
+  ];
+
+  for (const song of songPatterns) {
+    const matchesSong = song.pattern.some(pattern => 
+      text.includes(pattern) || href.includes(pattern.replace(/\s+/g, '-')) || 
+      className.includes(pattern.replace(/\s+/g, '-'))
+    );
+    
+    if (matchesSong) {
+      if (text.includes('collect') || className.includes('collect') || className.includes('btn-')) {
+        return `🎴 Collect Card: ${song.name}`;
+      }
+      if (tagName === 'img' || className.includes('cover') || className.includes('album')) {
+        return `🖼️ Cover Art: ${song.name}`;
+      }
+      return `🎧 Song: ${song.name}`;
     }
-    if (tagName === 'img' || className.includes('cover')) {
-      return '🖼️ Cover Art: Ocean Girl';
-    }
-    return '🎧 Song: Ocean Girl';
   }
 
   // Generic collect card
-  if (text.includes('collect card') || className.includes('collect') || className.includes('btn-ocean')) {
+  if (text.includes('collect card') || className.includes('collect') || className.includes('btn-')) {
     return '🎴 Collect Card';
   }
 
   // Cover art (generic)
   if (tagName === 'img' && (className.includes('cover') || className.includes('album'))) {
     return '🖼️ Cover Art';
+  }
+
+  // Card modal clicks
+  if (className.includes('card') || className.includes('modal') || ariaLabel.includes('card')) {
+    return '🎴 Card Modal';
   }
 
   // Analytics buttons
@@ -94,6 +150,11 @@ export function useClickTracking() {
       // Enhanced element identification
       const enhancedLabel = identifyElement(target);
       
+      // Debug logging to help troubleshoot tracking
+      if (enhancedLabel.includes('📱') || enhancedLabel.includes('🎵')) {
+        console.log('Social/Music button clicked:', enhancedLabel, target);
+      }
+      
       const clickData: ClickData = {
         id: generateClickId(),
         timestamp: Date.now(),
@@ -105,6 +166,7 @@ export function useClickTracking() {
           href: target.getAttribute('href') || undefined,
           role: target.getAttribute('role') || undefined,
           ariaLabel: target.getAttribute('aria-label') || undefined,
+          dataId: target.getAttribute('data-id') || undefined,
         },
         position: {
           x: event.clientX,

@@ -73,17 +73,37 @@ export default function CoverHologram({ src, title }: { src: string; title: stri
       
       {showCard ? (
         <div
-          className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-end justify-center"
-          style={{ paddingRight: '5vw', paddingBottom: 'calc(var(--buttons-bottom, 31%) + var(--panel-gap-px, 72px))', paddingLeft: '5vw', paddingTop: '2vh' }}
+          className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm"
+          style={{ padding: 0 }}
           onClick={() => {
             try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
             setShowCard(false);
           }}
         >
+          {/* Anchor the card so its bottom exactly touches the bottom of the pink display */}
           <div
-            className="relative rounded-2xl p-4 card-modal"
+            className="card-anchored"
+            style={{
+              position: 'fixed',
+              // Exactly align the card bottom to the blue display bottom
+              bottom: 'calc(var(--display-touch-top) - 4px)',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              padding: '0 5vw 0 5vw',
+              width: 'var(--display-width)',
+              display: 'flex',
+              // Align card to the bottom edge of this anchored container
+              alignItems: 'flex-end',
+              // Center the card horizontally on screen
+              justifyContent: 'center',
+              pointerEvents: 'auto'
+            }}
             onClick={(e)=> e.stopPropagation()}
           >
+            <div
+              className="relative rounded-2xl p-4 card-modal"
+              style={{ paddingBottom: '0px' }}
+            >
             <div className="tilt-wrap">
               <div className="card-frame">
                 <div 
@@ -138,7 +158,7 @@ export default function CoverHologram({ src, title }: { src: string; title: stri
                 <span className="frame-sheen" aria-hidden />
               </div>
             </div>
-            <div className="absolute top-3 left-1/2 transform -translate-x-1/2 z-10">
+            <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-10">
               <div className="ocean-cta-wrap relative">
                 <a
                   href="https://buy.stripe.com/cNi14oetz6p76Bbgxx4gg0k"
@@ -186,6 +206,7 @@ export default function CoverHologram({ src, title }: { src: string; title: stri
               className="absolute -top-3 -right-3 rounded-full bg-[#19E3FF] text-black font-bold w-8 h-8 shadow-[0_0_20px_rgba(25,227,255,0.8)]"
               title="Close"
             >×</button>
+            </div>
           </div>
         </div>
       ) : null}

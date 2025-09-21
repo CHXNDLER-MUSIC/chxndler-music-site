@@ -79,6 +79,7 @@ export interface ClickData {
     href?: string;
     role?: string;
     ariaLabel?: string;
+    dataId?: string;
   };
   position: {
     x: number;

@@ -38,7 +38,7 @@ export default function AnalyticsWidget() {
   return (
     <>
       {!isOpen && (
-        <div className="fixed bottom-4 right-4 z-40 flex flex-col gap-2">
+        <div className="fixed bottom-4 right-4 z-[110] flex flex-col gap-2">
           <button
             onClick={() => setIsOpen(true)}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-lg font-mono text-sm transition-all transform hover:scale-105"
@@ -55,7 +55,7 @@ export default function AnalyticsWidget() {
       
       {/* Health widget when analytics is open */}
       {isOpen && !healthOpen && (
-        <div className="fixed bottom-4 right-4 z-40">
+        <div className="fixed bottom-4 right-4 z-[105]">
           <HealthStatusWidget 
             isOpen={healthOpen} 
             onToggle={() => setHealthOpen(!healthOpen)} 
@@ -65,7 +65,7 @@ export default function AnalyticsWidget() {
       
       {/* Health widget overlay when open */}
       {healthOpen && (
-        <div className="fixed bottom-4 right-4 z-60">
+        <div className="fixed bottom-4 right-4 z-[115]">
           <HealthStatusWidget 
             isOpen={healthOpen} 
             onToggle={() => setHealthOpen(!healthOpen)} 
@@ -74,7 +74,7 @@ export default function AnalyticsWidget() {
       )}
       
       {isOpen && (
-        <div className="fixed inset-0 z-50">
+        <div className="fixed inset-0 z-[110]">
           <AnalyticsDashboard onClose={() => setIsOpen(false)} />
         </div>
       )}

@@ -20,7 +20,7 @@ export default function HoloHUD({
   const highlight = (track?.title || "").toLowerCase().includes("ocean girl") || (track?.slug === "ocean-girl");
 
   return (
-    <div className="holo-hud fixed inset-0 z-40 pointer-events-none select-none" aria-hidden={false}>
+    <div className="holo-hud fixed inset-0 z-50 pointer-events-none select-none" aria-hidden={false}>
       {/* Film grain + subtle bloom */}
       <div className="filmgrain" aria-hidden />
 
@@ -101,6 +101,8 @@ export default function HoloHUD({
       <style jsx>{`
         :global(.holo-hud){
           /* mild atmospheric tint to help neon sit on glass */
+          /* unify album size as a CSS var so surrounding layout can flow to it */
+          --album-size: clamp(160px, 18vw, 280px);
         }
         .filmgrain{ position:absolute; inset:0; pointer-events:none; opacity:.12; mix-blend-mode:overlay;
           background-image: url('data:image/svg+xml;utf8,${encodeURIComponent(`
@@ -111,7 +113,14 @@ export default function HoloHUD({
           `)}'); background-size: 240px 240px; }
 
         /* Title block */
-        .title-wrap{ position:absolute; top:8vh; left:8vw; max-width: 32vw; text-shadow: 0 2px 14px rgba(0,0,0,.45); }
+        .title-wrap{ 
+          position:absolute; 
+          top:8vh; 
+          left:8vw; 
+          /* Extend up to the album cover's left edge with a minimal gap */
+          width: calc(50vw - (0.5 * var(--album-size)) - 8vw - 2px);
+          text-shadow: 0 2px 14px rgba(0,0,0,.45); 
+        }
         .title{
           font-size: clamp(28px, 4.4vw, 72px);
           font-weight: 700; letter-spacing:.02em; line-height: 1.02;
@@ -130,11 +139,14 @@ export default function HoloHUD({
         /* Album card (centered top) */
         .album-card{
           position:absolute; top:8vh; left:50%; transform: translateX(-50%) perspective(1200px) rotateX(10deg) rotateY(-10deg);
-          width: clamp(160px, 18vw, 280px); aspect-ratio:1/1;
+          width: var(--album-size); aspect-ratio:1/1;
           border-radius: 16px; overflow:hidden;
           box-shadow: 0 0 50px rgba(56,182,255,.20), 0 10px 60px rgba(0,0,0,.6);
           outline: 1px solid rgba(56,182,255,.30);
           animation: albumCardPulse 2.6s ease-in-out infinite;
+          /* Enable click interaction despite parent having pointer-events:none */
+          pointer-events: auto;
+          cursor: pointer;
         }
         .card-glow{ position:absolute; inset:-8%; border-radius:20px; pointer-events:none;
           box-shadow: 0 0 80px rgba(56,182,255,.20);
@@ -178,11 +190,12 @@ export default function HoloHUD({
           position:absolute; 
           left:50%; 
           transform: translateX(-50%); 
-          /* Align above the shared button baseline; CSS vars set by SteeringWheelOverlay */
-          bottom: calc(var(--buttons-bottom, 31%) + var(--panel-gap-px, 72px)); 
+          /* Bottom of blue display should touch the light beam top */
+          bottom: var(--display-touch-top);
           width: clamp(80px, 18vw, 120px);
           max-width: 100px;
-          height: clamp(160px, 16vh, 220px);
+          /* Much shorter blue display (keep bottom fixed) */
+          height: calc(clamp(160px, 16vh, 220px) * 0.24);
           padding: 10px 0; 
           margin: 0;
           border-radius: 16px; 
@@ -195,9 +208,23 @@ export default function HoloHUD({
           text-align: center;
           display: flex;
           flex-direction: column;
-          align-items: center;
-          justify-content: center;
+          align-items: stretch;
+          justify-content: flex-start;
+          /* Prevent songs from extending outside the blue display; allow scroll if needed */
+          overflow: hidden;
+          overflow-y: auto;
           animation: bluePanelPulse 2.6s ease-in-out infinite;
+          /* Safari-specific fixes for z-index stacking */
+          z-index: 10;
+          isolation: isolate;
+          -webkit-transform: translateX(-50%);
+          /* Safari flexbox container fixes */
+          -webkit-box-orient: vertical;
+          -webkit-box-direction: normal;
+          -webkit-flex-direction: column;
+          -webkit-box-align: stretch;
+          -webkit-box-pack: start;
+          -webkit-justify-content: flex-start;
         }
         .song{ 
           display:flex; 
@@ -213,10 +240,20 @@ export default function HoloHUD({
           width: 100%;
           border: 0; 
           cursor: pointer;
+          /* Safari-specific flexbox fixes */
+          -webkit-box-align: center;
+          -webkit-box-pack: center;
+          -webkit-flex-direction: row;
+          flex-shrink: 0;
         }
         .song:hover{ outline: none; box-shadow: none; }
         .song .dot{ width:10px; height:10px; border-radius:9999px; background: #38B6FF; box-shadow: 0 0 10px #38B6FFAA; }
-        .song .name{ flex:1; font-size: 14px; letter-spacing:.02em; opacity:.9; transition: color .12s ease, text-shadow .15s ease; }
+        .song .name{ flex:1; font-size: 14px; letter-spacing:.02em; opacity:.9; transition: color .12s ease, text-shadow .15s ease; 
+          /* Safari text rendering fixes */
+          -webkit-flex: 1;
+          -webkit-font-smoothing: antialiased;
+          text-rendering: optimizeLegibility;
+        }
         .song:hover .name{ color:#EFFFFF; text-shadow: 0 0 10px rgba(25,227,255,0.8), 0 0 24px rgba(25,227,255,0.45); }
         .song.active{ outline: 1px solid rgba(252,84,175,.65); box-shadow: 0 0 24px rgba(252,84,175,.45); }
 

@@ -120,6 +120,9 @@ export default function HUDPanel({
   const planetRef = useRef(null);
   const playerRef = useRef(null);
   const [planetBottom, setPlanetBottom] = useState(88);
+  // Dynamic spacing for one-liner so it wraps before the cover
+  const coverRef = useRef(null);
+  const [oneLinerRight, setOneLinerRight] = useState(inConsole ? 108 : 140);
   // Audio progress tracking
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -163,6 +166,41 @@ export default function HUDPanel({
 
   // Mark mounted for any client-only adjustments; panel is imported with ssr:false
   useEffect(() => { setMounted(true); }, []);
+
+
+  // Measure cover width and reserve that space for the one-liner
+  useEffect(() => {
+    const el = coverRef.current;
+    if (!el) return;
+
+    const computeRight = () => {
+      try {
+        const rect = el.getBoundingClientRect();
+        const width = rect?.width || el.offsetWidth || 0;
+        // Account for the negative right offset so we only reserve the area overlapping the panel
+        const overflow = Math.abs(inConsole ? -8 : -16);
+        const gap = 12; // small gap so text never touches the cover
+        const right = Math.max(0, Math.round((width - overflow) + gap));
+        setOneLinerRight(right || (inConsole ? 108 : 140));
+      } catch {
+        // Fallback to previous/static value on any measurement issue
+        setOneLinerRight((r) => r || (inConsole ? 108 : 140));
+      }
+    };
+
+    // Initial compute and observe changes
+    computeRight();
+    let ro;
+    try {
+      ro = new ResizeObserver(() => computeRight());
+      ro.observe(el);
+    } catch {}
+    window.addEventListener('resize', computeRight);
+    return () => {
+      try { ro && ro.disconnect(); } catch {}
+      window.removeEventListener('resize', computeRight);
+    };
+  }, [inConsole]);
 
   // Audio progress tracking
   useEffect(() => {
@@ -227,6 +265,26 @@ export default function HUDPanel({
 
   // Toggle play/pause
   const handlePlayPause = () => {
+    // If no currentId, we're on the CHXNDLER home screen. Control ambient instead.
+    if (!currentId) {
+      try { sfx.play('click', 0.6); } catch {}
+      try {
+        const amb = document.querySelector('audio[data-ambient="1"]');
+        if (amb) {
+          if (amb.paused) {
+            try { window.dispatchEvent(new CustomEvent('ambient:userPlay')); } catch {}
+            amb.play().catch(()=>{});
+          } else {
+            try { window.dispatchEvent(new CustomEvent('ambient:userPause')); } catch {}
+            amb.pause();
+          }
+          return;
+        }
+      } catch {}
+      // Fallback: if ambient element missing, do nothing on home
+      return;
+    }
+    // Otherwise, control the main music player audio element
     const a = document.querySelector('audio[data-audio-player="1"]');
     if (!a) return;
     try { sfx.play('click', 0.6); } catch {}
@@ -309,7 +367,8 @@ export default function HUDPanel({
         if (!inner || !player) return;
         const ir = inner.getBoundingClientRect();
         const pr = player.getBoundingClientRect();
-        const gap = 8; // px space between planet and player
+        // Reduce the gap so the 3D display extends to the media player
+        const gap = 0; // px space between planet and player
         const b = Math.max(0, ir.bottom - pr.top + gap);
         setPlanetBottom(b);
       } catch {}
@@ -347,10 +406,22 @@ export default function HUDPanel({
           >
           {/* Background removed: keep HUD box transparent */}
         {/* Single blue outline wrapping the HUD content (amped glow) */}
-        <div className={`relative rounded-2xl border border-[#19E3FF]/60 ring-2 ring-[#19E3FF]/30 ${inConsole ? 'p-2' : 'p-4'}`} style={{
-          background: 'rgba(25,227,255,0.25)',
-          boxShadow: '0 0 50px rgba(25,227,255,0.20), 0 0 70px rgba(25,227,255,0.35), 0 0 24px rgba(25,227,255,0.50)'
+        <div className={`relative rounded-2xl ${inConsole ? 'p-2' : 'p-4'}`} style={{
+          background: 'transparent',
+          boxShadow: 'none'
         }}>
+          {/* Overlay frame to visually lower the blue panel top to match song listing */}
+          <div
+            className="absolute inset-x-0 rounded-2xl pointer-events-none"
+            style={{
+              bottom: 0,
+              top: `calc(var(--hud-y, 0px) + ${inConsole ? 2 : 4}px)`,
+              background: 'rgba(25,227,255,0.25)',
+              boxShadow: '0 0 50px rgba(25,227,255,0.20), 0 0 70px rgba(25,227,255,0.35), 0 0 24px rgba(25,227,255,0.50)',
+              border: '1px solid rgba(25,227,255,0.60)'
+            }}
+            aria-hidden
+          />
           {/* Background removed for transparent HUD */}
           {/* Cover art moved into right column above the song list */}
           {/* Holographic beam overlays removed */}
@@ -361,14 +432,14 @@ export default function HUDPanel({
               opacity: contentOpacity, 
               transition: 'opacity 240ms ease', 
               pointerEvents: contentOpacity > 0.01 ? 'auto' : 'none', 
-              minHeight: inConsole ? 300 : 400,
+              minHeight: inConsole ? 380 : 480,
               width: '100%',
               height: '100%'
             }}
             ref={innerRef}
           >
-          {/* Element icon at top left */}
-          <div className="absolute z-40" style={{ left: 8, top: 8, pointerEvents: 'none' }}>
+          {/* Element icon positioned below song listing */}
+          <div className="absolute z-40" style={{ left: 2, top: `calc(${inConsole ? 55 : 65}px + var(--hud-y, 0px))`, pointerEvents: 'none' }}>
             {(() => {
               try {
                 // Make the default CHXNDLER logo larger in the top-left
@@ -395,8 +466,8 @@ export default function HUDPanel({
               lineHeight: '1.12',
               display: 'flex',
               alignItems: 'center',
-              left: inConsole ? 48 : 64,
-              top: inConsole ? 8 : 12,
+              left: inConsole ? 42 : 58,
+              top: `calc(${inConsole ? 57 : 67}px + var(--hud-y, 0px))`,
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -406,7 +477,7 @@ export default function HUDPanel({
             {(!currentId ? 'CHXNDLER' : ((track?.title) || (resolvedSongs.find(s=> s.id === (active || ''))?.title) || ''))}
           </div>
 
-          {/* One-liner directly below title */}
+          {/* One-liner extending from below title up to cover */}
           <div
             className="absolute z-20 rounded-md"
             style={{
@@ -418,13 +489,18 @@ export default function HUDPanel({
               WebkitTextStroke: '0px transparent',
               fontSize: inConsole ? 10 : 12,
               lineHeight: '1.25',
-              left: inConsole ? 48 : 64,
-              top: inConsole ? 28 : 38,
-              right: '50%',
+              left: inConsole ? 42 : 58,
+              top: `calc(${inConsole ? 77 : 87}px + var(--hud-y, 0px))`,
+              // Reserve dynamic space for cover so text wraps before touching it
+              right: oneLinerRight,
+              bottom: inConsole ? 95 : 115, // Extend down to planet area
               wordWrap: 'break-word',
               overflowWrap: 'break-word',
               whiteSpace: 'normal',
               pointerEvents: 'none',
+              display: 'flex',
+              alignItems: 'flex-start',
+              overflow: 'hidden',
             }}
             aria-label="Song tagline"
           >
@@ -435,7 +511,8 @@ export default function HUDPanel({
           <div
             ref={planetRef}
             className={inConsole ? "absolute -left-2 -right-2" : "absolute -left-4 -right-4"}
-            style={{ top: inConsole ? 48 : 64, bottom: planetBottom }}
+            // Move 3D display down with unified HUD offset
+            style={{ top: `calc(${inConsole ? 91 : 111}px + var(--hud-y, 0px))`, bottom: planetBottom }}
           >
             {can3D && PlanetSystemComp ? (
               <div className="relative w-full h-full">
@@ -462,8 +539,14 @@ export default function HUDPanel({
               </div>
             )}
           </div>
-          {/* Cover section at top right */}
-          <div className="absolute top-2 right-2" style={{ width: '35%', display: 'flex', justifyContent: 'flex-end' }}>
+          {/* Cover section at top right corner */}
+          <div ref={coverRef} className="absolute" style={{ 
+            top: `calc(${inConsole ? -8 : -16}px + var(--hud-y, 0px))`, 
+            right: inConsole ? -8 : -16, 
+            width: 'auto', 
+            display: 'flex', 
+            justifyContent: 'flex-end' 
+          }}>
             <button
               type="button"
               aria-label="Open song card"
@@ -800,8 +883,14 @@ export default function HUDPanel({
           </div>
         </div>
 
-        {/* Song selector positioned at middle right of HUD display */}
-        <div className="absolute right-2" style={{ top: inConsole ? '160px' : '200px', width: '35%' }}>
+        {/* Song selector positioned at top left of blue display, extending to cover */}
+        <div className="absolute" style={{ 
+          left: inConsole ? 2 : 4, 
+          top: `calc(${inConsole ? 2 : 4}px + var(--hud-y, 0px))`, 
+          // Reserve dynamic space to the right so the dropdown never overlaps the cover
+          right: oneLinerRight,
+          maxWidth: 'none'
+        }}>
             <SongDropdown
               items={resolvedSongs}
               initialActiveId={active || resolvedSongs[0]?.id}
@@ -817,6 +906,16 @@ export default function HUDPanel({
                   }
                 } catch (error) {
                   if (DEBUG_MEDIA) dwarn('HUDPanel: failed to stop ambient audio', error);
+                }
+                // Also stop welcome VO immediately if present
+                try {
+                  const intro = document.querySelector('audio[data-intro="1"]');
+                  if (intro) {
+                    intro.pause();
+                    intro.currentTime = 0;
+                  }
+                } catch (error) {
+                  if (DEBUG_MEDIA) dwarn('HUDPanel: failed to stop intro VO', error);
                 }
                 
                 onSongChange?.(id);
@@ -1001,17 +1100,18 @@ export default function HUDPanel({
         >
           <div
             style={{ 
-              // Container matches exact blue display dimensions and position
-              position: 'absolute',
-              width: 'var(--display-width)',
-              height: 'calc(var(--display-touch-top) - var(--display-touch-bottom))',
-              top: 'var(--display-touch-bottom)',
+              // Exact same position as the pink display: bottom aligned to the beam top
+              position: 'fixed',
+              // Nudge the entire card container slightly more down
+              bottom: 'calc(var(--display-touch-top) - 140px)',
               left: '50%',
               transform: 'translateX(-50%)',
+              width: 'var(--display-width)',
               display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'flex-end',
-              alignItems: 'center'
+              // Align card to the bottom edge of this anchored container
+              alignItems: 'flex-end',
+              justifyContent: 'center',
+              pointerEvents: 'auto'
             }}
             onClick={() => {
               try { sfx.play('/audio/close.mp3', 0.7); } catch {}
@@ -1025,12 +1125,15 @@ export default function HUDPanel({
             <div
               className="relative rounded-2xl p-3 card-modal"
               style={{
-                maxWidth: '220px',
-                maxHeight: '310px',
+                maxWidth: '240px',
+                maxHeight: '340px',
                 width: 'auto',
                 height: 'auto',
-                marginBottom: '-60px',
-                paddingTop: '60px'
+                // Sit exactly on the bottom edge of the blue display
+                marginBottom: '0px',
+                paddingTop: '60px',
+                // Add extra space below the card so the outside container isn't too short
+                paddingBottom: '24px'
               }}
               onClick={(e)=> e.stopPropagation()}
             >
@@ -1147,7 +1250,7 @@ export default function HUDPanel({
                 const url = slug ? BUY_LINKS[slug] : (home ? 'https://buy.stripe.com/cNi14oetz6p76Bbgxx4gg0k' : undefined);
                 if (url) {
                   return (
-                    <div className="absolute top-3 left-1/2 transform -translate-x-1/2 z-10">
+                    <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-10">
                       <div className="ocean-cta-wrap relative">
                         <a
                           href={url}
@@ -1249,17 +1352,18 @@ export default function HUDPanel({
           position:relative; display:inline-grid; place-items:center;
           padding: 8px 12px; border-radius: 10px; font-weight:800; letter-spacing:.06em; font-size: 12px;
           color:#001014; text-transform:uppercase; font-family: InterLocal, system-ui, sans-serif;
-          background: radial-gradient(100% 100% at 50% 20%, rgba(210,255,255,0.95), #19E3FF);
+          /* Yellow variant */
+          background: radial-gradient(100% 100% at 50% 20%, rgba(255,255,210,0.95), #F2EF1D);
           border: 1px solid rgba(255,255,255,.24);
-          box-shadow: 0 0 20px rgba(25,227,255,.55), inset 0 2px 0 rgba(255,255,255,.6), inset 0 -8px 16px rgba(0,0,0,.22);
+          box-shadow: 0 0 20px rgba(242,239,29,.55), inset 0 2px 0 rgba(255,255,255,.6), inset 0 -8px 16px rgba(0,0,0,.22);
           transition: transform .12s ease, box-shadow .18s ease, filter .18s ease;
           overflow:hidden;
         }
         .btn-ocean:hover{
           transform: translateZ(0) scale(1.05);
           box-shadow:
-            0 0 36px rgba(25,227,255,.95),
-            0 0 80px rgba(25,227,255,.55),
+            0 0 36px rgba(242,239,29,.95),
+            0 0 80px rgba(242,239,29,.55),
             inset 0 2px 0 rgba(255,255,255,.7),
             inset 0 -10px 18px rgba(0,0,0,.28);
           filter: saturate(1.08) brightness(1.07);
@@ -1267,12 +1371,12 @@ export default function HUDPanel({
         }
         .btn-ocean:active{ transform: scale(.98); }
         @keyframes oceanGlow {
-          0%, 100% { box-shadow: 0 0 36px rgba(25,227,255,.95), 0 0 80px rgba(25,227,255,.55), inset 0 2px 0 rgba(255,255,255,.7), inset 0 -10px 18px rgba(0,0,0,.28); }
-          50% { box-shadow: 0 0 52px rgba(25,227,255,1), 0 0 110px rgba(25,227,255,.7), inset 0 2px 0 rgba(255,255,255,.75), inset 0 -12px 20px rgba(0,0,0,.3); }
+          0%, 100% { box-shadow: 0 0 36px rgba(242,239,29,.95), 0 0 80px rgba(242,239,29,.55), inset 0 2px 0 rgba(255,255,255,.7), inset 0 -10px 18px rgba(0,0,0,.28); }
+          50% { box-shadow: 0 0 52px rgba(242,239,29,1), 0 0 110px rgba(242,239,29,.7), inset 0 2px 0 rgba(255,255,255,.75), inset 0 -12px 20px rgba(0,0,0,.3); }
         }
         /* Ripple light pass on click */
         .btn-ripple{ position:absolute; inset:-10%; border-radius:inherit; pointer-events:none; opacity:0;
-          background: radial-gradient(closest-side, rgba(255,255,255,.85), rgba(25,227,255,.45) 40%, rgba(25,227,255,0) 60%);
+          background: radial-gradient(closest-side, rgba(255,255,255,.85), rgba(242,239,29,.45) 40%, rgba(242,239,29,0) 60%);
           filter: blur(1px);
         }
         .btn-ocean.is-rippling .btn-ripple{ animation: og-ripple 520ms ease-out 1; }

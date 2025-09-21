@@ -50,23 +50,31 @@
   
   /* Mobile First: Phone Layout (320px - 767px) */
   /* Optimized for thumb reach and smaller screens */
-  --beam-bottom-base: 220px;
-  --beam-height: 70px;
+  /* Fixed positioning - beam and display stay in same position across all screen sizes */
+  /* Moved higher to provide more space relative to blue button */
+  /* Move beam down slightly, closer to blue button */
+  /* Lower the center light beam slightly (closer to bottom edge) */
+  --beam-bottom-base: 340px;
+  /* Reduce beam visual height to 80% */
+  --beam-height: 72px; /* 80% of 90px */
   --display-gap: 6px;
   --panel-gap: 8px;
   --touch-zone-height: 44px; /* iOS minimum touch target */
   
-  /* Calculated beam boundaries */
+  /* Calculated beam boundaries (legacy vars retained for reference) */
   --beam-bottom: var(--beam-bottom-base);
   --beam-top: calc(var(--beam-bottom-base) + var(--beam-height));
   
-  /* Display touch points - all displays anchor to these */
-  /* Adjust display-touch-top to overlap slightly with beam for visual continuity */
-  --display-touch-top: calc(var(--beam-top) - 8px);
+  /* Display touch points - align to blue button baseline dynamically */
+  /* Position the light beam closer to the blue button using a separate gap var */
+  /* Nudge the blue display slightly lower on screen */
+  /* Fallback gap ensures beam fully clears blue button on first paint */
+  --display-touch-top: calc(var(--buttons-bottom, 36%) + var(--beam-gap-px, 144px));
   --display-touch-bottom: var(--beam-bottom);
   
   /* Mobile-specific display sizing */
-  --display-width: min(320px, calc(100vw - 16px));
+  /* Reduce blue display width to 80% across breakpoints, but raise the minimum */
+  --display-width: min(300px, calc((100vw - 16px) * 0.8));
   --display-border-radius: 12px;
 }
 
@@ -74,14 +82,13 @@
 /* Optimized for landscape orientation and larger touch targets */
 @media (min-width: 768px) {
   :root {
-    --beam-bottom-base: 280px;
-    --beam-height: 90px;
+    /* Beam position stays fixed - only update non-positioning properties */
     --display-gap: 8px;
     --panel-gap: 12px;
     --touch-zone-height: 48px;
     
     /* Tablet-specific display sizing */
-    --display-width: min(420px, calc(100vw - 24px));
+    --display-width: min(420px, calc((100vw - 24px) * 0.8));
     --display-border-radius: 14px;
     
     /* Enhanced beam visual properties for tablets */
@@ -94,14 +101,13 @@
 /* Optimized for mouse interaction and larger screens */
 @media (min-width: 1024px) {
   :root {
-    --beam-bottom-base: 320px;
-    --beam-height: 100px;
+    /* Beam position stays fixed - only update non-positioning properties */
     --display-gap: 10px;
     --panel-gap: 16px;
     --touch-zone-height: 40px; /* Smaller for precise mouse clicks */
     
     /* Desktop-specific display sizing */
-    --display-width: min(480px, calc(100vw - 32px));
+    --display-width: min(520px, calc((100vw - 32px) * 0.8));
     --display-border-radius: 16px;
     
     /* Enhanced beam visual properties for desktop */
@@ -115,13 +121,12 @@
 /* Enhanced spacing and proportions for large screens */
 @media (min-width: 1440px) {
   :root {
-    --beam-bottom-base: 360px;
-    --beam-height: 110px;
+    /* Beam position stays fixed - only update non-positioning properties */
     --display-gap: 12px;
     --panel-gap: 20px;
     
     /* Large desktop display sizing */
-    --display-width: min(560px, calc(100vw - 48px));
+    --display-width: min(600px, calc((100vw - 48px) * 0.8));
     --display-border-radius: 18px;
     
     /* Enhanced visual effects for large screens */
@@ -134,13 +139,12 @@
 /* Maximum spacing and enhanced visual effects */
 @media (min-width: 1920px) {
   :root {
-    --beam-bottom-base: 400px;
-    --beam-height: 120px;
+    /* Beam position stays fixed - only update non-positioning properties */
     --display-gap: 16px;
     --panel-gap: 24px;
     
     /* Ultra-wide display sizing */
-    --display-width: min(600px, calc(100vw - 64px));
+    --display-width: min(640px, calc((100vw - 64px) * 0.8));
     --display-border-radius: 20px;
   }
 }

@@ -139,7 +139,7 @@ export default function HoloHubMenu({
       // Arrange all buttons in a single horizontal line within the panel width (responsive)
       const vw = (typeof window !== 'undefined') ? window.innerWidth : 1024;
       const panelWidth = Math.min(400, Math.max(240, vw - 32));
-      const buttonSizes = entries.map(entry => entry.id === 'tt' ? itemSize * 0.75 : itemSize);
+      const buttonSizes = entries.map(entry => itemSize);
       const currentButtonSize = buttonSizes[i];
       const totalButtonWidth = buttonSizes.reduce((sum, size) => sum + size, 0);
       const maxAvailableWidth = panelWidth - 40; // Leave 20px margin on each side
@@ -148,14 +148,15 @@ export default function HoloHubMenu({
       let spacing = 0;
       if (n > 1) {
         const maxSpacing = (maxAvailableWidth - totalButtonWidth) / (n - 1);
-        spacing = Math.max(8, Math.min(itemSize * 0.3, maxSpacing)); // Min 8px, max 30% of itemSize
+        // Slightly tighten default spacing between buttons
+        spacing = Math.max(4, Math.min(itemSize * 0.2, maxSpacing)); // Min 4px, max 20% of itemSize
       }
       
       // Calculate total width and ensure it fits
       let totalWidth = totalButtonWidth + (spacing * (n - 1));
       if (totalWidth > maxAvailableWidth) {
         // If still too wide, reduce spacing to minimum
-        spacing = Math.max(4, (maxAvailableWidth - totalButtonWidth) / (n - 1));
+        spacing = Math.max(2, (maxAvailableWidth - totalButtonWidth) / (n - 1));
         totalWidth = totalButtonWidth + (spacing * (n - 1));
       }
       
@@ -214,17 +215,19 @@ export default function HoloHubMenu({
         className="panel-wrap"
         aria-hidden={!open || suspend}
         style={{
-          // Bottom of yellow display touches bottom of the central light beam
+          // Bottom of yellow display should sit exactly on top of the light beam
           position: 'fixed',
           bottom: beamBottomCss,
           // Center the yellow display perfectly on screen
           left: '50%',
           transform: 'translateX(-50%)',
-          width: `var(--display-width)`,
+          // Slightly wider than blue/pink displays (grow evenly on both sides)
+          width: `calc(var(--display-width) + 32px)`,
           // Height based on item size so the glass edge consistently meets the beam tip
           height: panelHeight,
           pointerEvents: open && !suspend ? 'auto' : 'none',
-          zIndex: 93,
+          // Render above the light beam (beam is z-95)
+          zIndex: 98,
           borderRadius: `var(--display-border-radius)`,
           overflow: 'hidden',
           opacity: open && !suspend ? 1 : 0,
@@ -244,7 +247,7 @@ export default function HoloHubMenu({
           const tint = it.color || "#38B6FF";
           const isFirst = i === 0;
           const isLast = i === entries.length - 1;
-          const size = it.id === 'tt' ? itemSize * 0.75 : itemSize; // Make TikTok smaller
+          const size = itemSize;
           return (
             <button
               key={it.id}
@@ -298,10 +301,10 @@ export default function HoloHubMenu({
               bottom: beamBottomCss,
               left: '50%',
               transform: 'translateX(-50%)',
-              width: `var(--display-width)`,
+          width: `calc(var(--display-width) + 32px)`,
               height: panelHeight,
               pointerEvents: open && !suspend ? 'auto' : 'none',
-              zIndex: 93,
+              zIndex: 98,
               borderRadius: `var(--display-border-radius)`,
               overflow: 'hidden',
               opacity: open && !suspend ? 1 : 0,
@@ -316,7 +319,7 @@ export default function HoloHubMenu({
                 const tint = it.color || "#38B6FF";
                 const isFirst = i === 0;
                 const isLast = i === entries.length - 1;
-                const size = it.id === 'tt' ? itemSize * 0.75 : itemSize; // Make TikTok smaller
+                const size = itemSize;
                 return (
                   <button
                     key={it.id}

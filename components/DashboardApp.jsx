@@ -54,7 +54,7 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [pendingTrackPlay, setPendingTrackPlay] = useState(false);
   const [pendingOverlayReveal, setPendingOverlayReveal] = useState(false); // wait to show overlay until warp SFX ends
   const trackPlayTimerRef = React.useRef(undefined);
-  // Keep ambient fully silent until Start is clicked
+  // Keep ambient suspended initially, but allow faster startup
   const [ambientSuspended, setAmbientSuspended] = useState(true);
   const [firstStartDone, setFirstStartDone] = useState(false);
   const [welcomeHasPlayed, setWelcomeHasPlayed] = useState(false); // tracks if welcome has ever been played
@@ -68,6 +68,66 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [showDimmingOverlay, setShowDimmingOverlay] = useState(true); // show dimming overlay on initial load
   const [beamTransitioning, setBeamTransitioning] = useState(false); // prevent rapid beam changes
   const SPACE_SKY = { webm: "/skies/space.webm", mp4: "/skies/space.mp4", key: "space" };
+
+  // Spotlight follows Start button dimensions/position exactly
+  const [spotlightPos, setSpotlightPos] = useState({ x: null, y: null, r: null });
+  const spotlightRafRef = React.useRef(0);
+
+  const computeStartSpotlight = React.useCallback(() => {
+    const run = () => {
+      try {
+        // Try measuring the actual Start button DOM for exact size/position
+        const btn = document.querySelector('.wheel-play.chx');
+        if (btn) {
+          const rect = btn.getBoundingClientRect();
+          const x = rect.left + rect.width / 2;
+          const y = rect.top + rect.height / 2;
+          const r = Math.min(rect.width, rect.height) / 2;
+          setSpotlightPos({ x, y, r });
+          return;
+        }
+      } catch {}
+      
+      // Fallback to computed geometry if the element isn't found yet
+      try {
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const vmin = Math.min(vw, vh);
+        const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+        const scaleFactor = (vw <= 480) ? 0.95 : (vw <= 768) ? 0.90 : (vw <= 1024) ? 0.85 : 0.80;
+        const vs = Math.round(clamp(vmin * scaleFactor, 420, 980) * 0.8);
+        const startBase = vmin * (vw <= 480 ? 0.19 : vw <= 768 ? 0.17 : 0.16);
+        const startSize = Math.round(clamp(startBase, vw <= 480 ? 112 : 92, 210)) * 1.02;
+        const r = startSize / 2;
+        const bottomPx = (-2 * vh / 100) + (vs * 0.35) - 54; // -2vh + vs*0.35 - 54
+        const y = vh - bottomPx - r;
+        const x = vw / 2;
+        setSpotlightPos({ x, y, r });
+      } catch {
+        // Last resort: center of screen with a safe radius
+        try { setSpotlightPos({ x: window.innerWidth / 2, y: window.innerHeight / 2, r: 80 }); } catch {}
+      }
+    };
+    cancelAnimationFrame(spotlightRafRef.current || 0);
+    spotlightRafRef.current = requestAnimationFrame(run);
+  }, []);
+
+  // Keep spotlight synced on mount, resize, and when overlay state changes
+  useEffect(() => {
+    if (!mounted || !showDimmingOverlay) return;
+    computeStartSpotlight();
+    const onResize = () => computeStartSpotlight();
+    window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', onResize);
+    // Also recompute once more after a short delay to catch layout shifts
+    const t = setTimeout(computeStartSpotlight, 50);
+    const t2 = setTimeout(computeStartSpotlight, 200);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('orientationchange', onResize);
+      clearTimeout(t); clearTimeout(t2);
+    };
+  }, [mounted, showDimmingOverlay, computeStartSpotlight]);
   
 
   // Centralized HUD power sequencing: play SFX then run beam/HUD fades
@@ -164,16 +224,32 @@ export default function DashboardApp({ initialSlug } = {}) {
     } catch (e) {
       console.warn('DashboardApp: Error stopping ambient audio:', e);
     }
+    // Also stop welcome VO immediately if present
+    try {
+      const introEl = document.querySelector('audio[data-intro="1"]');
+      if (introEl) {
+        introEl.pause();
+        introEl.currentTime = 0;
+        console.log('DashboardApp: Intro VO stopped immediately');
+      }
+    } catch (e) {
+      console.warn('DashboardApp: Error stopping intro VO:', e);
+    }
     
     // Stop ambient space music by setting isPlaying to false 
     setIsPlaying(false);
     
     // Force ambient suspension during song change sequence
     setAmbientSuspended(true);
+    // Ensure welcome VO won’t queue up while leaving home
+    setHomeIntroEnabled(false);
+    try { window.dispatchEvent(new CustomEvent('ambient:userPause')); } catch {}
 
     // Mark as user-driven to suppress fly/warp flashes on index change
     setUserSelected(true);
     setHomeMode(false);
+    // Clear any pending home overlay reveal since we're selecting a specific song
+    setPendingOverlayReveal(false);
 
     // Get track and update links immediately to avoid race conditions
     const t = tracks[idx];
@@ -183,11 +259,11 @@ export default function DashboardApp({ initialSlug } = {}) {
     // Switch MediaPlayer channel; MediaPlayer handles audio swap and loading
     setChannelIdx(idx);
     
-    // Use a simple timeout to trigger playSignal after warp completes
-    setTimeout(() => {
-      console.log('DashboardApp: Triggering playSignal for selected song:', t.title);
-      setPlaySignal((n) => n + 1);
-    }, 2500); // Slightly longer than MediaPlayer's warp delay
+    // Set flag to start song when video begins playing (onBasePlaying callback)
+    setPendingTrackPlay(true);
+    
+    // Let MediaPlayer handle audio element configuration through its index change
+    // Don't manually set src here to avoid race conditions
     
     // Trigger warp sequence with new song's sky
     setAllowWarp(true);
@@ -370,7 +446,7 @@ export default function DashboardApp({ initialSlug } = {}) {
     }
   }, [beamColor, showHUD, joinAlienOpen, beamTransitioning]);
 
-  // Spacebar and Pause key toggle for music play/pause (disabled until Start unlocks UI)
+  // Spacebar and Pause key toggle
   React.useEffect(() => {
     const handleKeyDown = (e) => {
       if (!uiUnlocked) return; // Ignore all media key input before Start
@@ -382,37 +458,57 @@ export default function DashboardApp({ initialSlug } = {}) {
       
       if (isSpacebar || isPauseKey) {
         e.preventDefault(); // Prevent default behavior (scroll/click on focused buttons)
-        
-        if (homeMode) {
-          // On homepage: control ambient space music instead of main music player
-          try {
-            const ambient = document.querySelector('audio[data-ambient="1"]');
-            if (ambient) {
-              if (ambient.paused) {
-                // Dispatch event to tell AmbientSpace this is a user play
-                window.dispatchEvent(new CustomEvent('ambient:userPlay'));
-                ambient.play().catch(() => {});
-              } else {
-                // Dispatch event to tell AmbientSpace this is a user pause
-                window.dispatchEvent(new CustomEvent('ambient:userPause'));
-                ambient.pause();
-              }
-            }
-          } catch (error) {
-            console.warn('Failed to toggle ambient audio:', error);
+        try {
+          const main = document.querySelector('audio[data-audio-player="1"]');
+          const ambient = document.querySelector('audio[data-ambient="1"]');
+          const intro = document.querySelector('audio[data-intro="1"]');
+          const mainIsPlaying = !!(main && !main.paused && (main.currentTime || 0) > 0);
+          const ambientIsPlaying = !!(ambient && !ambient.paused && (ambient.currentTime || 0) > 0);
+          const introIsPlaying = !!(intro && !intro.paused && (intro.currentTime || 0) > 0);
+
+          // 1) If a main song is currently playing, always control it
+          if (mainIsPlaying || isPlaying) {
+            setToggleSignal((n) => n + 1);
+            try { sfx.play('click', 0.6); } catch {}
+            return;
           }
-        } else {
-          // Not on homepage: control main music player
-          setToggleSignal((n) => n + 1); // Trigger music toggle
+          
+          // 2) If user has selected a song (not on homepage), control the main player regardless of ambient state
+          if (userSelected || !homeMode) {
+            if (main && ((main.getAttribute('src') || main.src || '').length > 0 || main.readyState >= 2)) {
+              setToggleSignal((n) => n + 1);
+              try { sfx.play('click', 0.6); } catch {}
+              return;
+            }
+          }
+          
+          // 3) Only control ambient if we're on the CHXNDLER homepage (homeMode) and user hasn't selected a song
+          if (homeMode && !userSelected) {
+            if (ambientIsPlaying) {
+              try { window.dispatchEvent(new CustomEvent('ambient:userPause')); } catch {}
+              ambient.pause();
+              try { sfx.play('click', 0.6); } catch {}
+              return;
+            }
+            // If we're on home and ambient is paused, play ambient (do NOT start a song)
+            if (ambient) {
+              try { window.dispatchEvent(new CustomEvent('ambient:userPlay')); } catch {}
+              ambient.play().catch(()=>{});
+              try { sfx.play('click', 0.6); } catch {}
+              return;
+            }
+          }
+        } catch (error) {
+          // Fall through to safe default
         }
-        
-        try { sfx.play('click', 0.6); } catch {} // Optional click sound feedback
+        // Safe default: if nothing matched, do nothing to avoid starting unintended audio on home
+        return;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [uiUnlocked, homeMode]);
+  }, [uiUnlocked, homeMode, isPlaying]);
 
   // Enable SFX globally only after Start unlocks the UI
   React.useEffect(() => {
@@ -481,10 +577,11 @@ export default function DashboardApp({ initialSlug } = {}) {
   }), [cardModalOpen]);
 
   const lightBeamStyle = useMemo(() => {
-    // Position the light beam independently (higher), using global CSS variable
+    // Position the light beam so its TOP touches the display bottom
+    // Use bottom = display-touch-top - beam-height (both are global CSS vars)
     return {
       left: '50%',
-      bottom: 'var(--beam-bottom)',
+      bottom: 'calc(var(--display-touch-top) - var(--beam-height))',
       height: 'var(--beam-height)',
       width: 'var(--display-width)',
       transform: 'translate3d(-50%,0,0)',
@@ -494,7 +591,7 @@ export default function DashboardApp({ initialSlug } = {}) {
     };
   }, [beamEnabled, showHUD, cardModalOpen, uiUnlocked, showOverlayUI, warpActive]);
 
-  // Position the blue display so its bottom touches the light beam top
+  // Position the blue display so its bottom touches the light beam top  
   const hudBottom = useMemo(() => 'var(--display-touch-top)', []);
 
   // Provide CSS variables globally (avoids any runtime style factory edge cases)
@@ -508,6 +605,10 @@ export default function DashboardApp({ initialSlug } = {}) {
     );
   }
   const SHOW_CENTER_BEAM = true; // Enable center light beam
+  // HUD vertical sizing + offset mapping so inner items shift down as height shrinks
+  const hudHeightFactor = 0.01; // minimal height; bottom stays fixed
+  const hudBaseFactor = 0.56;   // original baseline factor used earlier
+  const hudYOffset = Math.max(0, Math.round(100 * (hudBaseFactor - hudHeightFactor)));
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white max-w-screen overflow-x-hidden" style={{ minWidth: '100vw', minHeight: '100vh' }}>
       <div 
@@ -515,7 +616,7 @@ export default function DashboardApp({ initialSlug } = {}) {
         style={blurWrapperStyle}
       >
         <PrewarmThree />
-        <AmbientSpace ambientSrc="/audio/space-music.mp3" introSrc={homeMode && homeIntroEnabled ? "/audio/welcome-to-the-heartverse.mp3" : undefined} playingMusic={isPlaying} suspend={ambientSuspended} />
+        <AmbientSpace ambientSrc="/audio/space-music.mp3" introSrc={homeMode && homeIntroEnabled ? "/audio/welcome-to-the-heartverse.mp3" : undefined} playingMusic={isPlaying} suspend={ambientSuspended} userSelectedSong={userSelected} />
       <SkyboxVideo
         brightness={0.95}
         srcWebm={sky.webm}
@@ -530,7 +631,8 @@ export default function DashboardApp({ initialSlug } = {}) {
         offsetY="-1vh"
         onWarpSfxEnd={() => {
           // If we're landing on home via Start, reveal overlay/UI after warp finishes
-          if (pendingOverlayReveal) {
+          // Only revert to home if this isn't a user-selected song
+          if (pendingOverlayReveal && !userSelected && !pendingTrackPlay) {
             // Ensure we are in home mode (CHXNDLER) before revealing HUD
             try { setHomeMode(true); } catch {}
             try { setUserSelected(false); } catch {}
@@ -549,17 +651,32 @@ export default function DashboardApp({ initialSlug } = {}) {
             try {
               if (nextSky) { setSky(nextSky); setNextSky(null); }
             } catch {}
-            // Play the button sound exactly at reveal time
-            try { sfx.play('button', 0.9); } catch {}
+            // Play the button sound exactly at reveal time, then start ambient after it finishes
+            try { 
+              sfx.playAndWait('button', 0.9).then(() => {
+                // Start ambient music after button SFX completes
+                setAmbientSuspended(false); 
+                try { window.dispatchEvent(new Event('ambient:play')); } catch {}
+              }).catch(() => {
+                // If SFX fails, start ambient after a brief delay
+                setTimeout(() => {
+                  setAmbientSuspended(false); 
+                  try { window.dispatchEvent(new Event('ambient:play')); } catch {}
+                }, 500);
+              });
+            } catch {
+              // Fallback if SFX system fails entirely
+              setTimeout(() => {
+                setAmbientSuspended(false); 
+                try { window.dispatchEvent(new Event('ambient:play')); } catch {}
+              }, 500);
+            }
             try { setShowOverlayUI(true); } catch {}
             try { setBeamEnabled(true); } catch {}
             try { setShowHUD(true); } catch {}
             try { setBeamOnly(false); } catch {}
             try { setPowerBusy(false); } catch {}
             try { setLandingRevealReady(true); } catch {}
-            // Ambient should already be playing - just ensure it's not suspended
-            setAmbientSuspended(false); 
-            try { window.dispatchEvent(new Event('ambient:play')); } catch {}
             // Clear one-time flag to avoid repeats on later Starts
             try { welcomeOnStartRef.current = false; } catch {}
             setPendingOverlayReveal(false);
@@ -567,12 +684,8 @@ export default function DashboardApp({ initialSlug } = {}) {
         }}
         onFlyStart={() => {
           setWarpActive(true);
-          // Stop any currently playing track as soon as warp begins
-          try {
-            const a = document.querySelector('audio[data-audio-player="1"]');
-            if (a) { a.pause(); }
-          } catch {}
-          setIsPlaying(false);
+          // MediaPlayer will handle its own pause/resume logic for song changes
+          // Don't interfere with audio here - let MediaPlayer manage it
         }}
         onFlyEnd={() => {
           setWarpActive(false);
@@ -580,6 +693,20 @@ export default function DashboardApp({ initialSlug } = {}) {
           setLandingMode(false); // leave landing mode after first warp
           // Reset start button warp flag to allow normal effects to resume
           startButtonWarpRef.current = false;
+          // Hard-stop any ambient audio at warp end during song selection
+          try {
+            const amb = document.querySelector('audio[data-ambient="1"]');
+            if (amb) { 
+              amb.pause(); 
+              amb.currentTime = 0;
+              // Don't manipulate volume directly - let AmbientSpace component handle it
+            }
+          } catch {}
+          try {
+            const intro = document.querySelector('audio[data-intro="1"]');
+            if (intro) { intro.pause(); intro.currentTime = 0; }
+          } catch {}
+          setAmbientSuspended(true);
           // If a track play is pending, begin UI fade-in immediately at warp end
           // and start the button SFX right away so it completes before music starts
           if (pendingTrackPlay) {
@@ -647,7 +774,27 @@ export default function DashboardApp({ initialSlug } = {}) {
           }
           // For track changes: trigger music when we are pending a track play
           // Allow playback even if warpActive is still true to handle race conditions with onFlyEnd
-          if (pendingTrackPlay) {
+          // SAFETY: Only auto-play if user has explicitly selected a song or there was an initialSlug
+          // Also ensure UI is unlocked (user has interacted) to prevent auto-play on page load
+          if (pendingTrackPlay && (userSelected || initialSlug) && uiUnlocked) {
+            // Ensure ambient and intro are fully stopped just before starting the song
+            try {
+              const amb = document.querySelector('audio[data-ambient="1"]');
+              if (amb) { 
+                amb.pause(); 
+                amb.currentTime = 0; 
+                // Don't manipulate volume directly - let AmbientSpace component handle it
+                // Remove any event listeners that might try to restart it
+                amb.removeAttribute('autoplay');
+              }
+              // Dispatch events to ensure ambient component knows to stop
+              try { window.dispatchEvent(new CustomEvent('ambient:userPause')); } catch {}
+            } catch {}
+            try {
+              const intro = document.querySelector('audio[data-intro="1"]');
+              if (intro) { intro.pause(); intro.currentTime = 0; }
+            } catch {}
+            setAmbientSuspended(true);
             // Clear any pending fallback timers now that we'll start playback here
             if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
             // UI has already been revealed at warp end. Now, only start the song MP3
@@ -663,45 +810,59 @@ export default function DashboardApp({ initialSlug } = {}) {
               }
             }, 3000);
             const startSong = () => { 
-              console.log('DashboardApp: startSong called, incrementing playSignal from', playSignal, 'to', playSignal + 1);
-              console.log('DashboardApp: Current track:', curTrack?.title, 'src:', curTrack?.src);
+              console.log('🎵 DashboardApp: startSong called, incrementing playSignal from', playSignal, 'to', playSignal + 1);
+              console.log('🎵 DashboardApp: Current track:', curTrack?.title, 'src:', curTrack?.src);
+              console.log('🎵 DashboardApp: channelIdx:', channelIdx, 'userSelected:', userSelected, 'pendingTrackPlay:', pendingTrackPlay);
               clearTimeout(failsafeTimer); // Clear the failsafe timer
-              setPlaySignal((n) => {
-                console.log('DashboardApp: playSignal updated from', n, 'to', n + 1);
-                return n + 1;
-              }); 
-              setPendingTrackPlay(false); 
-              buttonSfxWaitRef.current = null;
+              // Small delay to ensure MediaPlayer has set up the audio element properly
+              setTimeout(() => {
+                console.log('🎵 DashboardApp: About to increment playSignal...');
+                setPlaySignal((n) => {
+                  console.log('🎵 DashboardApp: playSignal updated from', n, 'to', n + 1);
+                  return n + 1;
+                }); 
+                setPendingTrackPlay(false); 
+                buttonSfxWaitRef.current = null;
+                console.log('🎵 DashboardApp: Song start sequence completed');
+              }, 100); // 100ms delay to allow MediaPlayer to set up
             };
-            try {
-              const p = buttonSfxWaitRef.current;
-              if (p && typeof p.then === 'function') {
-                // Wait for button SFX to complete, but with a timeout
-                Promise.race([
-                  p,
-                  new Promise(resolve => setTimeout(resolve, 1200)) // Max 1.2s wait for SFX
-                ]).then(startSong).catch(() => {
-                  console.warn('DashboardApp: button SFX failed, starting song anyway');
-                  startSong();
-                });
-              } else {
-                // If SFX wasn't started, play it briefly and then start song
-                try {
-                  sfx.playAndWait('button', 0.9).then(() => {
-                    setTimeout(startSong, 100); // Small delay after SFX
-                  }).catch(() => {
-                    console.warn('DashboardApp: button SFX playAndWait failed, starting song immediately');
+            // For song selection (userSelected), start immediately when video plays
+            // For Start button flow, wait for button SFX
+            if (userSelected || initialSlug) {
+              console.log('DashboardApp: Song selection - starting immediately with video');
+              startSong();
+            } else {
+              // Start button flow - handle SFX timing
+              try {
+                const p = buttonSfxWaitRef.current;
+                if (p && typeof p.then === 'function') {
+                  // Wait for button SFX to complete, but with a timeout
+                  Promise.race([
+                    p,
+                    new Promise(resolve => setTimeout(resolve, 1200)) // Max 1.2s wait for SFX
+                  ]).then(startSong).catch(() => {
+                    console.warn('DashboardApp: button SFX failed, starting song anyway');
                     startSong();
                   });
-                } catch {
-                  // If SFX completely fails, start song immediately
-                  startSong();
+                } else {
+                  // If SFX wasn't started, play it briefly and then start song
+                  try {
+                    sfx.playAndWait('button', 0.9).then(() => {
+                      setTimeout(startSong, 100); // Small delay after SFX
+                    }).catch(() => {
+                      console.warn('DashboardApp: button SFX playAndWait failed, starting song immediately');
+                      startSong();
+                    });
+                  } catch {
+                    // If SFX completely fails, start song immediately
+                    startSong();
+                  }
                 }
+              } catch {
+                // Fallback: if anything fails, start the song
+                console.warn('DashboardApp: SFX handling failed, starting song immediately');
+                startSong();
               }
-            } catch {
-              // Fallback: if anything fails, start the song
-              console.warn('DashboardApp: SFX handling failed, starting song immediately');
-              startSong();
             }
           }
         }}
@@ -722,72 +883,57 @@ export default function DashboardApp({ initialSlug } = {}) {
         onPowerToggle={() => { 
           // Manual power toggle should not start new welcome audio, but don't interrupt if it's already playing
           if (!welcomeOnStartRef.current) {
-            // Only disable welcome intro if it's not currently playing
-            setHomeIntroEnabled(false);
+            // Check if welcome audio is currently playing before disabling
+            try {
+              const intro = document.querySelector('audio[data-intro="1"]');
+              const introIsPlaying = !!(intro && !intro.paused && (intro.currentTime || 0) > 0);
+              // Only disable welcome intro if it's not currently playing
+              if (!introIsPlaying) {
+                setHomeIntroEnabled(false);
+              }
+            } catch {
+              // If we can't check, err on the side of preserving audio
+              setHomeIntroEnabled(false);
+            }
           }
           // Blue button behavior is now handled entirely by handleBeamToggle('blue')
           // No need to call triggerHudPower since beam system manages everything
         }}
         onLaunch={() => {
-          // Mark welcome VO to play exactly once on first Start
+          // If a main song is currently playing, use Start to toggle play/pause
+          if (isPlaying) {
+            setToggleSignal((n) => n + 1);
+            return;
+          }
+          // Homepage Start flow (warp to home reveal)
           if (!welcomeHasPlayed) { welcomeOnStartRef.current = true; }
-          // For Start flow: reveal overlay only after warp.mp3 finishes
           setPendingOverlayReveal(true);
-          // Unlock overlay UI/HUD sequencing on Start press
           setUiUnlocked(true);
-          // Hide dimming overlay when start is clicked
           setShowDimmingOverlay(false);
-          // Allow the initial lightspeed loop to hide when we kick off warp
           setLandingRevealReady(true);
-          
-          // ALWAYS trigger warp sequence when start button is pressed
-          // Reset any track selection state to ensure we go to homepage BEFORE setting warp flag
+
+          // Prepare warp to homepage
           setUserSelected(false);
-          setHomeMode(false); // Will be set to true after warp completes
-          
-          // Set flag to prevent double warp from automatic effects AFTER state changes
+          setHomeMode(false);
           startButtonWarpRef.current = true;
-          
+
           // Stop any playing audio and clear track state
           try {
-            // Stop main music player audio
             const a = document.querySelector('audio[data-audio-player="1"]');
-            if (a) {
-              a.pause();
-              try { a.currentTime = 0; } catch {}
-              try { a.muted = true; } catch {}
-              try { a.removeAttribute('src'); } catch {}
-              try { a.load(); } catch {}
-            }
-            
-            // Stop ambient space music
+            if (a) { a.pause(); try { a.currentTime = 0; } catch {}; try { a.muted = true; } catch {}; try { a.removeAttribute('src'); } catch {}; try { a.load(); } catch {} }
             const ambient = document.querySelector('audio[data-ambient="1"]');
-            if (ambient) {
-              ambient.pause();
-              try { ambient.currentTime = 0; } catch {}
-            }
+            if (ambient) { ambient.pause(); try { ambient.currentTime = 0; } catch {} }
           } catch {}
           setIsPlaying(false);
-          
-          // Clear any selected planet for homepage
           try { usePlayerStore.setState({ mainId: null }); } catch {}
-          
-          // Fade out all UI elements before warp
           setShowHUD(false);
           setShowOverlayUI(false);
           setBeamEnabled(false);
-          
-          // Set flag to indicate we should go to home mode after warp
           setPendingHomePower(true);
-          
-          // ALWAYS start warp sequence to take user to CHXNDLER homepage
           setAllowWarp(true);
-          // Switch to space sky immediately so the base video can preload under lightspeed
           setSky(SPACE_SKY);
           setNextSky(null);
           setFlySignal((n) => n + 1);
-          
-          // Reset to homepage defaults
           setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
         }}
       />
@@ -803,10 +949,11 @@ export default function DashboardApp({ initialSlug } = {}) {
               bottom: hudBottom,
               left: '50%',
               transform: 'translateX(-50%)',
-              width: 'var(--display-width)',
-              height: 'var(--display-width)',
+              width: 'calc(var(--display-width) + 32px)',
+              height: `calc(var(--display-width) * ${hudHeightFactor})`,
               zIndex: 93,
-              borderRadius: 'var(--display-border-radius)'
+              borderRadius: 'var(--display-border-radius)',
+              ['--hud-y']: `${hudYOffset}px`,
             }}
           >
             <div className="relative h-full w-full p-0" style={{ overflow: 'visible' }} suppressHydrationWarning>
@@ -824,7 +971,7 @@ export default function DashboardApp({ initialSlug } = {}) {
                   songs={hudSongs}
                   onSongChange={onSongChange}
                   track={curTrack}
-                  currentId={homeMode ? undefined : curTrack?.slug}
+                  currentId={(!homeMode || userSelected || pendingTrackPlay) ? curTrack?.slug : undefined}
                   playing={isPlaying}
                   beamOnly={beamOnly}
                   beamEnabled={beamEnabled}
@@ -842,7 +989,18 @@ export default function DashboardApp({ initialSlug } = {}) {
                     setShowDimmingOverlay(false);
                     setHomeMode(true);
                     try { usePlayerStore.setState({ mainId: null }); } catch {}
-                    setHomeIntroEnabled(false);
+                    // Check if welcome audio is currently playing before disabling
+                    try {
+                      const intro = document.querySelector('audio[data-intro="1"]');
+                      const introIsPlaying = !!(intro && !intro.paused && (intro.currentTime || 0) > 0);
+                      // Only disable welcome intro if it's not currently playing
+                      if (!introIsPlaying) {
+                        setHomeIntroEnabled(false);
+                      }
+                    } catch {
+                      // If we can't check, err on the side of preserving audio
+                      setHomeIntroEnabled(false);
+                    }
                     setUserSelected(false);
                     setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
                     triggerHudPower(true);
@@ -855,9 +1013,8 @@ export default function DashboardApp({ initialSlug } = {}) {
                 onSkyChange={(webm, mp4, key) => setNextSky({ webm, mp4, key })}
                 onPlayingChange={(p) => { 
                   setIsPlaying(p); 
-                  // Only unsuspend ambient when song stops AND we're in home mode
-                  // If user selected a specific song, ambient should stay suspended
-                  if (!p && homeMode) {
+                  // Only unsuspend ambient when song stops AND we're in home mode AND user didn't explicitly select a song
+                  if (!p && homeMode && !userSelected) {
                     setAmbientSuspended(false);
                   }
                 }}
@@ -895,7 +1052,7 @@ export default function DashboardApp({ initialSlug } = {}) {
               right: '5%',
               bottom: '0px', 
               top: '0%',
-              clipPath: 'polygon(48% 100%, 52% 100%, 15% 0, 85% 0)',
+              clipPath: 'polygon(48% 100%, 52% 100%, 10% 0, 90% 0)',
               backgroundImage: getBeamGradient,
               backgroundSize: '100% 100%, 100% 160px',
               filter: 'blur(4px)',
@@ -914,9 +1071,31 @@ export default function DashboardApp({ initialSlug } = {}) {
         <HoloHUD
           track={curTrack}
           playing={effectivelyPlaying}
-          onToggle={() => setToggleSignal((n) => n + 1)}
+          onToggle={() => {
+            try {
+              if (homeMode) {
+                // On CHXNDLER homepage, toggle ambient space music instead of main player
+                const amb = document.querySelector('audio[data-ambient="1"]');
+                if (amb) {
+                  if (amb.paused) {
+                    try { window.dispatchEvent(new CustomEvent('ambient:userPlay')); } catch {}
+                    amb.play().catch(()=>{});
+                  } else {
+                    try { window.dispatchEvent(new CustomEvent('ambient:userPause')); } catch {}
+                    amb.pause();
+                  }
+                  return;
+                }
+              }
+            } catch {}
+            // Otherwise toggle main player
+            setToggleSignal((n) => n + 1);
+          }}
           onSelect={(slug) => {
-            try { onSongChange(slug); } catch {}
+            try { 
+              onSongChange(slug);
+              // Song will start automatically after warp completes via pendingTrackPlay mechanism
+            } catch {}
           }}
         />
       ) : null}
@@ -925,34 +1104,14 @@ export default function DashboardApp({ initialSlug } = {}) {
       {/* Dimming Overlay with Animated Spotlight on Start Button */}
       {mounted && showDimmingOverlay ? (
         (() => {
-          // Helper function to get responsive values (matching SteeringWheelOverlay logic)
-          const getResponsiveValue = (config) => {
-            if (!config) return config;
-            const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
-            const isTablet = typeof window !== 'undefined' && window.innerWidth > 768 && window.innerWidth <= 1024;
-            
-            if (isMobile && config.mobile) {
-              return { ...config, ...config.mobile };
-            } else if (isTablet && config.tablet) {
-              return { ...config, ...config.tablet };
-            }
-            return config;
-          };
-
-          const wheel = POS?.wheel || {};
-          const lp = wheel.logo || { topVh: 66, leftVw: 26, sizePx: 72 };
-          const ppConfig = getResponsiveValue(wheel.play) || { topVh: lp.topVh, leftVw: lp.leftVw, sizePx: Math.round(lp.sizePx * 0.9) };
-          const pp = ppConfig;
-
-          // Calculate exact button center position (matching SteeringWheelOverlay actual positioning)
-          // SteeringWheelOverlay positions button at: bottom: calc(-5vh + ${vs * 0.3}px - 32px), left: 50%
-          const vs = Math.round(Math.min(Math.min(window.innerWidth, window.innerHeight) * 0.70, 980));
-          const startSize = Math.round(Math.min(Math.max(Math.min(window.innerWidth, window.innerHeight) * 0.14, 64), 180));
-          
-          const buttonCenterX = '50%'; // Button is centered horizontally
-          // Convert bottom positioning to top: 100vh - bottom_offset - half_button_height
-          const bottomExpr = `-5vh + ${vs * 0.3}px - 32px`;
-          const buttonCenterY = `calc(100vh - (${bottomExpr}) - ${(startSize * 1.02)/2}px)`;
+          // Use measured spotlight position if available; otherwise, render nothing
+          const hasSpot = spotlightPos && typeof spotlightPos.x === 'number' && typeof spotlightPos.y === 'number' && typeof spotlightPos.r === 'number';
+          if (!hasSpot) return null;
+          const buttonCenterX = `${Math.round(spotlightPos.x)}px`;
+          const buttonCenterY = `${Math.round(spotlightPos.y)}px`;
+          const buttonRadius = Math.max(0, Math.round(spotlightPos.r));
+          // Make spotlight tighter: reduce clear radius slightly inside the button edge
+          const clearR = Math.max(0, buttonRadius - 10);
           
           return (
             <div className="fixed inset-0 z-[100] pointer-events-none">
@@ -963,8 +1122,9 @@ export default function DashboardApp({ initialSlug } = {}) {
                   background: `
                     radial-gradient(
                       circle at ${buttonCenterX} ${buttonCenterY},
-                      transparent ${(startSize * 1.02) * 0.35}px,
-                      rgba(0, 0, 0, 0.85) ${(startSize * 1.02) * 0.35 + 2}px,
+                      /* Clear hole slightly smaller than button for a tighter spotlight */
+                      transparent ${clearR}px,
+                      rgba(0, 0, 0, 0.85) ${Math.max(0, clearR + 2)}px,
                       rgba(0, 0, 0, 0.95) 100%
                     )
                   `,
@@ -980,6 +1140,7 @@ export default function DashboardApp({ initialSlug } = {}) {
 
       {/* Background preloader: covers + first ~5s of audio/skies */}
       {mounted ? <PreloadMedia maxImage={8} maxAudio={3} maxVideo={2} /> : null}
+
 
     </main>
   );
