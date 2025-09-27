@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { tracks as ALL, type Track } from "@/lib/songs-consolidated";
-import { skyFor } from "@/lib/sky";
+import { skyFor, verifyAllTrackSkies } from "@/lib/sky";
 import { track as gaTrack } from "@/lib/analytics";
 import { DEBUG_MEDIA, dlog, dwarn, dumpAudio } from "@/lib/debug";
 import { ELEMENT_COLORS, type Element } from "@/lib/planets";
@@ -85,6 +85,17 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   // Get current song's element and color
   const currentElement = getTrackElement(cur);
   const currentElementColor = ELEMENT_COLORS[currentElement];
+
+  // Run sky verification in development on component mount
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      // Run verification after a short delay to avoid blocking initial render
+      const timeoutId = setTimeout(() => {
+        verifyAllTrackSkies(tracks);
+      }, 1000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, []); // Run once on mount
 
   // Subscribe to state machine changes
   useEffect(() => {
@@ -592,7 +603,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   
 
   return (
-    <div className="hud-card console-hud h-full w-full" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} aria-label="Media dock">
+    <div className="hud-card console-hud h-full w-full" style={{ borderRadius: '16px' }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} aria-label="Media dock">
       {showWarp ? createPortal(<div className="warp-flash" style={{ zIndex: 120 }} aria-hidden />, document.body) : null}
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0 pr-2">
@@ -763,7 +774,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               <img
                 src={`/elements/${currentElement}.png`}
                 alt={`${cur.title} element`}
-                className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 transform w-8 h-8 brightness-150 saturate-125"
+                className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 transform w-[2rem] h-[2rem] min-w-[2rem] min-h-[2rem] brightness-150 saturate-125"
                 style={{ filter: `drop-shadow(0 0 14px ${currentElementColor}) drop-shadow(0 0 32px ${currentElementColor}AA) drop-shadow(0 0 64px ${currentElementColor}55)` }}
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = '/elements/music.png';
@@ -949,7 +960,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           align-items: center;
           justify-content: center;
           background: rgba(0,0,0,0.3);
-          border-radius: 12px;
+          border-radius: 16px;
           border: 1px solid ${currentElementColor}40;
           backdrop-filter: blur(8px);
           overflow: hidden;
@@ -990,14 +1001,18 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         .picker{
           max-height: 40vh;
           overflow: auto;
+          border-radius: 16px;
+          background: rgba(6,182,212,0.05);
+          border: 1px solid rgba(25,227,255,0.3);
+          margin: 0 2px;
         }
         .picker-list{ display:flex; flex-direction:column; gap:6px; }
         .picker-item{
           display:flex; align-items:center; justify-content:space-between;
-          width:100%; text-align:left; padding:8px 10px; border-radius:10px;
+          width:100%; text-align:left; padding:8px 10px; border-radius:12px;
           background: rgba(255,255,255,.06);
         }
-        .picker-item.active{ outline:1px solid rgba(255,255,255,.25); }
+        .picker-item.active{ outline:1px solid rgba(25,227,255,.4); background: rgba(25,227,255,.1); }
         
         .volume-display{
           font-size: 10px;
@@ -1011,18 +1026,19 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           display: flex;
           align-items: center;
           gap: 12px;
-          padding: 12px;
-          border-radius: 10px;
-          border: 2px solid rgba(25,227,255,0.8);
-          background: rgba(6,182,212,0.1);
+          padding: 8px 12px;
+          border-radius: 16px;
+          border: 1px solid rgba(25,227,255,0.4);
+          background: rgba(6,182,212,0.08);
           backdrop-filter: blur(12px);
-          box-shadow: 0 0 18px rgba(25,227,255,0.35);
+          box-shadow: 0 0 12px rgba(25,227,255,0.25);
+          margin: 0 2px;
         }
         
         .play-pause-btn {
           position: relative;
-          width: 48px;
-          height: 48px;
+          width: 40px;
+          height: 40px;
           border-radius: 50%;
           border: none;
           background: radial-gradient(circle at 30% 30%, #19E3FF, #0EA8D0);

@@ -34,7 +34,7 @@ export default function PlanetSystem({ showAll = false }: { showAll?: boolean })
         // Pull the camera back and widen FOV so the full system fits
         // Much more horizontal viewpoint: lower camera height and pull back slightly
         // Zoom out more for CHXNDLER homepage when showAll is true
-        camera={{ position: [0.2, 0.6, showAll ? 22 : 15.5], fov: showAll ? 50 : 40 }}
+        camera={{ position: [0.2, -0.2, showAll ? 22 : 15.5], fov: showAll ? 50 : 40 }}
         gl={{ antialias: true, alpha: true }}
         frameloop="demand"
       >
@@ -66,20 +66,12 @@ export default function PlanetSystem({ showAll = false }: { showAll?: boolean })
             </>
           ) : (
             (() => {
-              const satellites = songs.filter((s) => s.id !== focusId);
+              // When a song is playing, only show the main/focused planet
+              // Hide all satellites and moons to focus on the centered planet
               return (
                 <>
-                  {satellites.map((s) => (
-                    <Planet key={s.id} song={s} isMain={false} isHover={hoverId === s.id} isMoon={false} />
-                  ))}
-                  {/* Never apply hover inflation to main planet to avoid perceived zoom-in */}
+                  {/* Only show the main focused planet when song is playing */}
                   {focus ? <Planet key={`main-${focus.id}`} song={focus} isMain={true} isHover={false} isMoon={false} /> : null}
-                  {prevMainId && prevMainId !== focusId ? (
-                    (() => {
-                      const prev = songs.find((s) => s.id === prevMainId);
-                      return prev ? <Planet key={`moon-${prev.id}`} song={prev} isMain={false} isHover={prev.id === hoverId} isMoon={true} /> : null;
-                    })()
-                  ) : null}
                 </>
               );
             })()

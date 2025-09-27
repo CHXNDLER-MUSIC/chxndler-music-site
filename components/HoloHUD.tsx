@@ -50,7 +50,8 @@ export default function HoloHUD({
 
       {/* Center: Orrery above steering wheel */}
       <div className="orrery" aria-label="Song worlds orrery">
-        {/* Main planet removed to avoid single planet focus */}
+        {/* Heart-shaped central planet */}
+        <div className="planet heart-planet" />
         <div className="orbit o1"><div className="planet p1" /></div>
         <div className="orbit o2"><div className="planet p2" /></div>
         <div className="orbit o3"><div className="planet p3" /></div>
@@ -102,7 +103,7 @@ export default function HoloHUD({
         :global(.holo-hud){
           /* mild atmospheric tint to help neon sit on glass */
           /* unify album size as a CSS var so surrounding layout can flow to it */
-          --album-size: clamp(160px, 18vw, 280px);
+          --album-size: 280px;
         }
         .filmgrain{ position:absolute; inset:0; pointer-events:none; opacity:.12; mix-blend-mode:overlay;
           background-image: url('data:image/svg+xml;utf8,${encodeURIComponent(`
@@ -139,7 +140,9 @@ export default function HoloHUD({
         /* Album card (centered top) */
         .album-card{
           position:absolute; top:8vh; left:50%; transform: translateX(-50%) perspective(1200px) rotateX(10deg) rotateY(-10deg);
-          width: var(--album-size); aspect-ratio:1/1;
+          width: var(--album-size); height: var(--album-size); 
+          min-width: var(--album-size); min-height: var(--album-size);
+          max-width: var(--album-size); max-height: var(--album-size);
           border-radius: 16px; overflow:hidden;
           box-shadow: 0 0 50px rgba(56,182,255,.20), 0 10px 60px rgba(0,0,0,.6);
           outline: 1px solid rgba(56,182,255,.30);
@@ -175,6 +178,36 @@ export default function HoloHUD({
         .planet.p1{ width: 20px; height: 20px; background: radial-gradient(60% 60% at 40% 35%, rgba(255,255,255,.9), rgba(56,182,255,.55) 45%, rgba(10,10,30,.0) 70%); }
         .planet.p2{ width: 26px; height: 26px; background: radial-gradient(60% 60% at 40% 35%, rgba(255,255,255,.9), rgba(242,239,29,.55) 45%, rgba(10,10,30,.0) 70%); }
         .planet.p3{ width: 16px; height: 16px; background: radial-gradient(60% 60% at 40% 35%, rgba(255,255,255,.9), rgba(252,84,175,.55) 45%, rgba(10,10,30,.0) 70%); }
+        .planet.heart-planet{ 
+          width: 32px; height: 32px; 
+          background: radial-gradient(50% 50% at 40% 35%, rgba(255,255,255,.9), rgba(255,23,68,.8) 40%, rgba(255,105,180,.6) 70%, rgba(10,10,30,.0) 85%);
+          border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+          transform: rotate(-45deg);
+          position: absolute;
+          top: 50%; left: 50%;
+          margin-top: -16px; margin-left: -16px;
+          box-shadow: inset 0 -8px 16px rgba(0,0,0,.4), 0 0 32px rgba(255,23,68,.6), 0 0 48px rgba(255,105,180,.4);
+          animation: heartPulse 1.2s ease-in-out infinite;
+          z-index: 5;
+        }
+        .planet.heart-planet::before {
+          content: '';
+          position: absolute;
+          width: 16px; height: 24px;
+          background: radial-gradient(50% 50% at 40% 35%, rgba(255,255,255,.9), rgba(255,23,68,.8) 40%, rgba(255,105,180,.6) 70%);
+          border-radius: 16px 16px 0 0;
+          transform: rotate(-45deg);
+          top: -8px; left: 8px;
+        }
+        .planet.heart-planet::after {
+          content: '';
+          position: absolute;
+          width: 16px; height: 24px;
+          background: radial-gradient(50% 50% at 40% 35%, rgba(255,255,255,.9), rgba(255,23,68,.8) 40%, rgba(255,105,180,.6) 70%);
+          border-radius: 16px 16px 0 0;
+          transform: rotate(45deg);
+          top: -8px; right: 8px;
+        }
         .ring{ position:absolute; inset:-6px; border-radius:9999px; border:1px solid rgba(56,182,255,.45); filter: blur(.2px); opacity:.9; }
         .orbit{ position:absolute; inset:0; border-radius:9999px; border:1px dashed rgba(255,255,255,.18); animation: spin linear infinite; }
         .o1{ animation-duration: 10s; }
@@ -184,6 +217,16 @@ export default function HoloHUD({
         .o2 .planet{ position:absolute; top:64%; left:14%; }
         .o3 .planet{ position:absolute; top:48%; left:84%; }
         @keyframes spin { from{ transform: rotate(0deg);} to{ transform: rotate(360deg);} }
+        @keyframes heartPulse { 
+          0%, 100% { 
+            transform: rotate(-45deg) scale(1);
+            box-shadow: inset 0 -8px 16px rgba(0,0,0,.4), 0 0 32px rgba(255,23,68,.6), 0 0 48px rgba(255,105,180,.4);
+          }
+          50% { 
+            transform: rotate(-45deg) scale(1.15);
+            box-shadow: inset 0 -8px 16px rgba(0,0,0,.4), 0 0 40px rgba(255,23,68,.8), 0 0 60px rgba(255,105,180,.6);
+          }
+        }
 
         /* Centered song panel (blue display) */
         .song-panel{ 
@@ -195,7 +238,7 @@ export default function HoloHUD({
           width: clamp(80px, 18vw, 120px);
           max-width: 100px;
           /* Much shorter blue display (keep bottom fixed) */
-          height: calc(clamp(160px, 16vh, 220px) * 0.24);
+          height: calc(clamp(160px, 16vh, 220px) * 0.08);
           padding: 10px 0; 
           margin: 0;
           border-radius: 16px; 

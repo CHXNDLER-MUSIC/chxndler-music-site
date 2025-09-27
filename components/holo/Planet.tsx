@@ -41,9 +41,6 @@ export default function Planet({
   const phaseTargetRef = useRef(0);
   const worldPosRef = useRef(new Vector3());
   const [depthFactor, setDepthFactor] = useState(1.0);
-  const [glitchActive, setGlitchActive] = useState(false);
-  const [glitchOpacity, setGlitchOpacity] = useState(1.0);
-  const glitchTimerRef = useRef<number | undefined>(undefined);
 
   // Deterministic jitter so orbiting planets don't overlap perfectly
   const idHash = useMemo(() => {
@@ -242,10 +239,6 @@ export default function Planet({
     registerPlanet({ id: song.id, ringIndex, getWorldPosition, getAngle, addPhase });
     return () => {
       unregisterPlanet(song.id);
-      // Cleanup glitch timer
-      if (glitchTimerRef.current !== undefined) {
-        clearTimeout(glitchTimerRef.current);
-      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [song.id, layout?.ringIndex, layoutAngle0]);
@@ -637,29 +630,6 @@ export default function Planet({
       setDepthFactor(depthLocal);
     }
 
-    // Random holographic glitch effects
-    if (!glitchActive && Math.random() < (isMain ? 0.0008 : 0.0003)) {
-      setGlitchActive(true);
-      const glitchDuration = 150 + Math.random() * 200; // 150-350ms
-      
-      // Clear any existing timer
-      if (glitchTimerRef.current !== undefined) {
-        clearTimeout(glitchTimerRef.current);
-      }
-      
-      glitchTimerRef.current = window.setTimeout(() => {
-        setGlitchActive(false);
-        setGlitchOpacity(1.0);
-        glitchTimerRef.current = undefined;
-      }, glitchDuration);
-    }
-
-    // Animate glitch opacity
-    if (glitchActive) {
-      const glitchTime = elapsedTime * 50; // Fast oscillation
-      const glitchPattern = Math.sin(glitchTime) * Math.cos(glitchTime * 1.7) * Math.sin(glitchTime * 0.3);
-      setGlitchOpacity(0.3 + Math.abs(glitchPattern) * 0.7);
-    }
     // Slow-moving cloud layer for parallax realism
     if (cloudsRef.current) {
       cloudsRef.current.rotation.y += 0.12 * d;
@@ -898,7 +868,7 @@ export default function Planet({
              element === 'water' ? 1.25 : 
              element === 'lightning' ? 1.3 : 
              element === 'magic' ? 1.4 : 1.1) *
-            (glitchActive ? glitchOpacity : 1.0)
+            1.0
           }
           depthFactor={depthFactor}
         />
@@ -998,51 +968,13 @@ export default function Planet({
                  element === 'magic' ? new Color('#00FFFF') : 
                  new Color(color).lerp(new Color('#FFFFFF'), 0.9)}
           transparent
-          opacity={glitchActive ? 0.15 * glitchOpacity : 0.04}
+          opacity={0.04}
           depthWrite={false}
           blending={AdditiveBlending}
           side={2}
         />
       </mesh>
 
-      {/* Glitch overlay - only visible during glitch */}
-      {glitchActive && (
-        <>
-          <mesh scale={1.012}>
-            <sphereGeometry args={[1, 12, 6]} />
-            <meshBasicMaterial
-              color={new Color('#FF0000')}
-              transparent
-              opacity={0.2 * glitchOpacity}
-              depthWrite={false}
-              blending={AdditiveBlending}
-              wireframe
-            />
-          </mesh>
-          <mesh scale={1.015}>
-            <sphereGeometry args={[1, 8, 4]} />
-            <meshBasicMaterial
-              color={new Color('#00FF00')}
-              transparent
-              opacity={0.15 * glitchOpacity}
-              depthWrite={false}
-              blending={AdditiveBlending}
-              wireframe
-            />
-          </mesh>
-          <mesh scale={1.018}>
-            <sphereGeometry args={[1, 6, 3]} />
-            <meshBasicMaterial
-              color={new Color('#0000FF')}
-              transparent
-              opacity={0.1 * glitchOpacity}
-              depthWrite={false}
-              blending={AdditiveBlending}
-              wireframe
-            />
-          </mesh>
-        </>
-      )}
 
       {/* Holographic atmospheric glow layers - much more transparent */}
       <mesh scale={1.045}>

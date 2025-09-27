@@ -182,7 +182,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
               height={28} 
             />
           </span>
-          <span className="songs-label truncate text-[16px] font-semibold tracking-wide">{current?.title || 'SONGS'}</span>
+          <span className="songs-label truncate text-[16px] font-semibold tracking-wide">{!currentId ? 'CHXNDLER' : (current?.title || 'SONGS')}</span>
         </span>
         <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden className="opacity-80 text-[#9EEBFF]"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
       </button>

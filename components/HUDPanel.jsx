@@ -415,7 +415,7 @@ export default function HUDPanel({
             className="absolute inset-x-0 rounded-2xl pointer-events-none"
             style={{
               bottom: 0,
-              top: `calc(var(--hud-y, 0px) + ${inConsole ? 2 : 4}px)`,
+              top: `calc(var(--hud-y, 0px) + ${inConsole ? 140 : 160}px)`,
               background: 'rgba(25,227,255,0.25)',
               boxShadow: '0 0 50px rgba(25,227,255,0.20), 0 0 70px rgba(25,227,255,0.35), 0 0 24px rgba(25,227,255,0.50)',
               border: '1px solid rgba(25,227,255,0.60)'
@@ -438,19 +438,6 @@ export default function HUDPanel({
             }}
             ref={innerRef}
           >
-          {/* Element icon positioned below song listing */}
-          <div className="absolute z-40" style={{ left: 2, top: `calc(${inConsole ? 55 : 65}px + var(--hud-y, 0px))`, pointerEvents: 'none' }}>
-            {(() => {
-              try {
-                // Make the default CHXNDLER logo larger in the top-left
-                if (!currentId) { return <ElementIcon name="chxndler" size={32} />; }
-                const found = resolvedSongs.find(s => s.id === (active || ''));
-                const icon = found && found.icon;
-                // Disable glow for song-specific element icons to avoid any rectangular glow box
-                return icon ? <ElementIcon name={icon} size={28} glow={false} /> : null;
-              } catch { return null; }
-            })()}
-          </div>
 
 
           {/* 3D planets — extend to the inner edges of the blue display (bleed over padding) */}
@@ -514,14 +501,14 @@ export default function HUDPanel({
             >
               {(() => {
                 const src = (!currentId ? DEFAULT_COVER : (track?.cover || DEFAULT_COVER));
-                return <CoverCard src={src} responsive={true} />;
+                return <CoverCard src={src} />;
               })()}
             </button>
           </div>
 
           {/* Waveform Media Player - extend to edges but stop before cover art */}
-          <div ref={playerRef} className="absolute -bottom-6 -left-2 media-player-responsive" style={{ height: '80px' }}>
-            <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '0 0 8px 8px' }}>
+          <div ref={playerRef} className="absolute bottom-0 left-0 right-24" style={{ height: '80px' }}>
+            <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '0 10px 10px 16px' }}>
               <div className="flex items-center gap-4 p-3">
                 <button 
                   onClick={handlePlayPause}

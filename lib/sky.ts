@@ -1,34 +1,163 @@
 /**
  * Build per-track sky paths with safe fallbacks based on assets we actually ship.
- * - When the current track is any "ocean-girl" variant, use the Ocean Girl sky.
- * - Otherwise, fall back to the space sky.
+ * Now uses dynamic discovery to automatically detect available sky videos.
  */
-export function skyFor(slug?: string) {
-  // Known skies we ship; prefer mp4-first since not all tracks have webm
-  // Use distinct keys to force video remounts for reliable onplaying events
-  const OCEAN_GIRL = { key: "ocean-girl-sky", webm: "", mp4: "/skies/ocean-girl.mp4" };
-  const KID_FOREVER = { key: "kid-forever-sky", webm: "", mp4: "/skies/kid-forever.mp4" };
-  const BRAIN_FREEZE = { key: "brain-freeze-sky", webm: "", mp4: "/skies/brain-freeze.mp4" };
-  const ALONE = { key: "alone-sky", webm: "", mp4: "/skies/alone.mp4" };
-  const SPACE = { key: "space-sky", webm: "/skies/space.webm", mp4: "/skies/space.mp4" };
-  const ALIEN_HOUSE = { key: "alien-house-party-sky", webm: "", mp4: "/skies/alien-house-party.mp4" };
-  const WERE_JUST_FRIENDS = { key: "were-just-friends-sky", webm: "", mp4: "/skies/were-just-friends.mp4" };
-  const BE_MY_BEE = { key: "be-my-bee-sky", webm: "", mp4: "/skies/be-my-bee.mp4" };
-  const GAME_BOY_HEART = { key: "game-boy-heart-sky", webm: "", mp4: "/skies/game-boy-heart.mp4" };
-  const BABY = { key: "baby-sky", webm: "", mp4: "/skies/baby.mp4" };
 
-  if (!slug) return SPACE;
-  if (slug.startsWith("ocean-girl")) return OCEAN_GIRL;
-  if (slug.startsWith("alien-house-party") || slug.startsWith("house-party")) return ALIEN_HOUSE;
-  if (slug.startsWith("were-just-friends")) return WERE_JUST_FRIENDS;
-  if (slug.startsWith("kid-forever")) return KID_FOREVER;
-  if (slug.startsWith("brain-freeze")) return BRAIN_FREEZE;
-  if (slug.startsWith("alone")) return ALONE;
-  if (slug.startsWith("be-my-bee")) return BE_MY_BEE;
-  if (slug.startsWith("game-boy-heart")) return GAME_BOY_HEART;
-  if (slug.startsWith("baby")) return BABY;
-  return SPACE;
+import { findSkyVideoForTrack, getAllDiscoveredSkyMappings, getSkyVideoCoverage } from './sky-discovery';
+
+// Sky verification system
+type SkyVideoInfo = {
+  key: string;
+  webm: string;
+  mp4: string;
+};
+
+type VerificationResult = {
+  hasMatchingSky: boolean;
+  skyKey: string;
+  videoPath: string;
+  isDefault: boolean;
+};
+export function skyFor(slug?: string) {
+  // Default fallback sky
+  const DEFAULT_SPACE = { key: "space-sky", webm: "/skies/space.webm", mp4: "/skies/space.mp4" };
+  
+  if (!slug) return DEFAULT_SPACE;
+  
+  try {
+    // Try dynamic discovery first
+    const discoveredSky = findSkyVideoForTrack(slug);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🎬 skyFor("${slug}"):`, discoveredSky ? `Found ${discoveredSky.mp4}` : 'Not found');
+    }
+    if (discoveredSky && discoveredSky.mp4) {
+      return {
+        key: discoveredSky.key,
+        webm: discoveredSky.webm || "",
+        mp4: discoveredSky.mp4
+      };
+    }
+    
+    // Legacy fallbacks for specific patterns that might not match exactly
+    if (slug.startsWith("house-party")) {
+      const alienHouseSky = findSkyVideoForTrack("alien-house-party");
+      if (alienHouseSky && alienHouseSky.mp4) {
+        return {
+          key: alienHouseSky.key,
+          webm: alienHouseSky.webm || "",
+          mp4: alienHouseSky.mp4
+        };
+      }
+    }
+  } catch (error) {
+    console.warn('Error in dynamic sky discovery for slug:', slug, error);
+  }
+  
+  // Final fallback to space
+  return DEFAULT_SPACE;
 }
 
 // Use the lightspeed warp as the initial looping sky
 export const introSky = { key: "lightspeed", webm: "", mp4: "/skies/lightspeed.mp4" };
+
+/**
+ * Verifies if a track has a corresponding sky video
+ */
+export function verifySkyForTrack(slug: string): VerificationResult {
+  const sky = skyFor(slug);
+  const isDefault = sky.key === "space-sky";
+  
+  return {
+    hasMatchingSky: !isDefault,
+    skyKey: sky.key,
+    videoPath: sky.mp4 || sky.webm,
+    isDefault
+  };
+}
+
+/**
+ * Verifies all tracks using dynamic discovery and logs missing sky videos
+ * Returns a summary of verification results
+ */
+export function verifyAllTrackSkies(tracks: Array<{ slug: string; title: string }>): {
+  total: number;
+  withCustomSky: number;
+  usingDefault: number;
+  missingSkies: Array<{ slug: string; title: string; expectedPath: string }>;
+} {
+  // Use dynamic discovery for coverage analysis
+  const coverage = getSkyVideoCoverage(tracks.map(t => t.slug));
+  
+  const results = tracks.map(track => ({
+    track,
+    verification: verifySkyForTrack(track.slug)
+  }));
+  
+  const missingSkies = coverage.missing.map(slug => {
+    const track = tracks.find(t => t.slug === slug);
+    return {
+      slug,
+      title: track?.title || slug,
+      expectedPath: `/skies/${slug}.mp4`
+    };
+  });
+  
+  const summary = {
+    total: tracks.length,
+    withCustomSky: coverage.covered,
+    usingDefault: coverage.missing.length,
+    missingSkies
+  };
+  
+  // Log results for development with enhanced discovery info
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+    console.group('🎬 Sky Video Verification (Dynamic Discovery)');
+    console.log(`Total tracks: ${summary.total}`);
+    console.log(`Tracks with custom sky: ${summary.withCustomSky} (${coverage.coverage.toFixed(1)}% coverage)`);
+    console.log(`Tracks using default sky: ${summary.usingDefault}`);
+    
+    // Show discovered mappings
+    const discoveredMappings = getAllDiscoveredSkyMappings();
+    console.group(`🗺️  Discovered ${Object.keys(discoveredMappings).length} sky mappings:`);
+    Object.entries(discoveredMappings).forEach(([key, mapping]) => {
+      console.log(`  ${key} → ${mapping.mp4}${mapping.variant ? ` (${mapping.variant})` : ''}`);
+    });
+    console.groupEnd();
+    
+    if (summary.missingSkies.length > 0) {
+      console.group('❌ Missing sky videos:');
+      summary.missingSkies.forEach(missing => {
+        console.log(`• "${missing.title}" (${missing.slug}) - Expected: ${missing.expectedPath}`);
+      });
+      console.groupEnd();
+    } else {
+      console.log('✅ All tracks have custom sky videos!');
+    }
+    
+    console.groupEnd();
+  }
+  
+  return summary;
+}
+
+/**
+ * Gets all available sky video mappings for debugging (now uses dynamic discovery)
+ */
+export function getAllSkyMappings(): Record<string, SkyVideoInfo> {
+  const discoveredMappings = getAllDiscoveredSkyMappings();
+  const result: Record<string, SkyVideoInfo> = {};
+  
+  // Convert discovered mappings to the expected format
+  Object.entries(discoveredMappings).forEach(([key, mapping]) => {
+    result[key] = {
+      key: mapping.key,
+      webm: mapping.webm,
+      mp4: mapping.mp4
+    };
+  });
+  
+  // Ensure space sky is always available as fallback
+  result['space'] = { key: "space-sky", webm: "/skies/space.webm", mp4: "/skies/space.mp4" };
+  
+  return result;
+}

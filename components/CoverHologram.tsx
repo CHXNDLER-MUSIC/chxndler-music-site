@@ -32,7 +32,7 @@ export default function CoverHologram({ src, title }: { src: string; title: stri
 
   return (
     <motion.div
-      className={`absolute left-1/2 z-30 -translate-x-1/2 ${cockpit.cover.glass} rounded-2xl cursor-pointer hover:scale-105 transition-transform duration-200 w-[180px] md:w-[180px] max-md:w-[100px]`}
+      className={`absolute left-1/2 z-30 -translate-x-1/2 ${cockpit.cover.glass} rounded-2xl cursor-pointer hover:scale-105 transition-transform duration-200 w-[280px]`}
       style={{ 
         top: "calc(50% + 90px)", 
         transform: "translateX(-50%)"

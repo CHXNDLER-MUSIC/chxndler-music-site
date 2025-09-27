@@ -6,6 +6,7 @@ import { useCycleList } from "@/lib/useCycleList";
 
 export default function SongList({ onSongChange }: { onSongChange?: (id: string) => void }) {
   const { songs, mainId, hoverId, setHover, setMain } = usePlayerStore();
+  const main = songs.find((s) => s.id === mainId);
   const { activeId, setActiveId, handleKeyDown, next, prev } = useCycleList(songs, mainId || undefined, (id) => setMain(id));
 
   useEffect(() => { 
@@ -55,14 +56,23 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
   }, [hoverId, songs.length, setHover]);
 
   return (
-    <div
-      ref={containerRef}
-      role="listbox"
-      aria-label="Songs"
-      tabIndex={0}
-      onKeyDown={handleKeyDown}
-      className="h-[54vh] md:h-[58vh] overflow-y-auto overflow-x-hidden pr-1 custom-scroll w-full"
-    >
+    <div className="h-full flex flex-col">
+      <header className="mb-3 px-1 flex-shrink-0">
+        <h1 className="text-cyan-300 text-2xl md:text-3xl font-extrabold drop-shadow-cyan">
+          {main?.title ?? '—'}
+        </h1>
+        <p className="text-cyan-100/80 text-sm md:text-base">
+          {main?.oneLiner ?? ''}
+        </p>
+      </header>
+      <div
+        ref={containerRef}
+        role="listbox"
+        aria-label="Songs"
+        tabIndex={0}
+        onKeyDown={handleKeyDown}
+        className="flex-1 overflow-y-auto overflow-x-hidden pr-1 custom-scroll w-full"
+      >
       {songs.map((s) => {
         const isMain = s.id === mainId;
         const isHover = s.id === hoverId;
@@ -110,10 +120,11 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
           </button>
         );
       })}
-      {/* Optional: small prev/next controls for accessibility on touch devices */}
-      <div className="flex items-center justify-end gap-2 mt-2">
-        <button type="button" onClick={prev} className="px-2 py-1 rounded-md text-[11px] text-cyan-200/80 hover:text-cyan-50 hover:bg-cyan-400/10 focus:outline-none focus:ring-2 focus:ring-cyan-400">Prev</button>
-        <button type="button" onClick={next} className="px-2 py-1 rounded-md text-[11px] text-cyan-200/80 hover:text-cyan-50 hover:bg-cyan-400/10 focus:outline-none focus:ring-2 focus:ring-cyan-400">Next</button>
+        {/* Optional: small prev/next controls for accessibility on touch devices */}
+        <div className="flex items-center justify-end gap-2 mt-2">
+          <button type="button" onClick={prev} className="px-2 py-1 rounded-md text-[11px] text-cyan-200/80 hover:text-cyan-50 hover:bg-cyan-400/10 focus:outline-none focus:ring-2 focus:ring-cyan-400">Prev</button>
+          <button type="button" onClick={next} className="px-2 py-1 rounded-md text-[11px] text-cyan-200/80 hover:text-cyan-50 hover:bg-cyan-400/10 focus:outline-none focus:ring-2 focus:ring-cyan-400">Next</button>
+        </div>
       </div>
     </div>
   );

@@ -36,24 +36,20 @@ export default function HoloPanel() {
       aria-label="Holographic cockpit dashboard"
     >
       <div className="scanlines pointer-events-none" aria-hidden />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 md:p-6">
-        <div className="relative h-[320px] md:h-[360px] lg:h-[420px] rounded-xl bg-black/30 backdrop-blur-md ring-1 ring-cyan-400/20 p-2">
-          <PlanetSystem />
-          {/* Hidden audio bridge for the /holo route */}
-          <div className="hidden">
-            <HoloAudioBridge />
+      <div className="relative p-4 md:p-6">
+        {/* 3D Planet Display - positioned higher and clipped at cover art level */}
+        <div className="absolute top-0 left-4 right-4 md:left-6 md:right-6 h-[400px] overflow-hidden" style={{ clipPath: 'inset(0 0 calc(100% - 8vh) 0)' }}>
+          <div className="relative h-full rounded-xl bg-black/30 backdrop-blur-md ring-1 ring-cyan-400/20 p-2">
+            <PlanetSystem />
+            {/* Hidden audio bridge for the /holo route */}
+            <div className="hidden">
+              <HoloAudioBridge />
+            </div>
           </div>
         </div>
 
-        <div className="rounded-xl bg-black/30 backdrop-blur-md ring-1 ring-cyan-400/20 p-2">
-          <header className="mb-3 px-1">
-            <h1 className="text-cyan-300 text-2xl md:text-3xl font-extrabold drop-shadow-cyan">
-              {main?.title ?? '—'}
-            </h1>
-            <p className="text-cyan-100/80 text-sm md:text-base">
-              {main?.oneLiner ?? ''}
-            </p>
-          </header>
+        {/* Song List - positioned below the clipped 3D display */}
+        <div className="mt-16 h-[200px] md:h-[240px] lg:h-[280px] rounded-xl bg-black/30 backdrop-blur-md ring-1 ring-cyan-400/20 p-2">
           <SongList />
         </div>
       </div>

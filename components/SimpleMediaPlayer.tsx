@@ -215,7 +215,7 @@ export default function MediaPlayer({
               <img
                 src={getSongIcon(title)}
                 alt={`${title} element`}
-                className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 transform w-8 h-8 brightness-150 saturate-125"
+                className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 transform w-[2rem] h-[2rem] min-w-[2rem] min-h-[2rem] brightness-150 saturate-125"
                 style={{ filter: `drop-shadow(0 0 14px ${elementColor}) drop-shadow(0 0 32px ${elementColor}AA) drop-shadow(0 0 64px ${elementColor}55)` }}
               />
               
