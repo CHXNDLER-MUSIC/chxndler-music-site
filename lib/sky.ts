@@ -15,6 +15,7 @@ export function skyFor(slug?: string) {
   const WERE_JUST_FRIENDS = { key: "were-just-friends-sky", webm: "", mp4: "/skies/were-just-friends.mp4" };
   const BE_MY_BEE = { key: "be-my-bee-sky", webm: "", mp4: "/skies/be-my-bee.mp4" };
   const GAME_BOY_HEART = { key: "game-boy-heart-sky", webm: "", mp4: "/skies/game-boy-heart.mp4" };
+  const BABY = { key: "baby-sky", webm: "", mp4: "/skies/baby.mp4" };
 
   if (!slug) return SPACE;
   if (slug.startsWith("ocean-girl")) return OCEAN_GIRL;
@@ -25,6 +26,7 @@ export function skyFor(slug?: string) {
   if (slug.startsWith("alone")) return ALONE;
   if (slug.startsWith("be-my-bee")) return BE_MY_BEE;
   if (slug.startsWith("game-boy-heart")) return GAME_BOY_HEART;
+  if (slug.startsWith("baby")) return BABY;
   return SPACE;
 }
 

@@ -8,7 +8,7 @@ import { ELEMENT_COLORS, type Element } from "@/lib/planets";
 // Song element icon mapping
 const SONG_ELEMENTS: { [key: string]: string } = {
   'alone': '/elements/darkness.png',      // darkness for "Alone"
-  'baby': '/elements/heart.png',          // heart for "Baby" (love/tender theme)
+  'baby': '/elements/baby.png',           // baby icon for "Baby" track
   'be-my-bee': '/elements/heart.png',     // heart for "Be My Bee" (love theme)  
   'ocean-girl': '/elements/water.png',    // water for "Ocean Girl"
   'night-drive': '/elements/lightning.png', // lightning for energy/drive

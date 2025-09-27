@@ -39,7 +39,7 @@ function ElementIcon({ name }) {
   );
 }
 
-export default function SongDropdown({ items = [], initialActiveId, onChange }) {
+export default function SongDropdown({ items = [], initialActiveId, onChange, currentId }) {
   const { activeId, setActiveId, next, prev, handleKeyDown } = useCycleList(items, initialActiveId, onChange);
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
@@ -174,9 +174,15 @@ export default function SongDropdown({ items = [], initialActiveId, onChange }) 
       >
         <span className="flex items-center gap-2 min-w-0">
           <span className="songs-icon">
-            <OptimizedElementIcon name="music" alt="Music" className="w-7 h-7 object-contain" width={28} height={28} />
+            <OptimizedElementIcon 
+              name={!currentId ? "music" : (current?.icon || "music")} 
+              alt={!currentId ? "Music" : (current?.title || "Music")} 
+              className="w-7 h-7 object-contain" 
+              width={28} 
+              height={28} 
+            />
           </span>
-          <span className="songs-label truncate text-[16px] font-semibold tracking-wide">SONGS</span>
+          <span className="songs-label truncate text-[16px] font-semibold tracking-wide">{current?.title || 'SONGS'}</span>
         </span>
         <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden className="opacity-80 text-[#9EEBFF]"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
       </button>

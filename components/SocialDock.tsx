@@ -5,16 +5,21 @@ import * as SocialsMod from "../config/socials";
 
 type SocialItem = { id: string; href: string };
 
-// Minimal inline icons (stroke/fill uses currentColor)
-const IG = ({ size = 22 }: { size?: number }) => (
-  <svg viewBox="0 0 24 24" width={size} height={size} fill="none">
-    <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="2" />
-    <circle cx="12" cy="12" r="4.2" stroke="currentColor" strokeWidth="2" />
-    <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" />
-  </svg>
-);
-const TT = ({ size = 18 }: { size?: number }) => (
-  <svg viewBox="0 0 256 256" width={size} height={size} aria-hidden>
+// Minimal inline icons (stroke/fill uses currentColor) - responsive sizing
+const IG = ({ size }: { size?: number }) => {
+  const iconSize = size || `clamp(1.2rem, 3vw, 1.5rem)`;
+  return (
+    <svg viewBox="0 0 24 24" width={iconSize} height={iconSize} fill="none">
+      <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="2" />
+      <circle cx="12" cy="12" r="4.2" stroke="currentColor" strokeWidth="2" />
+      <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" />
+    </svg>
+  );
+};
+const TT = ({ size }: { size?: number }) => {
+  const iconSize = size || `clamp(1rem, 2.5vw, 1.2rem)`;
+  return (
+  <svg viewBox="0 0 256 256" width={iconSize} height={iconSize} aria-hidden>
     <g transform="translate(8,-6)">
       <path fill="#69C9D0" d="M120 32h40c2 26 21 47 46 52v32c-18-.4-36-5.9-52-15.7V184c0 35.3-28.7 64-64 64s-64-28.7-64-64c0-34.2 26.7-62.1 60.6-63.9 5.6-.3 11.2.2 16.7 1.4v32c-5.2-1.9-10.7-2.7-16.2-2.3-16.7 1.1-30.2 14.9-30.8 31.6-.7 18.5 14.1 33.6 32.6 33.6s32-14.3 32-32.8V32Z"/>
     </g>
@@ -24,11 +29,14 @@ const TT = ({ size = 18 }: { size?: number }) => (
     <path fill="#FFFFFF" d="M120 32h40c2 26 21 47 46 52v32c-18-.4-36-5.9-52-15.7V184c0 35.3-28.7 64-64 64s-64-28.7-64-64c0-34.2 26.7-62.1 60.6-63.9 5.6-.3 11.2.2 16.7 1.4v32c-5.2-1.9-10.7-2.7-16.2-2.3-16.7 1.1-30.2 14.9-30.8 31.6-.7 18.5 14.1 33.6 32.6 33.6s32-14.3 32-32.8V32Z"/>
   </svg>
 );
-const YT = ({ size = 22 }: { size?: number }) => (
-  <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor">
-    <path d="M23 12s0-3.2-.4-4.7a3.1 3.1 0 00-2.2-2.2C18.9 4.5 12 4.5 12 4.5s-6.9 0-8.4.6A3.1 3.1 0 001.4 7.3C1 8.8 1 12 1 12s0 3.2.4 4.7a3.1 3.1 0 002.2 2.2c1.5.6 8.4.6 8.4.6s6.9 0 8.4-.6a3.1 3.1 0 002.2-2.2c.4-1.5.4-4.7.4-4.7zM10 15.5v-7l6 3.5-6 3.5z" />
-  </svg>
-);
+const YT = ({ size }: { size?: number }) => {
+  const iconSize = size || `clamp(1.2rem, 3vw, 1.5rem)`;
+  return (
+    <svg viewBox="0 0 24 24" width={iconSize} height={iconSize} fill="currentColor">
+      <path d="M23 12s0-3.2-.4-4.7a3.1 3.1 0 00-2.2-2.2C18.9 4.5 12 4.5 12 4.5s-6.9 0-8.4.6A3.1 3.1 0 001.4 7.3C1 8.8 1 12 1 12s0 3.2.4 4.7a3.1 3.1 0 002.2 2.2c1.5.6 8.4.6 8.4.6s6.9 0 8.4-.6a3.1 3.1 0 002.2-2.2c.4-1.5.4-4.7.4-4.7zM10 15.5v-7l6 3.5-6 3.5z" />
+    </svg>
+  );
+};
 
 const colorFor = (id: string) => {
   const key = id.toLowerCase();
@@ -69,8 +77,10 @@ export default function SocialDock() {
             rel="noopener noreferrer"
             aria-label={s.id}
             title={s.id}
-            className="grid place-items-center h-14 w-14 rounded-2xl select-none"
+            className="grid place-items-center rounded-2xl select-none"
             style={{
+              height: `clamp(2.5rem, 6vw, 3.5rem)`,
+              width: `clamp(2.5rem, 6vw, 3.5rem)`,
               color,
               background: "rgba(0,0,0,.35)",
               border: "1px solid rgba(255,255,255,.16)",

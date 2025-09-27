@@ -6,6 +6,7 @@ import { AdditiveBlending, Group as ThreeGroup } from "three";
 // drei removed to avoid external asset/preset loading that can abort in some runtimes
 import { usePlayerStore } from "@/store/usePlayerStore";
 import Planet from "@/components/holo/Planet";
+import HeartPlanet from "@/components/holo/HeartPlanet";
 import { computePlanetLayout } from "@/lib/planetLayout";
 import { getEntriesByRing } from "@/lib/planetRegistry";
 
@@ -49,6 +50,9 @@ export default function PlanetSystem({ showAll = false }: { showAll?: boolean })
         <pointLight position={[0.8, -1.0, -0.4]} intensity={0.26} color={"#FC54AF"} distance={7.5} />
         <InvalidateOnState />
         <ZoomOnChange focusId={focusId} />
+
+        {/* Heart planet at the center - outside SystemGroup to avoid transformations */}
+        <HeartPlanet />
 
         {/* Very shallow tilt for near-horizontal horizon line */}
         {/* Render the full system: satellites first, focus planet last; previous main becomes a moon */}

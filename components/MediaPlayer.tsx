@@ -938,8 +938,13 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         /* Waveform visualization container */
         .waveform-container{
           position: relative;
-          width: clamp(120px, 35%, 180px);
-          height: clamp(80px, 25%, 120px);
+          width: 20vw;
+          height: 20vw;
+          min-width: 90px;
+          min-height: 90px;
+          max-width: 120px;
+          max-height: 120px;
+          flex-shrink: 0;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -981,14 +986,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         .section-marker.bridge{ background: linear-gradient(180deg, #F2EF1D, #FFC800); box-shadow: 0 0 8px #F2EF1DB3, 0 0 16px #FFC8007A; }
         .section-marker.intro{ background: linear-gradient(180deg, #A0AEC0, #E2E8F0); }
         .section-marker.outro{ background: linear-gradient(180deg, #A0AEC0, #718096); }
-        
-        /* Responsive adjustments */
-        @media (min-width: 1024px) {
-          .waveform-container { width: clamp(140px, 32%, 200px); }
-        }
-        @media (max-width: 640px) {
-          .waveform-container { width: clamp(100px, 40%, 160px); height: clamp(60px, 20%, 100px); }
-        }
 
         .picker{
           max-height: 40vh;
@@ -1009,16 +1006,17 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           text-align: center;
         }
         
-        /* Sleek integrated controls */
+        /* Sleek integrated controls - matching blue container style */
         .sleek-controls {
           display: flex;
           align-items: center;
           gap: 12px;
           padding: 12px;
-          background: rgba(25,227,255,0.05);
-          border: 1px solid rgba(25,227,255,0.2);
-          border-radius: 12px;
-          backdrop-filter: blur(8px);
+          border-radius: 10px;
+          border: 2px solid rgba(25,227,255,0.8);
+          background: rgba(6,182,212,0.1);
+          backdrop-filter: blur(12px);
+          box-shadow: 0 0 18px rgba(25,227,255,0.35);
         }
         
         .play-pause-btn {

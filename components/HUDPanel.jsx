@@ -120,7 +120,7 @@ export default function HUDPanel({
   const planetRef = useRef(null);
   const playerRef = useRef(null);
   const [planetBottom, setPlanetBottom] = useState(88);
-  // Dynamic spacing for one-liner so it wraps before the cover
+  // Dynamic spacing for song selector so it doesn't overlap the cover
   const coverRef = useRef(null);
   const [oneLinerRight, setOneLinerRight] = useState(inConsole ? 108 : 140);
   // Audio progress tracking
@@ -168,7 +168,7 @@ export default function HUDPanel({
   useEffect(() => { setMounted(true); }, []);
 
 
-  // Measure cover width and reserve that space for the one-liner
+  // Measure cover width and reserve that space for the song selector
   useEffect(() => {
     const el = coverRef.current;
     if (!el) return;
@@ -451,61 +451,7 @@ export default function HUDPanel({
               } catch { return null; }
             })()}
           </div>
-          {/* Title directly next to element icon */}
-          <div
-            className="absolute z-20 rounded-md"
-            style={{
-              color: '#19E3FF',
-              fontFamily: 'OrbitronLocal, InterLocal, sans-serif',
-              fontWeight: 800,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              textShadow: 'none',
-              WebkitTextStroke: '0px transparent',
-              fontSize: inConsole ? 14 : 18,
-              lineHeight: '1.12',
-              display: 'flex',
-              alignItems: 'center',
-              left: inConsole ? 42 : 58,
-              top: `calc(${inConsole ? 57 : 67}px + var(--hud-y, 0px))`,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              pointerEvents: 'none',
-            }}
-          >
-            {(!currentId ? 'CHXNDLER' : ((track?.title) || (resolvedSongs.find(s=> s.id === (active || ''))?.title) || ''))}
-          </div>
 
-          {/* One-liner extending from below title up to cover */}
-          <div
-            className="absolute z-20 rounded-md"
-            style={{
-              color: '#19E3FF',
-              fontFamily: 'InterLocal, OrbitronLocal, system-ui, sans-serif',
-              fontWeight: 700,
-              letterSpacing: '0.04em',
-              textShadow: 'none',
-              WebkitTextStroke: '0px transparent',
-              fontSize: inConsole ? 10 : 12,
-              lineHeight: '1.25',
-              left: inConsole ? 42 : 58,
-              top: `calc(${inConsole ? 77 : 87}px + var(--hud-y, 0px))`,
-              // Reserve dynamic space for cover so text wraps before touching it
-              right: oneLinerRight,
-              bottom: inConsole ? 95 : 115, // Extend down to planet area
-              wordWrap: 'break-word',
-              overflowWrap: 'break-word',
-              whiteSpace: 'normal',
-              pointerEvents: 'none',
-              display: 'flex',
-              alignItems: 'flex-start',
-              overflow: 'hidden',
-            }}
-            aria-label="Song tagline"
-          >
-            {(!currentId ? 'Welcome to the HEARTVERSE - a home for ALIENS, where misfits and dreamers live free.' : (track?.subtitle || ''))}
-          </div>
 
           {/* 3D planets — extend to the inner edges of the blue display (bleed over padding) */}
           <div
@@ -539,9 +485,9 @@ export default function HUDPanel({
               </div>
             )}
           </div>
-          {/* Cover section at top right corner */}
+          {/* Cover section at bottom right corner */}
           <div ref={coverRef} className="absolute" style={{ 
-            top: `calc(${inConsole ? -8 : -16}px + var(--hud-y, 0px))`, 
+            bottom: inConsole ? -8 : -16, 
             right: inConsole ? -8 : -16, 
             width: 'auto', 
             display: 'flex', 
@@ -573,8 +519,8 @@ export default function HUDPanel({
             </button>
           </div>
 
-          {/* Waveform Media Player - extend to edges of blue display */}
-          <div ref={playerRef} className="absolute -bottom-6 -left-2 -right-2" style={{ height: '80px' }}>
+          {/* Waveform Media Player - extend to edges but stop before cover art */}
+          <div ref={playerRef} className="absolute -bottom-6 -left-2 media-player-responsive" style={{ height: '80px' }}>
             <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '0 0 8px 8px' }}>
               <div className="flex items-center gap-4 p-3">
                 <button 
@@ -867,26 +813,15 @@ export default function HUDPanel({
                 </div>
                 
                 {/* Time display */}
-                {duration > 0 && (
-                  <div className="hud-time-enhanced">
-                    <span className="current-time">
-                      {Math.floor(progress / 60)}:{(Math.floor(progress % 60)).toString().padStart(2, '0')}
-                    </span>
-                    <span className="time-separator">/</span>
-                    <span className="total-time">
-                      {Math.floor(duration / 60)}:{(Math.floor(duration % 60)).toString().padStart(2, '0')}
-                    </span>
-                  </div>
-                )}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Song selector positioned at top left of blue display, extending to cover */}
+        {/* Song selector positioned above media player, extending to cover */}
         <div className="absolute" style={{ 
           left: inConsole ? 2 : 4, 
-          top: `calc(${inConsole ? 2 : 4}px + var(--hud-y, 0px))`, 
+          bottom: 'calc(80px - 24px)', // Position above media player (80px height - 24px overlap)
           // Reserve dynamic space to the right so the dropdown never overlaps the cover
           right: oneLinerRight,
           maxWidth: 'none'
@@ -894,6 +829,7 @@ export default function HUDPanel({
             <SongDropdown
               items={resolvedSongs}
               initialActiveId={active || resolvedSongs[0]?.id}
+              currentId={currentId}
               onChange={(id) => {
                 setActive(id);
                 
@@ -958,12 +894,11 @@ export default function HUDPanel({
         
         .hud-waveform-player{
           position: relative;
-          background: rgba(25,227,255,0.25);
-          border: none;
-          border-top: 1px solid rgba(25,227,255,0.3);
-          border-radius: 8px;
-          backdrop-filter: blur(8px);
-          box-shadow: 0 0 16px rgba(25,227,255,0.15);
+          border-radius: 10px;
+          border: 2px solid rgba(25,227,255,0.8);
+          background: rgba(6,182,212,0.1);
+          backdrop-filter: blur(12px);
+          box-shadow: 0 0 18px rgba(25,227,255,0.35);
         }
         
         .waveform-container{
@@ -1001,25 +936,31 @@ export default function HUDPanel({
           transform: scale(0.95);
         }
         
-        .hud-time-enhanced{
-          font-size: 10px;
-          color: rgba(25,227,255,.9);
-          font-family: 'OrbitronLocal', monospace;
-          text-shadow: 0 0 6px rgba(25,227,255,.5);
-          letter-spacing: 0.03em;
-          display: flex;
-          align-items: center;
-          gap: 2px;
+        /* Media player responsive positioning to avoid cover art */
+        .media-player-responsive {
+          /* Base: w-20 (80px) + gap (16px) */
+          right: calc(5rem + 1rem);
         }
-        .current-time {
-          color: rgba(25,227,255,1);
+        
+        @media (min-width: 640px) {
+          .media-player-responsive {
+            /* sm: w-24 (96px) + gap (16px) */
+            right: calc(6rem + 1rem);
+          }
         }
-        .time-separator {
-          color: rgba(25,227,255,.6);
-          margin: 0 2px;
+        
+        @media (min-width: 768px) {
+          .media-player-responsive {
+            /* md: w-28 (112px) + gap (16px) */
+            right: calc(7rem + 1rem);
+          }
         }
-        .total-time {
-          color: rgba(25,227,255,.7);
+        
+        @media (min-width: 1024px) {
+          .media-player-responsive {
+            /* lg: w-32 (128px) + gap (16px) */
+            right: calc(8rem + 1rem);
+          }
         }
         
         .hud-progress-bar-enhanced{

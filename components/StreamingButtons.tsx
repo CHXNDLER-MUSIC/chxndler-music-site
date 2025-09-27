@@ -1,11 +1,38 @@
 "use client";
-import React, { useRef, useCallback, useEffect } from "react";
+import React, { useRef, useCallback, useEffect, useState } from "react";
 import { sfx } from "@/lib/sfx";
 import IconButtonShell from "@/components/IconButtonShell";
 
-export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh:number; sizePx:number; gapPx?:number; tilt?:string; vertical?: boolean }, links:{ spotify?:string; apple?:string } }){
-  const size = pos.sizePx;
-  const gap = pos.gapPx ?? 18;
+export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh:number; sizePx:number; gapPx?:number; tilt?:string; vertical?: boolean; mobile?: {sizePx:number; gapPx?:number}; tablet?: {sizePx:number; gapPx?:number} }, links:{ spotify?:string; apple?:string } }){
+  // Get responsive size based on screen width
+  const getResponsiveSize = () => {
+    if (typeof window === 'undefined') return pos.sizePx;
+    const w = window.innerWidth;
+    if (w <= 768 && pos.mobile?.sizePx) return pos.mobile.sizePx;
+    if (w <= 1024 && pos.tablet?.sizePx) return pos.tablet.sizePx;
+    return pos.sizePx;
+  };
+  
+  const getResponsiveGap = () => {
+    if (typeof window === 'undefined') return pos.gapPx ?? 18;
+    const w = window.innerWidth;
+    if (w <= 768 && pos.mobile?.gapPx) return pos.mobile.gapPx;
+    if (w <= 1024 && pos.tablet?.gapPx) return pos.tablet.gapPx;
+    return pos.gapPx ?? 18;
+  };
+  
+  const [size, setSize] = useState(getResponsiveSize);
+  const [gap, setGap] = useState(getResponsiveGap);
+  
+  // Update size on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setSize(getResponsiveSize());
+      setGap(getResponsiveGap());
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const vertical = !!pos.vertical;
   const tilt = pos.tilt ?? "perspective(1200px) rotateX(18deg)";
   const clickRef = useRef<HTMLAudioElement|null>(null);

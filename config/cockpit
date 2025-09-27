@@ -68,7 +68,10 @@ export const POS = {
     igYVh: 42.0,
     ttYVh: 58.0,
     ytYVh: 74.0,
-    sizePx: 76,   // diameter of glow buttons (larger presence)
+    // Responsive button sizing for better mobile experience
+    sizePx: 76,   // diameter of glow buttons (desktop baseline)
+    mobile: { sizePx: 56 },    // smaller on mobile phones
+    tablet: { sizePx: 66 },    // medium size on tablets
   },
   stream: {
     // Middle console streaming buttons (Spotify + Apple)
@@ -78,6 +81,9 @@ export const POS = {
     gapPx: 22,
     vertical: true, // stack Spotify above Apple
     tilt: "perspective(1200px) rotateX(18deg)",
+    // Responsive sizing for streaming buttons
+    mobile: { sizePx: 56, gapPx: 16 },
+    tablet: { sizePx: 66, gapPx: 19 },
   },
   dial: {
     // Station dial overlay near the steering wheel (≈2 o'clock)
