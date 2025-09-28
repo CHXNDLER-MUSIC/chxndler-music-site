@@ -872,6 +872,8 @@ export default function DashboardApp({ initialSlug } = {}) {
         className="fixed inset-0 z-20 pointer-events-none cockpit-bg"
         aria-hidden="true" 
       />
+      
+      {/* SteeringWheelOverlay inside blur wrapper so wheel gets dimmed */}
       <SteeringWheelOverlay
         POS={POS}
         playing={isPlaying}
@@ -938,6 +940,7 @@ export default function DashboardApp({ initialSlug } = {}) {
         }}
       />
       </div> {/* Close blur wrapper */}
+
 
       {/* Blue display rendered as overlay sibling via portal */}
       {typeof window !== 'undefined' ? createPortal(
@@ -1102,41 +1105,17 @@ export default function DashboardApp({ initialSlug } = {}) {
       ) : null}
 
 
-      {/* Dimming Overlay with Animated Spotlight on Start Button */}
+      {/* Simple Dimming Overlay */}
       {mounted && showDimmingOverlay ? (
-        (() => {
-          // Use measured spotlight position if available; otherwise, render nothing
-          const hasSpot = spotlightPos && typeof spotlightPos.x === 'number' && typeof spotlightPos.y === 'number' && typeof spotlightPos.r === 'number';
-          if (!hasSpot) return null;
-          const buttonCenterX = `${Math.round(spotlightPos.x)}px`;
-          const buttonCenterY = `${Math.round(spotlightPos.y)}px`;
-          const buttonRadius = Math.max(0, Math.round(spotlightPos.r));
-          // Make spotlight tighter: reduce clear radius slightly inside the button edge
-          const clearR = Math.max(0, buttonRadius - 10);
-          
-          return (
-            <div className="fixed inset-0 z-[100] pointer-events-none">
-              {/* Base dimming layer with clean spotlight cutout */}
-              <div 
-                className="absolute inset-0"
-                style={{
-                  background: `
-                    radial-gradient(
-                      circle at ${buttonCenterX} ${buttonCenterY},
-                      /* Clear hole slightly smaller than button for a tighter spotlight */
-                      transparent ${clearR}px,
-                      rgba(0, 0, 0, 0.85) ${Math.max(0, clearR + 2)}px,
-                      rgba(0, 0, 0, 0.95) 100%
-                    )
-                  `,
-                  transition: 'opacity 500ms ease-out'
-                }}
-              />
-              
-              
-            </div>
-          );
-        })()
+        <div className="fixed inset-0 z-[89] pointer-events-none">
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: 'rgba(0, 0, 0, 0.7)',
+              transition: 'opacity 500ms ease-out'
+            }}
+          />
+        </div>
       ) : null}
 
       {/* Background preloader: covers + first ~5s of audio/skies */}

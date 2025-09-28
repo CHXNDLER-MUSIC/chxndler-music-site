@@ -52,10 +52,10 @@ export default function HoloHubMenu({
   const joinRef = useRef<HTMLAudioElement | null>(null);
 
   // Position yellow panel using unified touch point system
-  // Bottom of display touches the beam top dynamically
-  const beamBottomCss = 'var(--display-touch-top)';
-  // Panel height derived from icon size + padding, no hard-coded viewport checks
-  const panelHeight = useMemo(() => Math.round((itemSize || 60) + 24), [itemSize]);
+  // Bottom of display matches blue display position (30px lower)
+  const beamBottomCss = 'calc(var(--display-touch-top) - 30px)';
+  // Panel height fixed - yellow display should never change height
+  const panelHeight = 104; // Fixed height (80px itemSize + 24px padding)
 
   // Cap at 6 items, evenly spaced 60deg, start at -90deg (top)
   const entries = useMemo(() => items.slice(0, 6), [items]);
@@ -136,9 +136,8 @@ export default function HoloHubMenu({
         return { x: 0, y: 0, angleDeg: 0 };
       }
       
-      // Arrange all buttons in a single horizontal line within the panel width (responsive)
-      const vw = (typeof window !== 'undefined') ? window.innerWidth : 1024;
-      const panelWidth = Math.min(400, Math.max(240, vw - 32));
+      // Arrange all buttons in a single horizontal line within the panel width (fixed)
+      const panelWidth = 400; // Fixed width - yellow display should never change size
       const buttonSizes = entries.map(entry => itemSize);
       const currentButtonSize = buttonSizes[i];
       const totalButtonWidth = buttonSizes.reduce((sum, size) => sum + size, 0);

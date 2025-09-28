@@ -1019,8 +1019,95 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
     });
   }
   
+  // Create heart-shaped planet geometry
+  function createHeartGeometry(radius: number) {
+    // Create a proper 3D heart using parametric equations
+    const geometry = new THREE.BufferGeometry();
+    
+    // Heart parametric equations for 3D
+    const heartFunction = (u: number, v: number) => {
+      // u: angle around heart (0 to 2π)
+      // v: vertical parameter (-1 to 1)
+      
+      const x = 16 * Math.pow(Math.sin(u), 3);
+      const y = 13 * Math.cos(u) - 5 * Math.cos(2*u) - 2 * Math.cos(3*u) - Math.cos(4*u);
+      const z = v * 8; // Add depth variation
+      
+      return new THREE.Vector3(x, y, z);
+    };
+    
+    // Generate vertices for heart surface
+    const uSegments = 64;
+    const vSegments = 32;
+    const vertices: number[] = [];
+    const normals: number[] = [];
+    const uvs: number[] = [];
+    const indices: number[] = [];
+    
+    // Generate vertices
+    for (let i = 0; i <= vSegments; i++) {
+      const v = (i / vSegments) * 2 - 1; // -1 to 1
+      
+      for (let j = 0; j <= uSegments; j++) {
+        const u = (j / uSegments) * Math.PI * 2; // 0 to 2π
+        
+        const point = heartFunction(u, v);
+        
+        // Scale to desired radius
+        const scale = radius * 0.02;
+        vertices.push(point.x * scale, point.y * scale, point.z * scale);
+        
+        // Calculate normal (for proper lighting)
+        const epsilon = 0.01;
+        const tangentU = heartFunction(u + epsilon, v).sub(heartFunction(u - epsilon, v));
+        const tangentV = heartFunction(u, v + epsilon).sub(heartFunction(u, v - epsilon));
+        const normal = tangentU.cross(tangentV).normalize();
+        normals.push(normal.x, normal.y, normal.z);
+        
+        // UV coordinates
+        uvs.push(j / uSegments, i / vSegments);
+      }
+    }
+    
+    // Generate indices for triangles
+    for (let i = 0; i < vSegments; i++) {
+      for (let j = 0; j < uSegments; j++) {
+        const a = i * (uSegments + 1) + j;
+        const b = a + uSegments + 1;
+        const c = a + 1;
+        const d = b + 1;
+        
+        // Two triangles per quad
+        indices.push(a, b, c);
+        indices.push(c, b, d);
+      }
+    }
+    
+    // Set attributes
+    geometry.setIndex(indices);
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    
+    // Center the geometry
+    geometry.center();
+    
+    // Rotate heart to be upright (heart pointing up)
+    geometry.rotateZ(Math.PI); // Flip vertically so heart points up
+    geometry.rotateY(Math.PI / 2); // Rotate to face forward
+    
+    // Compute vertex normals for smooth lighting
+    geometry.computeVertexNormals();
+    
+    return geometry;
+  }
+
   // Create detailed planet geometry based on planet type
-  function createPlanetGeometry(radius: number, geometry: PlanetGeometry) {
+  function createPlanetGeometry(radius: number, geometry: PlanetGeometry, isHeartPlanet = false) {
+    // Use heart geometry for the central heart planet
+    if (isHeartPlanet) {
+      return createHeartGeometry(radius);
+    }
     // Validate inputs to prevent NaN values
     if (!radius || radius <= 0 || !isFinite(radius)) {
       if (process.env.NODE_ENV !== 'production') { /* eslint-disable-next-line no-console */ console.warn('Invalid radius provided to createPlanetGeometry:', radius); }
@@ -1127,14 +1214,15 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       surfaceRoughness: 0.5
     };
     
-    // Main planet with detailed geometry
-    const planetGeometry = createPlanetGeometry(radius, geometry);
+    // Main planet with detailed geometry - use heart shape for heart element planets
+    const isHeartPlanet = element === 'heart';
+    const planetGeometry = createPlanetGeometry(radius, geometry, isHeartPlanet);
     const material = makePlanetMaterial(tunedPlanetData);
     const mesh = new THREE.Mesh(planetGeometry, material);
     
-    // Atmosphere
+    // Atmosphere - skip for heart planets to show bare heart shape
     let atmosphereMesh: THREE.Mesh | undefined;
-    if (tunedPlanetData.atmosphere) {
+    if (tunedPlanetData.atmosphere && !isHeartPlanet) {
       const atmosphereMat = makeAtmosphereMaterial(tunedPlanetData);
       if (atmosphereMat) {
         const atmosphereGeometry = new THREE.SphereGeometry(radius * 1.05, geometry.segments.widthSegments / 2, geometry.segments.heightSegments / 2);
@@ -1262,23 +1350,47 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       });
     }
     
-    sys.add(mesh);
-    satsRef.current.push({ 
-      id, 
-      mesh, 
-      mat: material, 
-      r, 
-      speed, 
-      a, 
-      baseRadius: radius,
-      atmosphereMesh,
-      ringMesh,
-      moons,
-      planetType: planetData.type || 'terrestrial',
-      cloudLayers,
-      stormSystems,
-      weatherData: planetData.weather
-    });
+    // Position heart planet at center, others in orbit
+    if (isHeartPlanet) {
+      mesh.position.set(0, 0, 0);
+      sys.add(mesh);
+      // Store heart planet separately - no orbital parameters
+      satsRef.current.push({ 
+        id, 
+        mesh, 
+        mat: material, 
+        r: 0, // No orbital radius - at center
+        speed: 0, // No orbital speed
+        a: 0, // No orbital angle
+        baseRadius: radius,
+        atmosphereMesh,
+        ringMesh,
+        moons,
+        planetType: planetData.type || 'terrestrial',
+        cloudLayers,
+        stormSystems,
+        weatherData: planetData.weather,
+        isHeartPlanet: true
+      });
+    } else {
+      sys.add(mesh);
+      satsRef.current.push({ 
+        id, 
+        mesh, 
+        mat: material, 
+        r, 
+        speed, 
+        a, 
+        baseRadius: radius,
+        atmosphereMesh,
+        ringMesh,
+        moons,
+        planetType: planetData.type || 'terrestrial',
+        cloudLayers,
+        stormSystems,
+        weatherData: planetData.weather
+      });
+    }
   }
 
   useEffect(() => {
@@ -1413,6 +1525,27 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
         scale: { x: 1.0, y: 1.0, z: 1.0 }
       }
     };
+
+    // Central heart planet that others orbit around
+    const heartPlanet = {
+      radius: 0.8,
+      color: '#FF1B8D',
+      type: 'terrestrial' as PlanetType,
+      element: 'heart',
+      atmosphere: { color: '#FF6BCD', density: 0.8, glow: 1.6 },
+      geometry: {
+        shape: 'heart' as const,
+        deformation: 0.0,
+        poleFlattening: 0.0,
+        surfaceRoughness: 0.1,
+        craterDensity: 0.0,
+        segments: { widthSegments: 64, heightSegments: 64 },
+        scale: { x: 1.0, y: 1.0, z: 1.0 }
+      }
+    };
+    
+    // Add heart planet at center (no orbital parameters)
+    addSatLocal('heart', heartPlanet, 0, 0, 0);
     
     addSatLocal('s1', defaultPlanet1, 6.0, 0.25);
     addSatLocal('s2', defaultPlanet2, 4.2, 0.2);
@@ -1504,22 +1637,50 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
         
         // Set material opacity based on muting state
         if (s.mesh.material && typeof (s.mesh.material as any).opacity === 'number') {
-          const targetOpacity = shouldMute ? 0.15 : 1.0;
+          const targetOpacity = shouldMute ? 0.08 : 1.0; // Fade out more dramatically
           (s.mesh.material as any).opacity = targetOpacity;
           (s.mesh.material as any).transparent = true;
         }
         
         // Also mute atmosphere if present
         if (s.atmosphereMesh && s.atmosphereMesh.material && typeof (s.atmosphereMesh.material as any).opacity === 'number') {
-          const targetOpacity = shouldMute ? 0.1 : (s.atmosphereMesh.material as any).originalOpacity || 0.8;
+          const targetOpacity = shouldMute ? 0.05 : (s.atmosphereMesh.material as any).originalOpacity || 0.8;
           (s.atmosphereMesh.material as any).opacity = targetOpacity;
           (s.atmosphereMesh.material as any).transparent = true;
         }
         
-        s.a += (reduced ? 0.0 : s.speed * 0.008);
-        const x = Math.cos(s.a) * s.r;
-        const z = Math.sin(s.a) * s.r;
-        s.mesh.position.set(x, 0, z);
+        // Mute rings if present
+        if (s.ringMesh && s.ringMesh.material && typeof (s.ringMesh.material as any).opacity === 'number') {
+          const originalOpacity = (s.ringMesh.material as any).originalOpacity || (s.ringMesh.material as any).opacity;
+          if (!(s.ringMesh.material as any).originalOpacity) (s.ringMesh.material as any).originalOpacity = originalOpacity;
+          const targetOpacity = shouldMute ? originalOpacity * 0.05 : originalOpacity;
+          (s.ringMesh.material as any).opacity = targetOpacity;
+          (s.ringMesh.material as any).transparent = true;
+        }
+        
+        // Mute all child elements (moons, clouds, storms, etc.)
+        if (s.mesh.children && s.mesh.children.length > 0) {
+          s.mesh.children.forEach(child => {
+            if (child instanceof THREE.Mesh && child.material) {
+              const childMaterial = child.material as any;
+              if (typeof childMaterial.opacity === 'number') {
+                const originalOpacity = childMaterial.originalOpacity || childMaterial.opacity;
+                if (!childMaterial.originalOpacity) childMaterial.originalOpacity = originalOpacity;
+                const targetOpacity = shouldMute ? originalOpacity * 0.05 : originalOpacity;
+                childMaterial.opacity = targetOpacity;
+                childMaterial.transparent = true;
+              }
+            }
+          });
+        }
+        
+        // Skip orbital movement for heart planet (it stays at center)
+        if (!(s as any).isHeartPlanet) {
+          s.a += (reduced ? 0.0 : s.speed * 0.008);
+          const x = Math.cos(s.a) * s.r;
+          const z = Math.sin(s.a) * s.r;
+          s.mesh.position.set(x, 0, z);
+        }
         
         // Rotation for planet
         s.mesh.rotation.y += 0.005;

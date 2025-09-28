@@ -35,7 +35,7 @@ export default function SteeringWheelOverlay({
   const [showJoin, setShowJoin] = useState(false);
   const [activeBeamColor, setActiveBeamColor] = useState<'blue' | 'yellow' | 'pink'>('blue');
   const [mounted, setMounted] = useState(false);
-  const [startSpotlight, setStartSpotlight] = useState(true);
+  const [startSpotlight, setStartSpotlight] = useState(false);
 
   // Set mounted after component mounts to prevent immediate hover sounds
   useEffect(() => {
@@ -200,7 +200,7 @@ export default function SteeringWheelOverlay({
   const yellowItemSize = 80; // Fixed size - social media buttons should never change size
   // Resolve power (blue) button size responsively so beam can be positioned relative to it
   const powerCfgGlobal: any = getResponsiveValue((POS?.wheel as any)?.power) || {};
-  const powerSizePx: number = typeof powerCfgGlobal.sizePx === 'number' ? powerCfgGlobal.sizePx : 60;
+  const powerSizePx: number = typeof powerCfgGlobal.sizePx === 'number' ? powerCfgGlobal.sizePx : 72;
   // Unified responsive offsets so all three buttons (blue/yellow/pink)
   // stay aligned and symmetric across screen sizes
   const buttonOffsetPx = Math.round(clamp(vmin * 0.12, 72, 140));
@@ -245,7 +245,7 @@ export default function SteeringWheelOverlay({
       aria-hidden
       suppressHydrationWarning
       style={{
-        position: 'absolute', inset: 0, zIndex: 80, pointerEvents: 'none',
+        position: 'absolute', inset: 0, zIndex: 100, pointerEvents: 'none',
         // Shared CSS vars so other components can align to the button baseline responsively
         ['--buttons-bottom' as any]: `${buttonsBottomPercent}%`,
         ['--button-offset-px' as any]: `${buttonOffsetPx}px`,
@@ -312,8 +312,7 @@ export default function SteeringWheelOverlay({
         }}
       >
         {(() => {
-          const powerCfg: any = getResponsiveValue((POS?.wheel as any)?.power) || {};
-          const powerSize: number = typeof powerCfg.sizePx === 'number' ? powerCfg.sizePx : 60;
+          const powerSize: number = powerSizePx;
           return (
             <div style={{ pointerEvents: 'auto' }}>
               {onPowerToggle ? (
@@ -437,7 +436,7 @@ export default function SteeringWheelOverlay({
         }}
       >
         {(() => {
-          const joinSize: number = Math.round(clamp(vmin * 0.085, 56, 112));
+          const joinSize: number = 72; // Fixed size to match yellow and blue buttons
           return (
             <div style={{ pointerEvents: 'auto' }}>
               <HoloJoinButton 
@@ -467,7 +466,7 @@ export default function SteeringWheelOverlay({
               // Center horizontally in the viewport (always centered)
               left: '50%',
               transform: 'translateX(-50%)',
-              zIndex: 93,
+              zIndex: 125,
               pointerEvents: showJoin && !suspendUI ? 'auto' : 'none',
               opacity: showJoin && !suspendUI ? 1 : 0,
               // Match surrounding UI fade for consistency
@@ -511,7 +510,7 @@ export default function SteeringWheelOverlay({
       {/* Start button positioned directly on top of the wheel */}
       <button
         onClick={handleLaunch}
-        className={`pointer-events-auto wheel-play${isStart ? ' chx' : ''}${startSpotlight ? '' : ' no-spotlight'}`}
+        className={`pointer-events-auto wheel-play${isStart ? ' chx' : ''} no-spotlight`}
         style={{
           position: "absolute",
           // Position directly on top of the wheel surface
@@ -523,7 +522,9 @@ export default function SteeringWheelOverlay({
           height: startSize * 1.02,
           borderRadius: 9999,
           transform: `translate(-50%, 0)`,
-          zIndex: 90,
+          zIndex: 105,
+          // Ensure this button doesn't interfere with join form clicks
+          pointerEvents: showJoin ? 'none' : 'auto',
         }}
         onMouseEnter={() => { if (!mounted) return; try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
         aria-label={isStart ? "Start" : (playing ? "Pause" : "Play")}
