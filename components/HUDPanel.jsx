@@ -506,14 +506,14 @@ export default function HUDPanel({
             </button>
           </div>
 
-          {/* Waveform Media Player - positioned to align bottom with blue display */}
+          {/* Waveform Media Player - positioned in bottom left corner of blue display */}
           <div ref={playerRef} className="absolute" style={{ 
             width: '200px',
             height: '55px',
-            left: '-12px',
-            bottom: '0px'
+            left: inConsole ? '8px' : '12px',
+            bottom: inConsole ? '8px' : '12px'
           }}>
-            <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '0 10px 10px 16px' }}>
+            <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '10px' }}>
               <div className="flex items-center gap-3 p-2">
                 <button 
                   onClick={handlePlayPause}
@@ -888,7 +888,7 @@ export default function HUDPanel({
           position: relative;
           border-radius: 10px;
           border: 2px solid rgba(25,227,255,0.8);
-          background: rgba(6,182,212,0.1);
+          background: rgba(25,227,255,0.1);
           backdrop-filter: blur(12px);
           box-shadow: 0 0 18px rgba(25,227,255,0.35);
         }

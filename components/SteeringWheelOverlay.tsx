@@ -201,16 +201,9 @@ export default function SteeringWheelOverlay({
   // Resolve power (blue) button size responsively so beam can be positioned relative to it
   const powerCfgGlobal: any = getResponsiveValue((POS?.wheel as any)?.power) || {};
   const powerSizePx: number = typeof powerCfgGlobal.sizePx === 'number' ? powerCfgGlobal.sizePx : 72;
-  // Unified responsive offsets so all three buttons (blue/yellow/pink)
-  // stay aligned and symmetric across screen sizes
-  const buttonOffsetPx = Math.round(clamp(vmin * 0.12, 72, 140));
-  const buttonsBottomPercent = (() => {
-    if (typeof window === 'undefined') return 31;
-    const w = window.innerWidth;
-    if (w <= 420) return 32; // higher on small phones for better thumb reach
-    if (w <= 768) return 33; // higher on tablets/large phones
-    return 31;               // desktop
-  })();
+  // Fixed button positions to prevent movement on mobile
+  const buttonOffsetPx = 100; // Fixed horizontal offset
+  const buttonsBottomPercent = 31; // Fixed vertical position
 
   // Sync key CSS variables to :root so portal-rendered elements can align to the blue button
   useEffect(() => {
@@ -338,8 +331,8 @@ export default function SteeringWheelOverlay({
                   aria-label="Power"
                   title="Power"
                   style={{
-                    width: powerSize, 
-                    height: powerSize, 
+                    width: 72, 
+                    height: 72, 
                     borderRadius: 9999,
                     opacity: 1,
                     transition: 'opacity 300ms ease, transform 150ms ease, box-shadow 200ms ease, filter 180ms ease',

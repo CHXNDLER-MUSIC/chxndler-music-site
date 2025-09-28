@@ -1094,7 +1094,7 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
     
     // Rotate heart to be upright (heart pointing up)
     geometry.rotateZ(Math.PI); // Flip vertically so heart points up
-    geometry.rotateY(Math.PI / 2); // Rotate to face forward
+    geometry.rotateX(-Math.PI / 2); // Rotate to face forward properly
     
     // Compute vertex normals for smooth lighting
     geometry.computeVertexNormals();
@@ -1251,13 +1251,15 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       mesh.add(ringMesh);
     }
 
-    // Hologram wireframe shell for added holographic feel
-    try {
-      const wireGeo = new THREE.SphereGeometry(radius * 1.01, Math.max(24, geometry.segments.widthSegments / 4), Math.max(16, geometry.segments.heightSegments / 4));
-      const wireMat = new THREE.MeshBasicMaterial({ color: 0x19E3FF, wireframe: true, transparent: true, opacity: 0.18, blending: THREE.AdditiveBlending, depthWrite: false });
-      const wire = new THREE.Mesh(wireGeo, wireMat);
-      mesh.add(wire);
-    } catch {}
+    // Hologram wireframe shell for added holographic feel (skip for heart planets)
+    if (!isHeartPlanet) {
+      try {
+        const wireGeo = new THREE.SphereGeometry(radius * 1.01, Math.max(24, geometry.segments.widthSegments / 4), Math.max(16, geometry.segments.heightSegments / 4));
+        const wireMat = new THREE.MeshBasicMaterial({ color: 0x19E3FF, wireframe: true, transparent: true, opacity: 0.18, blending: THREE.AdditiveBlending, depthWrite: false });
+        const wire = new THREE.Mesh(wireGeo, wireMat);
+        mesh.add(wire);
+      } catch {}
+    }
     
     // Moons
     const moons: THREE.Mesh[] = [];
@@ -1284,9 +1286,9 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       }
     }
     
-    // Cloud Layers
+    // Cloud Layers (skip for heart planets)
     const cloudLayers: THREE.Mesh[] = [];
-    if (planetData.weather?.cloudLayers) {
+    if (planetData.weather?.cloudLayers && !isHeartPlanet) {
       planetData.weather.cloudLayers.forEach((cloudLayer) => {
         const cloudGeometry = new THREE.SphereGeometry(
           radius * cloudLayer.height,
@@ -1528,18 +1530,23 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
 
     // Central heart planet that others orbit around
     const heartPlanet = {
-      radius: 0.8,
-      color: '#FF1B8D',
+      radius: 3.5, // Massive central planet - truly dominant
+      color: '#D4145A', // More realistic planet color - deeper red
       type: 'terrestrial' as PlanetType,
       element: 'heart',
-      atmosphere: { color: '#FF6BCD', density: 0.8, glow: 1.6 },
+      // No atmosphere - removed completely
+      surface: {
+        metallic: 0.2,
+        roughness: 0.7,
+        normalScale: 1.5
+      },
       geometry: {
         shape: 'heart' as const,
-        deformation: 0.0,
+        deformation: 0.05, // Slight surface variation for realism
         poleFlattening: 0.0,
-        surfaceRoughness: 0.1,
-        craterDensity: 0.0,
-        segments: { widthSegments: 64, heightSegments: 64 },
+        surfaceRoughness: 0.8, // High surface detail for realistic planet appearance
+        craterDensity: 0.1, // Some surface features
+        segments: { widthSegments: 256, heightSegments: 256 }, // Ultra high detail
         scale: { x: 1.0, y: 1.0, z: 1.0 }
       }
     };
@@ -2132,12 +2139,13 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       surfaceRoughness: 0.5
     };
     
-    const centralGeo = createPlanetGeometry(centralRadius, centralGeometry);
+    const isHeartPlanet = element === 'heart';
+    const centralGeo = createPlanetGeometry(centralRadius, centralGeometry, isHeartPlanet);
     const centralMat = makePlanetMaterial({ ...enhancedPlanetData, seed: (enhancedPlanetData as any).seed ?? Math.random() * 1000 });
     const centralMesh = new THREE.Mesh(centralGeo, centralMat);
     
-    // Add atmosphere to central planet if it has one
-    if (enhancedPlanetData.atmosphere) {
+    // Add atmosphere to central planet if it has one (skip for heart planets)
+    if (enhancedPlanetData.atmosphere && !isHeartPlanet) {
       const atmosphereMat = makeAtmosphereMaterial(enhancedPlanetData);
       if (atmosphereMat) {
         const atmosphereGeo = new THREE.SphereGeometry(centralRadius * 1.05, 64, 64);
@@ -2146,13 +2154,15 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       }
     }
     
-    // Hologram wireframe shell on central planet
-    try {
-      const wireGeo = new THREE.SphereGeometry(centralRadius * 1.01, 48, 32);
-      const wireMat = new THREE.MeshBasicMaterial({ color: 0x19E3FF, wireframe: true, transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false });
-      const wire = new THREE.Mesh(wireGeo, wireMat);
-      centralMesh.add(wire);
-    } catch {}
+    // Hologram wireframe shell on central planet (skip for heart planets)
+    if (!isHeartPlanet) {
+      try {
+        const wireGeo = new THREE.SphereGeometry(centralRadius * 1.01, 48, 32);
+        const wireMat = new THREE.MeshBasicMaterial({ color: 0x19E3FF, wireframe: true, transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false });
+        const wire = new THREE.Mesh(wireGeo, wireMat);
+        centralMesh.add(wire);
+      } catch {}
+    }
 
     // Add rings to central planet if it has them
     if (enhancedPlanetData.rings) {
@@ -2173,8 +2183,8 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       centralMesh.add(ringMesh);
     }
     
-    // Add weather systems to central planet
-    if (enhancedPlanetData.weather?.cloudLayers) {
+    // Add weather systems to central planet (skip cloud layers for heart planets)
+    if (enhancedPlanetData.weather?.cloudLayers && !isHeartPlanet) {
       enhancedPlanetData.weather.cloudLayers.forEach((cloudLayer) => {
         const cloudGeometry = new THREE.SphereGeometry(
           centralRadius * cloudLayer.height,

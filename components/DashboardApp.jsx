@@ -942,6 +942,7 @@ export default function DashboardApp({ initialSlug } = {}) {
       </div> {/* Close blur wrapper */}
 
 
+
       {/* Blue display rendered as overlay sibling via portal */}
       {typeof window !== 'undefined' ? createPortal(
         (

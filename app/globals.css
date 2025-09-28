@@ -74,8 +74,8 @@
   --display-touch-bottom: var(--beam-bottom);
   
   /* Mobile-specific display sizing */
-  /* Reduce blue display width to 80% across breakpoints, but raise the minimum */
-  --display-width: min(300px, calc((100vw - 16px) * 0.8));
+  /* Fixed minimum width to prevent shrinking, with responsive scaling */
+  --display-width: max(320px, min(420px, calc((100vw - 16px) * 0.8)));
   --display-border-radius: 12px;
 }
 
@@ -89,7 +89,7 @@
     --touch-zone-height: 48px;
     
     /* Tablet-specific display sizing */
-    --display-width: min(420px, calc((100vw - 24px) * 0.8));
+    --display-width: max(360px, min(480px, calc((100vw - 24px) * 0.8)));
     --display-border-radius: 14px;
     
     /* Enhanced beam visual properties for tablets */
@@ -108,7 +108,7 @@
     --touch-zone-height: 40px; /* Smaller for precise mouse clicks */
     
     /* Desktop-specific display sizing */
-    --display-width: min(520px, calc((100vw - 32px) * 0.8));
+    --display-width: max(400px, min(580px, calc((100vw - 32px) * 0.8)));
     --display-border-radius: 16px;
     
     /* Enhanced beam visual properties for desktop */
@@ -127,7 +127,7 @@
     --panel-gap: 20px;
     
     /* Large desktop display sizing */
-    --display-width: min(600px, calc((100vw - 48px) * 0.8));
+    --display-width: max(450px, min(650px, calc((100vw - 48px) * 0.8)));
     --display-border-radius: 18px;
     
     /* Enhanced visual effects for large screens */
@@ -145,7 +145,7 @@
     --panel-gap: 24px;
     
     /* Ultra-wide display sizing */
-    --display-width: min(640px, calc((100vw - 64px) * 0.8));
+    --display-width: max(500px, min(720px, calc((100vw - 64px) * 0.8)));
     --display-border-radius: 20px;
   }
 }
