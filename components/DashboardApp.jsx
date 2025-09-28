@@ -577,11 +577,11 @@ export default function DashboardApp({ initialSlug } = {}) {
   }), [cardModalOpen]);
 
   const lightBeamStyle = useMemo(() => {
-    // Position the light beam so its TOP touches the display bottom
-    // Use bottom = display-touch-top - beam-height (both are global CSS vars)
+    // Position the light beam lower to align with the moved display
+    // Move beam down by 30px to match the display adjustment
     return {
       left: '50%',
-      bottom: 'calc(var(--display-touch-top) - var(--beam-height))',
+      bottom: 'calc(var(--display-touch-top) - var(--beam-height) - 30px)',
       height: 'var(--beam-height)',
       width: 'var(--display-width)',
       transform: 'translate3d(-50%,0,0)',
@@ -591,8 +591,8 @@ export default function DashboardApp({ initialSlug } = {}) {
     };
   }, [beamEnabled, showHUD, cardModalOpen, uiUnlocked, showOverlayUI, warpActive]);
 
-  // Position the blue display so its bottom touches the light beam top  
-  const hudBottom = useMemo(() => 'var(--display-touch-top)', []);
+  // Position the blue display slightly lower than the light beam top  
+  const hudBottom = useMemo(() => 'calc(var(--display-touch-top) - 30px)', []);
 
   // Provide CSS variables globally (avoids any runtime style factory edge cases)
 
@@ -1008,6 +1008,7 @@ export default function DashboardApp({ initialSlug } = {}) {
                 />
               ) : null}
             </div>
+            {/* Hidden MediaPlayer for audio functionality only */}
             <div className="hidden">
               <MediaPlayer
                 onSkyChange={(webm, mp4, key) => setNextSky({ webm, mp4, key })}

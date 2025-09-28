@@ -68,8 +68,9 @@
   /* Display touch points - align to blue button baseline dynamically */
   /* Position the light beam closer to the blue button using a separate gap var */
   /* Nudge the blue display slightly lower on screen */
-  /* Fallback gap ensures beam fully clears blue button on first paint */
-  --display-touch-top: calc(var(--buttons-bottom, 36%) + var(--beam-gap-px, 144px));
+  /* Increased gap to move all displays and beam down together */
+  --beam-gap-px: 400px; /* Significantly increased to move blue display much further down */
+  --display-touch-top: calc(var(--buttons-bottom, 36%) + var(--beam-gap-px));
   --display-touch-bottom: var(--beam-bottom);
   
   /* Mobile-specific display sizing */
@@ -157,11 +158,7 @@
     min-width: var(--touch-zone-height);
   }
   
-  /* Increase touch target spacing on mobile */
-  .items .item {
-    width: 48px !important;
-    height: 48px !important;
-  }
+  /* Removed responsive sizing - buttons now maintain fixed size across all devices */
 }
 
 /* Tablet: Medium-sized optimized buttons */

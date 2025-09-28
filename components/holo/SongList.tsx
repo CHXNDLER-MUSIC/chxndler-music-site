@@ -57,11 +57,11 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
 
   return (
     <div className="h-full flex flex-col">
-      <header className="mb-3 px-1 flex-shrink-0">
-        <h1 className="text-cyan-300 text-2xl md:text-3xl font-extrabold drop-shadow-cyan">
+      <header className="mb-4 px-1 flex-shrink-0">
+        <h1 className="text-cyan-300 text-3xl md:text-4xl font-extrabold drop-shadow-cyan">
           {main?.title ?? '—'}
         </h1>
-        <p className="text-cyan-100/80 text-sm md:text-base">
+        <p className="text-cyan-100/80 text-base md:text-lg">
           {main?.oneLiner ?? ''}
         </p>
       </header>
@@ -99,31 +99,31 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
               setMain(s.id);
               onSongChange?.(s.id);
             }}
-            className={`w-full text-left px-3 py-2 mb-2 rounded-lg transition
+            className={`w-full text-left px-4 py-4 mb-3 rounded-lg transition-all duration-200
               ring-1 backdrop-blur-sm
-              ${isMain ? "bg-cyan-300/15 ring-cyan-300/60" : isHover ? "bg-cyan-300/10 ring-cyan-300/40" : "bg-white/5 ring-white/10"}
-              hover:bg-cyan-300/10 hover:ring-cyan-300/40
-              focus:outline-none focus:ring-2 focus:ring-cyan-400
-              text-sm text-cyan-50`}
+              ${isMain ? "bg-cyan-300/15 ring-cyan-300/60 shadow-[0_0_20px_rgba(61,245,255,0.4)]" : isHover ? "bg-cyan-300/12 ring-cyan-300/50 shadow-[0_0_15px_rgba(61,245,255,0.3)]" : "bg-white/5 ring-white/10"}
+              hover:bg-cyan-300/12 hover:ring-cyan-300/50 hover:shadow-[0_0_25px_rgba(61,245,255,0.5)] hover:scale-[1.02]
+              focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:shadow-[0_0_20px_rgba(61,245,255,0.4)]
+              text-base text-cyan-50`}
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <span
-                className="inline-block w-2 h-2 rounded-full"
+                className="inline-block w-3 h-3 rounded-full"
                 style={{
                   background: s.planet.color || "#3DF5FF",
-                  boxShadow: "0 0 12px 2px rgba(61,245,255,0.5)",
+                  boxShadow: "0 0 15px 3px rgba(61,245,255,0.6)",
                 }}
               />
-              <span className="font-semibold break-words">{s.title}</span>
+              <span className="font-semibold break-words text-lg">{s.title}</span>
             </div>
-            <div className="text-cyan-200/70 text-xs break-words">{s.oneLiner}</div>
+            <div className="text-cyan-200/80 text-sm break-words mt-1">{s.oneLiner}</div>
           </button>
         );
       })}
         {/* Optional: small prev/next controls for accessibility on touch devices */}
-        <div className="flex items-center justify-end gap-2 mt-2">
-          <button type="button" onClick={prev} className="px-2 py-1 rounded-md text-[11px] text-cyan-200/80 hover:text-cyan-50 hover:bg-cyan-400/10 focus:outline-none focus:ring-2 focus:ring-cyan-400">Prev</button>
-          <button type="button" onClick={next} className="px-2 py-1 rounded-md text-[11px] text-cyan-200/80 hover:text-cyan-50 hover:bg-cyan-400/10 focus:outline-none focus:ring-2 focus:ring-cyan-400">Next</button>
+        <div className="flex items-center justify-end gap-3 mt-3">
+          <button type="button" onClick={prev} className="px-3 py-2 rounded-md text-sm text-cyan-200/80 hover:text-cyan-50 hover:bg-cyan-400/10 hover:shadow-[0_0_10px_rgba(61,245,255,0.3)] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-400">Prev</button>
+          <button type="button" onClick={next} className="px-3 py-2 rounded-md text-sm text-cyan-200/80 hover:text-cyan-50 hover:bg-cyan-400/10 hover:shadow-[0_0_10px_rgba(61,245,255,0.3)] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-400">Next</button>
         </div>
       </div>
     </div>

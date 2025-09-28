@@ -34,7 +34,7 @@ export default function JoinAliens() {
   }
 
   return (
-    <form onSubmit={onSubmit} autoComplete="off" className="flex h-full w-full flex-col gap-3">
+    <form onSubmit={onSubmit} autoComplete="off" className="flex h-full w-full flex-col gap-3 pointer-events-auto" style={{ zIndex: 1000, position: 'relative' }}>
       <label className="sr-only" htmlFor="join-email">Email</label>
       <input
         id="join-email"
@@ -48,7 +48,9 @@ export default function JoinAliens() {
         placeholder="Email"
         disabled={status === "loading" || status === "ok"}
         aria-disabled={status === "loading" || status === "ok"}
-        className="w-full max-w-[220px] mx-auto rounded-xl bg-black/35 backdrop-blur-md px-3 py-0.5 text-white placeholder-white/80 outline-none border-2 border-[#FC54AF]/80 shadow-[0_0_30px_rgba(252,84,175,0.55),_0_0_60px_rgba(252,84,175,0.35)] focus:ring-4 focus:ring-[#FC54AF] focus:shadow-[0_0_50px_rgba(252,84,175,0.85),_0_0_110px_rgba(252,84,175,0.55)] disabled:opacity-60 disabled:cursor-not-allowed text-sm"
+        tabIndex={0}
+        style={{ pointerEvents: 'auto', zIndex: 999 }}
+        className="w-full max-w-[220px] mx-auto rounded-xl bg-black/35 backdrop-blur-md px-3 py-0.5 text-white placeholder-white/80 outline-none border-2 border-[#FC54AF]/80 shadow-[0_0_30px_rgba(252,84,175,0.55),_0_0_60px_rgba(252,84,175,0.35)] focus:ring-4 focus:ring-[#FC54AF] focus:shadow-[0_0_50px_rgba(252,84,175,0.85),_0_0_110px_rgba(252,84,175,0.55)] disabled:opacity-60 disabled:cursor-not-allowed text-sm pointer-events-auto"
       />
 
       <label className="sr-only" htmlFor="join-phone">Phone (optional)</label>
@@ -65,7 +67,9 @@ export default function JoinAliens() {
         placeholder="Phone"
         disabled={status === "loading" || status === "ok"}
         aria-disabled={status === "loading" || status === "ok"}
-        className="w-full max-w-[220px] mx-auto rounded-xl bg-black/35 backdrop-blur-md px-3 py-0.5 text-white placeholder-white/80 outline-none border-2 border-[#FC54AF]/80 shadow-[0_0_30px_rgba(252,84,175,0.55),_0_0_60px_rgba(252,84,175,0.35)] focus:ring-4 focus:ring-[#FC54AF] focus:shadow-[0_0_50px_rgba(252,84,175,0.85),_0_0_110px_rgba(252,84,175,0.55)] disabled:opacity-60 disabled:cursor-not-allowed text-sm"
+        tabIndex={0}
+        style={{ pointerEvents: 'auto', zIndex: 999 }}
+        className="w-full max-w-[220px] mx-auto rounded-xl bg-black/35 backdrop-blur-md px-3 py-0.5 text-white placeholder-white/80 outline-none border-2 border-[#FC54AF]/80 shadow-[0_0_30px_rgba(252,84,175,0.55),_0_0_60px_rgba(252,84,175,0.35)] focus:ring-4 focus:ring-[#FC54AF] focus:shadow-[0_0_50px_rgba(252,84,175,0.85),_0_0_110px_rgba(252,84,175,0.55)] disabled:opacity-60 disabled:cursor-not-allowed text-sm pointer-events-auto"
       />
 
       <button
@@ -73,7 +77,7 @@ export default function JoinAliens() {
         disabled={status === "loading" || status === "ok"}
         aria-disabled={status === "loading" || status === "ok"}
         className={
-          `mt-1 rounded-2xl px-4 py-2 font-semibold tracking-wide backdrop-blur-md transition ` +
+          `mt-1 rounded-2xl px-4 py-2 font-semibold tracking-wide backdrop-blur-md transition pointer-events-auto ` +
           (status === 'ok'
             ? // Neon pink locked state
               'text-white bg-[#FC54AF]/30 ring-2 ring-[#FC54AF] shadow-[0_0_36px_rgba(252,84,175,0.85)] cursor-default'

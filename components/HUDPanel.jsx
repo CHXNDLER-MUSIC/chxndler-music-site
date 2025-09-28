@@ -501,15 +501,20 @@ export default function HUDPanel({
             >
               {(() => {
                 const src = (!currentId ? DEFAULT_COVER : (track?.cover || DEFAULT_COVER));
-                return <CoverCard src={src} />;
+                return <CoverCard src={src} size={140} />;
               })()}
             </button>
           </div>
 
-          {/* Waveform Media Player - extend to edges but stop before cover art */}
-          <div ref={playerRef} className="absolute bottom-0 left-0 right-24" style={{ height: '80px' }}>
+          {/* Waveform Media Player - positioned to align bottom with blue display */}
+          <div ref={playerRef} className="absolute" style={{ 
+            width: '200px',
+            height: '55px',
+            left: '-12px',
+            bottom: '0px'
+          }}>
             <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '0 10px 10px 16px' }}>
-              <div className="flex items-center gap-4 p-3">
+              <div className="flex items-center gap-3 p-2">
                 <button 
                   onClick={handlePlayPause}
                   className="hud-play-btn-enhanced"
@@ -522,7 +527,7 @@ export default function HUDPanel({
                     </svg>
                   ) : (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M8 5v14l11-7z"/>
+                      <path d="M7 4v16l12-8z"/>
                     </svg>
                   )}
                 </button>
@@ -573,7 +578,7 @@ export default function HUDPanel({
                     {/* SVG Waveform using smooth curves */}
                     <svg 
                       className="w-full h-full" 
-                      viewBox="0 0 400 40" 
+                      viewBox="0 0 400 32" 
                       preserveAspectRatio="none"
                       style={{ background: 'transparent' }}
                     >
@@ -646,12 +651,12 @@ export default function HUDPanel({
                           <>
                             {/* Unplayed waveform */}
                             <path
-                              d={`M 0 20 ${waveformData.map((amp, i) => {
+                              d={`M 0 16 ${waveformData.map((amp, i) => {
                                 const x = (i / (waveformData.length - 1)) * 400;
-                                const y1 = 20 - (amp * 15); // Top of wave
-                                const y2 = 20 + (amp * 15); // Bottom of wave
+                                const y1 = 16 - (amp * 12); // Top of wave
+                                const y2 = 16 + (amp * 12); // Bottom of wave
                                 return `L ${x} ${y1} L ${x} ${y2}`;
-                              }).join(' ')} L 400 20`}
+                              }).join(' ')} L 400 16`}
                               fill="none"
                               stroke="url(#unplayedGradient)"
                               strokeWidth="1.5"
@@ -660,15 +665,15 @@ export default function HUDPanel({
                             
                             {/* Played portion of waveform with enhanced glow */}
                             <clipPath id="playedClip">
-                              <rect x="0" y="0" width={progressX} height="40" />
+                              <rect x="0" y="0" width={progressX} height="32" />
                             </clipPath>
                             <path
-                              d={`M 0 20 ${waveformData.map((amp, i) => {
+                              d={`M 0 16 ${waveformData.map((amp, i) => {
                                 const x = (i / (waveformData.length - 1)) * 400;
-                                const y1 = 20 - (amp * 15);
-                                const y2 = 20 + (amp * 15);
+                                const y1 = 16 - (amp * 12);
+                                const y2 = 16 + (amp * 12);
                                 return `L ${x} ${y1} L ${x} ${y2}`;
-                              }).join(' ')} L 400 20`}
+                              }).join(' ')} L 400 16`}
                               fill="none"
                               stroke="url(#waveGradient)"
                               strokeWidth="2"
@@ -699,7 +704,7 @@ export default function HUDPanel({
                                   {/* Progress indicator circle */}
                                   <circle
                                     cx={progressX}
-                                    cy="20"
+                                    cy="16"
                                     r="3"
                                     fill={hexToRgba(elementColor, 1)}
                                     stroke="white"
@@ -713,7 +718,7 @@ export default function HUDPanel({
                                   {playing && (
                                     <circle
                                       cx={progressX}
-                                      cy="20"
+                                      cy="16"
                                       r="2"
                                       fill={hexToRgba(elementColor, 0.6)}
                                     >
@@ -890,7 +895,7 @@ export default function HUDPanel({
         
         .waveform-container{
           position: relative;
-          height: 40px;
+          height: 32px;
           cursor: pointer;
           border-radius: 6px;
           background: rgba(0,0,0,0.3);
@@ -1053,15 +1058,15 @@ export default function HUDPanel({
             <div
               className="relative rounded-2xl p-3 card-modal"
               style={{
-                maxWidth: '240px',
-                maxHeight: '340px',
+                maxWidth: '200px',
+                maxHeight: '280px',
                 width: 'auto',
                 height: 'auto',
                 // Sit exactly on the bottom edge of the blue display
                 marginBottom: '0px',
-                paddingTop: '60px',
+                paddingTop: '50px',
                 // Add extra space below the card so the outside container isn't too short
-                paddingBottom: '24px'
+                paddingBottom: '20px'
               }}
               onClick={(e)=> e.stopPropagation()}
             >

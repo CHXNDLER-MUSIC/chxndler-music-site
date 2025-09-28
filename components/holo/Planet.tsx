@@ -16,11 +16,13 @@ export default function Planet({
   isMain,
   isHover,
   isMoon,
+  isMuted = false,
 }: {
   song: Song;
   isMain: boolean;
   isHover: boolean;
   isMoon: boolean;
+  isMuted?: boolean;
 }) {
   // Enable procedural surface/normal/roughness maps for more realistic shading
   const USE_PROCEDURAL = true;
@@ -622,7 +624,11 @@ export default function Planet({
       meshRef.current.scale.setScalar(safeScale);
       const m: any = (meshRef.current.material as any);
       const safeDepthLocal = isFinite(depthLocal) ? depthLocal : 1.0;
-      if (m && typeof m.opacity === 'number') m.opacity = (isMain ? 0.62 : 0.52) * safeDepthLocal;
+      if (m && typeof m.opacity === 'number') {
+        const baseOpacity = isMain ? 0.62 : 0.52;
+        const mutedOpacity = isMuted ? 0.15 : 1.0;
+        m.opacity = baseOpacity * safeDepthLocal * mutedOpacity;
+      }
       (m as any).clearcoat = 0.25;
     }
     // Throttled state update to refresh HoloMaterial uniforms for depth
@@ -641,7 +647,8 @@ export default function Planet({
         const depthFactor = (groupRef.current?.position?.z ?? 0) >= 0 ? 1.0 : 0.85;
         const base = isHover ? 0.6 : 0.25;
         const osc = isHover ? 0.18 * Math.sin(state.clock.elapsedTime * 6) : 0.0;
-        mat.opacity = (base + osc) * depthFactor;
+        const mutedOpacity = isMuted ? 0.15 : 1.0;
+        mat.opacity = (base + osc) * depthFactor * mutedOpacity;
       }
     }
 

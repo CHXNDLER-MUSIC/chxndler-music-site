@@ -34,7 +34,7 @@ function ElementIcon({ name }) {
   
   return (
     <span className="holo-icon" style={glowStyle}>
-      <OptimizedElementIcon name={iconKey} alt={name} className="w-4 h-4 object-contain" width={16} height={16} />
+      <OptimizedElementIcon name={iconKey} alt={name} className="w-5 h-5 object-contain" width={20} height={20} />
     </span>
   );
 }
@@ -73,7 +73,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
     const raf = requestAnimationFrame(() => {
       try {
         const h = optMeasureRef.current?.offsetHeight || 0;
-        if (h > 0) setMaxListHeight(h * 6);
+        if (h > 0) setMaxListHeight(h * 5);
         else setMaxListHeight(180); // fallback
       } catch {
         setMaxListHeight(180);
@@ -195,7 +195,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
           tabIndex={-1}
           onKeyDown={onListKeyDown}
           ref={listRef}
-          className="absolute z-[200] mt-1.5 w-full max-h-[180px] overflow-y-auto rounded-[8px] border border-[#19E3FF]/60 bg-[rgba(8,26,32,0.6)] backdrop-blur-xl shadow-[0_6px_18px_rgba(0,0,0,0.45)]"
+          className="absolute z-[200] mt-1.5 w-full max-h-[240px] overflow-y-auto rounded-[8px] border border-[#19E3FF]/60 bg-[rgba(8,26,32,0.6)] backdrop-blur-xl shadow-[0_6px_18px_rgba(0,0,0,0.45)]"
           style={maxListHeight ? { maxHeight: `${maxListHeight}px`, overflowY: 'auto' } : undefined}
         >
           {items.map((s, i) => {
@@ -206,7 +206,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                 key={s.id}
                 role="option"
                 aria-selected={isActive}
-                className={"opt flex items-center gap-1.5 px-1.5 py-1 text-[9px] cursor-pointer transition"}
+                className={"opt flex items-center gap-3 px-3 py-3 text-sm cursor-pointer transition-all duration-200"}
                 ref={i === 0 ? optMeasureRef : undefined}
                 onMouseEnter={() => { 
                   setHighlight(i); 
@@ -255,7 +255,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                 <span className="shrink-0">
                   <ElementIcon name={s.icon} />
                 </span>
-                <span className={`song-title truncate ${isActive ? 'text-[#CFF7FF]' : 'text-[#9EEBFF]'}`}>{s.title}</span>
+                <span className={`song-title truncate font-semibold ${isActive ? 'text-[#CFF7FF]' : 'text-[#9EEBFF]'}`}>{s.title}</span>
               </div>
             );
           })}
@@ -281,8 +281,16 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
           box-shadow: 0 0 52px rgba(25,227,255,.7), 0 0 90px rgba(25,227,255,.45);
         }
         /* List options: add subtle rim + glow on hover */
-        .opt{ border-radius:10px; background: rgba(8,26,32,0.45); border:1px solid rgba(25,227,255,0.18); }
-        .opt:hover{ border-color: rgba(25,227,255,0.6); box-shadow: 0 0 36px rgba(25,227,255,.55), 0 0 70px rgba(25,227,255,.35); transform: translateZ(0) scale(1.02); }
+        .opt{ border-radius:12px; background: rgba(8,26,32,0.45); border:1px solid rgba(25,227,255,0.18); margin-bottom: 4px; }
+        .opt:hover{ 
+          border-color: rgba(25,227,255,0.8); 
+          background: rgba(25,227,255,0.08);
+          box-shadow: 
+            0 0 25px rgba(25,227,255,.7), 
+            0 0 50px rgba(25,227,255,.45),
+            0 0 80px rgba(25,227,255,.25); 
+          transform: translateZ(0) scale(1.03); 
+        }
         .holo-icon{ display:inline-flex; will-change: transform; animation: holoPulse 2.6s ease-in-out infinite; }
         @keyframes holoPulse { 0%,100%{ transform: scale(1);} 50%{ transform: scale(1.06);} }
         .songs-icon{ display:inline-flex; align-items:center; 

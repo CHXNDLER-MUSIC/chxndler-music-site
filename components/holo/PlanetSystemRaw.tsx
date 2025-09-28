@@ -1497,6 +1497,25 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
         }
         
         s.mesh.visible = true;
+        
+        // Apply muting effect when not in showAll mode and this satellite is not the focus
+        const isFocused = mainId && s.id === mainId;
+        const shouldMute = !showAll && mainId && !isFocused;
+        
+        // Set material opacity based on muting state
+        if (s.mesh.material && typeof (s.mesh.material as any).opacity === 'number') {
+          const targetOpacity = shouldMute ? 0.15 : 1.0;
+          (s.mesh.material as any).opacity = targetOpacity;
+          (s.mesh.material as any).transparent = true;
+        }
+        
+        // Also mute atmosphere if present
+        if (s.atmosphereMesh && s.atmosphereMesh.material && typeof (s.atmosphereMesh.material as any).opacity === 'number') {
+          const targetOpacity = shouldMute ? 0.1 : (s.atmosphereMesh.material as any).originalOpacity || 0.8;
+          (s.atmosphereMesh.material as any).opacity = targetOpacity;
+          (s.atmosphereMesh.material as any).transparent = true;
+        }
+        
         s.a += (reduced ? 0.0 : s.speed * 0.008);
         const x = Math.cos(s.a) * s.r;
         const z = Math.sin(s.a) * s.r;
@@ -1909,10 +1928,12 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
 
   // When the selected song changes, create central planet and update orbital system
   useEffect(() => {
+    console.log("🌍 Central planet effect triggered, mainId:", mainId);
     const sys = groupRef.current; if (!sys) return;
-    const id = mainId; if (!id) return;
+    const id = mainId; if (!id) { console.log("❌ No mainId, skipping central planet"); return; }
     const sat = satsRef.current.find(s => s.id === id);
-    if (!sat) return;
+    if (!sat) { console.log("❌ No satellite found for id:", id, "Available satellites:", satsRef.current.map(s => s.id)); return; }
+    console.log("✅ Creating central planet for:", id);
     
     // Create central planet from the selected satellite
     const centralPlanet = centralPlanetRef.current;
@@ -2039,7 +2060,9 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
     // Position forward from center for prominent display
     centralMesh.position.set(0, 0, 1.2);
     centralMesh.scale.set(1.6, 1.6, 1.6); // Start even larger
+    centralMesh.visible = true; // Ensure central planet is visible
     sys.add(centralMesh);
+    console.log("🎯 Central planet created and added to scene:", id, "Position:", centralMesh.position, "Visible:", centralMesh.visible);
     
     // Update central planet reference
     centralPlanetRef.current = {

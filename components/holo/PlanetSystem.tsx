@@ -61,17 +61,24 @@ export default function PlanetSystem({ showAll = false }: { showAll?: boolean })
           {showAll ? (
             <>
               {songs.map((s) => (
-                <Planet key={s.id} song={s} isMain={false} isHover={hoverId === s.id} isMoon={false} />
+                <Planet key={s.id} song={s} isMain={false} isHover={hoverId === s.id} isMoon={false} isMuted={false} />
               ))}
             </>
           ) : (
             (() => {
-              // When a song is playing, only show the main/focused planet
-              // Hide all satellites and moons to focus on the centered planet
+              // When a song is playing, show all planets but mute the non-focused ones
               return (
                 <>
-                  {/* Only show the main focused planet when song is playing */}
-                  {focus ? <Planet key={`main-${focus.id}`} song={focus} isMain={true} isHover={false} isMoon={false} /> : null}
+                  {songs.map((s) => (
+                    <Planet 
+                      key={s.id} 
+                      song={s} 
+                      isMain={s.id === focusId} 
+                      isHover={hoverId === s.id} 
+                      isMoon={false}
+                      isMuted={s.id !== focusId}
+                    />
+                  ))}
                 </>
               );
             })()

@@ -196,8 +196,8 @@ export default function SteeringWheelOverlay({
   const vsBase = Math.round(clamp(vmin * (scaleFactor * 0.97), vsMin, 980));
   // Apply global 80% size reduction to the wheel
   const vs = Math.round(vsBase * 0.8); // wheel.mp4 square size at 80%
-  const yellowHubSize = Math.round(clamp(vmin * 0.085, 56, 112));
-  const yellowItemSize = Math.round(clamp(vmin * 0.095, 58, 120));
+  const yellowHubSize = 72; // Fixed size - yellow hub should never change size
+  const yellowItemSize = 80; // Fixed size - social media buttons should never change size
   // Resolve power (blue) button size responsively so beam can be positioned relative to it
   const powerCfgGlobal: any = getResponsiveValue((POS?.wheel as any)?.power) || {};
   const powerSizePx: number = typeof powerCfgGlobal.sizePx === 'number' ? powerCfgGlobal.sizePx : 60;
@@ -383,7 +383,7 @@ export default function SteeringWheelOverlay({
                 LINKS.spotify ? { id: 'sp', label: 'Spotify', href: LINKS.spotify, icon: '/elements/spotify.png', color: '#1DB954' } : null,
                 LINKS.apple ? { id: 'am', label: 'Apple Music', href: LINKS.apple, icon: '/elements/apple.png', color: '#FA2D48' } : null,
               ].filter(Boolean) as any}
-                radius={Math.round(clamp(vmin * 0.09, 48, 120))}
+                radius={90}
                 hubColor={activeBeamColor === 'yellow' ? "#F2EF1D" : "#F2EF1D"}
                 isActive={activeBeamColor === 'yellow'}
                 itemSize={yellowItemSize}
