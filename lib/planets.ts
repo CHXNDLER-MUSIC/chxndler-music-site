@@ -8,7 +8,7 @@ export const ELEMENT_COLORS: Record<Element, string> = {
   fire: "#FC54AF",     // neon magenta (brand-leaning fire)
   earth: "#F2EF1D",    // neon yellow
   air: "#8BF9FF",      // light cyan
-  heart: "#FF2FB2",    // stronger pink/magenta
+  heart: "#FC54AF",    // bright pink
   lightning: "#FFC700", // deeper, richer yellow (golden)
   darkness: "#000000",  // deep black
 };

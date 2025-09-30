@@ -16,6 +16,7 @@ export default function SteeringWheelOverlay({
   onBeamColorChange,
   closeAllSignal = 0,
   suspendUI = false,
+  hideStartButton = false,
 }: {
   onLaunch: () => void;
   POS: any;
@@ -28,6 +29,8 @@ export default function SteeringWheelOverlay({
   closeAllSignal?: number;
   // Temporarily hide/fade overlay panels (e.g., during warp)
   suspendUI?: boolean;
+  // Hide the start button (when rendering it externally)
+  hideStartButton?: boolean;
 }) {
   const pauseRef = useRef<HTMLAudioElement|null>(null);
   const hoverRef = useRef<HTMLAudioElement|null>(null);
@@ -129,8 +132,8 @@ export default function SteeringWheelOverlay({
     if (showJoin) {
       // Close pink display without auto-opening blue display
       setShowJoin(false);
-      setActiveBeamColor('blue'); // local state back to blue tint
-      onBeamColorChange?.('off'); // tell parent to turn displays off, not open blue
+      setActiveBeamColor('blue'); // reset local state but don't auto-open blue display
+      onBeamColorChange?.('off'); // tell parent to turn ALL displays off
     } else {
       // Open pink display
       setShowJoin(true);
@@ -173,6 +176,8 @@ export default function SteeringWheelOverlay({
   const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
   // Current viewport width helper
   const vw = (typeof window !== 'undefined') ? window.innerWidth : 1200;
+  // Check if dimming overlay is active to disable button interactions
+  const isDimmingOverlayActive = (typeof window !== 'undefined') ? !!(window as any).__CHX_SHOW_DIMMING_OVERLAY : false;
   // Scale targets tuned for typical desktop/tablet/phone ranges
   // Ensure Start button isn't too small on phones
   const startBase = vmin * (vw <= 480 ? 0.19 : vw <= 768 ? 0.17 : 0.16);
@@ -197,7 +202,7 @@ export default function SteeringWheelOverlay({
   // Apply global 80% size reduction to the wheel
   const vs = Math.round(vsBase * 0.8); // wheel.mp4 square size at 80%
   const yellowHubSize = 72; // Fixed size - yellow hub should never change size
-  const yellowItemSize = 80; // Fixed size - social media buttons should never change size
+  const yellowItemSize = 68; // Fixed size - social media buttons should never change size
   // Resolve power (blue) button size responsively so beam can be positioned relative to it
   const powerCfgGlobal: any = getResponsiveValue((POS?.wheel as any)?.power) || {};
   const powerSizePx: number = typeof powerCfgGlobal.sizePx === 'number' ? powerCfgGlobal.sizePx : 72;
@@ -298,7 +303,7 @@ export default function SteeringWheelOverlay({
           left: '50%',
           transform: 'translate(-50%, 8px)',
           zIndex: 92,
-          pointerEvents: showUI ? 'auto' : 'none',
+          pointerEvents: showUI && !isDimmingOverlayActive ? 'auto' : 'none',
           opacity: showUI ? 1 : 0,
           // Match beam (400ms) and HUD (300ms) fade timing
           transition: 'opacity 350ms ease',
@@ -358,7 +363,7 @@ export default function SteeringWheelOverlay({
           left: `calc(50% - ${buttonOffsetPx}px - 10px)`, // Nudge slightly further left
           transform: 'translate(-50%, 8px)',
           zIndex: 92,
-          pointerEvents: showUI ? 'auto' : 'none',
+          pointerEvents: showUI && !isDimmingOverlayActive ? 'auto' : 'none',
           opacity: showUI ? 1 : 0,
           // Match beam (400ms) and HUD (300ms) fade timing
           transition: 'opacity 350ms ease',
@@ -394,17 +399,17 @@ export default function SteeringWheelOverlay({
                       if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
                     } catch {}
                     // Close other displays first (especially blue display)
-                    if (showUI) {
-                      onPowerToggle?.(); // This will close the blue display
-                    }
-                    // Set yellow beam
-                    setActiveBeamColor('yellow');
-                    onBeamColorChange?.('yellow');
+                    onBeamColorChange?.('off'); // Close all displays first
+                    // Then set yellow beam after a brief delay
+                    setTimeout(() => {
+                      setActiveBeamColor('yellow');
+                      onBeamColorChange?.('yellow');
+                    }, 100);
                   } else {
                     // Menu is closing: turn displays off without auto-opening blue
                     if (activeBeamColor === 'yellow') {
-                      setActiveBeamColor('blue');
-                      onBeamColorChange?.('off');
+                      setActiveBeamColor('blue'); // reset local state but don't auto-open blue display
+                      onBeamColorChange?.('off'); // tell parent to turn ALL displays off
                     }
                   }
                 }}
@@ -422,7 +427,7 @@ export default function SteeringWheelOverlay({
           left: `calc(50% + ${buttonOffsetPx}px + 10px)`, // Nudge slightly further right
           transform: 'translate(-50%, 8px)',
           zIndex: 92,
-          pointerEvents: showUI ? 'auto' : 'none',
+          pointerEvents: showUI && !isDimmingOverlayActive ? 'auto' : 'none',
           opacity: showUI ? 1 : 0,
           // Match beam (400ms) and HUD (300ms) fade timing
           transition: 'opacity 350ms ease',
@@ -490,7 +495,7 @@ export default function SteeringWheelOverlay({
                 animation: 'pinkPanelPulse 2.6s ease-in-out infinite',
               }}
             >
-              <JoinAliens />
+              <JoinAliens visible={showJoin && !suspendUI} />
             </div>
           </div>
         );
@@ -501,7 +506,7 @@ export default function SteeringWheelOverlay({
 
 
       {/* Start button positioned directly on top of the wheel */}
-      <button
+      {!hideStartButton && <button
         onClick={handleLaunch}
         className={`pointer-events-auto wheel-play${isStart ? ' chx' : ''} no-spotlight`}
         style={{
@@ -546,7 +551,7 @@ export default function SteeringWheelOverlay({
             )
           )}
         </span>
-      </button>
+      </button>}
 
       <style jsx>{`
         .wheel-play {

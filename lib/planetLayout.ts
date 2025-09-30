@@ -24,8 +24,8 @@ export function computePlanetLayout(
   } = {}
 ): Record<string, LayoutOut> {
   const {
-    ringGap = 1.8,
-    baseRadius = 2.2,
+    ringGap = 1.5,
+    baseRadius = 2.8,
     eccMin = 0.05,
     eccMax = 0.22,
     tiltPerRing = 6,
@@ -123,8 +123,8 @@ export function usePlanetLayout(songId: string): LayoutOut | undefined {
   const { innerWidth: w } = typeof window !== 'undefined' ? window : { innerWidth: 1280 } as any;
   const narrow = w < 640;
   const opts = useMemo(() => ({
-    ringGap: narrow ? 1.55 : 1.8,
-    baseRadius: 2.2,
+    ringGap: narrow ? 1.3 : 1.5,
+    baseRadius: 2.8,
     eccMin: 0.05, eccMax: 0.22,
     tiltPerRing: 6,
     minScale: 0.7,

@@ -6,6 +6,8 @@ import { useCycleList } from "@/lib/useCycleList";
 
 export default function SongList({ onSongChange }: { onSongChange?: (id: string) => void }) {
   const { songs, mainId, hoverId, setHover, setMain } = usePlayerStore();
+  
+  console.log('🎵 SongList render:', { songsCount: songs.length, mainId, songs });
   const main = songs.find((s) => s.id === mainId);
   const { activeId, setActiveId, handleKeyDown, next, prev } = useCycleList(songs, mainId || undefined, (id) => setMain(id));
 
@@ -56,7 +58,7 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
   }, [hoverId, songs.length, setHover]);
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col" style={{ pointerEvents: 'auto' }}>
       <header className="mb-4 px-1 flex-shrink-0">
         <h1 className="text-cyan-300 text-3xl md:text-4xl font-extrabold drop-shadow-cyan">
           {main?.title ?? '—'}
@@ -73,7 +75,11 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
         onKeyDown={handleKeyDown}
         className="flex-1 overflow-y-auto overflow-x-hidden pr-1 custom-scroll w-full"
       >
+      {songs.length === 0 && (
+        <div className="text-cyan-300 p-4">No songs available</div>
+      )}
       {songs.map((s) => {
+        console.log('🎵 Rendering song button:', s.title);
         const isMain = s.id === mainId;
         const isHover = s.id === hoverId;
         return (
@@ -87,24 +93,14 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
             onMouseLeave={() => setHover(null)}
             onFocus={() => setHover(s.id)}
             onBlur={() => setHover(null)}
-            onClick={() => {
-              setHover(s.id);
+            onClick={(e) => {
               setMain(s.id);
-              onSongChange?.(s.id);
             }}
-            onTouchStart={(e) => {
-              // Prevent both touch and click events from firing
-              e.preventDefault();
-              setHover(s.id);
-              setMain(s.id);
-              onSongChange?.(s.id);
+            style={{ 
+              cursor: 'pointer',
+              pointerEvents: 'auto'
             }}
-            className={`w-full text-left px-4 py-4 mb-3 rounded-lg transition-all duration-200
-              ring-1 backdrop-blur-sm
-              ${isMain ? "bg-cyan-300/15 ring-cyan-300/60 shadow-[0_0_20px_rgba(61,245,255,0.4)]" : isHover ? "bg-cyan-300/12 ring-cyan-300/50 shadow-[0_0_15px_rgba(61,245,255,0.3)]" : "bg-white/5 ring-white/10"}
-              hover:bg-cyan-300/12 hover:ring-cyan-300/50 hover:shadow-[0_0_25px_rgba(61,245,255,0.5)] hover:scale-[1.02]
-              focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:shadow-[0_0_20px_rgba(61,245,255,0.4)]
-              text-base text-cyan-50`}
+            className="w-full text-left px-4 py-4 mb-3 rounded-lg"
           >
             <div className="flex items-center gap-3">
               <span

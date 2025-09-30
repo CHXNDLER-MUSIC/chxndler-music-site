@@ -197,8 +197,8 @@ export default function AmbientSpace({
         }).catch(()=>{});
       }
 
-      // If intro is configured to play, restart it from 0 alongside ambient
-      if (intro && introSrc) {
+      // If intro is configured to play and not already playing, start it alongside ambient
+      if (intro && introSrc && introPendingRef.current && !introPlayingRef.current) {
         try { intro.currentTime = 0; } catch {}
         try {
           intro.volume = 0.9;
@@ -207,7 +207,7 @@ export default function AmbientSpace({
           const onIntroEnd  = () => { introPlayingRef.current = false; fadeVolume(clamp01(volume), 400); try { intro.removeEventListener('play', onIntroPlay); } catch {}; };
           intro.addEventListener('play', onIntroPlay);
           intro.addEventListener('ended', onIntroEnd, { once: true } as any);
-          intro.play().catch(()=>{});
+          intro.play().then(() => { introPendingRef.current = false; }).catch(()=>{});
         } catch {}
       }
     };

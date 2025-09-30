@@ -2,12 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Default positioning: make all elements relative by default.
-   This helps ensure absolutely positioned children anchor to their
-   nearest parent without needing per-component `relative` classes. */
-@layer base {
-  *, *::before, *::after { position: relative; }
-}
+/* Removed global position: relative rule that was causing click blocking issues */
 
 /* Local fonts (place files in /public/fonts) */
 /* Inter — optional local files; will fallback to system if missing */
@@ -69,7 +64,7 @@
   /* Position the light beam closer to the blue button using a separate gap var */
   /* Nudge the blue display slightly lower on screen */
   /* Increased gap to move all displays and beam down together */
-  --beam-gap-px: 400px; /* Significantly increased to move blue display much further down */
+  --beam-gap-px: 350px; /* Reduced to move blue display up slightly */
   --display-touch-top: calc(var(--buttons-bottom, 36%) + var(--beam-gap-px));
   --display-touch-bottom: var(--beam-bottom);
   
@@ -234,6 +229,15 @@ main {
   background-size: cover;
 }
 
+/* Light beam base background */
+.lightbeam-base-bg{
+  background-image: url("/cockpit/lightbeam-base.png?v=2");
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  transition: opacity 0.3s ease;
+}
+
 
 /* Glow + pulse tokens */
 .glow { box-shadow: 0 0 12px rgba(255,255,255,.55), inset 0 0 6px rgba(255,255,255,.35); }
@@ -360,6 +364,28 @@ main {
 /* Light beam element transitions */
 .light-beam { transition: opacity 300ms ease-out; will-change: opacity; }
 .light-beam * { transition: filter 300ms ease-out; }
+
+/* Cover art pulse animation */
+@keyframes cover-pulse-glow {
+  0%, 100% {
+    box-shadow: 
+      0 0 28px rgba(25, 227, 255, 0.45),
+      0 0 40px rgba(25, 227, 255, 0.3);
+  }
+  50% {
+    box-shadow: 
+      0 0 35px rgba(25, 227, 255, 0.6),
+      0 0 50px rgba(25, 227, 255, 0.4);
+  }
+}
+
+.cover-pulse {
+  animation: cover-pulse-glow 3s ease-in-out infinite;
+}
+
+.cover-pulse:hover {
+  animation: none;
+}
 
 
 /* Pink beam animation keyframes - flows upward */

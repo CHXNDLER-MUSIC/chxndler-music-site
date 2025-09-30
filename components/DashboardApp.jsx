@@ -67,6 +67,8 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [beamColor, setBeamColor] = useState('blue'); // track active beam color
   const [showDimmingOverlay, setShowDimmingOverlay] = useState(true); // show dimming overlay on initial load
   const [beamTransitioning, setBeamTransitioning] = useState(false); // prevent rapid beam changes
+  const [explicitClose, setExplicitClose] = useState(false); // track when explicitly closing without opening another display
+  const [safariRefreshKey, setSafariRefreshKey] = useState(0); // Safari refresh mechanism
   const SPACE_SKY = { webm: "/skies/space.webm", mp4: "/skies/space.mp4", key: "space" };
 
   // Spotlight follows Start button dimensions/position exactly
@@ -197,7 +199,6 @@ export default function DashboardApp({ initialSlug } = {}) {
       console.warn('DashboardApp: onSongChange - track not found for id:', id, 'slug:', slug);
       return;
     }
-    console.log('DashboardApp: onSongChange called with id:', id, 'found track idx:', idx, 'track:', tracks[idx]?.title);
 
     // STEP 1: Stop all music immediately when song is selected
     console.log('DashboardApp: Stopping all music for song change');
@@ -313,6 +314,16 @@ export default function DashboardApp({ initialSlug } = {}) {
     setMounted(true);
     // Explicitly disable SFX on mount until Start is pressed
     try { sfx.setEnabled(false); } catch {}
+    
+    // Safari-specific: Force refresh of portal content when state changes
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    if (isSafari) {
+      const safariRefreshInterval = setInterval(() => {
+        setSafariRefreshKey(prev => prev + 1);
+      }, 5000); // Refresh every 5 seconds to ensure updates on Safari
+      
+      return () => clearInterval(safariRefreshInterval);
+    }
   }, []);
 
   // If an initial slug is provided (route-based song page), orchestrate warp + playback
@@ -376,6 +387,15 @@ export default function DashboardApp({ initialSlug } = {}) {
     };
   }, []);
 
+  // Safari-specific: Force refresh when blue display state changes
+  React.useEffect(() => {
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    if (isSafari && (showHUD || beamEnabled || showOverlayUI)) {
+      // Trigger refresh when display becomes active
+      setSafariRefreshKey(prev => prev + 1);
+    }
+  }, [showHUD, beamEnabled, showOverlayUI, curTrack?.slug, isPlaying]);
+
   // Handle beam color control with strict mutual exclusion between displays
   const handleBeamToggle = React.useCallback((color) => {
     if (beamTransitioning) return; // Prevent rapid changes during transitions
@@ -396,12 +416,15 @@ export default function DashboardApp({ initialSlug } = {}) {
 
     if (color === 'pink') {
       if (beamColor === 'pink' && joinAlienOpen) {
-        // Already showing pink - toggle off
+        // Already showing pink - toggle off (don't open blue display)
         setBeamTransitioning(true);
+        setExplicitClose(true);
         closeAllDisplays();
         setTimeout(() => {
           setBeamColor('blue');
           setBeamTransitioning(false);
+          setExplicitClose(false);
+          // Explicitly keep all displays closed when closing pink
         }, 150);
       } else {
         // Switch to pink - close everything first
@@ -434,8 +457,8 @@ export default function DashboardApp({ initialSlug } = {}) {
         setTimeout(() => {
           setBeamColor('blue'); // Keep blue as default
         }, 100);
-      } else {
-        // Switch to blue - close everything first
+      } else if (!explicitClose) {
+        // Switch to blue - close everything first (only if not explicitly closing another display)
         closeAllDisplays();
         setTimeout(() => {
           setBeamColor('blue');
@@ -444,7 +467,7 @@ export default function DashboardApp({ initialSlug } = {}) {
         }, 150);
       }
     }
-  }, [beamColor, showHUD, joinAlienOpen, beamTransitioning]);
+  }, [beamColor, showHUD, joinAlienOpen, beamTransitioning, explicitClose]);
 
   // Spacebar and Pause key toggle
   React.useEffect(() => {
@@ -514,7 +537,8 @@ export default function DashboardApp({ initialSlug } = {}) {
   React.useEffect(() => {
     try { sfx.setEnabled(!!uiUnlocked); } catch {}
     try { (window).__CHX_UI_UNLOCKED = !!uiUnlocked; } catch {}
-  }, [uiUnlocked]);
+    try { (window).__CHX_SHOW_DIMMING_OVERLAY = !!showDimmingOverlay; } catch {}
+  }, [uiUnlocked, showDimmingOverlay]);
 
   // Compute effective playing state: true if main track OR space music is playing
   const effectivelyPlaying = useMemo(() => {
@@ -601,6 +625,11 @@ export default function DashboardApp({ initialSlug } = {}) {
     return (
       <main className="relative min-h-screen overflow-hidden bg-black text-white max-w-screen overflow-x-hidden" style={{ minWidth: '100vw', minHeight: '100vh' }}>
         <div className="absolute inset-0 bg-black" />
+        <div 
+          className="fixed inset-0 z-99 pointer-events-none lightbeam-base-bg"
+          aria-hidden="true" 
+          style={{ opacity: 0 }}
+        />
       </main>
     );
   }
@@ -873,6 +902,15 @@ export default function DashboardApp({ initialSlug } = {}) {
         aria-hidden="true" 
       />
       
+      <div 
+        className="fixed inset-0 z-99 pointer-events-none lightbeam-base-bg"
+        aria-hidden="true" 
+        style={{
+          opacity: (uiUnlocked && showOverlayUI && !warpActive) ? 1 : 0,
+          transition: 'opacity 400ms ease-in-out'
+        }}
+      />
+      
       {/* SteeringWheelOverlay inside blur wrapper so wheel gets dimmed */}
       <SteeringWheelOverlay
         POS={POS}
@@ -882,6 +920,7 @@ export default function DashboardApp({ initialSlug } = {}) {
         onBeamColorChange={handleBeamToggle}
         closeAllSignal={uiCloseSignal}
         suspendUI={warpActive}
+        hideStartButton={false}
         onPowerToggle={() => { 
           // Manual power toggle should not start new welcome audio, but don't interrupt if it's already playing
           if (!welcomeOnStartRef.current) {
@@ -942,7 +981,6 @@ export default function DashboardApp({ initialSlug } = {}) {
       </div> {/* Close blur wrapper */}
 
 
-
       {/* Blue display rendered as overlay sibling via portal */}
       {typeof window !== 'undefined' ? createPortal(
         (
@@ -958,29 +996,35 @@ export default function DashboardApp({ initialSlug } = {}) {
               zIndex: 93,
               borderRadius: 'var(--display-border-radius)',
               ['--hud-y']: `${hudYOffset}px`,
+              pointerEvents: (uiUnlocked && showOverlayUI) ? 'auto' : 'none'
             }}
           >
             <div className="relative h-full w-full p-0" style={{ overflow: 'visible' }} suppressHydrationWarning>
-              {/* Pre-mount HUDPanel; reveal via opacity so it is ready instantly */}
-              <motion.div
+              {/* Safari fix: Use CSS transitions instead of Framer Motion for portal content */}
+              <div
                 className="absolute inset-0 p-0"
                 suppressHydrationWarning
-                initial={{ opacity: 0 }}
-                animate={{ opacity: (uiUnlocked && showOverlayUI && showHUD && !warpActive) ? 1 : 0 }}
-                transition={{ type: 'spring', damping: 25, stiffness: 200, duration: 0.3 }}
-                style={{ pointerEvents: (uiUnlocked && showOverlayUI && showHUD && !warpActive) ? 'auto' : 'none', visibility: (uiUnlocked && showOverlayUI) ? 'visible' : 'hidden' }}
+                key={safariRefreshKey} // Force re-render on Safari when needed
+                style={{ 
+                  opacity: (uiUnlocked && showOverlayUI && showHUD && !warpActive) ? 1 : 0,
+                  pointerEvents: (uiUnlocked && showOverlayUI && showHUD && !warpActive) ? 'auto' : 'none', 
+                  visibility: (uiUnlocked && showOverlayUI) ? 'visible' : 'hidden',
+                  transition: 'opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+                  willChange: 'opacity',
+                  transform: 'translateZ(0)' // Force hardware acceleration on Safari
+                }}
               >
                 <HUDPanel
                   inConsole
                   songs={hudSongs}
                   onSongChange={onSongChange}
-                  track={curTrack}
-                  currentId={(!homeMode || userSelected || pendingTrackPlay) ? curTrack?.slug : undefined}
+                  track={(homeMode && !userSelected && !pendingTrackPlay) ? undefined : curTrack}
+                  currentId={(homeMode && !userSelected && !pendingTrackPlay) ? undefined : curTrack?.slug}
                   playing={isPlaying}
                   beamOnly={beamOnly}
                   beamEnabled={beamEnabled}
                 />
-              </motion.div>
+              </div>
               {!showHUD ? (
                 <button
                   type="button"
@@ -1019,7 +1063,8 @@ export default function DashboardApp({ initialSlug } = {}) {
                 onPlayingChange={(p) => { 
                   setIsPlaying(p); 
                   // Only unsuspend ambient when song stops AND we're in home mode AND user didn't explicitly select a song
-                  if (!p && homeMode && !userSelected) {
+                  // AND we're not pending a track play (which means we're not in a song selection flow)
+                  if (!p && homeMode && !userSelected && !pendingTrackPlay) {
                     setAmbientSuspended(false);
                   }
                 }}
@@ -1028,6 +1073,8 @@ export default function DashboardApp({ initialSlug } = {}) {
 
                   setCurTrack(t); 
                   if (userSelected) { setLinks({ spotify: t.spotify || LINKS.spotify, apple: t.apple || LINKS.apple }); } else { setLinks({ spotify: LINKS.spotify, apple: LINKS.apple }); } 
+                  // Update planet system focus to match currently playing song
+                  try { usePlayerStore.getState().setMain(t.slug || ''); } catch {}
                 }}
                 playSignal={playSignal}
                 toggleSignal={toggleSignal}
@@ -1074,8 +1121,9 @@ export default function DashboardApp({ initialSlug } = {}) {
 
       {mounted && uiUnlocked && showOverlayUI && showHUD && process.env.NEXT_PUBLIC_HOLOHUD === '1' ? (
         <HoloHUD
-          track={curTrack}
+          track={(homeMode && !userSelected && !pendingTrackPlay) ? undefined : curTrack}
           playing={effectivelyPlaying}
+          hidePlayButton={userSelected || !homeMode}
           onToggle={() => {
             try {
               if (homeMode) {
@@ -1113,9 +1161,24 @@ export default function DashboardApp({ initialSlug } = {}) {
             className="absolute inset-0"
             style={{
               background: 'rgba(0, 0, 0, 0.7)',
-              transition: 'opacity 500ms ease-out'
+              transition: 'opacity 500ms ease-out',
+              pointerEvents: 'none'
             }}
           />
+          {/* Circular cutout for start button to allow interaction */}
+          {spotlightPos.x !== null && spotlightPos.y !== null && spotlightPos.r !== null ? (
+            <div
+              className="absolute"
+              style={{
+                left: spotlightPos.x - spotlightPos.r - 20,
+                top: spotlightPos.y - spotlightPos.r - 20,
+                width: (spotlightPos.r + 20) * 2,
+                height: (spotlightPos.r + 20) * 2,
+                borderRadius: '50%',
+                pointerEvents: 'auto'
+              }}
+            />
+          ) : null}
         </div>
       ) : null}
 

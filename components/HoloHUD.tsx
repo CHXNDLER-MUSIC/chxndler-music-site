@@ -8,15 +8,21 @@ export default function HoloHUD({
   playing,
   onToggle,
   onSelect,
+  hidePlayButton = false,
 }: {
   track: Track | null;
   playing: boolean;
   onToggle: () => void;
   onSelect?: (slug: string) => void;
+  hidePlayButton?: boolean;
 }) {
+  // If no track (home mode), don't render the HoloHUD
+  if (!track) {
+    return null;
+  }
+
   const title = track?.title || "";
   const subtitle = (track as any)?.subtitle || "";
-  const cover = track?.cover || "/cover/ocean-girl.png";
   const highlight = (track?.title || "").toLowerCase().includes("ocean girl") || (track?.slug === "ocean-girl");
 
   return (
@@ -24,80 +30,28 @@ export default function HoloHUD({
       {/* Film grain + subtle bloom */}
       <div className="filmgrain" aria-hidden />
 
-      {/* Top-left: Title + one-liner */}
-      <div className="title-wrap">
-        <div className="title">{title}</div>
-        {subtitle ? <div className="subtitle">{subtitle}</div> : null}
-      </div>
 
-      {/* Top-right: tilted album hologram with cyan border & scanlines */}
-      <button
-        type="button"
-        className="album-card"
-        onClick={() => {
-          // Dispatch event to trigger HUDPanel card modal
-          const event = new CustomEvent('showCoverCard', { 
-            detail: { track, cover } 
-          });
-          window.dispatchEvent(event);
-        }}
-        aria-label="Open song card"
-      >
-        <div className="card-glow" />
-        <img src={cover} alt={title} className="card-img" />
-        <div className="scanlines" />
-      </button>
 
-      {/* Center: Orrery above steering wheel */}
-      <div className="orrery" aria-label="Song worlds orrery">
-        {/* Heart-shaped central planet */}
-        <div className="planet heart-planet" />
-        <div className="orbit o1"><div className="planet p1" /></div>
-        <div className="orbit o2"><div className="planet p2" /></div>
-        <div className="orbit o3"><div className="planet p3" /></div>
-      </div>
 
-      {/* Right-side: song list panel */}
-      <div className="song-panel">
-        {[
-          { k: "alone", label: "Alone" },
-          { k: "baby", label: "Baby" },
-          { k: "be-my-bee", label: "Be My Bee" },
-          { k: "ocean-girl", label: "Ocean Girl" },
-        ].map((s) => {
-          const isActive = (track?.slug === s.k);
-          return (
-            <button
-              key={s.k}
-              type="button"
-              className={`song ${isActive ? "active" : ""}`}
-              onClick={() => { try { onSelect && onSelect(s.k); } catch {} }}
-              aria-pressed={isActive}
-              aria-label={`Select ${s.label}`}
-            >
-              <span className="dot" />
-              <span className="name">{s.label}</span>
-            </button>
-          );
-        })}
-      </div>
 
       {/* Left of wheel: play/pause button */}
-      <button
-        type="button"
-        className={`play-btn ${playing ? "on" : ""}`}
-        onClick={() => {
-          // Delegate playback control to the main controller
-          // This ensures music only starts after the sky MP4 is playing
-          try { onToggle(); } catch {}
-        }}
-        aria-label={playing ? "Pause" : "Play"}
-      >
-        {playing ? 
-          (<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>)
-          :
-          (<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden><path d="M6 4l14 8-14 8z"/></svg>)}
-      </button>
+      {!hidePlayButton && (
+        <button
+          type="button"
+          className={`play-btn ${playing ? "on" : ""}`}
+          onClick={() => {
+            // Delegate playback control to the main controller
+            // This ensures music only starts after the sky MP4 is playing
+            try { onToggle(); } catch {}
+          }}
+          aria-label={playing ? "Pause" : "Play"}
+        >
+          {playing ? 
+            (<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>)
+            :
+            (<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden><path d="M6 4l14 8-14 8z"/></svg>)}
+        </button>
+      )}
 
       <style jsx>{`
         :global(.holo-hud){
@@ -113,192 +67,9 @@ export default function HoloHUD({
             </svg>
           `)}'); background-size: 240px 240px; }
 
-        /* Title block */
-        .title-wrap{ 
-          position:absolute; 
-          top:8vh; 
-          left:8vw; 
-          /* Extend up to the album cover's left edge with a minimal gap */
-          width: calc(50vw - (0.5 * var(--album-size)) - 8vw - 2px);
-          text-shadow: 0 2px 14px rgba(0,0,0,.45); 
-        }
-        .title{
-          font-size: clamp(28px, 4.4vw, 72px);
-          font-weight: 700; letter-spacing:.02em; line-height: 1.02;
-          color: #fff;
-          text-shadow:
-            0 0 28px rgba(56,182,255,.25),
-            0 2px 18px rgba(0,0,0,.55);
-          filter: drop-shadow(0 0 6px rgba(56,182,255,.20));
-        }
-        .subtitle{
-          margin-top: 8px; font-size: clamp(12px, 1.2vw, 18px);
-          color: rgba(255,255,255,.85);
-          text-shadow: 0 1px 10px rgba(0,0,0,.4);
-        }
 
-        /* Album card (centered top) */
-        .album-card{
-          position:absolute; top:8vh; left:50%; transform: translateX(-50%) perspective(1200px) rotateX(10deg) rotateY(-10deg);
-          width: var(--album-size); height: var(--album-size); 
-          min-width: var(--album-size); min-height: var(--album-size);
-          max-width: var(--album-size); max-height: var(--album-size);
-          border-radius: 16px; overflow:hidden;
-          box-shadow: 0 0 50px rgba(56,182,255,.20), 0 10px 60px rgba(0,0,0,.6);
-          outline: 1px solid rgba(56,182,255,.30);
-          animation: albumCardPulse 2.6s ease-in-out infinite;
-          /* Enable click interaction despite parent having pointer-events:none */
-          pointer-events: auto;
-          cursor: pointer;
-        }
-        .card-glow{ position:absolute; inset:-8%; border-radius:20px; pointer-events:none;
-          box-shadow: 0 0 80px rgba(56,182,255,.20);
-        }
-        .card-img{ width:100%; height:100%; object-fit:cover; filter: saturate(1.05) contrast(1.05) brightness(1.03); }
-        .scanlines{ position:absolute; inset:0; pointer-events:none; mix-blend-mode:screen; opacity:.22;
-          background: repeating-linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.08) 1px, rgba(0,0,0,0) 1px, rgba(0,0,0,0) 3px);
-        }
 
-        /* Orrery positioned between one-liner and blue display */
-        .orrery{
-          position:absolute;
-          left: 50%;
-          transform: translateX(-50%);
-          top: 16vh; /* Positioned after one-liner space */
-          width: clamp(200px, 24vw, 420px);
-          height: clamp(100px, 12vw, 200px); /* Compact to fit in available space */
-          display:grid; place-items:center;
-          filter: drop-shadow(0 0 18px rgba(252,84,175,.35)) drop-shadow(0 0 18px rgba(56,182,255,.25));
-        }
-        .planet{ position:absolute; border-radius:9999px; background: radial-gradient(50% 60% at 40% 35%, rgba(255,255,255,.8), rgba(252,84,175,.45) 35%, rgba(10,10,30,.0) 65%);
-          box-shadow: inset 0 -10px 24px rgba(0,0,0,.5), 0 0 22px rgba(252,84,175,.4);
-          animation: planetGlow 2.6s ease-in-out infinite;
-        }
-        .planet.main{ width: 88px; height: 88px; }
-        .planet.p1{ width: 20px; height: 20px; background: radial-gradient(60% 60% at 40% 35%, rgba(255,255,255,.9), rgba(56,182,255,.55) 45%, rgba(10,10,30,.0) 70%); }
-        .planet.p2{ width: 26px; height: 26px; background: radial-gradient(60% 60% at 40% 35%, rgba(255,255,255,.9), rgba(242,239,29,.55) 45%, rgba(10,10,30,.0) 70%); }
-        .planet.p3{ width: 16px; height: 16px; background: radial-gradient(60% 60% at 40% 35%, rgba(255,255,255,.9), rgba(252,84,175,.55) 45%, rgba(10,10,30,.0) 70%); }
-        .planet.heart-planet{ 
-          width: 32px; height: 32px; 
-          background: radial-gradient(50% 50% at 40% 35%, rgba(255,255,255,.9), rgba(255,23,68,.8) 40%, rgba(255,105,180,.6) 70%, rgba(10,10,30,.0) 85%);
-          border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-          transform: rotate(-45deg);
-          position: absolute;
-          top: 50%; left: 50%;
-          margin-top: -16px; margin-left: -16px;
-          box-shadow: inset 0 -8px 16px rgba(0,0,0,.4), 0 0 32px rgba(255,23,68,.6), 0 0 48px rgba(255,105,180,.4);
-          animation: heartPulse 1.2s ease-in-out infinite;
-          z-index: 5;
-        }
-        .planet.heart-planet::before {
-          content: '';
-          position: absolute;
-          width: 16px; height: 24px;
-          background: radial-gradient(50% 50% at 40% 35%, rgba(255,255,255,.9), rgba(255,23,68,.8) 40%, rgba(255,105,180,.6) 70%);
-          border-radius: 16px 16px 0 0;
-          transform: rotate(-45deg);
-          top: -8px; left: 8px;
-        }
-        .planet.heart-planet::after {
-          content: '';
-          position: absolute;
-          width: 16px; height: 24px;
-          background: radial-gradient(50% 50% at 40% 35%, rgba(255,255,255,.9), rgba(255,23,68,.8) 40%, rgba(255,105,180,.6) 70%);
-          border-radius: 16px 16px 0 0;
-          transform: rotate(45deg);
-          top: -8px; right: 8px;
-        }
-        .ring{ position:absolute; inset:-6px; border-radius:9999px; border:1px solid rgba(56,182,255,.45); filter: blur(.2px); opacity:.9; }
-        .orbit{ position:absolute; inset:0; border-radius:9999px; border:1px dashed rgba(255,255,255,.18); animation: spin linear infinite; }
-        .o1{ animation-duration: 10s; }
-        .o2{ animation-duration: 16s; }
-        .o3{ animation-duration: 22s; }
-        .o1 .planet{ position:absolute; top:8%; left:72%; }
-        .o2 .planet{ position:absolute; top:64%; left:14%; }
-        .o3 .planet{ position:absolute; top:48%; left:84%; }
-        @keyframes spin { from{ transform: rotate(0deg);} to{ transform: rotate(360deg);} }
-        @keyframes heartPulse { 
-          0%, 100% { 
-            transform: rotate(-45deg) scale(1);
-            box-shadow: inset 0 -8px 16px rgba(0,0,0,.4), 0 0 32px rgba(255,23,68,.6), 0 0 48px rgba(255,105,180,.4);
-          }
-          50% { 
-            transform: rotate(-45deg) scale(1.15);
-            box-shadow: inset 0 -8px 16px rgba(0,0,0,.4), 0 0 40px rgba(255,23,68,.8), 0 0 60px rgba(255,105,180,.6);
-          }
-        }
 
-        /* Centered song panel (blue display) */
-        .song-panel{ 
-          position:absolute; 
-          left:50%; 
-          transform: translateX(-50%); 
-          /* Bottom of blue display should touch the light beam top */
-          bottom: var(--display-touch-top);
-          width: clamp(80px, 18vw, 120px);
-          max-width: 100px;
-          /* Much shorter blue display (keep bottom fixed) */
-          height: calc(clamp(160px, 16vh, 220px) * 0.08);
-          padding: 10px 0; 
-          margin: 0;
-          border-radius: 16px; 
-          backdrop-filter: blur(12px);
-          /* Unified HUD tint to match dashboard */
-          background: rgba(25,227,255,0.25);
-          border: 1px solid rgba(25,227,255,.15);
-          box-shadow: 0 10px 40px rgba(0,0,0,.45), inset 0 0 0 1px rgba(25,227,255,.10);
-          pointer-events:auto;
-          text-align: center;
-          display: flex;
-          flex-direction: column;
-          align-items: stretch;
-          justify-content: flex-start;
-          /* Prevent songs from extending outside the blue display; allow scroll if needed */
-          overflow: hidden;
-          overflow-y: auto;
-          animation: bluePanelPulse 2.6s ease-in-out infinite;
-          /* Safari-specific fixes for z-index stacking */
-          z-index: 10;
-          isolation: isolate;
-          -webkit-transform: translateX(-50%);
-          /* Safari flexbox container fixes */
-          -webkit-box-orient: vertical;
-          -webkit-box-direction: normal;
-          -webkit-flex-direction: column;
-          -webkit-box-align: stretch;
-          -webkit-box-pack: start;
-          -webkit-justify-content: flex-start;
-        }
-        .song{ 
-          display:flex; 
-          align-items:center; 
-          justify-content:center;
-          gap:10px; 
-          padding:8px 0; 
-          margin:6px 0; 
-          border-radius:12px; 
-          color:#fff;
-          background: transparent; 
-          transition: color .12s ease; 
-          width: 100%;
-          border: 0; 
-          cursor: pointer;
-          /* Safari-specific flexbox fixes */
-          -webkit-box-align: center;
-          -webkit-box-pack: center;
-          -webkit-flex-direction: row;
-          flex-shrink: 0;
-        }
-        .song:hover{ outline: none; box-shadow: none; }
-        .song .dot{ width:10px; height:10px; border-radius:9999px; background: #38B6FF; box-shadow: 0 0 10px #38B6FFAA; }
-        .song .name{ flex:1; font-size: 14px; letter-spacing:.02em; opacity:.9; transition: color .12s ease, text-shadow .15s ease; 
-          /* Safari text rendering fixes */
-          -webkit-flex: 1;
-          -webkit-font-smoothing: antialiased;
-          text-rendering: optimizeLegibility;
-        }
-        .song:hover .name{ color:#EFFFFF; text-shadow: 0 0 10px rgba(25,227,255,0.8), 0 0 24px rgba(25,227,255,0.45); }
-        .song.active{ outline: 1px solid rgba(252,84,175,.65); box-shadow: 0 0 24px rgba(252,84,175,.45); }
 
         /* Play button left of wheel */
         .play-btn{
@@ -315,48 +86,8 @@ export default function HoloHUD({
         .play-btn:active{ transform: scale(.98); }
         .play-btn svg{ fill:#fff; }
         
-        /* Synchronized blue panel pulsing */
-        @keyframes bluePanelPulse {
-          0%, 100% { 
-            filter: brightness(1) saturate(1);
-            box-shadow: 
-              0 10px 40px rgba(0,0,0,.45), 
-              inset 0 0 0 1px rgba(25,227,255,.10);
-          }
-          50% { 
-            filter: brightness(1.06) saturate(1.1);
-            box-shadow: 
-              0 10px 40px rgba(0,0,0,.45), 
-              0 0 30px rgba(25,227,255,.25),
-              inset 0 0 0 1px rgba(25,227,255,.15);
-          }
-        }
         
-        /* Synchronized planet and orrery glow */
-        @keyframes planetGlow {
-          0%, 100% { 
-            filter: brightness(1) saturate(1);
-          }
-          50% { 
-            filter: brightness(1.08) saturate(1.15);
-          }
-        }
         
-        /* Synchronized album card pulsing */
-        @keyframes albumCardPulse {
-          0%, 100% { 
-            box-shadow: 
-              0 0 50px rgba(56,182,255,.20), 
-              0 10px 60px rgba(0,0,0,.6);
-            outline: 1px solid rgba(56,182,255,.30);
-          }
-          50% { 
-            box-shadow: 
-              0 0 65px rgba(56,182,255,.30), 
-              0 10px 60px rgba(0,0,0,.6);
-            outline: 1px solid rgba(56,182,255,.40);
-          }
-        }
       `}</style>
     </div>
   );

@@ -57,7 +57,8 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
 
   // Create ultra-realistic planet material based on planet type and properties
   function makePlanetMaterial(planetData: any) {
-    const color = new THREE.Color(planetData.color || '#38B6FF');
+    // Use proper heart color
+    const color = new THREE.Color((planetData.element === 'heart') ? '#FC54AF' : (planetData.color || '#38B6FF'));
     const surface = planetData.surface || {};
     const type = planetData.type || 'terrestrial';
     const geometry = planetData.geometry || {};
@@ -1021,80 +1022,45 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
   
   // Create heart-shaped planet geometry
   function createHeartGeometry(radius: number) {
-    // Create a proper 3D heart using parametric equations
-    const geometry = new THREE.BufferGeometry();
+    // Create a solid heart by combining multiple heart-shaped spheres
+    const heartShape = new THREE.Shape();
     
-    // Heart parametric equations for 3D
-    const heartFunction = (u: number, v: number) => {
-      // u: angle around heart (0 to 2π)
-      // v: vertical parameter (-1 to 1)
-      
-      const x = 16 * Math.pow(Math.sin(u), 3);
-      const y = 13 * Math.cos(u) - 5 * Math.cos(2*u) - 2 * Math.cos(3*u) - Math.cos(4*u);
-      const z = v * 8; // Add depth variation
-      
-      return new THREE.Vector3(x, y, z);
+    // Create 2D heart path (corrected orientation - point at top)
+    const heartPath = (t: number) => {
+      const x = 16 * Math.pow(Math.sin(t), 3);
+      const y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
+      return new THREE.Vector2(x, -y); // Flip Y here to get point at top
     };
     
-    // Generate vertices for heart surface
-    const uSegments = 64;
-    const vSegments = 32;
-    const vertices: number[] = [];
-    const normals: number[] = [];
-    const uvs: number[] = [];
-    const indices: number[] = [];
-    
-    // Generate vertices
-    for (let i = 0; i <= vSegments; i++) {
-      const v = (i / vSegments) * 2 - 1; // -1 to 1
-      
-      for (let j = 0; j <= uSegments; j++) {
-        const u = (j / uSegments) * Math.PI * 2; // 0 to 2π
-        
-        const point = heartFunction(u, v);
-        
-        // Scale to desired radius
-        const scale = radius * 0.02;
-        vertices.push(point.x * scale, point.y * scale, point.z * scale);
-        
-        // Calculate normal (for proper lighting)
-        const epsilon = 0.01;
-        const tangentU = heartFunction(u + epsilon, v).sub(heartFunction(u - epsilon, v));
-        const tangentV = heartFunction(u, v + epsilon).sub(heartFunction(u, v - epsilon));
-        const normal = tangentU.cross(tangentV).normalize();
-        normals.push(normal.x, normal.y, normal.z);
-        
-        // UV coordinates
-        uvs.push(j / uSegments, i / vSegments);
-      }
+    // Generate heart shape path
+    const points: THREE.Vector2[] = [];
+    const steps = 100;
+    for (let i = 0; i <= steps; i++) {
+      const t = (i / steps) * Math.PI * 2;
+      const point = heartPath(t);
+      points.push(point);
     }
     
-    // Generate indices for triangles
-    for (let i = 0; i < vSegments; i++) {
-      for (let j = 0; j < uSegments; j++) {
-        const a = i * (uSegments + 1) + j;
-        const b = a + uSegments + 1;
-        const c = a + 1;
-        const d = b + 1;
-        
-        // Two triangles per quad
-        indices.push(a, b, c);
-        indices.push(c, b, d);
-      }
-    }
+    heartShape.setFromPoints(points);
     
-    // Set attributes
-    geometry.setIndex(indices);
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-    geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
-    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    // Create extruded geometry for solid heart (more spherical settings)
+    const extrudeSettings = {
+      depth: radius * 1.2, // increased depth for more volume
+      bevelEnabled: true,
+      bevelSegments: 12, // more segments for smoother curves
+      bevelSize: radius * 0.15, // larger bevel for rounder appearance
+      bevelThickness: radius * 0.08, // thicker bevel for planet-like roundness
+      curveSegments: 48 // more curve segments for smoother surface
+    };
+    
+    const geometry = new THREE.ExtrudeGeometry(heartShape, extrudeSettings);
+    
+    // Scale to appropriate size
+    const scale = radius * 0.03;
+    geometry.scale(scale, scale, scale);
     
     // Center the geometry
     geometry.center();
-    
-    // Rotate heart to be upright (heart pointing up)
-    geometry.rotateZ(Math.PI); // Flip vertically so heart points up
-    geometry.rotateX(-Math.PI / 2); // Rotate to face forward properly
     
     // Compute vertex normals for smooth lighting
     geometry.computeVertexNormals();
@@ -1202,7 +1168,7 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
     const element = (planetData && (planetData as any).element) || null;
     const tunedAtmosphere = planetData.atmosphere ? {
       ...planetData.atmosphere,
-      color: (element === 'heart') ? '#FF6BCD' : (element === 'lightning') ? '#FFD84D' : planetData.atmosphere.color,
+      color: (element === 'heart') ? '#FC54AF' : (element === 'lightning') ? '#FFD84D' : planetData.atmosphere.color,
       glow: (element === 'heart') ? Math.max(planetData.atmosphere.glow || 0, 1.3) : (element === 'lightning') ? Math.max(planetData.atmosphere.glow || 0, 1.6) : (planetData.atmosphere.glow || 1.0),
     } : undefined;
     const tunedPlanetData = { ...planetData, atmosphere: tunedAtmosphere, seed: (planetData.seed ?? Math.random() * 1000) };
@@ -1220,16 +1186,16 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
     const material = makePlanetMaterial(tunedPlanetData);
     const mesh = new THREE.Mesh(planetGeometry, material);
     
-    // Atmosphere - skip for heart planets to show bare heart shape
+    // Atmosphere - disabled to remove blue spheres around planets
     let atmosphereMesh: THREE.Mesh | undefined;
-    if (tunedPlanetData.atmosphere && !isHeartPlanet) {
-      const atmosphereMat = makeAtmosphereMaterial(tunedPlanetData);
-      if (atmosphereMat) {
-        const atmosphereGeometry = new THREE.SphereGeometry(radius * 1.05, geometry.segments.widthSegments / 2, geometry.segments.heightSegments / 2);
-        atmosphereMesh = new THREE.Mesh(atmosphereGeometry, atmosphereMat);
-        mesh.add(atmosphereMesh);
-      }
-    }
+    // if (tunedPlanetData.atmosphere && !isHeartPlanet) {
+    //   const atmosphereMat = makeAtmosphereMaterial(tunedPlanetData);
+    //   if (atmosphereMat) {
+    //     const atmosphereGeometry = new THREE.SphereGeometry(radius * 1.05, geometry.segments.widthSegments / 2, geometry.segments.heightSegments / 2);
+    //     atmosphereMesh = new THREE.Mesh(atmosphereGeometry, atmosphereMat);
+    //     mesh.add(atmosphereMesh);
+    //   }
+    // }
     
     // Rings
     let ringMesh: THREE.Mesh | undefined;
@@ -1251,15 +1217,15 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       mesh.add(ringMesh);
     }
 
-    // Hologram wireframe shell for added holographic feel (skip for heart planets)
-    if (!isHeartPlanet) {
-      try {
-        const wireGeo = new THREE.SphereGeometry(radius * 1.01, Math.max(24, geometry.segments.widthSegments / 4), Math.max(16, geometry.segments.heightSegments / 4));
-        const wireMat = new THREE.MeshBasicMaterial({ color: 0x19E3FF, wireframe: true, transparent: true, opacity: 0.18, blending: THREE.AdditiveBlending, depthWrite: false });
-        const wire = new THREE.Mesh(wireGeo, wireMat);
-        mesh.add(wire);
-      } catch {}
-    }
+    // Hologram wireframe shell - disabled to remove blue spheres around planets
+    // if (!isHeartPlanet) {
+    //   try {
+    //     const wireGeo = new THREE.SphereGeometry(radius * 1.01, Math.max(24, geometry.segments.widthSegments / 4), Math.max(16, geometry.segments.heightSegments / 4));
+    //     const wireMat = new THREE.MeshBasicMaterial({ color: 0x19E3FF, wireframe: true, transparent: true, opacity: 0.18, blending: THREE.AdditiveBlending, depthWrite: false });
+    //     const wire = new THREE.Mesh(wireGeo, wireMat);
+    //     mesh.add(wire);
+    //   } catch {}
+    // }
     
     // Moons
     const moons: THREE.Mesh[] = [];
@@ -1404,7 +1370,7 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(35, width / height, 0.1, 120);
     camera.position.set(0, 1.2, 16.0);
-    camera.lookAt(0, 0, 0); // Look directly at center
+    camera.lookAt(0, -2, 0); // Look below center to shift display higher
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -1528,35 +1494,10 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       }
     };
 
-    // Central heart planet that others orbit around
-    const heartPlanet = {
-      radius: 3.5, // Massive central planet - truly dominant
-      color: '#D4145A', // More realistic planet color - deeper red
-      type: 'terrestrial' as PlanetType,
-      element: 'heart',
-      // No atmosphere - removed completely
-      surface: {
-        metallic: 0.2,
-        roughness: 0.7,
-        normalScale: 1.5
-      },
-      geometry: {
-        shape: 'heart' as const,
-        deformation: 0.05, // Slight surface variation for realism
-        poleFlattening: 0.0,
-        surfaceRoughness: 0.8, // High surface detail for realistic planet appearance
-        craterDensity: 0.1, // Some surface features
-        segments: { widthSegments: 256, heightSegments: 256 }, // Ultra high detail
-        scale: { x: 1.0, y: 1.0, z: 1.0 }
-      }
-    };
     
-    // Add heart planet at center (no orbital parameters)
-    addSatLocal('heart', heartPlanet, 0, 0, 0);
-    
-    addSatLocal('s1', defaultPlanet1, 6.0, 0.25);
-    addSatLocal('s2', defaultPlanet2, 4.2, 0.2);
-    addSatLocal('s3', defaultPlanet3, 2.8, 0.32);
+    addSatLocal('s1', defaultPlanet1, 4.5, 0.25);
+    addSatLocal('s2', defaultPlanet2, 3.2, 0.2);
+    addSatLocal('s3', defaultPlanet3, 2.1, 0.32);
 
     // Animate
     const reduced = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1569,10 +1510,12 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       // Update camera focus for smooth transitions
       const camera = cameraRef.current;
       if (camera) {
-        // Smoothly animate camera position to target
-        camera.position.lerp(targetCameraPos.current, cameraTransitionSpeed.current);
+        // Smoothly animate camera position to target with eased motion
+        const distance = camera.position.distanceTo(targetCameraPos.current);
+        const easedSpeed = distance > 0.1 ? cameraTransitionSpeed.current * 1.5 : cameraTransitionSpeed.current;
+        camera.position.lerp(targetCameraPos.current, easedSpeed);
         
-        // Smoothly animate camera look-at target
+        // Smoothly animate camera look-at target with enhanced focus
         const currentLookAt = new THREE.Vector3();
         camera.getWorldDirection(currentLookAt);
         currentLookAt.add(camera.position);
@@ -1580,7 +1523,9 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
         const targetLookDirection = targetCameraLookAt.current.clone().sub(camera.position).normalize();
         const currentLookDirection = currentLookAt.sub(camera.position).normalize();
         
-        currentLookDirection.lerp(targetLookDirection, cameraTransitionSpeed.current);
+        // Use faster look-at transition for more responsive focusing
+        const lookAtSpeed = distance > 0.1 ? easedSpeed * 1.2 : easedSpeed;
+        currentLookDirection.lerp(targetLookDirection, lookAtSpeed);
         const newLookAt = camera.position.clone().add(currentLookDirection);
         camera.lookAt(newLookAt);
       }
@@ -1588,8 +1533,9 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       // Update central planet if it exists
       if (centralPlanet.mesh) {
         const hovered = !!hov && centralPlanet.id === hov;
-        const osc = hovered ? (1 + 0.06 * Math.sin(t * 3.2)) : 1;
-        const targetScale = (hovered ? 1.8 : 1.6) * osc; // Central planet is much larger
+        const focused = !!centralPlanet.id; // Planet is focused when it's the central planet
+        const osc = hovered ? (1 + 0.08 * Math.sin(t * 3.5)) : (focused ? (1 + 0.04 * Math.sin(t * 2.0)) : 1);
+        const targetScale = (hovered ? 2.2 : (focused ? 2.0 : 1.6)) * osc; // Central planet is much larger and pulses when focused
         const ms = centralPlanet.mesh.scale;
         ms.x += (targetScale - ms.x) * 0.18;
         ms.y = ms.x; ms.z = ms.x;
@@ -1597,6 +1543,10 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
         centralPlanet.mesh.position.set(0, 0, 1.2);
         // Gentle rotation for the central planet
         centralPlanet.mesh.rotation.y += 0.003;
+        // Keep heart planets right-side up
+        if (centralPlanet.id === 'heart') {
+          centralPlanet.mesh.rotation.x = 0; // Reset any X rotation
+        }
         
         // Drive planet shader uniforms
         try {
@@ -1642,11 +1592,17 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
         const isFocused = mainId && s.id === mainId;
         const shouldMute = !showAll && mainId && !isFocused;
         
-        // Set material opacity based on muting state
+        // Set material opacity and scale based on muting state
         if (s.mesh.material && typeof (s.mesh.material as any).opacity === 'number') {
-          const targetOpacity = shouldMute ? 0.08 : 1.0; // Fade out more dramatically
+          const targetOpacity = shouldMute ? 0.05 : 1.0; // Fade out very dramatically for focus
           (s.mesh.material as any).opacity = targetOpacity;
           (s.mesh.material as any).transparent = true;
+          
+          // Also scale down non-focused planets for stronger visual hierarchy
+          const targetScale = shouldMute ? 0.7 : 1.0;
+          const currentScale = s.mesh.scale.x;
+          const newScale = currentScale + (targetScale - currentScale) * 0.1;
+          s.mesh.scale.setScalar(newScale);
         }
         
         // Also mute atmosphere if present
@@ -1689,9 +1645,13 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
           s.mesh.position.set(x, 0, z);
         }
         
-        // Rotation for planet
+        // Rotation for planet - adjust for heart planets
         s.mesh.rotation.y += 0.005;
-        s.mesh.rotation.x += 0.002;
+        if ((s as any).isHeartPlanet) {
+          // Heart planet stays upright - no X rotation
+        } else {
+          s.mesh.rotation.x += 0.002;
+        }
         
         const hovered = !!hov && s.id === hov;
         const osc = hovered ? (1 + 0.06 * Math.sin(t * 3.2)) : 1;
@@ -1933,9 +1893,9 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
   const { songs, mainId, hoverId } = usePlayerStore((s) => ({ songs: s.songs, mainId: s.mainId, hoverId: s.hoverId }));
   const hoverRef = useRef<string | null>(null);
   useEffect(() => { hoverRef.current = hoverId || null; }, [hoverId]);
-  // Compute layout with much larger spacing
+  // Compute layout with consistent spacing (matching planetLayout defaults)
   const layout = useMemo(() => (
-    songs && songs.length ? computePlanetLayout(songs as any, { ringGap: 3.2, baseRadius: 3.6, tiltPerRing: 8, minScale: 0.7, maxScale: 1.25 }) : undefined
+    songs && songs.length ? computePlanetLayout(songs as any, { ringGap: 1.5, baseRadius: 2.8, tiltPerRing: 6, minScale: 0.7, maxScale: 1.25 }) : undefined
   ), [songs]);
 
   useEffect(() => {
@@ -1990,7 +1950,7 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
         const id = song.id;
         const lay = (layout as any)[id];
         if (!lay) return;
-        const spacingMul = 2.2;
+        const spacingMul = 1.0;
         const r = (lay.orbitRadius ?? 4) * spacingMul;
         const prev = ringMaxByIndex.get(lay.ringIndex);
         if (!prev || r > prev.r) ringMaxByIndex.set(lay.ringIndex, { r, tiltDeg: lay.tiltDeg ?? 8 });
@@ -2048,7 +2008,7 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
     songs.forEach((song, idx) => {
       const id = song.id;
       const lay = layout ? (layout as any)[id] : undefined;
-      const spacingMul = 2.2; // space them out much more
+      const spacingMul = 1.0; // consistent spacing with layout
       const rBase = lay?.orbitRadius ?? (idx % 2 ? 4.2 : 6.0);
       const r = rBase * spacingMul;
       const speed = 0.08 + (lay ? (0.016 * (lay.ringIndex ?? 0)) : 0) + (0.02 * ((idx % 5))); // slower, ring-based
@@ -2121,7 +2081,7 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
     const element = (planetData && (planetData as any).element) || null;
     const tunedAtmosphere = planetData.atmosphere ? {
       ...planetData.atmosphere,
-      color: (element === 'heart') ? '#FF6BCD' : (element === 'lightning') ? '#FFD84D' : planetData.atmosphere.color,
+      color: (element === 'heart') ? '#FC54AF' : (element === 'lightning') ? '#FFD84D' : planetData.atmosphere.color,
       glow: (element === 'heart') ? Math.max(planetData.atmosphere.glow || 0, 1.3) : (element === 'lightning') ? Math.max(planetData.atmosphere.glow || 0, 1.6) : (planetData.atmosphere.glow || 1.0),
     } : undefined;
     const enhancedPlanetData = {
@@ -2144,25 +2104,25 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
     const centralMat = makePlanetMaterial({ ...enhancedPlanetData, seed: (enhancedPlanetData as any).seed ?? Math.random() * 1000 });
     const centralMesh = new THREE.Mesh(centralGeo, centralMat);
     
-    // Add atmosphere to central planet if it has one (skip for heart planets)
-    if (enhancedPlanetData.atmosphere && !isHeartPlanet) {
-      const atmosphereMat = makeAtmosphereMaterial(enhancedPlanetData);
-      if (atmosphereMat) {
-        const atmosphereGeo = new THREE.SphereGeometry(centralRadius * 1.05, 64, 64);
-        const atmosphereMesh = new THREE.Mesh(atmosphereGeo, atmosphereMat);
-        centralMesh.add(atmosphereMesh);
-      }
-    }
+    // Add atmosphere to central planet - disabled to remove blue spheres around planets
+    // if (enhancedPlanetData.atmosphere && !isHeartPlanet) {
+    //   const atmosphereMat = makeAtmosphereMaterial(enhancedPlanetData);
+    //   if (atmosphereMat) {
+    //     const atmosphereGeo = new THREE.SphereGeometry(centralRadius * 1.05, 64, 64);
+    //     const atmosphereMesh = new THREE.Mesh(atmosphereGeo, atmosphereMat);
+    //     centralMesh.add(atmosphereMesh);
+    //   }
+    // }
     
-    // Hologram wireframe shell on central planet (skip for heart planets)
-    if (!isHeartPlanet) {
-      try {
-        const wireGeo = new THREE.SphereGeometry(centralRadius * 1.01, 48, 32);
-        const wireMat = new THREE.MeshBasicMaterial({ color: 0x19E3FF, wireframe: true, transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false });
-        const wire = new THREE.Mesh(wireGeo, wireMat);
-        centralMesh.add(wire);
-      } catch {}
-    }
+    // Hologram wireframe shell on central planet - disabled to remove blue spheres around planets
+    // if (!isHeartPlanet) {
+    //   try {
+    //     const wireGeo = new THREE.SphereGeometry(centralRadius * 1.01, 48, 32);
+    //     const wireMat = new THREE.MeshBasicMaterial({ color: 0x19E3FF, wireframe: true, transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false });
+    //     const wire = new THREE.Mesh(wireGeo, wireMat);
+    //     centralMesh.add(wire);
+    //   } catch {}
+    // }
 
     // Add rings to central planet if it has them
     if (enhancedPlanetData.rings) {
@@ -2246,17 +2206,24 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
     const planetColor = new THREE.Color(enhancedPlanetData.color || '#38B6FF');
     const isWarmColor = planetColor.r > 0.6 || (planetColor.r + planetColor.g) > 1.0;
     
-    // Dynamic camera positioning based on planet characteristics
-    const baseDistance = 12.0; // Increased from 8.5 for more breathing room
-    const focusDistance = baseDistance * (isWarmColor ? 1.1 : 0.95); // Slightly further for warm colors
-    const heightOffset = isWarmColor ? 2.2 : 1.8; // Increased height for better overview
+    // Dynamic camera positioning based on planet characteristics - more cinematic focus
+    const baseDistance = 8.5; // Closer for dramatic focus
+    const focusDistance = baseDistance * (isWarmColor ? 1.0 : 0.9); // Slightly closer for warm colors to show detail
+    const heightOffset = isWarmColor ? 1.5 : 1.2; // Lower height for more intimate view
     
-    // Set target camera position - zoomed out for better composition
+    // Set target camera position - focused on selected planet
     targetCameraPos.current.set(0, heightOffset, focusDistance);
-    targetCameraLookAt.current.set(0, 0, 1.2); // Look at central planet position
+    targetCameraLookAt.current.set(0, 0, 1.2); // Look directly at central planet position
     
-    // Faster transition for focus changes
-    cameraTransitionSpeed.current = 0.12;
+    // Immediate focus with faster initial transition for dramatic effect
+    cameraTransitionSpeed.current = 0.25; // Start with fast transition for immediate focus
+    
+    // Set up a timer to slow down the transition after initial focus
+    setTimeout(() => {
+      if (cameraTransitionSpeed.current > 0.15) {
+        cameraTransitionSpeed.current = 0.15; // Slow down for smooth fine-tuning
+      }
+    }, 500);
     
     // Create particle system for gravitational effects
     if (!particleSystemRef.current) {

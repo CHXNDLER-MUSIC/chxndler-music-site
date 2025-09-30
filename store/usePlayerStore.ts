@@ -20,15 +20,22 @@ let state: State = {
   prevMainId: null,
   hoverId: null,
   initSongs: (songs: Song[]) => {
+    console.log('🎵 PlayerStore: initSongs called', { currentLength: state.songs.length, newLength: songs.length });
     if (state.songs.length === 0) {
       setState({ songs, prevMainId: null });
     } else {
       setState({ songs });
     }
+    console.log('🎵 PlayerStore: songs updated', { finalLength: state.songs.length });
   },
   setMain: (id: string) => {
-    if (state.mainId === id) return;
+    console.log('🎵 PlayerStore: setMain called', { currentMainId: state.mainId, newId: id });
+    if (state.mainId === id) {
+      console.log('🎵 PlayerStore: ID unchanged, skipping');
+      return;
+    }
     setState({ prevMainId: state.mainId, mainId: id });
+    console.log('🎵 PlayerStore: mainId updated to', id);
   },
   setHover: (id: string | null) => setState({ hoverId: id }),
 };

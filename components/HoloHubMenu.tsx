@@ -591,8 +591,14 @@ export default function HoloHubMenu({
           display: none !important;
         }
         /* Brand button icons - fill entire button area completely */
-        .item[data-id="ig"] .icon, .item[data-id="tt"] .icon, .item[data-id="yt"] .icon, .item[data-id="sp"] .icon, .item[data-id="am"] .icon{
+        .item[data-id="ig"] .icon, .item[data-id="yt"] .icon, .item[data-id="sp"] .icon, .item[data-id="am"] .icon{
           position: absolute; inset: 0; width: 100%; height: 100%; 
+          display: block; padding: 0 !important; margin: 0 !important;
+          transition: none;
+        }
+        /* TikTok button icon - smaller than other brand buttons */
+        .item[data-id="tt"] .icon{
+          position: absolute; inset: 8%; width: 84%; height: 84%; 
           display: block; padding: 0 !important; margin: 0 !important;
           transition: none;
         }

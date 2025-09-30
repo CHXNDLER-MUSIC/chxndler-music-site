@@ -60,10 +60,10 @@ export default function SocialIcons({ LINKS, POS, trackLinks }) {
   const hasStack = typeof s.baseYVh === 'number' && typeof s.spacingVh === 'number';
   const BASE = s.tilt || "perspective(1100px) rotateX(32deg) rotateY(-8deg)";
   // Make icon sizes responsive based on viewport and button size
-  const minIconSize = Math.max(16, Math.round(size * 0.45)); // minimum size for small screens
-  const maxIconSize = Math.round(size * 0.65); // maximum size for large screens
-  const iconSize = `clamp(${minIconSize}px, ${Math.round(size * 0.56)}px, ${maxIconSize}px)`;
-  const tiktokIconSize = `clamp(${Math.max(12, Math.round(minIconSize * 0.8))}px, ${Math.round(size * 0.45)}px, ${Math.round(maxIconSize * 0.8)}px)`;
+  const minIconSize = Math.max(18, Math.round(size * 0.50)); // minimum size for small screens
+  const maxIconSize = Math.round(size * 0.72); // maximum size for large screens
+  const iconSize = `clamp(${minIconSize}px, ${Math.round(size * 0.64)}px, ${maxIconSize}px)`;
+  const tiktokIconSize = `clamp(${Math.max(12, Math.round(minIconSize * 0.8))}px, ${Math.round(size * 0.45)}px, ${Math.round(maxIconSize * 0.7)}px)`;
   const clickRef = useRef(null);
   const hoverRef = useRef(null);
   // Prime SFX on first user interaction to remove initial latency

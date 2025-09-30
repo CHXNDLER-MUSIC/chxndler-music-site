@@ -4,22 +4,41 @@ import { tracks } from "@/lib/songs-consolidated";
 import { usePlayerStore } from "@/store/usePlayerStore";
 
 export default function HoloAudioBridge() {
-  const { mainId } = usePlayerStore((s) => ({ mainId: s.mainId }));
+  const { mainId, songs } = usePlayerStore((s) => ({ mainId: s.mainId, songs: s.songs }));
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [idx, setIdx] = useState(0);
-  const order = useMemo(() => tracks, []);
+  const warpAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [currentTrack, setCurrentTrack] = useState(null);
 
-  // Map store mainId (slug) to tracks[] index
+  // Find the current track from player store songs and map to tracks array
   useEffect(() => {
-    if (!mainId) return;
-    const i = order.findIndex((t) => (t.slug || "").toLowerCase() === mainId.toLowerCase() || (t.slug || "").toLowerCase().startsWith(mainId.toLowerCase()));
-    if (i >= 0) setIdx(i);
-  }, [mainId, order]);
+    console.log('🎵 HoloAudioBridge: mainId changed', { mainId, songsLength: songs.length });
+    if (!mainId || !songs.length) return;
+    
+    // Find the holo song from player store
+    const holoSong = songs.find(s => s.id === mainId);
+    console.log('🎵 HoloAudioBridge: Found holo song', holoSong);
+    if (!holoSong) {
+      console.log('🎵 HoloAudioBridge: Available song IDs:', songs.map(s => s.id));
+      return;
+    }
 
-  // Load+play on index change (when source exists)
+    // Map back to the original track using the title
+    const track = tracks.find(t => t.title === holoSong.title);
+    console.log('🎵 HoloAudioBridge: Found matching track', track);
+    if (!track) {
+      console.log('🎵 HoloAudioBridge: Available track titles:', tracks.map(t => t.title));
+      console.log('🎵 HoloAudioBridge: Looking for title:', holoSong.title);
+    }
+    if (track) {
+      setCurrentTrack(track);
+    }
+  }, [mainId, songs]);
+
+  // Load+play on track change (when source exists) with warp delay
   useEffect(() => {
+    console.log('🎵 HoloAudioBridge: currentTrack changed', currentTrack);
     const a = audioRef.current; if (!a) return;
-    const cur = order[idx]; if (!cur) return;
+    if (!currentTrack) return;
     
     // Stop current song before loading new one
     try {
@@ -29,23 +48,54 @@ export default function HoloAudioBridge() {
       // Silently handle any errors during stop
     }
     
-    // Also stop ambient space music when switching songs
+    // Also stop all other audio elements to prevent conflicts
     try {
-      const ambient = document.querySelector('audio[data-ambient="1"]');
-      if (ambient) {
-        ambient.pause();
-        ambient.currentTime = 0;
-      }
+      const allAudio = document.querySelectorAll('audio');
+      allAudio.forEach(audio => {
+        if (audio !== a) { // Don't stop our own audio element
+          audio.pause();
+          audio.currentTime = 0;
+        }
+      });
     } catch (e) {
-      // Silently handle any errors during ambient stop
+      // Silently handle any errors during audio stop
     }
     
-    a.src = cur.src || "";
+    a.src = currentTrack.src || "";
     a.load();
-    if (cur.src) {
-      a.play().catch(()=>{});
+    
+    if (currentTrack.src) {
+      console.log('🎵 HoloAudioBridge: Starting warp delay for', currentTrack.title);
+      
+      // Visual feedback that warp is happening
+      document.body.style.backgroundColor = '#FF0000';
+      setTimeout(() => {
+        document.body.style.backgroundColor = '';
+      }, 500);
+      
+      // Play warp sound immediately
+      const warpAudio = warpAudioRef.current;
+      if (warpAudio) {
+        warpAudio.currentTime = 0;
+        warpAudio.volume = 0.7;
+        warpAudio.play().catch((err) => {
+          console.log('🎵 HoloAudioBridge: Warp sound failed', err);
+        });
+      }
+      
+      // Implement warp delay like MediaPlayer
+      const WARP_MS = 1800;
+      const warpTimeout = setTimeout(() => {
+        console.log('🎵 HoloAudioBridge: Warp delay complete, playing', currentTrack.title);
+        a.play().catch((err) => {
+          console.error('🎵 HoloAudioBridge: Play failed', err);
+        });
+      }, WARP_MS);
+      
+      // Return cleanup function to clear timeout if component unmounts or track changes again
+      return () => clearTimeout(warpTimeout);
     }
-  }, [idx, order]);
+  }, [currentTrack]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -57,14 +107,31 @@ export default function HoloAudioBridge() {
       const a = audioRef.current; if (!a) return;
       if (e.key === ' ') { e.preventDefault(); if (a.paused) a.play().catch(()=>{}); else a.pause(); }
       else if (e.key === 'Enter') { e.preventDefault(); if (a.paused) a.play().catch(()=>{}); else a.pause(); }
-      else if (e.key === 'ArrowLeft') { e.preventDefault(); setIdx((p)=> (p - 1 + order.length) % order.length); }
-      else if (e.key === 'ArrowRight') { e.preventDefault(); setIdx((p)=> (p + 1) % order.length); }
+      else if (e.key === 'ArrowLeft') { 
+        e.preventDefault(); 
+        const currentIndex = songs.findIndex(s => s.id === mainId);
+        if (currentIndex >= 0) {
+          const newIndex = (currentIndex - 1 + songs.length) % songs.length;
+          usePlayerStore.getState().setMain(songs[newIndex].id);
+        }
+      }
+      else if (e.key === 'ArrowRight') { 
+        e.preventDefault(); 
+        const currentIndex = songs.findIndex(s => s.id === mainId);
+        if (currentIndex >= 0) {
+          const newIndex = (currentIndex + 1) % songs.length;
+          usePlayerStore.getState().setMain(songs[newIndex].id);
+        }
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [order.length]);
+  }, [songs, mainId]);
 
   return (
-    <audio ref={audioRef} data-audio-player="1" preload="auto" />
+    <>
+      <audio ref={audioRef} data-holo-audio="1" preload="auto" />
+      <audio ref={warpAudioRef} src="/audio/warp.mp3" preload="auto" style={{ display: 'none' }} />
+    </>
   );
 }

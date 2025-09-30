@@ -42,7 +42,7 @@ export default function Planet({
   const phaseOffsetRef = useRef(0);
   const phaseTargetRef = useRef(0);
   const worldPosRef = useRef(new Vector3());
-  const [depthFactor, setDepthFactor] = useState(1.0);
+  const depthFactorRef = useRef(1.0);
 
   // Deterministic jitter so orbiting planets don't overlap perfectly
   const idHash = useMemo(() => {
@@ -153,7 +153,11 @@ export default function Planet({
   }, [color]);
   // One dominant center planet; others arranged on a shared ring, smaller.
   const speedBase = song.planet.orbitSpeed;
-  const speedTarget = isHover ? speedBase * 1.8 : speedBase;
+  const speedTarget = isMain 
+    ? speedBase * 0.3  // Much slower orbit for focused planet
+    : isHover 
+      ? speedBase * 1.8 
+      : speedBase;
   const jitter = ((idHash % 1000) / 1000 - 0.5) * 0.4; // wider placement jitter [-0.2, 0.2]
   const titleLength = song.title.length;
   const genreInfluence = (song as any).genre ? (song as any).genre.length / 10 : 0.5;
@@ -187,8 +191,8 @@ export default function Planet({
   // Push satellites a bit further out on the shared ring
   // Keep system within left HUD column: tighten satellite ring radius
   const ringBase = 6.0; // push satellites further out for even more spacing
-  // Larger outward nudge on hover
-  const orbitTarget = isMain ? 0 : (isMoon ? 2.0 : ringBase) + jitter + (isHover ? 1.0 : 0);
+  // Larger outward nudge on hover - keep focused planets in their orbits
+  const orbitTarget = (isMoon ? 2.0 : ringBase) + jitter + (isHover ? 1.0 : 0);
   const base = (song.planet?.radius || 1.0) * BASE_SCALE;
   // Ultra-dramatic size differences with extreme variation for holographic effect
   const shapeBasedMainMult = {
@@ -209,8 +213,9 @@ export default function Planet({
       }[planetType] || (0.9 + sizeVar * 0.8);
   const ORBIT_MULT = shapeBasedOrbitMult;
   const HOVER_MULT = 1.25;
+  const FOCUS_EMPHASIS_MULT = 1.4; // Additional scale boost for focused planets
   const scaleTarget = Math.max(0.01, isMain
-    ? base * MAIN_MULT * mainSizeJitter
+    ? base * MAIN_MULT * FOCUS_EMPHASIS_MULT * mainSizeJitter
     : (isHover ? base * ORBIT_MULT * HOVER_MULT : base * ORBIT_MULT) * satelliteSizeJitter) || 1.0;
 
   // Layout fields (concentric rings + golden-angle)
@@ -249,19 +254,8 @@ export default function Planet({
 
   // Optional external texture map (e.g., cover art) when provided — disabled to keep realistic planets
   const USE_EXTERNAL_TEXTURES = false;
-  // Optional external texture map (e.g., cover art) when provided
-  const [externalMap, setExternalMap] = useState<Texture|null>(null);
-  useEffect(() => {
-    if (!USE_EXTERNAL_TEXTURES) { setExternalMap(null); return; }
-    let cancelled = false;
-    const url = song.planet.textureUrl;
-    if (!url) { setExternalMap(null); return; }
-    try {
-      const loader = new TextureLoader();
-      loader.load(url, (tex) => { if (!cancelled) { tex.wrapS = tex.wrapT = RepeatWrapping; setExternalMap(tex); } }, undefined, () => { if(!cancelled) setExternalMap(null); });
-    } catch { setExternalMap(null); }
-    return () => { cancelled = true; };
-  }, [song.planet.textureUrl]);
+  // External textures disabled to prevent flashing
+  const externalMap = null;
 
   // Only build procedural textures when enabled and no external map
   const { colorTex, normalTex, roughTex, cloudsTex } = useMemo(() => {
@@ -550,7 +544,8 @@ export default function Planet({
     const scaleLerp = isHover ? lerpFast : (isMain ? (1 - Math.exp(-d / 0.5)) : lerpSlow);
 
     // Respect computed layout + element tweaks (non-destructive) with safety checks
-    const targetR = (isMain ? 0 : layoutOrbit) * radiusMul;
+    // Keep focused planets in their orbits instead of moving them to center
+    const targetR = layoutOrbit * radiusMul;
     const safeTargetR = isFinite(targetR) ? targetR : 0;
     orbitRadiusRef.current = lerp(orbitRadiusRef.current, safeTargetR, orbitLerp);
     const layoutScale = (layout?.scale ?? 1) * scaleMul;
@@ -597,7 +592,7 @@ export default function Planet({
       groupRef.current.rotation.x = safeTilt;
     }
     // Depth readability: compute a camera-relative factor once per frame
-    let depthLocal = depthFactor;
+    let depthLocal = depthFactorRef.current;
     if (groupRef.current && (state as any).camera) {
       const cam = (state as any).camera as any;
       const v = worldPosRef.current.clone();
@@ -631,9 +626,9 @@ export default function Planet({
       }
       (m as any).clearcoat = 0.25;
     }
-    // Throttled state update to refresh HoloMaterial uniforms for depth
-    if (Number.isFinite(depthLocal) && Math.abs(depthLocal - depthFactor) > 0.03) {
-      setDepthFactor(depthLocal);
+    // Update depth factor for next frame without causing re-renders
+    if (Number.isFinite(depthLocal)) {
+      depthFactorRef.current = depthLocal;
     }
 
     // Slow-moving cloud layer for parallax realism

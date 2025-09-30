@@ -36,9 +36,9 @@ export function createHeartGeometry(
       const t = (point / pointsPerLayer) * Math.PI * 2; // parameter around heart outline
       const layerDepth = (layer / layers) - 0.5; // from -0.5 to 0.5
       
-      // 2D heart shape equation (parametric)
+      // 2D heart shape equation (parametric) - flipped Y for correct orientation
       const heartX = scale * (16 * Math.sin(t) ** 3) * 0.08;
-      const heartY = scale * (13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t)) * 0.08;
+      const heartY = scale * -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t)) * 0.08;
       
       // Create solid planet-like body by scaling heart shape based on distance from center
       // Use spherical interpolation and roundness blending to make it more planet-like

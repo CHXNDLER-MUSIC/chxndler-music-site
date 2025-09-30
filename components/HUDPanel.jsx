@@ -20,6 +20,7 @@ class ErrorBoundary extends React.Component {
 }
 // Song list removed in favor of dropdown-only selector
 import CoverCard from "@/components/CoverCard";
+import CoverHologram from "@/components/CoverHologram";
 import { buildPlanetSongs } from "@/lib/planets";
 import SongDropdown from "@/components/SongDropdown";
 import DevErrorLogger from "@/components/DevErrorLogger";
@@ -55,7 +56,7 @@ function ElementIcon({ name, size = 18, glow = true }) {
     const k = String(key).toLowerCase();
     if (k.includes("chxndler")) return "#19E3FF"; // brand cyan
     if (k.includes("water")) return "#38B6FF";      // cyan
-    if (k.includes("heart")) return "#FF2FB2";      // stronger pink
+    if (k.includes("heart")) return "#FC54AF";      // bright pink
     if (k.includes("lightning") || k.includes("electric")) return "#FFC700"; // deeper yellow
     if (k.includes("earth")) return "#F2EF1D";     // reuse neon yellow
     if (k.includes("air")) return "#8BF9FF";       // light cyan
@@ -111,8 +112,6 @@ export default function HUDPanel({
   const [PlanetSystemComp, setPlanetSystemComp] = useState(() => PlanetSystemRaw);
   const [threeFailed, setThreeFailed] = useState(null);
   const [mounted, setMounted] = useState(false);
-  const [showCard, setShowCard] = useState(false);
-  const [cardFlipped, setCardFlipped] = useState(false);
   // Beam fade: allow external control; default to fade-in on mount
   const [beamOpacity, setBeamOpacity] = useState(0);
   // Refs for dynamic planet placement above player
@@ -137,8 +136,10 @@ export default function HUDPanel({
     }
   }, [beamEnabled]);
   // Content fade (instead of hard hide when beamOnly)
+  // Always show song selection dropdown even when beamOnly is true
   const [contentOpacity, setContentOpacity] = useState(beamOnly ? 0 : 1);
   useEffect(() => { setContentOpacity(beamOnly ? 0 : 1); }, [beamOnly]);
+  
 
   // Runtime probe: ensure WebGL exists; use raw Three-based system to avoid React internals issues
   useEffect(() => {
@@ -294,35 +295,6 @@ export default function HUDPanel({
       a.pause();
     }
   };
-  useEffect(() => {
-    if (!showCard) return;
-    const onKey = (e) => { 
-      if (e.key === 'Escape') {
-        setShowCard(false);
-        // Dispatch event to notify DashboardApp that card modal closed
-        const event = new CustomEvent('hideCoverCard');
-        window.dispatchEvent(event);
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [showCard]);
-
-  // Listen for cover card events from HoloHUD
-  useEffect(() => {
-    const handleShowCoverCard = (event) => {
-      setShowCard(true);
-    };
-    window.addEventListener('showCoverCard', handleShowCoverCard);
-    return () => window.removeEventListener('showCoverCard', handleShowCoverCard);
-  }, []);
-
-  // Reset flip state when modal closes
-  useEffect(() => {
-    if (!showCard) {
-      setCardFlipped(false);
-    }
-  }, [showCard]);
 
   // Measure container and compute a stable scale before first paint to avoid flicker.
   useLayoutEffect(() => {
@@ -445,12 +417,17 @@ export default function HUDPanel({
             ref={planetRef}
             className={inConsole ? "absolute -left-2 -right-2" : "absolute -left-4 -right-4"}
             // Move 3D display down with unified HUD offset
-            style={{ top: `calc(${inConsole ? 91 : 111}px + var(--hud-y, 0px))`, bottom: planetBottom }}
+            style={{ 
+              top: `calc(${inConsole ? 91 : 111}px + var(--hud-y, 0px))`, 
+              bottom: planetBottom,
+              pointerEvents: 'none' // Allow clicks to pass through to elements below
+            }}
           >
             {can3D && PlanetSystemComp ? (
-              <div className="relative w-full h-full">
+              <div className="w-full h-full" style={{ pointerEvents: 'none' }}>
                 <ErrorBoundary fallback={null} onError={(e)=>{ if (String(e?.name||'').includes('IndexSizeError')) { try { if (DEBUG_MEDIA) dwarn('Disabling 3D due to IndexSizeError'); } catch {} } setThreeFailed((e && (e.message||e.name)) || 'Render error'); setCan3D(false); }}>
-                  <PlanetSystemComp showAll={!currentId} onSongChange={onSongChange} />
+                  {/* Show planet system always - both on homepage and when songs are selected */}
+                  <PlanetSystemComp showAll={true} onSongChange={onSongChange} />
                 </ErrorBoundary>
               </div>
             ) : (
@@ -472,7 +449,7 @@ export default function HUDPanel({
               </div>
             )}
           </div>
-          {/* Cover section at bottom right corner */}
+          {/* Cover section at bottom right corner - using CoverHologram for pop-out functionality */}
           <div ref={coverRef} className="absolute" style={{ 
             bottom: inConsole ? -8 : -16, 
             right: inConsole ? -8 : -16, 
@@ -480,38 +457,41 @@ export default function HUDPanel({
             display: 'flex', 
             justifyContent: 'flex-end' 
           }}>
-            <button
-              type="button"
-              aria-label="Open song card"
-              className="cover-link"
-              onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {}; try { const a = hoverCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
-              onClick={() => { 
-                try { sfx.play('click', 0.6); } catch {};
-                try { const a = clickCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {};
-                // Track cover art click
-                const trackingSong = (!currentId ? 'chxndler_home' : (track?.slug || active || 'unknown'));
-                const trackingTitle = (!currentId ? 'CHXNDLER Home' : (track?.title || 'Unknown'));
-                trackAnalytics("cover_art_clicked", {
-                  song_id: trackingSong,
-                  song_title: trackingTitle,
-                  cover_src: (!currentId ? DEFAULT_COVER : (track?.cover || DEFAULT_COVER))
-                });
-                setShowCard(true); 
-              }}
-            >
-              {(() => {
-                const src = (!currentId ? DEFAULT_COVER : (track?.cover || DEFAULT_COVER));
-                return <CoverCard src={src} size={140} />;
-              })()}
-            </button>
+            {(() => {
+              const src = (!currentId ? DEFAULT_COVER : (track?.cover || DEFAULT_COVER));
+              const title = (!currentId ? 'CHXNDLER' : (track?.title || 'Unknown'));
+              const trackingSong = (!currentId ? 'chxndler_home' : (track?.slug || active || 'unknown'));
+              const trackingTitle = (!currentId ? 'CHXNDLER Home' : (track?.title || 'Unknown'));
+              
+              return (
+                <div
+                  onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {}; try { const a = hoverCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
+                >
+                  <CoverHologram 
+                    src={src} 
+                    title={title} 
+                    inline={true} 
+                    size={110}
+                    onCardOpen={() => {
+                      // Track cover art click when card actually opens
+                      trackAnalytics("cover_art_clicked", {
+                        song_id: trackingSong,
+                        song_title: trackingTitle,
+                        cover_src: src
+                      });
+                    }}
+                  />
+                </div>
+              );
+            })()}
           </div>
 
-          {/* Waveform Media Player - positioned in bottom left corner of blue display */}
+          {/* Waveform Media Player - flush in bottom left corner extending to cover art */}
           <div ref={playerRef} className="absolute" style={{ 
-            width: '200px',
+            left: inConsole ? -2 : -4, // Flush with blue display left edge
+            right: oneLinerRight + 8, // Extend to cover art with small gap
             height: '55px',
-            left: inConsole ? '8px' : '12px',
-            bottom: inConsole ? '8px' : '12px'
+            bottom: inConsole ? -2 : -4 // Flush with blue display bottom edge
           }}>
             <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '10px' }}>
               <div className="flex items-center gap-3 p-2">
@@ -810,13 +790,18 @@ export default function HUDPanel({
           </div>
         </div>
 
-        {/* Song selector positioned above media player, extending to cover */}
+        </div>
+
+        {/* Song selector positioned outside content opacity container to avoid beamOnly blocking */}
         <div className="absolute" style={{ 
-          left: inConsole ? 2 : 4, 
+          left: inConsole ? 6 : 8, 
           bottom: 'calc(80px - 24px)', // Position above media player (80px height - 24px overlap)
           // Reserve dynamic space to the right so the dropdown never overlaps the cover
-          right: oneLinerRight,
-          maxWidth: 'none'
+          right: oneLinerRight + 4,
+          maxWidth: 'none',
+          zIndex: 99999,  // Highest z-index to ensure it's above everything
+          pointerEvents: 'auto', // Explicitly enable pointer events
+          position: 'absolute' // Explicit positioning to avoid any layout conflicts
         }}>
             <SongDropdown
               items={resolvedSongs}
@@ -824,6 +809,14 @@ export default function HUDPanel({
               currentId={currentId}
               onChange={(id) => {
                 setActive(id);
+                
+                // Set as main planet in player store so it becomes focused in dashboard
+                try {
+                  usePlayerStore.getState().setMain(id);
+                  console.log('🎵 HUDPanel: Set main planet to', id);
+                } catch (error) {
+                  console.error('Failed to set main planet:', error);
+                }
                 
                 // Stop ambient space music when switching songs
                 try {
@@ -858,8 +851,6 @@ export default function HUDPanel({
               }}
             />
           </div>
-        </div>
-
 
         {/* bottom-corner buttons removed per design request */}
         </motion.div>
@@ -890,7 +881,13 @@ export default function HUDPanel({
           border: 2px solid rgba(25,227,255,0.8);
           background: rgba(25,227,255,0.1);
           backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
           box-shadow: 0 0 18px rgba(25,227,255,0.35);
+          /* Safari performance fixes */
+          -webkit-backface-visibility: hidden;
+          backface-visibility: hidden;
+          will-change: transform, opacity;
+          contain: layout style;
         }
         
         .waveform-container{
@@ -1023,250 +1020,9 @@ export default function HUDPanel({
         }
         
         /* Beam animations removed */
+
       `}</style>
-      {showCard ? (
-        <div
-          className="fixed inset-0 z-[120] flex items-center justify-center backdrop-blur-sm"
-          style={{ 
-            background: 'transparent'
-          }}
-        >
-          <div
-            style={{ 
-              // Exact same position as the pink display: bottom aligned to the beam top
-              position: 'fixed',
-              // Nudge the entire card container slightly more down
-              bottom: 'calc(var(--display-touch-top) - 140px)',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: 'var(--display-width)',
-              display: 'flex',
-              // Align card to the bottom edge of this anchored container
-              alignItems: 'flex-end',
-              justifyContent: 'center',
-              pointerEvents: 'auto'
-            }}
-            onClick={() => {
-              try { sfx.play('/audio/close.mp3', 0.7); } catch {}
-              try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
-              setShowCard(false);
-              // Dispatch event to notify DashboardApp that card modal closed
-              const event = new CustomEvent('hideCoverCard');
-              window.dispatchEvent(event);
-            }}
-          >
-            <div
-              className="relative rounded-2xl p-3 card-modal"
-              style={{
-                maxWidth: '200px',
-                maxHeight: '280px',
-                width: 'auto',
-                height: 'auto',
-                // Sit exactly on the bottom edge of the blue display
-                marginBottom: '0px',
-                paddingTop: '50px',
-                // Add extra space below the card so the outside container isn't too short
-                paddingBottom: '20px'
-              }}
-              onClick={(e)=> e.stopPropagation()}
-            >
-            <div className="tilt-wrap">
-              <div className="card-frame">
-                <div 
-                  className="card-flip-container"
-                  style={{
-                    position: 'relative',
-                    cursor: 'pointer'
-                  }}
-                  onClick={() => { 
-                    try { sfx.play('flip', 0.3); } catch {} 
-                    setCardFlipped(!cardFlipped); 
-                  }}
-                >
-                  <div 
-                    className="card-flip-inner"
-                    style={{
-                      transition: 'transform 0.7s ease-in-out',
-                      transformStyle: 'preserve-3d',
-                      transform: cardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
-                    }}
-                  >
-                    {/* Front side */}
-                    <div style={{ backfaceVisibility: 'hidden', transform: 'rotateY(0deg)' }}>
-                      {(() => {
-                        const home = !currentId;
-                        const slug = home ? '' : (track?.slug || active || '');
-                        const CARD_OVERRIDES = {
-                          "were-just-friends": "/card/we're-just-friends.png",
-                          "were-just-friends-dmvrco-remix": "/card/we're-just-friends-dmvrco-remix.png",
-                          "were-just-friends-mickey-jas-remix": "/card/we're-just-friends-mickey jas-remix.png",
-                          "mr-brightside": "/card/mr.brightside.png",
-                          "tienes-un-amigo": "/card/tienes-un-amigo-acqi.png",
-                        };
-                        const explicitCard = slug ? (CARD_OVERRIDES[slug] || `/card/${slug}.png`) : '';
-                        const cardSrc = home ? DEFAULT_CARD : (explicitCard || track?.cover || FALLBACK_COVER);
-                        return (
-                          <img
-                            src={cardSrc}
-                            alt={(track?.title)||'Card'}
-                            className="tilt-img"
-                            data-fallback="0"
-                            onError={(e)=>{
-                              try {
-                                const el = e.currentTarget;
-                                const tried = Number((el.dataset && el.dataset.fallback) || '0');
-                                if (home) { el.src = '/card/BUSINESS CARD.png'; if (el.dataset) el.dataset.fallback = '2'; return; }
-                                if (tried === 0 && slug) {
-                                  el.src = `/generated/${slug}-album-card.png`;
-                                  if (el.dataset) el.dataset.fallback = '1';
-                                  return;
-                                }
-                                el.src = track?.cover || DEFAULT_COVER;
-                                if (el.dataset) el.dataset.fallback = '2';
-                              } catch {}
-                            }}
-                          />
-                        );
-                      })()} 
-                    </div>
-                    {/* Back side */}
-                    <div 
-                      style={{ 
-                        position: 'absolute', 
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        backfaceVisibility: 'hidden',
-                        transform: 'rotateY(180deg)'
-                      }}
-                    >
-                      <img
-                        src="/card/back.png"
-                        alt="Card back"
-                        className="tilt-img"
-                      />
-                    </div>
-                  </div>
-                </div>
-                <span className="frame-sheen" aria-hidden />
-              </div>
-            </div>
-            {(() => {
-              try {
-                const home = !currentId;
-                const slug = home ? '' : (track?.slug || active || '');
-                // Map track slugs to purchase links
-                const BUY_LINKS = {
-                  'alone': 'https://buy.stripe.com/dRmfZiclr5l3e3Ddll4gg0i',
-                  'always-on-my-mind': 'https://buy.stripe.com/9B6cN61GN28R0cN5ST4gg04',
-                  'baby': 'https://buy.stripe.com/aFacN64SZ4gZcZz8114gg0a',
-                  'be-my-bee': 'https://buy.stripe.com/cNi14oetz6p76Bbgxx4gg0k',
-                  'be-my-bee-acoustic': 'https://buy.stripe.com/aFacN64SZ4gZcZz8114gg0a',
-                  'brain-freeze': 'https://buy.stripe.com/8x2aEYfxD00JcZza994gg0h',
-                  'collide': 'https://buy.stripe.com/7sY3cw5X3fZH0cN0yz4gg05',
-                  'colors-of-our-home': 'https://buy.stripe.com/5kQ00k2KRfZH9Nn1CD4gg0j',
-                  'i-might-fall-in-love-with-you': 'https://buy.stripe.com/aFa8wQdpv7tb1gR1CD4gg0c',
-                  'kid-forever': 'https://buy.stripe.com/00wfZibhnfZH4t3dll4gg0g',
-                  'letting-go': 'https://buy.stripe.com/3cI9AU85b00J9Nna994gg0d',
-                  'mr-brightside': 'https://buy.stripe.com/8x25kEetz8xf0cN8114gg02',
-                  'mr-brightside-killers-cover': 'https://buy.stripe.com/8x25kEetz8xf0cN8114gg02',
-                  'ocean-girl': 'https://buy.stripe.com/dRmbJ24SZ00J6Bb9554gg00',
-                  'ocean-girl-acoustic': 'https://buy.stripe.com/aFaeVeclr28R3oZftt4gg09',
-                  'ocean-girl-remix': 'https://buy.stripe.com/dRmeVeetz8xf0cNchh4gg08',
-                  'somebody-to-love': 'https://buy.stripe.com/4gM00kgBH4gZaRr1CD4gg0e',
-                  'tienes-un-amigo': 'https://buy.stripe.com/cNibJ2gBH3cV8Jjgxx4gg0f',
-                  'were-just-friends': 'https://buy.stripe.com/14A14o99fbJrbVv8114gg0b',
-                  'were-just-friends-mickey-jas-remix': 'https://buy.stripe.com/aFa5kE3OV14N3oZchh4gg06',
-                  'were-just-friends-dmvrco-remix': 'https://buy.stripe.com/28EdRa0CJ5l38Jj9554gg03',
-                };
-                const url = slug ? BUY_LINKS[slug] : (home ? 'https://buy.stripe.com/cNi14oetz6p76Bbgxx4gg0k' : undefined);
-                if (url) {
-                  return (
-                    <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-10">
-                      <div className="ocean-cta-wrap relative">
-                        <a
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="btn-ocean"
-                          title="Collect this card"
-                          onClick={(e) => {
-                            try { e.preventDefault(); } catch {}
-                            try { sfx.play('click', 0.6); } catch {}
-                            try {
-                              const el = e.currentTarget;
-                              el.classList.remove('is-rippling');
-                              // force reflow to restart animation
-                              // @ts-ignore
-                              void el.offsetWidth;
-                              el.classList.add('is-rippling');
-                              setTimeout(() => { window.open(el.href, '_blank', 'noopener,noreferrer'); }, 520);
-                            } catch { window.open((e.currentTarget || {}).href, '_blank', 'noopener,noreferrer'); }
-                          }}
-                        >
-                          <span className="btn-label" style={{ whiteSpace: 'nowrap' }}>COLLECT CARD</span>
-                          <span className="btn-ripple" aria-hidden />
-                        </a>
-                      </div>
-                    </div>
-                  );
-                }
-              } catch {}
-              return null;
-            })()}
-            {/* Streaming buttons removed per request */}
-            <button
-              type="button"
-              aria-label="Close"
-              onClick={() => {
-                try { sfx.play('/audio/close.mp3', 0.7); } catch {}
-                try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
-                setShowCard(false);
-                // Dispatch event to notify DashboardApp that card modal closed
-                const event = new CustomEvent('hideCoverCard');
-                window.dispatchEvent(event);
-              }}
-              className="absolute -top-3 -right-3 rounded-full bg-[#19E3FF] text-black font-bold w-8 h-8 shadow-[0_0_20px_rgba(25,227,255,0.8)]"
-              title="Close"
-            >×</button>
-            </div>
-          </div>
-        </div>
-      ) : null}
       <style jsx>{`
-        .card-modal{
-          /* Container now handles dimensions, card fills container */
-          background: rgba(25,227,255,0.25);
-          box-shadow: 0 0 60px rgba(25,227,255,0.25), inset 0 0 0 1px rgba(25,227,255,0.20);
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-        }
-        .tilt-wrap{ perspective: 1200px; transform-style: preserve-3d; }
-        .card-frame{
-          position:relative; border-radius: 16px; padding: 6px; background: rgba(25,227,255,0.10);
-          outline: 1px solid rgba(25,227,255,.4);
-          box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 0 36px rgba(25,227,255,.35);
-        }
-        .tilt-img{
-          width: 100%; height: auto; display:block; object-fit: contain;
-          transform: rotateX(10deg) rotateY(-10deg) translateZ(0);
-          filter: saturate(1.06) contrast(1.06) brightness(1.04)
-            drop-shadow(0 0 18px rgba(25,227,255,0.55)) drop-shadow(0 0 36px rgba(25,227,255,0.35));
-          animation: tiltPulse 3s ease-in-out infinite;
-          border-radius: 14px;
-        }
-        .frame-sheen{ position:absolute; inset: 6px; border-radius: 12px; pointer-events:none;
-          background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,0) 60%);
-          mix-blend-mode: screen; opacity:.6;
-        }
-        .tilt-img:hover{ animation-duration: 2.2s; }
-        @keyframes tiltPulse{
-          0%,100% { transform: rotateX(9deg) rotateY(-9deg) scale(1); }
-          50%      { transform: rotateX(13deg) rotateY(-13deg) scale(1.04); }
-        }
         .btn-stream{
           display:inline-block; padding: 8px 12px; border-radius: 12px; color:#001014; font-weight:700;
           border: 1px solid rgba(255,255,255,.25);
@@ -1279,46 +1035,6 @@ export default function HUDPanel({
         .btn-spotify:hover{ transform: translateZ(0) scale(1.04); box-shadow: 0 0 32px rgba(29,185,84,.8), inset 0 2px 0 rgba(255,255,255,.6), inset 0 -6px 16px rgba(0,0,0,.3); filter: saturate(1.05) brightness(1.03); }
         .btn-apple{ background: radial-gradient(100% 100% at 50% 30%, rgba(255,210,210,1), #FF3B30); box-shadow: 0 0 24px rgba(255,59,48,.55), inset 0 2px 0 rgba(255,255,255,.55), inset 0 -6px 14px rgba(0,0,0,.25); }
         .btn-apple:hover{ transform: translateZ(0) scale(1.04); box-shadow: 0 0 32px rgba(255,59,48,.8), inset 0 2px 0 rgba(255,255,255,.6), inset 0 -6px 16px rgba(0,0,0,.3); filter: saturate(1.05) brightness(1.03); }
-        /* Ocean Girl purchase button */
-        .ocean-cta-wrap{ position:relative; }
-        .btn-ocean{
-          position:relative; display:inline-grid; place-items:center;
-          padding: 8px 12px; border-radius: 10px; font-weight:800; letter-spacing:.06em; font-size: 12px;
-          color:#001014; text-transform:uppercase; font-family: InterLocal, system-ui, sans-serif;
-          /* Yellow variant */
-          background: radial-gradient(100% 100% at 50% 20%, rgba(255,255,210,0.95), #F2EF1D);
-          border: 1px solid rgba(255,255,255,.24);
-          box-shadow: 0 0 20px rgba(242,239,29,.55), inset 0 2px 0 rgba(255,255,255,.6), inset 0 -8px 16px rgba(0,0,0,.22);
-          transition: transform .12s ease, box-shadow .18s ease, filter .18s ease;
-          overflow:hidden;
-        }
-        .btn-ocean:hover{
-          transform: translateZ(0) scale(1.05);
-          box-shadow:
-            0 0 36px rgba(242,239,29,.95),
-            0 0 80px rgba(242,239,29,.55),
-            inset 0 2px 0 rgba(255,255,255,.7),
-            inset 0 -10px 18px rgba(0,0,0,.28);
-          filter: saturate(1.08) brightness(1.07);
-          animation: oceanGlow 1.8s ease-in-out infinite;
-        }
-        .btn-ocean:active{ transform: scale(.98); }
-        @keyframes oceanGlow {
-          0%, 100% { box-shadow: 0 0 36px rgba(242,239,29,.95), 0 0 80px rgba(242,239,29,.55), inset 0 2px 0 rgba(255,255,255,.7), inset 0 -10px 18px rgba(0,0,0,.28); }
-          50% { box-shadow: 0 0 52px rgba(242,239,29,1), 0 0 110px rgba(242,239,29,.7), inset 0 2px 0 rgba(255,255,255,.75), inset 0 -12px 20px rgba(0,0,0,.3); }
-        }
-        /* Ripple light pass on click */
-        .btn-ripple{ position:absolute; inset:-10%; border-radius:inherit; pointer-events:none; opacity:0;
-          background: radial-gradient(closest-side, rgba(255,255,255,.85), rgba(242,239,29,.45) 40%, rgba(242,239,29,0) 60%);
-          filter: blur(1px);
-        }
-        .btn-ocean.is-rippling .btn-ripple{ animation: og-ripple 520ms ease-out 1; }
-        @keyframes og-ripple{
-          0% { opacity:.7; transform: scale(.5); }
-          60% { opacity:.25; transform: scale(1.6); }
-          100% { opacity:0; transform: scale(2.2); }
-        }
-        /* (flicker effect removed) */
       `}</style>
       <audio ref={hoverCoverRef} preload="auto">
         <source src="/audio/hover.mp3" type="audio/mpeg" />
@@ -1327,6 +1043,7 @@ export default function HUDPanel({
       <audio ref={clickCoverRef} src="/audio/click.mp3" preload="auto" />
       <audio ref={closeCoverRef} src="/audio/close.mp3" preload="auto" />
       </div>
+
     </motion.section>
   );
 }

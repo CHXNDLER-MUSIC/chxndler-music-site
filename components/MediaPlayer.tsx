@@ -44,11 +44,9 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const audioRef = useRef<HTMLAudioElement|null>(null);
   const uiClickRef = useRef<HTMLAudioElement|null>(null);
   const detentRef = useRef<HTMLAudioElement|null>(null);
-  const warpTimerRef = useRef<number|undefined>(undefined);
   const warpPlayTimerRef = useRef<number|undefined>(undefined);
   const isInitialMountRef = useRef(true);
   const intentionalPlayRef = useRef(false); // Track when play is intentionally triggered
-  const [showWarp, setShowWarp] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [volume, setVolume] = useState(1.0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -170,10 +168,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       detent(); // detent SFX
     }
     
-    // Trigger warp flash overlay briefly when locking into a station
-    try { setShowWarp(true); } catch {}
-    if (warpTimerRef.current !== undefined) clearTimeout(warpTimerRef.current);
-    warpTimerRef.current = window.setTimeout(() => { setShowWarp(false); warpTimerRef.current = undefined; }, 820);
 
     // Always load the song when index changes, but only auto-play if autoPlayOnIndex is true
     if (cur.src) {
@@ -222,7 +216,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
 
   // Cleanup any pending warp timers on unmount
   useEffect(() => () => {
-    if (warpTimerRef.current !== undefined) { clearTimeout(warpTimerRef.current); }
     if (warpPlayTimerRef.current !== undefined) { clearTimeout(warpPlayTimerRef.current); }
   }, []);
 
@@ -461,7 +454,16 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       const vol = Math.max(0, Math.min(1, a.volume)); 
       setVolume(vol); 
     };
-    const onTimeUpdate = () => { setCurrentTime(a.currentTime); };
+    const onTimeUpdate = () => { 
+      const newTime = a.currentTime;
+      setCurrentTime(newTime);
+      if (DEBUG_MEDIA) {
+        // Only log every 5 seconds to avoid spam
+        if (Math.floor(newTime) % 5 === 0 && Math.floor(newTime) !== Math.floor(currentTime)) {
+          dlog('timeupdate', { currentTime: newTime, duration: a.duration, playing: !a.paused });
+        }
+      }
+    };
     const onLoadedMetadata = () => { setDuration(a.duration); };
     const onCanPlayThrough = () => { try { onAudioReady && onAudioReady(true); } catch {} };
     const onCanPlay = () => { try { onAudioReady && onAudioReady(true); } catch {} };
@@ -577,6 +579,11 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     
     const animate = () => {
       setAnimationTime(Date.now());
+      // Also update current time more frequently for smoother cursor movement
+      const a = audioRef.current;
+      if (a && !a.paused) {
+        setCurrentTime(a.currentTime);
+      }
       if (playing) {
         requestAnimationFrame(animate);
       }
@@ -603,13 +610,14 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   
 
   return (
-    <div className="hud-card console-hud h-full w-full" style={{ borderRadius: '16px' }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} aria-label="Media dock">
-      {showWarp ? createPortal(<div className="warp-flash" style={{ zIndex: 120 }} aria-hidden />, document.body) : null}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0 pr-2">
-          <div className="text-left">
-            <div className="text-sm md:text-base opacity-90 leading-tight truncate">{cur.title}</div>
-            <div className="text-xs md:text-sm opacity-60 leading-tight line-clamp-2">{cur.subtitle}</div>
+    <div className="hud-card console-hud h-full w-full relative" style={{ borderRadius: '16px' }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} aria-label="Media dock">
+      <div className="flex flex-col h-full">
+        <div className="flex items-start justify-between gap-3 flex-1">
+          <div className="flex-1 min-w-0 pr-2">
+            <div className="text-left">
+              <div className="text-sm md:text-base opacity-90 leading-tight truncate">{cur.title}</div>
+              <div className="text-xs md:text-sm opacity-60 leading-tight line-clamp-2">{cur.subtitle}</div>
+            </div>
           </div>
         </div>
         <div className="waveform-container" title={cur.title}>
@@ -656,7 +664,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                   return Math.max(0.02, Math.min(0.95, amplitude));
                 });
                 
-                const progress = duration > 0 ? currentTime / duration : 0;
+                const progress = (duration > 0 && isFinite(currentTime) && isFinite(duration)) ? Math.max(0, Math.min(1, currentTime / duration)) : 0;
                 
                 return (
                   <>
@@ -761,21 +769,31 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             
             {/* Time cursor with element icon */}
             <div
-              className="absolute top-0 h-full flex flex-col items-center justify-center pointer-events-none z-10"
+              className="absolute top-0 h-full flex flex-col items-center justify-center pointer-events-none z-10 cursor-transition"
               style={{
-                left: `${Math.max(0, Math.min(100, (duration > 0 ? currentTime / duration : 0) * 100))}%`,
+                left: `${Math.max(0, Math.min(100, (duration > 0 && isFinite(currentTime) && isFinite(duration) ? (currentTime / duration) * 100 : 0)))}%`,
                 transform: 'translateX(-50%)',
                 width: '32px',
               }}
             >
-              {/* Vertical cursor line removed per design */}
+              {/* Vertical cursor line for better tracking visibility */}
+              <div
+                className="absolute top-0 bottom-0 w-0.5 bg-current opacity-80"
+                style={{
+                  background: `linear-gradient(to bottom, transparent 0%, ${currentElementColor} 20%, ${currentElementColor} 80%, transparent 100%)`,
+                  boxShadow: `0 0 4px ${currentElementColor}`,
+                }}
+              />
               
               {/* Element-shaped cursor icon */}
               <img
                 src={`/elements/${currentElement}.png`}
                 alt={`${cur.title} element`}
                 className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 transform w-[2rem] h-[2rem] min-w-[2rem] min-h-[2rem] brightness-150 saturate-125"
-                style={{ filter: `drop-shadow(0 0 14px ${currentElementColor}) drop-shadow(0 0 32px ${currentElementColor}AA) drop-shadow(0 0 64px ${currentElementColor}55)` }}
+                style={{ 
+                  filter: `drop-shadow(0 0 14px ${currentElementColor}) drop-shadow(0 0 32px ${currentElementColor}AA) drop-shadow(0 0 64px ${currentElementColor}55)`,
+                  animation: playing ? 'cursorPulse 2s ease-in-out infinite' : 'none'
+                }}
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = '/elements/music.png';
                 }}
@@ -783,7 +801,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               
               {/* Time + section display */}
               <div 
-                className="absolute -bottom-6 text-xs font-mono px-2 py-1 rounded"
+                className="absolute -bottom-6 text-xs font-mono px-2 py-1 rounded transition-all duration-200"
                 style={{ 
                   background: `${currentElementColor}22`,
                   color: currentElementColor,
@@ -794,7 +812,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               </div>
               {currentSection ? (
                 <div 
-                  className="absolute -top-6 text-[10px] font-mono px-2 py-0.5 rounded"
+                  className="absolute -top-6 text-[10px] font-mono px-2 py-0.5 rounded transition-all duration-300"
                   style={{ 
                     background: 'rgba(0,0,0,0.35)',
                     color: '#fff',
@@ -806,7 +824,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               ) : null}
             </div>
           </div>
-        </div>
+      </div>
       </div>
 
 
@@ -948,14 +966,15 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       <style jsx>{`
         /* Waveform visualization container */
         .waveform-container{
-          position: relative;
-          width: 20vw;
+          position: absolute;
+          bottom: -4px;
+          right: 4px;
+          width: 22vw;
           height: 20vw;
-          min-width: 90px;
+          min-width: 110px;
           min-height: 90px;
-          max-width: 120px;
+          max-width: 140px;
           max-height: 120px;
-          flex-shrink: 0;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1150,6 +1169,15 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         @keyframes pulse {
           0%, 100% { opacity: 0.6; transform: scale(1); }
           50% { opacity: 1; transform: scale(1.1); }
+        }
+        
+        @keyframes cursorPulse {
+          0%, 100% { transform: translate(-50%, -50%) scale(1); }
+          50% { transform: translate(-50%, -50%) scale(1.1); }
+        }
+        
+        .cursor-transition {
+          transition: left 0.05s ease-out;
         }
       `}</style>
     </div>

@@ -21,6 +21,7 @@ export default function HoloPanel() {
   // Initialize songs once on mount
   useEffect(() => {
     const { holoSongs } = buildPlanetSongs();
+    console.log('🎵 HoloPanel: Initializing songs', { count: holoSongs.length, holoSongs });
     usePlayerStore.getState().initSongs(holoSongs);
   }, []);
 
@@ -37,19 +38,13 @@ export default function HoloPanel() {
     >
       <div className="scanlines pointer-events-none" aria-hidden />
       <div className="relative p-4 md:p-6">
-        {/* 3D Planet Display - positioned higher and clipped at cover art level */}
-        <div className="absolute top-0 left-4 right-4 md:left-6 md:right-6 h-[400px] overflow-hidden" style={{ clipPath: 'inset(0 0 calc(100% - 8vh) 0)' }}>
-          <div className="relative h-full rounded-xl bg-black/30 backdrop-blur-md ring-1 ring-cyan-400/20 p-2">
-            <PlanetSystem />
-            {/* Hidden audio bridge for the /holo route */}
-            <div className="hidden">
-              <HoloAudioBridge />
-            </div>
-          </div>
+        {/* Hidden audio bridge for the /holo route */}
+        <div className="hidden">
+          <HoloAudioBridge />
         </div>
 
         {/* Song List - positioned below the clipped 3D display */}
-        <div className="mt-16 h-[200px] md:h-[240px] lg:h-[280px] rounded-xl bg-black/30 backdrop-blur-md ring-1 ring-cyan-400/20 p-2">
+        <div className="mt-16 h-[200px] md:h-[240px] lg:h-[280px] rounded-xl bg-black/30 backdrop-blur-md ring-1 ring-cyan-400/20 p-2" style={{ pointerEvents: 'auto' }}>
           <SongList />
         </div>
       </div>
