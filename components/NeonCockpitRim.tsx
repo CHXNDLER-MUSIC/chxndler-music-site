@@ -128,7 +128,6 @@ export default function NeonCockpitRim() {
           background:
             radial-gradient(50% 60% at 6% 10%, rgba(56,255,200, calc(0.18 + var(--level) * 0.26)), transparent 60%),
             radial-gradient(50% 60% at 94% 10%, rgba(56,182,255, calc(0.18 + var(--level) * 0.26)), transparent 60%),
-            radial-gradient(50% 60% at 6% 90%, rgba(252,84,175, calc(0.16 + var(--level) * 0.22)), transparent 60%),
             radial-gradient(50% 60% at 94% 90%, rgba(242,239,29, calc(0.14 + var(--level) * 0.18)), transparent 60%);
           filter: blur(10px);
         }

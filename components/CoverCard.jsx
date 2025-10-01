@@ -55,9 +55,9 @@ export default function CoverCard({ src = "/cover/ocean-girl.png", label, size =
         .cover-art-container:hover .blue-fill-overlay{ 
           background-color: rgba(25, 227, 255, 0.3);
         }
-        /* Apply a subtle blue tint by default to match dropdown styling */
+        /* Apply a light blue tint to match song dropdown trigger styling */
         .blue-fill-overlay{
-          background-color: rgba(8, 26, 32, 0.25);
+          background-color: rgba(34, 211, 238, 0.1);
         }
       `}</style>
     </div>

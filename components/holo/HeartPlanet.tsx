@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useRef, useMemo } from "react";
-import { Mesh, ShaderMaterial, Color, DoubleSide, Shape, Vector2, ExtrudeGeometry, Euler } from "three";
+import { Mesh, ShaderMaterial, Color, DoubleSide, Euler } from "three";
 import { useFrame } from "@react-three/fiber";
+import { createHeartGeometry } from "../../lib/heartGeometry";
 
 export default function HeartPlanet() {
   const meshRef = useRef<Mesh>(null);
@@ -13,37 +14,20 @@ export default function HeartPlanet() {
   
   // Log after defining radius to avoid ReferenceError during render
   console.log("🧡 HeartPlanet is rendering! Position: [0,0,0], Radius:", heartRadius);
+  console.log("🧡 Using new rounder heart geometry with heartness: 0.3");
 
-  // Create 3D heart geometry by extruding a 2D heart path
+  // Create 3D heart geometry using the rounder planet-like geometry function
   const heartGeometry = useMemo(() => {
-    // Parametric 2D heart (classic formula), then extrude
-    const heartPath = (t: number) => {
-      const x = 16 * Math.pow(Math.sin(t), 3);
-      const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
-      return new Vector2(x, -y); // flip Y so the point faces up
-    };
-    const pts: Vector2[] = [];
-    const steps = 200;
-    for (let i = 0; i <= steps; i++) {
-      const t = (i / steps) * Math.PI * 2;
-      pts.push(heartPath(t));
-    }
-    const shape = new Shape();
-    shape.setFromPoints(pts);
-    const extrude = new ExtrudeGeometry(shape, {
-      depth: heartRadius * 0.8, // Reduced depth for rounder appearance
-      bevelEnabled: true,
-      bevelSegments: 24, // More segments for smoother curves
-      bevelSize: heartRadius * 0.25, // Larger bevel for more rounding
-      bevelThickness: heartRadius * 0.15, // Thicker bevel for rounder edges
-      curveSegments: 96 // More curve segments for smoother heart outline
-    });
-    // Scale path units to desired radius; empirical factor to fit nicely (smaller scale)
-    const scale = heartRadius * 0.025; // Reduced from 0.03 to make it smaller
-    extrude.scale(scale, scale, scale);
-    extrude.center();
-    extrude.computeVertexNormals();
-    return extrude;
+    // Use the sophisticated heart geometry that creates a rounder, more planet-like shape
+    const geometry = createHeartGeometry(
+      heartRadius, // size
+      64, // detail level for smooth curves
+      {
+        heartness: 0.05, // Nearly spherical - should be extremely round
+        thicknessMultiplier: 2.0 // Much thicker for obvious volume change
+      }
+    );
+    return geometry;
   }, [heartRadius]);
 
   // Enhanced planet-like shader material with dramatic lighting

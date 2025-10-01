@@ -628,7 +628,28 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           </div>
         </div>
         <div className="waveform-container" title={cur.title}>
-          <div className="waveform" aria-label="Audio waveform visualization">
+          <div 
+            className="waveform" 
+            aria-label="Audio waveform visualization"
+            onClick={(e) => {
+              const a = audioRef.current;
+              if (!a || !duration) return;
+              
+              // Calculate click position relative to waveform
+              const rect = e.currentTarget.getBoundingClientRect();
+              const clickX = e.clientX - rect.left;
+              const progress = Math.max(0, Math.min(1, clickX / rect.width));
+              const newTime = progress * duration;
+              
+              // Seek to the clicked position
+              a.currentTime = Math.max(0, Math.min(duration - 0.2, newTime));
+              intentionalPlayRef.current = true;
+              a.play().catch(() => {});
+              setPlaying(true);
+              gaTrack("seek_waveform", { slug: cur.slug, seconds: newTime, progress });
+            }}
+            style={{ cursor: 'pointer' }}
+          >
             {/* Audio Waveform using SVG for smooth curves */}
             <svg 
               className="w-full h-full" 
@@ -975,13 +996,13 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         /* Waveform visualization container */
         .waveform-container{
           position: absolute;
-          bottom: -4px;
-          right: 4px;
-          width: 22vw;
+          bottom: -12px;
+          right: 0;
+          width: 24vw;
           height: 20vw;
-          min-width: 110px;
+          min-width: 120px;
           min-height: 90px;
-          max-width: 140px;
+          max-width: 160px;
           max-height: 120px;
           display: flex;
           align-items: center;

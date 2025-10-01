@@ -84,22 +84,8 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
               ))}
             </>
           ) : focusId ? (
-            (() => {
-              const focusedSong = songs.find((s) => s.id === focusId);
-              if (!focusedSong) return null;
-              
-              // When a song is selected, show ONLY the focused planet - all others disappear
-              return (
-                <Planet 
-                  key={focusId} 
-                  song={focusedSong} 
-                  isMain={true} 
-                  isHover={hoverId === focusId} 
-                  isMoon={false}
-                  isMuted={false}
-                />
-              );
-            })()
+            // When a song is selected, hide ALL planets (toggle off)
+            null
           ) : null}
         </SystemGroup>
         </group>

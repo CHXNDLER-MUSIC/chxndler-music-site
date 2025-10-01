@@ -234,7 +234,7 @@ main {
   background-image: url("/cockpit/lightbeam-base.png?v=2");
   /* Keep the base fixed in place and size across screen widths */
   /* Anchor to bottom to avoid movement on resize, then push further down */
-  background-position: center bottom -300px; /* moved above blue button */
+  background-position: center 75%; /* positioned at 75% from top */
   background-size: 1366px auto; /* lock to asset's intrinsic width */
   background-repeat: no-repeat;
   /* Remove unintended blue tint from the PNG */

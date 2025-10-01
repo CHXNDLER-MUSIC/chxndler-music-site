@@ -1,4 +1,5 @@
 import "./globals.css";
+import "../styles/glow.css";
 import type { Metadata } from "next";
 import React from "react";
 import ClickTracker from "@/components/ClickTracker";
