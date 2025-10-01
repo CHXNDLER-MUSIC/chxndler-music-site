@@ -22,7 +22,7 @@ export default function OG() {
           fontWeight: 700,
         }}
       >
-        CHXNDLER — Starship
+        CHXNDLER — SPACESHIP
       </div>
     ),
     size

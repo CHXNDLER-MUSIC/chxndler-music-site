@@ -419,7 +419,8 @@ export default function AmbientSpace({
 
   return (
     <>
-      <audio ref={ambRef}  src={ambientSrc} loop preload="auto" autoPlay playsInline muted data-ambient="1" />
+      {/* Do not autoplay on mount; playback is orchestrated via effects when not suspended */}
+      <audio ref={ambRef} src={ambientSrc} loop preload="auto" playsInline muted data-ambient="1" />
       {introSrc ? <audio ref={introRef} src={introSrc} preload="auto" playsInline data-intro="1" /> : null}
       {/* Enable sound button hidden; global interaction starts audio automatically */}
     </>

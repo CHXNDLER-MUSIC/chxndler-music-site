@@ -1,24 +1,50 @@
 "use client";
 
 import React, { useRef, useMemo } from "react";
-import { Mesh, ShaderMaterial, Color, DoubleSide } from "three";
+import { Mesh, ShaderMaterial, Color, DoubleSide, Shape, Vector2, ExtrudeGeometry, Euler } from "three";
 import { useFrame } from "@react-three/fiber";
-import { createHeartGeometry } from "@/lib/heartGeometry";
 
 export default function HeartPlanet() {
   const meshRef = useRef<Mesh>(null);
   const glowRef = useRef<Mesh>(null);
   const atmosphereRef = useRef<Mesh>(null);
+  // Heart size baseline (used to scale geometry & glows) - made smaller
+  const heartRadius = 2.0; // Smaller so it doesn't dominate the display
   
-  console.log("🧡 HeartPlanet is rendering!");
+  // Log after defining radius to avoid ReferenceError during render
+  console.log("🧡 HeartPlanet is rendering! Position: [0,0,0], Radius:", heartRadius);
 
-  // Create the heart geometry
+  // Create 3D heart geometry by extruding a 2D heart path
   const heartGeometry = useMemo(() => {
-    return createHeartGeometry(3.2, 48, { 
-      heartness: 1.4, 
-      thicknessMultiplier: 1.8 
+    // Parametric 2D heart (classic formula), then extrude
+    const heartPath = (t: number) => {
+      const x = 16 * Math.pow(Math.sin(t), 3);
+      const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+      return new Vector2(x, -y); // flip Y so the point faces up
+    };
+    const pts: Vector2[] = [];
+    const steps = 200;
+    for (let i = 0; i <= steps; i++) {
+      const t = (i / steps) * Math.PI * 2;
+      pts.push(heartPath(t));
+    }
+    const shape = new Shape();
+    shape.setFromPoints(pts);
+    const extrude = new ExtrudeGeometry(shape, {
+      depth: heartRadius * 0.8, // Reduced depth for rounder appearance
+      bevelEnabled: true,
+      bevelSegments: 24, // More segments for smoother curves
+      bevelSize: heartRadius * 0.25, // Larger bevel for more rounding
+      bevelThickness: heartRadius * 0.15, // Thicker bevel for rounder edges
+      curveSegments: 96 // More curve segments for smoother heart outline
     });
-  }, []);
+    // Scale path units to desired radius; empirical factor to fit nicely (smaller scale)
+    const scale = heartRadius * 0.025; // Reduced from 0.03 to make it smaller
+    extrude.scale(scale, scale, scale);
+    extrude.center();
+    extrude.computeVertexNormals();
+    return extrude;
+  }, [heartRadius]);
 
   // Enhanced planet-like shader material with dramatic lighting
   const planetMaterial = useMemo(() => {
@@ -111,10 +137,33 @@ export default function HeartPlanet() {
           float fresnel = 1.0 - max(dot(normal, viewDir), 0.0);
           fresnel = pow(fresnel, 1.8);
           
-          // Dynamic surface details
+          // Dynamic surface details with heart-shaped patterns
           vec2 surfaceUv = vUv * 6.0 + uTime * 0.05;
           float surfaceDetail = fbm(surfaceUv) * 0.3;
-          float continents = fbm(vUv * 3.0) * 0.4;
+          
+          // Enhanced heart-shaped continent patterns on spherical surface
+          vec2 heartUv = vUv * 4.0 - 2.0; // Scale up for more heart patterns
+          
+          // Multiple heart shapes at different scales and positions
+          float heartShape1 = pow(heartUv.x * heartUv.x + heartUv.y * heartUv.y - 0.5, 3.0) - 
+                             heartUv.x * heartUv.x * pow(heartUv.y, 3.0);
+          
+          // Second heart pattern with offset
+          vec2 heartUv2 = (vUv + vec2(0.3, 0.2)) * 3.0 - 1.5;
+          float heartShape2 = pow(heartUv2.x * heartUv2.x + heartUv2.y * heartUv2.y - 0.4, 3.0) - 
+                             heartUv2.x * heartUv2.x * pow(heartUv2.y, 3.0);
+          
+          // Third heart pattern with different offset
+          vec2 heartUv3 = (vUv + vec2(-0.2, 0.4)) * 2.5 - 1.25;
+          float heartShape3 = pow(heartUv3.x * heartUv3.x + heartUv3.y * heartUv3.y - 0.6, 3.0) - 
+                             heartUv3.x * heartUv3.x * pow(heartUv3.y, 3.0);
+          
+          float heartPattern1 = smoothstep(-0.05, 0.05, heartShape1) * 0.8;
+          float heartPattern2 = smoothstep(-0.03, 0.03, heartShape2) * 0.6;
+          float heartPattern3 = smoothstep(-0.04, 0.04, heartShape3) * 0.7;
+          
+          // Combine heart patterns with base noise
+          float continents = fbm(vUv * 3.0) * 0.3 + heartPattern1 + heartPattern2 + heartPattern3;
           
           // Heart pulse effect
           float heartPulse = sin(uTime * 3.0) * 0.1 + 0.9;
@@ -128,11 +177,11 @@ export default function HeartPlanet() {
           surfaceColor += uLightColor * spec1 * 0.8;
           
           // Strong rim lighting for 3D pop
-          vec3 rimColor = uColor * 4.0 * fresnel * heartPulse;
+          vec3 rimColor = uColor * 6.0 * fresnel * heartPulse;
           surfaceColor += rimColor;
           
-          // Emissive glow from within (much brighter)
-          vec3 emissive = uColor * 1.2 * heartPulse;
+          // Emissive glow from within (very bright)
+          vec3 emissive = uColor * 8.0 * heartPulse;
           
           vec3 finalColor = surfaceColor + emissive;
           
@@ -173,11 +222,11 @@ export default function HeartPlanet() {
           float fresnel = 1.0 - abs(dot(vNormal, viewDir));
           fresnel = pow(fresnel, 2.0);
           
-          // Pulsing atmosphere (brighter)
+          // Pulsing atmosphere (very bright)
           float pulse = sin(uTime * 2.0) * 0.4 + 1.0;
           
-          vec3 atmosphereColor = uColor * 2.5 * fresnel * pulse;
-          float alpha = fresnel * 0.8 * pulse;
+          vec3 atmosphereColor = uColor * 8.0 * fresnel * pulse;
+          float alpha = fresnel * 1.5 * pulse;
           
           gl_FragColor = vec4(atmosphereColor, alpha);
         }
@@ -215,28 +264,10 @@ export default function HeartPlanet() {
   });
 
   return (
-    <group position={[0, 0, 0]} scale={[1.0, 1.0, 1.0]}>
-      {/* Main heart planet using proper heart geometry */}
-      <mesh ref={meshRef} position={[0, 0, 0]}>
-        <primitive object={heartGeometry} />
+    <group position={[0, 0, 0]} scale={[0.8, 0.8, 0.8]} rotation={new Euler(0, 0, Math.PI)}>
+      {/* Single core heart planet body with bright shader material */}
+      <mesh ref={meshRef} position={[0, 0, 0]} geometry={heartGeometry}>
         <primitive object={planetMaterial} />
-      </mesh>
-      
-      {/* Atmospheric glow around heart planet */}
-      <mesh ref={atmosphereRef} position={[0, 0, 0]} scale={[1.08, 1.08, 1.08]}>
-        <primitive object={heartGeometry} />
-        <primitive object={atmosphereMaterial} />
-      </mesh>
-      
-      {/* Outer atmospheric halo */}
-      <mesh position={[0, 0, 0]} scale={[1.15, 1.15, 1.15]}>
-        <sphereGeometry args={[3.8, 16, 16]} />
-        <meshBasicMaterial
-          color="#FC54AF"
-          transparent
-          opacity={0.15}
-          side={DoubleSide}
-        />
       </mesh>
     </group>
   );

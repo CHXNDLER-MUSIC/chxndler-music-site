@@ -438,8 +438,6 @@ export default function HoloHubMenu({
             linear-gradient(120deg, rgba(255,255,255,.25), rgba(255,255,255,0) 60%),
             linear-gradient(45deg, #F2EF1D44, transparent 30%),
             repeating-linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.12) 1px, rgba(0,0,0,0) 1px, rgba(0,0,0,0) 3px);
-          transform: translateX(-130%);
-          animation: holoSheen 2.8s ease-in-out infinite;
         }
         .hub:hover{ transform: scale(1.06); box-shadow:
             0 16px 30px rgba(0,0,0,.68),
@@ -556,8 +554,6 @@ export default function HoloHubMenu({
           background:
             linear-gradient(120deg, rgba(255,255,255,.18), rgba(255,255,255,0) 60%),
             repeating-linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.08) 1px, rgba(0,0,0,0) 1px, rgba(0,0,0,0) 3px);
-          transform: translateX(-130%);
-          animation: holoSheen 2.8s ease-in-out infinite;
         }
         .item:hover{ transform: translate(var(--tx,0), var(--ty,0)) translate(-50%, -50%) scale(1.06); box-shadow:
             0 16px 30px rgba(0,0,0,.65),
@@ -630,7 +626,6 @@ export default function HoloHubMenu({
         .item:active{ transform: translate(var(--tx,0), var(--ty,0)) translate(-50%, -50%) scale(0.95); }
         /* Focus ring should follow the item's own tint, not the hub color */
         .item:focus{ outline: 2px solid var(--tint, #38B6FF); outline-offset: 2px; }
-        @keyframes holoSheen { 0% { transform: translateX(-130%); } 55% { transform: translateX(130%);} 100% { transform: translateX(130%);} }
         .item .dot{ width: 10px; height:10px; border-radius:9999px; background:#9EEBFF; }
 
         @media (max-width: 480px) { .hub{ left:-32px; top:-32px; width:64px; height:64px; } .hub-icon{ width: 38px; height: 38px; } }

@@ -14,7 +14,16 @@ export default function SongHUD({ title, coverSrc, element }: { title: string; c
            boxShadow: '0 10px 24px rgba(0,0,0,.4)'
          }}>
       <div style={{ display:'flex', alignItems:'center', gap:12, minWidth: 320 }}>
-        <Image src={coverSrc} alt={title} width={48} height={48} priority className="rounded" />
+        <span className="hud-cover relative overflow-hidden" style={{ display: 'inline-block', borderRadius: 10, width: 48, height: 48 }}>
+          <Image src={coverSrc} alt={title} width={48} height={48} priority className="rounded object-cover w-full h-full" />
+          {/* Subtle blue interior to match waveform styling */}
+          <span className="hud-blue-fill-overlay pointer-events-none absolute inset-0 mix-blend-overlay" />
+          {/* Inner neon rim */}
+          <span className="pointer-events-none absolute inset-0 rounded-[10px] ring-1 ring-[#19E3FF]/40" />
+          {/* Scanlines for texture */}
+          <span className="pointer-events-none absolute inset-0 opacity-20 mix-blend-screen"
+                style={{ background: 'repeating-linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.12) 1px, transparent 1px, transparent 3px)' }} />
+        </span>
         <div style={{ lineHeight: 1.1 }}>
           <div style={{ fontWeight: 800, letterSpacing: '.02em' }}>{title}</div>
           <div style={{ fontSize: 12, opacity: .8 }}>Element: {element}</div>
@@ -34,4 +43,18 @@ export default function SongHUD({ title, coverSrc, element }: { title: string; c
     </div>
   );
 }
-
+<style jsx>{`
+  .hud-cover{
+    outline:1px solid rgba(25,227,255,.20);
+    box-shadow: 0 0 18px rgba(25,227,255,.12);
+    transition: transform .15s ease, box-shadow .2s ease, outline-color .2s ease;
+  }
+  .hud-cover:hover{
+    transform: translateZ(0) scale(1.04);
+    outline-color: rgba(25,227,255,.8);
+    box-shadow: 0 0 42px rgba(25,227,255,.6), 0 0 70px rgba(25,227,255,.35);
+  }
+  /* Subtle blue tint by default, stronger on hover */
+  .hud-blue-fill-overlay{ background-color: rgba(25, 227, 255, 0.12); transition: background-color .2s ease; }
+  .hud-cover:hover .hud-blue-fill-overlay{ background-color: rgba(25, 227, 255, 0.30); }
+`}</style>

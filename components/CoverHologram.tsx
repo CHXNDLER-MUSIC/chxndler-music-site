@@ -14,20 +14,38 @@ const getPurchaseUrl = (title: string) => {
   
   // Map of song slugs to their Stripe purchase URLs
   const purchaseUrls: Record<string, string> = {
-    'ocean-girl': 'https://buy.stripe.com/cNi14oetz6p76Bbgxx4gg0k',
-    'chxndler': 'https://buy.stripe.com/cNi14oetz6p76Bbgxx4gg0k', // Default/home
-    // Add more songs as needed
-    // 'song-slug': 'https://buy.stripe.com/your-stripe-url',
+    'chxndler': 'https://buy.stripe.com/cNi14oetz6p76Bbgxx4gg0k',
+    'alone': 'https://buy.stripe.com/dRmfZiclr5l3e3Ddll4gg0i',
+    'always-on-my-mind': 'https://buy.stripe.com/9B6cN61GN28R0cN5ST4gg04',
+    'baby': 'https://buy.stripe.com/aFacN64SZ4gZcZz8114gg0a',
+    'be-my-bee': 'https://buy.stripe.com/7sY9AU1GN00J4t3ftt4gg0l',
+    'be-my-bee-acoustic': 'https://buy.stripe.com/eVq4gA7173cV6Bb0yz4gg07',
+    'brain-freeze': 'https://buy.stripe.com/8x2aEYfxD00JcZza994gg0h',
+    'collide': 'https://buy.stripe.com/7sY3cw5X3fZH0cN0yz4gg05',
+    'colors-of-our-home': 'https://buy.stripe.com/5kQ00k2KRfZH9Nn1CD4gg0j',
+    'i-might-fall-in-love-with-you': 'https://buy.stripe.com/aFa8wQdpv7tb1gR1CD4gg0c',
+    'kid-forever': 'https://buy.stripe.com/00wfZibhnfZH4t3dll4gg0g',
+    'letting-go': 'https://buy.stripe.com/3cI9AU85b00J9Nna994gg0d',
+    'mrbrightside': 'https://buy.stripe.com/8x25kEetz8xf0cN8114gg02',
+    'ocean-girl': 'https://buy.stripe.com/dRmbJ24SZ00J6Bb9554gg00',
+    'ocean-girl-acoustic': 'https://buy.stripe.com/aFaeVeclr28R3oZftt4gg09',
+    'ocean-girl-remix': 'https://buy.stripe.com/dRmeVeetz8xf0cNchh4gg08',
+    'somebody-to-love': 'https://buy.stripe.com/4gM00kgBH4gZaRr1CD4gg0e',
+    'tienes-un-amigo': 'https://buy.stripe.com/cNibJ2gBH3cV8Jjgxx4gg0f',
+    'were-just-friends': 'https://buy.stripe.com/14A14o99fbJrbVv8114gg0b',
+    'were-just-friends-mickey-jas-remix': 'https://buy.stripe.com/aFa5kE3OV14N3oZchh4gg06',
+    'were-just-friends-dmvrco-remix': 'https://buy.stripe.com/28EdRa0CJ5l38Jj9554gg03',
   };
   
   // Return specific URL or default
-  return purchaseUrls[slug] || purchaseUrls['ocean-girl'];
+  return purchaseUrls[slug] || purchaseUrls['chxndler'];
 };
 
 export default function CoverHologram({ src, title, inline = false, size = 168, onCardOpen }: { src: string; title: string; inline?: boolean; size?: number; onCardOpen?: () => void }) {
   const [showCard, setShowCard] = useState(false);
   const [cardFlipped, setCardFlipped] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const closeCoverRef = useRef(null);
   const flipCoverRef = useRef(null);
 
@@ -70,7 +88,7 @@ export default function CoverHologram({ src, title, inline = false, size = 168, 
 
   return (
     <motion.div
-      className={`cover-hologram-container ${inline ? 'relative' : 'absolute left-1/2 z-30 -translate-x-1/2'} ${cockpit.cover.glass} rounded-2xl cursor-pointer`}
+      className={`cover-hologram-container ${hovered ? 'hovered' : ''} ${inline ? 'relative' : 'absolute left-1/2 z-30 -translate-x-1/2'} ${cockpit.cover.glass} rounded-2xl cursor-pointer bg-[rgba(8,26,32,0.4)] backdrop-blur-xl`}
       style={inline ? { 
         width: size + 16, // Add padding to size
       } : { 
@@ -81,14 +99,12 @@ export default function CoverHologram({ src, title, inline = false, size = 168, 
       initial={{ opacity: 0, y: 20, rotateX: -8 }}
       animate={{ opacity: inline ? 1 : cockpit.cover.hologramOpacity, y: 0, rotateX: inline ? 0 : -cockpit.cover.tilt }}
       whileHover={{ 
-        scale: 1.05,
-        boxShadow: [
-          "inset 0 0 40px rgba(255,255,255,0.08), 0 0 28px rgba(25,227,255,0.35)",
-          "inset 0 0 40px rgba(255,255,255,0.12), 0 0 40px rgba(25,227,255,0.8), 0 0 60px rgba(25,227,255,0.6), 0 0 80px rgba(25,227,255,0.4)"
-        ]
+        scale: 1.04
       }}
       transition={{ type: "spring", stiffness: 100, damping: 18 }}
       onClick={handleClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
@@ -109,15 +125,12 @@ export default function CoverHologram({ src, title, inline = false, size = 168, 
           priority
         />
         {/* Blue fill overlay */}
-        <div className="blue-fill-overlay absolute inset-2 rounded-xl pointer-events-none bg-[#19E3FF]/0 transition-all duration-300" />
+        <div className="blue-fill-overlay absolute inset-2 rounded-xl pointer-events-none transition-all duration-300" />
       </div>
       {!inline && <div className="px-3 pb-3 text-center text-xs text-white/70">{title}</div>}
       <div
         aria-hidden
-        className="absolute inset-0 rounded-2xl border-2 border-[#19E3FF]/60 transition-all duration-300"
-        style={{
-          boxShadow: "inset 0 0 40px rgba(255,255,255,0.08), 0 0 28px rgba(25,227,255,0.35)",
-        }}
+        className="cover-glow-frame absolute inset-0 rounded-2xl border-2 border-[#19E3FF]/60 transition-all duration-300"
       />
       
       {showCard && mounted ? createPortal(
@@ -173,7 +186,8 @@ export default function CoverHologram({ src, title, inline = false, size = 168, 
                         alt={title}
                         className="tilt-img"
                         onError={(e)=>{
-                          e.currentTarget.src = '/card/chxndler.png';
+                          // If card doesn't exist, show the original cover art
+                          e.currentTarget.src = src;
                         }}
                       />
                     </div>
@@ -200,7 +214,7 @@ export default function CoverHologram({ src, title, inline = false, size = 168, 
                 <span className="frame-sheen" aria-hidden />
               </div>
             </div>
-            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 z-10">
+            <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 z-10">
               <div className="ocean-cta-wrap relative">
                 <a
                   href={getPurchaseUrl(title)}
@@ -260,36 +274,58 @@ export default function CoverHologram({ src, title, inline = false, size = 168, 
       <style jsx>{`
         /* Cover Hologram Hover Effects */
         .cover-hologram-container {
-          animation: coverPulse 3s ease-in-out infinite;
           transition: transform 0.3s ease !important;
           will-change: transform;
+          box-shadow: none;
+        }
+        .cover-hologram-container:hover,
+        .cover-hologram-container.hovered {
+          box-shadow:
+            0 0 52px rgba(25,227,255,.9),
+            0 0 90px rgba(25,227,255,.7),
+            0 0 140px rgba(25,227,255,0.5),
+            0 0 200px rgba(25,227,255,0.3) !important;
         }
         
-        .cover-hologram-container:hover {
-          animation: none;
-        }
-        
-        .cover-hologram-container:hover .blue-fill-overlay {
-          background-color: rgba(25, 227, 255, 0.2);
+        .cover-hologram-container:hover .blue-fill-overlay,
+        .cover-hologram-container.hovered .blue-fill-overlay {
+          background-color: rgba(25, 227, 255, 0.3);
           mix-blend-mode: overlay;
         }
-        
-        .cover-hologram-container:hover .cover-hologram-image {
-          filter: brightness(1.1) contrast(1.1) saturate(1.2);
+        /* Apply subtle blue tint by default to match dropdown styling */
+        .blue-fill-overlay { 
+          background-color: rgba(25, 227, 255, 0.12); 
+          mix-blend-mode: overlay; 
         }
         
-        .cover-hologram-container:hover > div[aria-hidden] {
+        .cover-hologram-image {
+          filter: brightness(1.1) contrast(1.05) saturate(1.1);
+        }
+        .cover-hologram-container:hover .cover-hologram-image,
+        .cover-hologram-container.hovered .cover-hologram-image {
+          filter: brightness(1.6) contrast(1.4) saturate(1.8) 
+            drop-shadow(0 0 20px rgba(25,227,255,1)) 
+            drop-shadow(0 0 40px rgba(25,227,255,0.8)) 
+            drop-shadow(0 0 80px rgba(25,227,255,0.6))
+            drop-shadow(0 0 120px rgba(25,227,255,0.4));
+        }
+        
+        .cover-glow-frame {
+          box-shadow: inset 0 0 40px rgba(255,255,255,0.08);
+          border-color: rgba(25, 227, 255, 0.6);
+        }
+        .cover-hologram-container:hover .cover-glow-frame,
+        .cover-hologram-container.hovered .cover-glow-frame {
           border-color: rgba(25, 227, 255, 1);
+          box-shadow:
+            inset 0 0 80px rgba(255,255,255,0.2),
+            0 0 52px rgba(25,227,255,.9),
+            0 0 90px rgba(25,227,255,.7),
+            0 0 140px rgba(25,227,255,0.5),
+            0 0 200px rgba(25,227,255,0.3);
         }
         
-        @keyframes coverPulse {
-          0%, 100% {
-            box-shadow: 0 0 28px rgba(25, 227, 255, 0.35);
-          }
-          50% {
-            box-shadow: 0 0 35px rgba(25, 227, 255, 0.5);
-          }
-        }
+        
         
         .card-modal{
           max-width: min(45vw, 280px);

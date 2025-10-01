@@ -30,7 +30,7 @@ type Sat = {
   weatherData?: WeatherSystem;
 };
 
-export default function PlanetSystemRaw({ showAll = false, onSongChange }: { showAll?: boolean; onSongChange?: (id: string) => void }) {
+export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = false, onSongChange }: { showAll?: boolean; hideUntilPlaying?: boolean; onSongChange?: (id: string) => void }) {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -55,8 +55,114 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
   const connectionLinesRef = useRef<THREE.LineSegments[]>([]);
   const particleUniforms = useRef<{ uTime: { value: number }; uCentralPos: { value: THREE.Vector3 }; uCentralColor: { value: THREE.Color } } | null>(null);
 
+  // Create special material for Collide planet - half color, half black and white
+  function createCollidePlanetMaterial(seed: number) {
+    const uniforms = {
+      uTime: { value: 0 },
+      uSeed: { value: seed },
+      uColorSide: { value: new THREE.Color('#FC54AF') }, // Heart pink
+      uMonoSide: { value: new THREE.Color('#FFFFFF') },  // White for B&W side
+      uDarkSide: { value: new THREE.Color('#000000') },  // Black for B&W side
+    };
+
+    const vertexShader = `
+      varying vec3 vNormal;
+      varying vec3 vPosition;
+      varying vec3 vWorldPosition;
+      varying vec2 vUv;
+      
+      void main() {
+        vNormal = normalize(normalMatrix * normal);
+        vPosition = (modelViewMatrix * vec4(position, 1.0)).xyz;
+        vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `;
+
+    const fragmentShader = `
+      uniform float uTime;
+      uniform float uSeed;
+      uniform vec3 uColorSide;
+      uniform vec3 uMonoSide;
+      uniform vec3 uDarkSide;
+      
+      varying vec3 vNormal;
+      varying vec3 vPosition;
+      varying vec3 vWorldPosition;
+      varying vec2 vUv;
+      
+      // Noise function for surface detail
+      float hash(float n) {
+        return fract(sin(n) * 43758.5453123);
+      }
+      
+      float noise(vec2 st) {
+        vec2 i = floor(st);
+        vec2 f = fract(st);
+        vec2 u = f * f * (3.0 - 2.0 * f);
+        return mix(mix(hash(i.x + i.y * 57.0), hash(i.x + 1.0 + i.y * 57.0), u.x),
+                   mix(hash(i.x + (i.y + 1.0) * 57.0), hash(i.x + 1.0 + (i.y + 1.0) * 57.0), u.x), u.y);
+      }
+      
+      void main() {
+        vec3 normal = normalize(vNormal);
+        vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+        
+        // Split the planet along the X-axis (longitude)
+        // Left side (negative X) = color, Right side (positive X) = black & white
+        float splitLine = vWorldPosition.x;
+        float transitionWidth = 0.3;
+        float splitFactor = smoothstep(-transitionWidth, transitionWidth, splitLine);
+        
+        // Lighting calculation
+        vec3 lightDir = normalize(vec3(2.0, 3.0, 5.0));
+        float NdotL = max(dot(normal, lightDir), 0.1);
+        
+        // Surface detail
+        vec2 surfaceUv = vUv * 8.0 + uTime * 0.05;
+        float surfaceNoise = noise(surfaceUv) * 0.3;
+        float crackedPattern = noise(vUv * 12.0) * 0.4;
+        
+        // Color side (left) - vibrant lightning colors
+        vec3 colorSurface = uColorSide * (0.8 + surfaceNoise);
+        colorSurface = mix(colorSurface, uColorSide * 1.5, crackedPattern * NdotL);
+        
+        // Black & white side (right) - monochrome with contrast
+        float monoIntensity = 0.7 + surfaceNoise * 0.6 + crackedPattern * 0.4;
+        vec3 monoSurface = mix(uDarkSide, uMonoSide, monoIntensity * NdotL);
+        
+        // Mix between color and monochrome based on position
+        vec3 finalColor = mix(colorSurface, monoSurface, splitFactor);
+        
+        // Add some rim lighting for 3D effect
+        float fresnel = 1.0 - max(dot(normal, viewDir), 0.0);
+        fresnel = pow(fresnel, 2.0);
+        vec3 rimColor = mix(uColorSide, uMonoSide, splitFactor) * 0.5;
+        finalColor += rimColor * fresnel;
+        
+        // Apply lighting
+        finalColor *= (0.4 + 0.6 * NdotL);
+        
+        gl_FragColor = vec4(finalColor, 1.0);
+      }
+    `;
+
+    return new THREE.ShaderMaterial({
+      uniforms,
+      vertexShader,
+      fragmentShader,
+      side: THREE.FrontSide,
+      transparent: false,
+      depthWrite: true
+    });
+  }
+
   // Create ultra-realistic planet material based on planet type and properties
   function makePlanetMaterial(planetData: any) {
+    // Check if this is the Collide planet (heart element with collide in the ID)
+    const isCollidePlanet = planetData.element === 'heart' && planetData.songId && planetData.songId.toLowerCase().includes('collide');
+    
     // Use proper heart color
     const color = new THREE.Color((planetData.element === 'heart') ? '#FC54AF' : (planetData.color || '#38B6FF'));
     const surface = planetData.surface || {};
@@ -65,11 +171,22 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
     // Stable per-planet seed to avoid unintended color/texture shifts over time
     const seed = typeof planetData.seed === 'number' ? planetData.seed : Math.random() * 1000;
     
+    // Special material for Collide planet
+    if (isCollidePlanet) {
+      return createCollidePlanetMaterial(seed);
+    }
+    
     // Enhanced planet-specific properties for more realism
     const planetTypeData = getPlanetTypeData(type);
     const enhancedSurface = { ...planetTypeData.surface, ...surface };
     
     // High-quality geometry settings
+    // Prepare dramatic motif flags/colors from planetData.motifs
+    const motifs: Array<{ name: string; color?: string; intensity?: number }> = (planetData.motifs || []) as any;
+    const has = (n: string) => motifs?.some((m) => m.name === n);
+    const accent1 = motifs?.[0]?.color || (planetData.element === 'heart' ? '#FC54AF' : planetData.element === 'lightning' ? '#F2EF1D' : planetData.color || '#38B6FF');
+    const accent2 = motifs?.[1]?.color || (planetData.element === 'darkness' ? '#8B5A8B' : '#66AAFF');
+
     const uniforms = {
       uTime: { value: 0 },
       uSeed: { value: seed },
@@ -83,7 +200,29 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       uPlanetType: { value: getPlanetTypeCode(type) },
       uSurfaceRoughness: { value: geometry.surfaceRoughness || 0.5 },
       uCraterDensity: { value: geometry.craterDensity || 0.2 },
-      uDeformation: { value: geometry.deformation || 0.05 }
+      uDeformation: { value: geometry.deformation || 0.05 },
+      // Motif flags and accents
+      uHasCracks: { value: has('cracks') ? 1 : 0 },
+      uHasHoneycomb: { value: has('honeycomb') ? 1 : 0 },
+      uHasPixel: { value: has('pixel') ? 1 : 0 },
+      uHasTiles: { value: has('tiles') ? 1 : 0 },
+      uHasQuilt: { value: has('quilt') ? 1 : 0 },
+      uHasGraffiti: { value: has('graffiti') ? 1 : 0 },
+      uHasCobble: { value: has('cobblestone') ? 1 : 0 },
+      uHasMirror: { value: has('mirror') ? 1 : 0 },
+      uHasSkyscraper: { value: has('skyscraper') ? 1 : 0 },
+      uHasHeartLakes: { value: has('heart_lakes') ? 1 : 0 },
+      uHasAurora: { value: has('aurora') ? 1 : 0 },
+      uHasCoral: { value: has('coral') ? 1 : 0 },
+      uHasShards: { value: has('shards') ? 1 : 0 },
+      uHasDollarBolts: { value: has('dollar_bolts') ? 1 : 0 },
+      uHasPetals: { value: has('petals') ? 1 : 0 },
+      uHasRivers: { value: has('rivers') ? 1 : 0 },
+      uHasStadiumLines: { value: has('stadium_lines') ? 1 : 0 },
+      uHasVelvet: { value: has('velvet') ? 1 : 0 },
+      uAccent1: { value: new THREE.Color(accent1) },
+      uAccent2: { value: new THREE.Color(accent2) },
+      uMotifIntensity: { value: Math.min(1.5, 0.6 + (motifs?.length || 0) * 0.2) },
     };
     
     const vertexShader = `
@@ -122,6 +261,10 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       uniform float uSurfaceRoughness;
       uniform float uCraterDensity;
       uniform float uDeformation;
+      // Motif flags
+      uniform float uHasCracks, uHasHoneycomb, uHasPixel, uHasTiles, uHasQuilt, uHasGraffiti, uHasCobble, uHasMirror, uHasSkyscraper, uHasHeartLakes, uHasAurora, uHasCoral, uHasShards, uHasDollarBolts, uHasPetals, uHasRivers, uHasStadiumLines, uHasVelvet;
+      uniform vec3 uAccent1, uAccent2;
+      uniform float uMotifIntensity;
       
       varying vec3 vNormal;
       varying vec3 vPosition;
@@ -190,12 +333,37 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
         return mix(vec3(luma), color, 1.0 + amt);
       }
       
+      // Hex grid util
+      vec2 hex(vec2 p) {
+        const vec2 k = vec2(0.5773502692, 1.1547005384);
+        p = abs(p);
+        float a = dot(p, vec2(k.x, k.y));
+        float b = dot(p, vec2(-k.x, k.y));
+        float h = max(a, b);
+        return vec2(h, p.y);
+      }
+
+      float heartSDF(vec2 p){
+        p.x = abs(p.x);
+        float a = atan(p.x, p.y)/3.141593;
+        float r = length(p);
+        float h = pow(r,2.0)*(13.0*a*a - 22.0*a + 10.0);
+        return h - 0.5;
+      }
+
+      float checker(vec2 uv, float scale){
+        vec2 c = floor(uv*scale);
+        return mod(c.x + c.y, 2.0);
+      }
+
       void main() {
         vec3 normal = normalize(vNormal);
         vec3 viewDirection = normalize(vViewPosition);
         vec3 nrm = normalize(vWorldPosition);
         float lat = asin(clamp(nrm.y, -1.0, 1.0));
         float lon = atan(nrm.z, nrm.x);
+        // lat/lon uv in 0..1
+        vec2 uvLL = vec2(fract((lon / 6.2831853) + 0.5), clamp((lat / 3.141593) + 0.5, 0.0, 1.0));
         
         // Compute coherent noise-driven height for realism
         // Use a stable per-planet seed so surface patterns do not change over time
@@ -348,6 +516,109 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
           surfaceColor = mix(surfaceColor, uBaseColor, 0.12);
           surfaceColor = saturateColor(surfaceColor, 0.2);
         }
+
+        // Apply motifs to surfaceColor before lighting
+        float motif = uMotifIntensity;
+        // Cracks
+        if (uHasCracks > 0.5) {
+          float crack = 1.0 - smoothstep(0.06, 0.12, ridged(vec3(lon*24.0, lat*24.0, uSeed+12.0)));
+          surfaceColor = mix(surfaceColor, uAccent1, clamp(crack * 1.5 * motif, 0.0, 1.0));
+        }
+        // Honeycomb
+        if (uHasHoneycomb > 0.5) {
+          vec2 p = uvLL * 8.0;
+          vec2 hxy = hex(p*2.0);
+          float edge = smoothstep(0.15, 0.12, abs(fract(hxy.x) - 0.5));
+          float honey = edge * (0.7 + 0.3*sin(uTime*1.5));
+          surfaceColor = mix(surfaceColor, mix(surfaceColor, uAccent1, 0.6), clamp(honey*motif, 0.0, 1.0));
+        }
+        // Pixel
+        if (uHasPixel > 0.5) {
+          vec2 q = floor(uvLL * 32.0) / 32.0;
+          float pix = checker(q, 32.0);
+          vec3 pxCol = mix(surfaceColor * 0.8, saturateColor(uAccent1, 0.4), pix);
+          surfaceColor = mix(surfaceColor, pxCol, 0.65*motif);
+        }
+        // Tiles
+        if (uHasTiles > 0.5) {
+          vec2 g = floor(uvLL * 20.0);
+          float on = step(0.5, fract(sin(g.x*12.9898 + g.y*78.233 + floor(uTime*4.0))*43758.5453));
+          vec3 tileCol = mix(surfaceColor*0.6, uAccent1, on);
+          surfaceColor = mix(surfaceColor, tileCol, 0.7*motif);
+        }
+        // Quilt
+        if (uHasQuilt > 0.5) {
+          vec2 q = uvLL * 12.0;
+          vec2 f = fract(q);
+          float seam = 1.0 - smoothstep(0.04, 0.06, min(min(f.x, 1.0-f.x), min(f.y, 1.0-f.y)));
+          vec3 patchColor = mix(uAccent1, uAccent2, checker(q, 1.0));
+          surfaceColor = mix(surfaceColor, patchColor, 0.5*motif);
+          surfaceColor += vec3(0.2)*seam;
+        }
+        // Graffiti
+        if (uHasGraffiti > 0.5) {
+          float stripes = 0.5 + 0.5*sin(lon*30.0 + uSeed*0.2);
+          float splat = step(0.75, fbm(vec3(uvLL*18.0, uSeed+uTime*0.6)));
+          vec3 ink = mix(uAccent2, uAccent1, stripes);
+          surfaceColor = mix(surfaceColor, ink, clamp((0.35*stripes + 0.25*splat)*motif, 0.0, 0.85));
+        }
+        // Cobblestone
+        if (uHasCobble > 0.5) {
+          vec2 u = uvLL*14.0;
+          vec2 cell = fract(u) - 0.5;
+          float d = length(cell);
+          float ring = smoothstep(0.45, 0.40, d);
+          vec3 stone = mix(surfaceColor*0.8, vec3(0.2,0.2,0.22), ring);
+          surfaceColor = mix(surfaceColor, stone, 0.6*motif);
+        }
+        // Mirror
+        if (uHasMirror > 0.5) {
+          surfaceColor = mix(surfaceColor, vec3(0.9), 0.25*motif);
+        }
+        // Skyscraper
+        if (uHasSkyscraper > 0.5) {
+          float band = smoothstep(0.02, 0.0, abs(fract(lon*10.0) - 0.5));
+          vec3 neon = mix(uAccent2, uAccent1, 0.7);
+          surfaceColor = mix(surfaceColor, neon, clamp(band*motif, 0.0, 0.8));
+        }
+        // Heart lakes
+        if (uHasHeartLakes > 0.5) {
+          vec2 p = (uvLL - 0.5) * 3.0;
+          float h0 = heartSDF(p);
+          float lake = smoothstep(0.04, 0.0, abs(h0));
+          vec3 rim = uAccent1 * smoothstep(0.06, 0.04, abs(h0));
+          surfaceColor = mix(surfaceColor, surfaceColor*0.35, lake*0.7*motif);
+          surfaceColor += rim*0.5*motif;
+        }
+        // Coral
+        if (uHasCoral > 0.5) {
+          float reefs = smoothstep(0.6, 0.95, fbm(vec3(uvLL*22.0, uSeed)));
+          surfaceColor = mix(surfaceColor, uAccent1, reefs*0.35*motif);
+        }
+        // Shards
+        if (uHasShards > 0.5) {
+          float facets = smoothstep(0.8, 0.95, ridged(vec3(uvLL*30.0, uSeed+5.0)));
+          surfaceColor = mix(surfaceColor, vec3(1.0), facets*0.25*motif);
+        }
+        // Dollar bolts
+        if (uHasDollarBolts > 0.5) {
+          float bolts = step(0.88, fbm(vec3(uvLL*28.0 + vec2(uTime*0.5,0.0), uSeed)));
+          surfaceColor = mix(surfaceColor, uAccent2, bolts*0.4*motif);
+        }
+        // Rivers
+        if (uHasRivers > 0.5) {
+          float rv = smoothstep(0.44, 0.5, sin(lon*8.0 + fbm(vec3(lat*6.0, lon*6.0, uSeed))*2.0));
+          surfaceColor = mix(surfaceColor, saturateColor(uAccent2,0.5), rv*0.35*motif);
+        }
+        // Stadium lines
+        if (uHasStadiumLines > 0.5) {
+          float line = smoothstep(0.01, 0.0, min(abs(fract(uvLL.x*10.0)-0.5), abs(fract(uvLL.y*10.0)-0.5)));
+          surfaceColor += vec3(1.0)*line*0.25*motif;
+        }
+        // Velvet
+        if (uHasVelvet > 0.5) {
+          surfaceColor = mix(surfaceColor, saturateColor(surfaceColor, 0.6), 0.5*motif);
+        }
         
         // Lighting calculation (softer for hologram look)
         vec3 lightDirection = normalize(vec3(1.0, 1.0, 1.0));
@@ -377,9 +648,8 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
         float detailNoise = fbm(vec3(lon * 40.0, lat * 40.0, uSeed + 1000.0));
         finalColor *= (0.92 + 0.16 * detailNoise);
 
-        // Stable transparency with realistic atmosphere edge
-        float alpha = clamp(0.55 + fresnel * 0.25, 0.45, 0.85);
-        gl_FragColor = vec4(finalColor, alpha);
+        // Solid planets - no transparency
+        gl_FragColor = vec4(finalColor, 1.0);
       }
     `;
     
@@ -388,9 +658,9 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       vertexShader,
       fragmentShader,
       side: THREE.FrontSide,
-      transparent: true,
+      transparent: false,
       blending: THREE.NormalBlending,
-      depthWrite: false
+      depthWrite: true
     });
   }
   
@@ -1043,14 +1313,14 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
     
     heartShape.setFromPoints(points);
     
-    // Create extruded geometry for solid heart (more spherical settings)
+    // Create extruded geometry for solid heart (rounder settings)
     const extrudeSettings = {
-      depth: radius * 1.2, // increased depth for more volume
+      depth: radius * 0.8, // reduced depth for rounder appearance
       bevelEnabled: true,
-      bevelSegments: 12, // more segments for smoother curves
-      bevelSize: radius * 0.15, // larger bevel for rounder appearance
-      bevelThickness: radius * 0.08, // thicker bevel for planet-like roundness
-      curveSegments: 48 // more curve segments for smoother surface
+      bevelSegments: 24, // more segments for smoother curves
+      bevelSize: radius * 0.25, // larger bevel for more rounding
+      bevelThickness: radius * 0.15, // thicker bevel for rounder edges
+      curveSegments: 96 // more curve segments for smoother heart outline
     };
     
     const geometry = new THREE.ExtrudeGeometry(heartShape, extrudeSettings);
@@ -1158,7 +1428,7 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
   }
 
   // Helper to add a realistic satellite mesh to the current system group
-  function addSatLocal(id: string, planetData: any, r = 6.0, speed = 0.25, a = Math.random() * Math.PI * 2) {
+  function addSatLocal(id: string, planetData: any, r = 6.0, speed = 0.25, a = Math.random() * Math.PI * 2, isOutermostRing = false) {
     const sys = groupRef.current; if (!sys) return;
     // Add subtle per-planet size variation for a more organic feel
     const sizeJitter = 0.75 + Math.random() * 0.8; // 0.75x .. 1.55x
@@ -1171,17 +1441,25 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       color: (element === 'heart') ? '#FC54AF' : (element === 'lightning') ? '#FFD84D' : planetData.atmosphere.color,
       glow: (element === 'heart') ? Math.max(planetData.atmosphere.glow || 0, 1.3) : (element === 'lightning') ? Math.max(planetData.atmosphere.glow || 0, 1.6) : (planetData.atmosphere.glow || 1.0),
     } : undefined;
-    const tunedPlanetData = { ...planetData, atmosphere: tunedAtmosphere, seed: (planetData.seed ?? Math.random() * 1000) };
-    const geometry = planetData.geometry || {
+    const tunedPlanetData = { ...planetData, atmosphere: tunedAtmosphere, seed: (planetData.seed ?? Math.random() * 1000), songId: id };
+    // Special geometry for Collide planet - more spherical
+    const isCollidePlanet = (id && id.toLowerCase().includes('collide'));
+    const geometry = isCollidePlanet ? {
+      segments: { widthSegments: 64, heightSegments: 64 },
+      scale: { x: 1, y: 1, z: 1 },
+      deformation: 0.0,  // No deformation for perfect sphere
+      poleFlattening: 0.0,  // No flattening
+      surfaceRoughness: 0.1  // Smooth surface
+    } : (planetData.geometry || {
       segments: { widthSegments: 128, heightSegments: 128 },
       scale: { x: 1, y: 1, z: 1 },
       deformation: 0.05,
       poleFlattening: 0.02,
       surfaceRoughness: 0.5
-    };
+    });
     
-    // Main planet with detailed geometry - use heart shape for heart element planets
-    const isHeartPlanet = element === 'heart';
+    // Main planet with detailed geometry - only center planet uses heart shape (handled by HeartPlanet component)
+    const isHeartPlanet = false; // Baby planets with heart element should use spherical geometry
     const planetGeometry = createPlanetGeometry(radius, geometry, isHeartPlanet);
     const material = makePlanetMaterial(tunedPlanetData);
     const mesh = new THREE.Mesh(planetGeometry, material);
@@ -1227,27 +1505,29 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
     //   } catch {}
     // }
     
-    // Moons
+    // Moons - only create for outermost ring planets, and they orbit the heart planet
     const moons: THREE.Mesh[] = [];
-    if (planetData.moons && planetData.moons > 0) {
+    if (planetData.moons && planetData.moons > 0 && isOutermostRing) {
       for (let i = 0; i < planetData.moons; i++) {
-        const moonRadius = radius * (0.1 + Math.random() * 0.15);
-        const moonDistance = radius * (1.5 + i * 0.5 + Math.random() * 0.3);
+        const moonRadius = radius * (0.08 + Math.random() * 0.12);
+        // Moons orbit much farther out around the heart planet
+        const moonDistance = 8.0 + i * 1.5 + Math.random() * 2.0;
         const moonGeometry = new THREE.SphereGeometry(moonRadius, 16, 16);
         const moonMaterial = new THREE.MeshPhongMaterial({
-          color: 0x666666,
-          emissive: 0x111111
+          color: 0x888888,
+          emissive: 0x222222
         });
         const moonMesh = new THREE.Mesh(moonGeometry, moonMaterial);
         
-        const angle = (Math.PI * 2 * i) / planetData.moons;
+        const angle = (Math.PI * 2 * i) / planetData.moons + Math.random() * 0.5;
         moonMesh.position.set(
           Math.cos(angle) * moonDistance,
-          (Math.random() - 0.5) * moonDistance * 0.2,
+          (Math.random() - 0.5) * moonDistance * 0.1,
           Math.sin(angle) * moonDistance
         );
         
-        mesh.add(moonMesh);
+        // Add moons directly to the system instead of the planet
+        sys.add(moonMesh);
         moons.push(moonMesh);
       }
     }
@@ -1546,6 +1826,7 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
         // Keep heart planets right-side up
         if (centralPlanet.id === 'heart') {
           centralPlanet.mesh.rotation.x = 0; // Reset any X rotation
+          centralPlanet.mesh.rotation.z = Math.PI; // Keep heart point facing downward
         }
         
         // Drive planet shader uniforms
@@ -1588,52 +1869,26 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
         
         s.mesh.visible = true;
         
-        // Apply muting effect when not in showAll mode and this satellite is not the focus
+        // Hide/show planets based on focus - when a song is selected, only show that planet
         const isFocused = mainId && s.id === mainId;
-        const shouldMute = !showAll && mainId && !isFocused;
+        const shouldHide = !showAll && mainId && !isFocused;
         
-        // Set material opacity and scale based on muting state
-        if (s.mesh.material && typeof (s.mesh.material as any).opacity === 'number') {
-          const targetOpacity = shouldMute ? 0.05 : 1.0; // Fade out very dramatically for focus
-          (s.mesh.material as any).opacity = targetOpacity;
-          (s.mesh.material as any).transparent = true;
-          
-          // Also scale down non-focused planets for stronger visual hierarchy
-          const targetScale = shouldMute ? 0.7 : 1.0;
-          const currentScale = s.mesh.scale.x;
-          const newScale = currentScale + (targetScale - currentScale) * 0.1;
-          s.mesh.scale.setScalar(newScale);
+        // Hide non-focused planets completely
+        s.mesh.visible = !shouldHide;
+        
+        // Hide atmosphere, rings, and other elements along with the main planet
+        if (s.atmosphereMesh) {
+          s.atmosphereMesh.visible = !shouldHide;
         }
         
-        // Also mute atmosphere if present
-        if (s.atmosphereMesh && s.atmosphereMesh.material && typeof (s.atmosphereMesh.material as any).opacity === 'number') {
-          const targetOpacity = shouldMute ? 0.05 : (s.atmosphereMesh.material as any).originalOpacity || 0.8;
-          (s.atmosphereMesh.material as any).opacity = targetOpacity;
-          (s.atmosphereMesh.material as any).transparent = true;
+        if (s.ringMesh) {
+          s.ringMesh.visible = !shouldHide;
         }
         
-        // Mute rings if present
-        if (s.ringMesh && s.ringMesh.material && typeof (s.ringMesh.material as any).opacity === 'number') {
-          const originalOpacity = (s.ringMesh.material as any).originalOpacity || (s.ringMesh.material as any).opacity;
-          if (!(s.ringMesh.material as any).originalOpacity) (s.ringMesh.material as any).originalOpacity = originalOpacity;
-          const targetOpacity = shouldMute ? originalOpacity * 0.05 : originalOpacity;
-          (s.ringMesh.material as any).opacity = targetOpacity;
-          (s.ringMesh.material as any).transparent = true;
-        }
-        
-        // Mute all child elements (moons, clouds, storms, etc.)
+        // Hide all child elements (moons, clouds, storms, etc.)
         if (s.mesh.children && s.mesh.children.length > 0) {
           s.mesh.children.forEach(child => {
-            if (child instanceof THREE.Mesh && child.material) {
-              const childMaterial = child.material as any;
-              if (typeof childMaterial.opacity === 'number') {
-                const originalOpacity = childMaterial.originalOpacity || childMaterial.opacity;
-                if (!childMaterial.originalOpacity) childMaterial.originalOpacity = originalOpacity;
-                const targetOpacity = shouldMute ? originalOpacity * 0.05 : originalOpacity;
-                childMaterial.opacity = targetOpacity;
-                childMaterial.transparent = true;
-              }
-            }
+            child.visible = !shouldHide;
           });
         }
         
@@ -1664,6 +1919,11 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
         try {
           const u: any = (s.mesh.material as any).uniforms || s.mat.uniforms;
           
+          // Update time for special materials like Collide planet
+          if (u && u.uTime) {
+            u.uTime.value = t;
+          }
+          
           // Update atmosphere if present
           if (s.atmosphereMesh && s.atmosphereMesh.material) {
             const atmU: any = (s.atmosphereMesh.material as any).uniforms;
@@ -1672,20 +1932,22 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
             }
           }
           
-          // Animate moons if present
+          // Animate moons if present - they now orbit the heart planet
           if (s.moons && s.moons.length > 0) {
             s.moons.forEach((moon, idx) => {
-              const moonSpeed = 0.02 + idx * 0.01;
+              const moonSpeed = 0.015 + idx * 0.005; // Slower, more stately orbit
               const currentPos = moon.position.clone();
               const distance = currentPos.length();
               const angle = Math.atan2(currentPos.z, currentPos.x) + moonSpeed;
               
+              // Moons orbit around the heart planet at (0,0,0) with slight vertical wobble
+              const verticalWobble = Math.sin(state.clock.elapsedTime * 0.5 + idx) * 0.3;
               moon.position.set(
                 Math.cos(angle) * distance,
-                currentPos.y,
+                currentPos.y + verticalWobble * 0.1,
                 Math.sin(angle) * distance
               );
-              moon.rotation.y += 0.05;
+              moon.rotation.y += 0.03;
             });
           }
           
@@ -1895,8 +2157,16 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
   useEffect(() => { hoverRef.current = hoverId || null; }, [hoverId]);
   // Compute layout with consistent spacing (matching planetLayout defaults)
   const layout = useMemo(() => (
-    songs && songs.length ? computePlanetLayout(songs as any, { ringGap: 1.5, baseRadius: 2.8, tiltPerRing: 6, minScale: 0.7, maxScale: 1.25 }) : undefined
-  ), [songs]);
+    songs && songs.length 
+      ? computePlanetLayout(songs as any, { 
+          ringGap: showAll ? 2.2 : 1.8, 
+          baseRadius: showAll ? 5.2 : 3.5, 
+          tiltPerRing: 6, 
+          minScale: 0.7, 
+          maxScale: showAll ? 1.35 : 1.25 
+        }) 
+      : undefined
+  ), [songs, showAll]);
 
   useEffect(() => {
     // Build system from songs when available
@@ -1940,6 +2210,26 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       // Fade out particle system when no focus
       if (particleSystemRef.current) {
         (particleSystemRef.current.material as any).opacity = 0.2;
+      }
+
+      // Single bright central heart planet when using raw system (only when showAll is true)
+      if (showAll) {
+        try {
+          const heartGeo = createHeartGeometry(2.0); // Smaller size
+          // Single bright material with emissive properties
+          const heartMat = new THREE.MeshBasicMaterial({ 
+            color: new THREE.Color('#FC54AF').multiplyScalar(3.0), // Very bright base color
+            emissive: new THREE.Color('#FC54AF').multiplyScalar(0.5) // Strong emissive glow
+          });
+          const heartMesh = new THREE.Mesh(heartGeo, heartMat);
+          heartMesh.position.set(0, 0, 0);
+          heartMesh.rotation.z = Math.PI; // Ensure heart point faces downward
+          heartMesh.scale.set(0.8, 0.8, 0.8); // Make it smaller
+          heartMesh.visible = true;
+          sys.add(heartMesh);
+
+          centralPlanetRef.current = { id: 'heart', mesh: heartMesh, originalSat: null };
+        } catch {}
       }
     }
 
@@ -2004,6 +2294,12 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
         ringsRef.current.push(g);
       }
     }
+    // Find the maximum ring index to identify outermost ring
+    const maxRingIndex = Math.max(...songs.map(song => {
+      const lay = layout ? (layout as any)[song.id] : undefined;
+      return lay?.ringIndex ?? 0;
+    }));
+
     // Create a planet for every song (including main)
     songs.forEach((song, idx) => {
       const id = song.id;
@@ -2013,6 +2309,7 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       const r = rBase * spacingMul;
       const speed = 0.08 + (lay ? (0.016 * (lay.ringIndex ?? 0)) : 0) + (0.02 * ((idx % 5))); // slower, ring-based
       const a0 = lay?.angle0 ?? (Math.random() * Math.PI * 2);
+      const isOutermostRing = (lay?.ringIndex ?? 0) === maxRingIndex;
       
       // Use the full planet data with all realistic properties
       const planetData = song.planet || {
@@ -2028,7 +2325,7 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
         planetData.radius *= 0.95;
       }
       
-      addSatLocal(id, planetData, r, speed, a0);
+      addSatLocal(id, planetData, r, speed, a0, isOutermostRing);
     });
     // After building, compute a focus rotation so the selected planet is front-center
     if (focusId) {
@@ -2099,7 +2396,7 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
       surfaceRoughness: 0.5
     };
     
-    const isHeartPlanet = element === 'heart';
+    const isHeartPlanet = false; // Center heart planet handled by separate HeartPlanet component
     const centralGeo = createPlanetGeometry(centralRadius, centralGeometry, isHeartPlanet);
     const centralMat = makePlanetMaterial({ ...enhancedPlanetData, seed: (enhancedPlanetData as any).seed ?? Math.random() * 1000 });
     const centralMesh = new THREE.Mesh(centralGeo, centralMat);
@@ -2206,10 +2503,10 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
     const planetColor = new THREE.Color(enhancedPlanetData.color || '#38B6FF');
     const isWarmColor = planetColor.r > 0.6 || (planetColor.r + planetColor.g) > 1.0;
     
-    // Dynamic camera positioning based on planet characteristics - more cinematic focus
-    const baseDistance = 8.5; // Closer for dramatic focus
-    const focusDistance = baseDistance * (isWarmColor ? 1.0 : 0.9); // Slightly closer for warm colors to show detail
-    const heightOffset = isWarmColor ? 1.5 : 1.2; // Lower height for more intimate view
+    // Dynamic camera positioning based on planet characteristics - better framing for HUD display
+    const baseDistance = 12.0; // Increased distance for better framing in HUD
+    const focusDistance = baseDistance * (isWarmColor ? 1.0 : 0.95); // Slightly closer for warm colors to show detail
+    const heightOffset = isWarmColor ? 1.8 : 1.5; // Adjusted height for better viewing angle
     
     // Set target camera position - focused on selected planet
     targetCameraPos.current.set(0, heightOffset, focusDistance);
@@ -2253,5 +2550,16 @@ export default function PlanetSystemRaw({ showAll = false, onSongChange }: { sho
 
   // Hover behavior handled in main tick via hoverRef
 
-  return <div ref={mountRef} className="absolute inset-0" style={{ background: "transparent" }} />;
+  // Fade logic: hide when a song is selected but not yet playing; otherwise visible
+  return (
+    <div
+      ref={mountRef}
+      className="absolute inset-0"
+      style={{
+        background: 'transparent',
+        opacity: (!showAll && hideUntilPlaying) ? 0 : 1,
+        transition: 'opacity 400ms ease-in-out'
+      }}
+    />
+  );
 }

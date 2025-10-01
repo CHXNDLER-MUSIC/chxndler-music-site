@@ -573,24 +573,31 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     return () => window.removeEventListener("keydown", onKey);
   }, [idx, wrapChannels, tracks.length]);
 
-  // Animation loop for waveform when playing
+  // Animation loop for waveform and smooth cursor movement
   useEffect(() => {
-    if (!playing) return;
+    let animationId: number;
     
     const animate = () => {
       setAnimationTime(Date.now());
-      // Also update current time more frequently for smoother cursor movement
+      // Update current time for smooth cursor movement
       const a = audioRef.current;
       if (a && !a.paused) {
         setCurrentTime(a.currentTime);
       }
       if (playing) {
-        requestAnimationFrame(animate);
+        animationId = requestAnimationFrame(animate);
       }
     };
     
-    const animationId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationId);
+    if (playing) {
+      animationId = requestAnimationFrame(animate);
+    }
+    
+    return () => {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+      }
+    };
   }, [playing]);
 
   // Dial interactions moved to StationDialOverlay; keep keyboard + prev/next here
@@ -664,6 +671,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                   return Math.max(0.02, Math.min(0.95, amplitude));
                 });
                 
+                // Use same calculation as cursor for perfect sync - ensure consistent progress calculation
                 const progress = (duration > 0 && isFinite(currentTime) && isFinite(duration)) ? Math.max(0, Math.min(1, currentTime / duration)) : 0;
                 
                 return (
@@ -785,10 +793,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 }}
               />
               
-              {/* Element-shaped cursor icon */}
+              {/* Chxndler cursor icon */}
               <img
-                src={`/elements/${currentElement}.png`}
-                alt={`${cur.title} element`}
+                src="/elements/chxndler.png"
+                alt="Chxndler cursor"
                 className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 transform w-[2rem] h-[2rem] min-w-[2rem] min-h-[2rem] brightness-150 saturate-125"
                 style={{ 
                   filter: `drop-shadow(0 0 14px ${currentElementColor}) drop-shadow(0 0 32px ${currentElementColor}AA) drop-shadow(0 0 64px ${currentElementColor}55)`,
@@ -1177,7 +1185,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         }
         
         .cursor-transition {
-          transition: left 0.05s ease-out;
+          transition: left 0.1s linear;
         }
       `}</style>
     </div>

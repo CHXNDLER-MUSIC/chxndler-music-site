@@ -9,25 +9,347 @@ export const ELEMENT_COLORS: Record<Element, string> = {
   earth: "#F2EF1D",    // neon yellow
   air: "#8BF9FF",      // light cyan
   heart: "#FC54AF",    // bright pink
-  lightning: "#FFC700", // deeper, richer yellow (golden)
+  lightning: "#F2EF1D", // neon yellow
   darkness: "#000000",  // deep black
 };
 
 function pickElement(slug: string, index: number): Element {
   const s = slug.toLowerCase();
-  // Specific themes first
+  
+  // Darkness songs
+  if (s.includes("alone") || s.includes("cheerleader") || s.includes("little-black-heart") || 
+      s.includes("mr-brightside") || s.includes("paris")) return "darkness";
+  
+  // Heart songs  
+  if (s.includes("always-on-my-mind") || s.includes("baby") || s.includes("be-my-bee") ||
+      s.includes("collide") || s.includes("colors-of-our-home") || s.includes("i-might-fall-in-love") ||
+      s.includes("love-me") || s.includes("somebody-to-love") || s.includes("tienes-un-amigo") ||
+      s.includes("we-re-just-friends")) return "heart";
+  
+  // Lightning songs
+  if (s.includes("american-dream") || s.includes("blue") || s.includes("brain-freeze") ||
+      s.includes("feeling-this") || s.includes("game-boy-heart") || s.includes("home") ||
+      s.includes("house-party") || s.includes("kid-forever") || s.includes("pok-mon")) return "lightning";
+  
+  // Water songs
+  if (s.includes("letting-go") || s.includes("ocean-girl")) return "water";
+  
+  // Legacy fallback for unmapped songs
+  if (s.includes("heart") || s.includes("love") || s.includes("friends")) return "heart";
+  if (s.includes("lightning") || s.includes("electric") || s.includes("neon")) return "lightning";
+  if (s.includes("dark") || s.includes("black") || s.includes("midnight")) return "darkness";
   if (s.includes("ocean") || s.includes("tide") || s.includes("wave") || s.includes("sea")) return "water";
-  if (s.includes("heart") || s.includes("love") || s.includes("friends") || s.includes("somebody-to-love")) return "heart";
-  if (s.includes("lightning") || s.includes("lighting") || s.includes("electric") || s.includes("neon") || s.includes("collide") || s.includes("brain") || s.includes("kid") || s.includes("game")) return "lightning";
-  if (s.includes("dark") || s.includes("black") || s.includes("alone") || s.includes("midnight")) return "darkness";
-  // Legacy element mapping
-  if (s.includes("fire") || s.includes("burn")) return "fire";
-  if (s.includes("home") || s.includes("earth") || s.includes("paris") || s.includes("bee")) return "earth";
-  if (s.includes("air") || s.includes("sky")) return "air";
+  
   // fallback: cycle for variety
   const cycle: Element[] = ["water", "heart", "lightning", "darkness", "fire", "earth", "air"];
   return cycle[index % cycle.length];
 }
+
+// Comprehensive planet data based on detailed mapping
+export const SONG_PLANET_DATA: Record<string, {
+  element: Element;
+  color: string;
+  surface: string;
+  atmosphere: string;
+  shape: string;
+  surfaceElements: string;
+}> = {
+  // DARKNESS PLANETS
+  "alone": {
+    element: "darkness",
+    color: "#000000",
+    surface: "Jagged obsidian crust with deep canyons glowing faint red, fractured tectonic plates",
+    atmosphere: "Thin grey fog, cold starlight reflection, faint aurora in monochrome",
+    shape: "Irregular sphere, fractured into floating chunks",
+    surfaceElements: "Deep cracks, barren plains, no vegetation"
+  },
+  "cheerleader": {
+    element: "darkness", 
+    color: "#000000",
+    surface: "Black asphalt terrain with faded white lines like abandoned stadium floor",
+    atmosphere: "Faint echo of crowd cheers in static, neon scoreboard flashes glitching",
+    shape: "Round, smooth but with flat plateau tops",
+    surfaceElements: "Stadium-like markings, empty bleachers carved into terrain"
+  },
+  "little-black-heart": {
+    element: "darkness",
+    color: "#000000", 
+    surface: "Volcanic rock cracked with violet magma veins shaped like arteries",
+    atmosphere: "Smoke plumes venting upward, sparks raining like falling stars",
+    shape: "Jagged orb with volcanic ridges",
+    surfaceElements: "Lava rivers, no trees, moth-like life"
+  },
+  "mr-brightside": {
+    element: "darkness",
+    color: "#000000",
+    surface: "Smooth black mirrored plains broken by jagged silver shards",
+    atmosphere: "Blinding camera-flash storms, cold metallic haze", 
+    shape: "Shiny reflective sphere",
+    surfaceElements: "Mirror-like surfaces, scattered crystal towers"
+  },
+  "paris": {
+    element: "darkness",
+    color: "#000000",
+    surface: "Black cobblestone terrain glistening with rain, glowing Eiffel Tower fissures",
+    atmosphere: "Golden mist curling like cigarette smoke, subtle neon reflections",
+    shape: "Rounded globe with soft edges",
+    surfaceElements: "Stone streets, faint Parisian-style arches, rain puddles"
+  },
+
+  // HEART PLANETS  
+  "always-on-my-mind": {
+    element: "heart",
+    color: "#FC54AF",
+    surface: "Rose-pink velvet plains shimmering under soft light",
+    atmosphere: "Haze of glowing hearts breaking and reforming in slow motion",
+    shape: "Soft rounded orb",
+    surfaceElements: "Fabric-like valleys, glowing heart-shaped lakes"
+  },
+  "always-on-my-mind-remix": {
+    element: "heart",
+    color: "#FC54AF",
+    surface: "Bright pink velvet plains glowing more intensely",
+    atmosphere: "Bright glowing haze of hearts breaking and reforming",
+    shape: "Soft rounded orb",
+    surfaceElements: "Glowing heart-shaped lakes, more saturated pink plains"
+  },
+  "baby": {
+    element: "heart",
+    color: "#FC54AF", 
+    surface: "Pastel pink terrain with toy block mountains and carousel-striped craters",
+    atmosphere: "Cotton-candy clouds and bubblegum bursts popping outward",
+    shape: "Rounded sphere with playful bumps",
+    surfaceElements: "Carousel ridges, toy block mountains"
+  },
+  "be-my-bee": {
+    element: "heart",
+    color: "#FC54AF",
+    surface: "Golden honeycomb crust glowing from within, dripping molten honey",
+    atmosphere: "Warm pollen mist shimmering like glitter", 
+    shape: "Hex-patterned globe",
+    surfaceElements: "Honeycomb surface, flower meadows, nectar pools"
+  },
+  "be-my-bee-acoustic": {
+    element: "heart",
+    color: "#FC54AF",
+    surface: "Golden honeycomb crust with pink nectar pools replacing green",
+    atmosphere: "Warm pollen mist shimmering pinkish gold",
+    shape: "Hex-patterned globe",
+    surfaceElements: "Pink flower meadows, honeycombs"
+  },
+  "collide": {
+    element: "heart",
+    color: "#FC54AF",
+    surface: "Crystalline pink ridges colliding at sharp angles, glowing fractures",
+    atmosphere: "Starbursts of comet-like sparks streaking across skies",
+    shape: "Angular jagged orb", 
+    surfaceElements: "Crystal mountains, fault lines"
+  },
+  "colors-of-our-home": {
+    element: "heart",
+    color: "#FC54AF",
+    surface: "Warm pink base veined with pastel rainbow rivers",
+    atmosphere: "Aurora borealis in golden and violet hues",
+    shape: "Rounded sphere",
+    surfaceElements: "Rainbow rivers, pastel forests, glowing hills"
+  },
+  "colors-of-our-home-bluma-game-soundtrack": {
+    element: "heart",
+    color: "#FC54AF",
+    surface: "Pink and blue terrain blending together like game-level tiles",
+    atmosphere: "Blue and pink auroras in sky",
+    shape: "Rounded orb",
+    surfaceElements: "Blue rivers, pink forests, glowing pastel hills"
+  },
+  "i-might-fall-in-love-with-you": {
+    element: "heart", 
+    color: "#FC54AF",
+    surface: "Pastel rose surface with swirling golden brushstrokes",
+    atmosphere: "Cartoon-like doodle clouds drifting in slow motion",
+    shape: "Soft orb with smooth swirls",
+    surfaceElements: "Cartoon-like hills, record-shaped plateaus"
+  },
+  "love-me": {
+    element: "heart",
+    color: "#FC54AF",
+    surface: "Pink crust fractured with glowing violet rivers of light",
+    atmosphere: "Drifting neon rose petals",
+    shape: "Cracked orb",
+    surfaceElements: "Canyons glowing violet, rose gardens sprouting"
+  },
+  "pink-moon": {
+    element: "heart",
+    color: "#FC54AF",
+    surface: "Bright pink glowing terrain illuminated with neon lights",
+    atmosphere: "Neon glow mist orbiting like auroras",
+    shape: "Rounded neon orb",
+    surfaceElements: "Pink neon valleys, glowing craters"
+  },
+  "somebody-to-love": {
+    element: "heart",
+    color: "#FC54AF", 
+    surface: "Pink marble terrain with handprint depressions etched in gold",
+    atmosphere: "Faint echoes of voices, silhouettes flickering like mirages",
+    shape: "Smooth marble orb",
+    surfaceElements: "Handprint-shaped valleys, golden pools"
+  },
+  "tienes-un-amigo": {
+    element: "heart",
+    color: "#FC54AF",
+    surface: "Glowing pink surface veined with golden rivers forming constellation-like maps",
+    atmosphere: "Warm golden haze like candlelight",
+    shape: "Round glowing globe",
+    surfaceElements: "Golden rivers, friendly tree groves"
+  },
+  "were-just-friends": {
+    element: "heart", 
+    color: "#FC54AF",
+    surface: "Pink terrain shattered into crystal shards glowing white along cracks", 
+    atmosphere: "Sparks and static crackling between pieces",
+    shape: "Fragmented sphere",
+    surfaceElements: "Floating shards, canyon ridges"
+  },
+  "were-just-friends-dmvrco-remix": {
+    element: "heart", 
+    color: "#FC54AF",
+    surface: "Pink terrain shattered into crystal shards with more vibrant glowing cracks", 
+    atmosphere: "Bright sparks and neon static crackling between shards",
+    shape: "Fragmented sphere",
+    surfaceElements: "Floating shards glowing in vibrant pink and purple"
+  },
+  "were-just-friends-mickey-jas-remix": {
+    element: "heart", 
+    color: "#FC54AF",
+    surface: "Pink terrain with softened cracks, matte pastel texture for lo-fi vibe", 
+    atmosphere: "Gentle static haze with muted pastel sparks",
+    shape: "Fragmented soft orb",
+    surfaceElements: "Canyons and shards with muted pastel colors"
+  },
+
+  // LIGHTNING PLANETS
+  "american-dream": {
+    element: "lightning",
+    color: "#F2EF1D",
+    surface: "Neon yellow skyscraper formations like jagged teeth covered in glowing billboards",
+    atmosphere: "Smog of green lightning bolts shaped like dollar signs",
+    shape: "Jagged high-rise sphere", 
+    surfaceElements: "Skyscrapers, digital billboards"
+  },
+  "blue": {
+    element: "lightning",
+    color: "#F2EF1D",
+    surface: "Yellow crust covered with stormy sapphire-blue clouds",
+    atmosphere: "Electric rain flashing between blue and gold",
+    shape: "Rounded glowing orb",
+    surfaceElements: "Ocean-like storm seas, thundercloud valleys"
+  },
+  "brain-freeze": {
+    element: "lightning",
+    color: "#F2EF1D",
+    surface: "Yellow frozen crust cracked with glowing icy fissures", 
+    atmosphere: "Mist of crystalline frost particles sparkling like diamonds",
+    shape: "Icy globe",
+    surfaceElements: "Glaciers, frozen rivers, neon icebergs"
+  },
+  "feeling-this": {
+    element: "lightning",
+    color: "#F2EF1D",
+    surface: "Jagged punk-graffiti terrain in neon yellow and black stripes",
+    atmosphere: "Spray-paint storms and neon sparks flashing",
+    shape: "Angular jagged orb",
+    surfaceElements: "Graffiti walls, skate-park craters"
+  },
+  "feeling-this-cosmic": {
+    element: "lightning",
+    color: "#F2EF1D",
+    surface: "Jagged punk-graffiti terrain with neon graffiti art sprayed across",
+    atmosphere: "Spacey cosmic spray-paint storms with glowing graffiti tags",
+    shape: "Angular jagged orb",
+    surfaceElements: "Graffiti walls, cosmic skate-park craters"
+  },
+  "game-boy-heart": {
+    element: "lightning",
+    color: "#F2EF1D",
+    surface: "Pixel-mapped yellow terrain with giant 8-bit blocks",
+    atmosphere: "Glowing pixel clouds flickering like loading screens",
+    shape: "Blocky cube-like sphere",
+    surfaceElements: "Pixel platforms, arcade hills"
+  },
+  "home": {
+    element: "lightning",
+    color: "#F2EF1D", 
+    surface: "Golden stitched quilt patches glowing softly",
+    atmosphere: "Amber lantern haze and warm smoke drifting",
+    shape: "Round cozy orb",
+    surfaceElements: "Patchwork lands, lantern-lit cottages"
+  },
+  "home-acoustic": {
+    element: "lightning",
+    color: "#F2EF1D", 
+    surface: "Golden quilt patches mixed with pink and blue accents",
+    atmosphere: "Amber lantern haze with pink-blue smoke drifting",
+    shape: "Round cozy orb",
+    surfaceElements: "Patchwork lands accented pink and blue"
+  },
+  "alien-house-party": {
+    element: "lightning",
+    color: "#F2EF1D",
+    surface: "Neon cracked dance floor tiles flashing on/off",
+    atmosphere: "Strobe beams projecting into void",
+    shape: "Bumpy spherical dance-floor",
+    surfaceElements: "Dance tiles, glowing stairways"
+  },
+  "kid-forever": {
+    element: "lightning",
+    color: "#F2EF1D",
+    surface: "Yellow graffiti-covered terrain like cosmic playground",
+    atmosphere: "Glow-in-the-dark doodle clouds (dinosaurs, stars, spaceships)",
+    shape: "Playful rounded orb",
+    surfaceElements: "Playgrounds, neon treehouses, cartoon slides"
+  },
+  "pok-mon": {
+    element: "lightning", 
+    color: "#F2EF1D",
+    surface: "Neon yellow surface textured like a glowing Poké Ball grid",
+    atmosphere: "Pixelated spark clouds bursting in 8-bit",
+    shape: "Perfectly round sphere", 
+    surfaceElements: "Poké Ball craters, digital forests"
+  },
+
+  // WATER PLANETS
+  "letting-go": {
+    element: "water",
+    color: "#38B6FF",
+    surface: "Deep swirling oceans with glowing whirlpools",
+    atmosphere: "White foam clouds twisting like feathers",
+    shape: "Watery sphere",
+    surfaceElements: "Endless seas, glowing whirlpools"
+  },
+  "ocean-girl": {
+    element: "water",
+    color: "#38B6FF",
+    surface: "Turquoise waves frozen mid-crest, liquid glass reflection",
+    atmosphere: "Pink horizon glow with seaspray drifting like mist",
+    shape: "Oceanic orb",
+    surfaceElements: "Coral reefs, seashell ridges, tidal valleys"
+  },
+  "ocean-girl-acoustic": {
+    element: "water",
+    color: "#38B6FF",
+    surface: "Turquoise waves with purple accents flowing through water",
+    atmosphere: "Pink horizon glow with purple seaspray drifting like mist",
+    shape: "Oceanic orb",
+    surfaceElements: "Coral reefs with purple coral, seashell ridges, tidal valleys"
+  },
+  "ocean-girl-remix": {
+    element: "water",
+    color: "#38B6FF",
+    surface: "Turquoise waves with black streaks flowing across surface",
+    atmosphere: "Pink horizon glow with black mist over seaspray",
+    shape: "Oceanic orb",
+    surfaceElements: "Coral reefs with black coral, dark tidal valleys"
+  }
+};
 
 function pickPlanetType(element: Element, slug: string): PlanetType {
   const s = slug.toLowerCase();
@@ -373,7 +695,7 @@ function generatePlanetProperties(element: Element, type: PlanetType, baseRadius
           color: elementColor,
           opacity: 0.6
         } : undefined,
-        moons: Math.floor(Math.random() * 4) + 2,
+        moons: 0, // Removed moons per user request
         radius,
         weather: generateWeatherSystem(type, element),
         geometry: generatePlanetGeometry(type, element, index)
@@ -393,7 +715,7 @@ function generatePlanetProperties(element: Element, type: PlanetType, baseRadius
           emissive: "#001122",
           normalStrength: 0.8
         },
-        moons: Math.random() > 0.5 ? 1 : 0,
+        moons: 0, // Removed moons per user request
         radius,
         weather: generateWeatherSystem(type, element),
         geometry: generatePlanetGeometry(type, element, index)
@@ -453,7 +775,7 @@ function generatePlanetProperties(element: Element, type: PlanetType, baseRadius
           emissive: "#001144",
           normalStrength: 0.6
         },
-        moons: Math.random() > 0.6 ? 1 : 0,
+        moons: 0, // Removed moons per user request
         radius,
         weather: generateWeatherSystem(type, element),
         geometry: generatePlanetGeometry(type, element, index)
@@ -473,7 +795,7 @@ function generatePlanetProperties(element: Element, type: PlanetType, baseRadius
           emissive: "#221100",
           normalStrength: 0.9
         },
-        moons: Math.random() > 0.8 ? 1 : 0,
+        moons: 0, // Removed moons per user request
         radius,
         weather: generateWeatherSystem(type, element),
         geometry: generatePlanetGeometry(type, element, index)
@@ -533,7 +855,7 @@ function generatePlanetProperties(element: Element, type: PlanetType, baseRadius
           emissive: "#000000",
           normalStrength: 1.0
         },
-        moons: Math.random() > 0.7 ? 1 : 0,
+        moons: 0, // Removed moons per user request
         radius,
         weather: generateWeatherSystem(type, element),
         geometry: generatePlanetGeometry(type, element, index)
@@ -627,8 +949,80 @@ export type HoloSong = {
     moons?: number;
     weather?: WeatherSystem;
     geometry?: PlanetGeometry;
+    // Optional visual motifs to drive shader patterns
+    motifs?: { name: PlanetMotifName; color?: string; intensity?: number }[];
   };
 };
+
+// Dramatic visual motifs supported by the planet shader
+export type PlanetMotifName =
+  | 'cracks'           // glowing fracture lines
+  | 'honeycomb'        // hex grid + warm emissive cells
+  | 'pixel'            // blocky 8-bit quantization
+  | 'tiles'            // tiled dancefloor/grid
+  | 'quilt'            // patchwork squares with seams
+  | 'graffiti'         // stripes + spray splatter
+  | 'cobblestone'      // rounded stones, wet look
+  | 'mirror'           // metallic mirror-like side
+  | 'skyscraper'       // vertical neon billboard bands
+  | 'heart_lakes'      // heart-shaped lake mask
+  | 'aurora'           // atmospheric aurora tint
+  | 'coral'            // coral speckles and reefs
+  | 'shards'           // faceted shard highlight lines
+  | 'dollar_bolts'     // green $-shaped lightning accents
+  | 'petals'           // drifting neon petal tint
+  | 'rivers'           // flowing colored rivers
+  | 'stadium_lines'    // field/track markings
+  | 'velvet'           // soft velvet shading
+  ;
+
+function inferMotifsFromDescriptor(slug: string): { name: PlanetMotifName; color?: string; intensity?: number }[] | undefined {
+  // Try direct slug, then a few common alias variants
+  let d = SONG_PLANET_DATA[slug];
+  if (!d) {
+    const aliases = [
+      slug.replace(/-killers-cover$/, ''),
+      slug.replace(/-blink-182-cover$/, ''),
+      slug.replace(/^alien-/, ''),
+      slug.replace(/\(.*\)$/, '').replace(/--+/g, '-').replace(/-$/, ''),
+      slug === 'pokemon' ? 'pok-mon' : slug,
+    ];
+    for (const a of aliases) { if (SONG_PLANET_DATA[a]) { d = SONG_PLANET_DATA[a]; break; } }
+  }
+  if (!d) return undefined;
+  const src = `${d.surface} ${d.atmosphere} ${d.surfaceElements}`.toLowerCase();
+  const motifs: { name: PlanetMotifName; color?: string; intensity?: number }[] = [];
+
+  const push = (name: PlanetMotifName, color?: string, intensity?: number) => motifs.push({ name, color, intensity });
+
+  // Heuristic keyword mapping from descriptors → motifs
+  if (src.includes('honeycomb')) push('honeycomb', d.color);
+  if (src.includes('pixel') || src.includes('8-bit') || src.includes('grid')) push('pixel', d.color);
+  if (src.includes('dance floor') || src.includes('tiles') || src.includes('tile')) push('tiles', d.color);
+  if (src.includes('quilt') || src.includes('patch')) push('quilt', '#F2EF1D');
+  if (src.includes('graffiti') || src.includes('spray')) push('graffiti', '#F2EF1D');
+  if (src.includes('cobblestone')) push('cobblestone', '#444444');
+  if (src.includes('mirror')) push('mirror', '#C0C0C0', 1.0);
+  if (src.includes('skyscraper') || src.includes('billboard')) push('skyscraper', d.color);
+  if (src.includes('heart') && src.includes('lake')) push('heart_lakes', '#FC54AF');
+  if (src.includes('aurora')) push('aurora', '#FF77FF');
+  if (src.includes('coral')) push('coral', '#FF7F50');
+  if (src.includes('shard') || src.includes('crystal')) push('shards', '#FFFFFF');
+  if (src.includes('dollar')) push('dollar_bolts', '#32CD32');
+  if (src.includes('petal')) push('petals', '#FF66CC');
+  if (src.includes('river')) push('rivers', '#8bf9ff');
+  if (src.includes('stadium') || src.includes('bleachers') || src.includes('lines')) push('stadium_lines', '#FFFFFF');
+  if (src.includes('velvet')) push('velvet');
+
+  // Cracks/fractures
+  if (src.includes('crack') || src.includes('fracture') || src.includes('shattered') || src.includes('fragment')) {
+    // Try to derive glow color from element color
+    const crackColor = d.element === 'heart' ? '#FF77FF' : d.element === 'water' ? '#66CCFF' : d.element === 'lightning' ? '#FFF26A' : '#FF3355';
+    push('cracks', crackColor, 1.0);
+  }
+
+  return motifs.length ? motifs : undefined;
+}
 
 export function buildPlanetSongs(): { hudSongs: HudSong[]; holoSongs: HoloSong[] } {
   // Deterministic numeric seed from slug (stable across reloads)
@@ -761,8 +1155,8 @@ export function buildPlanetSongs(): { hudSongs: HudSong[]; holoSongs: HoloSong[]
 
     hudSongs.push({ id, title: t.title, icon: element, color });
 
-    // orbit spacing and speed with variety
-    const orbitRadius = 1.6 + (i % 8) * 0.5 + (i % 3) * 0.15;
+    // orbit spacing and speed with variety - increased distance from central heart planet
+    const orbitRadius = 12.0 + (i % 8) * 2.0 + (i % 3) * 1.0;
     const orbitSpeed = 0.28 + ((i % 7) * 0.03);
     const tilt = 0.12 + ((i % 5) * 0.03);
     const radius = baseRadius + ((i % 5) * (radiusJitter / 5));
@@ -781,6 +1175,9 @@ export function buildPlanetSongs(): { hudSongs: HudSong[]; holoSongs: HoloSong[]
       geometry: override.geometry || planetProps.geometry,
     };
     
+    // Infer dramatic motifs from rich descriptors, if available
+    const inferredMotifs = inferMotifsFromDescriptor(id);
+
     holoSongs.push({
       id,
       title: t.title,
@@ -801,6 +1198,7 @@ export function buildPlanetSongs(): { hudSongs: HudSong[]; holoSongs: HoloSong[]
         moons: merged.moons,
         weather: merged.weather,
         geometry: merged.geometry,
+        motifs: inferredMotifs,
       },
     });
   });

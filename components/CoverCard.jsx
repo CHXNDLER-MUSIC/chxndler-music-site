@@ -14,18 +14,18 @@ export default function CoverCard({ src = "/cover/ocean-girl.png", label, size =
   return (
     <div className="flex flex-col items-start">
       <div
-        className={`cover-art-container group relative rounded-[12px] overflow-hidden border-2 border-[#19E3FF]/90 shadow-[0_0_28px_rgba(25,227,255,0.45)] transition-all duration-300 cursor-pointer hover:scale-105 hover:border-[#19E3FF] hover:shadow-[0_0_40px_rgba(25,227,255,0.8),0_0_60px_rgba(25,227,255,0.6),0_0_80px_rgba(25,227,255,0.4)] cover-pulse ${responsiveClasses}`}
+        className={`cover-art-container group relative rounded-[12px] overflow-hidden cursor-pointer ${responsiveClasses}`}
         style={responsive ? {} : { width: size - 10, height: size - 10 }}
         onClick={handleClick}
       >
         <img
           src={src}
           alt={label || "Cover art"}
-          className="w-full h-full object-cover transition-all duration-300 group-hover:brightness-110 group-hover:contrast-110 group-hover:saturate-120"
+          className="w-full h-full object-cover transition-all duration-300"
           onError={(e)=>{ e.currentTarget.src = "/logo/CHXNDLER_Logo.png"; }}
         />
-        {/* Blue fill overlay */}
-        <div className="blue-fill-overlay pointer-events-none absolute inset-0 bg-[#19E3FF]/0 transition-all duration-300 group-hover:bg-[#19E3FF]/15 group-hover:mix-blend-overlay" />
+        {/* Blue fill overlay: only on hover like dropdown */}
+        <div className="blue-fill-overlay pointer-events-none absolute inset-0 mix-blend-overlay transition-all duration-300" />
         {/* inner neon rim */}
         <div className="pointer-events-none absolute inset-0 rounded-[12px] ring-1 ring-[#19E3FF]/40" />
         {/* scanlines */}
@@ -35,6 +35,31 @@ export default function CoverCard({ src = "/cover/ocean-girl.png", label, size =
       {label ? (
         <span className={`mt-1 tracking-wide text-cyan-100/90 ${responsive ? "text-[9px] sm:text-[10px] md:text-xs" : "text-[10px]"}`}>{label}</span>
       ) : null}
+      <style jsx>{`
+        .cover-art-container{ 
+          outline:1px solid rgba(25,227,255,.20);
+          box-shadow: 0 0 28px rgba(25,227,255,.15);
+          transition: transform .15s ease, box-shadow .2s ease, outline-color .2s ease, filter .2s ease;
+        }
+        .cover-art-container:hover{
+          transform: translateZ(0) scale(1.04);
+          outline-color: rgba(25,227,255,.8);
+          box-shadow:
+            0 0 52px rgba(25,227,255,.7),
+            0 0 90px rgba(25,227,255,.45),
+            inset 0 0 15px rgba(25,227,255,.2);
+        }
+        .cover-art-container:hover img{ 
+          filter: brightness(1.5) contrast(1.25) saturate(1.35);
+        }
+        .cover-art-container:hover .blue-fill-overlay{ 
+          background-color: rgba(25, 227, 255, 0.3);
+        }
+        /* Apply a subtle blue tint by default to match dropdown styling */
+        .blue-fill-overlay{
+          background-color: rgba(8, 26, 32, 0.25);
+        }
+      `}</style>
     </div>
   );
 }

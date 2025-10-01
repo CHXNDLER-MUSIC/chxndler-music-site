@@ -24,8 +24,9 @@ export function computePlanetLayout(
   } = {}
 ): Record<string, LayoutOut> {
   const {
-    ringGap = 1.5,
-    baseRadius = 2.8,
+    // Push satellites even farther from the center heart planet with increased spacing
+    ringGap = 7.5,
+    baseRadius = 32.0,
     eccMin = 0.05,
     eccMax = 0.22,
     tiltPerRing = 6,
@@ -123,8 +124,9 @@ export function usePlanetLayout(songId: string): LayoutOut | undefined {
   const { innerWidth: w } = typeof window !== 'undefined' ? window : { innerWidth: 1280 } as any;
   const narrow = w < 640;
   const opts = useMemo(() => ({
-    ringGap: narrow ? 1.3 : 1.5,
-    baseRadius: 2.8,
+    // Even larger spacing to clear the center heart with increased distances
+    ringGap: narrow ? 6.0 : 7.5,
+    baseRadius: narrow ? 30.0 : 32.0,
     eccMin: 0.05, eccMax: 0.22,
     tiltPerRing: 6,
     minScale: 0.7,
@@ -139,4 +141,3 @@ function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
 function clamp(x: number, a: number, b: number) { return Math.max(a, Math.min(b, x)); }
 function wrapTau(x: number) { const T = Math.PI * 2; x %= T; return x < 0 ? x + T : x; }
 function hash01(id: string) { let h = 2166136261 >>> 0; for (let i = 0; i < id.length; i++) { h ^= id.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967295; }
-

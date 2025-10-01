@@ -33,8 +33,8 @@ class SFXBus {
       const Ctor = window.AudioContext || (window as any).webkitAudioContext;
       if (!Ctor) return (this.ctx = null);
       this.ctx = new Ctor();
-      // Pre-decode a few common sounds in background
-      this.preload(["hover", "click", "join", "select"]).catch(() => {});
+      // Pre-decode common sounds in background (add warp/button for start flow)
+      this.preload(["hover", "click", "join", "select", "button", "warp"]).catch(() => {});
     } catch {
       this.ctx = null;
     }
@@ -45,6 +45,16 @@ class SFXBus {
   setEnabled(v: boolean) {
     this.enabled = !!v;
     try { (window as any).__CHX_UI_UNLOCKED = this.enabled; } catch {}
+    // Best-effort: create/resume AudioContext immediately on enable within the user gesture
+    try {
+      if (this.enabled) {
+        const ctx = this.ensure();
+        if (ctx && ctx.state === 'suspended') {
+          // Resume asynchronously but without waiting
+          ctx.resume().catch(() => {});
+        }
+      }
+    } catch {}
   }
   private isEnabled(): boolean {
     try {

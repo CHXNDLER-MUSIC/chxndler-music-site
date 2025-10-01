@@ -11,9 +11,10 @@ import { Slot } from "@/components/Slot";
 import { DASHBOARD } from "@/config/dashboard";
 import dynamic from "next/dynamic";
 const HUDPanel = dynamic(() => import("@/components/HUDPanel"), { ssr: false });
-import HoloHUD from "@/components/HoloHUD";
+const PlanetSystem = dynamic(() => import("@/components/holo/PlanetSystem"), { ssr: false });
+const HoloHUD = dynamic(() => import("@/components/HoloHUD"), { ssr: false });
 import { skyFor, introSky } from "@/lib/sky";
-import MediaPlayer from "@/components/MediaPlayer";
+const MediaPlayer = dynamic(() => import("@/components/MediaPlayer"), { ssr: false });
 import { sfx } from "@/lib/sfx";
 import { LINKS, POS } from "@/config/cockpit";
 import { tracks } from "@/lib/songs-consolidated";
@@ -30,7 +31,7 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [sky, setSky] = useState(introSky);
   const [links, setLinks] = useState({ spotify: LINKS.spotify, apple: LINKS.apple });
   const [userSelected, setUserSelected] = useState(false);
-  const [curTrack, setCurTrack] = useState(tracks.find(t => t.slug === initialSlug) || tracks.find(t => t.title === "WE'RE JUST FRIENDS") || tracks[0]);
+  const [curTrack, setCurTrack] = useState(initialSlug ? (tracks.find(t => t.slug === initialSlug) || tracks.find(t => t.title === "WE'RE JUST FRIENDS") || tracks[0]) : null);
   const [playSignal, setPlaySignal] = useState(0);
   const [toggleSignal, setToggleSignal] = useState(0);
   const [flySignal, setFlySignal] = useState(0);
@@ -48,14 +49,15 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [allowWarp, setAllowWarp] = useState(false); // show initial lightspeed overlay
   const [landingMode, setLandingMode] = useState(true); // initial screen state
   const [landingRevealReady, setLandingRevealReady] = useState(false); // when true, allow initial overlay to hide
-  const [homeMode, setHomeMode] = useState(false);
-  const [homeIntroEnabled, setHomeIntroEnabled] = useState(true);
+  const [homeMode, setHomeMode] = useState(!initialSlug); // true when on homepage (no initial slug)
+  const [homeIntroEnabled, setHomeIntroEnabled] = useState(false);
   const [pendingHomePower, setPendingHomePower] = useState(false);
   const [pendingTrackPlay, setPendingTrackPlay] = useState(false);
   const [pendingOverlayReveal, setPendingOverlayReveal] = useState(false); // wait to show overlay until warp SFX ends
   const trackPlayTimerRef = React.useRef(undefined);
   // Keep ambient suspended initially, but allow faster startup
   const [ambientSuspended, setAmbientSuspended] = useState(true);
+  const [ambientPlaying, setAmbientPlaying] = useState(false);
   const [firstStartDone, setFirstStartDone] = useState(false);
   const [welcomeHasPlayed, setWelcomeHasPlayed] = useState(false); // tracks if welcome has ever been played
   const welcomeOnStartRef = React.useRef(false); // signals that welcome VO should play now
@@ -150,11 +152,7 @@ export default function DashboardApp({ initialSlug } = {}) {
         // Keep ambient paused until after HUD fades in
         // Start light beam immediately with audio
         try { setBeamEnabled(true); } catch {}
-        // Only unsuspend ambient during UI transitions if we're in home mode
-        // Don't unsuspend if user has selected a specific song
-        if (homeMode) {
-          setAmbientSuspended(false); // Allow ambient to continue playing during UI changes
-        }
+        // Do not start ambient on home/opening page
         // Fade HUD in shortly after beam starts fading in (faster response)
         setTimeout(() => {
           setShowHUD(true);
@@ -325,6 +323,39 @@ export default function DashboardApp({ initialSlug } = {}) {
       return () => clearInterval(safariRefreshInterval);
     }
   }, []);
+
+  // Track ambient audio playing state for accurate button state on homepage
+  useEffect(() => {
+    if (!mounted) return;
+    
+    const trackAmbientState = () => {
+      const ambient = document.querySelector('audio[data-ambient="1"]');
+      if (!ambient) {
+        // Try again later if element not found
+        setTimeout(trackAmbientState, 100);
+        return;
+      }
+      
+      const onPlay = () => setAmbientPlaying(true);
+      const onPause = () => setAmbientPlaying(false);
+      const onEnded = () => setAmbientPlaying(false);
+      
+      // Set initial state
+      setAmbientPlaying(!ambient.paused && ambient.currentTime > 0);
+      
+      ambient.addEventListener('play', onPlay);
+      ambient.addEventListener('pause', onPause);
+      ambient.addEventListener('ended', onEnded);
+      
+      return () => {
+        ambient.removeEventListener('play', onPlay);
+        ambient.removeEventListener('pause', onPause);
+        ambient.removeEventListener('ended', onEnded);
+      };
+    };
+    
+    return trackAmbientState();
+  }, [mounted]);
 
   // If an initial slug is provided (route-based song page), orchestrate warp + playback
   useEffect(() => {
@@ -544,9 +575,9 @@ export default function DashboardApp({ initialSlug } = {}) {
   const effectivelyPlaying = useMemo(() => {
     // Main track is playing
     if (isPlaying) return true;
-    // Space music is playing when not suspended (warp doesn't stop space music, just fades it)
-    return !ambientSuspended;
-  }, [isPlaying, ambientSuspended]);
+    // Space music is playing when actually playing (not just not suspended)
+    return ambientPlaying;
+  }, [isPlaying, ambientPlaying]);
 
   // Helper function to get beam gradient based on active beam color
   const getBeamGradient = useMemo(() => {
@@ -625,10 +656,15 @@ export default function DashboardApp({ initialSlug } = {}) {
     return (
       <main className="relative min-h-screen overflow-hidden bg-black text-white max-w-screen overflow-x-hidden" style={{ minWidth: '100vw', minHeight: '100vh' }}>
         <div className="absolute inset-0 bg-black" />
+        {/* Ensure cockpit frame preloads immediately alongside lightbeam base */}
         <div 
-          className="fixed inset-0 z-99 pointer-events-none lightbeam-base-bg"
+          className="fixed inset-0 z-20 pointer-events-none cockpit-bg"
           aria-hidden="true" 
-          style={{ opacity: 0 }}
+        />
+        <div 
+          className="fixed inset-0 z-[100] pointer-events-none lightbeam-base-bg"
+          aria-hidden="true" 
+          style={{ opacity: 1 }}
         />
       </main>
     );
@@ -667,39 +703,16 @@ export default function DashboardApp({ initialSlug } = {}) {
             try { setUserSelected(false); } catch {}
             try { usePlayerStore.setState({ mainId: null }); } catch {}
             try { setLinks({ spotify: LINKS.spotify, apple: LINKS.apple }); } catch {}
-            // Enable welcome VO once if Start requested it and it hasn't played yet
-            try {
-              if (welcomeOnStartRef.current && !welcomeHasPlayed) {
-                setHomeIntroEnabled(true);
-                setWelcomeHasPlayed(true);
-              } else {
-                setHomeIntroEnabled(false);
-              }
-            } catch {}
+            // Enable welcome VO on opening/home page and release ambient suspend so it plays after warp
+            try { setHomeIntroEnabled(true); } catch {}
+            try { setAmbientSuspended(false); } catch {}
+            try { setWelcomeHasPlayed(true); } catch {}
             // Switch background sky in the same render pass for simultaneous reveal
             try {
               if (nextSky) { setSky(nextSky); setNextSky(null); }
             } catch {}
-            // Play the button sound exactly at reveal time, then start ambient after it finishes
-            try { 
-              sfx.playAndWait('button', 0.9).then(() => {
-                // Start ambient music after button SFX completes
-                setAmbientSuspended(false); 
-                try { window.dispatchEvent(new Event('ambient:play')); } catch {}
-              }).catch(() => {
-                // If SFX fails, start ambient after a brief delay
-                setTimeout(() => {
-                  setAmbientSuspended(false); 
-                  try { window.dispatchEvent(new Event('ambient:play')); } catch {}
-                }, 500);
-              });
-            } catch {
-              // Fallback if SFX system fails entirely
-              setTimeout(() => {
-                setAmbientSuspended(false); 
-                try { window.dispatchEvent(new Event('ambient:play')); } catch {}
-              }, 500);
-            }
+            // Play the button sound at reveal time; do not start ambient on home
+            try { sfx.playAndWait('button', 0.9).catch(()=>{}); } catch {}
             try { setShowOverlayUI(true); } catch {}
             try { setBeamEnabled(true); } catch {}
             try { setShowHUD(true); } catch {}
@@ -722,20 +735,22 @@ export default function DashboardApp({ initialSlug } = {}) {
           setLandingMode(false); // leave landing mode after first warp
           // Reset start button warp flag to allow normal effects to resume
           startButtonWarpRef.current = false;
-          // Hard-stop any ambient audio at warp end during song selection
-          try {
-            const amb = document.querySelector('audio[data-ambient="1"]');
-            if (amb) { 
-              amb.pause(); 
-              amb.currentTime = 0;
-              // Don't manipulate volume directly - let AmbientSpace component handle it
-            }
-          } catch {}
-          try {
-            const intro = document.querySelector('audio[data-intro="1"]');
-            if (intro) { intro.pause(); intro.currentTime = 0; }
-          } catch {}
-          setAmbientSuspended(true);
+          // Only hard-stop ambient audio at warp end when a track play is pending (song selection flow).
+          // For homepage reveal, keep ambient/welcome playing.
+          if (pendingTrackPlay) {
+            try {
+              const amb = document.querySelector('audio[data-ambient=\"1\"]');
+              if (amb) { 
+                amb.pause(); 
+                amb.currentTime = 0;
+              }
+            } catch {}
+            try {
+              const intro = document.querySelector('audio[data-intro=\"1\"]');
+              if (intro) { intro.pause(); intro.currentTime = 0; }
+            } catch {}
+            setAmbientSuspended(true);
+          }
           // If a track play is pending, begin UI fade-in immediately at warp end
           // and start the button SFX right away so it completes before music starts
           if (pendingTrackPlay) {
@@ -786,16 +801,16 @@ export default function DashboardApp({ initialSlug } = {}) {
             setHomeMode(true);
             // Clear any selected planet for home mode
             try { usePlayerStore.setState({ mainId: null }); } catch {}
-            // First Start: enable welcome VO to play over ambient once space-music is in
+            // Do not enable welcome VO on home
             if (!firstStartDone && !welcomeHasPlayed) {
-              welcomeOnStartRef.current = true; // signal power-up not to cancel it
-              setHomeIntroEnabled(true);
+              welcomeOnStartRef.current = false;
+              setHomeIntroEnabled(false);
               setFirstStartDone(true);
-              setWelcomeHasPlayed(true); // mark that welcome will play/has played
+              setWelcomeHasPlayed(false);
             }
             setUserSelected(false);
             setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
-            // Unsuspend ambient music when returning to home mode
+            // Keep ambient active on home/opening page so space music continues
             setAmbientSuspended(false);
             // Let ambient continue during UI transitions for smoother experience
             // Defer overlay/UI reveal until warp SFX has finished
@@ -897,16 +912,18 @@ export default function DashboardApp({ initialSlug } = {}) {
         }}
       />
 
+
       <div 
         className="fixed inset-0 z-20 pointer-events-none cockpit-bg"
         aria-hidden="true" 
       />
       
       <div 
-        className="fixed inset-0 z-99 pointer-events-none lightbeam-base-bg"
+        className="fixed inset-0 z-[100] pointer-events-none lightbeam-base-bg"
         aria-hidden="true" 
         style={{
-          opacity: (uiUnlocked && showOverlayUI && !warpActive) ? 1 : 0,
+          // Keep the light beam base PNG visible on the opening page and during warp
+          opacity: (landingMode || (uiUnlocked && showOverlayUI)) ? 1 : 0,
           transition: 'opacity 400ms ease-in-out'
         }}
       />
@@ -941,6 +958,13 @@ export default function DashboardApp({ initialSlug } = {}) {
           // No need to call triggerHudPower since beam system manages everything
         }}
         onLaunch={() => {
+          // Ensure SFX are enabled immediately within the user gesture
+          try { 
+            sfx.setEnabled(true); 
+            (window).__CHX_UI_UNLOCKED = true; 
+            // Immediately clear dimming so the wheel brightens right away on Start
+            (window).__CHX_SHOW_DIMMING_OVERLAY = false;
+          } catch {}
           // If a main song is currently playing, use Start to toggle play/pause
           if (isPlaying) {
             setToggleSignal((n) => n + 1);
@@ -1020,7 +1044,8 @@ export default function DashboardApp({ initialSlug } = {}) {
                   onSongChange={onSongChange}
                   track={(homeMode && !userSelected && !pendingTrackPlay) ? undefined : curTrack}
                   currentId={(homeMode && !userSelected && !pendingTrackPlay) ? undefined : curTrack?.slug}
-                  playing={isPlaying}
+                  playing={(homeMode && !userSelected && !pendingTrackPlay) ? ambientPlaying : isPlaying}
+                  hidePlanetsUntilPlaying={pendingTrackPlay}
                   beamOnly={beamOnly}
                   beamEnabled={beamEnabled}
                 />
@@ -1062,11 +1087,7 @@ export default function DashboardApp({ initialSlug } = {}) {
                 onSkyChange={(webm, mp4, key) => setNextSky({ webm, mp4, key })}
                 onPlayingChange={(p) => { 
                   setIsPlaying(p); 
-                  // Only unsuspend ambient when song stops AND we're in home mode AND user didn't explicitly select a song
-                  // AND we're not pending a track play (which means we're not in a song selection flow)
-                  if (!p && homeMode && !userSelected && !pendingTrackPlay) {
-                    setAmbientSuspended(false);
-                  }
+                  // Do not auto-start ambient when a song stops on home
                 }}
                 onAudioReady={() => {}}
                 onTrackChange={(t) => { 
@@ -1127,18 +1148,9 @@ export default function DashboardApp({ initialSlug } = {}) {
           onToggle={() => {
             try {
               if (homeMode) {
-                // On CHXNDLER homepage, toggle ambient space music instead of main player
-                const amb = document.querySelector('audio[data-ambient="1"]');
-                if (amb) {
-                  if (amb.paused) {
-                    try { window.dispatchEvent(new CustomEvent('ambient:userPlay')); } catch {}
-                    amb.play().catch(()=>{});
-                  } else {
-                    try { window.dispatchEvent(new CustomEvent('ambient:userPause')); } catch {}
-                    amb.pause();
-                  }
-                  return;
-                }
+                // Do not toggle ambient on home; remain silent
+                try { window.dispatchEvent(new CustomEvent('ambient:userPause')); } catch {}
+                return;
               }
             } catch {}
             // Otherwise toggle main player

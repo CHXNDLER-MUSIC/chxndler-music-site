@@ -14,27 +14,41 @@ function InvalidateOnState() {
   const invalidate = useThree((s) => s.invalidate);
   const { mainId, hoverId, songs } = usePlayerStore();
   useEffect(() => {
-    invalidate();
-  }, [mainId, hoverId, songs.length, invalidate]);
+    // Throttle invalidation to prevent excessive re-renders
+    const timeout = setTimeout(() => {
+      invalidate();
+    }, 50);
+    return () => clearTimeout(timeout);
+  }, [mainId, hoverId, songs.length]); // Removed invalidate from deps to prevent infinite loop
   return null;
 }
 
-export default function PlanetSystem({ showAll = false }: { showAll?: boolean }) {
+export default function PlanetSystem({ showAll = false, hideUntilPlaying = false }: { showAll?: boolean; hideUntilPlaying?: boolean }) {
+  console.log("🌍 PlanetSystem rendering with showAll:", showAll, "songs count:", usePlayerStore.getState().songs.length);
   const { songs, mainId, prevMainId, hoverId } = usePlayerStore();
   const focusId = showAll ? null : (mainId ?? songs[0]?.id);
   const focus = showAll ? null : (songs.find((s) => s.id === focusId) ?? songs[0]);
+  
+  
 
   return (
     // Fill the parent (HUDPanel provides a fixed-height relative container)
-    <div className="absolute inset-0 holo-inset">
+    // Fade logic: when a song is selected (showAll=false) but not yet playing, hide the planets.
+    <div 
+      className="absolute inset-0"
+      style={{
+        opacity: (!showAll && hideUntilPlaying) ? 0 : 1,
+        transition: 'opacity 400ms ease-in-out'
+      }}
+    >
       <Canvas
         className="absolute inset-0"
         style={{ background: 'transparent' }}
         dpr={[1, 2]}
         // Pull the camera back and widen FOV so the full system fits
         // Much more horizontal viewpoint: lower camera height and pull back slightly
-        // Zoom out more for CHXNDLER homepage when showAll is true
-        camera={{ position: [0.2, -0.2, showAll ? 22 : 15.5], fov: showAll ? 50 : 40 }}
+        // Zoom out even more for CHXNDLER homepage when showAll is true - increased for much wider planet spread
+        camera={{ position: [0.2, -0.2, showAll ? 42 : 15.5], fov: showAll ? 58 : 40 }}
         gl={{ antialias: true, alpha: true }}
         frameloop="demand"
       >
@@ -51,42 +65,44 @@ export default function PlanetSystem({ showAll = false }: { showAll?: boolean })
         <InvalidateOnState />
         <ZoomOnChange focusId={focusId} />
 
-        {/* Heart planet at the center - outside SystemGroup to avoid transformations */}
-        <HeartPlanet />
+        {/* Heart planet at the center - only when showing all planets */}
+        {showAll && <HeartPlanet />}
+        
+        {/* Removed debug helper sphere that was visible on the homepage */}
 
         {/* Very shallow tilt for near-horizontal horizon line */}
         {/* Render the full system: satellites first, focus planet last; previous main becomes a moon */}
+        {/* Enlarge full-system view on homepage so it spans the blue display width */}
+        <group scale={showAll ? 1.45 : 1}>
         <SystemGroup>
-          <OrbitGuides />
+          {/* Orbit guides only when showing the full system */}
+          {showAll ? <OrbitGuides /> : null}
           {showAll ? (
             <>
               {songs.map((s) => (
-                <Planet key={s.id} song={s} isMain={false} isHover={hoverId === s.id} isMoon={false} isMuted={false} />
+                <Planet key={s.id} song={s} isMain={false} isHover={hoverId === s.id} isMoon={false} isMuted={false} ringBaseOverride={44} />
               ))}
             </>
-          ) : (
+          ) : focusId ? (
             (() => {
-              // When a song is selected, show only the focused planet
+              const focusedSong = songs.find((s) => s.id === focusId);
+              if (!focusedSong) return null;
+              
+              // When a song is selected, show ONLY the focused planet - all others disappear
               return (
-                <>
-                  {songs
-                    .filter((s) => s.id === focusId)
-                    .map((s) => (
-                      <Planet 
-                        key={s.id} 
-                        song={s} 
-                        isMain={true} 
-                        isHover={hoverId === s.id} 
-                        isMoon={false}
-                        isMuted={false}
-                      />
-                    ))
-                  }
-                </>
+                <Planet 
+                  key={focusId} 
+                  song={focusedSong} 
+                  isMain={true} 
+                  isHover={hoverId === focusId} 
+                  isMoon={false}
+                  isMuted={false}
+                />
               );
             })()
-          )}
+          ) : null}
         </SystemGroup>
+        </group>
 
         {/* Subtle vertical projection sweep across the HUD area */}
         <ProjectionSweep />
@@ -182,12 +198,12 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
   const { camera, invalidate } = useThree();
   // Use different base values based on showAll mode - access via props context
   const isShowAll = focusId === null;
-  const base = React.useRef({ z: isShowAll ? 22 : 15.5, fov: isShowAll ? 50 : 40 });
+  const base = React.useRef({ z: isShowAll ? 42 : 15.5, fov: isShowAll ? 58 : 40 });
   const anim = React.useRef<{ t: number; d: number; active: boolean }>({ t: 0, d: 0.8, active: false });
 
   React.useEffect(() => {
     // Update base values based on current mode
-    base.current = { z: isShowAll ? 22 : 15.5, fov: isShowAll ? 50 : 40 };
+    base.current = { z: isShowAll ? 42 : 15.5, fov: isShowAll ? 58 : 40 };
     
     // Only restart zoom animation if we have a focusId (not in showAll/home mode)
     if (focusId) {

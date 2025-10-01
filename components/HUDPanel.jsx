@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
+import dynamic from "next/dynamic";
 // 2D fallback hologram
 // 2D HUD removed per request; 3D only
 // 3D planet system (requires three/r3f/drei installed)
@@ -24,7 +25,10 @@ import CoverHologram from "@/components/CoverHologram";
 import { buildPlanetSongs } from "@/lib/planets";
 import SongDropdown from "@/components/SongDropdown";
 import DevErrorLogger from "@/components/DevErrorLogger";
-import PlanetSystemRaw from "@/components/holo/PlanetSystemRaw";
+// Lazy-load 3D systems on client only to avoid early evaluation issues
+// Prefer R3F-based system when compatible; otherwise fall back to raw Three.js
+const PlanetSystem = dynamic(() => import("@/components/holo/PlanetSystem"), { ssr: false });
+const PlanetSystemRaw = dynamic(() => import("@/components/holo/PlanetSystemRaw"), { ssr: false });
 import { sfx } from "@/lib/sfx";
 import { DEBUG_MEDIA, dlog, dwarn } from "@/lib/debug";
 import { ElementIcon as OptimizedElementIcon } from "@/lib/elementIcons";
@@ -96,6 +100,7 @@ export default function HUDPanel({
   currentId,
   holoPop = false,
   playing = false,
+  hidePlanetsUntilPlaying = false,
   beamOnly = false,
   beamEnabled = undefined, // optional external control for beam fade (true/false)
 }) {
@@ -109,7 +114,8 @@ export default function HUDPanel({
   const [scale, setScale] = useState(1);
   const [hoverId, setHoverId] = useState(null);
   const [can3D, setCan3D] = useState(false);
-  const [PlanetSystemComp, setPlanetSystemComp] = useState(() => PlanetSystemRaw);
+  const [preferRaw3D, setPreferRaw3D] = useState(false);
+  // Remove problematic component state that causes React CurrentOwner issues
   const [threeFailed, setThreeFailed] = useState(null);
   const [mounted, setMounted] = useState(false);
   // Beam fade: allow external control; default to fade-in on mount
@@ -126,6 +132,9 @@ export default function HUDPanel({
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1.0);
+  const [animationTime, setAnimationTime] = useState(0);
+  // Direct ref to the currently tracked audio element for live reads during render
+  const liveAudioRef = useRef(null);
   useEffect(() => {
     if (typeof beamEnabled === 'boolean') {
       const t = setTimeout(() => setBeamOpacity(beamEnabled ? 1 : 0), 10);
@@ -141,10 +150,10 @@ export default function HUDPanel({
   useEffect(() => { setContentOpacity(beamOnly ? 0 : 1); }, [beamOnly]);
   
 
-  // Runtime probe: ensure WebGL exists; use raw Three-based system to avoid React internals issues
+  // Runtime probe: ensure WebGL exists and that React internals needed by R3F are present
   useEffect(() => {
     let mounted = true;
-    // Quick capability probe: require a WebGL context
+    // Add more defensive error handling for React Three Fiber compatibility
     try {
       const c = document.createElement('canvas');
       const gl = c && (c.getContext('webgl') || c.getContext('experimental-webgl'));
@@ -153,14 +162,23 @@ export default function HUDPanel({
         setThreeFailed('WebGL unavailable');
         return () => { mounted = false; };
       }
-    } catch {
+      // Probe for React internals used by dev JSX runtime that some R3F versions rely on
+      const hasReactInternals = !!(React && (React).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED);
+      if (!hasReactInternals) {
+        // Fall back to raw Three.js renderer to avoid ReactCurrentOwner crashes
+        setPreferRaw3D(true);
+      }
+      // Enable 3D with additional safety
+      setTimeout(() => {
+        if (mounted) {
+          setCan3D(true);
+          setThreeFailed(null);
+        }
+      }, 100);
+    } catch (err) {
       setCan3D(false);
-      setThreeFailed('WebGL blocked');
-      return () => { mounted = false; };
+      setThreeFailed(`WebGL/React error: ${err.message}`);
     }
-    // Raw Three-based system requires only WebGL
-    setCan3D(true);
-    setThreeFailed(null);
     return () => { mounted = false; };
   }, []);
   // Bridge to 3D store available if installed
@@ -203,17 +221,24 @@ export default function HUDPanel({
     };
   }, [inConsole]);
 
-  // Audio progress tracking
+  // Audio progress tracking - track ambient audio on homepage, main player when song selected
   useEffect(() => {
     const findAndConnectAudio = () => {
-      const a = document.querySelector('audio[data-audio-player="1"]');
-      if (DEBUG_MEDIA) dlog('HUDPanel: finding audio element', a);
+      // On homepage (no currentId), track ambient audio for space-music.mp3
+      // When a song is selected (currentId exists), track main player
+      const audioSelector = !currentId ? 'audio[data-ambient="1"]' : 'audio[data-audio-player="1"]';
+      const a = document.querySelector(audioSelector);
+      
+      if (DEBUG_MEDIA) dlog('HUDPanel: finding audio element', { selector: audioSelector, element: a, currentId });
       if (!a) {
         // Try again in a moment if audio element not found
         setTimeout(findAndConnectAudio, 100);
         return;
       }
       if (DEBUG_MEDIA) dlog('HUDPanel: found audio element, connecting listeners');
+
+      // Store ref for live cursor position calculations
+      liveAudioRef.current = a;
       
       const onTimeUpdate = () => { 
         if (DEBUG_MEDIA) dlog('HUDPanel: timeupdate', a.currentTime);
@@ -224,6 +249,30 @@ export default function HUDPanel({
         setDuration(a.duration || 0); 
       };
       const onVolumeChange = () => { setVolume(a.volume); };
+      // Update progress immediately on seek events (works even when paused)
+      const onSeek = () => { 
+        try { setProgress(isFinite(a.currentTime) ? a.currentTime : 0); } catch {}
+      };
+      
+      // Track play/pause state for button display
+      const onPlay = () => {
+        if (DEBUG_MEDIA) dlog('HUDPanel: audio playing');
+        // Update playing state to reflect the actual audio state
+        if (!currentId) {
+          // For ambient audio, we need to update the parent playing state
+          // This will make the button show "pause" when space-music.mp3 is playing
+          // Note: This is handled by the parent component's playing prop
+        }
+      };
+      const onPause = () => {
+        if (DEBUG_MEDIA) dlog('HUDPanel: audio paused');
+        // Update playing state to reflect the actual audio state
+        if (!currentId) {
+          // For ambient audio, we need to update the parent playing state
+          // This will make the button show "play" when space-music.mp3 is paused
+          // Note: This is handled by the parent component's playing prop
+        }
+      };
       
       // Set initial values
       if (a.duration) setDuration(a.duration);
@@ -233,24 +282,87 @@ export default function HUDPanel({
       a.addEventListener('durationchange', onDurationChange);
       a.addEventListener('volumechange', onVolumeChange);
       a.addEventListener('loadedmetadata', onDurationChange);
+      a.addEventListener('seeking', onSeek);
+      a.addEventListener('seeked', onSeek);
+      a.addEventListener('play', onPlay);
+      a.addEventListener('pause', onPause);
       
       return () => {
+        // Clear live ref when disconnecting
+        if (liveAudioRef.current === a) liveAudioRef.current = null;
         a.removeEventListener('timeupdate', onTimeUpdate);
         a.removeEventListener('durationchange', onDurationChange);
         a.removeEventListener('volumechange', onVolumeChange);
         a.removeEventListener('loadedmetadata', onDurationChange);
+        a.removeEventListener('seeking', onSeek);
+        a.removeEventListener('seeked', onSeek);
+        a.removeEventListener('play', onPlay);
+        a.removeEventListener('pause', onPause);
       };
     };
     
     if (mounted) {
       return findAndConnectAudio();
     }
-  }, [mounted]);
+  }, [mounted, currentId]); // Re-run when currentId changes to switch between ambient and main player
+
+  // Animation loop for smooth cursor movement when playing
+  useEffect(() => {
+    let animationId;
+    let frameCount = 0;
+    
+    const animate = () => {
+      setAnimationTime(Date.now());
+      
+      // Update progress more frequently when playing for smoother cursor movement
+      // Track ambient audio on homepage, main player when song selected
+      const audioSelector = !currentId ? 'audio[data-ambient="1"]' : 'audio[data-audio-player="1"]';
+      const a = document.querySelector(audioSelector);
+      
+      if (a && !a.paused) {
+        const newTime = a.currentTime;
+        
+        // Only update if time has actually changed to avoid unnecessary re-renders
+        setProgress(prevTime => {
+          if (Math.abs(newTime - prevTime) > 0.01) { // Update if difference > 10ms
+            return newTime;
+          }
+          return prevTime;
+        });
+        
+        // Debug logging every 60 frames (1 second at 60fps) when playing
+        frameCount++;
+        if (frameCount % 60 === 0 && DEBUG_MEDIA) {
+          dlog('HUDPanel Animation Loop (Playing):', {
+            audioType: !currentId ? 'ambient' : 'main',
+            selector: audioSelector,
+            currentTime: newTime.toFixed(2),
+            duration: a.duration?.toFixed(2) || 'unknown',
+            progress: a.duration > 0 ? ((newTime / a.duration) * 100).toFixed(1) : 0,
+            cursor: a.duration > 0 ? `${((newTime / a.duration) * 100).toFixed(1)}%` : '0%',
+            readyState: a.readyState
+          });
+        }
+      }
+      
+      // Continue animation loop
+      animationId = requestAnimationFrame(animate);
+    };
+    
+    animationId = requestAnimationFrame(animate);
+    return () => {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+      }
+    };
+  }, [playing, currentId]); // React to playing state changes and currentId changes
 
   // Progress bar click handler
   const handleProgressClick = (e) => {
-    const a = document.querySelector('audio[data-audio-player="1"]');
-    if (DEBUG_MEDIA) dlog('HUDPanel: progress click', { hasAudio: !!a, duration });
+    // Track ambient audio on homepage, main player when song selected
+    const audioSelector = !currentId ? 'audio[data-ambient="1"]' : 'audio[data-audio-player="1"]';
+    const a = document.querySelector(audioSelector);
+    if (DEBUG_MEDIA) dlog('HUDPanel: progress click', { selector: audioSelector, hasAudio: !!a, duration, currentId });
     if (!a || !duration) {
       if (DEBUG_MEDIA) dlog('HUDPanel: cannot seek — missing audio or duration');
       return;
@@ -259,40 +371,35 @@ export default function HUDPanel({
     const clickX = e.clientX - rect.left;
     const percentage = clickX / rect.width;
     const seekTime = percentage * duration;
-    if (DEBUG_MEDIA) dlog('HUDPanel: seeking', { seekTime, percent: percentage * 100 });
+    if (DEBUG_MEDIA) dlog('HUDPanel: seeking', { seekTime, percent: percentage * 100, audioType: !currentId ? 'ambient' : 'main' });
     a.currentTime = seekTime;
     try { sfx.play('click', 0.3); } catch {}
   };
 
   // Toggle play/pause
   const handlePlayPause = () => {
-    // If no currentId, we're on the CHXNDLER home screen. Control ambient instead.
-    if (!currentId) {
-      try { sfx.play('click', 0.6); } catch {}
-      try {
-        const amb = document.querySelector('audio[data-ambient="1"]');
-        if (amb) {
-          if (amb.paused) {
-            try { window.dispatchEvent(new CustomEvent('ambient:userPlay')); } catch {}
-            amb.play().catch(()=>{});
-          } else {
-            try { window.dispatchEvent(new CustomEvent('ambient:userPause')); } catch {}
-            amb.pause();
-          }
-          return;
-        }
-      } catch {}
-      // Fallback: if ambient element missing, do nothing on home
+    try { sfx.play('click', 0.6); } catch {}
+    
+    // Track ambient audio on homepage, main player when song selected
+    const audioSelector = !currentId ? 'audio[data-ambient="1"]' : 'audio[data-audio-player="1"]';
+    const a = document.querySelector(audioSelector);
+    
+    if (!a) {
+      if (DEBUG_MEDIA) dlog('HUDPanel: no audio element found for play/pause', { selector: audioSelector, currentId });
       return;
     }
-    // Otherwise, control the main music player audio element
-    const a = document.querySelector('audio[data-audio-player="1"]');
-    if (!a) return;
-    try { sfx.play('click', 0.6); } catch {}
-    if (a.paused) {
-      a.play().catch(() => {});
+    
+    if (!currentId) {
+      // Do not play ambient audio on homepage
+      try { window.dispatchEvent(new CustomEvent('ambient:userPause')); } catch {}
+      return;
     } else {
-      a.pause();
+      // When a song is selected, control the main player
+      if (a.paused) {
+        a.play().catch(() => {});
+      } else {
+        a.pause();
+      }
     }
   };
 
@@ -329,28 +436,46 @@ export default function HUDPanel({
 
   // Fallback: if songs not provided, build from tracks
   const resolvedSongs = songs && songs.length ? songs : buildPlanetSongs().hudSongs;
+  
+  // Initialize player store with holoSongs for 3D planet system
+  useEffect(() => {
+    const planetData = buildPlanetSongs();
+    if (planetData.holoSongs && planetData.holoSongs.length > 0) {
+      usePlayerStore.getState().initSongs(planetData.holoSongs);
+    }
+  }, []);
 
   // Dynamically place planet container directly above the media player
   useLayoutEffect(() => {
+    let measureTimeout;
     const measure = () => {
-      try {
-        const inner = innerRef.current;
-        const player = playerRef.current;
-        if (!inner || !player) return;
-        const ir = inner.getBoundingClientRect();
-        const pr = player.getBoundingClientRect();
-        // Reduce the gap so the 3D display extends to the media player
-        const gap = 0; // px space between planet and player
-        const b = Math.max(0, ir.bottom - pr.top + gap);
-        setPlanetBottom(b);
-      } catch {}
+      // Throttle measurements to prevent excessive updates
+      clearTimeout(measureTimeout);
+      measureTimeout = setTimeout(() => {
+        try {
+          const inner = innerRef.current;
+          const player = playerRef.current;
+          if (!inner || !player) return;
+          const ir = inner.getBoundingClientRect();
+          const pr = player.getBoundingClientRect();
+          // Reduce the gap so the 3D display extends to the media player
+          const gap = 0; // px space between planet and player
+          const b = Math.max(0, ir.bottom - pr.top + gap);
+          // Only update if there's a significant change to prevent micro-adjustments
+          setPlanetBottom(prev => Math.abs(prev - b) > 2 ? b : prev);
+        } catch {}
+      }, 100); // 100ms throttle
     };
     measure();
     const ro = new ResizeObserver(() => measure());
     if (innerRef.current) ro.observe(innerRef.current);
     if (playerRef.current) ro.observe(playerRef.current);
     window.addEventListener('resize', measure);
-    return () => { try { ro.disconnect(); } catch {}; window.removeEventListener('resize', measure); };
+    return () => { 
+      clearTimeout(measureTimeout);
+      try { ro.disconnect(); } catch {}; 
+      window.removeEventListener('resize', measure); 
+    };
   }, [inConsole]);
 
   return (
@@ -394,40 +519,41 @@ export default function HUDPanel({
             }}
             aria-hidden
           />
-          {/* Background removed for transparent HUD */}
-          {/* Cover art moved into right column above the song list */}
-          {/* Holographic beam overlays removed */}
-          {/* Bloom layers removed */}
-          <div
-            className={`relative ${inConsole ? 'p-2' : 'p-4'}`}
-            style={{ 
-              opacity: contentOpacity, 
-              transition: 'opacity 240ms ease', 
-              pointerEvents: contentOpacity > 0.01 ? 'auto' : 'none', 
-              minHeight: inConsole ? 380 : 480,
-              width: '100%',
-              height: '100%'
-            }}
-            ref={innerRef}
-          >
-
-
-          {/* 3D planets — extend to the inner edges of the blue display (bleed over padding) */}
+          {/* 3D planets — align to full blue display width (outside inner padding) */}
           <div
             ref={planetRef}
-            className={inConsole ? "absolute -left-2 -right-2" : "absolute -left-4 -right-4"}
-            // Move 3D display down with unified HUD offset
+            className="absolute inset-x-0"
+            // Position 3D display higher within blue HUD area; allow only top bleed on homepage
             style={{ 
-              top: `calc(${inConsole ? 91 : 111}px + var(--hud-y, 0px))`, 
+              top: `calc(${inConsole ? 60 : 80}px + var(--hud-y, 0px)${!currentId ? ' - 18px' : ''})`, 
               bottom: planetBottom,
               pointerEvents: 'none' // Allow clicks to pass through to elements below
             }}
           >
-            {can3D && PlanetSystemComp ? (
+            {can3D ? (
               <div className="w-full h-full" style={{ pointerEvents: 'none' }}>
-                <ErrorBoundary fallback={null} onError={(e)=>{ if (String(e?.name||'').includes('IndexSizeError')) { try { if (DEBUG_MEDIA) dwarn('Disabling 3D due to IndexSizeError'); } catch {} } setThreeFailed((e && (e.message||e.name)) || 'Render error'); setCan3D(false); }}>
+                <ErrorBoundary 
+                  key={preferRaw3D ? 'raw' : 'r3f'}
+                  fallback={null} 
+                  onError={(e)=>{ 
+                    const emsg = String((e && (e.message||e.name)) || '');
+                    if (String(e?.name||'').includes('IndexSizeError')) { 
+                      try { if (DEBUG_MEDIA) dwarn('Disabling 3D due to IndexSizeError'); } catch {} 
+                    }
+                    if (emsg.includes('ReactCurrentOwner')) {
+                      // Switch to raw 3D fallback; keep 3D enabled
+                      setPreferRaw3D(true);
+                    }
+                    setThreeFailed(emsg || 'Render error'); 
+                    // Do not disable can3D here; fallback may still work
+                  }}
+                >
                   {/* Show planet system always - both on homepage and when songs are selected */}
-                  <PlanetSystemComp showAll={true} onSongChange={onSongChange} />
+                  {preferRaw3D ? (
+                    <PlanetSystemRaw showAll={!currentId} hideUntilPlaying={!!hidePlanetsUntilPlaying} onSongChange={onSongChange} />
+                  ) : (
+                    <PlanetSystem showAll={!currentId} hideUntilPlaying={!!hidePlanetsUntilPlaying} onSongChange={onSongChange} />
+                  )}
                 </ErrorBoundary>
               </div>
             ) : (
@@ -449,6 +575,25 @@ export default function HUDPanel({
               </div>
             )}
           </div>
+          {/* Background removed for transparent HUD */}
+          {/* Cover art moved into right column above the song list */}
+          {/* Holographic beam overlays removed */}
+          {/* Bloom layers removed */}
+          <div
+            className={`relative ${inConsole ? 'p-2' : 'p-4'}`}
+            style={{ 
+              opacity: contentOpacity, 
+              transition: 'opacity 240ms ease', 
+              pointerEvents: contentOpacity > 0.01 ? 'auto' : 'none', 
+              minHeight: inConsole ? 380 : 480,
+              width: '100%',
+              height: '100%'
+            }}
+            ref={innerRef}
+          >
+
+
+          
           {/* Cover section at bottom right corner - using CoverHologram for pop-out functionality */}
           <div ref={coverRef} className="absolute" style={{ 
             bottom: inConsole ? -8 : -16, 
@@ -624,7 +769,11 @@ export default function HUDPanel({
                           return Math.max(0.05, Math.min(0.9, amplitude));
                         });
                         
-                        const progressRatio = duration > 0 ? (progress / duration) : 0;
+                        // Use live audio values for perfect sync with cursor overlay
+                        const a = liveAudioRef.current;
+                        const liveDur = (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
+                        const liveTime = (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
+                        const progressRatio = liveDur > 0 ? (liveTime / liveDur) : 0;
                         const progressX = progressRatio * 400;
                         
                         return (
@@ -716,11 +865,33 @@ export default function HUDPanel({
                     
                     {/* Element icon cursor positioned above progress */}
                     <div
-                      className="absolute top-0 h-full flex flex-col items-center justify-center pointer-events-none z-10"
+                      className="absolute top-0 h-full flex flex-col items-center justify-center pointer-events-none z-10 hud-cursor-transition"
                       style={{
-                        left: `${Math.max(0, Math.min(100, (duration > 0 ? (progress / duration) * 100 : 0)))}%`,
+                        left: `${(() => {
+                          // Prefer live audio element values; fall back to local state
+                          const a = liveAudioRef.current;
+                          const liveDur = (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
+                          const liveTime = (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
+                          const progressPercent = liveDur > 0 ? (liveTime / liveDur) * 100 : 0;
+                          const leftPos = Math.max(0, Math.min(100, progressPercent));
+
+                          // Debug logging for cursor movement
+                          if (playing && liveTime > 0 && DEBUG_MEDIA) {
+                            dlog('🎯 HUDPanel Cursor Position:', {
+                              usingLive: !!a,
+                              progress: liveTime.toFixed(3),
+                              duration: liveDur.toFixed(3),
+                              progressPercent: progressPercent.toFixed(3),
+                              leftPos: leftPos.toFixed(3),
+                              playing
+                            });
+                          }
+
+                          return leftPos;
+                        })()}%`,
                         transform: 'translateX(-50%)',
                         width: '32px',
+                        transition: playing ? 'left 0.1s linear' : 'left 0.3s ease',
                       }}
                     >
                       {/* Element icon at cursor position */}
@@ -1017,6 +1188,15 @@ export default function HUDPanel({
         
         .hud-progress-bar-enhanced:hover .progress-handle {
           transform: translate(-50%, -50%) scale(1.2);
+        }
+        
+        /* HUD Cursor smooth transitions */
+        .hud-cursor-transition {
+          transition: left 0.1s linear;
+        }
+        
+        .hud-cursor-transition.playing {
+          transition: left 0.05s linear;
         }
         
         /* Beam animations removed */

@@ -277,10 +277,10 @@ export default function SteeringWheelOverlay({
         <LumaKeyVideo
           srcMp4="/cockpit/wheel.mp4"
           srcAlt="/wheel.mp4"
-          threshold={(vconf as any)?.threshold ?? 0.03}
-          softness={(vconf as any)?.softness ?? 0.015}
+          threshold={(vconf as any)?.threshold ?? 0.001}
+          softness={(vconf as any)?.softness ?? 0.01}
           saturation={(vconf as any)?.saturation ?? 1.0}
-          contrast={(vconf as any)?.contrast ?? 1.1}
+          contrast={(vconf as any)?.contrast ?? 1.2}
           offsetYRatio={0}
           className="block"
           style={{
@@ -292,6 +292,11 @@ export default function SteeringWheelOverlay({
             // Render at 1:1 scale to preserve intended size
             transform: 'scale(1.0)',
             transformOrigin: 'bottom center',
+            // Dim the wheel on the opening screen without affecting the Start button
+            filter: isDimmingOverlayActive ? 'brightness(0.65) saturate(1.0)' : undefined,
+            opacity: isDimmingOverlayActive ? 0.95 : 1,
+            // When dimming is removed (after Start), snap to full brightness immediately
+            transition: isDimmingOverlayActive ? 'filter 250ms ease, opacity 250ms ease' : 'none',
           }}
         />
       </div>
@@ -757,8 +762,6 @@ export default function SteeringWheelOverlay({
           background:
             linear-gradient(120deg, rgba(255,255,255,.18), rgba(255,255,255,0) 60%),
             repeating-linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.08) 1px, rgba(0,0,0,0) 1px, rgba(0,0,0,0) 3px);
-          transform: translateX(-130%);
-          animation: powerSheen 3s ease-in-out infinite;
         }
         .power-glyph{ position:relative; display:inline-flex; align-items:center; justify-content:center; color:#fff;
           /* Blue glow coming through the icon */
@@ -790,7 +793,6 @@ export default function SteeringWheelOverlay({
         }
         .power-btn:active{ transform: scale(.96); }
         @keyframes powerPulse{ 0%,100%{ filter: brightness(1) } 50%{ filter: brightness(1.08) } }
-        @keyframes powerSheen { 0% { transform: translateX(-130%);} 55% { transform: translateX(130%);} 100% { transform: translateX(130%);} }
         
         /* Synchronized panel pulsing effects */
         @keyframes pinkPanelPulse {

@@ -6,7 +6,7 @@ import AnalyticsWidget from "@/components/AnalyticsWidget";
 import { AudioProvider } from "@/app/providers/AudioProvider";
 
 export const metadata: Metadata = {
-  title: "CHXNDLER — Cockpit",
+  title: "CHXNDLER — SPACESHIP",
   description: "Pilot the cockpit, switch channels, and drift through space.",
 };
 
@@ -26,6 +26,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preload" as="image" href="/elements/youtube.png" />
         <link rel="preload" as="image" href="/elements/spotify.png" />
         <link rel="preload" as="image" href="/elements/apple.png" />
+        {/* Preload cockpit frame and light beam base so they render instantly */}
+        <link rel="preload" as="image" href="/cockpit/cockpit.png?v=2" />
+        <link rel="preload" as="image" href="/cockpit/lightbeam-base.png?v=2" />
         {/* Preload critical sky videos to minimize first transition latency */}
         <link rel="preload" as="video" href="/skies/space.mp4" type="video/mp4" />
         <link rel="preload" as="video" href="/skies/space.webm" type="video/webm" />

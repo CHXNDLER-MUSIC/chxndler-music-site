@@ -17,12 +17,14 @@ export default function Planet({
   isHover,
   isMoon,
   isMuted = false,
+  ringBaseOverride,
 }: {
   song: Song;
   isMain: boolean;
   isHover: boolean;
   isMoon: boolean;
   isMuted?: boolean;
+  ringBaseOverride?: number;
 }) {
   // Enable procedural surface/normal/roughness maps for more realistic shading
   const USE_PROCEDURAL = true;
@@ -190,7 +192,8 @@ export default function Planet({
   const mainSizeJitter = (sizeMultipliers[planetType] || 1.0) * (0.9 + (genreInfluence || 0) * 0.2);
   // Push satellites a bit further out on the shared ring
   // Keep system within left HUD column: tighten satellite ring radius
-  const ringBase = 6.0; // push satellites further out for even more spacing
+  // Push satellites even further from center to clear the large heart planet
+  const ringBase = typeof ringBaseOverride === 'number' ? ringBaseOverride : 28.0;
   // Larger outward nudge on hover - keep focused planets in their orbits
   const orbitTarget = (isMoon ? 2.0 : ringBase) + jitter + (isHover ? 1.0 : 0);
   const base = (song.planet?.radius || 1.0) * BASE_SCALE;
