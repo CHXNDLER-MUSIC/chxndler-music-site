@@ -579,26 +579,23 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     
     const animate = () => {
       setAnimationTime(Date.now());
-      // Update current time for smooth cursor movement
+      // Update current time for smooth cursor movement - always update when audio exists
       const a = audioRef.current;
-      if (a && !a.paused) {
+      if (a && a.duration > 0) {
         setCurrentTime(a.currentTime);
       }
-      if (playing) {
-        animationId = requestAnimationFrame(animate);
-      }
+      animationId = requestAnimationFrame(animate);
     };
     
-    if (playing) {
-      animationId = requestAnimationFrame(animate);
-    }
+    // Always run animation loop for smooth cursor tracking
+    animationId = requestAnimationFrame(animate);
     
     return () => {
       if (animationId) {
         cancelAnimationFrame(animationId);
       }
     };
-  }, [playing]);
+  }, []);
 
   // Dial interactions moved to StationDialOverlay; keep keyboard + prev/next here
 
@@ -796,7 +793,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               </div>
             )}
             
-            {/* Time cursor with element icon */}
+            {/* Time cursor with element icon - positioned to match animated circle exactly */}
             <div
               className="absolute top-0 h-full flex flex-col items-center justify-center pointer-events-none z-10 cursor-transition"
               style={{
@@ -814,12 +811,15 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 }}
               />
               
-              {/* Chxndler cursor icon */}
+              {/* Chxndler cursor icon - positioned exactly at circle center (cy="50" = 50% height) */}
               <img
                 src="/elements/chxndler.png"
                 alt="Chxndler cursor"
-                className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 transform w-[2rem] h-[2rem] min-w-[2rem] min-h-[2rem] brightness-150 saturate-125"
+                className="absolute w-[2rem] h-[2rem] min-w-[2rem] min-h-[2rem] brightness-150 saturate-125"
                 style={{ 
+                  top: '50%', // Match the circle's cy="50" position exactly
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)', // Center the icon on the exact circle position
                   filter: `drop-shadow(0 0 14px ${currentElementColor}) drop-shadow(0 0 32px ${currentElementColor}AA) drop-shadow(0 0 64px ${currentElementColor}55)`,
                   animation: playing ? 'cursorPulse 2s ease-in-out infinite' : 'none'
                 }}

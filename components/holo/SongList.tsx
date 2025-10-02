@@ -58,7 +58,55 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
   }, [hoverId, songs.length, setHover]);
 
   return (
-    <div className="h-full flex flex-col" style={{ pointerEvents: 'auto' }}>
+    <>
+      <style jsx>{`
+        .song-list-scroll::-webkit-scrollbar {
+          width: 12px;
+          background: rgba(0,0,0,0.3);
+        }
+        .song-list-scroll::-webkit-scrollbar-track {
+          background: rgba(0,0,0,0.2);
+          border-radius: 8px;
+          box-shadow: inset 0 0 6px rgba(25,227,255,0.1);
+        }
+        .song-list-scroll::-webkit-scrollbar-thumb {
+          background: linear-gradient(180deg, 
+            rgba(25,227,255,0.8) 0%, 
+            rgba(25,227,255,0.6) 50%, 
+            rgba(25,227,255,0.4) 100%
+          );
+          border-radius: 8px;
+          border: 1px solid rgba(25,227,255,0.3);
+          box-shadow: 
+            0 0 8px rgba(25,227,255,0.6),
+            inset 0 0 4px rgba(25,227,255,0.4);
+          animation: scrollGlow 2s ease-in-out infinite alternate;
+        }
+        .song-list-scroll::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(180deg, 
+            rgba(25,227,255,1) 0%, 
+            rgba(25,227,255,0.8) 50%, 
+            rgba(25,227,255,0.6) 100%
+          );
+          box-shadow: 
+            0 0 12px rgba(25,227,255,0.8),
+            inset 0 0 6px rgba(25,227,255,0.6);
+          animation: none;
+        }
+        @keyframes scrollGlow {
+          0% {
+            box-shadow: 
+              0 0 8px rgba(25,227,255,0.4),
+              inset 0 0 4px rgba(25,227,255,0.2);
+          }
+          100% {
+            box-shadow: 
+              0 0 16px rgba(25,227,255,0.8),
+              inset 0 0 8px rgba(25,227,255,0.5);
+          }
+        }
+      `}</style>
+      <div className="h-full flex flex-col" style={{ pointerEvents: 'auto' }}>
       <header className="mb-4 px-1 flex-shrink-0">
         <h1 className="text-cyan-300 text-3xl md:text-4xl font-extrabold drop-shadow-cyan">
           {main?.title ?? '—'}
@@ -73,7 +121,11 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
         aria-label="Songs"
         tabIndex={0}
         onKeyDown={handleKeyDown}
-        className="flex-1 overflow-y-auto overflow-x-hidden pr-1 custom-scroll w-full"
+        className="flex-1 overflow-y-auto overflow-x-hidden pr-1 song-list-scroll w-full"
+        style={{
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(25,227,255,0.6) rgba(0,0,0,0.2)',
+        }}
       >
       {songs.length === 0 && (
         <div className="text-cyan-300 p-4">No songs available</div>
@@ -123,5 +175,6 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
         </div>
       </div>
     </div>
+    </>
   );
 }

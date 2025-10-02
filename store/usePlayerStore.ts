@@ -8,9 +8,12 @@ type State = {
   mainId: string | null;
   prevMainId: string | null;
   hoverId: string | null;
+  planetsVisible: boolean;
   initSongs: (songs: Song[]) => void;
   setMain: (id: string) => void;
   setHover: (id: string | null) => void;
+  togglePlanets: () => void;
+  setPlanetsVisible: (visible: boolean) => void;
 };
 
 // Minimal, dependency-free store using useSyncExternalStore
@@ -19,6 +22,7 @@ let state: State = {
   mainId: null,
   prevMainId: null,
   hoverId: null,
+  planetsVisible: true,
   initSongs: (songs: Song[]) => {
     console.log('🎵 PlayerStore: initSongs called', { currentLength: state.songs.length, newLength: songs.length });
     if (state.songs.length === 0) {
@@ -38,6 +42,18 @@ let state: State = {
     console.log('🎵 PlayerStore: mainId updated to', id);
   },
   setHover: (id: string | null) => setState({ hoverId: id }),
+  togglePlanets: () => {
+    console.log('🎵 PlayerStore: togglePlanets called', { current: state.planetsVisible });
+    setState({ planetsVisible: !state.planetsVisible });
+    console.log('🎵 PlayerStore: planetsVisible updated to', !state.planetsVisible);
+  },
+  setPlanetsVisible: (visible: boolean) => {
+    console.log('🎵 PlayerStore: setPlanetsVisible called', { current: state.planetsVisible, new: visible });
+    if (state.planetsVisible !== visible) {
+      setState({ planetsVisible: visible });
+      console.log('🎵 PlayerStore: planetsVisible updated to', visible);
+    }
+  },
 };
 
 const listeners = new Set<() => void>();

@@ -25,9 +25,11 @@ function InvalidateOnState() {
 
 export default function PlanetSystem({ showAll = false, hideUntilPlaying = false }: { showAll?: boolean; hideUntilPlaying?: boolean }) {
   console.log("🌍 PlanetSystem rendering with showAll:", showAll, "songs count:", usePlayerStore.getState().songs.length);
-  const { songs, mainId, prevMainId, hoverId } = usePlayerStore();
+  const { songs, mainId, prevMainId, hoverId, planetsVisible } = usePlayerStore();
   const focusId = showAll ? null : (mainId ?? songs[0]?.id);
   const focus = showAll ? null : (songs.find((s) => s.id === focusId) ?? songs[0]);
+  
+  console.log("🌍 PlanetSystem state:", { showAll, planetsVisible, mainId, focusId, hideUntilPlaying, songsCount: songs.length });
   
   
 
@@ -66,7 +68,7 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         <ZoomOnChange focusId={focusId} />
 
         {/* Heart planet at the center - only when showing all planets */}
-        {showAll && <HeartPlanet />}
+        {showAll && planetsVisible && <HeartPlanet />}
         
         {/* Removed debug helper sphere that was visible on the homepage */}
 
@@ -76,16 +78,13 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         <group scale={showAll ? 1.45 : 1}>
         <SystemGroup>
           {/* Orbit guides only when showing the full system */}
-          {showAll ? <OrbitGuides /> : null}
-          {showAll ? (
+          {showAll && planetsVisible ? <OrbitGuides /> : null}
+          {showAll && planetsVisible ? (
             <>
               {songs.map((s) => (
                 <Planet key={s.id} song={s} isMain={false} isHover={hoverId === s.id} isMoon={false} isMuted={false} ringBaseOverride={44} />
               ))}
             </>
-          ) : focusId ? (
-            // When a song is selected, hide ALL planets (toggle off)
-            null
           ) : null}
         </SystemGroup>
         </group>
@@ -217,8 +216,8 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
       ? 2 * t * t
       : 1 - Math.pow(-2 * t + 2, 2) / 2;
     // dolly closer at mid, then return
-    const closeZ = 13.3;
-    const closeFov = 36;
+    const closeZ = 16.5;
+    const closeFov = 38;
     // use a bell curve around 0.5
     const bell = Math.sin(Math.PI * ease);
     (camera as any).position.z = base.current.z - (base.current.z - closeZ) * bell;

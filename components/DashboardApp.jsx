@@ -198,7 +198,12 @@ export default function DashboardApp({ initialSlug } = {}) {
       return;
     }
 
-    // STEP 1: Stop all music immediately when song is selected
+    // STEP 1: Hide all planets when a song is selected
+    try {
+      usePlayerStore.getState().setPlanetsVisible(false);
+    } catch {}
+
+    // STEP 2: Stop all music immediately when song is selected
     console.log('DashboardApp: Stopping all music for song change');
     
     // Stop main music player audio
@@ -970,6 +975,10 @@ export default function DashboardApp({ initialSlug } = {}) {
             setToggleSignal((n) => n + 1);
             return;
           }
+          // Toggle planet visibility when Start button is clicked
+          try {
+            usePlayerStore.getState().togglePlanets();
+          } catch {}
           // Homepage Start flow (warp to home reveal)
           if (!welcomeHasPlayed) { welcomeOnStartRef.current = true; }
           setPendingOverlayReveal(true);

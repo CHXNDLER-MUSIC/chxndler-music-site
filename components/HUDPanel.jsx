@@ -631,12 +631,12 @@ export default function HUDPanel({
             })()}
           </div>
 
-          {/* Waveform Media Player - flush in bottom left corner extending to cover art */}
+          {/* Waveform Media Player - positioned below dropdown with proper spacing */}
           <div ref={playerRef} className="absolute" style={{ 
-            left: inConsole ? -2 : -4, // Flush with blue display left edge
-            right: oneLinerRight + 8, // Extend to cover art with small gap
+            left: inConsole ? 0 : 2, // Shift very slightly more to the left
+            right: oneLinerRight, // Extend further to the right
             height: '55px',
-            bottom: inConsole ? -2 : -4 // Flush with blue display bottom edge
+            bottom: inConsole ? -10 : -12 // Move down to avoid cutting into dropdown
           }}>
             <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '10px' }}>
               <div className="flex items-center gap-3 p-2">
@@ -980,6 +980,13 @@ export default function HUDPanel({
               currentId={currentId}
               onChange={(id) => {
                 setActive(id);
+                
+                // Hide all planets when a song is selected from dropdown
+                try {
+                  usePlayerStore.getState().setPlanetsVisible(false);
+                } catch (error) {
+                  console.error('Failed to hide planets:', error);
+                }
                 
                 // Set as main planet in player store so it becomes focused in dashboard
                 try {

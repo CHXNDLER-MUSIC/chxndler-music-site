@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useRef, useMemo } from "react";
-import { Mesh, ShaderMaterial, Color, DoubleSide, Euler } from "three";
+import { Mesh, ShaderMaterial, Color, DoubleSide, Euler, SphereGeometry } from "three";
 import { useFrame } from "@react-three/fiber";
-import { createHeartGeometry } from "../../lib/heartGeometry";
 
 export default function HeartPlanet() {
   const meshRef = useRef<Mesh>(null);
@@ -14,19 +13,12 @@ export default function HeartPlanet() {
   
   // Log after defining radius to avoid ReferenceError during render
   console.log("🧡 HeartPlanet is rendering! Position: [0,0,0], Radius:", heartRadius);
-  console.log("🧡 Using new rounder heart geometry with heartness: 0.3");
+  console.log("🧡 Using spherical geometry with heart displacement and enhanced glow layers");
 
-  // Create 3D heart geometry using the rounder planet-like geometry function
+  // Create spherical geometry with heart-shaped surface displacement in shader
   const heartGeometry = useMemo(() => {
-    // Use the sophisticated heart geometry that creates a rounder, more planet-like shape
-    const geometry = createHeartGeometry(
-      heartRadius, // size
-      64, // detail level for smooth curves
-      {
-        heartness: 0.05, // Nearly spherical - should be extremely round
-        thicknessMultiplier: 2.0 // Much thicker for obvious volume change
-      }
-    );
+    // Use a sphere as the base geometry for guaranteed roundness
+    const geometry = new SphereGeometry(heartRadius, 64, 32);
     return geometry;
   }, [heartRadius]);
 
@@ -45,17 +37,43 @@ export default function HeartPlanet() {
         uMetalness: { value: 0.1 }
       },
       vertexShader: `
+        uniform float uTime;
         varying vec3 vNormal;
         varying vec3 vPosition;
         varying vec3 vWorldPosition;
         varying vec2 vUv;
         
+        // Heart-shaped displacement function
+        float heartDisplacement(vec2 uv) {
+          // Convert UV to heart coordinate space
+          vec2 heartUv = (uv - 0.5) * 4.0; // Scale and center
+          
+          // Classic heart equation
+          float x = heartUv.x;
+          float y = -heartUv.y; // Flip Y for correct orientation
+          float heart = pow(x*x + y*y - 1.0, 3.0) - x*x * pow(y, 3.0);
+          
+          // Create subtle displacement based on heart shape
+          float displacement = smoothstep(-0.5, 0.5, heart) * 0.1;
+          return displacement;
+        }
+        
         void main() {
+          vec3 pos = position;
+          
+          // Add subtle heart-shaped displacement to the sphere
+          float displacement = heartDisplacement(uv);
+          pos += normal * displacement;
+          
+          // Add gentle pulsing
+          float pulse = sin(uTime * 3.0) * 0.05 + 1.0;
+          pos *= pulse;
+          
           vNormal = normalize(normalMatrix * normal);
-          vPosition = (modelViewMatrix * vec4(position, 1.0)).xyz;
-          vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
+          vPosition = (modelViewMatrix * vec4(pos, 1.0)).xyz;
+          vWorldPosition = (modelMatrix * vec4(pos, 1.0)).xyz;
           vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
         }
       `,
       fragmentShader: `
@@ -161,11 +179,11 @@ export default function HeartPlanet() {
           surfaceColor += uLightColor * spec1 * 0.8;
           
           // Strong rim lighting for 3D pop
-          vec3 rimColor = uColor * 6.0 * fresnel * heartPulse;
+          vec3 rimColor = uColor * 10.0 * fresnel * heartPulse;
           surfaceColor += rimColor;
           
           // Emissive glow from within (very bright)
-          vec3 emissive = uColor * 8.0 * heartPulse;
+          vec3 emissive = uColor * 12.0 * heartPulse;
           
           vec3 finalColor = surfaceColor + emissive;
           
@@ -208,9 +226,10 @@ export default function HeartPlanet() {
           
           // Pulsing atmosphere (very bright)
           float pulse = sin(uTime * 2.0) * 0.4 + 1.0;
+          float heartPulse = sin(uTime * 3.0) * 0.3 + 1.0;
           
-          vec3 atmosphereColor = uColor * 8.0 * fresnel * pulse;
-          float alpha = fresnel * 1.5 * pulse;
+          vec3 atmosphereColor = uColor * 15.0 * fresnel * pulse * heartPulse;
+          float alpha = fresnel * 2.0 * pulse;
           
           gl_FragColor = vec4(atmosphereColor, alpha);
         }
@@ -253,6 +272,45 @@ export default function HeartPlanet() {
       <mesh ref={meshRef} position={[0, 0, 0]} geometry={heartGeometry}>
         <primitive object={planetMaterial} />
       </mesh>
+      
+      {/* Inner atmosphere glow layer */}
+      <mesh ref={atmosphereRef} position={[0, 0, 0]} scale={[1.4, 1.4, 1.4]}>
+        <sphereGeometry args={[heartRadius, 32, 16]} />
+        <primitive object={atmosphereMaterial} />
+      </mesh>
+      
+      {/* Middle glow layer */}
+      <mesh position={[0, 0, 0]} scale={[1.8, 1.8, 1.8]}>
+        <sphereGeometry args={[heartRadius, 32, 16]} />
+        <meshBasicMaterial 
+          color="#FC54AF" 
+          transparent 
+          opacity={0.12} 
+          side={2}
+          blending={2}
+        />
+      </mesh>
+      
+      {/* Outer glow layer for extended light emission */}
+      <mesh position={[0, 0, 0]} scale={[2.5, 2.5, 2.5]}>
+        <sphereGeometry args={[heartRadius, 24, 12]} />
+        <meshBasicMaterial 
+          color="#FC54AF" 
+          transparent 
+          opacity={0.06} 
+          side={2}
+          blending={2}
+        />
+      </mesh>
+      
+      {/* Point light emanating from the heart planet */}
+      <pointLight 
+        position={[0, 0, 0]} 
+        color="#FC54AF" 
+        intensity={2.5}
+        distance={15}
+        decay={2}
+      />
     </group>
   );
 }

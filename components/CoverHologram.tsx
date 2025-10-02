@@ -46,12 +46,21 @@ export default function CoverHologram({ src, title, inline = false, size = 168, 
   const [cardFlipped, setCardFlipped] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const [hasRealCard, setHasRealCard] = useState(false);
   const closeCoverRef = useRef(null);
   const flipCoverRef = useRef(null);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    // Check if a real card exists by trying to load the card image
+    const cardSrc = src.replace('/cover/', '/card/');
+    if (cardSrc !== src) { // Only check if we actually have a cover image path
+      const img = new window.Image();
+      img.onload = () => setHasRealCard(true);
+      img.onerror = () => setHasRealCard(false);
+      img.src = cardSrc;
+    }
+  }, [src]);
   
   const handleClick = () => {
     // Play flip sound when opening the card
@@ -214,47 +223,49 @@ export default function CoverHologram({ src, title, inline = false, size = 168, 
                 <span className="frame-sheen" aria-hidden />
               </div>
             </div>
-            <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 z-10">
-              <div className="ocean-cta-wrap relative">
-                <a
-                  href={getPurchaseUrl(title)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-ocean"
-                  title="Collect this card"
-                  onClick={(e) => {
-                    try { e.preventDefault(); } catch {}
-                    
-                    // Play click sound
-                    try { sfx.play('click', 0.7); } catch {}
-                    
-                    // Track collect card button click
-                    try {
-                      track('collect_card_clicked', { 
-                        song_slug: title?.toLowerCase().replace(/\s+/g, '-'),
-                        card_src: src,
-                        payload: { 
-                          song_title: title,
-                          card_image: src,
-                          stripe_url: e.currentTarget.href 
-                        } 
-                      });
-                    } catch {}
-                    
-                    try {
-                      const el = e.currentTarget;
-                      el.classList.remove('is-rippling');
-                      void el.offsetWidth;
-                      el.classList.add('is-rippling');
-                      setTimeout(() => { window.open(el.href, '_blank', 'noopener,noreferrer'); }, 520);
-                    } catch { window.open((e.currentTarget || {}).href, '_blank', 'noopener,noreferrer'); }
-                  }}
-                >
-                  <span className="btn-label" style={{ whiteSpace: 'nowrap' }}>COLLECT CARD</span>
-                  <span className="btn-ripple" aria-hidden />
-                </a>
+            {hasRealCard && (
+              <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 z-10">
+                <div className="ocean-cta-wrap relative">
+                  <a
+                    href={getPurchaseUrl(title)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-ocean"
+                    title="Collect this card"
+                    onClick={(e) => {
+                      try { e.preventDefault(); } catch {}
+                      
+                      // Play click sound
+                      try { sfx.play('click', 0.7); } catch {}
+                      
+                      // Track collect card button click
+                      try {
+                        track('collect_card_clicked', { 
+                          song_slug: title?.toLowerCase().replace(/\s+/g, '-'),
+                          card_src: src,
+                          payload: { 
+                            song_title: title,
+                            card_image: src,
+                            stripe_url: e.currentTarget.href 
+                          } 
+                        });
+                      } catch {}
+                      
+                      try {
+                        const el = e.currentTarget;
+                        el.classList.remove('is-rippling');
+                        void el.offsetWidth;
+                        el.classList.add('is-rippling');
+                        setTimeout(() => { window.open(el.href, '_blank', 'noopener,noreferrer'); }, 520);
+                      } catch { window.open((e.currentTarget || {}).href, '_blank', 'noopener,noreferrer'); }
+                    }}
+                  >
+                    <span className="btn-label" style={{ whiteSpace: 'nowrap' }}>COLLECT CARD</span>
+                    <span className="btn-ripple" aria-hidden />
+                  </a>
+                </div>
               </div>
-            </div>
+            )}
             <button
               type="button"
               aria-label="Close"
