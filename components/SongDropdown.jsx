@@ -213,7 +213,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
           tabIndex={-1}
           onKeyDown={onListKeyDown}
           ref={listRef}
-          className="fixed z-[100000] max-h-[240px] overflow-y-auto overflow-x-hidden rounded-[8px] border border-[#19E3FF]/60 bg-[rgba(8,26,32,0.6)] backdrop-blur-xl shadow-[0_6px_18px_rgba(0,0,0,0.45)]"
+          className="fixed z-[100000] max-h-[240px] overflow-y-auto overflow-x-hidden rounded-[8px] border border-[#19E3FF]/60 bg-[rgba(8,26,32,0.6)] backdrop-blur-xl shadow-[0_6px_18px_rgba(0,0,0,0.45)] holo-scrollbar"
           style={{
             position: 'fixed',
             top: triggerRect.bottom + window.scrollY + 6,
@@ -361,6 +361,45 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
           color: rgba(255, 255, 255, 1) !important; 
           text-shadow: none; 
           filter: none;
+        }
+        /* Holographic scrollbar styling */
+        .holo-scrollbar::-webkit-scrollbar {
+          width: 16px;
+          background: rgba(8, 26, 32, 0.8);
+          border-radius: 8px;
+        }
+        .holo-scrollbar::-webkit-scrollbar-track {
+          background: rgba(8, 26, 32, 0.4);
+          border-radius: 8px;
+          border: 1px solid rgba(25, 227, 255, 0.2);
+          box-shadow: inset 0 0 8px rgba(25, 227, 255, 0.1);
+        }
+        .holo-scrollbar::-webkit-scrollbar-thumb {
+          background: linear-gradient(180deg, 
+            rgba(25, 227, 255, 0.8) 0%, 
+            rgba(25, 227, 255, 0.6) 50%, 
+            rgba(25, 227, 255, 0.4) 100%);
+          border-radius: 8px;
+          border: 2px solid rgba(25, 227, 255, 0.3);
+          box-shadow: 
+            0 0 12px rgba(25, 227, 255, 0.6),
+            0 0 24px rgba(25, 227, 255, 0.3),
+            inset 0 0 8px rgba(255, 255, 255, 0.1);
+          transition: all 0.3s ease;
+        }
+        .holo-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(180deg, 
+            rgba(25, 227, 255, 1) 0%, 
+            rgba(25, 227, 255, 0.8) 50%, 
+            rgba(25, 227, 255, 0.6) 100%);
+          box-shadow: 
+            0 0 20px rgba(25, 227, 255, 0.8),
+            0 0 40px rgba(25, 227, 255, 0.5),
+            inset 0 0 12px rgba(255, 255, 255, 0.2);
+          transform: scale(1.1);
+        }
+        .holo-scrollbar::-webkit-scrollbar-corner {
+          background: rgba(8, 26, 32, 0.8);
         }
       `}</style>
     </div>

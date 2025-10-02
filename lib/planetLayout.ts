@@ -25,8 +25,8 @@ export function computePlanetLayout(
 ): Record<string, LayoutOut> {
   const {
     // Push satellites even farther from the center heart planet with increased spacing
-    ringGap = 9.5,
-    baseRadius = 38.0,
+    ringGap = 16.0,
+    baseRadius = 55.0,
     eccMin = 0.05,
     eccMax = 0.22,
     tiltPerRing = 6,
@@ -125,8 +125,8 @@ export function usePlanetLayout(songId: string): LayoutOut | undefined {
   const narrow = w < 640;
   const opts = useMemo(() => ({
     // Even larger spacing to clear the center heart with increased distances
-    ringGap: narrow ? 7.5 : 9.5,
-    baseRadius: narrow ? 35.0 : 38.0,
+    ringGap: narrow ? 14.0 : 16.0,
+    baseRadius: narrow ? 50.0 : 55.0,
     eccMin: 0.05, eccMax: 0.22,
     tiltPerRing: 6,
     minScale: 0.7,

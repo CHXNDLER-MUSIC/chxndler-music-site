@@ -12,22 +12,26 @@ import { getEntriesByRing } from "@/lib/planetRegistry";
 
 function InvalidateOnState() {
   const invalidate = useThree((s) => s.invalidate);
-  const { mainId, hoverId, songs } = usePlayerStore();
+  const { mainId, hoverId, songs, planetsVisible } = usePlayerStore();
   useEffect(() => {
     // Throttle invalidation to prevent excessive re-renders
     const timeout = setTimeout(() => {
       invalidate();
     }, 50);
     return () => clearTimeout(timeout);
-  }, [mainId, hoverId, songs.length]); // Removed invalidate from deps to prevent infinite loop
+  }, [mainId, hoverId, songs.length, planetsVisible]); // Include planetsVisible to trigger re-render when planets are toggled
   return null;
 }
 
 export default function PlanetSystem({ showAll = false, hideUntilPlaying = false }: { showAll?: boolean; hideUntilPlaying?: boolean }) {
   console.log("🌍 PlanetSystem rendering with showAll:", showAll, "songs count:", usePlayerStore.getState().songs.length);
-  const { songs, mainId, prevMainId, hoverId, planetsVisible } = usePlayerStore();
+  const { songs, mainId, prevMainId, hoverId, planetsVisible, setPlanetsVisible } = usePlayerStore();
   const focusId = showAll ? null : (mainId ?? songs[0]?.id);
   const focus = showAll ? null : (songs.find((s) => s.id === focusId) ?? songs[0]);
+  
+  // Context-aware planet visibility management
+  // Note: We don't automatically show planets on homepage anymore
+  // Let the user's toggle state (from start button) persist across views
   
   console.log("🌍 PlanetSystem state:", { showAll, planetsVisible, mainId, focusId, hideUntilPlaying, songsCount: songs.length });
   
@@ -50,7 +54,7 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         // Pull the camera back and widen FOV so the full system fits
         // Much more horizontal viewpoint: lower camera height and pull back slightly
         // Zoom out even more for CHXNDLER homepage when showAll is true - increased for much wider planet spread
-        camera={{ position: [0.2, -0.2, showAll ? 42 : 15.5], fov: showAll ? 58 : 40 }}
+        camera={{ position: [0.2, -0.2, showAll ? 70 : 20], fov: showAll ? 85 : 48 }}
         gl={{ antialias: true, alpha: true }}
         frameloop="demand"
       >
@@ -67,7 +71,7 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         <InvalidateOnState />
         <ZoomOnChange focusId={focusId} />
 
-        {/* Heart planet at the center - only when showing all planets */}
+        {/* Heart planet at the center - only when showing all planets and planets are visible */}
         {showAll && planetsVisible && <HeartPlanet />}
         
         {/* Removed debug helper sphere that was visible on the homepage */}
@@ -77,14 +81,31 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         {/* Enlarge full-system view on homepage so it spans the blue display width */}
         <group scale={showAll ? 1.45 : 1}>
         <SystemGroup>
-          {/* Orbit guides only when showing the full system */}
+          {/* Orbit guides only when showing the full system and planets are visible */}
           {showAll && planetsVisible ? <OrbitGuides /> : null}
-          {showAll && planetsVisible ? (
-            <>
-              {songs.map((s) => (
-                <Planet key={s.id} song={s} isMain={false} isHover={hoverId === s.id} isMoon={false} isMuted={false} ringBaseOverride={44} />
-              ))}
-            </>
+          {/* Show planets based on mode and visibility state */}
+          {planetsVisible ? (
+            showAll ? (
+              // Homepage mode: show all planets
+              <>
+                {songs.map((s) => (
+                  <Planet key={s.id} song={s} isMain={false} isHover={hoverId === s.id} isMoon={false} isMuted={false} ringBaseOverride={44} />
+                ))}
+              </>
+            ) : (
+              // Individual song mode: show only the focused planet
+              focusId && songs.find(s => s.id === focusId) ? (
+                <Planet 
+                  key={focusId} 
+                  song={songs.find(s => s.id === focusId)!} 
+                  isMain={true} 
+                  isHover={hoverId === focusId} 
+                  isMoon={false} 
+                  isMuted={false} 
+                  ringBaseOverride={20} 
+                />
+              ) : null
+            )
           ) : null}
         </SystemGroup>
         </group>
@@ -183,12 +204,12 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
   const { camera, invalidate } = useThree();
   // Use different base values based on showAll mode - access via props context
   const isShowAll = focusId === null;
-  const base = React.useRef({ z: isShowAll ? 42 : 15.5, fov: isShowAll ? 58 : 40 });
+  const base = React.useRef({ z: isShowAll ? 70 : 35, fov: isShowAll ? 85 : 65 });
   const anim = React.useRef<{ t: number; d: number; active: boolean }>({ t: 0, d: 0.8, active: false });
 
   React.useEffect(() => {
     // Update base values based on current mode
-    base.current = { z: isShowAll ? 42 : 15.5, fov: isShowAll ? 58 : 40 };
+    base.current = { z: isShowAll ? 70 : 35, fov: isShowAll ? 85 : 65 };
     
     // Only restart zoom animation if we have a focusId (not in showAll/home mode)
     if (focusId) {
@@ -215,9 +236,9 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
     const ease = t < 0.5
       ? 2 * t * t
       : 1 - Math.pow(-2 * t + 2, 2) / 2;
-    // dolly closer at mid, then return
-    const closeZ = 16.5;
-    const closeFov = 38;
+    // dolly closer at mid, then return - zoomed out slightly for better view
+    const closeZ = 20;
+    const closeFov = 46;
     // use a bell curve around 0.5
     const bell = Math.sin(Math.PI * ease);
     (camera as any).position.z = base.current.z - (base.current.z - closeZ) * bell;
@@ -256,7 +277,7 @@ function OverlapManager() {
       });
       // Sort by angle within ring for nearest-neighbor checks
       snapshot.sort((a, b) => a.theta - b.theta);
-      const dMin = Math.min(size.width, size.height) < 640 ? 22 : 28; // px
+      const dMin = Math.min(size.width, size.height) < 640 ? 35 : 45; // px - increased for better spacing
       for (let i = 0; i < snapshot.length; i++) {
         const a = snapshot[i];
         const b = snapshot[(i + 1) % snapshot.length]; // neighbor with wrap
@@ -264,7 +285,7 @@ function OverlapManager() {
         const dy = a.pos.y - b.pos.y;
         const dist = Math.hypot(dx, dy);
         if (dist < dMin) {
-          const nudge = 0.01;
+          const nudge = 0.025; // increased nudge for better separation
           // push apart by adjusting phases in opposite directions
           a.e.addPhase(+nudge);
           b.e.addPhase(-nudge);

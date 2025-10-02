@@ -52,6 +52,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [animationTime, setAnimationTime] = useState(0);
+  const seekingRef = useRef(false);
   // Structured sections and derived chorus times
   const sections = useMemo(() => {
     const secs = (cur as any)?.sections as { time: number; label: string; kind?: string }[] | undefined;
@@ -467,6 +468,13 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     const onLoadedMetadata = () => { setDuration(a.duration); };
     const onCanPlayThrough = () => { try { onAudioReady && onAudioReady(true); } catch {} };
     const onCanPlay = () => { try { onAudioReady && onAudioReady(true); } catch {} };
+    const onSeeked = () => { 
+      // When seeking completes, update cursor position and resume normal tracking
+      const newTime = a.currentTime;
+      setCurrentTime(newTime);
+      seekingRef.current = false;
+      if (DEBUG_MEDIA) dlog('audio event: seeked to', newTime);
+    };
 
     a.addEventListener('play', onPlay);
     a.addEventListener('pause', onPause);
@@ -479,6 +487,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     a.addEventListener('loadedmetadata', onLoadedMetadata);
     a.addEventListener('canplaythrough', onCanPlayThrough as any);
     a.addEventListener('canplay', onCanPlay as any);
+    a.addEventListener('seeked', onSeeked);
 
     return () => {
       // Restore original pause method
@@ -496,6 +505,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       a.removeEventListener('loadedmetadata', onLoadedMetadata);
       a.removeEventListener('canplaythrough', onCanPlayThrough as any);
       a.removeEventListener('canplay', onCanPlay as any);
+      a.removeEventListener('seeked', onSeeked);
     };
   }, []);
 
@@ -579,9 +589,9 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     
     const animate = () => {
       setAnimationTime(Date.now());
-      // Update current time for smooth cursor movement - always update when audio exists
+      // Update current time for smooth cursor movement - only when not manually seeking
       const a = audioRef.current;
-      if (a && a.duration > 0) {
+      if (a && a.duration > 0 && !seekingRef.current) {
         setCurrentTime(a.currentTime);
       }
       animationId = requestAnimationFrame(animate);
@@ -638,8 +648,14 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               const progress = Math.max(0, Math.min(1, clickX / rect.width));
               const newTime = progress * duration;
               
-              // Seek to the clicked position
-              a.currentTime = Math.max(0, Math.min(duration - 0.2, newTime));
+              // Set seeking flag and immediately update cursor position
+              seekingRef.current = true;
+              setCurrentTime(newTime);
+              
+              // Seek to the clicked position - seeked event will clear the flag
+              const seekTime = Math.max(0, Math.min(duration - 0.2, newTime));
+              a.currentTime = seekTime;
+              
               intentionalPlayRef.current = true;
               a.play().catch(() => {});
               setPlaying(true);
@@ -725,39 +741,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                       }}
                     />
                     
-                    {/* Animated playing indicator */}
-                    {playing && (
-                      <g>
-                        {/* Pulse effect at current position */}
-                        <circle
-                          cx={progress * 800}
-                          cy="50"
-                          r="3"
-                          fill={currentElementColor}
-                          opacity="0.8"
-                          style={{
-                            filter: `drop-shadow(0 0 6px ${currentElementColor})`,
-                          }}
-                        >
-                          <animate attributeName="r" values="3;8;3" dur="2s" repeatCount="indefinite" />
-                          <animate attributeName="opacity" values="0.8;0.3;0.8" dur="2s" repeatCount="indefinite" />
-                        </circle>
-                        
-                        {/* Moving frequency indicators */}
-                        {[...Array(5)].map((_, i) => (
-                          <rect
-                            key={i}
-                            x={Math.max(0, progress * 800 - 40 + i * 10)}
-                            y={45 + Math.sin(animationTime * 0.002 + i) * 3}
-                            width="2"
-                            height={8 + Math.sin(animationTime * 0.003 + i * 2) * 4}
-                            fill={currentElementColor}
-                            opacity={0.6 - i * 0.1}
-                            rx="1"
-                          />
-                        ))}
-                      </g>
-                    )}
                   </>
                 );
               })()}
@@ -779,7 +762,14 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                       title={`${s.label} (${Math.round(s.time)}s)`}
                       onClick={() => {
                         const a = audioRef.current; if (!a || !duration) return;
-                        a.currentTime = Math.max(0, Math.min(duration - 0.2, s.time));
+                        
+                        // Set seeking flag and immediately update cursor position
+                        seekingRef.current = true;
+                        setCurrentTime(s.time);
+                        
+                        const seekTime = Math.max(0, Math.min(duration - 0.2, s.time));
+                        a.currentTime = seekTime;
+                        
                         intentionalPlayRef.current = true; // Mark as intentional play
                         a.play().catch(()=>{});
                         setPlaying(true);
@@ -899,7 +889,14 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               const a = audioRef.current; if (!a || !duration) return;
               const now = a.currentTime;
               const next = chorusTimes.find((t) => t > now + 0.75) ?? chorusTimes[0];
-              a.currentTime = Math.max(0, Math.min(duration - 0.2, next));
+              
+              // Set seeking flag and immediately update cursor position
+              seekingRef.current = true;
+              setCurrentTime(next);
+              
+              const seekTime = Math.max(0, Math.min(duration - 0.2, next));
+              a.currentTime = seekTime;
+              
               intentionalPlayRef.current = true; // Mark as intentional play
               a.play().catch(()=>{});
               setPlaying(true);
@@ -1206,7 +1203,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         }
         
         .cursor-transition {
-          transition: left 0.1s linear;
+          /* Removed transition for real-time cursor movement */
         }
       `}</style>
     </div>

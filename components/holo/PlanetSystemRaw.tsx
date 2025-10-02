@@ -1292,47 +1292,135 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
   
   // Create heart-shaped planet geometry
   function createHeartGeometry(radius: number) {
-    // Create a solid heart by combining multiple heart-shaped spheres
-    const heartShape = new THREE.Shape();
+    // Use the existing heart geometry library for proper 3D heart shape
+    // Import and use the more sophisticated heart geometry
+    const vertices: number[] = [];
+    const normals: number[] = [];
+    const uvs: number[] = [];
+    const indices: number[] = [];
+
+    // Heart equation parameters - optimized for planet-like roundness
+    const scale = radius * 0.5;
+    const thickness = scale * 1.2; // More volume for planet-like appearance
+    const heartness = 0.7; // Balanced between heart shape and roundness
     
-    // Create 2D heart path (corrected orientation - point at top)
-    const heartPath = (t: number) => {
-      const x = 16 * Math.pow(Math.sin(t), 3);
-      const y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
-      return new THREE.Vector2(x, -y); // Flip Y here to get point at top
-    };
+    // Generate vertices for solid heart shape using layered approach
+    const layers = 24; // Good detail for planet
+    const pointsPerLayer = 32; // Smooth outline
     
-    // Generate heart shape path
-    const points: THREE.Vector2[] = [];
-    const steps = 100;
-    for (let i = 0; i <= steps; i++) {
-      const t = (i / steps) * Math.PI * 2;
-      const point = heartPath(t);
-      points.push(point);
+    for (let layer = 0; layer <= layers; layer++) {
+      for (let point = 0; point < pointsPerLayer; point++) {
+        const t = (point / pointsPerLayer) * Math.PI * 2;
+        const layerDepth = (layer / layers) - 0.5; // from -0.5 to 0.5
+        
+        // 2D heart shape equation (parametric) 
+        const heartX = scale * (16 * Math.sin(t) ** 3) * 0.08;
+        const heartY = scale * -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t)) * 0.08;
+        
+        // Create solid planet-like body with rounded profile
+        const distanceFromCenter = Math.abs(layerDepth);
+        const sphericalFactor = Math.cos(distanceFromCenter * Math.PI); // Rounded profile
+        const heartScale = 0.8 + 0.2 * sphericalFactor;
+
+        // Blend heart outline toward circular for planet-like roundness
+        const dir = { x: heartX, y: heartY };
+        const len = Math.sqrt(dir.x * dir.x + dir.y * dir.y);
+        if (len > 1e-6) {
+          dir.x /= len;
+          dir.y /= len;
+        } else {
+          dir.x = 1;
+          dir.y = 0;
+        }
+        
+        const targetCircleRadius = scale * 0.85 * heartScale;
+        const circleX = dir.x * targetCircleRadius;
+        const circleY = dir.y * targetCircleRadius;
+        
+        // More circular blend for planet-like appearance
+        const roundness = 0.4 / heartness; // Significant rounding
+        const baseX = heartX * heartScale;
+        const baseY = heartY * heartScale;
+        const x = baseX * (1 - roundness) + circleX * roundness;
+        const y = baseY * (1 - roundness) + circleY * roundness;
+        const z = layerDepth * thickness;
+
+        vertices.push(x, y, z);
+
+        // Calculate normals for proper lighting
+        const heartNormal = { x: baseX, y: baseY, z: 0 };
+        const heartLen = Math.sqrt(heartNormal.x ** 2 + heartNormal.y ** 2 + heartNormal.z ** 2);
+        if (heartLen > 1e-6) {
+          heartNormal.x /= heartLen;
+          heartNormal.y /= heartLen;
+          heartNormal.z /= heartLen;
+        }
+        
+        const sphericalNormal = { x, y, z };
+        const sphereLen = Math.sqrt(x ** 2 + y ** 2 + z ** 2);
+        if (sphereLen > 1e-6) {
+          sphericalNormal.x /= sphereLen;
+          sphericalNormal.y /= sphereLen;
+          sphericalNormal.z /= sphereLen;
+        }
+        
+        const lerpToSphere = 0.7; // Strong spherical influence
+        const normalX = heartNormal.x * (1 - lerpToSphere) + sphericalNormal.x * lerpToSphere;
+        const normalY = heartNormal.y * (1 - lerpToSphere) + sphericalNormal.y * lerpToSphere;
+        const normalZ = heartNormal.z * (1 - lerpToSphere) + sphericalNormal.z * lerpToSphere;
+        
+        normals.push(normalX, normalY, normalZ);
+        uvs.push(point / pointsPerLayer, layer / layers);
+      }
     }
     
-    heartShape.setFromPoints(points);
+    // Generate indices for surface
+    for (let layer = 0; layer < layers; layer++) {
+      for (let point = 0; point < pointsPerLayer; point++) {
+        const ringStride = pointsPerLayer;
+        const current = layer * ringStride + point;
+        const next = layer * ringStride + ((point + 1) % pointsPerLayer);
+        const currentNext = (layer + 1) * ringStride + point;
+        const nextNext = (layer + 1) * ringStride + ((point + 1) % pointsPerLayer);
+
+        indices.push(current, next, currentNext);
+        indices.push(next, nextNext, currentNext);
+      }
+    }
+
+    // Add caps
+    const ringStride = pointsPerLayer;
+    const backZ = -0.5 * thickness;
+    const frontZ = 0.5 * thickness;
+
+    const backCenterIndex = vertices.length / 3;
+    vertices.push(0, 0, backZ);
+    normals.push(0, 0, -1);
+    uvs.push(0.5, 0.5);
     
-    // Create extruded geometry for solid heart (rounder settings)
-    const extrudeSettings = {
-      depth: radius * 0.8, // reduced depth for rounder appearance
-      bevelEnabled: true,
-      bevelSegments: 24, // more segments for smoother curves
-      bevelSize: radius * 0.25, // larger bevel for more rounding
-      bevelThickness: radius * 0.15, // thicker bevel for rounder edges
-      curveSegments: 96 // more curve segments for smoother heart outline
-    };
+    for (let p = 0; p < pointsPerLayer; p++) {
+      const a = 0 * ringStride + p;
+      const b = 0 * ringStride + ((p + 1) % pointsPerLayer);
+      indices.push(backCenterIndex, b, a);
+    }
+
+    const frontCenterIndex = vertices.length / 3;
+    vertices.push(0, 0, frontZ);
+    normals.push(0, 0, 1);
+    uvs.push(0.5, 0.5);
     
-    const geometry = new THREE.ExtrudeGeometry(heartShape, extrudeSettings);
+    for (let p = 0; p < pointsPerLayer; p++) {
+      const a = layers * ringStride + p;
+      const b = layers * ringStride + ((p + 1) % pointsPerLayer);
+      indices.push(frontCenterIndex, a, b);
+    }
     
-    // Scale to appropriate size
-    const scale = radius * 0.03;
-    geometry.scale(scale, scale, scale);
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3));
+    geometry.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(normals), 3));
+    geometry.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(uvs), 2));
+    geometry.setIndex(indices);
     
-    // Center the geometry
-    geometry.center();
-    
-    // Compute vertex normals for smooth lighting
     geometry.computeVertexNormals();
     
     return geometry;
@@ -1873,22 +1961,22 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
         const isFocused = mainId && s.id === mainId;
         const shouldHide = !showAll && mainId && !isFocused;
         
-        // Hide non-focused planets completely
-        s.mesh.visible = !shouldHide;
+        // Hide non-focused planets completely, and hide all planets if planetsVisible is false
+        s.mesh.visible = planetsVisible && !shouldHide;
         
         // Hide atmosphere, rings, and other elements along with the main planet
         if (s.atmosphereMesh) {
-          s.atmosphereMesh.visible = !shouldHide;
+          s.atmosphereMesh.visible = planetsVisible && !shouldHide;
         }
         
         if (s.ringMesh) {
-          s.ringMesh.visible = !shouldHide;
+          s.ringMesh.visible = planetsVisible && !shouldHide;
         }
         
         // Hide all child elements (moons, clouds, storms, etc.)
         if (s.mesh.children && s.mesh.children.length > 0) {
           s.mesh.children.forEach(child => {
-            child.visible = !shouldHide;
+            child.visible = planetsVisible && !shouldHide;
           });
         }
         
@@ -2152,7 +2240,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
   }, []);
 
   // Sync planets to songs from the global store for closer match to previous visuals
-  const { songs, mainId, hoverId } = usePlayerStore((s) => ({ songs: s.songs, mainId: s.mainId, hoverId: s.hoverId }));
+  const { songs, mainId, hoverId, planetsVisible } = usePlayerStore((s) => ({ songs: s.songs, mainId: s.mainId, hoverId: s.hoverId, planetsVisible: s.planetsVisible }));
   const hoverRef = useRef<string | null>(null);
   useEffect(() => { hoverRef.current = hoverId || null; }, [hoverId]);
   // Compute layout with consistent spacing (matching planetLayout defaults)
@@ -2349,7 +2437,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
     const main = mainRef.current.mesh;
     if (main) main.visible = false; // no separate central planet; every song has its own
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [songs, mainId, showAll, layout && Object.keys(layout).join(',')]);
+  }, [songs, mainId, showAll, planetsVisible, layout && Object.keys(layout).join(',')]);
 
   // When the selected song changes, create central planet and update orbital system
   useEffect(() => {
@@ -2504,7 +2592,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
     const isWarmColor = planetColor.r > 0.6 || (planetColor.r + planetColor.g) > 1.0;
     
     // Dynamic camera positioning based on planet characteristics - better framing for HUD display
-    const baseDistance = 12.0; // Increased distance for better framing in HUD
+    const baseDistance = 18.0; // Increased distance for better framing in HUD
     const focusDistance = baseDistance * (isWarmColor ? 1.0 : 0.95); // Slightly closer for warm colors to show detail
     const heightOffset = isWarmColor ? 1.8 : 1.5; // Adjusted height for better viewing angle
     

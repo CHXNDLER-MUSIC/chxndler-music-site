@@ -22,7 +22,7 @@ let state: State = {
   mainId: null,
   prevMainId: null,
   hoverId: null,
-  planetsVisible: true,
+  planetsVisible: false,
   initSongs: (songs: Song[]) => {
     console.log('🎵 PlayerStore: initSongs called', { currentLength: state.songs.length, newLength: songs.length });
     if (state.songs.length === 0) {
@@ -38,7 +38,11 @@ let state: State = {
       console.log('🎵 PlayerStore: ID unchanged, skipping');
       return;
     }
-    setState({ prevMainId: state.mainId, mainId: id });
+    
+    // Immediately hide all planets when a new song is selected - they stay hidden
+    console.log('🎵 PlayerStore: Hiding planets for warp sequence - keeping them hidden');
+    setState({ prevMainId: state.mainId, mainId: id, planetsVisible: false });
+    
     console.log('🎵 PlayerStore: mainId updated to', id);
   },
   setHover: (id: string | null) => setState({ hoverId: id }),

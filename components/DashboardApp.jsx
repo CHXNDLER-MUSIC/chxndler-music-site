@@ -132,6 +132,40 @@ export default function DashboardApp({ initialSlug } = {}) {
       clearTimeout(t); clearTimeout(t2);
     };
   }, [mounted, showDimmingOverlay, computeStartSpotlight]);
+
+  // Listen for welcome audio ending to properly track when it has played
+  useEffect(() => {
+    const onIntroEnded = () => {
+      console.log('🎵 DashboardApp: Welcome audio ended, marking as played');
+      setWelcomeHasPlayed(true);
+    };
+    
+    // Listen for the intro audio ending
+    const checkIntroElement = () => {
+      const intro = document.querySelector('audio[data-intro="1"]');
+      if (intro) {
+        intro.addEventListener('ended', onIntroEnded, { once: true });
+        return () => intro.removeEventListener('ended', onIntroEnded);
+      }
+      return null;
+    };
+    
+    // Check immediately and then periodically until we find the intro element
+    const cleanup = checkIntroElement();
+    if (cleanup) return cleanup;
+    
+    const interval = setInterval(() => {
+      const cleanup = checkIntroElement();
+      if (cleanup) {
+        clearInterval(interval);
+        return cleanup;
+      }
+    }, 100);
+    
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
   
 
   // Centralized HUD power sequencing: play SFX then run beam/HUD fades
@@ -711,7 +745,7 @@ export default function DashboardApp({ initialSlug } = {}) {
             // Enable welcome VO on opening/home page and release ambient suspend so it plays after warp
             try { setHomeIntroEnabled(true); } catch {}
             try { setAmbientSuspended(false); } catch {}
-            try { setWelcomeHasPlayed(true); } catch {}
+            // Don't set welcomeHasPlayed here - wait for audio to actually finish
             // Switch background sky in the same render pass for simultaneous reveal
             try {
               if (nextSky) { setSky(nextSky); setNextSky(null); }
@@ -980,7 +1014,9 @@ export default function DashboardApp({ initialSlug } = {}) {
             usePlayerStore.getState().togglePlanets();
           } catch {}
           // Homepage Start flow (warp to home reveal)
-          if (!welcomeHasPlayed) { welcomeOnStartRef.current = true; }
+          if (!welcomeHasPlayed) { 
+            welcomeOnStartRef.current = true;
+          }
           setPendingOverlayReveal(true);
           setUiUnlocked(true);
           setShowDimmingOverlay(false);

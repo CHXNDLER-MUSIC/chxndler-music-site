@@ -43,26 +43,37 @@ export default function HeartPlanet() {
         varying vec3 vWorldPosition;
         varying vec2 vUv;
         
-        // Heart-shaped displacement function
-        float heartDisplacement(vec2 uv) {
-          // Convert UV to heart coordinate space
-          vec2 heartUv = (uv - 0.5) * 4.0; // Scale and center
+        // Subtle planetary displacement with heart-inspired features
+        float heartDisplacement(vec3 position) {
+          // Convert 3D position to spherical coordinates
+          float phi = atan(position.z, position.x); 
+          float theta = acos(position.y / length(position));
           
-          // Classic heart equation
-          float x = heartUv.x;
-          float y = -heartUv.y; // Flip Y for correct orientation
-          float heart = pow(x*x + y*y - 1.0, 3.0) - x*x * pow(y, 3.0);
+          // Create natural planetary variations with subtle heart influence
+          float heartU = phi / (2.0 * 3.14159);
+          float heartV = theta / 3.14159;
           
-          // Create subtle displacement based on heart shape
-          float displacement = smoothstep(-0.5, 0.5, heart) * 0.1;
-          return displacement;
+          // Very subtle heart-inspired continental patterns
+          vec2 heart1 = vec2(heartU * 1.5 - 0.75, heartV * 1.5 - 0.75);
+          float x1 = heart1.x * 0.4;
+          float y1 = heart1.y * 0.4;
+          float heartShape = pow(x1*x1 + y1*y1 - 0.3, 3.0) - x1*x1 * pow(y1, 3.0) * 0.2;
+          
+          // Create realistic planetary surface variations
+          float continentalPattern = smoothstep(-0.1, 0.1, heartShape) * 0.008; // Very subtle
+          
+          // Add natural planetary noise for realistic terrain
+          float naturalNoise = sin(phi * 8.0) * sin(theta * 6.0) * 0.005 +
+                              sin(phi * 15.0) * sin(theta * 12.0) * 0.003;
+          
+          return continentalPattern + naturalNoise;
         }
         
         void main() {
           vec3 pos = position;
           
-          // Add subtle heart-shaped displacement to the sphere
-          float displacement = heartDisplacement(uv);
+          // Add subtle heart-shaped displacement to the sphere using 3D position
+          float displacement = heartDisplacement(normalize(position));
           pos += normal * displacement;
           
           // Add gentle pulsing
@@ -139,51 +150,56 @@ export default function HeartPlanet() {
           float fresnel = 1.0 - max(dot(normal, viewDir), 0.0);
           fresnel = pow(fresnel, 1.8);
           
-          // Dynamic surface details with heart-shaped patterns
-          vec2 surfaceUv = vUv * 6.0 + uTime * 0.05;
-          float surfaceDetail = fbm(surfaceUv) * 0.3;
+          // Realistic planetary surface details
+          vec2 surfaceUv = vUv * 8.0 + uTime * 0.02;
+          float surfaceDetail = fbm(surfaceUv) * 0.2;
           
-          // Enhanced heart-shaped continent patterns on spherical surface
-          vec2 heartUv = vUv * 4.0 - 2.0; // Scale up for more heart patterns
+          // Large-scale continental patterns using world position
+          vec3 worldPos = normalize(vWorldPosition);
+          float phi = atan(worldPos.z, worldPos.x);
+          float theta = acos(worldPos.y);
+          vec2 sphericalUv = vec2(phi / (2.0 * 3.14159), theta / 3.14159);
           
-          // Multiple heart shapes at different scales and positions
-          float heartShape1 = pow(heartUv.x * heartUv.x + heartUv.y * heartUv.y - 0.5, 3.0) - 
-                             heartUv.x * heartUv.x * pow(heartUv.y, 3.0);
+          // Large continental masses
+          float continents1 = fbm(sphericalUv * 3.0) * 0.4;
+          float continents2 = fbm((sphericalUv + vec2(0.5, 0.3)) * 2.5) * 0.3;
+          float continents3 = fbm((sphericalUv + vec2(0.8, 0.1)) * 4.0) * 0.2;
           
-          // Second heart pattern with offset
-          vec2 heartUv2 = (vUv + vec2(0.3, 0.2)) * 3.0 - 1.5;
-          float heartShape2 = pow(heartUv2.x * heartUv2.x + heartUv2.y * heartUv2.y - 0.4, 3.0) - 
-                             heartUv2.x * heartUv2.x * pow(heartUv2.y, 3.0);
+          // Very subtle heart-inspired continental shapes (barely visible)
+          vec2 heartUv = sphericalUv * 1.8 - 0.9;
+          float x = heartUv.x * 0.3;
+          float y = heartUv.y * 0.3;
+          float heartShape = pow(x*x + y*y - 0.2, 3.0) - x*x * pow(y, 3.0) * 0.1;
+          float heartPattern = smoothstep(-0.05, 0.05, heartShape) * 0.08; // Very subtle
           
-          // Third heart pattern with different offset
-          vec2 heartUv3 = (vUv + vec2(-0.2, 0.4)) * 2.5 - 1.25;
-          float heartShape3 = pow(heartUv3.x * heartUv3.x + heartUv3.y * heartUv3.y - 0.6, 3.0) - 
-                             heartUv3.x * heartUv3.x * pow(heartUv3.y, 3.0);
+          // Combine for realistic planetary appearance
+          float continents = continents1 + continents2 + continents3 + heartPattern;
           
-          float heartPattern1 = smoothstep(-0.05, 0.05, heartShape1) * 0.8;
-          float heartPattern2 = smoothstep(-0.03, 0.03, heartShape2) * 0.6;
-          float heartPattern3 = smoothstep(-0.04, 0.04, heartShape3) * 0.7;
-          
-          // Combine heart patterns with base noise
-          float continents = fbm(vUv * 3.0) * 0.3 + heartPattern1 + heartPattern2 + heartPattern3;
+          // Add mountain ranges and geographic features
+          float mountains = fbm(sphericalUv * 12.0) * 0.15;
+          float oceanBasins = smoothstep(0.2, 0.6, continents) * 0.3;
           
           // Heart pulse effect
           float heartPulse = sin(uTime * 3.0) * 0.1 + 0.9;
           
-          // Color mixing with enhanced contrast
-          vec3 darkColor = mix(uDarkColor, uDarkColor * 0.5, continents);
-          vec3 litColor = mix(uColor, uLightColor, totalDiff * 0.7);
-          vec3 surfaceColor = mix(darkColor, litColor, totalDiff + surfaceDetail);
+          // Realistic planetary color mixing
+          vec3 oceanColor = mix(uDarkColor, vec3(0.1, 0.3, 0.6), oceanBasins);
+          vec3 landColor = mix(uColor * 0.8, vec3(0.4, 0.6, 0.3), continents);
+          vec3 mountainColor = mix(landColor, vec3(0.6, 0.5, 0.4), mountains);
           
-          // Add specular highlights
-          surfaceColor += uLightColor * spec1 * 0.8;
+          vec3 baseColor = mix(oceanColor, mountainColor, continents + mountains);
+          vec3 litColor = mix(baseColor, uLightColor, totalDiff * 0.5);
+          vec3 surfaceColor = mix(baseColor * 0.3, litColor, totalDiff + surfaceDetail * 0.5);
           
-          // Strong rim lighting for 3D pop
-          vec3 rimColor = uColor * 10.0 * fresnel * heartPulse;
+          // Add specular highlights (reduced for planet appearance)
+          surfaceColor += uLightColor * spec1 * 0.3;
+          
+          // Subtle atmospheric rim lighting
+          vec3 rimColor = uColor * 2.0 * fresnel * heartPulse;
           surfaceColor += rimColor;
           
-          // Emissive glow from within (very bright)
-          vec3 emissive = uColor * 12.0 * heartPulse;
+          // Gentle planetary glow (much reduced)
+          vec3 emissive = uColor * 0.8 * heartPulse;
           
           vec3 finalColor = surfaceColor + emissive;
           
@@ -224,12 +240,12 @@ export default function HeartPlanet() {
           float fresnel = 1.0 - abs(dot(vNormal, viewDir));
           fresnel = pow(fresnel, 2.0);
           
-          // Pulsing atmosphere (very bright)
-          float pulse = sin(uTime * 2.0) * 0.4 + 1.0;
-          float heartPulse = sin(uTime * 3.0) * 0.3 + 1.0;
+          // Intense solar atmosphere pulsing
+          float pulse = sin(uTime * 2.0) * 0.8 + 1.6;
+          float heartPulse = sin(uTime * 3.0) * 0.6 + 1.4;
           
-          vec3 atmosphereColor = uColor * 15.0 * fresnel * pulse * heartPulse;
-          float alpha = fresnel * 2.0 * pulse;
+          vec3 atmosphereColor = uColor * 75.0 * fresnel * pulse * heartPulse;
+          float alpha = fresnel * 5.0 * pulse;
           
           gl_FragColor = vec4(atmosphereColor, alpha);
         }
@@ -273,43 +289,46 @@ export default function HeartPlanet() {
         <primitive object={planetMaterial} />
       </mesh>
       
-      {/* Inner atmosphere glow layer */}
-      <mesh ref={atmosphereRef} position={[0, 0, 0]} scale={[1.4, 1.4, 1.4]}>
+      {/* Subtle planetary atmosphere */}
+      <mesh ref={atmosphereRef} position={[0, 0, 0]} scale={[1.1, 1.1, 1.1]}>
         <sphereGeometry args={[heartRadius, 32, 16]} />
-        <primitive object={atmosphereMaterial} />
-      </mesh>
-      
-      {/* Middle glow layer */}
-      <mesh position={[0, 0, 0]} scale={[1.8, 1.8, 1.8]}>
-        <sphereGeometry args={[heartRadius, 32, 16]} />
-        <meshBasicMaterial 
+        <meshStandardMaterial 
           color="#FC54AF" 
+          emissive="#FC54AF"
+          emissiveIntensity={0.3}
           transparent 
-          opacity={0.12} 
-          side={2}
-          blending={2}
+          opacity={0.15}
         />
       </mesh>
       
-      {/* Outer glow layer for extended light emission */}
-      <mesh position={[0, 0, 0]} scale={[2.5, 2.5, 2.5]}>
+      {/* Outer atmospheric glow - very subtle for realistic planet */}
+      <mesh position={[0, 0, 0]} scale={[1.25, 1.25, 1.25]}>
         <sphereGeometry args={[heartRadius, 24, 12]} />
         <meshBasicMaterial 
           color="#FC54AF" 
           transparent 
-          opacity={0.06} 
+          opacity={0.08} 
           side={2}
-          blending={2}
         />
       </mesh>
       
-      {/* Point light emanating from the heart planet */}
+      {/* Planetary lighting - gentle illumination */}
+      <ambientLight intensity={0.3} />
+      <pointLight 
+        position={[8, 6, 10]} 
+        color="#FFFFFF" 
+        intensity={2.0}
+        distance={50}
+        decay={0.5}
+      />
+      
+      {/* Subtle heart-colored accent lighting */}
       <pointLight 
         position={[0, 0, 0]} 
         color="#FC54AF" 
-        intensity={2.5}
+        intensity={1.0}
         distance={15}
-        decay={2}
+        decay={2.0}
       />
     </group>
   );

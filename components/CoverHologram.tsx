@@ -97,7 +97,7 @@ export default function CoverHologram({ src, title, inline = false, size = 168, 
 
   return (
     <motion.div
-      className={`cover-hologram-container ${hovered ? 'hovered' : ''} ${inline ? 'relative' : 'absolute left-1/2 z-30 -translate-x-1/2'} ${cockpit.cover.glass} rounded-2xl cursor-pointer bg-[rgba(8,26,32,0.4)] backdrop-blur-xl`}
+      className={`cover-hologram-container ${hovered ? 'hovered' : ''} ${inline ? 'relative' : 'absolute left-1/2 z-30 -translate-x-1/2'} rounded-2xl cursor-pointer border-2 border-[#19E3FF]/80 bg-cyan-400/10 backdrop-blur-xl shadow-[0_0_18px_rgba(25,227,255,0.35)]`}
       style={inline ? { 
         width: size + 16, // Add padding to size
       } : { 
@@ -133,14 +133,8 @@ export default function CoverHologram({ src, title, inline = false, size = 168, 
           className="cover-hologram-image rounded-xl object-cover select-none w-full h-auto transition-all duration-300"
           priority
         />
-        {/* Blue fill overlay */}
-        <div className="blue-fill-overlay absolute inset-2 rounded-xl pointer-events-none transition-all duration-300" />
       </div>
       {!inline && <div className="px-3 pb-3 text-center text-xs text-white/70">{title}</div>}
-      <div
-        aria-hidden
-        className="cover-glow-frame absolute inset-0 rounded-2xl border-2 border-[#19E3FF]/60 transition-all duration-300"
-      />
       
       {showCard && mounted ? createPortal(
         <div
@@ -298,16 +292,6 @@ export default function CoverHologram({ src, title, inline = false, size = 168, 
             0 0 200px rgba(25,227,255,0.3) !important;
         }
         
-        .cover-hologram-container:hover .blue-fill-overlay,
-        .cover-hologram-container.hovered .blue-fill-overlay {
-          background-color: rgba(25, 227, 255, 0.3);
-          mix-blend-mode: overlay;
-        }
-        /* Apply subtle blue tint by default to match dropdown styling */
-        .blue-fill-overlay { 
-          background-color: rgba(25, 227, 255, 0.12); 
-          mix-blend-mode: overlay; 
-        }
         
         .cover-hologram-image {
           filter: brightness(1.1) contrast(1.05) saturate(1.1);

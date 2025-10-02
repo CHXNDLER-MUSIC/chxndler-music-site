@@ -981,7 +981,7 @@ export default function HUDPanel({
               onChange={(id) => {
                 setActive(id);
                 
-                // Hide all planets when a song is selected from dropdown
+                // Hide all planets immediately when a song is selected from dropdown
                 try {
                   usePlayerStore.getState().setPlanetsVisible(false);
                 } catch (error) {
@@ -995,6 +995,16 @@ export default function HUDPanel({
                 } catch (error) {
                   console.error('Failed to set main planet:', error);
                 }
+                
+                // After warp delay (1800ms), show the selected song's planet
+                setTimeout(() => {
+                  try {
+                    usePlayerStore.getState().setPlanetsVisible(true);
+                    console.log('🎵 HUDPanel: Planets re-enabled after warp for song:', id);
+                  } catch (error) {
+                    console.error('Failed to re-enable planets after warp:', error);
+                  }
+                }, 1800);
                 
                 // Stop ambient space music when switching songs
                 try {
