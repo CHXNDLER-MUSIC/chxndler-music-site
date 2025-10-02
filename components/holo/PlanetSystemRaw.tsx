@@ -1961,22 +1961,34 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
         const isFocused = mainId && s.id === mainId;
         const shouldHide = !showAll && mainId && !isFocused;
         
+        // Debug planet visibility logic
+        console.log(`🌍 Planet ${s.id} visibility:`, { 
+          planetsVisible, 
+          showAll, 
+          mainId, 
+          isFocused, 
+          shouldHide, 
+          finalVisible: planetsVisible && !shouldHide 
+        });
+        
         // Hide non-focused planets completely, and hide all planets if planetsVisible is false
-        s.mesh.visible = planetsVisible && !shouldHide;
+        // TEMPORARY FIX: On homepage (showAll=true), always show planets regardless of planetsVisible state
+        const forceVisible = showAll; // Force visible on homepage for debugging
+        s.mesh.visible = (planetsVisible || forceVisible) && !shouldHide;
         
         // Hide atmosphere, rings, and other elements along with the main planet
         if (s.atmosphereMesh) {
-          s.atmosphereMesh.visible = planetsVisible && !shouldHide;
+          s.atmosphereMesh.visible = (planetsVisible || forceVisible) && !shouldHide;
         }
         
         if (s.ringMesh) {
-          s.ringMesh.visible = planetsVisible && !shouldHide;
+          s.ringMesh.visible = (planetsVisible || forceVisible) && !shouldHide;
         }
         
         // Hide all child elements (moons, clouds, storms, etc.)
         if (s.mesh.children && s.mesh.children.length > 0) {
           s.mesh.children.forEach(child => {
-            child.visible = planetsVisible && !shouldHide;
+            child.visible = (planetsVisible || forceVisible) && !shouldHide;
           });
         }
         
@@ -2261,6 +2273,14 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
     const sys = groupRef.current; if (!sys) return;
     if (!songs || !songs.length) return;
     const focusId = showAll ? null : mainId;
+    
+    console.log("🌍 PlanetSystemRaw useEffect:", { 
+      showAll, 
+      planetsVisible, 
+      mainId, 
+      focusId, 
+      songsCount: songs.length 
+    });
     // Clear existing satellites
     for (const s of satsRef.current) {
       try { sys.remove(s.mesh); (s.mesh.geometry as any)?.dispose?.(); (s.mesh.material as any)?.dispose?.(); } catch {}

@@ -398,7 +398,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         });
     }
     else { 
-      a.pause(); 
+      a.pause();
+      setPlaying(false); // Ensure immediate UI update
       stateMachine.current.send({ type: 'PAUSE' });
       gaTrack("pause", { slug: cur.slug }); 
     }

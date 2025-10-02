@@ -47,9 +47,14 @@ let state: State = {
   },
   setHover: (id: string | null) => setState({ hoverId: id }),
   togglePlanets: () => {
-    console.log('🎵 PlayerStore: togglePlanets called', { current: state.planetsVisible });
-    setState({ planetsVisible: !state.planetsVisible });
-    console.log('🎵 PlayerStore: planetsVisible updated to', !state.planetsVisible);
+    console.log('🎵 PlayerStore: togglePlanets called', { current: state.planetsVisible, willBecomeTo: !state.planetsVisible });
+    const newValue = !state.planetsVisible;
+    setState({ planetsVisible: newValue });
+    console.log('🎵 PlayerStore: planetsVisible updated from', state.planetsVisible, 'to', newValue);
+    // Verify the state actually changed
+    setTimeout(() => {
+      console.log('🎵 PlayerStore: togglePlanets verification - state is now:', state.planetsVisible);
+    }, 10);
   },
   setPlanetsVisible: (visible: boolean) => {
     console.log('🎵 PlayerStore: setPlanetsVisible called', { current: state.planetsVisible, new: visible });

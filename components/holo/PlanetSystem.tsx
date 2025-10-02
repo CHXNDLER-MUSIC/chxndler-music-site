@@ -34,6 +34,7 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
   // Let the user's toggle state (from start button) persist across views
   
   console.log("🌍 PlanetSystem state:", { showAll, planetsVisible, mainId, focusId, hideUntilPlaying, songsCount: songs.length });
+  console.log("🌍 PlanetSystem songs:", songs.map(s => s.id));
   
   
 
@@ -84,17 +85,28 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
           {/* Orbit guides only when showing the full system and planets are visible */}
           {showAll && planetsVisible ? <OrbitGuides /> : null}
           {/* Show planets based on mode and visibility state */}
-          {planetsVisible ? (
-            showAll ? (
-              // Homepage mode: show all planets
-              <>
-                {songs.map((s) => (
-                  <Planet key={s.id} song={s} isMain={false} isHover={hoverId === s.id} isMoon={false} isMuted={false} ringBaseOverride={44} />
-                ))}
-              </>
-            ) : (
+          {(() => {
+            console.log("🌍 PlanetSystem rendering decision:", { planetsVisible, showAll, songsCount: songs.length });
+            if (!planetsVisible) {
+              console.log("🌍 PlanetSystem: Not rendering planets - planetsVisible is false");
+              return null;
+            }
+            if (showAll) {
+              console.log("🌍 PlanetSystem: Rendering", songs.length, "planets for homepage");
+              return (
+                <>
+                  {songs.map((s, index) => {
+                    console.log(`🌍 Rendering planet ${index + 1}/${songs.length}:`, s.id, s.title);
+                    return (
+                      <Planet key={s.id} song={s} isMain={false} isHover={hoverId === s.id} isMoon={false} isMuted={false} ringBaseOverride={44} />
+                    );
+                  })}
+                </>
+              );
+            } else {
               // Individual song mode: show only the focused planet
-              focusId && songs.find(s => s.id === focusId) ? (
+              console.log("🌍 PlanetSystem: Individual song mode, focusId:", focusId);
+              return focusId && songs.find(s => s.id === focusId) ? (
                 <Planet 
                   key={focusId} 
                   song={songs.find(s => s.id === focusId)!} 
@@ -104,9 +116,9 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
                   isMuted={false} 
                   ringBaseOverride={20} 
                 />
-              ) : null
-            )
-          ) : null}
+              ) : null;
+            }
+          })()}
         </SystemGroup>
         </group>
 
