@@ -1972,23 +1972,30 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
         });
         
         // Hide non-focused planets completely, and hide all planets if planetsVisible is false
-        // TEMPORARY FIX: On homepage (showAll=true), always show planets regardless of planetsVisible state
-        const forceVisible = showAll; // Force visible on homepage for debugging
-        s.mesh.visible = (planetsVisible || forceVisible) && !shouldHide;
+        // DIRECT FIX: Force visible on homepage regardless of planetsVisible state
+        const forceVisibleOnHomepage = showAll; // Homepage should always show planets
+        s.mesh.visible = (planetsVisible || forceVisibleOnHomepage) && !shouldHide;
+        
+        console.log(`🌍 Planet ${s.id} FINAL visibility decision:`, {
+          planetsVisible,
+          forceVisibleOnHomepage,
+          shouldHide,
+          finalVisible: (planetsVisible || forceVisibleOnHomepage) && !shouldHide
+        });
         
         // Hide atmosphere, rings, and other elements along with the main planet
         if (s.atmosphereMesh) {
-          s.atmosphereMesh.visible = (planetsVisible || forceVisible) && !shouldHide;
+          s.atmosphereMesh.visible = (planetsVisible || forceVisibleOnHomepage) && !shouldHide;
         }
         
         if (s.ringMesh) {
-          s.ringMesh.visible = (planetsVisible || forceVisible) && !shouldHide;
+          s.ringMesh.visible = (planetsVisible || forceVisibleOnHomepage) && !shouldHide;
         }
         
         // Hide all child elements (moons, clouds, storms, etc.)
         if (s.mesh.children && s.mesh.children.length > 0) {
           s.mesh.children.forEach(child => {
-            child.visible = (planetsVisible || forceVisible) && !shouldHide;
+            child.visible = (planetsVisible || forceVisibleOnHomepage) && !shouldHide;
           });
         }
         
@@ -2281,6 +2288,17 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
       focusId, 
       songsCount: songs.length 
     });
+    
+    // IMMEDIATE FIX: Force planets visible on homepage for now
+    console.log("🌍 CHECKING CONDITIONS:", { showAll, planetsVisible, condition: showAll && !planetsVisible });
+    if (showAll && !planetsVisible) {
+      console.log("🌍 IMMEDIATE FIX: Forcing planets visible on homepage");
+      usePlayerStore.getState().setPlanetsVisible(true);
+    } else if (showAll) {
+      console.log("🌍 On homepage but planetsVisible is already true:", planetsVisible);
+    } else {
+      console.log("🌍 Not on homepage, showAll:", showAll);
+    }
     // Clear existing satellites
     for (const s of satsRef.current) {
       try { sys.remove(s.mesh); (s.mesh.geometry as any)?.dispose?.(); (s.mesh.material as any)?.dispose?.(); } catch {}
@@ -2409,7 +2427,9 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
     }));
 
     // Create a planet for every song (including main)
+    console.log("🌍 Creating planets for", songs.length, "songs");
     songs.forEach((song, idx) => {
+      console.log(`🌍 Creating planet ${idx + 1}/${songs.length}: ${song.id} (${song.title})`);
       const id = song.id;
       const lay = layout ? (layout as any)[id] : undefined;
       const spacingMul = 1.0; // consistent spacing with layout

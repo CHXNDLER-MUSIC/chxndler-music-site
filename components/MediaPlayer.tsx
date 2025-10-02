@@ -99,6 +99,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   // Subscribe to state machine changes
   useEffect(() => {
     const unsubscribe = stateMachine.current.onStateChange((state, context) => {
+      console.log('🎵 State machine changed:', { state, context, isPlaying: context.isPlaying });
       setMediaState(state);
       setPlaying(context.isPlaying);
       
@@ -368,9 +369,15 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   }
   
   function toggle() {
+    console.log('🎵 Toggle button clicked - current state:', { playing, paused: audioRef.current?.paused, src: cur.src });
     uiClick();
-    const a = audioRef.current; if (!a) return;
+    const a = audioRef.current; 
+    if (!a) {
+      console.error('🎵 No audio element found in toggle');
+      return;
+    }
     if (!cur.src) {
+      console.log('🎵 No src for current track, finding track with audio');
       // No local audio: jump to the first track with local audio and play
       const withAudio = tracks.findIndex(t => !!t.src);
       if (withAudio >= 0) {
@@ -380,28 +387,34 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       return;
     }
     if (a.paused) { 
+      console.log('🎵 Audio is paused, attempting to play');
       // Use retry logic for play
       intentionalPlayRef.current = true; // Mark as intentional play
       playWithAutoplayFallback(a, {
         maxRetries: 2,
         onRetry: (attempt, error) => {
+          console.log(`🎵 Toggle play retry ${attempt}`, error?.name, error?.message);
           if (DEBUG_MEDIA) dwarn(`toggle play retry ${attempt}`, error?.name, error?.message);
         }
       })
         .then(() => {
+          console.log('🎵 Play successful from toggle');
           stateMachine.current.send({ type: 'PLAY' });
           gaTrack("play", { slug: cur.slug });
         })
         .catch((error) => {
+          console.error('🎵 Play failed from toggle', error);
           if (DEBUG_MEDIA) dwarn('toggle play failed after retries', error);
           stateMachine.current.send({ type: 'ERROR', payload: { error } });
         });
     }
     else { 
+      console.log('🎵 Audio is playing, pausing');
       a.pause();
       setPlaying(false); // Ensure immediate UI update
       stateMachine.current.send({ type: 'PAUSE' });
       gaTrack("pause", { slug: cur.slug }); 
+      console.log('🎵 Pause completed');
     }
   }
 
@@ -417,7 +430,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     try {
       if (startSignal === 0 && playSignal === 0 && toggleSignal === 0 && !autoPlayOnIndex) {
         a.pause();
-        a.currentTime = 0;
+        // Don't reset currentTime - preserve playback position for resume
       }
     } catch {}
     
@@ -433,7 +446,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         if (DEBUG_MEDIA) dwarn('Unexpected auto-play detected, pausing audio');
         try {
           a.pause();
-          a.currentTime = 0;
+          // Don't reset currentTime - preserve position for proper pause/resume
           return;
         } catch {}
       }
@@ -442,9 +455,11 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       intentionalPlayRef.current = false;
       
       if (mutedOrSilent) return;
+      console.log('🎵 Audio play event - setting playing to true');
       setPlaying(true);
     };
     const onPause = () => { 
+      console.log('🎵 Audio pause event - setting playing to false');
       if (DEBUG_MEDIA) dlog('audio event: pause for', cur?.title); 
       setPlaying(false); 
     };
@@ -852,7 +867,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       <div className="sleek-controls mt-3">
         {showHUDPlay && (
           <button 
-            onClick={toggle} 
+            onClick={(e) => {
+              console.log('🎵 Play/pause button clicked', { playing, event: e });
+              toggle();
+            }} 
             className="play-pause-btn" 
             aria-label={playing ? "Pause" : "Play"}
           >

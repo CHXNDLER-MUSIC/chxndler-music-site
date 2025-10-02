@@ -10,7 +10,7 @@ type State = {
   hoverId: string | null;
   planetsVisible: boolean;
   initSongs: (songs: Song[]) => void;
-  setMain: (id: string) => void;
+  setMain: (id: string, preservePlanetVisibility?: boolean) => void;
   setHover: (id: string | null) => void;
   togglePlanets: () => void;
   setPlanetsVisible: (visible: boolean) => void;
@@ -32,16 +32,22 @@ let state: State = {
     }
     console.log('🎵 PlayerStore: songs updated', { finalLength: state.songs.length });
   },
-  setMain: (id: string) => {
-    console.log('🎵 PlayerStore: setMain called', { currentMainId: state.mainId, newId: id });
+  setMain: (id: string, preservePlanetVisibility = false) => {
+    console.log('🎵 PlayerStore: setMain called', { currentMainId: state.mainId, newId: id, preservePlanetVisibility });
     if (state.mainId === id) {
       console.log('🎵 PlayerStore: ID unchanged, skipping');
       return;
     }
     
-    // Immediately hide all planets when a new song is selected - they stay hidden
-    console.log('🎵 PlayerStore: Hiding planets for warp sequence - keeping them hidden');
-    setState({ prevMainId: state.mainId, mainId: id, planetsVisible: false });
+    if (preservePlanetVisibility) {
+      // Don't change planet visibility (for homepage navigation)
+      console.log('🎵 PlayerStore: Setting mainId without changing planet visibility');
+      setState({ prevMainId: state.mainId, mainId: id });
+    } else {
+      // Immediately hide all planets when a new song is selected - they stay hidden
+      console.log('🎵 PlayerStore: Hiding planets for warp sequence - keeping them hidden');
+      setState({ prevMainId: state.mainId, mainId: id, planetsVisible: false });
+    }
     
     console.log('🎵 PlayerStore: mainId updated to', id);
   },
