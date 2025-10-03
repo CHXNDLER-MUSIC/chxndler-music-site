@@ -61,7 +61,12 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [ambientSuspended, setAmbientSuspended] = useState(true);
   const [ambientPlaying, setAmbientPlaying] = useState(false);
   const [firstStartDone, setFirstStartDone] = useState(false);
-  const [welcomeHasPlayed, setWelcomeHasPlayed] = useState(false); // tracks if welcome has ever been played
+  const [welcomeHasPlayed, setWelcomeHasPlayed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try { return window.sessionStorage.getItem('chx_welcome_played') === '1'; } catch {}
+    }
+    return false;
+  }); // tracks if welcome has ever been played (per session)
   const welcomeOnStartRef = React.useRef(false); // signals that welcome VO should play now
   const startButtonWarpRef = React.useRef(false); // prevents double warp when start button is clicked
   // Ensure song MP3 starts only after button SFX finishes; start SFX at warp end
@@ -140,6 +145,7 @@ export default function DashboardApp({ initialSlug } = {}) {
     const onIntroEnded = () => {
       console.log('🎵 DashboardApp: Welcome audio ended, marking as played');
       setWelcomeHasPlayed(true);
+      try { window.sessionStorage.setItem('chx_welcome_played', '1'); } catch {}
     };
     
     // Listen for the intro audio ending
@@ -788,6 +794,8 @@ export default function DashboardApp({ initialSlug } = {}) {
         minDurationMs={3000}
         offsetY="-1vh"
         onWarpSfxEnd={() => {
+          // Ensure planets stay hidden through the warp for song selections
+          try { playerStore.getState().setPlanetsVisible(false); } catch {}
           // Prepare focused selection but keep planets hidden; reveal after song starts playing
           try {
             const slug = (curTrack && curTrack.slug) ? curTrack.slug : null;
@@ -801,8 +809,8 @@ export default function DashboardApp({ initialSlug } = {}) {
             try { setUserSelected(false); } catch {}
             try { playerStore.setState({ mainId: null }); } catch {}
             try { setLinks({ spotify: LINKS.spotify, apple: LINKS.apple }); } catch {}
-            // Enable welcome VO on opening/home page; keep ambient suspended for now.
-            try { setHomeIntroEnabled(true); } catch {}
+            // Enable welcome VO on opening/home page only once per session; keep ambient suspended for now.
+            try { if (!welcomeHasPlayed) setHomeIntroEnabled(true); else setHomeIntroEnabled(false); } catch {}
             // Don't set welcomeHasPlayed here - wait for audio to actually finish
             // Switch background sky in the same render pass for simultaneous reveal
             try {
@@ -846,6 +854,10 @@ export default function DashboardApp({ initialSlug } = {}) {
         }}
         onFlyStart={() => {
           setWarpActive(true);
+          // Force planets hidden during selection warp to avoid showing all planets mid-transition
+          if (pendingTrackPlay || userSelected) {
+            try { playerStore.getState().setPlanetsVisible(false); } catch {}
+          }
           // MediaPlayer will handle its own pause/resume logic for song changes
           // Don't interfere with audio here - let MediaPlayer manage it
         }}
@@ -870,6 +882,8 @@ export default function DashboardApp({ initialSlug } = {}) {
               if (intro) { intro.pause(); intro.currentTime = 0; }
             } catch {}
             setAmbientSuspended(true);
+            // Keep planets hidden until playback starts (onPlayingChange will re-enable)
+            try { playerStore.getState().setPlanetsVisible(false); } catch {}
           }
           // If a track play is pending, begin UI fade-in immediately at warp end
           // and start the button SFX right away so it completes before music starts
@@ -923,12 +937,11 @@ export default function DashboardApp({ initialSlug } = {}) {
             try { playerStore.getState().setPlanetsVisible(true); } catch {}
             // Clear any selected planet for home mode
             try { playerStore.setState({ mainId: null }); } catch {}
-            // Do not enable welcome VO on home
+            // Do not enable welcome VO on home; mark first start as done
             if (!firstStartDone && !welcomeHasPlayed) {
               welcomeOnStartRef.current = false;
               setHomeIntroEnabled(false);
               setFirstStartDone(true);
-              setWelcomeHasPlayed(false);
             }
             setUserSelected(false);
             setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });

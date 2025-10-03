@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { playerStore } from "@/store/usePlayerStore";
 import { computePlanetLayout } from "@/lib/planetLayout";
+import { buildPlanetSongs } from "@/lib/planets";
 import type { PlanetType, WeatherSystem, PlanetGeometry } from "@/lib/planets";
 
 type Sat = {
@@ -54,6 +55,16 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
   const particleSystemRef = useRef<THREE.Points | null>(null);
   const connectionLinesRef = useRef<THREE.LineSegments[]>([]);
   const particleUniforms = useRef<{ uTime: { value: number }; uCentralPos: { value: THREE.Vector3 }; uCentralColor: { value: THREE.Color } } | null>(null);
+
+  // Safety: ensure songs are initialized if not already populated
+  React.useEffect(() => {
+    try {
+      if (!playerStore.getState().songs || playerStore.getState().songs.length === 0) {
+        const { holoSongs } = buildPlanetSongs();
+        playerStore.getState().initSongs(holoSongs as any);
+      }
+    } catch {}
+  }, []);
 
   // Create special material for Collide planet - half color, half black and white
   function createCollidePlanetMaterial(seed: number) {

@@ -42,6 +42,50 @@ export function track(
 ) {
   if (typeof window === 'undefined') return;
 
+  // Lightweight de-duplication for noisy events
+  // Prevents multiple inserts from rapid re-renders or repeated callbacks
+  // - page_view: once per page path/query per short window
+  // - music_started: once per song per short window
+  // - join_aliens_click: cooldown to avoid double toggles
+  // - start_button_clicked: cooldown to avoid double taps
+  const now = Date.now();
+  const pageForKey = data.page || (typeof window !== 'undefined' ? window.location.pathname + window.location.search : '');
+  const songForKey = (data as any).song_slug || (data as any).slug || (data as any).song_id || '';
+  const dedupeKey = (() => {
+    switch (event_type) {
+      case 'page_view':
+        return `pv:${pageForKey}`;
+      case 'music_started':
+        return `ms:${String(songForKey).toLowerCase()}`;
+      case 'join_aliens_click':
+        return 'join_click';
+      case 'start_button_clicked':
+        return 'start_btn';
+      default:
+        return '';
+    }
+  })();
+  const cooldownMs = (() => {
+    switch (event_type) {
+      case 'page_view': return 10_000; // 10s per path
+      case 'music_started': return 30_000; // 30s per song
+      case 'join_aliens_click': return 3_000; // 3s
+      case 'start_button_clicked': return 2_000; // 2s
+      default: return 0;
+    }
+  })();
+  try {
+    if (!('__chx_analytics_last' in window)) {
+      (window as any).__chx_analytics_last = new Map<string, number>();
+    }
+    const lastMap: Map<string, number> = (window as any).__chx_analytics_last;
+    if (dedupeKey && cooldownMs > 0) {
+      const last = lastMap.get(dedupeKey) || 0;
+      if (now - last < cooldownMs) return; // suppress duplicate
+      lastMap.set(dedupeKey, now);
+    }
+  } catch {}
+
   const session_id = getOrCreateSessionId();
   const page = data.page || window.location.pathname + window.location.search;
   const referrer = data.referrer || document.referrer || '';

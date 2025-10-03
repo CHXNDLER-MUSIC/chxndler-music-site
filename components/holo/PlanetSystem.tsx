@@ -8,6 +8,7 @@ import { playerStore } from "@/store/usePlayerStore";
 import Planet from "@/components/holo/Planet";
 import HeartPlanet from "@/components/holo/HeartPlanet";
 import { computePlanetLayout } from "@/lib/planetLayout";
+import { buildPlanetSongs } from "@/lib/planets";
 import { getEntriesByRing } from "@/lib/planetRegistry";
 
 function InvalidateOnState() {
@@ -32,6 +33,16 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
   const { songs, mainId, prevMainId, hoverId, planetsVisible } = storeSnap as any;
   const focusId = showAll ? null : (mainId ?? songs[0]?.id);
   const focus = showAll ? null : (songs.find((s) => s.id === focusId) ?? songs[0]);
+
+  // Safety: ensure songs are initialized if not already populated
+  React.useEffect(() => {
+    try {
+      if (!playerStore.getState().songs || playerStore.getState().songs.length === 0) {
+        const { holoSongs } = buildPlanetSongs();
+        playerStore.getState().initSongs(holoSongs as any);
+      }
+    } catch {}
+  }, []);
   
   // Context-aware planet visibility management
   // Note: We don't automatically show planets on homepage anymore

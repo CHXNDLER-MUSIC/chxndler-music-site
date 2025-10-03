@@ -67,18 +67,38 @@ export async function POST(req: NextRequest) {
       db: { schema: 'analytics' },
     });
 
-    // OPTIONAL: touch_session RPC; ignore failures so tracking never 500s
+    // Ensure session row exists: try RPC first, then direct upsert fallback
+    let sessionEnsured = false;
     try {
       const { error: rpcError } = await supabase.rpc('touch_session', {
         p_session_id: body.session_id,
         p_user_agent: ua,
         p_ip_hash: ip_hash,
       });
-      if (rpcError && !rpcError.message?.includes('schema cache')) {
+      if (!rpcError) sessionEnsured = true;
+      else if (!rpcError.message?.includes('schema cache')) {
         console.warn('touch_session error:', rpcError.message);
       }
-    } catch (e) {
-      // Suppress schema cache errors to reduce log noise
+    } catch {
+      // Suppress RPC errors
+    }
+    if (!sessionEnsured) {
+      try {
+        // Fallback: upsert directly into analytics.sessions to satisfy FK
+        const { error: upsertErr } = await supabase
+          .from('sessions')
+          .upsert(
+            { session_id: body.session_id, user_agent: ua, ip_hash },
+            { onConflict: 'session_id', ignoreDuplicates: false }
+          );
+        if (upsertErr && !upsertErr.message?.includes('schema cache')) {
+          console.warn('sessions upsert error:', upsertErr.message);
+        } else {
+          sessionEnsured = true;
+        }
+      } catch {
+        // Ignore – analytics should never block
+      }
     }
 
     // Insert event into analytics.events table

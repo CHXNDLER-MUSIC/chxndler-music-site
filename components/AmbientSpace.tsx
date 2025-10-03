@@ -186,37 +186,41 @@ export default function AmbientSpace({
         setNeedEnable(true);
         return;
       }
-      // Start both ambient bed and intro VO together, immediately after button SFX completes
-      // Reset playheads and set initial volumes for a clean, in-sync start
+      // Reset playheads for a clean start
       try { amb.pause(); } catch {}
       try { amb.currentTime = 0; } catch {}
-      const targetVol = intro && introSrc ? Math.min(volume, 0.75) : volume;
-      amb.volume = clamp01(targetVol);
       try { amb.muted = false; amb.removeAttribute('muted'); } catch {}
+      const setBed = () => { amb.volume = clamp01(intro && introSrc ? Math.min(volume, 0.75) : volume); };
+      setBed();
 
-      const plays: Promise<any>[] = [];
-      try { plays.push(amb.play()); } catch {}
-
+      // If welcome VO is available and pending, start both VO and ambient together
       if (intro && introSrc && introPendingRef.current && !introPlayingRef.current) {
         try { intro.currentTime = 0; } catch {}
         try { intro.volume = 0.9; } catch {}
-        // Manage ambient bed level during VO and restore after
-        const onIntroPlay = () => {
+        const handleIntroPlay = () => {
           introPlayingRef.current = true;
-          amb.volume = clamp01(Math.min(volume, 0.75));
+          setBed();
         };
-        const onIntroEnd = () => {
+        const handleIntroEnded = () => {
           introPlayingRef.current = false;
           fadeVolume(clamp01(volume), 400);
-          try { intro.removeEventListener('play', onIntroPlay); } catch {}
+          try { intro.removeEventListener('play', handleIntroPlay); } catch {}
         };
-        try { intro.addEventListener('play', onIntroPlay); } catch {}
-        try { intro.addEventListener('ended', onIntroEnd, { once: true } as any); } catch {}
-        try { plays.push(intro.play()); introPendingRef.current = false; } catch {}
+        try { intro.addEventListener('play', handleIntroPlay); } catch {}
+        try { intro.addEventListener('ended', handleIntroEnded, { once: true } as any); } catch {}
+        // Reset ambient fully, set bed, and start both back-to-back
+        try { amb.pause(); } catch {}
+        try { amb.currentTime = 0; } catch {}
+        setBed();
+        const p1 = amb.play().catch(()=>{});
+        const p2 = intro.play().then(() => { introPendingRef.current = false; }).catch(() => { introPendingRef.current = false; });
+        // Do not block on promises; return after queuing both plays
+        void p1; void p2;
+        return;
       }
 
-      // Best-effort: wait for both play() calls to settle, but do not block UI
-      Promise.allSettled(plays).catch(()=>{});
+      // Otherwise, start ambient immediately
+      amb.play().catch(()=>{});
     };
     window.addEventListener('ambient:play', onAmbientPlay as any);
     return () => { window.removeEventListener('ambient:play', onAmbientPlay as any); };
@@ -267,8 +271,14 @@ export default function AmbientSpace({
       if (fadeDownTimerRef.current !== undefined) cancelAnimationFrame(fadeDownTimerRef.current as any);
       fadeVolume(0, 150);
       // Leave intro playing if it already started; if not started yet, let normal flow handle it
-    } else {
+  } else {
       console.log('AmbientSpace: neither playingMusic nor suspend, checking if should resume ambient');
+      // If a welcome VO is pending, hold ambient until an explicit ambient:play signal
+      // This ensures space-music.mp3 starts together with the welcome VO after button.mp3 finishes
+      if (introPendingRef.current) {
+        console.log('AmbientSpace: intro pending; deferring ambient resume until ambient:play');
+        return cancelFade();
+      }
       // Don't resume ambient if user has selected a specific song
       if (userSelectedSong) {
         console.log('AmbientSpace: user selected song, keeping ambient paused');
@@ -333,8 +343,9 @@ export default function AmbientSpace({
   useEffect(() => {
     const amb = ambRef.current; if (!amb) return;
     const tryResume = () => {
-      // Don't auto-resume if user manually paused, or if music is playing, or if suspended, or if user selected a song
-      if (playingMusic || suspend || userPausedRef.current || userSelectedSong) return;
+      // Don't auto-resume if user manually paused, or if music is playing, or if suspended,
+      // or if user selected a song, or if welcome VO is pending (we'll start via ambient:play)
+      if (playingMusic || suspend || userPausedRef.current || userSelectedSong || introPendingRef.current) return;
       try { amb.muted = false; } catch {}
       amb.play().catch(()=>{});
     };
@@ -345,7 +356,7 @@ export default function AmbientSpace({
     // Also periodically ensure it's playing in case of transient blockers
     const id = window.setInterval(() => {
       // Only try resume if audio appears to be stopped/paused unexpectedly
-      if (amb && amb.paused && !playingMusic && !suspend && !userPausedRef.current && !userSelectedSong) {
+      if (amb && amb.paused && !playingMusic && !suspend && !userPausedRef.current && !userSelectedSong && !introPendingRef.current) {
         console.log('Periodic check: audio unexpectedly paused, attempting resume');
         tryResume();
       }
@@ -361,7 +372,7 @@ export default function AmbientSpace({
   useEffect(() => {
     const amb = ambRef.current; if (!amb) return;
     const tryResume = () => {
-      if (playingMusic || suspend || userSelectedSong) return;
+      if (playingMusic || suspend || userSelectedSong || introPendingRef.current) return;
       try { amb.muted = false; } catch {}
       amb.play().catch(() => { try { amb.load(); amb.play().catch(()=>{}); } catch {} });
     };
@@ -380,7 +391,7 @@ export default function AmbientSpace({
 
     // Watchdog: detect if time stops advancing for several seconds while "playing"
     const id = window.setInterval(() => {
-      if (!amb || playingMusic || suspend || userSelectedSong) { 
+      if (!amb || playingMusic || suspend || userSelectedSong || introPendingRef.current) { 
         stuckSinceRef.current = undefined; 
         lastTimeRef.current = amb?.currentTime || 0; 
         return; 
