@@ -2658,7 +2658,8 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
       className="absolute inset-0"
       style={{
         background: 'transparent',
-        opacity: (!showAll && hideUntilPlaying) ? 0 : 1,
+        // Gate visibility solely by global planetsVisible to avoid flicker during selection
+        opacity: planetsVisible ? 1 : 0,
         transition: 'opacity 400ms ease-in-out'
       }}
     />

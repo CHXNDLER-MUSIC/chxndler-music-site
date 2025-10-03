@@ -45,10 +45,11 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
   return (
     // Fill the parent (HUDPanel provides a fixed-height relative container)
     // Fade logic: when a song is selected (showAll=false) but not yet playing, hide the planets.
-    <div 
+    <div
       className="absolute inset-0"
       style={{
-        opacity: (!showAll && hideUntilPlaying) ? 0 : 1,
+        // Gate visibility solely by global planetsVisible to avoid flicker
+        opacity: planetsVisible ? 1 : 0,
         transition: 'opacity 400ms ease-in-out'
       }}
     >

@@ -308,9 +308,16 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
               <div className="rounded-xl border border-yellow-400/30 bg-yellow-500/10">
                 <button className="w-full text-left p-6 border-b border-yellow-400/20 flex items-center justify-between" onClick={() => setSocialOpen(!socialOpen)}>
                   <h3 className="text-lg font-bold text-yellow-200">SOCIAL MEDIA</h3>
-                  <div className="text-sm text-yellow-100/80 mt-1">
-                    Total: {(metrics?.socials?.instagram||0)+(metrics?.socials?.tiktok||0)+(metrics?.socials?.youtube||0)+(metrics?.socials?.spotify||0)+(metrics?.socials?.apple||0)}
-                  </div>
+                  {(() => {
+                    // Compute total using the same fallback as row values so totals match
+                    const ig = metrics?.socials?.instagram ?? (stats?.socialButtons.find(b=>b.button==='Instagram')?.count || 0);
+                    const yt = metrics?.socials?.youtube   ?? (stats?.socialButtons.find(b=>b.button==='YouTube')?.count || 0);
+                    const am = metrics?.socials?.apple     ?? (stats?.musicButtons.find(b=>b.button==='Apple Music')?.count || 0);
+                    const sp = metrics?.socials?.spotify   ?? (stats?.musicButtons.find(b=>b.button==='Spotify')?.count || 0);
+                    const tt = metrics?.socials?.tiktok    ?? (stats?.socialButtons.find(b=>b.button==='TikTok')?.count || 0);
+                    const total = ig + yt + am + sp + tt;
+                    return <div className="text-sm text-yellow-100/80 mt-1">Total: {total}</div>;
+                  })()}
                 </button>
                 {socialOpen && (
                   <div className="divide-y divide-yellow-400/10">
@@ -381,7 +388,17 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                 <button className="w-full text-left px-6 py-4 flex items-center justify-between hover:bg-cyan-500/10 border-b border-cyan-400/10" onClick={() => setSongsOpen(!songsOpen)}>
                   <span className="text-white font-medium">Songs</span>
                   <span className="text-cyan-200 font-bold">
-                    {Object.values(metrics?.songPlays || {}).reduce((s: number, v: any)=> s + (v?.count||0), 0)}
+                    {(() => {
+                      // Sum per-track counts using the same server/local fallback as row values
+                      const total = (tracks || []).reduce((sum, t) => {
+                        const slug = (t.slug || '').toLowerCase();
+                        const server = metrics?.songPlays?.[slug]?.count || 0;
+                        if (server > 0) return sum + server;
+                        const local = (stats?.songSelections || []).find(s => (s.title || '').toLowerCase() === (t.title || '').toLowerCase())?.count || 0;
+                        return sum + local;
+                      }, 0);
+                      return total;
+                    })()}
                   </span>
                 </button>
                 {songsOpen && (
@@ -422,7 +439,17 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                 <button className="w-full text-left px-6 py-4 flex items-center justify-between hover:bg-cyan-500/10 border-b border-cyan-400/10" onClick={() => setCoversOpen(!coversOpen)}>
                   <span className="text-white font-medium">Cover Art</span>
                   <span className="text-cyan-200 font-bold">
-                    {Object.values(metrics?.coverClicks || {}).reduce((s: number, v: any)=> s + (v?.count||0), 0)}
+                    {(() => {
+                      // Sum per-track counts using the same server/local fallback as row values
+                      const total = (tracks || []).reduce((sum, t) => {
+                        const slug = (t.slug || '').toLowerCase();
+                        const server = metrics?.coverClicks?.[slug]?.count || 0;
+                        if (server > 0) return sum + server;
+                        const local = (stats?.coverClicks || []).find(s => (s.title || '').toLowerCase() === (t.title || '').toLowerCase())?.count || 0;
+                        return sum + local;
+                      }, 0);
+                      return total;
+                    })()}
                   </span>
                 </button>
                 {coversOpen && (
@@ -462,24 +489,27 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                     <button className="w-full text-left px-6 py-4 flex items-center justify-between hover:bg-cyan-500/10" onClick={() => setCardsOpen(!cardsOpen)}>
                       <span className="text-white font-medium">Cards</span>
                       <span className="text-cyan-200 font-bold">
-                        {Object.values(stats.collectCardClicks || {}).reduce((s: number, d: any)=> s + (d?.count||0), 0)}
+                        {(stats?.collectCardClicks || []).reduce((s: number, d: any)=> s + (d?.count||0), 0)}
                       </span>
                     </button>
                     {cardsOpen && (
                       <div className="px-6 pb-6 space-y-3">
-                        {Object.entries(stats.collectCardClicks || {}).sort((a:any,b:any)=> (b[1]?.count||0)-(a[1]?.count||0)).map(([song, data]: any) => (
-                          <div key={song} className="flex items-center gap-4">
-                            <div className="flex-1">
-                              <div className="flex justify-between items-center mb-1">
-                                <span className="text-white font-medium">{data?.title || song}</span>
-                                <span className="text-cyan-400 font-bold">{data?.count || 0} clicks</span>
-                              </div>
-                              <div className="bg-gray-700 rounded-full h-2 overflow-hidden">
-                                <div className={`h-full bg-gradient-to-r from-teal-500 to-cyan-500 transition-all duration-500`} style={{ width: `${Math.max(((data?.count||0) / Math.max(1, ...Object.values(stats.collectCardClicks || {}).map((d:any)=> d?.count || 0))) * 100, 5)}%` }} />
+                        {(stats?.collectCardClicks || [])
+                          .slice()
+                          .sort((a:any,b:any)=> (b?.count||0)-(a?.count||0))
+                          .map((row: any, idx: number) => (
+                            <div key={`${row?.song || idx}`} className="flex items-center gap-4">
+                              <div className="flex-1">
+                                <div className="flex justify-between items-center mb-1">
+                                  <span className="text-white font-medium">{row?.title || row?.song || 'Unknown'}</span>
+                                  <span className="text-cyan-400 font-bold">{row?.count || 0} clicks</span>
+                                </div>
+                                <div className="bg-gray-700 rounded-full h-2 overflow-hidden">
+                                  <div className={`h-full bg-gradient-to-r from-teal-500 to-cyan-500 transition-all duration-500`} style={{ width: `${Math.max(((row?.count||0) / Math.max(1, ...(stats?.collectCardClicks || []).map((d:any)=> d?.count || 0))) * 100, 5)}%` }} />
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
                       </div>
                     )}
                   </>
