@@ -26,6 +26,7 @@ const getPurchaseUrl = (title: string) => {
     'brain-freeze': 'https://buy.stripe.com/8x2aEYfxD00JcZza994gg0h',
     'collide': 'https://buy.stripe.com/7sY3cw5X3fZH0cN0yz4gg05',
     'colors-of-our-home': 'https://buy.stripe.com/5kQ00k2KRfZH9Nn1CD4gg0j',
+    'game-boy-heart': 'https://buy.stripe.com/aFa8wQ2KR5l32kV6WX4gg0m',
     'i-might-fall-in-love-with-you': 'https://buy.stripe.com/aFa8wQdpv7tb1gR1CD4gg0c',
     'kid-forever': 'https://buy.stripe.com/00wfZibhnfZH4t3dll4gg0g',
     'letting-go': 'https://buy.stripe.com/3cI9AU85b00J9Nna994gg0d',

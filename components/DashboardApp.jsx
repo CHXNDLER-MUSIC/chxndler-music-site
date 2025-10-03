@@ -61,12 +61,7 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [ambientSuspended, setAmbientSuspended] = useState(true);
   const [ambientPlaying, setAmbientPlaying] = useState(false);
   const [firstStartDone, setFirstStartDone] = useState(false);
-  const [welcomeHasPlayed, setWelcomeHasPlayed] = useState(() => {
-    if (typeof window !== 'undefined') {
-      try { return window.sessionStorage.getItem('chx_welcome_played') === '1'; } catch {}
-    }
-    return false;
-  }); // tracks if welcome has ever been played (per session)
+  const [welcomeHasPlayed, setWelcomeHasPlayed] = useState(false); // tracks if welcome has been played (resets on page refresh)
   const welcomeOnStartRef = React.useRef(false); // signals that welcome VO should play now
   const startButtonWarpRef = React.useRef(false); // prevents double warp when start button is clicked
   // Ensure song MP3 starts only after button SFX finishes; start SFX at warp end
@@ -143,9 +138,9 @@ export default function DashboardApp({ initialSlug } = {}) {
   // Listen for welcome audio ending to properly track when it has played
   useEffect(() => {
     const onIntroEnded = () => {
-      console.log('🎵 DashboardApp: Welcome audio ended, marking as played');
+      console.log('🎵 DashboardApp: Welcome audio ended, marking as played for this page load');
       setWelcomeHasPlayed(true);
-      try { window.sessionStorage.setItem('chx_welcome_played', '1'); } catch {}
+      // Note: No longer storing in session storage - welcome VO can play again after page refresh
     };
     
     // Listen for the intro audio ending
@@ -242,6 +237,7 @@ export default function DashboardApp({ initialSlug } = {}) {
     
 
     // STEP 1: Hide all planets when a song is selected
+    console.log('🌍 DashboardApp: onSongChange - Hiding planets for song selection');
     try {
       playerStore.getState().setPlanetsVisible(false);
     } catch {}
@@ -410,6 +406,7 @@ export default function DashboardApp({ initialSlug } = {}) {
     const t = tracks.find((x) => x.slug === initialSlug);
     if (!t) return;
     // Ensure planets are hidden when arriving on a song route
+    console.log('🌍 DashboardApp: initialSlug effect - Hiding planets for route song');
     try { playerStore.getState().setPlanetsVisible(false); } catch {}
     // Ensure focused planet is this route's song
     try { playerStore.getState().setMain(t.slug || ''); } catch {}
@@ -781,7 +778,24 @@ export default function DashboardApp({ initialSlug } = {}) {
         style={blurWrapperStyle}
       >
         <PrewarmThree />
-        <AmbientSpace ambientSrc="/audio/space-music.mp3" introSrc={homeMode && homeIntroEnabled ? "/audio/welcome-to-the-heartverse.mp3" : undefined} playingMusic={isPlaying} suspend={ambientSuspended} userSelectedSong={userSelected} />
+        <AmbientSpace 
+          ambientSrc="/audio/space-music.mp3" 
+          introSrc={(() => {
+            const shouldPlayWelcome = homeMode && homeIntroEnabled;
+            const introSrc = shouldPlayWelcome ? "/audio/welcome-to-the-heartverse.mp3" : undefined;
+            console.log('🎵 DashboardApp: AmbientSpace introSrc decision:', { 
+              homeMode, 
+              homeIntroEnabled, 
+              shouldPlayWelcome, 
+              introSrc,
+              welcomeHasPlayed
+            });
+            return introSrc;
+          })()} 
+          playingMusic={isPlaying} 
+          suspend={ambientSuspended} 
+          userSelectedSong={userSelected} 
+        />
       <SkyboxVideo
         brightness={0.95}
         srcWebm={sky.webm}
@@ -795,8 +809,13 @@ export default function DashboardApp({ initialSlug } = {}) {
         minDurationMs={3000}
         offsetY="-1vh"
         onWarpSfxEnd={() => {
-          // Ensure planets stay hidden through the warp for song selections
-          try { playerStore.getState().setPlanetsVisible(false); } catch {}
+          // Only hide planets during song selection warps, NOT Start button warps
+          if (userSelected || pendingTrackPlay) {
+            console.log('🌍 DashboardApp: onWarpSfxEnd - Hiding planets during SONG selection warp');
+            try { playerStore.getState().setPlanetsVisible(false); } catch {}
+          } else {
+            console.log('🌍 DashboardApp: onWarpSfxEnd - START button warp, keeping planets visible');
+          }
           // Prepare focused selection but keep planets hidden; reveal after song starts playing
           try {
             const slug = (curTrack && curTrack.slug) ? curTrack.slug : null;
@@ -817,22 +836,54 @@ export default function DashboardApp({ initialSlug } = {}) {
             try {
               if (nextSky) { setSky(nextSky); setNextSky(null); }
             } catch {}
-            // Play the button sound; start ambient + welcome VO only after it finishes
+            // Play the button sound; start ambient + welcome VO simultaneously from the beginning after it finishes
             try {
               const p = sfx.playAndWait('button', 0.9);
               let settled = false;
-              const startAmbient = () => {
+              const startAudioFromBeginning = () => {
                 if (settled) return; settled = true;
-                try { setAmbientSuspended(false); } catch {}
-                try { window.dispatchEvent(new CustomEvent('ambient:play')); } catch {}
+                console.log('🎵 DashboardApp: Starting ambient + welcome VO from beginning');
+                
+                // Reset both audio tracks to beginning and start them simultaneously
+                try {
+                  const ambientEl = document.querySelector('audio[data-ambient="1"]');
+                  const introEl = document.querySelector('audio[data-intro="1"]');
+                  
+                  // Reset to beginning
+                  if (ambientEl) {
+                    ambientEl.currentTime = 0;
+                    console.log('🎵 DashboardApp: Reset space-music.mp3 to beginning');
+                  }
+                  if (introEl) {
+                    introEl.currentTime = 0;
+                    console.log('🎵 DashboardApp: Reset welcome-to-the-heartverse.mp3 to beginning');
+                  }
+                  
+                  // Start ambient first, then intro should follow automatically via AmbientSpace
+                  setAmbientSuspended(false);
+                  window.dispatchEvent(new CustomEvent('ambient:play'));
+                  
+                  // Small delay to ensure ambient starts, then ensure intro is playing from beginning
+                  setTimeout(() => {
+                    if (introEl && homeIntroEnabled) {
+                      introEl.currentTime = 0;
+                      introEl.play().catch(() => {});
+                      console.log('🎵 DashboardApp: Ensured welcome VO starts from beginning');
+                    }
+                  }, 100);
+                  
+                } catch (e) {
+                  console.error('🎵 DashboardApp: Error starting audio from beginning:', e);
+                }
               };
-              p.then(startAmbient).catch(() => {
-                // If SFX fails, still start ambient soon after to avoid silence
-                setTimeout(startAmbient, 200);
+              
+              p.then(startAudioFromBeginning).catch(() => {
+                // If SFX fails, still start audio soon after to avoid silence
+                setTimeout(startAudioFromBeginning, 200);
               });
               // Watchdog: if SFX promise neither resolves nor rejects (shouldn't happen),
               // start after a generous timeout to avoid getting stuck on silence.
-              setTimeout(() => { if (!settled) startAmbient(); }, 3000);
+              setTimeout(() => { if (!settled) startAudioFromBeginning(); }, 3000);
             } catch {
               // If SFX throws synchronously, still resume ambient shortly after
               setTimeout(() => {
@@ -858,6 +909,7 @@ export default function DashboardApp({ initialSlug } = {}) {
           setWarpActive(true);
           // Force planets hidden during selection warp to avoid showing all planets mid-transition
           if (pendingTrackPlay || userSelected) {
+            console.log('🌍 DashboardApp: onFlyStart - Hiding planets during selection warp');
             try { playerStore.getState().setPlanetsVisible(false); } catch {}
           }
           // MediaPlayer will handle its own pause/resume logic for song changes
@@ -885,6 +937,7 @@ export default function DashboardApp({ initialSlug } = {}) {
             } catch {}
             setAmbientSuspended(true);
             // Keep planets hidden until playback starts (onPlayingChange will re-enable)
+            console.log('🌍 DashboardApp: onFlyEnd - Hiding planets until playback starts');
             try { playerStore.getState().setPlanetsVisible(false); } catch {}
           }
           // If a track play is pending, begin UI fade-in immediately at warp end
@@ -1130,6 +1183,11 @@ export default function DashboardApp({ initialSlug } = {}) {
           // Homepage Start flow (warp to home reveal)
           if (!welcomeHasPlayed) { 
             welcomeOnStartRef.current = true;
+            setHomeIntroEnabled(true); // Enable welcome VO immediately when Start is pressed
+            console.log('🎵 DashboardApp: Start button - enabling welcome VO');
+          } else {
+            setHomeIntroEnabled(false);
+            console.log('🎵 DashboardApp: Start button - welcome already played, not enabling');
           }
           setPendingOverlayReveal(true);
           setUiUnlocked(true);
@@ -1210,6 +1268,11 @@ export default function DashboardApp({ initialSlug } = {}) {
           // Homepage Start flow (warp to home reveal)
           if (!welcomeHasPlayed) { 
             welcomeOnStartRef.current = true;
+            setHomeIntroEnabled(true); // Enable welcome VO immediately when Start is pressed
+            console.log('🎵 DashboardApp: Start button - enabling welcome VO');
+          } else {
+            setHomeIntroEnabled(false);
+            console.log('🎵 DashboardApp: Start button - welcome already played, not enabling');
           }
           setPendingOverlayReveal(true);
           setUiUnlocked(true);
