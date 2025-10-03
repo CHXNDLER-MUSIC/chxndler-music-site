@@ -61,17 +61,24 @@ export async function GET(_req: NextRequest) {
     ]);
 
     // Unique page views: distinct session_id that recorded a page_view on the opening page
-    // Opening page is '/' (or '/?...'). Limit to 100k rows to avoid heavy transfers.
-    const pvRes = await supabase
+    // Opening page is '/' or '/?...'. Query in two parts to avoid PostgREST or() quirks with '?'
+    const pvSet = new Set<string>();
+    const pvExact = await supabase
+      .from('events')
+      .select('session_id')
+      .eq('event_type', 'page_view')
+      .eq('page', '/');
+    if (pvExact.error && !pvExact.error.message?.includes('schema cache')) throw pvExact.error;
+    (pvExact.data || []).forEach((row: any) => { if (row?.session_id) pvSet.add(String(row.session_id)); });
+
+    const pvQuery = await supabase
       .from('events')
       .select('session_id, page')
       .eq('event_type', 'page_view')
-      .or('page.eq./,page.like./?%');
-    if (pvRes.error && !pvRes.error.message?.includes('schema cache')) throw pvRes.error;
-    const pvSet = new Set<string>();
-    (pvRes.data || []).forEach((row: any) => {
-      if (row?.session_id) pvSet.add(String(row.session_id));
-    });
+      .like('page', '/?%');
+    if (pvQuery.error && !pvQuery.error.message?.includes('schema cache')) throw pvQuery.error;
+    (pvQuery.data || []).forEach((row: any) => { if (row?.session_id) pvSet.add(String(row.session_id)); });
+
     const pageViews = pvSet.size;
 
     // Aggregate song plays (music_started) and cover art clicks

@@ -17,6 +17,30 @@ function identifyElement(element: HTMLElement): string {
   const parentElement = element.parentElement;
   const parentClass = String(parentElement?.className || '').toLowerCase();
 
+  // Prefer explicit cover art identification before any card logic
+  try {
+    const isCollectBtn = className.includes('btn-ocean') || (!!(element as any).closest && !!(element as any).closest('.btn-ocean'));
+    const isCoverContext = !isCollectBtn && (
+      className.includes('cover-hologram') ||
+      className.includes('cover') ||
+      (!!(element as any).closest && !!(element as any).closest('.cover-hologram-container'))
+    );
+    if (isCoverContext) {
+      // Try to resolve song name from data attributes or aria-label
+      let songName = dataSong || '';
+      if (!songName) {
+        const elWithSong = ((element as any).closest && (element as any).closest('[data-song]')) as HTMLElement | null;
+        songName = elWithSong?.getAttribute('data-song') || '';
+      }
+      if (!songName) {
+        const m = (element.getAttribute('aria-label') || '').match(/view\s+(.+?)\s+card/i);
+        if (m && m[1]) songName = m[1];
+      }
+      if (songName) return `🖼️ Cover Art: ${songName}`;
+      return '🖼️ Cover Art';
+    }
+  } catch {}
+
   // Beam Color Buttons (Power/Blue, Comms/Yellow, Join/Pink)
   if (ariaLabel.includes('power') || title.includes('power') || className.includes('power-btn')) {
     return '⚡ Power Button';
@@ -53,7 +77,8 @@ function identifyElement(element: HTMLElement): string {
   if ((text.includes('start') || className.includes('start') || className.includes('wheel-play')) && !text.includes('music')) {
     return '🎮 Start Button';
   }
-  if (text.includes('play') || text.includes('pause') || className.includes('play')) {
+  // Only count play/pause from the waveform media player button
+  if (className.includes('hud-play-btn')) {
     return '▶️ Play/Pause';
   }
 
@@ -111,7 +136,7 @@ function identifyElement(element: HTMLElement): string {
   }
 
   // Generic collect card (enhanced with data attributes + aria-label)
-  if (text.includes('collect card') || ariaLabel.includes('collect') || className.includes('collect') || className.includes('btn-')) {
+  if (text.includes('collect card') || ariaLabel.includes('collect') || className.includes('collect') || className.includes('btn-ocean')) {
     // Prefer explicit data-song on target or ancestors
     const ownSong = dataSong || element.getAttribute('data-song');
     if (ownSong) return `🎴 Collect Card: ${ownSong}`;
@@ -132,7 +157,7 @@ function identifyElement(element: HTMLElement): string {
   }
 
   // Card modal clicks
-  if (className.includes('card') || className.includes('modal') || ariaLabel.includes('card')) {
+  if (className.includes('card-modal') || className.includes('card-') || className.includes('modal')) {
     return '🎴 Card Modal';
   }
 

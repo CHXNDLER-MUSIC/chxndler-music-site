@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import AnalyticsDashboard from "./AnalyticsDashboard";
+import MusicAnalyticsVisual from "./MusicAnalyticsVisual";
 import HealthStatusWidget from "./HealthStatusWidget";
 
 export default function AnalyticsWidget() {
-  const [isOpen, setIsOpen] = useState(false);
+  const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [shouldShow, setShouldShow] = useState(false);
   const [healthOpen, setHealthOpen] = useState(false);
 
@@ -15,11 +15,11 @@ export default function AnalyticsWidget() {
                  new URLSearchParams(window.location.search).has("analytics");
     setShouldShow(show);
 
-    // Add keyboard shortcuts: Ctrl/Cmd + Shift + A for analytics, H for health
+    // Add keyboard shortcuts: Ctrl/Cmd + Shift + A for Website Analytics, H for health
     const handleKeydown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'A') {
         e.preventDefault();
-        setIsOpen(true);
+        setAnalyticsOpen(true);
       }
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'H') {
         e.preventDefault();
@@ -37,14 +37,14 @@ export default function AnalyticsWidget() {
 
   return (
     <>
-      {!isOpen && (
+      {!analyticsOpen && (
         <div className="fixed bottom-4 right-4 z-[110] flex flex-col gap-2">
           <button
-            onClick={() => setIsOpen(true)}
+            onClick={() => setAnalyticsOpen(true)}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-lg font-mono text-sm transition-all transform hover:scale-105"
-            title="Open Click Analytics Dashboard (Ctrl/Cmd + Shift + A)"
+            title="Open Website Analytics (Ctrl/Cmd + Shift + A)"
           >
-            📊 Click Analytics
+            🌐 Website Analytics
           </button>
           <HealthStatusWidget 
             isOpen={healthOpen} 
@@ -54,7 +54,7 @@ export default function AnalyticsWidget() {
       )}
       
       {/* Health widget when analytics is open */}
-      {isOpen && !healthOpen && (
+      {analyticsOpen && !healthOpen && (
         <div className="fixed bottom-4 right-4 z-[105]">
           <HealthStatusWidget 
             isOpen={healthOpen} 
@@ -73,9 +73,9 @@ export default function AnalyticsWidget() {
         </div>
       )}
       
-      {isOpen && (
+      {analyticsOpen && (
         <div className="fixed inset-0 z-[110]">
-          <AnalyticsDashboard onClose={() => setIsOpen(false)} />
+          <MusicAnalyticsVisual onClose={() => setAnalyticsOpen(false)} />
         </div>
       )}
     </>

@@ -1000,6 +1000,16 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                   const selectedTrack = tracks[i];
                   setIdx(i); 
                   setPickerOpen(false);
+                  // Hide all 3D planets when a new song is selected from the picker
+                  try {
+                    // Lazily import playerStore to avoid SSR issues
+                    const { playerStore } = require("@/store/usePlayerStore");
+                    playerStore.getState().setPlanetsVisible(false);
+                    // Sync focused planet selection with the chosen track
+                    if (selectedTrack?.slug) {
+                      playerStore.getState().setMain(selectedTrack.slug);
+                    }
+                  } catch {}
                   
                   // The index change effect will handle playing after warp delay
                   // No need for duplicate timer logic here

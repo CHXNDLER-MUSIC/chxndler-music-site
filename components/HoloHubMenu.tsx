@@ -1,6 +1,6 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { track } from "@/lib/analytics";
+import { track, storeClickData, generateClickId } from "@/lib/analytics";
 import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sfx";
 
@@ -120,7 +120,7 @@ export default function HoloHubMenu({
     if (!open) setTimeout(() => firstItemRef.current?.focus(), 0);
   }, [open, onToggle]);
 
-  const runItem = useCallback((it: HubItem) => {
+  const runItem = useCallback((it: HubItem, ev?: MouseEvent) => {
     // Explicitly track social/music platform clicks with a canonical label
     try {
       const labelMap: Record<string, string> = {
@@ -139,6 +139,34 @@ export default function HoloHubMenu({
           element_label,
         }
       });
+
+      // Also store locally so analytics UI can show counts without server
+      try {
+        const id = generateClickId();
+        const ts = Date.now();
+        storeClickData({
+          id,
+          timestamp: ts,
+          element: {
+            tagName: 'button',
+            className: 'item holo-hub',
+            id: '',
+            textContent: it.label,
+            role: 'button',
+            dataId: it.id,
+          },
+          position: {
+            x: (ev as any)?.clientX ?? 0,
+            y: (ev as any)?.clientY ?? 0,
+            screenX: (ev as any)?.screenX ?? 0,
+            screenY: (ev as any)?.screenY ?? 0,
+          },
+          viewport: { width: window.innerWidth, height: window.innerHeight },
+          page: { url: window.location.href, title: document.title },
+          userAgent: navigator.userAgent,
+          enhancedLabel: element_label,
+        });
+      } catch {}
     } catch {}
     // Then perform the actual action
     try { if (typeof it.onClick === "function") it.onClick(); else if (it.href) window.open(it.href, "_blank", "noopener,noreferrer"); } catch {}
@@ -292,7 +320,7 @@ export default function HoloHubMenu({
                 width: `${size}px`,
                 height: `${size}px`,
               }}
-              onClick={(e) => { e.stopPropagation(); try { sfx.play('join', 0.9); } catch {}; runItem(it); }}
+              onClick={(e) => { e.stopPropagation(); try { sfx.play('join', 0.9); } catch {}; runItem(it, e as unknown as MouseEvent); }}
               onMouseDown={(e) => { e.stopPropagation(); }}
               onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
               title={it.label}
@@ -363,7 +391,7 @@ export default function HoloHubMenu({
                       width: `${size}px`,
                       height: `${size}px`,
                     }}
-                    onClick={(e) => { e.stopPropagation(); try { sfx.play('join', 0.9); } catch {}; runItem(it); }}
+                    onClick={(e) => { e.stopPropagation(); try { sfx.play('join', 0.9); } catch {}; runItem(it, e as unknown as MouseEvent); }}
                     onMouseDown={(e) => { e.stopPropagation(); }}
                     onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                     title={it.label}

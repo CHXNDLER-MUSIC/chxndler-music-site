@@ -50,7 +50,7 @@ const getPurchaseUrl = (title: string) => {
   return url;
 };
 
-export default function CoverHologram({ src, title, inline = false, size = 168, onCardOpen }: { src: string; title: string; inline?: boolean; size?: number; onCardOpen?: () => void }) {
+export default function CoverHologram({ src, title, slug, inline = false, size = 168, onCardOpen }: { src: string; title: string; slug?: string; inline?: boolean; size?: number; onCardOpen?: () => void }) {
   const [showCard, setShowCard] = useState(false);
   const [cardFlipped, setCardFlipped] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -82,11 +82,18 @@ export default function CoverHologram({ src, title, inline = false, size = 168, 
       } 
     } catch {}
     
+    // Track cover art click immediately when the cover is clicked
+    try {
+      const norm = (slug && slug.toLowerCase()) || title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      track('cover_art_clicked', {
+        song_slug: norm,
+        payload: { song_title: title, cover_src: src },
+      });
+    } catch {}
+
     setShowCard(true);
-    // Call the analytics callback when card opens
-    if (onCardOpen) {
-      onCardOpen();
-    }
+    // Preserve optional callback for external hooks (no tracking here anymore)
+    try { if (onCardOpen) onCardOpen(); } catch {}
   };
 
   // Reset flip state when modal closes
@@ -124,6 +131,9 @@ export default function CoverHologram({ src, title, inline = false, size = 168, 
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       role="button"
+      // Help analytics identify cover art context reliably
+      data-song={title}
+      data-slug={(slug && slug.toLowerCase()) || title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -140,6 +150,9 @@ export default function CoverHologram({ src, title, inline = false, size = 168, 
           width={size}
           height={size}
           className="cover-hologram-image rounded-xl object-cover select-none w-full h-auto transition-all duration-300"
+          // Mirror attributes onto the image for robust targeting
+          data-song={title}
+          data-slug={(slug && slug.toLowerCase()) || title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}
           priority
         />
       </div>

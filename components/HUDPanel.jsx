@@ -1,3 +1,4 @@
+/* @refresh skip */
 "use client";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
@@ -446,6 +447,12 @@ export default function HUDPanel({
     }
   }, []);
 
+  // Planet visibility is orchestrated by DashboardApp:
+  // - It enables planets on home after Start/landing.
+  // - It hides planets during song selection until playback begins.
+  // Avoid forcing planetsVisible=true here based solely on !currentId,
+  // which could re-show planets briefly during selection transitions.
+
   // Dynamically place planet container directly above the media player
   useLayoutEffect(() => {
     let measureTimeout;
@@ -619,18 +626,9 @@ export default function HUDPanel({
                   <CoverHologram 
                     src={src} 
                     title={title} 
+                    slug={trackingSong}
                     inline={true} 
                     size={110}
-                    onCardOpen={() => {
-                      // Track cover art click when card actually opens (normalized fields)
-                      trackAnalytics("cover_art_clicked", {
-                        song_slug: trackingSong,
-                        payload: {
-                          song_title: trackingTitle,
-                          cover_src: src,
-                        },
-                      });
-                    }}
                   />
                 </div>
               );
@@ -1040,197 +1038,8 @@ export default function HUDPanel({
 
         {/* bottom-corner buttons removed per design request */}
         </motion.div>
-      <style jsx>{`
-        .cover-link{ display:block; border-radius:16px; outline:1px solid rgba(25,227,255,.20);
-          box-shadow: 0 0 28px rgba(25,227,255,.15);
-          transition: transform .15s ease, box-shadow .2s ease, outline-color .2s ease;
-        }
-        .cover-link:hover{
-          transform: scale(1.04);
-          outline-color: rgba(25,227,255,.50);
-          box-shadow: 0 0 52px rgba(25,227,255,.40), 0 0 90px rgba(25,227,255,.25);
-        }
-        .cover-link:active{ transform: scale(.98); }
-        
-        /* Enhanced Media Player Styles */
-        .hud-media-player {
-          padding: 8px;
-          background: rgba(0,0,0,.3);
-          border: 1px solid rgba(25,227,255,.2);
-          border-radius: 8px;
-          backdrop-filter: blur(4px);
-        }
-        
-        .hud-waveform-player{
-          position: relative;
-          border-radius: 10px;
-          border: 2px solid rgba(25,227,255,0.8);
-          background: rgba(25,227,255,0.1);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-          box-shadow: 0 0 18px rgba(25,227,255,0.35);
-          /* Safari performance fixes */
-          -webkit-backface-visibility: hidden;
-          backface-visibility: hidden;
-          will-change: transform, opacity;
-          contain: layout style;
-        }
-        
-        .waveform-container{
-          position: relative;
-          height: 32px;
-          cursor: pointer;
-          border-radius: 6px;
-          background: rgba(0,0,0,0.3);
-          overflow: hidden;
-          transition: all 0.2s ease;
-        }
-        
-        .hud-play-btn-enhanced{
-          width: 28px;
-          height: 28px;
-          border-radius: 50%;
-          background: rgba(25,227,255,.8);
-          border: 1px solid rgba(255,255,255,.4);
-          color: #000;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          box-shadow: 0 0 12px rgba(25,227,255,.4);
-          flex-shrink: 0;
-        }
-        .hud-play-btn-enhanced:hover{
-          background: rgba(25,227,255,1);
-          transform: scale(1.08);
-          box-shadow: 0 0 18px rgba(25,227,255,.6);
-          border-color: rgba(255,255,255,.6);
-        }
-        .hud-play-btn-enhanced:active{
-          transform: scale(0.95);
-        }
-        
-        /* Media player responsive positioning to avoid cover art */
-        .media-player-responsive {
-          /* Base: w-20 (80px) + gap (16px) */
-          right: calc(5rem + 1rem);
-        }
-        
-        @media (min-width: 640px) {
-          .media-player-responsive {
-            /* sm: w-24 (96px) + gap (16px) */
-            right: calc(6rem + 1rem);
-          }
-        }
-        
-        @media (min-width: 768px) {
-          .media-player-responsive {
-            /* md: w-28 (112px) + gap (16px) */
-            right: calc(7rem + 1rem);
-          }
-        }
-        
-        @media (min-width: 1024px) {
-          .media-player-responsive {
-            /* lg: w-32 (128px) + gap (16px) */
-            right: calc(8rem + 1rem);
-          }
-        }
-        
-        .hud-progress-bar-enhanced{
-          position: relative;
-          width: 100%;
-          height: 12px;
-          border-radius: 6px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          --hover-position: 0%;
-        }
-        
-        .progress-track {
-          position: absolute;
-          width: 100%;
-          height: 100%;
-          background: rgba(0,0,0,.5);
-          border: 1px solid rgba(25,227,255,.3);
-          border-radius: 6px;
-          overflow: hidden;
-        }
-        
-        .hud-progress-fill-enhanced{
-          position: absolute;
-          left: 0;
-          top: 0;
-          height: 100%;
-          background: linear-gradient(90deg, rgba(25,227,255,.9), rgba(25,227,255,.7));
-          border-radius: 6px;
-          transition: width 0.1s ease;
-          box-shadow: 0 0 8px rgba(25,227,255,.5);
-          z-index: 2;
-        }
-        
-        .progress-hover-indicator {
-          position: absolute;
-          left: var(--hover-position);
-          top: 0;
-          width: 2px;
-          height: 100%;
-          background: rgba(255,255,255,.8);
-          opacity: 0;
-          transition: opacity 0.15s ease;
-          z-index: 3;
-          transform: translateX(-50%);
-        }
-        
-        .hud-progress-bar-enhanced:hover .progress-hover-indicator {
-          opacity: 1;
-        }
-        
-        .progress-handle {
-          position: absolute;
-          top: 50%;
-          width: 16px;
-          height: 16px;
-          background: rgba(25,227,255,1);
-          border: 2px solid rgba(255,255,255,.8);
-          border-radius: 50%;
-          transform: translate(-50%, -50%);
-          box-shadow: 0 0 10px rgba(25,227,255,.6);
-          z-index: 4;
-          transition: left 0.1s ease, transform 0.15s ease;
-        }
-        
-        .hud-progress-bar-enhanced:hover .progress-handle {
-          transform: translate(-50%, -50%) scale(1.2);
-        }
-        
-        /* HUD Cursor smooth transitions */
-        .hud-cursor-transition {
-          transition: left 0.1s linear;
-        }
-        
-        .hud-cursor-transition.playing {
-          transition: left 0.05s linear;
-        }
-        
-        /* Beam animations removed */
-
-      `}</style>
-      <style jsx>{`
-        .btn-stream{
-          display:inline-block; padding: 8px 12px; border-radius: 12px; color:#001014; font-weight:700;
-          border: 1px solid rgba(255,255,255,.25);
-          text-shadow: 0 1px 0 rgba(255,255,255,.6);
-          transition: transform .12s ease, box-shadow .18s ease, filter .18s ease;
-        }
-        .btn-stream:active{ transform: scale(.98); }
-        /* Brand variants */
-        .btn-spotify{ background: radial-gradient(100% 100% at 50% 30%, rgba(210,255,225,1), #1DB954); box-shadow: 0 0 24px rgba(29,185,84,.55), inset 0 2px 0 rgba(255,255,255,.55), inset 0 -6px 14px rgba(0,0,0,.25); }
-        .btn-spotify:hover{ transform: translateZ(0) scale(1.04); box-shadow: 0 0 32px rgba(29,185,84,.8), inset 0 2px 0 rgba(255,255,255,.6), inset 0 -6px 16px rgba(0,0,0,.3); filter: saturate(1.05) brightness(1.03); }
-        .btn-apple{ background: radial-gradient(100% 100% at 50% 30%, rgba(255,210,210,1), #FF3B30); box-shadow: 0 0 24px rgba(255,59,48,.55), inset 0 2px 0 rgba(255,255,255,.55), inset 0 -6px 14px rgba(0,0,0,.25); }
-        .btn-apple:hover{ transform: translateZ(0) scale(1.04); box-shadow: 0 0 32px rgba(255,59,48,.8), inset 0 2px 0 rgba(255,255,255,.6), inset 0 -6px 16px rgba(0,0,0,.3); filter: saturate(1.05) brightness(1.03); }
-      `}</style>
+      {/* styles moved to app/globals.css to avoid styled-jsx in this module */}
+      {/* brand button styles moved to app/globals.css */}
       <audio ref={hoverCoverRef} preload="auto">
         <source src="/audio/hover.mp3" type="audio/mpeg" />
         <source src="/audio/song-select.mp3" type="audio/mpeg" />

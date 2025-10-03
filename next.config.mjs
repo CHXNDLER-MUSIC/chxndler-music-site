@@ -7,6 +7,14 @@ const nextConfig = {
   images: { remotePatterns: [{ protocol: 'https', hostname: 'images.unsplash.com' }] },
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },
+  // Avoid eval()-based devtool that can confuse React Refresh on some browsers
+  webpack(config, { dev }) {
+    if (dev) {
+      // Use external source maps instead of eval-source-map
+      config.devtool = 'source-map';
+    }
+    return config;
+  },
   async headers() {
     if (!isProd) return [];
     return [
@@ -38,6 +46,12 @@ const nextConfig = {
       },
       {
         source: '/audio/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      {
+        source: '/ui/:path*',
         headers: [
           { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],

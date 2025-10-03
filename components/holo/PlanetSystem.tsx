@@ -62,6 +62,11 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         // Zoom out a touch further on homepage (showAll)
         camera={{ position: [0.2, -0.2, showAll ? 112 : 20], fov: showAll ? 92 : 48 }}
         gl={{ antialias: true, alpha: true }}
+        onCreated={({ gl }) => {
+          // Lift exposure so emissive and additive layers pop without bloom
+          // @ts-ignore three typings vary by version
+          gl.toneMappingExposure = 1.6;
+        }}
         frameloop="demand"
       >
         {/* Transparent background; parent provides holographic blue backdrop */}
@@ -77,8 +82,8 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         <InvalidateOnState />
         <ZoomOnChange focusId={focusId} />
 
-        {/* Heart planet at the center - always on homepage (showAll) */}
-        {showAll && <HeartPlanet />}
+        {/* Heart planet at the center - respect planetsVisible */}
+        {showAll && planetsVisible && <HeartPlanet />}
         
         {/* Removed debug helper sphere that was visible on the homepage */}
 
@@ -87,8 +92,8 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         {/* Enlarge full-system view on homepage so it spans the blue display width */}
         <group scale={showAll ? 1.45 : 1}>
         <SystemGroup>
-          {/* Orbit guides on homepage regardless of planetsVisible */}
-          {showAll ? <OrbitGuides /> : null}
+          {/* Orbit guides on homepage - respect planetsVisible */}
+          {showAll && planetsVisible ? <OrbitGuides /> : null}
           {/* Show planets based on mode and visibility state */}
           {(() => {
             console.log("🌍 PlanetSystem rendering decision:", { planetsVisible, showAll, songsCount: songs.length });

@@ -1,105 +1,139 @@
 "use client";
 
 import React, { useRef, useMemo } from "react";
-import { Mesh, ShaderMaterial, Color, AdditiveBlending, BackSide } from "three";
+import { Mesh, ShaderMaterial, Color, AdditiveBlending, BackSide, Vector3 } from "three";
 import { useFrame } from "@react-three/fiber";
-import { createHeartGeometry } from "@/lib/heartGeometry";
 
 export default function HeartPlanet() {
   const meshRef = useRef<Mesh>(null);
-  const glowRef = useRef<Mesh>(null);
   const atmosphereRef = useRef<Mesh>(null);
-  // Heart size baseline (used to scale geometry & glows) - made smaller
-  const heartRadius = 2.0; // Smaller so it doesn't dominate the display
-  
-  // Log after defining radius to avoid ReferenceError during render
-  // console.log("🧡 HeartPlanet is rendering! Position: [0,0,0], Radius:", heartRadius);
-  // console.log("🧡 Using spherical geometry with heart displacement and enhanced glow layers");
+  // Planet size baseline (used to scale geometry & glows)
+  const planetRadius = 2.0;
 
-  // Create a true heart-shaped geometry so the silhouette stays a heart
-  const heartGeometry = useMemo(() => {
-    return createHeartGeometry(heartRadius * 2.4, 64, {
-      heartness: 1.25,
-      thicknessMultiplier: 1.15,
-    });
-  }, [heartRadius]);
-
-  // Bright emissive "sun" surface shader (procedural granulation)
+  // Textured, lit planet shader (procedural continents/oceans + specular)
   const planetMaterial = useMemo(() => {
     const material = new ShaderMaterial({
       uniforms: {
         uTime: { value: 0 },
-        uColor: { value: new Color("#FC54AF") },
-        uEmissiveIntensity: { value: 2.6 },
-        uGranulation: { value: 3.0 }
+        // Colors: tweak for a heart-tinged world while staying realistic
+        uOcean: { value: new Color("#1b3d6e") },
+        uLandLow: { value: new Color("#3d915f") },
+        uLandHigh: { value: new Color("#c4b08a") },
+        uSpecular: { value: new Color("#a9c9ff") },
+        // Lighting
+        uLightDir: { value: new Vector3(3, 6, 5).normalize() },
+        uGloss: { value: 128.0 },
+        uRoughness: { value: 0.5 },
+        // Noise controls
+        uScale: { value: 0.55 }, // continent scale
+        uDetail: { value: 2.2 },
+        uCloudScale: { value: 1.2 },
+        uCloudStrength: { value: 0.25 },
       },
       vertexShader: `
         uniform float uTime;
         varying vec3 vNormalW;
         varying vec3 vWorldPosition;
+        varying vec3 vViewDir;
         
         void main() {
           vec3 pos = position;
-          // Very subtle breathing to keep it lively but stable
-          float pulse = 1.0 + sin(uTime * 1.8) * 0.015;
-          pos *= pulse;
-
+          // Gentle rotation wobble to keep it lively but not pulsing in size
           vNormalW = normalize(normalMatrix * normal);
-          vWorldPosition = (modelMatrix * vec4(pos, 1.0)).xyz;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+          vec4 worldPos = modelMatrix * vec4(pos, 1.0);
+          vWorldPosition = worldPos.xyz;
+          vViewDir = normalize(cameraPosition - vWorldPosition);
+          gl_Position = projectionMatrix * viewMatrix * worldPos;
         }
       `,
       fragmentShader: `
+        precision highp float;
         uniform float uTime;
-        uniform vec3 uColor;
-        uniform float uEmissiveIntensity;
-        uniform float uGranulation;
+        uniform vec3 uOcean;
+        uniform vec3 uLandLow;
+        uniform vec3 uLandHigh;
+        uniform vec3 uSpecular;
+        uniform vec3 uLightDir;
+        uniform float uGloss;
+        uniform float uRoughness;
+        uniform float uScale;
+        uniform float uDetail;
+        uniform float uCloudScale;
+        uniform float uCloudStrength;
         
         varying vec3 vNormalW;
         varying vec3 vWorldPosition;
+        varying vec3 vViewDir;
         
-        // Noise utilities
-        float hash(float n) {
-          return fract(sin(n) * 43758.5453123);
+        // Basic hash and noise
+        float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453123); }
+        float noise(vec2 x){
+          vec2 i = floor(x);
+          vec2 f = fract(x);
+          float a = hash(i);
+          float b = hash(i + vec2(1.0, 0.0));
+          float c = hash(i + vec2(0.0, 1.0));
+          float d = hash(i + vec2(1.0, 1.0));
+          vec2 u = f*f*(3.0-2.0*f);
+          return mix(a, b, u.x) + (c - a)*u.y*(1.0 - u.x) + (d - b)*u.x*u.y;
         }
-        
-        float noise(vec2 st) {
-          vec2 i = floor(st);
-          vec2 f = fract(st);
-          vec2 u = f * f * (3.0 - 2.0 * f);
-          return mix(mix(hash(i.x + i.y * 57.0), hash(i.x + 1.0 + i.y * 57.0), u.x),
-                     mix(hash(i.x + (i.y + 1.0) * 57.0), hash(i.x + 1.0 + (i.y + 1.0) * 57.0), u.x), u.y);
-        }
-        
-        float fbm(vec2 st) {
-          float value = 0.0;
-          float amplitude = 0.5;
-          for (int i = 0; i < 4; i++) {
-            value += amplitude * noise(st);
-            st *= 2.0;
-            amplitude *= 0.5;
+        float fbm(vec2 p){
+          float v = 0.0;
+          float a = 0.5;
+          for(int i=0;i<6;i++){
+            v += a * noise(p);
+            p *= 2.0; a *= 0.5;
           }
-          return value;
+          return v;
+        }
+        float ridge(vec2 p){
+          float n = fbm(p);
+          return 1.0 - abs(2.0*n - 1.0);
         }
         
-        void main() {
-          vec3 n = normalize(vNormalW);
-          vec3 v = normalize(cameraPosition - vWorldPosition);
-
-          // Solar granulation using FBM on world position
-          vec2 gUv = vec2(vWorldPosition.x, vWorldPosition.y) * uGranulation;
-          float gran = fbm(gUv + uTime * 0.15) * 0.7 + fbm(gUv * 1.9 - uTime * 0.1) * 0.3;
-          gran = smoothstep(0.2, 0.9, gran);
-
-          // Make the center brighter than the rim
-          float center = pow(max(dot(n, v), 0.0), 1.5);
-          float flicker = 0.85 + 0.15 * sin(uTime * 8.0 + vWorldPosition.x * 2.0);
-
-          vec3 color = uColor * (1.2 + 1.6 * gran) * center * uEmissiveIntensity * flicker;
+        void main(){
+          vec3 N = normalize(vNormalW);
+          vec3 L = normalize(uLightDir);
+          vec3 V = normalize(vViewDir);
+          vec3 H = normalize(L + V);
+          
+          // Generate continents/oceans in world space for stability
+          vec2 uv = vWorldPosition.xz * uScale;
+          float base = fbm(uv + vec2(0.0, uTime*0.01));
+          float detail = fbm(uv * (2.0 + uDetail) - vec2(0.0, uTime*0.02));
+          float terrain = mix(base, detail, 0.45);
+          // Sharpen to make clear land/ocean boundaries
+          float landMask = smoothstep(0.47, 0.53, terrain);
+          // Mountains on land using ridge noise
+          float mountains = ridge(uv * 3.0 + 12.0);
+          
+          // Land color gradient
+          vec3 land = mix(uLandLow, uLandHigh, clamp(mountains * 1.2, 0.0, 1.0));
+          vec3 ocean = uOcean;
+          vec3 albedo = mix(ocean, land, landMask);
+          
+          // Simple lambert + blinn-phong
+          float diff = max(dot(N, L), 0.0);
+          float shininess = mix(64.0, uGloss, (1.0 - uRoughness));
+          // Specular mostly on oceans
+          float oceanFactor = 1.0 - landMask;
+          float spec = pow(max(dot(N, H), 0.0), shininess) * oceanFactor;
+          
+          // Very soft ambient and night boost so the night side isn't pitch black
+          float ambient = 0.18;
+          float nightBoost = 0.06;
+          float lightAmt = diff + ambient;
+          vec3 color = albedo * lightAmt + uSpecular * spec * 0.6 + albedo * nightBoost * (1.0 - diff);
+          
+          // Subtle animated cloud veil (additive, brightens day side slightly)
+          float clouds = fbm(vWorldPosition.xy * uCloudScale + uTime*0.03);
+          clouds = smoothstep(0.65, 0.93, clouds);
+          color += vec3(1.0) * clouds * uCloudStrength * diff;
+          
           gl_FragColor = vec4(color, 1.0);
         }
       `,
-      // FrontSide prevents backface lighting artifacts at grazing angles
+      // FrontSide
       side: 0,
       transparent: false,
       depthWrite: true,
@@ -114,7 +148,7 @@ export default function HeartPlanet() {
       uniforms: {
         uTime: { value: 0 },
         uColor: { value: new Color("#FC54AF") },
-        uStrength: { value: 2.6 }
+        uStrength: { value: 1.6 }
       },
       vertexShader: `
         varying vec3 vNormalW;
@@ -142,12 +176,12 @@ export default function HeartPlanet() {
           float fresnel = 1.0 - abs(dot(normalize(vNormalW), viewDir));
           fresnel = pow(fresnel, 2.0);
            
-          // Stronger solar atmosphere pulsing
-          float pulse = sin(uTime * 2.0) * 0.8 + 1.6;
-          float heartPulse = sin(uTime * 3.0) * 0.6 + 1.4;
+          // Moderate pulsing
+          float pulse = sin(uTime * 2.0) * 0.35 + 1.2;
+          float heartPulse = sin(uTime * 3.0) * 0.25 + 1.1;
            
           float rim = pow(fresnel, 1.4);
-          vec3 atmosphereColor = uColor * 300.0 * rim * pulse * heartPulse * uStrength;
+          vec3 atmosphereColor = uColor * 180.0 * rim * pulse * heartPulse * uStrength;
           float alpha = rim; // additive blending; alpha acts as weight
           
           gl_FragColor = vec4(atmosphereColor, alpha);
@@ -171,7 +205,7 @@ export default function HeartPlanet() {
       uniforms: {
         uTime: { value: 0 },
         uColor: { value: new Color("#FF77C6") },
-        uIntensity: { value: 2.6 }
+        uIntensity: { value: 1.5 }
       },
       vertexShader: `
         varying vec3 vNormalW;
@@ -190,7 +224,7 @@ export default function HeartPlanet() {
         varying vec3 vWorldPosition;
         void main(){
           vec3 v = normalize(cameraPosition - vWorldPosition);
-          float center = pow(max(dot(normalize(vNormalW), v), 0.0), 3.0);
+          float center = pow(max(dot(normalize(vNormalW), v), 0.0), 2.2);
           vec3 c = uColor * uIntensity * center;
           gl_FragColor = vec4(c, center);
         }
@@ -218,41 +252,47 @@ export default function HeartPlanet() {
     if (innerGlowMaterial.uniforms) {
       innerGlowMaterial.uniforms.uTime.value = time;
     }
+    // no billboard uniforms
     
     if (meshRef.current) {
       // Slow rotation
-      meshRef.current.rotation.y += delta * 0.15;
+      meshRef.current.rotation.y += delta * 0.12;
     }
     
     if (atmosphereRef.current) {
       atmosphereRef.current.rotation.y += delta * 0.15;
     }
+    
+    // removed billboard sizing
   });
 
   return (
-    <group position={[0, 0, 0]} scale={[0.85, 0.85, 0.85]}>
-      {/* Single core heart planet body with bright shader material */}
-      <mesh ref={meshRef} position={[0, 0, 0]} geometry={heartGeometry} renderOrder={1}>
+    <group position={[0, 0, 0]} scale={[0.9, 0.9, 0.9]}>
+      {/* Core sphere with realistic shading */}
+      <mesh ref={meshRef} position={[0, 0, 0]} renderOrder={1}>
+        <sphereGeometry args={[planetRadius, 128, 64]} />
         <primitive object={planetMaterial} />
       </mesh>
 
-      {/* Inner frontside glow overlay */}
-      <mesh position={[0, 0, 0]} geometry={heartGeometry} scale={[1.08, 1.08, 1.08]} renderOrder={5}>
+      {/* Inner frontside glow overlay (subtle) */}
+      <mesh position={[0, 0, 0]} scale={[1.04, 1.04, 1.04]} renderOrder={5}>
+        <sphereGeometry args={[planetRadius, 64, 32]} />
         <primitive object={innerGlowMaterial} />
       </mesh>
       
-      {/* Stronger solar corona (additive, backface only) */}
-      <mesh ref={atmosphereRef} position={[0, 0, 0]} geometry={heartGeometry} scale={[1.85, 1.85, 1.85]} renderOrder={6}>
+      {/* Atmosphere corona (additive, backface only) */}
+      <mesh ref={atmosphereRef} position={[0, 0, 0]} scale={[1.5, 1.5, 1.5]} renderOrder={6}>
+        <sphereGeometry args={[planetRadius, 64, 32]} />
         <primitive object={atmosphereMaterial} />
       </mesh>
-      
+
       {/* Outer far glow (very soft) */}
-      <mesh position={[0, 0, 0]} scale={[2.6, 2.6, 2.6]} renderOrder={7}>
-        <sphereGeometry args={[heartRadius, 24, 12]} />
+      <mesh position={[0, 0, 0]} scale={[2.3, 2.3, 2.3]} renderOrder={7}>
+        <sphereGeometry args={[planetRadius, 32, 16]} />
         <meshBasicMaterial
           color="#FC54AF"
           transparent
-          opacity={0.16}
+          opacity={0.12}
           depthWrite={false}
           depthTest={false}
           blending={AdditiveBlending}

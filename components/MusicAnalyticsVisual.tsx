@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getClickAnalyticsLocal } from "../lib/analytics";
+import { getClickAnalyticsLocal, clearClickAnalyticsLocal } from "../lib/analytics";
 import { tracks } from "@/lib/songs-consolidated";
 
 interface MusicStats {
@@ -40,6 +40,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [songsOpen, setSongsOpen] = useState(false);
   const [coversOpen, setCoversOpen] = useState(false);
+  const [cardsOpen, setCardsOpen] = useState(false);
   const [igOpen, setIgOpen] = useState(false);
   const [ttOpen, setTtOpen] = useState(false);
   const [ytOpen, setYtOpen] = useState(false);
@@ -47,6 +48,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
   const [amOpen, setAmOpen] = useState(false);
   const [socialOpen, setSocialOpen] = useState(true);
   const [joinOpen, setJoinOpen] = useState(true);
+  const [musicOpen, setMusicOpen] = useState(true);
 
   const loadMusicAnalytics = () => {
     const clicks = getClickAnalyticsLocal();
@@ -232,6 +234,40 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
           </div>
           <div className="flex gap-3">
             <button
+              onClick={async () => {
+                const ok = typeof window === 'undefined' ? false : window.confirm('Are you sure you want to reset analytics?');
+                if (!ok) return;
+                const attempt = async (adminKey?: string) => {
+                  const headers: Record<string, string> = {};
+                  if (adminKey) headers['x-admin-key'] = adminKey;
+                  const res = await fetch('/api/reset-analytics', { method: 'POST', headers });
+                  return res;
+                };
+                try {
+                  let res = await attempt();
+                  if (res.status === 401) {
+                    const key = typeof window !== 'undefined' ? window.prompt('Enter admin key to reset analytics:') || '' : '';
+                    if (!key) return;
+                    res = await attempt(key);
+                  }
+                  if (!res.ok) throw new Error(`reset failed (${res.status})`);
+                  // Clear local click analytics too
+                  try { clearClickAnalyticsLocal(); } catch {}
+                  // Reload server + local metrics
+                  await loadServerMetrics();
+                  loadMusicAnalytics();
+                  try { const json = await res.json(); console.log('reset results:', json); } catch {}
+                  if (typeof window !== 'undefined') alert('Analytics reset complete.');
+                } catch (e) {
+                  console.warn('reset analytics failed:', e);
+                  if (typeof window !== 'undefined') alert('Reset failed. Check admin key or server logs.');
+                }
+              }}
+              className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors text-sm font-medium"
+            >
+              🗑️ Reset Analytics
+            </button>
+            <button
               onClick={() => { loadServerMetrics(); loadMusicAnalytics(); }}
               className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg transition-colors text-sm font-medium"
             >
@@ -256,7 +292,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
           ) : (
             <div className="p-6 space-y-8">
               {/* Headline site metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 p-4 rounded-xl border border-cyan-500/20">
                   <div className="text-3xl font-bold text-cyan-400">{metrics?.pageViews ?? 0}</div>
                   <div className="text-sm text-cyan-300/70">Page Views</div>
@@ -265,22 +301,13 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                   <div className="text-3xl font-bold text-purple-400">{metrics?.startClicks ?? (stats?.controlButtons.find(b=>b.button==='Start')?.count || 0)}</div>
                   <div className="text-sm text-purple-300/70">Start Button Clicks</div>
                 </div>
-                <div className="bg-gradient-to-br from-yellow-500/20 to-amber-500/20 p-4 rounded-xl border border-yellow-500/20">
-                  <div className="text-3xl font-bold text-yellow-300">{
-                    (metrics?.socials?.instagram || 0) +
-                    (metrics?.socials?.tiktok || 0) +
-                    (metrics?.socials?.youtube || 0) +
-                    (metrics?.socials?.spotify || 0) +
-                    (metrics?.socials?.apple || 0)
-                  }</div>
-                  <div className="text-sm text-yellow-100/80">Social Media Total</div>
-                </div>
+                
               </div>
 
               {/* Social Media clicks (collapsible) */}
               <div className="rounded-xl border border-yellow-400/30 bg-yellow-500/10">
                 <button className="w-full text-left p-6 border-b border-yellow-400/20 flex items-center justify-between" onClick={() => setSocialOpen(!socialOpen)}>
-                  <h3 className="text-lg font-bold text-yellow-200">SOCIAL MEDIA CLICKS</h3>
+                  <h3 className="text-lg font-bold text-yellow-200">SOCIAL MEDIA</h3>
                   <div className="text-sm text-yellow-100/80 mt-1">
                     Total: {(metrics?.socials?.instagram||0)+(metrics?.socials?.tiktok||0)+(metrics?.socials?.youtube||0)+(metrics?.socials?.spotify||0)+(metrics?.socials?.apple||0)}
                   </div>
@@ -330,44 +357,50 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                 )}
               </div>
 
-              {/* Button Categories */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Control Buttons */}
-                {stats.controlButtons.length > 0 && (
-                  <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50">
-                    <h3 className="text-lg font-bold text-white mb-4 flex items-center">
-                      <span className="text-2xl mr-2">🎛️</span>
-                      Control Buttons
-                    </h3>
-                    <div className="space-y-3">
-                      {stats.controlButtons.map((button) => (
-                        <div key={button.button} className="flex justify-between items-center">
-                          <span className="text-white font-medium">{button.button}</span>
-                          <span className="text-cyan-400 font-bold">{button.count} clicks</span>
-                        </div>
-                      ))}
+              {/* Blue Display: Songs, Cover Art, Cards */
+              }
+              <div className="rounded-xl border border-cyan-400/30 bg-cyan-500/10">
+                <button className="w-full text-left p-6 border-b border-cyan-400/20 flex items-center justify-between" onClick={() => setMusicOpen(!musicOpen)}>
+                  <h3 className="text-lg font-bold text-cyan-200">MUSIC</h3>
+                  <div className="text-sm text-cyan-100/80 mt-1">{musicOpen ? 'Hide' : 'Show'}</div>
+                </button>
+                {musicOpen && (
+                  <>
+                    {/* Control counters at top: POWER then Play/Pause */}
+                    <div className="divide-y divide-cyan-400/10">
+                      <div className="w-full px-6 py-4 flex items-center justify-between">
+                        <span className="text-white font-medium">Power</span>
+                        <span className="text-cyan-200 font-bold">{stats?.controlButtons.find(b=>b.button==='Power')?.count || 0}</span>
+                      </div>
+                      <div className="w-full px-6 py-4 flex items-center justify-between">
+                        <span className="text-white font-medium">Play/Pause</span>
+                        <span className="text-cyan-200 font-bold">{stats?.controlButtons.find(b=>b.button==='Play/Pause')?.count || 0}</span>
+                      </div>
                     </div>
-                  </div>
-                )}
-                {/* Platforms section removed per new Comms/Pink layout */}
-              </div>
-
-              {/* Songs (plays) - collapsible list with all songs and total */}
-              <div className="bg-gray-800/50 rounded-xl border border-gray-700/50">
-                <button className="w-full text-left p-6 flex items-center justify-between" onClick={() => setSongsOpen(!songsOpen)}>
-                  <span className="text-xl font-bold text-white flex items-center">
-                    <span className="text-2xl mr-2">🎧</span>
-                    Songs (plays)
-                    <span className="ml-3 text-cyan-300 text-base font-semibold">Total: {Object.values(metrics?.songPlays || {}).reduce((s: number, v: any)=> s + (v?.count||0), 0)}</span>
+                {/* Songs */}
+                <button className="w-full text-left px-6 py-4 flex items-center justify-between hover:bg-cyan-500/10 border-b border-cyan-400/10" onClick={() => setSongsOpen(!songsOpen)}>
+                  <span className="text-white font-medium">Songs</span>
+                  <span className="text-cyan-200 font-bold">
+                    {Object.values(metrics?.songPlays || {}).reduce((s: number, v: any)=> s + (v?.count||0), 0)}
                   </span>
-                  <span className="text-cyan-300">{songsOpen ? 'Hide' : 'Show'}</span>
                 </button>
                 {songsOpen && (
                   <div className="px-6 pb-6 space-y-3">
                     {tracks.map((t, idx) => {
                       const slug = (t.slug || '').toLowerCase();
-                      const count = metrics?.songPlays?.[slug]?.count || 0;
-                      const max = Math.max(1, ...tracks.map(tt => metrics?.songPlays?.[(tt.slug||'').toLowerCase()]?.count || 0));
+                      // Fallback to local click analytics if server metrics are unavailable or zero
+                      const localSongCount = (() => {
+                        const match = (stats?.songSelections || []).find(s => (s.title || '').toLowerCase() === (t.title || '').toLowerCase());
+                        return match?.count || 0;
+                      })();
+                      const count = metrics?.songPlays?.[slug]?.count || localSongCount || 0;
+                      const max = Math.max(1, ...tracks.map(tt => {
+                        const s = (tt.slug || '').toLowerCase();
+                        const server = metrics?.songPlays?.[s]?.count || 0;
+                        if (server > 0) return server;
+                        const local = (stats?.songSelections || []).find(ss => (ss.title || '').toLowerCase() === (tt.title || '').toLowerCase())?.count || 0;
+                        return local;
+                      }));
                       return (
                         <div key={slug || idx} className="flex items-center gap-4">
                           <div className="flex-1">
@@ -376,7 +409,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                               <span className="text-cyan-400 font-bold">{count} plays</span>
                             </div>
                             <div className="bg-gray-700 rounded-full h-2 overflow-hidden">
-                              <div className={`h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500`} style={{ width: getBarWidth(count, max) }} />
+                              <div className={`h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500`} style={{ width: `${Math.max((count / max) * 100, 5)}%` }} />
                             </div>
                           </div>
                         </div>
@@ -384,33 +417,39 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                     })}
                   </div>
                 )}
-              </div>
 
-              {/* Cover Art - collapsible list with all songs and total */}
-              <div className="bg-gray-800/50 rounded-xl border border-gray-700/50">
-                <button className="w-full text-left p-6 flex items-center justify-between" onClick={() => setCoversOpen(!coversOpen)}>
-                  <span className="text-xl font-bold text-white flex items-center">
-                    <span className="text-2xl mr-2">🖼️</span>
-                    Cover Art
-                    <span className="ml-3 text-pink-300 text-base font-semibold">Total: {Object.values(metrics?.coverClicks || {}).reduce((s: number, v: any)=> s + (v?.count||0), 0)}</span>
+                {/* Cover Art */}
+                <button className="w-full text-left px-6 py-4 flex items-center justify-between hover:bg-cyan-500/10 border-b border-cyan-400/10" onClick={() => setCoversOpen(!coversOpen)}>
+                  <span className="text-white font-medium">Cover Art</span>
+                  <span className="text-cyan-200 font-bold">
+                    {Object.values(metrics?.coverClicks || {}).reduce((s: number, v: any)=> s + (v?.count||0), 0)}
                   </span>
-                  <span className="text-cyan-300">{coversOpen ? 'Hide' : 'Show'}</span>
                 </button>
                 {coversOpen && (
                   <div className="px-6 pb-6 space-y-3">
                     {tracks.map((t, idx) => {
                       const slug = (t.slug || '').toLowerCase();
-                      const count = metrics?.coverClicks?.[slug]?.count || 0;
-                      const max = Math.max(1, ...tracks.map(tt => metrics?.coverClicks?.[(tt.slug||'').toLowerCase()]?.count || 0));
+                      const localCoverCount = (() => {
+                        const match = (stats?.coverClicks || []).find(s => (s.title || '').toLowerCase() === (t.title || '').toLowerCase());
+                        return match?.count || 0;
+                      })();
+                      const count = metrics?.coverClicks?.[slug]?.count || localCoverCount || 0;
+                      const max = Math.max(1, ...tracks.map(tt => {
+                        const s = (tt.slug || '').toLowerCase();
+                        const server = metrics?.coverClicks?.[s]?.count || 0;
+                        if (server > 0) return server;
+                        const local = (stats?.coverClicks || []).find(ss => (ss.title || '').toLowerCase() === (tt.title || '').toLowerCase())?.count || 0;
+                        return local;
+                      }));
                       return (
                         <div key={slug || idx} className="flex items-center gap-4">
                           <div className="flex-1">
                             <div className="flex justify-between items-center mb-1">
                               <span className="text-white font-medium">{t.title}</span>
-                              <span className="text-pink-400 font-bold">{count} clicks</span>
+                              <span className="text-cyan-400 font-bold">{count} clicks</span>
                             </div>
                             <div className="bg-gray-700 rounded-full h-2 overflow-hidden">
-                              <div className={`h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500`} style={{ width: getBarWidth(count, max) }} />
+                              <div className={`h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500`} style={{ width: `${Math.max((count / max) * 100, 5)}%` }} />
                             </div>
                           </div>
                         </div>
@@ -418,7 +457,37 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                     })}
                   </div>
                 )}
+
+                    {/* Cards */}
+                    <button className="w-full text-left px-6 py-4 flex items-center justify-between hover:bg-cyan-500/10" onClick={() => setCardsOpen(!cardsOpen)}>
+                      <span className="text-white font-medium">Cards</span>
+                      <span className="text-cyan-200 font-bold">
+                        {Object.values(stats.collectCardClicks || {}).reduce((s: number, d: any)=> s + (d?.count||0), 0)}
+                      </span>
+                    </button>
+                    {cardsOpen && (
+                      <div className="px-6 pb-6 space-y-3">
+                        {Object.entries(stats.collectCardClicks || {}).sort((a:any,b:any)=> (b[1]?.count||0)-(a[1]?.count||0)).map(([song, data]: any) => (
+                          <div key={song} className="flex items-center gap-4">
+                            <div className="flex-1">
+                              <div className="flex justify-between items-center mb-1">
+                                <span className="text-white font-medium">{data?.title || song}</span>
+                                <span className="text-cyan-400 font-bold">{data?.count || 0} clicks</span>
+                              </div>
+                              <div className="bg-gray-700 rounded-full h-2 overflow-hidden">
+                                <div className={`h-full bg-gradient-to-r from-teal-500 to-cyan-500 transition-all duration-500`} style={{ width: `${Math.max(((data?.count||0) / Math.max(1, ...Object.values(stats.collectCardClicks || {}).map((d:any)=> d?.count || 0))) * 100, 5)}%` }} />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
+
+              {/* Control Buttons grid removed; surfaced in MUSIC section */}
+
 
               {/* Keep click-category sections for additional context */}
 
