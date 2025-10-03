@@ -799,7 +799,21 @@ export default function Planet({
         </>
       )}
 
-      {/* Outer glow shell removed per request (no aura around planets) */}
+      {/* Hover halo: a soft additive glow only while hovering a song */}
+      {isHover && (
+        <mesh scale={1.11}>
+          <sphereGeometry args={[1, 64, 64]} />
+          <meshBasicMaterial
+            // Use ringColor (tuned for luminance) biased toward white for a clean halo
+            color={new Color(ringColor).lerp(new Color('#FFFFFF'), 0.4)}
+            transparent
+            opacity={0.12}
+            depthWrite={false}
+            blending={AdditiveBlending}
+            side={2}
+          />
+        </mesh>
+      )}
 
       {/* Core planet body with enhanced high-detail geometry and realistic shapes */}
       <mesh 

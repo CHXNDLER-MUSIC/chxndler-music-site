@@ -59,8 +59,8 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         // Pull the camera back and widen FOV so the full system fits
         // Much more horizontal viewpoint: lower camera height and pull back slightly
         // Zoom out a touch more on the homepage (showAll=true)
-        // Zoom out a bit more on homepage (showAll) so the full system fits comfortably
-        camera={{ position: [0.2, -0.2, showAll ? 100 : 20], fov: showAll ? 92 : 48 }}
+        // Zoom out a touch further on homepage (showAll)
+        camera={{ position: [0.2, -0.2, showAll ? 112 : 20], fov: showAll ? 92 : 48 }}
         gl={{ antialias: true, alpha: true }}
         frameloop="demand"
       >
@@ -92,9 +92,9 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
           {/* Show planets based on mode and visibility state */}
           {(() => {
             console.log("🌍 PlanetSystem rendering decision:", { planetsVisible, showAll, songsCount: songs.length });
-            // On homepage (showAll), force planets visible regardless of planetsVisible state
-            if (!showAll && !planetsVisible) {
-              console.log("🌍 PlanetSystem: Not rendering planets - planetsVisible is false and not homepage");
+            // Respect planetsVisible everywhere, including homepage (Start toggles this on)
+            if (!planetsVisible) {
+              console.log("🌍 PlanetSystem: Not rendering planets - planetsVisible is false");
               return null;
             }
             if (showAll) {
@@ -128,8 +128,7 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         </SystemGroup>
         </group>
 
-        {/* Subtle vertical projection sweep across the HUD area */}
-        <ProjectionSweep />
+        {/* Projection sweep removed to avoid left-to-right light flashes */}
 
         {/* Bloom skipped (package not installed). Using stronger glow shells instead. */}
 
@@ -184,40 +183,7 @@ function SystemGroup({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ProjectionSweep() {
-  // A tall, faint vertical stripe that sweeps left-to-right in front of the system
-  const matRef = React.useRef<any>(null);
-  useFrame((_, dt) => {
-    if (!matRef.current) return;
-    matRef.current.uniforms.uTime.value += dt;
-  });
-  const uniforms = React.useMemo(() => ({ uTime: { value: 0 } }), []);
-  const vs = `
-    varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
-  `;
-  const fs = `
-    uniform float uTime; varying vec2 vUv;
-    // narrow gaussian band moving along x
-    float gaussian(float x, float m, float s){ float d = (x - m)/s; return exp(-0.5*d*d); }
-    void main(){
-      // center stripe position cycles slowly
-      float pos = fract(uTime * 0.08);
-      // map uv.x from 0..1; widen domain by repeating 2x for soft entry/exit
-      float x = vUv.x;
-      float band = gaussian(x, pos, 0.06) * 0.9 + gaussian(x, pos*0.7, 0.02) * 0.5;
-      float alpha = band * 0.16; // fainter
-      vec3 col = vec3(0.65, 1.0, 1.0) * band; // cyan-white
-      gl_FragColor = vec4(col, alpha);
-    }
-  `;
-  return (
-    <mesh position={[0, 0.1, 0.2]}>
-      <planeGeometry args={[9, 6, 1, 1]} />
-      {/* @ts-ignore */}
-      <shaderMaterial ref={matRef} uniforms={uniforms} vertexShader={vs} fragmentShader={fs} transparent blending={AdditiveBlending} depthWrite={false} />
-    </mesh>
-  );
-}
+// Projection sweep component removed
 
 function ZoomOnChange({ focusId }: { focusId: string | null }) {
   // Subtle camera dolly + FOV ease when focus song changes
@@ -225,7 +191,7 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
   // Use different base values based on showAll mode - access via props context
   const isShowAll = focusId === null;
   // Match Canvas camera defaults; give more room in showAll to see every planet
-  const base = React.useRef({ z: isShowAll ? 100 : 35, fov: isShowAll ? 92 : 65 });
+  const base = React.useRef({ z: isShowAll ? 112 : 35, fov: isShowAll ? 92 : 65 });
   const anim = React.useRef<{ t: number; d: number; active: boolean }>({ t: 0, d: 0.8, active: false });
 
   React.useEffect(() => {

@@ -23,9 +23,10 @@ export async function GET(_req: NextRequest) {
   if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
     return j(500, { error: 'Supabase environment variables not set' });
   }
+  // Read from analytics schema to match where events are stored
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
     auth: { persistSession: false },
-    db: { schema: 'public' },
+    db: { schema: 'analytics' },
   });
 
   const countHead = async (builder: any) => {
@@ -36,7 +37,6 @@ export async function GET(_req: NextRequest) {
 
   try {
     const [
-      pageViews,
       startClicks,
       commsClicks,
       ig,
@@ -44,10 +44,10 @@ export async function GET(_req: NextRequest) {
       yt,
       sp,
       am,
-      joinPinkClicks,
+      joinPinkByLabel,
+      joinExplicit,
       joinSubmitClicks,
     ] = await Promise.all([
-      countHead(supabase.from('events').eq('event_type', 'page_view')),
       countHead(supabase.from('events').eq('event_type', 'start_button_clicked')),
       countHead(supabase.from('events').eq('event_type', 'click').contains('payload', { element_label: '📡 Comms Hub' })),
       countHead(supabase.from('events').eq('event_type', 'click').contains('payload', { element_label: '📱 Instagram' })),
@@ -56,15 +56,30 @@ export async function GET(_req: NextRequest) {
       countHead(supabase.from('events').eq('event_type', 'click').contains('payload', { element_label: '🎵 Spotify' })),
       countHead(supabase.from('events').eq('event_type', 'click').contains('payload', { element_label: '🎵 Apple Music' })),
       countHead(supabase.from('events').eq('event_type', 'click').contains('payload', { element_label: '🚀 Join Aliens' })),
+      countHead(supabase.from('events').eq('event_type', 'join_aliens_click')),
       countHead(supabase.from('events').eq('event_type', 'join_aliens_submit')),
     ]);
+
+    // Unique page views: distinct session_id that recorded a page_view on the opening page
+    // Opening page is '/' (or '/?...'). Limit to 100k rows to avoid heavy transfers.
+    const pvRes = await supabase
+      .from('events')
+      .select('session_id, page')
+      .eq('event_type', 'page_view')
+      .or('page.eq./,page.like./?%');
+    if (pvRes.error && !pvRes.error.message?.includes('schema cache')) throw pvRes.error;
+    const pvSet = new Set<string>();
+    (pvRes.data || []).forEach((row: any) => {
+      if (row?.session_id) pvSet.add(String(row.session_id));
+    });
+    const pageViews = pvSet.size;
 
     // Aggregate song plays (music_started) and cover art clicks
     const playsRes = await supabase
       .from('events')
-      .select('song_slug, payload')
-      .eq('event_type', 'music_started')
-      .limit(10000);
+      .select('song_slug, payload, event_type')
+      .in('event_type', ['music_started', 'song_selected'])
+      .limit(20000);
     if (playsRes.error && !playsRes.error.message?.includes('schema cache')) throw playsRes.error;
 
     const coverRes = await supabase
@@ -99,7 +114,7 @@ export async function GET(_req: NextRequest) {
       startClicks,
       commsClicks,
       socials: { instagram: ig, tiktok: tt, youtube: yt, spotify: sp, apple: am },
-      joinPinkClicks,
+      joinPinkClicks: joinPinkByLabel + joinExplicit,
       joinSubmitClicks,
       songPlays,
       coverClicks,
@@ -109,4 +124,3 @@ export async function GET(_req: NextRequest) {
     return j(500, { error: e?.message || 'Failed to load metrics' });
   }
 }
-

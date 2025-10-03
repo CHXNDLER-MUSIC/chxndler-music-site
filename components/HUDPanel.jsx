@@ -622,11 +622,13 @@ export default function HUDPanel({
                     inline={true} 
                     size={110}
                     onCardOpen={() => {
-                      // Track cover art click when card actually opens
+                      // Track cover art click when card actually opens (normalized fields)
                       trackAnalytics("cover_art_clicked", {
-                        song_id: trackingSong,
-                        song_title: trackingTitle,
-                        cover_src: src
+                        song_slug: trackingSong,
+                        payload: {
+                          song_title: trackingTitle,
+                          cover_src: src,
+                        },
                       });
                     }}
                   />

@@ -67,8 +67,8 @@
   --beam-gap-px: 350px; /* Reduced to move blue display up slightly */
   /* Fine-tune the vertical alignment of the light beam base PNG */
   /* Negative moves the PNG up; positive moves it down */
-  /* Reverse direction: move the light beam base PNG higher in viewport */
-  --beam-base-nudge: 192px;
+  /* Move the lightbeam base up very slightly */
+  --beam-base-nudge: -442px;
   --display-touch-top: calc(var(--buttons-bottom, 36%) + var(--beam-gap-px));
   --display-touch-bottom: var(--beam-bottom);
   

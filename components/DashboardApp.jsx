@@ -709,14 +709,25 @@ export default function DashboardApp({ initialSlug } = {}) {
       try {
         const root = document.documentElement;
         const cs = getComputedStyle(root);
+        const nudgePx = parseFloat(cs.getPropertyValue('--beam-base-nudge')) || 0; // px
+
+        // Prefer exact DOM measurement of the power button top edge
+        const powerEl = document.querySelector('.power-btn');
+        if (powerEl) {
+          const rect = powerEl.getBoundingClientRect();
+          const topY = Math.round(rect.top + nudgePx);
+          setBeamBaseBgPos(`center ${topY}px`);
+          return;
+        }
+
+        // Fallback to variable-based calculation if the element isn't present yet
         const buttonsBottomStr = cs.getPropertyValue('--buttons-bottom').trim();
         const buttonsBottom = parseFloat(buttonsBottomStr || '31') || 31; // percent
-        const nudgePx = parseFloat(cs.getPropertyValue('--beam-base-nudge')) || 0; // px
+        const powerSizeStr = cs.getPropertyValue('--power-size-px').trim();
+        const powerSizePx = parseFloat(powerSizeStr || '72') || 72;
         const vh = window.innerHeight || 0;
-        // Align the PNG vertically with the blue button baseline (same position as power button wrapper)
-        // Power wrapper sits at bottom: <percent> with a translateY(8px) push down
-        const fromTopForBg = Math.max(0, Math.round((vh - (vh * (buttonsBottom / 100))) + 8 + nudgePx));
-        // Use top-origin background position for consistency
+        // Align to TOP of the power button: baseline (from top) - full button height + translateY(8px) + nudge
+        const fromTopForBg = Math.round((vh - (vh * (buttonsBottom / 100))) - powerSizePx + 8 + nudgePx);
         setBeamBaseBgPos(`center ${fromTopForBg}px`);
       } catch {
         // Fallback stays null; CSS default will be used
@@ -742,11 +753,11 @@ export default function DashboardApp({ initialSlug } = {}) {
           className="fixed inset-0 z-20 pointer-events-none cockpit-bg"
           aria-hidden="true" 
         />
-        {/* Hide light beam base until client vars are ready to avoid jump */}
+        {/* Show light beam base on initial page too */}
         <div 
           className="fixed inset-0 z-[100] pointer-events-none lightbeam-base-bg"
           aria-hidden="true" 
-          style={{ opacity: 0 }}
+          style={{ opacity: 1 }}
         />
       </main>
     );
@@ -908,6 +919,8 @@ export default function DashboardApp({ initialSlug } = {}) {
             setPendingHomePower(false);
             // Now that space.mp4 is playing
             setHomeMode(true);
+            // Make sure all planets are visible on the homepage after Start
+            try { playerStore.getState().setPlanetsVisible(true); } catch {}
             // Clear any selected planet for home mode
             try { playerStore.setState({ mainId: null }); } catch {}
             // Do not enable welcome VO on home
@@ -1032,11 +1045,10 @@ export default function DashboardApp({ initialSlug } = {}) {
         className="fixed inset-0 z-[100] pointer-events-none lightbeam-base-bg"
         aria-hidden="true" 
         style={{
-          // Keep the light beam base PNG visible on the opening page and during warp
-          // Only show after we've computed the correct background position to prevent initial jump
-          opacity: (landingMode || (uiUnlocked && showOverlayUI)) && !!beamBaseBgPos ? 1 : 0,
+          // Always keep the light beam base PNG visible, including on first page
+          opacity: 1,
           transition: 'opacity 400ms ease-in-out',
-          // Dynamically anchor PNG under the blue button
+          // Dynamically anchor PNG under the blue button when available; otherwise fallback to CSS
           backgroundPosition: beamBaseBgPos || undefined
         }}
       />

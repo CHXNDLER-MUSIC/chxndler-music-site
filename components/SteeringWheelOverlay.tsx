@@ -40,6 +40,7 @@ export default function SteeringWheelOverlay({
   const [activeBeamColor, setActiveBeamColor] = useState<'blue' | 'yellow' | 'pink'>('blue');
   const [mounted, setMounted] = useState(false);
   const [startSpotlight, setStartSpotlight] = useState(false);
+  const startTrackedRef = useRef(false);
   // When transitioning from pink → yellow, temporarily suspend yellow panel until sequencing finishes
   const [suspendYellowPanel, setSuspendYellowPanel] = useState(false);
   const yellowFromPinkTimeoutA = useRef<number | null>(null);
@@ -96,10 +97,11 @@ export default function SteeringWheelOverlay({
 
   function handleLaunch() {
     const willPause = !!playing;
-    // Track explicit Start button clicks (not generic play/pause)
+    // Track Start press once per mount (counts the central button as Start even if styled as Play)
     try {
-      if (isStart) {
+      if (!startTrackedRef.current) {
         track('start_button_clicked');
+        startTrackedRef.current = true;
       }
     } catch {}
     // Trigger toggle action first so downstream can open streaming links within a user gesture
@@ -139,6 +141,8 @@ export default function SteeringWheelOverlay({
       setShowJoin(true);
       setActiveBeamColor('pink');
       onBeamColorChange?.('pink');
+      // Explicit analytics event for Join Aliens button (avoid relying on global click label)
+      try { track('join_aliens_click'); } catch {}
     }
   }, [showJoin, onBeamColorChange, showUI]);
 

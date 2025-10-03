@@ -1,5 +1,6 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { track } from "@/lib/analytics";
 import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sfx";
 
@@ -120,11 +121,31 @@ export default function HoloHubMenu({
   }, [open, onToggle]);
 
   const runItem = useCallback((it: HubItem) => {
+    // Explicitly track social/music platform clicks with a canonical label
+    try {
+      const labelMap: Record<string, string> = {
+        ig: '📱 Instagram',
+        tt: '📱 TikTok',
+        yt: '📱 YouTube',
+        sp: '🎵 Spotify',
+        am: '🎵 Apple Music',
+      };
+      const element_label = labelMap[(it.id || '').toLowerCase()] || it.label || '📡 Comms Hub';
+      track('click', {
+        payload: {
+          element_tag: 'button',
+          element_class: 'item',
+          element_text: it.label,
+          element_label,
+        }
+      });
+    } catch {}
+    // Then perform the actual action
     try { if (typeof it.onClick === "function") it.onClick(); else if (it.href) window.open(it.href, "_blank", "noopener,noreferrer"); } catch {}
-    setOpen(false);
-    onToggle?.(false);
-    // Return focus to hub after action
-    setTimeout(() => hubRef.current?.focus(), 0);
+    // Keep the yellow panel open after clicking social links.
+    // Do not call setOpen(false) here so the display stays visible.
+    // Also avoid notifying onToggle to prevent unintended beam/color changes.
+    // Optionally, we could return focus to the clicked button, but leaving focus as-is is fine.
   }, [onToggle]);
 
   // Compute positions; when closed, items sit on hub (0,0)
@@ -254,6 +275,7 @@ export default function HoloHubMenu({
               type="button"
               className="item"
               role="menuitem"
+              data-no-track
               tabIndex={open ? 0 : -1}
               data-id={it.id}
               style={{
@@ -326,6 +348,7 @@ export default function HoloHubMenu({
                     type="button"
                     className="item"
                     role="menuitem"
+                    data-no-track
                     tabIndex={open ? 0 : -1}
                     data-id={it.id}
                     style={{

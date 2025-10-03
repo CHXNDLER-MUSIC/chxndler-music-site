@@ -154,8 +154,11 @@ function identifyElement(element: HTMLElement): string {
 export function useClickTracking() {
   useEffect(() => {
     function handleClick(event: MouseEvent) {
-      const target = event.target as HTMLElement;
-      if (!target || !target.tagName || typeof target.tagName !== 'string') return;
+      const raw = event.target as HTMLElement;
+      if (!raw || !raw.tagName || typeof raw.tagName !== 'string') return;
+
+      // Prefer the closest interactive/labelled ancestor for accurate identification
+      const target = (raw.closest && raw.closest('button, a, [role="button"], [aria-label], [data-id], [data-song], [data-slug]')) as HTMLElement || raw;
 
       // Skip tracking for certain elements if needed
       if (target.closest('[data-no-track]')) return;

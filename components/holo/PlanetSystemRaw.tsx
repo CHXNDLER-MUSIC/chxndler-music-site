@@ -1776,28 +1776,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
 
     // (Rings will be created once layout is known)
 
-    // Add a subtle projection sweep/scan shader in front of the system for holo polish
-    try {
-      const uniforms = { uTime: { value: 0 } };
-      sweepUniforms.current = uniforms;
-      const vs = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`;
-      const fs = `
-        uniform float uTime; varying vec2 vUv;
-        float gauss(float x, float m, float s){ float d=(x-m)/s; return exp(-0.5*d*d); }
-        void main(){
-          float pos = fract(uTime * 0.08);
-          float band = gauss(vUv.x, pos, 0.06) * 0.9 + gauss(vUv.x, pos*0.7, 0.02) * 0.5;
-          float scan = 0.08 * sin((vUv.y + uTime * 2.5) * 120.0);
-          float a = clamp(band * 0.16 + scan * 0.08, 0.0, 1.0);
-          vec3 col = vec3(0.65, 1.0, 1.0) * a;
-          gl_FragColor = vec4(col, a);
-        }
-      `;
-      const mat = new THREE.ShaderMaterial({ uniforms, vertexShader: vs, fragmentShader: fs, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
-      const plane = new THREE.Mesh(new THREE.PlaneGeometry(16, 10), mat);
-      plane.position.set(0, 0.35, 0.2);
-      scene.add(plane);
-    } catch {}
+    // Projection sweep removed to avoid left-to-right flashes above planets
 
     // Initial simple satellites until songs load with weather systems
     const defaultPlanet1 = { 
@@ -1972,31 +1951,29 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
           finalVisible: planetsVisible && !shouldHide 
         });
         
-        // Hide non-focused planets completely, and hide all planets if planetsVisible is false
-        // DIRECT FIX: Force visible on homepage regardless of planetsVisible state
-        const forceVisibleOnHomepage = showAll; // Homepage should always show planets
-        s.mesh.visible = (planetsVisible || forceVisibleOnHomepage) && !shouldHide;
+        // Hide non-focused planets when a song is selected
+        // Respect planetsVisible everywhere (homepage toggled by Start button)
+        s.mesh.visible = (planetsVisible) && !shouldHide;
         
         console.log(`🌍 Planet ${s.id} FINAL visibility decision:`, {
           planetsVisible,
-          forceVisibleOnHomepage,
           shouldHide,
-          finalVisible: (planetsVisible || forceVisibleOnHomepage) && !shouldHide
+          finalVisible: (planetsVisible) && !shouldHide
         });
         
         // Hide atmosphere, rings, and other elements along with the main planet
         if (s.atmosphereMesh) {
-          s.atmosphereMesh.visible = (planetsVisible || forceVisibleOnHomepage) && !shouldHide;
+          s.atmosphereMesh.visible = (planetsVisible) && !shouldHide;
         }
         
         if (s.ringMesh) {
-          s.ringMesh.visible = (planetsVisible || forceVisibleOnHomepage) && !shouldHide;
+          s.ringMesh.visible = (planetsVisible) && !shouldHide;
         }
         
         // Hide all child elements (moons, clouds, storms, etc.)
         if (s.mesh.children && s.mesh.children.length > 0) {
           s.mesh.children.forEach(child => {
-            child.visible = (planetsVisible || forceVisibleOnHomepage) && !shouldHide;
+            child.visible = (planetsVisible) && !shouldHide;
           });
         }
         
@@ -2292,16 +2269,8 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
       songsCount: songs.length 
     });
     
-    // IMMEDIATE FIX: Force planets visible on homepage for now
-    console.log("🌍 CHECKING CONDITIONS:", { showAll, planetsVisible, condition: showAll && !planetsVisible });
-    if (showAll && !planetsVisible) {
-      console.log("🌍 IMMEDIATE FIX: Forcing planets visible on homepage");
-      playerStore.getState().setPlanetsVisible(true);
-    } else if (showAll) {
-      console.log("🌍 On homepage but planetsVisible is already true:", planetsVisible);
-    } else {
-      console.log("🌍 Not on homepage, showAll:", showAll);
-    }
+    // Do not force-enable planets on homepage; Start button toggles visibility
+    console.log("🌍 PlanetSystemRaw visibility gate:", { showAll, planetsVisible });
     // Clear existing satellites
     for (const s of satsRef.current) {
       try { sys.remove(s.mesh); (s.mesh.geometry as any)?.dispose?.(); (s.mesh.material as any)?.dispose?.(); } catch {}

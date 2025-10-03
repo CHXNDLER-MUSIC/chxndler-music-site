@@ -166,7 +166,12 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
     if (e.key === "Enter") {
       e.preventDefault();
       const id = items[highlight]?.id;
-      if (id) { setActiveId(id); onChange?.(id); }
+      if (id) { 
+        setActiveId(id); 
+        // Ensure planets toggle off when a song is selected via keyboard
+        try { playerStore.getState().setPlanetsVisible(false); } catch {}
+        onChange?.(id); 
+      }
       setOpen(false);
       // Playback will start after warp SFX delay via MediaPlayer
       try { playerStore.getState().setHover(null); } catch {}
@@ -256,18 +261,23 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                   try { sfx.play('warp', 0.9); } catch {}
                   try { const c = clickRef.current; if (c) { c.currentTime = 0; c.volume = 0.9; c.play().catch(()=>{}); } } catch {}
                   
-                  // Track song selection
+                  // Track song selection (normalized: include slug + details)
                   track("song_selected", {
-                    song_id: s.id,
-                    song_title: s.title,
-                    song_icon: s.icon || 'none'
+                    song_slug: (s.slug || s.id || '').toLowerCase?.() || (s.id || ''),
+                    payload: {
+                      song_title: s.title,
+                      song_icon: s.icon || 'none',
+                    }
                   });
                   trackSecure("song_selected", {
-                    song_id: s.id,
+                    song_slug: (s.slug || s.id || '').toLowerCase?.() || (s.id || ''),
                     song_title: s.title,
                     song_icon: s.icon || 'none'
                   });
                   
+                  // Hide all planets immediately when a song is selected from the dropdown
+                  try { playerStore.getState().setPlanetsVisible(false); } catch {}
+
                   setActiveId(s.id); 
                   if (onChange) {
                     onChange(s.id);

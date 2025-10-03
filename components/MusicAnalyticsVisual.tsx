@@ -40,6 +40,13 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [songsOpen, setSongsOpen] = useState(false);
   const [coversOpen, setCoversOpen] = useState(false);
+  const [igOpen, setIgOpen] = useState(false);
+  const [ttOpen, setTtOpen] = useState(false);
+  const [ytOpen, setYtOpen] = useState(false);
+  const [spOpen, setSpOpen] = useState(false);
+  const [amOpen, setAmOpen] = useState(false);
+  const [socialOpen, setSocialOpen] = useState(true);
+  const [joinOpen, setJoinOpen] = useState(true);
 
   const loadMusicAnalytics = () => {
     const clicks = getClickAnalyticsLocal();
@@ -239,7 +246,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
           </div>
         </div>
 
-        <div className="overflow-y-auto max-h-[calc(90vh-100px)]">
+        <div className="overflow-y-auto max-h-[calc(90vh-100px)] pb-24">
           {(!stats || stats.totalMusicInteractions === 0) && !metrics ? (
             <div className="p-8 text-center text-gray-400">
               <div className="text-6xl mb-4">🎵</div>
@@ -249,7 +256,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
           ) : (
             <div className="p-6 space-y-8">
               {/* Headline site metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 p-4 rounded-xl border border-cyan-500/20">
                   <div className="text-3xl font-bold text-cyan-400">{metrics?.pageViews ?? 0}</div>
                   <div className="text-sm text-cyan-300/70">Page Views</div>
@@ -259,62 +266,72 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                   <div className="text-sm text-purple-300/70">Start Button Clicks</div>
                 </div>
                 <div className="bg-gradient-to-br from-yellow-500/20 to-amber-500/20 p-4 rounded-xl border border-yellow-500/20">
-                  <div className="text-3xl font-bold text-yellow-300">{metrics?.commsClicks ?? (stats?.controlButtons.find(b=>b.button==='Comms')?.count || 0)}</div>
-                  <div className="text-sm text-yellow-100/80">Yellow Comms Clicks</div>
+                  <div className="text-3xl font-bold text-yellow-300">{
+                    (metrics?.socials?.instagram || 0) +
+                    (metrics?.socials?.tiktok || 0) +
+                    (metrics?.socials?.youtube || 0) +
+                    (metrics?.socials?.spotify || 0) +
+                    (metrics?.socials?.apple || 0)
+                  }</div>
+                  <div className="text-sm text-yellow-100/80">Social Media Total</div>
                 </div>
               </div>
 
-              {/* Social breakdown */}
-              <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50">
-                <h3 className="text-lg font-bold text-white mb-4">Social Platform Clicks</h3>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-white">
-                  {[
-                    { name: 'Instagram', value: metrics?.socials?.instagram ?? (stats?.socialButtons.find(b=>b.button==='Instagram')?.count || 0) },
-                    { name: 'TikTok', value: metrics?.socials?.tiktok ?? (stats?.socialButtons.find(b=>b.button==='TikTok')?.count || 0) },
-                    { name: 'YouTube', value: metrics?.socials?.youtube ?? (stats?.socialButtons.find(b=>b.button==='YouTube')?.count || 0) },
-                    { name: 'Spotify', value: metrics?.socials?.spotify ?? (stats?.musicButtons.find(b=>b.button==='Spotify')?.count || 0) },
-                    { name: 'Apple Music', value: metrics?.socials?.apple ?? (stats?.musicButtons.find(b=>b.button==='Apple Music')?.count || 0) },
-                  ].map((it) => (
-                    <div key={it.name} className="flex justify-between items-center">
-                      <span className="font-medium">{it.name}</span>
-                      <span className="text-cyan-300 font-bold">{it.value}</span>
+              {/* Social Media clicks (collapsible) */}
+              <div className="rounded-xl border border-yellow-400/30 bg-yellow-500/10">
+                <button className="w-full text-left p-6 border-b border-yellow-400/20 flex items-center justify-between" onClick={() => setSocialOpen(!socialOpen)}>
+                  <h3 className="text-lg font-bold text-yellow-200">SOCIAL MEDIA CLICKS</h3>
+                  <div className="text-sm text-yellow-100/80 mt-1">
+                    Total: {(metrics?.socials?.instagram||0)+(metrics?.socials?.tiktok||0)+(metrics?.socials?.youtube||0)+(metrics?.socials?.spotify||0)+(metrics?.socials?.apple||0)}
+                  </div>
+                </button>
+                {socialOpen && (
+                  <div className="divide-y divide-yellow-400/10">
+                    {([
+                      { key: 'Instagram', value: metrics?.socials?.instagram ?? (stats?.socialButtons.find(b=>b.button==='Instagram')?.count || 0), open: igOpen, setOpen: setIgOpen },
+                      { key: 'YouTube', value: metrics?.socials?.youtube ?? (stats?.socialButtons.find(b=>b.button==='YouTube')?.count || 0), open: ytOpen, setOpen: setYtOpen },
+                      { key: 'Apple Music', value: metrics?.socials?.apple ?? (stats?.musicButtons.find(b=>b.button==='Apple Music')?.count || 0), open: amOpen, setOpen: setAmOpen },
+                      { key: 'Spotify', value: metrics?.socials?.spotify ?? (stats?.musicButtons.find(b=>b.button==='Spotify')?.count || 0), open: spOpen, setOpen: setSpOpen },
+                      { key: 'TikTok', value: metrics?.socials?.tiktok ?? (stats?.socialButtons.find(b=>b.button==='TikTok')?.count || 0), open: ttOpen, setOpen: setTtOpen },
+                    ] as Array<{key:string;value:number;open:boolean;setOpen:(v:boolean)=>void}>).map((it) => (
+                      <div key={it.key}>
+                        <button className="w-full text-left px-6 py-4 flex items-center justify-between hover:bg-yellow-500/10" onClick={() => it.setOpen(!it.open)}>
+                          <span className="text-white font-medium">{it.key}</span>
+                          <span className="text-yellow-200 font-bold">{it.value}</span>
+                        </button>
+                        {it.open && (
+                          <div className="px-6 pb-4 text-sm text-yellow-100/80">
+                            {it.value} clicks
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Pink: Join Aliens section (collapsible) */}
+              <div className="rounded-xl border border-pink-400/30 bg-pink-500/10">
+                <button className="w-full text-left p-6 border-b border-pink-400/20 flex items-center justify-between" onClick={() => setJoinOpen(!joinOpen)}>
+                  <h3 className="text-lg font-bold text-pink-200">JOIN ALIENS</h3>
+                  <div className="text-sm text-pink-100/80 mt-1">Total: {metrics?.joinPinkClicks ?? (stats?.controlButtons.find(b=>b.button==='Join Aliens')?.count || 0)}</div>
+                </button>
+                {joinOpen && (
+                  <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-pink-500/20 p-4 rounded-xl border border-pink-400/30">
+                      <div className="text-3xl font-bold text-pink-300">{metrics?.joinPinkClicks ?? (stats?.controlButtons.find(b=>b.button==='Join Aliens')?.count || 0)}</div>
+                      <div className="text-sm text-pink-200/90">Total Clicks</div>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Pink join analytics */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-pink-500/20 p-4 rounded-xl border border-pink-400/30">
-                  <div className="text-3xl font-bold text-pink-300">{metrics?.joinPinkClicks ?? (stats?.controlButtons.find(b=>b.button==='Join Aliens')?.count || 0)}</div>
-                  <div className="text-sm text-pink-200/90">Pink Join Aliens Clicks</div>
-                </div>
-                <div className="bg-emerald-500/20 p-4 rounded-xl border border-emerald-400/30">
-                  <div className="text-3xl font-bold text-emerald-300">{metrics?.joinSubmitClicks ?? 0}</div>
-                  <div className="text-sm text-emerald-200/90">Join The Aliens Submits</div>
-                </div>
+                    <div className="bg-emerald-500/20 p-4 rounded-xl border border-emerald-400/30">
+                      <div className="text-3xl font-bold text-emerald-300">{metrics?.joinSubmitClicks ?? 0}</div>
+                      <div className="text-sm text-emerald-200/90">JOIN THE ALIENS Submits</div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Button Categories */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Social Media Buttons */}
-                {stats.socialButtons.length > 0 && (
-                  <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50">
-                    <h3 className="text-lg font-bold text-white mb-4 flex items-center">
-                      <span className="text-2xl mr-2">📱</span>
-                      Social Media
-                    </h3>
-                    <div className="space-y-3">
-                      {stats.socialButtons.map((button) => (
-                        <div key={button.button} className="flex justify-between items-center">
-                          <span className="text-white font-medium">{button.button}</span>
-                          <span className="text-pink-400 font-bold">{button.count} clicks</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 {/* Control Buttons */}
                 {stats.controlButtons.length > 0 && (
                   <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50">
@@ -332,30 +349,17 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                     </div>
                   </div>
                 )}
-
-                {/* Music Platform Buttons */}
-                {stats.musicButtons.length > 0 && (
-                  <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50">
-                    <h3 className="text-lg font-bold text-white mb-4 flex items-center">
-                      <span className="text-2xl mr-2">🎵</span>
-                      Music Platforms
-                    </h3>
-                    <div className="space-y-3">
-                      {stats.musicButtons.map((button) => (
-                        <div key={button.button} className="flex justify-between items-center">
-                          <span className="text-white font-medium">{button.button}</span>
-                          <span className="text-green-400 font-bold">{button.count} clicks</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {/* Platforms section removed per new Comms/Pink layout */}
               </div>
 
-              {/* Songs (plays) - collapsible list with all songs */}
+              {/* Songs (plays) - collapsible list with all songs and total */}
               <div className="bg-gray-800/50 rounded-xl border border-gray-700/50">
                 <button className="w-full text-left p-6 flex items-center justify-between" onClick={() => setSongsOpen(!songsOpen)}>
-                  <span className="text-xl font-bold text-white flex items-center"><span className="text-2xl mr-2">🎧</span> Songs (plays)</span>
+                  <span className="text-xl font-bold text-white flex items-center">
+                    <span className="text-2xl mr-2">🎧</span>
+                    Songs (plays)
+                    <span className="ml-3 text-cyan-300 text-base font-semibold">Total: {Object.values(metrics?.songPlays || {}).reduce((s: number, v: any)=> s + (v?.count||0), 0)}</span>
+                  </span>
                   <span className="text-cyan-300">{songsOpen ? 'Hide' : 'Show'}</span>
                 </button>
                 {songsOpen && (
@@ -382,10 +386,14 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                 )}
               </div>
 
-              {/* Cover Art - collapsible list with all songs */}
+              {/* Cover Art - collapsible list with all songs and total */}
               <div className="bg-gray-800/50 rounded-xl border border-gray-700/50">
                 <button className="w-full text-left p-6 flex items-center justify-between" onClick={() => setCoversOpen(!coversOpen)}>
-                  <span className="text-xl font-bold text-white flex items-center"><span className="text-2xl mr-2">🖼️</span> Cover Art</span>
+                  <span className="text-xl font-bold text-white flex items-center">
+                    <span className="text-2xl mr-2">🖼️</span>
+                    Cover Art
+                    <span className="ml-3 text-pink-300 text-base font-semibold">Total: {Object.values(metrics?.coverClicks || {}).reduce((s: number, v: any)=> s + (v?.count||0), 0)}</span>
+                  </span>
                   <span className="text-cyan-300">{coversOpen ? 'Hide' : 'Show'}</span>
                 </button>
                 {coversOpen && (

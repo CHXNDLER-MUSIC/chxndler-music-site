@@ -61,9 +61,10 @@ export async function POST(req: NextRequest) {
     const ua = body.user_agent || req.headers.get('user-agent') || 'unknown';
 
     // Supabase admin client, using public schema
+    // Use the analytics schema to align with SUPABASE_SETUP.sql
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
       auth: { persistSession: false },
-      db: { schema: 'public' },
+      db: { schema: 'analytics' },
     });
 
     // OPTIONAL: touch_session RPC; ignore failures so tracking never 500s
@@ -80,18 +81,17 @@ export async function POST(req: NextRequest) {
       // Suppress schema cache errors to reduce log noise
     }
 
-    // Insert event into events table (if it exists)
+    // Insert event into analytics.events table
     try {
-      const { error } = await supabase.from('events').insert({
+      const row: any = {
         session_id: body.session_id,
         event_type: body.event_type,
         page: body.page?.slice(0, 512) ?? null,
         referrer: body.referrer?.slice(0, 512) ?? null,
         song_slug: body.song_slug?.slice(0, 128) ?? null,
         payload: body.payload ?? null,
-        user_agent: ua,
-        ip_hash,
-      });
+      };
+      const { error } = await supabase.from('events').insert(row);
 
       if (error && !error.message?.includes('schema cache')) {
         console.warn('events insert error:', error);

@@ -146,7 +146,10 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
             data-id={s.id}
             ref={setItemRef(s.id)}
             onMouseEnter={() => setHover(s.id)}
-            onMouseLeave={() => setHover(null)}
+            // Keep the last hovered planet highlighted; do not clear on leave
+            // This makes the hover effect more consistent as users move the mouse
+            // between items in the list without flicker
+            onMouseLeave={() => { /* keep hover until a new item is hovered */ }}
             onFocus={() => setHover(s.id)}
             onBlur={() => setHover(null)}
             onClick={(e) => {

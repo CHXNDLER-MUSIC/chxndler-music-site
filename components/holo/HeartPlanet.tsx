@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useRef, useMemo } from "react";
-import { Mesh, ShaderMaterial, Color, DoubleSide, Euler, SphereGeometry, AdditiveBlending } from "three";
+import { Mesh, ShaderMaterial, Color, AdditiveBlending, BackSide } from "three";
 import { useFrame } from "@react-three/fiber";
+import { createHeartGeometry } from "@/lib/heartGeometry";
 
 export default function HeartPlanet() {
   const meshRef = useRef<Mesh>(null);
@@ -15,11 +16,12 @@ export default function HeartPlanet() {
   // console.log("🧡 HeartPlanet is rendering! Position: [0,0,0], Radius:", heartRadius);
   // console.log("🧡 Using spherical geometry with heart displacement and enhanced glow layers");
 
-  // Create spherical geometry with heart-shaped surface displacement in shader
+  // Create a true heart-shaped geometry so the silhouette stays a heart
   const heartGeometry = useMemo(() => {
-    // Use a sphere as the base geometry for guaranteed roundness
-    const geometry = new SphereGeometry(heartRadius, 64, 32);
-    return geometry;
+    return createHeartGeometry(heartRadius * 2.4, 64, {
+      heartness: 1.25,
+      thicknessMultiplier: 1.15,
+    });
   }, [heartRadius]);
 
   // Bright emissive "sun" surface shader (procedural granulation)
@@ -28,7 +30,7 @@ export default function HeartPlanet() {
       uniforms: {
         uTime: { value: 0 },
         uColor: { value: new Color("#FC54AF") },
-        uEmissiveIntensity: { value: 2.2 },
+        uEmissiveIntensity: { value: 2.6 },
         uGranulation: { value: 3.0 }
       },
       vertexShader: `
@@ -112,7 +114,7 @@ export default function HeartPlanet() {
       uniforms: {
         uTime: { value: 0 },
         uColor: { value: new Color("#FC54AF") },
-        uStrength: { value: 1.0 }
+        uStrength: { value: 2.6 }
       },
       vertexShader: `
         varying vec3 vNormalW;
@@ -144,17 +146,19 @@ export default function HeartPlanet() {
           float pulse = sin(uTime * 2.0) * 0.8 + 1.6;
           float heartPulse = sin(uTime * 3.0) * 0.6 + 1.4;
            
-          vec3 atmosphereColor = uColor * 120.0 * fresnel * pulse * heartPulse * uStrength;
-          float alpha = fresnel * 0.9; // additive blending; alpha acts as weight
-           
+          float rim = pow(fresnel, 1.4);
+          vec3 atmosphereColor = uColor * 300.0 * rim * pulse * heartPulse * uStrength;
+          float alpha = rim; // additive blending; alpha acts as weight
+          
           gl_FragColor = vec4(atmosphereColor, alpha);
         }
       `,
       transparent: true,
       blending: AdditiveBlending,
       depthWrite: false,
-      // BackSide for a clean halo silhouette without inner-face artifacts
-      side: 1
+      depthTest: false,
+      // Use BackSide on a scaled mesh to create a halo around the silhouette
+      side: BackSide
     });
     // Keep additive layers out of tone mapping to preserve intensity
     (material as any).toneMapped = false;
@@ -167,7 +171,7 @@ export default function HeartPlanet() {
       uniforms: {
         uTime: { value: 0 },
         uColor: { value: new Color("#FF77C6") },
-        uIntensity: { value: 2.0 }
+        uIntensity: { value: 2.6 }
       },
       vertexShader: `
         varying vec3 vNormalW;
@@ -228,32 +232,32 @@ export default function HeartPlanet() {
   return (
     <group position={[0, 0, 0]} scale={[0.85, 0.85, 0.85]}>
       {/* Single core heart planet body with bright shader material */}
-      <mesh ref={meshRef} position={[0, 0, 0]} geometry={heartGeometry}>
+      <mesh ref={meshRef} position={[0, 0, 0]} geometry={heartGeometry} renderOrder={1}>
         <primitive object={planetMaterial} />
       </mesh>
 
       {/* Inner frontside glow overlay */}
-      <mesh position={[0, 0, 0]} scale={[1.02, 1.02, 1.02]}>
-        <sphereGeometry args={[heartRadius, 64, 32]} />
+      <mesh position={[0, 0, 0]} geometry={heartGeometry} scale={[1.08, 1.08, 1.08]} renderOrder={5}>
         <primitive object={innerGlowMaterial} />
       </mesh>
       
       {/* Stronger solar corona (additive, backface only) */}
-      <mesh ref={atmosphereRef} position={[0, 0, 0]} scale={[1.25, 1.25, 1.25]}>
-        <sphereGeometry args={[heartRadius, 32, 16]} />
+      <mesh ref={atmosphereRef} position={[0, 0, 0]} geometry={heartGeometry} scale={[1.85, 1.85, 1.85]} renderOrder={6}>
         <primitive object={atmosphereMaterial} />
       </mesh>
       
       {/* Outer far glow (very soft) */}
-      <mesh position={[0, 0, 0]} scale={[1.55, 1.55, 1.55]}>
+      <mesh position={[0, 0, 0]} scale={[2.6, 2.6, 2.6]} renderOrder={7}>
         <sphereGeometry args={[heartRadius, 24, 12]} />
         <meshBasicMaterial
           color="#FC54AF"
           transparent
-          opacity={0.04}
+          opacity={0.16}
           depthWrite={false}
+          depthTest={false}
           blending={AdditiveBlending}
-          side={1}
+          side={2}
+          toneMapped={false as any}
         />
       </mesh>
       
