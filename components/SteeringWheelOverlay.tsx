@@ -397,7 +397,7 @@ export default function SteeringWheelOverlay({
       >
         {(() => {
           return (
-            <div style={{ pointerEvents: 'auto' }}>
+            <div style={{ pointerEvents: showUI && !isDimmingOverlayActive && isUIUnlocked ? 'auto' : 'none' }}>
               <HoloHubMenu
                 items={[
                 LINKS.instagram ? { id: 'ig', label: 'Instagram', href: LINKS.instagram, icon: '/elements/instagram.png', color: '#E1306C' } : null,
@@ -415,7 +415,7 @@ export default function SteeringWheelOverlay({
                 anchorBottomPercent={buttonsBottomPercent}
                 anchorOffsetPx={buttonOffsetPx}
                 closeSignal={closeAllSignal}
-                suspend={suspendUI || suspendYellowPanel}
+                suspend={suspendUI || suspendYellowPanel || !isUIUnlocked}
                 onToggle={(isOpen) => {
                   if (!showUI || !isUIUnlocked) return;
                   if (isOpen) {

@@ -190,12 +190,12 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                   className="card-flip-container"
                   style={{
                     position: 'relative',
-                    cursor: 'pointer'
+                    cursor: hasRealCard ? 'pointer' : 'default'
                   }}
-                  onClick={() => { 
+                  onClick={hasRealCard ? () => { 
                     try { const a = flipCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
                     setCardFlipped(!cardFlipped); 
-                  }}
+                  } : undefined}
                 >
                   <div 
                     className="card-flip-inner"

@@ -9,17 +9,10 @@ export default function PageViewTracker() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Track page view on route changes
+    // Track page view on route changes and initial load
     console.log('PageViewTracker: tracking page view for', pathname + (searchParams.toString() ? '?' + searchParams.toString() : ''));
     trackPageView();
   }, [pathname, searchParams]);
-
-  // Also track initial page load
-  useEffect(() => {
-    // Track initial page view on mount
-    console.log('PageViewTracker: initial mount - tracking page view for', pathname + (searchParams.toString() ? '?' + searchParams.toString() : ''));
-    trackPageView();
-  }, []);
 
   return null;
 }

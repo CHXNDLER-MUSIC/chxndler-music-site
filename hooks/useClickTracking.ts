@@ -45,7 +45,8 @@ function identifyElement(element: HTMLElement): string {
   if (ariaLabel.includes('power') || title.includes('power') || className.includes('power-btn')) {
     return '⚡ Power Button';
   }
-  if (ariaLabel.includes('join alien') || text.includes('join') || className.includes('join') || title.includes('join')) {
+  // Only track the actual pink JOIN THE ALIENS button, not input fields
+  if (tagName === 'button' && (text.includes('join the aliens') || text.includes('welcome aboard') || text.includes('submitting') || text.includes('try again'))) {
     return '🚀 Join Aliens';
   }
   // Check if this is a social media button first, then fall back to general comms hub

@@ -110,6 +110,9 @@ export default function HoloHubMenu({
   }, [open]);
 
   const onHubClick = useCallback(() => {
+    // Only proceed if not suspended - parent component controls this via suspend prop
+    if (suspend) return;
+    
     // Play join-alien SFX on hub click
     try { const a = joinRef.current; if (a) { a.currentTime = 0; a.volume = 0.95; void a.play(); } } catch {}
     const newOpen = !open;
@@ -118,7 +121,7 @@ export default function HoloHubMenu({
     onToggle?.(newOpen);
     // After opening, focus first item
     if (!open) setTimeout(() => firstItemRef.current?.focus(), 0);
-  }, [open, onToggle]);
+  }, [open, onToggle, suspend]);
 
   const runItem = useCallback((it: HubItem, ev?: MouseEvent) => {
     // Explicitly track social/music platform clicks with a canonical label

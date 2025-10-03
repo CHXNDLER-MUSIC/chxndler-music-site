@@ -54,8 +54,8 @@ export async function GET(_req: NextRequest) {
       countHead(supabase.from('events').eq('event_type', 'click').contains('payload', { element_label: '📱 YouTube' })),
       countHead(supabase.from('events').eq('event_type', 'click').contains('payload', { element_label: '🎵 Spotify' })),
       countHead(supabase.from('events').eq('event_type', 'click').contains('payload', { element_label: '🎵 Apple Music' })),
-      countHead(supabase.from('events').eq('event_type', 'join_aliens_click')),
-      countHead(supabase.from('events').eq('event_type', 'join_aliens_submit')),
+      countHead(supabase.from('events').eq('event_type', 'click').contains('payload', { element_label: '🚀 Join Aliens' })),
+      countHead(supabase.from('events').eq('event_type', 'join_aliens_success')),
     ]);
 
     // Unique page views: distinct session_id that recorded a page_view on the opening page

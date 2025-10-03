@@ -7,7 +7,9 @@ import { track as gaTrack } from "@/lib/analytics";
 import { DEBUG_MEDIA, dlog, dwarn, dumpAudio } from "@/lib/debug";
 import { ELEMENT_COLORS, type Element } from "@/lib/planets";
 import { retryMediaPlay, playWithAutoplayFallback } from "@/lib/media-retry";
+import { testAudioFile, testAllAudioFiles } from "@/lib/audio-debug";
 import { MediaStateMachine, type MediaState } from "@/lib/media-state-machine";
+import { audioCoordinator } from "@/lib/audio-coordinator";
 
 type Props = {
   onSkyChange: (webm: string, mp4: string, key: string) => void;
@@ -54,6 +56,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const [animationTime, setAnimationTime] = useState(0);
   const [seeking, setSeeking] = useState(false);
   const seekingRef = useRef(false);
+  const seekPositionRef = useRef<number | null>(null); // Track visual position during seeking
   
   // Prefer the live duration from the audio element to avoid UI lag before
   // loadedmetadata updates state. Falls back to state if needed.
@@ -309,20 +312,22 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
 
   // Debug function to test audio manually (accessible from browser console)
   useEffect(() => {
-    window.testAudio = () => {
+    (window as any).testCurrentAudio = () => {
       const a = audioRef.current;
       if (!a) {
         console.error('No audio element found');
         return;
       }
-      console.log('🔍 Audio element test:', {
+      console.log('🔍 Current audio element test:', {
         src: a.src,
         paused: a.paused,
         volume: a.volume,
         muted: a.muted,
         readyState: a.readyState,
         duration: a.duration,
-        currentTime: a.currentTime
+        currentTime: a.currentTime,
+        networkState: a.networkState,
+        error: a.error
       });
       console.log('🔍 Attempting manual play...');
       a.play().then(() => {
@@ -331,7 +336,59 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         console.error('❌ Manual play failed:', err);
       });
     };
-    return () => { delete window.testAudio; };
+    
+    (window as any).testCurrentAudioFile = async () => {
+      const a = audioRef.current;
+      if (!a || !a.src) {
+        console.error('No audio element or src found');
+        return;
+      }
+      console.log('🎵 Testing current audio file:', a.src);
+      const result = await testAudioFile(a.src);
+      console.log('🎵 Test result:', result);
+    };
+    
+    (window as any).testAllAudioFiles = testAllAudioFiles;
+    
+    (window as any).debugAudioConflicts = () => {
+      console.log('🎵 ==> AUDIO CONFLICT DEBUG <==');
+      console.log('🎵 Audio Coordinator Status:', audioCoordinator.getAudioStatus());
+      
+      const main = document.querySelector('audio[data-audio-player="1"]') as HTMLAudioElement;
+      const ambient = document.querySelector('audio[data-ambient="1"]') as HTMLAudioElement;
+      const intro = document.querySelector('audio[data-intro="1"]') as HTMLAudioElement;
+      
+      console.log('🎵 Main Track:', main ? {
+        src: main.src,
+        paused: main.paused,
+        volume: main.volume,
+        currentTime: main.currentTime,
+        readyState: main.readyState
+      } : 'Not found');
+      
+      console.log('🎵 Ambient/Space Music:', ambient ? {
+        src: ambient.src,
+        paused: ambient.paused,
+        volume: ambient.volume,
+        currentTime: ambient.currentTime,
+        readyState: ambient.readyState
+      } : 'Not found');
+      
+      console.log('🎵 Intro/Welcome VO:', intro ? {
+        src: intro.src,
+        paused: intro.paused,
+        volume: intro.volume,
+        currentTime: intro.currentTime,
+        readyState: intro.readyState
+      } : 'Not found');
+    };
+    
+    return () => { 
+      delete (window as any).testCurrentAudio;
+      delete (window as any).testCurrentAudioFile;
+      delete (window as any).testAllAudioFiles;
+      delete (window as any).debugAudioConflicts;
+    };
   }, []);
 
   // External toggle signal from steering wheel: if paused, play current (or first with audio); if playing, pause
@@ -397,24 +454,39 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     }
     if (a.paused) { 
       console.log('🎵 Audio is paused, attempting to play');
-      // Use retry logic for play
       intentionalPlayRef.current = true; // Mark as intentional play
-      playWithAutoplayFallback(a, {
-        maxRetries: 2,
-        onRetry: (attempt, error) => {
-          console.log(`🎵 Toggle play retry ${attempt}`, error?.name, error?.message);
-          if (DEBUG_MEDIA) dwarn(`toggle play retry ${attempt}`, error?.name, error?.message);
-        }
-      })
+      
+      // Ensure audio is unmuted and has proper volume
+      a.muted = false;
+      a.volume = 1.0;
+      
+      // Simple play attempt first, fallback to retry logic if needed
+      a.play()
         .then(() => {
-          console.log('🎵 Play successful from toggle');
+          console.log('🎵 Toggle: Play successful');
           stateMachine.current.send({ type: 'PLAY' });
           gaTrack("play", { slug: cur.slug });
         })
         .catch((error) => {
-          console.error('🎵 Play failed from toggle', error);
-          if (DEBUG_MEDIA) dwarn('toggle play failed after retries', error);
-          stateMachine.current.send({ type: 'ERROR', payload: { error } });
+          console.log('🎵 Toggle: Simple play failed, trying with retry logic', error?.name);
+          // Fallback to retry logic only if simple play fails
+          playWithAutoplayFallback(a, {
+            maxRetries: 2,
+            onRetry: (attempt, error) => {
+              console.log(`🎵 Toggle play retry ${attempt}`, error?.name, error?.message);
+              if (DEBUG_MEDIA) dwarn(`toggle play retry ${attempt}`, error?.name, error?.message);
+            }
+          })
+            .then(() => {
+              console.log('🎵 Toggle: Retry play successful');
+              stateMachine.current.send({ type: 'PLAY' });
+              gaTrack("play", { slug: cur.slug });
+            })
+            .catch((retryError) => {
+              console.error('🔴 Toggle: All play attempts failed', retryError);
+              if (DEBUG_MEDIA) dwarn('toggle play failed after retries', retryError);
+              stateMachine.current.send({ type: 'ERROR', payload: { error: retryError } });
+            });
         });
     }
     else { 
@@ -464,15 +536,34 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       intentionalPlayRef.current = false;
       
       if (mutedOrSilent) return;
+      
       console.log('🎵 Audio play event - setting playing to true');
+      
+      // Use audio coordinator to manage audio conflicts
+      audioCoordinator.setActiveSource('main');
+      
       setPlaying(true);
     };
     const onPause = () => { 
       console.log('🎵 Audio pause event - setting playing to false');
-      if (DEBUG_MEDIA) dlog('audio event: pause for', cur?.title); 
+      if (DEBUG_MEDIA) dlog('audio event: pause for', cur?.title);
+      
+      // Clear main audio as active source when paused
+      if (audioCoordinator.getCurrentSource() === 'main') {
+        audioCoordinator.setActiveSource(null);
+      }
+      
       setPlaying(false); 
     };
-    const onEnded = () => { if (DEBUG_MEDIA) dlog('audio event: ended'); setPlaying(false); };
+    const onEnded = () => { 
+      if (DEBUG_MEDIA) dlog('audio event: ended'); 
+      setPlaying(false);
+      
+      // Clear main audio as active source when ended
+      if (audioCoordinator.getCurrentSource() === 'main') {
+        audioCoordinator.setActiveSource(null);
+      }
+    };
     const onErr = (e: any) => { if (DEBUG_MEDIA) { dwarn('audio event: error', e?.target?.error?.message || e?.target?.error?.code || 'unknown audio error'); dumpAudio(a, 'audio:error'); }};
     const onWaiting = () => { if (DEBUG_MEDIA) dlog('audio event: waiting'); };
     const onStalled = () => { if (DEBUG_MEDIA) dlog('audio event: stalled'); };
@@ -502,6 +593,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       const newTime = a.currentTime;
       setCurrentTime(newTime);
       seekingRef.current = false;
+      seekPositionRef.current = null; // clear visual override
       setSeeking(false); // re-enable smooth transitions
       if (DEBUG_MEDIA) dlog('audio event: seeked to', newTime);
     };
@@ -659,15 +751,17 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     <div className="hud-card console-hud h-full w-full relative" style={{ borderRadius: '16px' }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} aria-label="Media dock">
       <div className="flex flex-col h-full">
         <div className="flex items-start justify-between gap-3 flex-1">
-          <div className="flex-1 min-w-0 pr-2">
+          <div className="flex-1 min-w-0">
             <div className="text-left">
               <div className="text-sm md:text-base opacity-90 leading-tight truncate">{cur.title}</div>
               <div className="text-xs md:text-sm opacity-60 leading-tight line-clamp-2">{cur.subtitle}</div>
             </div>
           </div>
+          
         </div>
-        <div className="waveform-container" title={cur.title}>
-          <div 
+        <div className="waveform-wrapper">
+          <div className="waveform-container" title={cur.title}>
+            <div 
             className="waveform" 
             aria-label="Audio waveform visualization"
             onPointerDown={(e) => {
@@ -681,9 +775,17 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
                 const progress = rect.width > 0 ? (x / rect.width) : 0;
                 const newTime = progress * d;
-                seekingRef.current = true; // lock out rAF/timeupdate while scrubbing
-                setSeeking(true); // trigger UI update for instant cursor movement
-                setCurrentTime(newTime);   // immediate visual update
+                
+                // Set seeking state FIRST to disable transitions
+                setSeeking(true); 
+                seekingRef.current = true;
+                
+                // Store the visual position for immediate cursor update
+                seekPositionRef.current = newTime;
+                
+                // Also update state for consistency
+                setCurrentTime(newTime);
+                
                 const seekTime = Math.max(0, Math.min(Math.max(0, d - 0.2), newTime));
                 try { a.currentTime = seekTime; } catch {}
                 return { progress, newTime };
@@ -705,6 +807,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               };
               const onUp = () => {
                 seekingRef.current = false; // allow normal updates again; seeked will also sync
+                seekPositionRef.current = null; // clear visual override
                 setSeeking(false); // re-enable smooth transitions
                 window.removeEventListener('pointermove', onMove);
                 window.removeEventListener('pointerup', onUp);
@@ -815,9 +918,12 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                       onClick={() => {
                         const a = audioRef.current; if (!a || !liveDuration) return;
                         
-                        // Set seeking flag and immediately update cursor position
-                        seekingRef.current = true;
+                        // Set seeking state FIRST to disable transitions
                         setSeeking(true);
+                        seekingRef.current = true;
+                        
+                        // Store visual position for immediate cursor update
+                        seekPositionRef.current = s.time;
                         setCurrentTime(s.time);
                         
                         const seekTime = Math.max(0, Math.min(liveDuration - 0.2, s.time));
@@ -841,7 +947,9 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               className={`absolute top-0 h-full flex flex-col items-center justify-center pointer-events-none z-10 cursor-transition ${playing ? 'playing' : ''} ${seeking ? 'seeking' : ''}`}
               style={{
                 left: `${(() => {
-                  const progressPercent = Math.max(0, Math.min(100, (liveDuration > 0 && isFinite(currentTime) ? (currentTime / liveDuration) * 100 : 0)));
+                  // Use ref for immediate visual feedback during seeking, otherwise use state
+                  const timeToUse = seekPositionRef.current !== null ? seekPositionRef.current : currentTime;
+                  const progressPercent = Math.max(0, Math.min(100, (liveDuration > 0 && isFinite(timeToUse) ? (timeToUse / liveDuration) * 100 : 0)));
                   return progressPercent;
                 })()}%`,
                 transform: 'translateX(-50%)',
@@ -899,6 +1007,25 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               ) : null}
             </div>
           </div>
+          
+          {/* Spotify button positioned next to the waveform */}
+          {cur.spotify && (
+            <div className="spotify-btn-container">
+              <a
+                href={cur.spotify}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="spotify-btn"
+                title="Open on Spotify"
+                aria-label={`Open ${cur.title} on Spotify`}
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                  <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
+                </svg>
+              </a>
+            </div>
+          )}
+        </div>
       </div>
       </div>
 
@@ -949,9 +1076,12 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               const now = a.currentTime;
               const next = chorusTimes.find((t) => t > now + 0.75) ?? chorusTimes[0];
               
-              // Set seeking flag and immediately update cursor position
-              seekingRef.current = true;
+              // Set seeking state FIRST to disable transitions
               setSeeking(true);
+              seekingRef.current = true;
+              
+              // Store visual position for immediate cursor update
+              seekPositionRef.current = next;
               setCurrentTime(next);
               
               const seekTime = Math.max(0, Math.min(liveDuration - 0.2, next));
@@ -1020,8 +1150,59 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                     }
                   } catch {}
                   
-                  // The index change effect will handle playing after warp delay
-                  // No need for duplicate timer logic here
+                  // When manually selecting from picker, trigger playback immediately
+                  if (wasChanged && selectedTrack?.src) {
+                    setTimeout(() => {
+                      const a = audioRef.current;
+                      if (!a) return;
+                      
+                      // Ensure the correct source is loaded
+                      try {
+                        const want = String(selectedTrack.src || "");
+                        const current = a.getAttribute("src") || a.src;
+                        if (want && current !== want) {
+                          a.setAttribute("src", want);
+                          try { a.load(); } catch {}
+                        }
+                      } catch {}
+                      
+                      // Play immediately without waiting for warp delay
+                      intentionalPlayRef.current = true;
+                      
+                      // Ensure audio is unmuted and has proper volume
+                      a.muted = false;
+                      a.volume = 1.0;
+                      
+                      console.log('🎵 Picker: Attempting to play', selectedTrack.title, selectedTrack.src);
+                      
+                      // Simple play attempt first, fallback to retry logic if needed
+                      a.play()
+                        .then(() => {
+                          console.log('🎵 Picker: Play successful for', selectedTrack.title);
+                          stateMachine.current.send({ type: 'PLAY' });
+                          gaTrack("play", { slug: selectedTrack.slug });
+                        })
+                        .catch((error) => {
+                          console.log('🎵 Picker: Simple play failed, trying with retry logic', error?.name);
+                          // Fallback to retry logic only if simple play fails
+                          playWithAutoplayFallback(a, {
+                            maxRetries: 2,
+                            onRetry: (attempt, error) => {
+                              console.log(`Picker selection play retry ${attempt}`, error?.name, error?.message);
+                            }
+                          })
+                            .then(() => {
+                              console.log('🎵 Picker: Retry play successful for', selectedTrack.title);
+                              stateMachine.current.send({ type: 'PLAY' });
+                              gaTrack("play", { slug: selectedTrack.slug });
+                            })
+                            .catch((retryError) => {
+                              console.error('🔴 Picker: All play attempts failed for', selectedTrack.title, retryError);
+                              stateMachine.current.send({ type: 'ERROR', payload: { error: retryError } });
+                            });
+                        });
+                    }, 100); // Short delay to allow index change to settle
+                  }
                 }}
                 title={t.title}
               >
@@ -1041,14 +1222,40 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           className="media-dock-audio"
           data-audio-player="1"
           loop
-          preload="auto"
+          preload="metadata"
           playsInline
           muted={false}
           autoPlay={false}
-          onError={() => {
-            const a = audioRef.current; if (!a) return;
-            if (DEBUG_MEDIA) { dwarn('audio tag onError'); dumpAudio(a, 'audio:onError'); }
-            a.removeAttribute("src"); a.load(); setPlaying(false);
+          crossOrigin="anonymous"
+          onError={(e) => {
+            const a = audioRef.current; 
+            if (!a) return;
+            console.error('🔴 Audio element error:', {
+              src: cur.src,
+              error: a.error,
+              readyState: a.readyState,
+              networkState: a.networkState
+            });
+            if (DEBUG_MEDIA) { 
+              dwarn('audio tag onError', { 
+                src: cur.src, 
+                error: a.error?.message || a.error?.code,
+                readyState: a.readyState,
+                networkState: a.networkState
+              }); 
+              dumpAudio(a, 'audio:onError'); 
+            }
+            // Don't immediately clear src - let retry logic handle it
+            setPlaying(false);
+          }}
+          onLoadStart={() => {
+            console.log('🎵 Audio loadstart for:', cur.src);
+          }}
+          onCanPlay={() => {
+            console.log('🎵 Audio canplay for:', cur.src);
+          }}
+          onCanPlayThrough={() => {
+            console.log('🎵 Audio canplaythrough for:', cur.src);
           }}
           style={{ position:'fixed', width:0, height:0, opacity:0, pointerEvents:'none', left:0, top:0 }}
         />,
@@ -1060,11 +1267,18 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       <audio ref={detentRef}   src="/audio/warp.mp3" preload="auto" />
 
       <style jsx>{`
-        /* Waveform visualization container */
-        .waveform-container{
+        /* Waveform wrapper to contain both waveform and spotify button */
+        .waveform-wrapper {
           position: absolute;
           bottom: -12px;
           right: 0;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        
+        /* Waveform visualization container */
+        .waveform-container{
           width: 24vw;
           height: 20vw;
           min-width: 120px;
@@ -1079,6 +1293,44 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           border: 1px solid ${currentElementColor}40;
           backdrop-filter: blur(8px);
           overflow: hidden;
+        }
+        
+        /* Spotify button container - positioned next to waveform */
+        .spotify-btn-container {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          padding: 8px;
+          background: rgba(29, 185, 84, 0.15);
+          border-radius: 12px;
+          border: 1px solid rgba(29, 185, 84, 0.4);
+          backdrop-filter: blur(8px);
+        }
+        
+        /* Spotify button - compact circular design */
+        .spotify-btn {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #1DB954, #1ed760);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-decoration: none;
+          transition: all 0.3s ease;
+          box-shadow: 0 2px 12px rgba(29, 185, 84, 0.4);
+          border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .spotify-btn:hover {
+          transform: scale(1.1);
+          box-shadow: 0 4px 16px rgba(29, 185, 84, 0.5);
+        }
+        
+        .spotify-btn:active {
+          transform: scale(0.95);
         }
         
         .waveform {

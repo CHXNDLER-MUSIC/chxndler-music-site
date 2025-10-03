@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
+import { audioCoordinator } from "@/lib/audio-coordinator";
 
 /** Autoplays ambient + optional welcome VO; pauses ambient while music is playing. */
 export default function AmbientSpace({
@@ -73,6 +74,8 @@ export default function AmbientSpace({
       // Ensure unmuted immediately on successful play
       try { amb.muted = false; amb.removeAttribute('muted'); } catch {}
       amb.volume = initialBed;
+      // Register as active audio source
+      try { audioCoordinator.setActiveSource('ambient'); } catch (e) { console.warn('audioCoordinator error:', e); }
     }).catch(() => {
       // Even if play fails, unmute so it's ready when resumed
       try { amb.muted = false; amb.removeAttribute('muted'); } catch {}
@@ -82,22 +85,40 @@ export default function AmbientSpace({
     let tryIntro: Promise<any>|undefined;
     const startIntro = () => {
       if (!intro || !introSrc || !introPendingRef.current || playingMusic) return;
+      console.log('🎵 AmbientSpace: Starting welcome VO sequence');
       try {
         intro.volume = 0.9;
         const onIntroPlay = () => { 
+          console.log('🎵 AmbientSpace: Welcome VO started playing');
           introPlayingRef.current = true; 
           // Ensure ambient is audibly present under the VO from the very start
           try { amb.muted = false; amb.removeAttribute('muted'); } catch {}
           amb.volume = clamp01(Math.min(volume, 0.75)); // Increased from 0.5 to 0.75 for better audibility
+          // Register intro as active audio source
+          try { audioCoordinator.setActiveSource('intro'); } catch (e) { console.warn('audioCoordinator error:', e); }
         };
-        const onIntroEnd  = () => { introPlayingRef.current = false; fadeVolume(volume, 400); };
+        const onIntroEnd  = () => { 
+          console.log('🎵 AmbientSpace: Welcome VO ended, returning to ambient');
+          introPlayingRef.current = false; 
+          fadeVolume(volume, 400);
+          // Switch back to ambient as active source
+          try { audioCoordinator.setActiveSource('ambient'); } catch (e) { console.warn('audioCoordinator error:', e); }
+        };
         intro.addEventListener('play', onIntroPlay);
         intro.addEventListener('ended', onIntroEnd, { once: true });
         // Start intro VO immediately after ambient begins
         tryIntro = new Promise<void>((resolve) => {
           setTimeout(() => {
             if (!introPendingRef.current || playingMusic) { resolve(); return; }
-            intro.play().then(() => { introPendingRef.current = false; resolve(); }).catch(() => resolve());
+            console.log('🎵 AmbientSpace: Attempting to play welcome VO');
+            intro.play().then(() => { 
+              introPendingRef.current = false; 
+              console.log('🎵 AmbientSpace: Welcome VO play successful');
+              resolve(); 
+            }).catch((e) => {
+              console.error('🎵 AmbientSpace: Welcome VO play failed:', e);
+              resolve();
+            });
           }, 50); // Reduced delay from 100ms to 50ms
         });
       } catch {}
@@ -258,10 +279,22 @@ export default function AmbientSpace({
       // Immediately silence ambient while a main song plays
       console.log('AmbientSpace: playingMusic became true, pausing ambient immediately');
       if (fadeDownTimerRef.current !== undefined) { clearTimeout(fadeDownTimerRef.current); fadeDownTimerRef.current = undefined; }
-      try { amb.pause(); } catch {}
+      
+      // ENHANCED: Ensure complete audio stop and reset
+      try { 
+        amb.pause(); 
+        amb.currentTime = 0;
+        amb.volume = 0;
+        console.log('AmbientSpace: space-music.mp3 completely stopped');
+      } catch {}
+      
       if (intro) {
-        try { if (!intro.paused) intro.pause(); } catch {}
-        try { intro.currentTime = 0; } catch {}
+        try { 
+          if (!intro.paused) intro.pause(); 
+          intro.currentTime = 0;
+          intro.volume = 0;
+          console.log('AmbientSpace: welcome VO completely stopped');
+        } catch {}
         introPlayingRef.current = false;
         introPendingRef.current = false; // don't replay VO during music
       }
@@ -377,7 +410,18 @@ export default function AmbientSpace({
       amb.play().catch(() => { try { amb.load(); amb.play().catch(()=>{}); } catch {} });
     };
 
-    const onEnded = () => { try { amb.currentTime = 0; } catch {}; tryResume(); };
+    const onEnded = () => { 
+      console.log('🎵 AmbientSpace: space-music.mp3 ended, checking if should loop');
+      try { amb.currentTime = 0; } catch {}; 
+      
+      // Only auto-resume/loop if we're not playing music and not suspended
+      if (!playingMusic && !suspend && !userSelectedSong && !introPendingRef.current) {
+        console.log('🎵 AmbientSpace: Auto-looping space-music.mp3');
+        tryResume(); 
+      } else {
+        console.log('🎵 AmbientSpace: Not looping - conditions prevent it');
+      }
+    };
     const onStallish = () => { tryResume(); };
     const onError = () => { try { amb.load(); } catch {}; tryResume(); };
 
@@ -398,13 +442,13 @@ export default function AmbientSpace({
       }
       const t = amb.currentTime || 0;
       const last = lastTimeRef.current || 0;
-      const advanced = (t - last) > 0.01; // more lenient threshold - 10ms advance
+      const advanced = (t - last) > 0.05; // more lenient threshold - 50ms advance
       const now = performance.now();
       if (!advanced && !amb.paused && amb.readyState >= 2) {
         // Potential stall
         if (stuckSinceRef.current === undefined) stuckSinceRef.current = now;
         const stuckMs = now - (stuckSinceRef.current || now);
-        if (stuckMs > 15000) { // increased threshold to 15 seconds to avoid false positives
+        if (stuckMs > 30000) { // increased threshold to 30 seconds to avoid false positives
           // Instead of nudging playhead, just try to resume playback
           console.log('Audio stall detected, attempting resume');
           tryResume();
@@ -464,7 +508,7 @@ export default function AmbientSpace({
   return (
     <>
       {/* Do not autoplay on mount; playback is orchestrated via effects when not suspended */}
-      <audio ref={ambRef} src={ambientSrc} loop preload="auto" playsInline muted data-ambient="1" />
+      <audio ref={ambRef} src={ambientSrc} preload="auto" playsInline muted data-ambient="1" />
       {introSrc ? <audio ref={introRef} src={introSrc} preload="auto" playsInline data-intro="1" /> : null}
       {/* Enable sound button hidden; global interaction starts audio automatically */}
     </>

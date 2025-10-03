@@ -24,6 +24,7 @@ import PrewarmThree from "@/components/PrewarmThree";
 import { track } from "@/lib/analytics";
 import PreloadMedia from "@/components/PreloadMedia";
 import { slugify } from "@/lib/slug";
+import { audioCoordinator } from "@/lib/audio-coordinator";
 
 export default function DashboardApp({ initialSlug } = {}) {
   const [channelIdx, setChannelIdx] = useState(0);
@@ -639,6 +640,61 @@ export default function DashboardApp({ initialSlug } = {}) {
     return ambientPlaying;
   }, [isPlaying, ambientPlaying]);
 
+  // Debug function for welcome VO issues
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.debugWelcomeVO = () => {
+        console.log('🎵 ==> WELCOME VO DEBUG <==');
+        console.log('🎵 State Values:', {
+          homeMode,
+          homeIntroEnabled,
+          welcomeHasPlayed,
+          firstStartDone,
+          uiUnlocked,
+          showOverlayUI,
+          pendingOverlayReveal,
+          ambientSuspended,
+          warpActive,
+          welcomeOnStart: welcomeOnStartRef.current
+        });
+        
+        const intro = document.querySelector('audio[data-intro="1"]');
+        console.log('🎵 Welcome VO Element:', intro ? {
+          src: intro.src,
+          paused: intro.paused,
+          volume: intro.volume,
+          currentTime: intro.currentTime,
+          readyState: intro.readyState
+        } : 'Not found');
+        
+        const ambient = document.querySelector('audio[data-ambient="1"]');
+        console.log('🎵 Ambient Element:', ambient ? {
+          src: ambient.src,
+          paused: ambient.paused,
+          volume: ambient.volume,
+          currentTime: ambient.currentTime,
+          readyState: ambient.readyState
+        } : 'Not found');
+      };
+      
+      // Force welcome VO to play for debugging
+      window.forceWelcomeVO = () => {
+        console.log('🎵 ==> FORCING WELCOME VO <==');
+        setHomeMode(true);
+        setHomeIntroEnabled(true);
+        setWelcomeHasPlayed(false);
+        setAmbientSuspended(false);
+        console.log('🎵 Force: Set homeMode=true, homeIntroEnabled=true, welcomeHasPlayed=false');
+      };
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        delete window.debugWelcomeVO;
+        delete window.forceWelcomeVO;
+      }
+    };
+  }, [homeMode, homeIntroEnabled, welcomeHasPlayed, firstStartDone, uiUnlocked, showOverlayUI, pendingOverlayReveal, ambientSuspended, warpActive]);
+
   // Helper function to get beam gradient based on active beam color
   const getBeamGradient = useMemo(() => {
     const gradients = {
@@ -788,7 +844,14 @@ export default function DashboardApp({ initialSlug } = {}) {
               homeIntroEnabled, 
               shouldPlayWelcome, 
               introSrc,
-              welcomeHasPlayed
+              welcomeHasPlayed,
+              uiUnlocked,
+              showOverlayUI,
+              pendingOverlayReveal,
+              firstStartDone,
+              warpActive,
+              ambientSuspended,
+              welcomeOnStart: welcomeOnStartRef.current
             });
             return introSrc;
           })()} 
@@ -829,8 +892,8 @@ export default function DashboardApp({ initialSlug } = {}) {
             try { setUserSelected(false); } catch {}
             try { playerStore.setState({ mainId: null }); } catch {}
             try { setLinks({ spotify: LINKS.spotify, apple: LINKS.apple }); } catch {}
-            // Enable welcome VO on opening/home page only once per session; keep ambient suspended for now.
-            try { if (!welcomeHasPlayed) setHomeIntroEnabled(true); else setHomeIntroEnabled(false); } catch {}
+            // ALWAYS enable welcome VO on opening/home page after Start button warp
+            try { setHomeIntroEnabled(true); } catch {}
             // Don't set welcomeHasPlayed here - wait for audio to actually finish
             // Switch background sky in the same render pass for simultaneous reveal
             try {
@@ -859,18 +922,56 @@ export default function DashboardApp({ initialSlug } = {}) {
                     console.log('🎵 DashboardApp: Reset welcome-to-the-heartverse.mp3 to beginning');
                   }
                   
-                  // Start ambient first, then intro should follow automatically via AmbientSpace
-                  setAmbientSuspended(false);
-                  window.dispatchEvent(new CustomEvent('ambient:play'));
+                  // Start both ambient and intro SIMULTANEOUSLY from the beginning
+                  console.log('🎵 DashboardApp: Starting ambient and welcome VO simultaneously');
                   
-                  // Small delay to ensure ambient starts, then ensure intro is playing from beginning
-                  setTimeout(() => {
-                    if (introEl && homeIntroEnabled) {
-                      introEl.currentTime = 0;
-                      introEl.play().catch(() => {});
-                      console.log('🎵 DashboardApp: Ensured welcome VO starts from beginning');
+                  // Prepare both audio elements
+                  let ambientReady = false;
+                  let introReady = false;
+                  
+                  const startBothSimultaneously = () => {
+                    if (ambientReady && introReady) {
+                      console.log('🎵 DashboardApp: Both audio elements ready, starting simultaneously');
+                      const promises = [];
+                      
+                      if (ambientEl) {
+                        promises.push(ambientEl.play().catch(e => console.warn('Ambient play failed:', e)));
+                      }
+                      if (introEl && homeIntroEnabled) {
+                        promises.push(introEl.play().catch(e => console.warn('Intro play failed:', e)));
+                      }
+                      
+                      Promise.allSettled(promises).then(() => {
+                        console.log('🎵 DashboardApp: Simultaneous audio start completed');
+                        // Unmute ambient after both are playing
+                        setAmbientSuspended(false);
+                        try { audioCoordinator.setActiveSource('intro'); } catch {}
+                      });
                     }
-                  }, 100);
+                  };
+                  
+                  // Prepare ambient
+                  if (ambientEl) {
+                    ambientEl.currentTime = 0;
+                    ambientEl.volume = 0.75; // Set to bed volume under VO
+                    ambientEl.muted = false;
+                    ambientReady = true;
+                  } else {
+                    ambientReady = true;
+                  }
+                  
+                  // Prepare intro
+                  if (introEl && homeIntroEnabled) {
+                    introEl.currentTime = 0;
+                    introEl.volume = 0.9;
+                    introEl.muted = false;
+                    introReady = true;
+                  } else {
+                    introReady = true;
+                  }
+                  
+                  // Start both simultaneously
+                  startBothSimultaneously();
                   
                 } catch (e) {
                   console.error('🎵 DashboardApp: Error starting audio from beginning:', e);
@@ -931,10 +1032,13 @@ export default function DashboardApp({ initialSlug } = {}) {
                 amb.currentTime = 0;
               }
             } catch {}
-            try {
-              const intro = document.querySelector('audio[data-intro=\"1\"]');
-              if (intro) { intro.pause(); intro.currentTime = 0; }
-            } catch {}
+            // Only stop intro if this is NOT a Start button warp to homepage
+            if (!startButtonWarpRef.current) {
+              try {
+                const intro = document.querySelector('audio[data-intro=\"1\"]');
+                if (intro) { intro.pause(); intro.currentTime = 0; }
+              } catch {}
+            }
             setAmbientSuspended(true);
             // Keep planets hidden until playback starts (onPlayingChange will re-enable)
             console.log('🌍 DashboardApp: onFlyEnd - Hiding planets until playback starts');
@@ -996,12 +1100,8 @@ export default function DashboardApp({ initialSlug } = {}) {
             try { playerStore.getState().setPlanetsVisible(true); } catch {}
             // Clear any selected planet for home mode
             try { playerStore.setState({ mainId: null }); } catch {}
-            // Do not enable welcome VO on home; mark first start as done
-            if (!firstStartDone && !welcomeHasPlayed) {
-              welcomeOnStartRef.current = false;
-              setHomeIntroEnabled(false);
-              setFirstStartDone(true);
-            }
+            // Don't enable welcome VO in this path - it's handled in onWarpSfxEnd
+            setFirstStartDone(true);
             setUserSelected(false);
             setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
             // Keep ambient suspended until warp SFX fully ends; we'll enable it in onWarpSfxEnd
@@ -1029,10 +1129,13 @@ export default function DashboardApp({ initialSlug } = {}) {
               // Dispatch events to ensure ambient component knows to stop
               try { window.dispatchEvent(new CustomEvent('ambient:userPause')); } catch {}
             } catch {}
-            try {
-              const intro = document.querySelector('audio[data-intro="1"]');
-              if (intro) { intro.pause(); intro.currentTime = 0; }
-            } catch {}
+            // Only stop intro if this is NOT a Start button warp (which should preserve welcome VO)
+            if (!startButtonWarpRef.current) {
+              try {
+                const intro = document.querySelector('audio[data-intro="1"]');
+                if (intro) { intro.pause(); intro.currentTime = 0; }
+              } catch {}
+            }
             setAmbientSuspended(true);
             // Reveal the focused planet immediately after warp/base video is playing.
             // Keep other planets hidden; only the selected planet should show now.
@@ -1181,18 +1284,17 @@ export default function DashboardApp({ initialSlug } = {}) {
           } catch {}
           
           // Homepage Start flow (warp to home reveal)
-          if (!welcomeHasPlayed) { 
-            welcomeOnStartRef.current = true;
-            setHomeIntroEnabled(true); // Enable welcome VO immediately when Start is pressed
-            console.log('🎵 DashboardApp: Start button - enabling welcome VO');
-          } else {
-            setHomeIntroEnabled(false);
-            console.log('🎵 DashboardApp: Start button - welcome already played, not enabling');
-          }
+          // ALWAYS enable welcome VO on Start button - should play every time
+          welcomeOnStartRef.current = true;
+          setHomeIntroEnabled(true);
+          console.log('🎵 DashboardApp: Start button - ALWAYS enabling welcome VO');
           setPendingOverlayReveal(true);
           setUiUnlocked(true);
           setShowDimmingOverlay(false);
           setLandingRevealReady(true);
+          
+          // Reset welcome VO state so it can play every time Start is pressed
+          setWelcomeHasPlayed(false);
           
           // Prepare warp to homepage
           setUserSelected(false);
@@ -1209,6 +1311,7 @@ export default function DashboardApp({ initialSlug } = {}) {
           // Clear current track to ensure homepage state
           setCurTrack(null);
           setChannelIdx(0);
+          setPendingTrackPlay(false); // Ensure no track play is pending
           setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
           
           // Set up UI states for homepage warp
@@ -1266,14 +1369,10 @@ export default function DashboardApp({ initialSlug } = {}) {
           try { playerStore.setState({ mainId: null }); } catch {}
           try { setHidePlanetsForSelection(false); } catch {}
           // Homepage Start flow (warp to home reveal)
-          if (!welcomeHasPlayed) { 
-            welcomeOnStartRef.current = true;
-            setHomeIntroEnabled(true); // Enable welcome VO immediately when Start is pressed
-            console.log('🎵 DashboardApp: Start button - enabling welcome VO');
-          } else {
-            setHomeIntroEnabled(false);
-            console.log('🎵 DashboardApp: Start button - welcome already played, not enabling');
-          }
+          // ALWAYS enable welcome VO on Start button - should play every time
+          welcomeOnStartRef.current = true;
+          setHomeIntroEnabled(true);
+          console.log('🎵 DashboardApp: Start button - ALWAYS enabling welcome VO');
           setPendingOverlayReveal(true);
           setUiUnlocked(true);
           setShowDimmingOverlay(false);

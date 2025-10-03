@@ -2,6 +2,7 @@
 
 import React, { useRef, useMemo } from "react";
 import { Mesh, ShaderMaterial, Color, AdditiveBlending, BackSide, Vector3 } from "three";
+import { createHeartGeometry } from "../../lib/heartGeometry";
 import { useFrame } from "@react-three/fiber";
 
 export default function HeartPlanet() {
@@ -9,6 +10,14 @@ export default function HeartPlanet() {
   const atmosphereRef = useRef<Mesh>(null);
   // Planet size baseline (used to scale geometry & glows)
   const planetRadius = 2.0;
+
+  // Create heart geometry
+  const heartGeometry = useMemo(() => {
+    return createHeartGeometry(planetRadius * 2, 64, { 
+      heartness: 1.2, 
+      thicknessMultiplier: 0.8 
+    });
+  }, [planetRadius]);
 
   // Textured, lit planet shader (procedural continents/oceans + specular)
   const planetMaterial = useMemo(() => {
@@ -148,7 +157,7 @@ export default function HeartPlanet() {
       uniforms: {
         uTime: { value: 0 },
         uColor: { value: new Color("#FC54AF") },
-        uStrength: { value: 1.6 }
+        uStrength: { value: 4.5 }
       },
       vertexShader: `
         varying vec3 vNormalW;
@@ -181,7 +190,7 @@ export default function HeartPlanet() {
           float heartPulse = sin(uTime * 3.0) * 0.25 + 1.1;
            
           float rim = pow(fresnel, 1.4);
-          vec3 atmosphereColor = uColor * 180.0 * rim * pulse * heartPulse * uStrength;
+          vec3 atmosphereColor = uColor * 350.0 * rim * pulse * heartPulse * uStrength;
           float alpha = rim; // additive blending; alpha acts as weight
           
           gl_FragColor = vec4(atmosphereColor, alpha);
@@ -205,7 +214,7 @@ export default function HeartPlanet() {
       uniforms: {
         uTime: { value: 0 },
         uColor: { value: new Color("#FF77C6") },
-        uIntensity: { value: 1.5 }
+        uIntensity: { value: 5.0 }
       },
       vertexShader: `
         varying vec3 vNormalW;
@@ -268,31 +277,31 @@ export default function HeartPlanet() {
 
   return (
     <group position={[0, 0, 0]} scale={[0.9, 0.9, 0.9]}>
-      {/* Core sphere with realistic shading */}
+      {/* Core heart with realistic shading */}
       <mesh ref={meshRef} position={[0, 0, 0]} renderOrder={1}>
-        <sphereGeometry args={[planetRadius, 128, 64]} />
+        <primitive object={heartGeometry} />
         <primitive object={planetMaterial} />
       </mesh>
 
       {/* Inner frontside glow overlay (subtle) */}
       <mesh position={[0, 0, 0]} scale={[1.04, 1.04, 1.04]} renderOrder={5}>
-        <sphereGeometry args={[planetRadius, 64, 32]} />
+        <primitive object={heartGeometry} />
         <primitive object={innerGlowMaterial} />
       </mesh>
       
       {/* Atmosphere corona (additive, backface only) */}
       <mesh ref={atmosphereRef} position={[0, 0, 0]} scale={[1.5, 1.5, 1.5]} renderOrder={6}>
-        <sphereGeometry args={[planetRadius, 64, 32]} />
+        <primitive object={heartGeometry} />
         <primitive object={atmosphereMaterial} />
       </mesh>
 
       {/* Outer far glow (very soft) */}
       <mesh position={[0, 0, 0]} scale={[2.3, 2.3, 2.3]} renderOrder={7}>
-        <sphereGeometry args={[planetRadius, 32, 16]} />
+        <primitive object={heartGeometry} />
         <meshBasicMaterial
           color="#FC54AF"
           transparent
-          opacity={0.12}
+          opacity={0.25}
           depthWrite={false}
           depthTest={false}
           blending={AdditiveBlending}
@@ -302,12 +311,16 @@ export default function HeartPlanet() {
       </mesh>
       
       {/* Planetary lighting - gentle illumination */}
-      <ambientLight intensity={0.1} />
+      <ambientLight intensity={0.2} />
       {/* Keep an external white light subtle so emissive dominates */}
-      <pointLight position={[8, 6, 10]} color="#FFFFFF" intensity={0.6} distance={50} decay={0.5} />
+      <pointLight position={[8, 6, 10]} color="#FFFFFF" intensity={0.8} distance={50} decay={0.5} />
       
-      {/* Subtle heart-colored accent lighting */}
-      <pointLight position={[0, 0, 0]} color="#FC54AF" intensity={1.5} distance={18} decay={2.0} />
+      {/* Bright heart-colored accent lighting */}
+      <pointLight position={[0, 0, 0]} color="#FC54AF" intensity={8.0} distance={25} decay={1.5} />
+      
+      {/* Additional bright core light for extra glow */}
+      <pointLight position={[0, 0, 2]} color="#FF77C6" intensity={6.0} distance={20} decay={2.0} />
+      <pointLight position={[0, 0, -2]} color="#FF44B8" intensity={6.0} distance={20} decay={2.0} />
     </group>
   );
 }

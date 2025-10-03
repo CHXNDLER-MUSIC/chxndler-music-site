@@ -67,7 +67,7 @@ export function track(
   })();
   const cooldownMs = (() => {
     switch (event_type) {
-      case 'page_view': return 10_000; // 10s per path
+      case 'page_view': return 5_000; // 5s per path
       case 'music_started': return 30_000; // 30s per song
       case 'join_aliens_click': return 3_000; // 3s
       case 'start_button_clicked': return 2_000; // 2s

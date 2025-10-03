@@ -78,7 +78,7 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         // Pull the camera back and widen FOV so the full system fits
         // Elevated viewpoint: camera positioned above to look down at the planet system
         // Zoom out more on the homepage (showAll=true) for better overview
-        camera={{ position: [0.2, 15, showAll ? 112 : 20], fov: showAll ? 92 : 48 }}
+        camera={{ position: [0.2, 18, showAll ? 155 : 32], fov: showAll ? 105 : 60 }}
         gl={{ antialias: true, alpha: true }}
         onCreated={({ gl }) => {
           // Lift exposure so emissive and additive layers pop without bloom
@@ -135,17 +135,24 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
             } else {
               // Individual song mode: show only the focused planet
               console.log("🌍 PlanetSystem: Individual song mode, focusId:", focusId);
-              return focusId && songs.find(s => s.id === focusId) ? (
-                <Planet 
-                  key={focusId} 
-                  song={songs.find(s => s.id === focusId)!} 
-                  isMain={true} 
-                  isHover={hoverId === focusId} 
-                  isMoon={false} 
-                  isMuted={false} 
-                  ringBaseOverride={20} 
-                />
-              ) : null;
+              const focusedSong = songs.find(s => s.id === focusId);
+              if (focusedSong) {
+                console.log("🌍 PlanetSystem: Rendering single focused planet:", focusedSong.id, focusedSong.title);
+                return (
+                  <Planet 
+                    key={focusId} 
+                    song={focusedSong} 
+                    isMain={true} 
+                    isHover={hoverId === focusId} 
+                    isMoon={false} 
+                    isMuted={false} 
+                    ringBaseOverride={20} 
+                  />
+                );
+              } else {
+                console.log("🌍 PlanetSystem: No focused song found for focusId:", focusId);
+                return null;
+              }
             }
           })()}
         </SystemGroup>
@@ -214,12 +221,12 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
   // Use different base values based on showAll mode - access via props context
   const isShowAll = focusId === null;
   // Match Canvas camera defaults; give more room in showAll to see every planet
-  const base = React.useRef({ z: isShowAll ? 112 : 35, fov: isShowAll ? 92 : 65 });
+  const base = React.useRef({ z: isShowAll ? 155 : 48, fov: isShowAll ? 105 : 78 });
   const anim = React.useRef<{ t: number; d: number; active: boolean }>({ t: 0, d: 0.8, active: false });
 
   React.useEffect(() => {
     // Update base values based on current mode
-    base.current = { z: isShowAll ? 84 : 35, fov: isShowAll ? 85 : 65 };
+    base.current = { z: isShowAll ? 155 : 48, fov: isShowAll ? 105 : 78 };
     
     // Only restart zoom animation if we have a focusId (not in showAll/home mode)
     if (focusId) {
@@ -233,7 +240,7 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
       anim.current.active = false;
       const camera_: any = camera;
       camera_.position.x = 0.2;
-      camera_.position.y = 15;
+      camera_.position.y = 18;
       camera_.position.z = base.current.z;
       camera_.fov = base.current.fov;
       camera_.updateProjectionMatrix();
@@ -249,12 +256,12 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
       ? 2 * t * t
       : 1 - Math.pow(-2 * t + 2, 2) / 2;
     // dolly closer at mid, then return - zoomed out slightly for better view
-    const closeZ = 20;
-    const closeFov = 46;
+    const closeZ = 32;
+    const closeFov = 58;
     // use a bell curve around 0.5
     const bell = Math.sin(Math.PI * ease);
     (camera as any).position.x = 0.2;
-    (camera as any).position.y = 15;
+    (camera as any).position.y = 18;
     (camera as any).position.z = base.current.z - (base.current.z - closeZ) * bell;
     (camera as any).fov = base.current.fov - (base.current.fov - closeFov) * bell;
     (camera as any).updateProjectionMatrix();
@@ -262,7 +269,7 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
     if (anim.current.t >= anim.current.d) {
       anim.current.active = false;
       (camera as any).position.x = 0.2;
-      (camera as any).position.y = 15;
+      (camera as any).position.y = 18;
       (camera as any).position.z = base.current.z;
       (camera as any).fov = base.current.fov;
       (camera as any).updateProjectionMatrix();
