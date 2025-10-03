@@ -12,6 +12,9 @@ import { sfx } from "@/lib/sfx";
 const getPurchaseUrl = (title: string) => {
   const slug = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
   
+  // Debug: log the generated slug to see what's happening
+  console.log(`🎵 Getting purchase URL for title: "${title}" -> slug: "${slug}"`);
+  
   // Map of song slugs to their Stripe purchase URLs
   const purchaseUrls: Record<string, string> = {
     'chxndler': 'https://buy.stripe.com/cNi14oetz6p76Bbgxx4gg0k',
@@ -37,8 +40,14 @@ const getPurchaseUrl = (title: string) => {
     'were-just-friends-dmvrco-remix': 'https://buy.stripe.com/28EdRa0CJ5l38Jj9554gg03',
   };
   
-  // Return specific URL or default
-  return purchaseUrls[slug] || purchaseUrls['chxndler'];
+  // Return specific URL or log error and fallback
+  const url = purchaseUrls[slug];
+  if (!url) {
+    console.error(`🎵 No purchase URL found for slug: "${slug}" (title: "${title}"). Available slugs:`, Object.keys(purchaseUrls));
+    console.error(`🎵 Falling back to chxndler URL`);
+    return purchaseUrls['chxndler'];
+  }
+  return url;
 };
 
 export default function CoverHologram({ src, title, inline = false, size = 168, onCardOpen }: { src: string; title: string; inline?: boolean; size?: number; onCardOpen?: () => void }) {
@@ -226,6 +235,9 @@ export default function CoverHologram({ src, title, inline = false, size = 168, 
                     rel="noopener noreferrer"
                     className="btn-ocean"
                     title="Collect this card"
+                    aria-label={`Collect Card: ${title}`}
+                    data-song={title}
+                    data-slug={title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}
                     onClick={(e) => {
                       try { e.preventDefault(); } catch {}
                       

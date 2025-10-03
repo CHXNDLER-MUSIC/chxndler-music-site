@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { usePlayerStore } from '@/store/usePlayerStore';
+import { playerStore } from '@/store/usePlayerStore';
 import { buildPlanetSongs } from '@/lib/planets';
 import SongList from '@/components/holo/SongList';
 import HoloAudioBridge from '@/components/holo/HoloAudioBridge';
@@ -22,13 +22,12 @@ export default function HoloPanel() {
   useEffect(() => {
     const { holoSongs } = buildPlanetSongs();
     console.log('🎵 HoloPanel: Initializing songs', { count: holoSongs.length, holoSongs });
-    usePlayerStore.getState().initSongs(holoSongs);
+    playerStore.getState().initSongs(holoSongs);
   }, []);
 
-  const { mainId, songs } = usePlayerStore((s) => ({
-    mainId: s.mainId,
-    songs: s.songs,
-  }));
+  const [storeSnap, setStoreSnap] = React.useState(() => playerStore.getState());
+  React.useEffect(() => playerStore.subscribe(() => setStoreSnap(playerStore.getState())), []);
+  const { mainId, songs } = storeSnap as any;
   const main = songs.find((s) => s.id === mainId);
 
   return (

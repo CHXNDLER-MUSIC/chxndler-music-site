@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { usePlayerStore } from "@/store/usePlayerStore";
+import { playerStore } from "@/store/usePlayerStore";
 import { computePlanetLayout } from "@/lib/planetLayout";
 import type { PlanetType, WeatherSystem, PlanetGeometry } from "@/lib/planets";
 
@@ -1737,7 +1737,8 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(35, width / height, 0.1, 120);
-    camera.position.set(0, 1.2, 16.0);
+    // Slightly farther default to better frame homepage planets
+    camera.position.set(0, 1.2, 20.0);
     camera.lookAt(0, -2, 0); // Look below center to shift display higher
     cameraRef.current = camera;
 
@@ -2208,7 +2209,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
         const clickedMeshIndex = planetMeshes.indexOf(intersects[0].object as THREE.Mesh);
         if (clickedMeshIndex >= 0) {
           const planetId = planetIds[clickedMeshIndex];
-          onSongChange(planetId);
+        onSongChange(planetId);
         }
       }
     };
@@ -2259,7 +2260,9 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
   }, []);
 
   // Sync planets to songs from the global store for closer match to previous visuals
-  const { songs, mainId, hoverId, planetsVisible } = usePlayerStore((s) => ({ songs: s.songs, mainId: s.mainId, hoverId: s.hoverId, planetsVisible: s.planetsVisible }));
+  const [storeSnap, setStoreSnap] = React.useState(() => playerStore.getState());
+  React.useEffect(() => playerStore.subscribe(() => setStoreSnap(playerStore.getState())), []);
+  const { songs, mainId, hoverId, planetsVisible } = storeSnap as any;
   const hoverRef = useRef<string | null>(null);
   useEffect(() => { hoverRef.current = hoverId || null; }, [hoverId]);
   // Compute layout with consistent spacing (matching planetLayout defaults)
@@ -2293,7 +2296,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
     console.log("🌍 CHECKING CONDITIONS:", { showAll, planetsVisible, condition: showAll && !planetsVisible });
     if (showAll && !planetsVisible) {
       console.log("🌍 IMMEDIATE FIX: Forcing planets visible on homepage");
-      usePlayerStore.getState().setPlanetsVisible(true);
+      playerStore.getState().setPlanetsVisible(true);
     } else if (showAll) {
       console.log("🌍 On homepage but planetsVisible is already true:", planetsVisible);
     } else {
@@ -2329,7 +2332,8 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
     
     // Reset camera to overview position when showing all planets
     if (showAll || !focusId) {
-      targetCameraPos.current.set(0, 1.2, 16.0);
+      // Zoom out a touch more on homepage overview
+      targetCameraPos.current.set(0, 1.2, 20.0);
       targetCameraLookAt.current.set(0, 0, 0);
       cameraTransitionSpeed.current = 0.08;
       

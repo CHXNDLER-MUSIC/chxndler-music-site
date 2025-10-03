@@ -65,6 +65,10 @@
   /* Nudge the blue display slightly lower on screen */
   /* Increased gap to move all displays and beam down together */
   --beam-gap-px: 350px; /* Reduced to move blue display up slightly */
+  /* Fine-tune the vertical alignment of the light beam base PNG */
+  /* Negative moves the PNG up; positive moves it down */
+  /* Reverse direction: move the light beam base PNG higher in viewport */
+  --beam-base-nudge: 192px;
   --display-touch-top: calc(var(--buttons-bottom, 36%) + var(--beam-gap-px));
   --display-touch-bottom: var(--beam-bottom);
   
@@ -232,9 +236,10 @@ main {
 /* Light beam base background */
 .lightbeam-base-bg{
   background-image: url("/cockpit/lightbeam-base.png?v=2");
-  /* Keep the base fixed in place and size across screen widths */
-  /* Anchor to bottom to avoid movement on resize, then push further down */
-  background-position: center 85%; /* positioned at 85% from top */
+  /* Position base directly beneath the blue button by aligning to beam bottom */
+  /* beam bottom from viewport bottom: calc(var(--display-touch-top) - var(--beam-height) - 30px) */
+  /* convert to top-origin for background-position: 100% - bottom */
+  background-position: center calc(100% - (var(--display-touch-top) - var(--beam-height) - 30px) + var(--beam-base-nudge, 0px));
   background-size: 1366px auto; /* lock to asset's intrinsic width */
   background-repeat: no-repeat;
   /* Remove unintended blue tint from the PNG */

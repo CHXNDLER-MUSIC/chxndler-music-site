@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sfx";
-import { usePlayerStore } from "@/store/usePlayerStore";
+import { playerStore } from "@/store/usePlayerStore";
 import { useCycleList } from "@/lib/useCycleList";
 import { track } from "@/lib/analytics";
 import { trackSecure } from "@/lib/secureAnalytics";
@@ -125,7 +125,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
           hover_method: 'keyboard_down'
         });
       }
-      try { setTimeout(() => usePlayerStore.getState().setHover(id || null), 0); } catch {}
+      try { setTimeout(() => playerStore.getState().setHover(id || null), 0); } catch {}
       return;
     }
     if (e.key === "ArrowUp") {
@@ -143,7 +143,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
           hover_method: 'keyboard_up'
         });
       }
-      try { setTimeout(() => usePlayerStore.getState().setHover(id || null), 0); } catch {}
+      try { setTimeout(() => playerStore.getState().setHover(id || null), 0); } catch {}
       return;
     }
     if (e.key === "Home") {
@@ -151,7 +151,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
       setHighlight(0);
       const id = items[0]?.id;
       if (id) { setActiveId(id); onChange?.(id); }
-      try { setTimeout(() => usePlayerStore.getState().setHover(id || null), 0); } catch {}
+      try { setTimeout(() => playerStore.getState().setHover(id || null), 0); } catch {}
       return;
     }
     if (e.key === "End") {
@@ -160,7 +160,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
       setHighlight(nh);
       const id = items[nh]?.id;
       if (id) { setActiveId(id); onChange?.(id); }
-      try { setTimeout(() => usePlayerStore.getState().setHover(id || null), 0); } catch {}
+      try { setTimeout(() => playerStore.getState().setHover(id || null), 0); } catch {}
       return;
     }
     if (e.key === "Enter") {
@@ -169,7 +169,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
       if (id) { setActiveId(id); onChange?.(id); }
       setOpen(false);
       // Playback will start after warp SFX delay via MediaPlayer
-      try { usePlayerStore.getState().setHover(null); } catch {}
+      try { playerStore.getState().setHover(null); } catch {}
     }
   }
 
@@ -185,7 +185,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
         aria-controls="song-dropdown-list"
         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {}; try { const a = hoverBtnRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
         onClick={() => { 
-          try { sfx.play('join', 0.75); } catch {}; try { const a = clickRef.current; if (a) { a.currentTime = 0; a.volume = 0.75; a.play().catch(()=>{}); } } catch {}; setOpen((v) => { const nv = !v; try { setTimeout(() => usePlayerStore.getState().setHover(nv ? (items[highlight]?.id || null) : null), 0); } catch {}; return nv; }); 
+      try { sfx.play('join', 0.75); } catch {}; try { const a = clickRef.current; if (a) { a.currentTime = 0; a.volume = 0.75; a.play().catch(()=>{}); } } catch {}; setOpen((v) => { const nv = !v; try { setTimeout(() => playerStore.getState().setHover(nv ? (items[highlight]?.id || null) : null), 0); } catch {}; return nv; }); 
         }}
         onKeyDown={onTriggerKeyDown}
         className="songs-trigger w-full flex items-center justify-between gap-2 px-2 py-3 rounded-[10px] border-2 border-[#19E3FF]/80 bg-cyan-400/10 backdrop-blur-xl shadow-[0_0_18px_rgba(25,227,255,0.35)] focus:outline-none focus:ring-2 focus:ring-cyan-400"
@@ -240,7 +240,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                 ref={i === 0 ? optMeasureRef : undefined}
                 onMouseEnter={() => { 
                   setHighlight(i); 
-                  try { setTimeout(() => usePlayerStore.getState().setHover(s.id), 0); } catch{}; 
+                  try { setTimeout(() => playerStore.getState().setHover(s.id), 0); } catch{}; 
                   try { sfx.play('hover', 0.35); } catch {}; 
                   try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {};
                   // Track hover event
@@ -250,7 +250,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                     hover_method: 'mouse'
                   });
                 }}
-                onMouseLeave={() => { try { setTimeout(() => usePlayerStore.getState().setHover(null), 0); } catch{} }}
+                onMouseLeave={() => { try { setTimeout(() => playerStore.getState().setHover(null), 0); } catch{} }}
                 onPointerDown={(e) => {
                   // Play warp sound
                   try { sfx.play('warp', 0.9); } catch {}
@@ -276,7 +276,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                   
                   try { 
                     setTimeout(() => {
-                      const state = usePlayerStore.getState();
+                      const state = playerStore.getState();
                       if (state) {
                         state.setHover(null);
                       }

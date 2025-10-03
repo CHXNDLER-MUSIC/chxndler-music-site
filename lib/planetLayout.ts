@@ -1,5 +1,7 @@
-import { useMemo } from "react";
-import { usePlayerStore } from "@/store/usePlayerStore";
+"use client";
+
+import { useMemo, useEffect, useState } from "react";
+import { playerStore } from "@/store/usePlayerStore";
 
 export type LayoutOut = {
   id: string;
@@ -119,7 +121,9 @@ export function computePlanetLayout(
 }
 
 export function usePlanetLayout(songId: string): LayoutOut | undefined {
-  const { songs } = usePlayerStore();
+  // Local subscription to the store
+  const [songs, setSongs] = useState(() => playerStore.getState().songs as any);
+  useEffect(() => playerStore.subscribe(() => setSongs(playerStore.getState().songs as any)), []);
   // Responsive opts: tighten on small screens
   const { innerWidth: w } = typeof window !== 'undefined' ? window : { innerWidth: 1280 } as any;
   const narrow = w < 640;

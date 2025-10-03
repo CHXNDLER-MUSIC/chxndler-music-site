@@ -1,5 +1,6 @@
 "use client";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { track } from "@/lib/analytics";
 import HoloHubMenu from "@/components/HoloHubMenu";
 import LumaKeyVideo from "@/components/LumaKeyVideo";
 import HoloJoinButton from "@/components/HoloJoinButton";
@@ -39,6 +40,10 @@ export default function SteeringWheelOverlay({
   const [activeBeamColor, setActiveBeamColor] = useState<'blue' | 'yellow' | 'pink'>('blue');
   const [mounted, setMounted] = useState(false);
   const [startSpotlight, setStartSpotlight] = useState(false);
+  // When transitioning from pink → yellow, temporarily suspend yellow panel until sequencing finishes
+  const [suspendYellowPanel, setSuspendYellowPanel] = useState(false);
+  const yellowFromPinkTimeoutA = useRef<number | null>(null);
+  const yellowFromPinkTimeoutB = useRef<number | null>(null);
 
   // Set mounted after component mounts to prevent immediate hover sounds
   useEffect(() => {
@@ -56,6 +61,8 @@ export default function SteeringWheelOverlay({
   useEffect(() => { onBeamColorChangeRef.current = onBeamColorChange; }, [onBeamColorChange]);
   const prevBeamColorRef = useRef<typeof activeBeamColor | null>(null);
   const didMountRef = useRef(false);
+  // When set, skip notifying parent on the next local color change
+  const suppressNextBeamNotifyRef = useRef(false);
   useEffect(() => {
     // Skip notifying parent on initial mount to avoid auto-enabling the blue display/beam
     if (!didMountRef.current) {
@@ -65,45 +72,36 @@ export default function SteeringWheelOverlay({
     }
     if (prevBeamColorRef.current === activeBeamColor) return;
     prevBeamColorRef.current = activeBeamColor;
+    if (suppressNextBeamNotifyRef.current) {
+      suppressNextBeamNotifyRef.current = false;
+      return; // do not inform parent for this one transition
+    }
     try { onBeamColorChangeRef.current?.(activeBeamColor); } catch {}
   }, [activeBeamColor]);
   const joinFormRef = useRef<HTMLDivElement|null>(null);
 
   // Display management handled inline by button handlers
 
-  // Close join form when clicking outside (but not on the join alien button itself)
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (showJoin && joinFormRef.current && !joinFormRef.current.contains(event.target as Node)) {
-        // Check if the click was on a join alien button - if so, let the button handle it
-        const target = event.target as Element;
-        const isJoinButton = target?.closest('[aria-label="Join Alien Display"]') || 
-                            target?.closest('.join-wrap') ||
-                            target?.getAttribute('aria-label') === 'Join Alien Display';
-        
-        if (!isJoinButton) {
-          setShowJoin(false);
-        }
-      }
-    }
-    
-    if (showJoin) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showJoin]);
+  // Pink display stays open until pink button is clicked - no click-outside behavior
 
   // On external close signal (warp start), close pink join panel and reset local beam tint
   useEffect(() => {
     setShowJoin(false);
     setActiveBeamColor('blue');
+    // Clear any pending yellow transition timers
+    if (yellowFromPinkTimeoutA.current) { window.clearTimeout(yellowFromPinkTimeoutA.current); yellowFromPinkTimeoutA.current = null; }
+    if (yellowFromPinkTimeoutB.current) { window.clearTimeout(yellowFromPinkTimeoutB.current); yellowFromPinkTimeoutB.current = null; }
+    setSuspendYellowPanel(false);
   }, [closeAllSignal]);
 
   function handleLaunch() {
     const willPause = !!playing;
+    // Track explicit Start button clicks (not generic play/pause)
+    try {
+      if (isStart) {
+        track('start_button_clicked');
+      }
+    } catch {}
     // Trigger toggle action first so downstream can open streaming links within a user gesture
     try { onLaunch(); } catch {}
     // After first click, permanently disable the start spotlight
@@ -132,7 +130,9 @@ export default function SteeringWheelOverlay({
     if (showJoin) {
       // Close pink display without auto-opening blue display
       setShowJoin(false);
-      setActiveBeamColor('blue'); // reset local state but don't auto-open blue display
+      // Reset local state but don't emit a blue signal to parent
+      suppressNextBeamNotifyRef.current = true;
+      setActiveBeamColor('blue');
       onBeamColorChange?.('off'); // tell parent to turn ALL displays off
     } else {
       // Open pink display
@@ -330,13 +330,24 @@ export default function SteeringWheelOverlay({
                       const a = buttonRef.current;
                       if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
                     } catch {}
-                    
-                    // Always ensure beam turns blue when blue button is clicked
-                    setActiveBeamColor('blue');
-                    onBeamColorChange?.('blue');
-                    
-                    // Toggle the blue display
-                    onPowerToggle?.();
+
+                    // If pink display is open, sequence: close pink → beam blue → open blue
+                    if (showJoin || activeBeamColor === 'pink') {
+                      // Close pink without auto-opening blue immediately
+                      setShowJoin(false);
+                      onBeamColorChange?.('off');
+                      // After close animation, flip beam to blue and trigger blue display
+                      setTimeout(() => {
+                        setActiveBeamColor('blue');
+                        onBeamColorChange?.('blue');
+                        onPowerToggle?.();
+                      }, 180);
+                    } else {
+                      // Normal blue toggle
+                      setActiveBeamColor('blue');
+                      onBeamColorChange?.('blue');
+                      onPowerToggle?.();
+                    }
                   }}
                   aria-label="Power"
                   title="Power"
@@ -394,7 +405,7 @@ export default function SteeringWheelOverlay({
                 anchorBottomPercent={buttonsBottomPercent}
                 anchorOffsetPx={buttonOffsetPx}
                 closeSignal={closeAllSignal}
-                suspend={suspendUI}
+                suspend={suspendUI || suspendYellowPanel}
                 onToggle={(isOpen) => {
                   if (!showUI) return;
                   if (isOpen) {
@@ -403,18 +414,42 @@ export default function SteeringWheelOverlay({
                       const a = buttonRef.current;
                       if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
                     } catch {}
-                    // Close other displays first (especially blue display)
-                    onBeamColorChange?.('off'); // Close all displays first
-                    // Then set yellow beam after a brief delay
-                    setTimeout(() => {
-                      setActiveBeamColor('yellow');
-                      onBeamColorChange?.('yellow');
-                    }, 100);
+                    // If pink display is open, sequence: fade out pink → switch beam → fade in yellow panel
+                    if (showJoin || activeBeamColor === 'pink') {
+                      // Prevent yellow panel from showing while pink fades out and beam flips
+                      setSuspendYellowPanel(true);
+                      // Start pink fade-out
+                      setShowJoin(false);
+                      onBeamColorChange?.('off');
+                      // After pink fade completes (~350ms), flip beam to yellow
+                      yellowFromPinkTimeoutA.current = window.setTimeout(() => {
+                        setActiveBeamColor('yellow');
+                        onBeamColorChange?.('yellow');
+                        // Parent applies a ~150ms delay before enabling the beam; un-suspend panel slightly after
+                        yellowFromPinkTimeoutB.current = window.setTimeout(() => {
+                          setSuspendYellowPanel(false);
+                        }, 170);
+                      }, 360);
+                    } else {
+                      // Close other displays first (especially blue display)
+                      onBeamColorChange?.('off'); // Close all displays first
+                      // Then set yellow beam after a brief delay
+                      setTimeout(() => {
+                        setActiveBeamColor('yellow');
+                        onBeamColorChange?.('yellow');
+                      }, 100);
+                    }
                   } else {
                     // Menu is closing: turn displays off without auto-opening blue
                     if (activeBeamColor === 'yellow') {
-                      setActiveBeamColor('blue'); // reset local state but don't auto-open blue display
+                      // Reset local state but don't emit a blue signal to parent
+                      suppressNextBeamNotifyRef.current = true;
+                      setActiveBeamColor('blue');
                       onBeamColorChange?.('off'); // tell parent to turn ALL displays off
+                      // Also cancel any pending transition timers
+                      if (yellowFromPinkTimeoutA.current) { window.clearTimeout(yellowFromPinkTimeoutA.current); yellowFromPinkTimeoutA.current = null; }
+                      if (yellowFromPinkTimeoutB.current) { window.clearTimeout(yellowFromPinkTimeoutB.current); yellowFromPinkTimeoutB.current = null; }
+                      setSuspendYellowPanel(false);
                     }
                   }
                 }}
@@ -479,7 +514,7 @@ export default function SteeringWheelOverlay({
             {/* Join form panel */}
             <div
               style={{
-                width: 'calc(var(--display-width) + 32px)', // Match widened display width across panels
+                width: 'calc(var(--display-width) - 120px)', // Very narrow pink display, brought in dramatically on both sides
                 borderRadius: 'var(--display-border-radius)',
                 padding: '12px',
                 color: '#fff',

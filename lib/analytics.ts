@@ -125,6 +125,7 @@ export function trackClick(clickData: ClickData) {
       element_tag: clickData.element.tagName,
       element_class: clickData.element.className,
       element_text: clickData.element.textContent,
+      element_label: clickData.enhancedLabel, // include enhanced label for easier analysis
       click_id: clickData.id,
       position: clickData.position,
       viewport: clickData.viewport,

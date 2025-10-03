@@ -1,10 +1,12 @@
 "use client";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { tracks } from "@/lib/songs-consolidated";
-import { usePlayerStore } from "@/store/usePlayerStore";
+import { playerStore } from "@/store/usePlayerStore";
 
 export default function HoloAudioBridge() {
-  const { mainId, songs } = usePlayerStore((s) => ({ mainId: s.mainId, songs: s.songs }));
+  const [storeSnap, setStoreSnap] = React.useState(() => playerStore.getState());
+  React.useEffect(() => playerStore.subscribe(() => setStoreSnap(playerStore.getState())), []);
+  const { mainId, songs } = storeSnap as any;
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const warpAudioRef = useRef<HTMLAudioElement | null>(null);
   const [currentTrack, setCurrentTrack] = useState(null);
@@ -112,7 +114,7 @@ export default function HoloAudioBridge() {
         const currentIndex = songs.findIndex(s => s.id === mainId);
         if (currentIndex >= 0) {
           const newIndex = (currentIndex - 1 + songs.length) % songs.length;
-          usePlayerStore.getState().setMain(songs[newIndex].id);
+          playerStore.getState().setMain(songs[newIndex].id);
         }
       }
       else if (e.key === 'ArrowRight') { 
@@ -120,7 +122,7 @@ export default function HoloAudioBridge() {
         const currentIndex = songs.findIndex(s => s.id === mainId);
         if (currentIndex >= 0) {
           const newIndex = (currentIndex + 1) % songs.length;
-          usePlayerStore.getState().setMain(songs[newIndex].id);
+          playerStore.getState().setMain(songs[newIndex].id);
         }
       }
     };

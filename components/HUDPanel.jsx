@@ -8,7 +8,7 @@ import dynamic from "next/dynamic";
 // IMPORTANT: Do NOT import at module scope — older @react-three/fiber versions
 // are incompatible with React 19 and can crash on evaluation. We lazy-load it
 // only after probing availability, and fall back gracefully.
-import { usePlayerStore } from "@/store/usePlayerStore";
+import { playerStore } from "@/store/usePlayerStore";
 import { track as trackAnalytics } from "@/lib/analytics";
 
 // We import the 3D system directly and only render on client via this client component
@@ -103,6 +103,7 @@ export default function HUDPanel({
   hidePlanetsUntilPlaying = false,
   beamOnly = false,
   beamEnabled = undefined, // optional external control for beam fade (true/false)
+  joinAlienOpen = false, // disable cover art interaction when pink display is open
 }) {
   const hoverCoverRef = useRef(null);
   const clickCoverRef = useRef(null);
@@ -441,7 +442,7 @@ export default function HUDPanel({
   useEffect(() => {
     const planetData = buildPlanetSongs();
     if (planetData.holoSongs && planetData.holoSongs.length > 0) {
-      usePlayerStore.getState().initSongs(planetData.holoSongs);
+      playerStore.getState().initSongs(planetData.holoSongs);
     }
   }, []);
 
@@ -548,7 +549,7 @@ export default function HUDPanel({
                     // Do not disable can3D here; fallback may still work
                   }}
                 >
-                  {/* Show planet system always - both on homepage and when songs are selected */}
+                  {/* Show all planets on homepage (no currentId), and focus when a song is selected */}
                   {preferRaw3D ? (
                     <PlanetSystemRaw showAll={!currentId} hideUntilPlaying={!!hidePlanetsUntilPlaying} onSongChange={onSongChange} />
                   ) : (
@@ -611,6 +612,9 @@ export default function HUDPanel({
               return (
                 <div
                   onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {}; try { const a = hoverCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
+                  style={{
+                    pointerEvents: joinAlienOpen ? 'none' : 'auto'
+                  }}
                 >
                   <CoverHologram 
                     src={src} 
@@ -983,28 +987,20 @@ export default function HUDPanel({
                 
                 // Hide all planets immediately when a song is selected from dropdown
                 try {
-                  usePlayerStore.getState().setPlanetsVisible(false);
+                  playerStore.getState().setPlanetsVisible(false);
                 } catch (error) {
                   console.error('Failed to hide planets:', error);
                 }
                 
                 // Set as main planet in player store so it becomes focused in dashboard
                 try {
-                  usePlayerStore.getState().setMain(id);
+                  playerStore.getState().setMain(id);
                   console.log('🎵 HUDPanel: Set main planet to', id);
                 } catch (error) {
                   console.error('Failed to set main planet:', error);
                 }
                 
-                // After warp delay (1800ms), show the selected song's planet
-                setTimeout(() => {
-                  try {
-                    usePlayerStore.getState().setPlanetsVisible(true);
-                    console.log('🎵 HUDPanel: Planets re-enabled after warp for song:', id);
-                  } catch (error) {
-                    console.error('Failed to re-enable planets after warp:', error);
-                  }
-                }, 1800);
+                // Do not re-enable planets here; next route controls when to show the focused planet
                 
                 // Stop ambient space music when switching songs
                 try {
@@ -1030,7 +1026,7 @@ export default function HUDPanel({
                 onSongChange?.(id);
                 try {
                   if (usePlayerStore?.getState) {
-                    usePlayerStore.getState().setMain(id);
+                  playerStore.getState().setMain(id);
                   }
                 } catch (error) {
                   if (DEBUG_MEDIA) dwarn('HUDPanel: failed to update player store', error);

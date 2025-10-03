@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { getClickAnalyticsLocal } from "../lib/analytics";
+import { tracks } from "@/lib/songs-consolidated";
 
 interface MusicStats {
   // Button Categories
@@ -23,8 +24,22 @@ interface MusicAnalyticsVisualProps {
   onClose?: () => void;
 }
 
+type Metrics = {
+  pageViews: number;
+  startClicks: number;
+  commsClicks: number;
+  socials: { instagram: number; tiktok: number; youtube: number; spotify: number; apple: number };
+  joinPinkClicks: number;
+  joinSubmitClicks: number;
+  songPlays: Record<string, { count: number; title?: string }>;
+  coverClicks: Record<string, { count: number; title?: string }>;
+};
+
 export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualProps) {
   const [stats, setStats] = useState<MusicStats | null>(null);
+  const [metrics, setMetrics] = useState<Metrics | null>(null);
+  const [songsOpen, setSongsOpen] = useState(false);
+  const [coversOpen, setCoversOpen] = useState(false);
 
   const loadMusicAnalytics = () => {
     const clicks = getClickAnalyticsLocal();
@@ -173,7 +188,19 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
     return colors[index % colors.length];
   };
 
+  async function loadServerMetrics() {
+    try {
+      const res = await fetch('/api/metrics', { cache: 'no-store' });
+      if (!res.ok) throw new Error('metrics failed');
+      const json = await res.json();
+      setMetrics(json);
+    } catch {
+      setMetrics(null);
+    }
+  }
+
   useEffect(() => {
+    loadServerMetrics();
     loadMusicAnalytics();
   }, []);
 
@@ -192,13 +219,13 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
         <div className="p-6 border-b border-cyan-500/20 flex justify-between items-center bg-gradient-to-r from-blue-900/20 to-purple-900/20">
           <div>
             <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">
-              🎵 Music Analytics Dashboard
+              🌐 Website Analytics
             </h2>
-            <p className="text-cyan-300/70 mt-1">Visual insights into your music engagement</p>
+            <p className="text-cyan-300/70 mt-1">Site-wide events, buttons, and music</p>
           </div>
           <div className="flex gap-3">
             <button
-              onClick={loadMusicAnalytics}
+              onClick={() => { loadServerMetrics(); loadMusicAnalytics(); }}
               className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg transition-colors text-sm font-medium"
             >
               🔄 Refresh
@@ -213,7 +240,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
         </div>
 
         <div className="overflow-y-auto max-h-[calc(90vh-100px)]">
-          {stats.totalMusicInteractions === 0 ? (
+          {(!stats || stats.totalMusicInteractions === 0) && !metrics ? (
             <div className="p-8 text-center text-gray-400">
               <div className="text-6xl mb-4">🎵</div>
               <p className="text-xl">No music interactions yet!</p>
@@ -221,23 +248,50 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
             </div>
           ) : (
             <div className="p-6 space-y-8">
-              {/* Overview Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-gradient-to-br from-cyan-500/20 to-blue-500/20 p-4 rounded-xl border border-cyan-500/20">
-                  <div className="text-3xl font-bold text-cyan-400">{stats.totalMusicInteractions}</div>
-                  <div className="text-sm text-cyan-300/70">Music Interactions</div>
+              {/* Headline site metrics */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 p-4 rounded-xl border border-cyan-500/20">
+                  <div className="text-3xl font-bold text-cyan-400">{metrics?.pageViews ?? 0}</div>
+                  <div className="text-sm text-cyan-300/70">Page Views</div>
                 </div>
                 <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 p-4 rounded-xl border border-purple-500/20">
-                  <div className="text-3xl font-bold text-purple-400">{stats.totalButtonClicks}</div>
-                  <div className="text-sm text-purple-300/70">Button Clicks</div>
+                  <div className="text-3xl font-bold text-purple-400">{metrics?.startClicks ?? (stats?.controlButtons.find(b=>b.button==='Start')?.count || 0)}</div>
+                  <div className="text-sm text-purple-300/70">Start Button Clicks</div>
                 </div>
-                <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 p-4 rounded-xl border border-green-500/20">
-                  <div className="text-3xl font-bold text-green-400">{stats.collectCardClicks.reduce((sum, item) => sum + item.count, 0)}</div>
-                  <div className="text-sm text-green-300/70">Cards Collected</div>
+                <div className="bg-gradient-to-br from-yellow-500/20 to-amber-500/20 p-4 rounded-xl border border-yellow-500/20">
+                  <div className="text-3xl font-bold text-yellow-300">{metrics?.commsClicks ?? (stats?.controlButtons.find(b=>b.button==='Comms')?.count || 0)}</div>
+                  <div className="text-sm text-yellow-100/80">Yellow Comms Clicks</div>
                 </div>
-                <div className="bg-gradient-to-br from-orange-500/20 to-red-500/20 p-4 rounded-xl border border-orange-500/20">
-                  <div className="text-3xl font-bold text-orange-400">{stats.socialButtons.reduce((sum, item) => sum + item.count, 0) + stats.musicButtons.reduce((sum, item) => sum + item.count, 0)}</div>
-                  <div className="text-sm text-orange-300/70">Social/Music Links</div>
+              </div>
+
+              {/* Social breakdown */}
+              <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50">
+                <h3 className="text-lg font-bold text-white mb-4">Social Platform Clicks</h3>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-white">
+                  {[
+                    { name: 'Instagram', value: metrics?.socials?.instagram ?? (stats?.socialButtons.find(b=>b.button==='Instagram')?.count || 0) },
+                    { name: 'TikTok', value: metrics?.socials?.tiktok ?? (stats?.socialButtons.find(b=>b.button==='TikTok')?.count || 0) },
+                    { name: 'YouTube', value: metrics?.socials?.youtube ?? (stats?.socialButtons.find(b=>b.button==='YouTube')?.count || 0) },
+                    { name: 'Spotify', value: metrics?.socials?.spotify ?? (stats?.musicButtons.find(b=>b.button==='Spotify')?.count || 0) },
+                    { name: 'Apple Music', value: metrics?.socials?.apple ?? (stats?.musicButtons.find(b=>b.button==='Apple Music')?.count || 0) },
+                  ].map((it) => (
+                    <div key={it.name} className="flex justify-between items-center">
+                      <span className="font-medium">{it.name}</span>
+                      <span className="text-cyan-300 font-bold">{it.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Pink join analytics */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-pink-500/20 p-4 rounded-xl border border-pink-400/30">
+                  <div className="text-3xl font-bold text-pink-300">{metrics?.joinPinkClicks ?? (stats?.controlButtons.find(b=>b.button==='Join Aliens')?.count || 0)}</div>
+                  <div className="text-sm text-pink-200/90">Pink Join Aliens Clicks</div>
+                </div>
+                <div className="bg-emerald-500/20 p-4 rounded-xl border border-emerald-400/30">
+                  <div className="text-3xl font-bold text-emerald-300">{metrics?.joinSubmitClicks ?? 0}</div>
+                  <div className="text-sm text-emerald-200/90">Join The Aliens Submits</div>
                 </div>
               </div>
 
@@ -298,107 +352,67 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                 )}
               </div>
 
-              {/* Song Selections Chart */}
-              {stats.songSelections.length > 0 && (
-                <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50">
-                  <h3 className="text-xl font-bold text-white mb-4 flex items-center">
-                    <span className="text-2xl mr-2">🎧</span>
-                    Most Selected Songs
-                  </h3>
-                  <div className="space-y-3">
-                    {stats.songSelections.slice(0, 5).map((song, index) => {
-                      const maxCount = stats.songSelections[0]?.count || 1;
+              {/* Songs (plays) - collapsible list with all songs */}
+              <div className="bg-gray-800/50 rounded-xl border border-gray-700/50">
+                <button className="w-full text-left p-6 flex items-center justify-between" onClick={() => setSongsOpen(!songsOpen)}>
+                  <span className="text-xl font-bold text-white flex items-center"><span className="text-2xl mr-2">🎧</span> Songs (plays)</span>
+                  <span className="text-cyan-300">{songsOpen ? 'Hide' : 'Show'}</span>
+                </button>
+                {songsOpen && (
+                  <div className="px-6 pb-6 space-y-3">
+                    {tracks.map((t, idx) => {
+                      const slug = (t.slug || '').toLowerCase();
+                      const count = metrics?.songPlays?.[slug]?.count || 0;
+                      const max = Math.max(1, ...tracks.map(tt => metrics?.songPlays?.[(tt.slug||'').toLowerCase()]?.count || 0));
                       return (
-                        <div key={song.song} className="flex items-center gap-4">
-                          <div className="w-4 h-4 rounded-full bg-gradient-to-r from-cyan-400 to-blue-400 flex items-center justify-center text-xs text-black font-bold">
-                            {index + 1}
-                          </div>
+                        <div key={slug || idx} className="flex items-center gap-4">
                           <div className="flex-1">
                             <div className="flex justify-between items-center mb-1">
-                              <span className="text-white font-medium">{song.title || song.song}</span>
-                              <span className="text-cyan-400 font-bold">{song.count} plays</span>
+                              <span className="text-white font-medium">{t.title}</span>
+                              <span className="text-cyan-400 font-bold">{count} plays</span>
                             </div>
                             <div className="bg-gray-700 rounded-full h-2 overflow-hidden">
-                              <div 
-                                className={`h-full ${getBarColor(index)} transition-all duration-500`}
-                                style={{ width: getBarWidth(song.count, maxCount) }}
-                              />
+                              <div className={`h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500`} style={{ width: getBarWidth(count, max) }} />
                             </div>
                           </div>
                         </div>
                       );
                     })}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
-              {/* Cover Clicks Chart */}
-              {stats.coverClicks.length > 0 && (
-                <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50">
-                  <h3 className="text-xl font-bold text-white mb-4 flex items-center">
-                    <span className="text-2xl mr-2">🖼️</span>
-                    Most Clicked Cover Art
-                  </h3>
-                  <div className="space-y-3">
-                    {stats.coverClicks.slice(0, 5).map((cover, index) => {
-                      const maxCount = stats.coverClicks[0]?.count || 1;
+              {/* Cover Art - collapsible list with all songs */}
+              <div className="bg-gray-800/50 rounded-xl border border-gray-700/50">
+                <button className="w-full text-left p-6 flex items-center justify-between" onClick={() => setCoversOpen(!coversOpen)}>
+                  <span className="text-xl font-bold text-white flex items-center"><span className="text-2xl mr-2">🖼️</span> Cover Art</span>
+                  <span className="text-cyan-300">{coversOpen ? 'Hide' : 'Show'}</span>
+                </button>
+                {coversOpen && (
+                  <div className="px-6 pb-6 space-y-3">
+                    {tracks.map((t, idx) => {
+                      const slug = (t.slug || '').toLowerCase();
+                      const count = metrics?.coverClicks?.[slug]?.count || 0;
+                      const max = Math.max(1, ...tracks.map(tt => metrics?.coverClicks?.[(tt.slug||'').toLowerCase()]?.count || 0));
                       return (
-                        <div key={cover.song} className="flex items-center gap-4">
-                          <div className="w-4 h-4 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center text-xs text-black font-bold">
-                            {index + 1}
-                          </div>
+                        <div key={slug || idx} className="flex items-center gap-4">
                           <div className="flex-1">
                             <div className="flex justify-between items-center mb-1">
-                              <span className="text-white font-medium">{cover.title || cover.song}</span>
-                              <span className="text-purple-400 font-bold">{cover.count} clicks</span>
+                              <span className="text-white font-medium">{t.title}</span>
+                              <span className="text-pink-400 font-bold">{count} clicks</span>
                             </div>
                             <div className="bg-gray-700 rounded-full h-2 overflow-hidden">
-                              <div 
-                                className={`h-full ${getBarColor(index + 1)} transition-all duration-500`}
-                                style={{ width: getBarWidth(cover.count, maxCount) }}
-                              />
+                              <div className={`h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500`} style={{ width: getBarWidth(count, max) }} />
                             </div>
                           </div>
                         </div>
                       );
                     })}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
-              {/* Collect Card Clicks Chart */}
-              {stats.collectCardClicks.length > 0 && (
-                <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50">
-                  <h3 className="text-xl font-bold text-white mb-4 flex items-center">
-                    <span className="text-2xl mr-2">🎴</span>
-                    Most Collected Cards
-                  </h3>
-                  <div className="space-y-3">
-                    {stats.collectCardClicks.slice(0, 5).map((card, index) => {
-                      const maxCount = stats.collectCardClicks[0]?.count || 1;
-                      return (
-                        <div key={card.song} className="flex items-center gap-4">
-                          <div className="w-4 h-4 rounded-full bg-gradient-to-r from-orange-400 to-red-400 flex items-center justify-center text-xs text-black font-bold">
-                            {index + 1}
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex justify-between items-center mb-1">
-                              <span className="text-white font-medium">{card.title || card.song}</span>
-                              <span className="text-orange-400 font-bold">{card.count} collections</span>
-                            </div>
-                            <div className="bg-gray-700 rounded-full h-2 overflow-hidden">
-                              <div 
-                                className={`h-full ${getBarColor(index + 2)} transition-all duration-500`}
-                                style={{ width: getBarWidth(card.count, maxCount) }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+              {/* Keep click-category sections for additional context */}
 
             </div>
           )}

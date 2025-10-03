@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
+import { track } from "@/lib/analytics";
 
 export default function JoinAliens({ visible = true } = {}) {
   const [email, setEmail] = useState("");
@@ -31,6 +32,7 @@ export default function JoinAliens({ visible = true } = {}) {
     if (status === "loading" || status === "ok") return; // lock after success
     if (!email.trim() && !phone.trim()) return; // require at least one field
     try { const a = joinRef.current; if (a) { a.currentTime = 0; a.volume = 0.9; a.play().catch(()=>{}); } } catch {}
+    try { track('join_aliens_submit', { payload: { email_present: !!email.trim(), phone_present: !!phone.trim() } }); } catch {}
     setStatus("loading");
     try {
       const res = await fetch("/api/join", {

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useMemo } from "react";
-import { Mesh, ShaderMaterial, Color, DoubleSide, Euler, SphereGeometry } from "three";
+import { Mesh, ShaderMaterial, Color, DoubleSide, Euler, SphereGeometry, AdditiveBlending } from "three";
 import { useFrame } from "@react-three/fiber";
 
 export default function HeartPlanet() {
@@ -12,8 +12,8 @@ export default function HeartPlanet() {
   const heartRadius = 2.0; // Smaller so it doesn't dominate the display
   
   // Log after defining radius to avoid ReferenceError during render
-  console.log("🧡 HeartPlanet is rendering! Position: [0,0,0], Radius:", heartRadius);
-  console.log("🧡 Using spherical geometry with heart displacement and enhanced glow layers");
+  // console.log("🧡 HeartPlanet is rendering! Position: [0,0,0], Radius:", heartRadius);
+  // console.log("🧡 Using spherical geometry with heart displacement and enhanced glow layers");
 
   // Create spherical geometry with heart-shaped surface displacement in shader
   const heartGeometry = useMemo(() => {
@@ -22,88 +22,41 @@ export default function HeartPlanet() {
     return geometry;
   }, [heartRadius]);
 
-  // Enhanced planet-like shader material with dramatic lighting
+  // Bright emissive "sun" surface shader (procedural granulation)
   const planetMaterial = useMemo(() => {
     const material = new ShaderMaterial({
       uniforms: {
         uTime: { value: 0 },
         uColor: { value: new Color("#FC54AF") },
-        uLightColor: { value: new Color("#FFFFFF") },
-        uDarkColor: { value: new Color("#AA2266") },
-        uLightPos1: { value: [4, 6, 8] },
-        uLightPos2: { value: [-3, 2, 5] },
-        uLightPos3: { value: [0, -2, 6] },
-        uRoughness: { value: 0.4 },
-        uMetalness: { value: 0.1 }
+        uEmissiveIntensity: { value: 2.2 },
+        uGranulation: { value: 3.0 }
       },
       vertexShader: `
         uniform float uTime;
-        varying vec3 vNormal;
-        varying vec3 vPosition;
+        varying vec3 vNormalW;
         varying vec3 vWorldPosition;
-        varying vec2 vUv;
-        
-        // Subtle planetary displacement with heart-inspired features
-        float heartDisplacement(vec3 position) {
-          // Convert 3D position to spherical coordinates
-          float phi = atan(position.z, position.x); 
-          float theta = acos(position.y / length(position));
-          
-          // Create natural planetary variations with subtle heart influence
-          float heartU = phi / (2.0 * 3.14159);
-          float heartV = theta / 3.14159;
-          
-          // Very subtle heart-inspired continental patterns
-          vec2 heart1 = vec2(heartU * 1.5 - 0.75, heartV * 1.5 - 0.75);
-          float x1 = heart1.x * 0.4;
-          float y1 = heart1.y * 0.4;
-          float heartShape = pow(x1*x1 + y1*y1 - 0.3, 3.0) - x1*x1 * pow(y1, 3.0) * 0.2;
-          
-          // Create realistic planetary surface variations
-          float continentalPattern = smoothstep(-0.1, 0.1, heartShape) * 0.008; // Very subtle
-          
-          // Add natural planetary noise for realistic terrain
-          float naturalNoise = sin(phi * 8.0) * sin(theta * 6.0) * 0.005 +
-                              sin(phi * 15.0) * sin(theta * 12.0) * 0.003;
-          
-          return continentalPattern + naturalNoise;
-        }
         
         void main() {
           vec3 pos = position;
-          
-          // Add subtle heart-shaped displacement to the sphere using 3D position
-          float displacement = heartDisplacement(normalize(position));
-          pos += normal * displacement;
-          
-          // Add gentle pulsing
-          float pulse = sin(uTime * 3.0) * 0.05 + 1.0;
+          // Very subtle breathing to keep it lively but stable
+          float pulse = 1.0 + sin(uTime * 1.8) * 0.015;
           pos *= pulse;
-          
-          vNormal = normalize(normalMatrix * normal);
-          vPosition = (modelViewMatrix * vec4(pos, 1.0)).xyz;
+
+          vNormalW = normalize(normalMatrix * normal);
           vWorldPosition = (modelMatrix * vec4(pos, 1.0)).xyz;
-          vUv = uv;
           gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
         }
       `,
       fragmentShader: `
         uniform float uTime;
         uniform vec3 uColor;
-        uniform vec3 uLightColor;
-        uniform vec3 uDarkColor;
-        uniform vec3 uLightPos1;
-        uniform vec3 uLightPos2;
-        uniform vec3 uLightPos3;
-        uniform float uRoughness;
-        uniform float uMetalness;
+        uniform float uEmissiveIntensity;
+        uniform float uGranulation;
         
-        varying vec3 vNormal;
-        varying vec3 vPosition;
+        varying vec3 vNormalW;
         varying vec3 vWorldPosition;
-        varying vec2 vUv;
         
-        // Enhanced noise functions
+        // Noise utilities
         float hash(float n) {
           return fract(sin(n) * 43758.5453123);
         }
@@ -128,85 +81,27 @@ export default function HeartPlanet() {
         }
         
         void main() {
-          vec3 normal = normalize(vNormal);
-          vec3 viewDir = normalize(cameraPosition - vWorldPosition);
-          
-          // Multiple light sources for dramatic 3D effect
-          vec3 lightDir1 = normalize(uLightPos1 - vWorldPosition);
-          vec3 lightDir2 = normalize(uLightPos2 - vWorldPosition);
-          vec3 lightDir3 = normalize(uLightPos3 - vWorldPosition);
-          
-          // Calculate lighting from multiple sources
-          float diff1 = max(dot(normal, lightDir1), 0.0);
-          float diff2 = max(dot(normal, lightDir2), 0.0) * 0.6;
-          float diff3 = max(dot(normal, lightDir3), 0.0) * 0.4;
-          float totalDiff = diff1 + diff2 + diff3;
-          
-          // Specular highlights
-          vec3 reflectDir1 = reflect(-lightDir1, normal);
-          float spec1 = pow(max(dot(viewDir, reflectDir1), 0.0), 32.0);
-          
-          // Fresnel rim lighting for 3D depth
-          float fresnel = 1.0 - max(dot(normal, viewDir), 0.0);
-          fresnel = pow(fresnel, 1.8);
-          
-          // Realistic planetary surface details
-          vec2 surfaceUv = vUv * 8.0 + uTime * 0.02;
-          float surfaceDetail = fbm(surfaceUv) * 0.2;
-          
-          // Large-scale continental patterns using world position
-          vec3 worldPos = normalize(vWorldPosition);
-          float phi = atan(worldPos.z, worldPos.x);
-          float theta = acos(worldPos.y);
-          vec2 sphericalUv = vec2(phi / (2.0 * 3.14159), theta / 3.14159);
-          
-          // Large continental masses
-          float continents1 = fbm(sphericalUv * 3.0) * 0.4;
-          float continents2 = fbm((sphericalUv + vec2(0.5, 0.3)) * 2.5) * 0.3;
-          float continents3 = fbm((sphericalUv + vec2(0.8, 0.1)) * 4.0) * 0.2;
-          
-          // Very subtle heart-inspired continental shapes (barely visible)
-          vec2 heartUv = sphericalUv * 1.8 - 0.9;
-          float x = heartUv.x * 0.3;
-          float y = heartUv.y * 0.3;
-          float heartShape = pow(x*x + y*y - 0.2, 3.0) - x*x * pow(y, 3.0) * 0.1;
-          float heartPattern = smoothstep(-0.05, 0.05, heartShape) * 0.08; // Very subtle
-          
-          // Combine for realistic planetary appearance
-          float continents = continents1 + continents2 + continents3 + heartPattern;
-          
-          // Add mountain ranges and geographic features
-          float mountains = fbm(sphericalUv * 12.0) * 0.15;
-          float oceanBasins = smoothstep(0.2, 0.6, continents) * 0.3;
-          
-          // Heart pulse effect
-          float heartPulse = sin(uTime * 3.0) * 0.1 + 0.9;
-          
-          // Realistic planetary color mixing
-          vec3 oceanColor = mix(uDarkColor, vec3(0.1, 0.3, 0.6), oceanBasins);
-          vec3 landColor = mix(uColor * 0.8, vec3(0.4, 0.6, 0.3), continents);
-          vec3 mountainColor = mix(landColor, vec3(0.6, 0.5, 0.4), mountains);
-          
-          vec3 baseColor = mix(oceanColor, mountainColor, continents + mountains);
-          vec3 litColor = mix(baseColor, uLightColor, totalDiff * 0.5);
-          vec3 surfaceColor = mix(baseColor * 0.3, litColor, totalDiff + surfaceDetail * 0.5);
-          
-          // Add specular highlights (reduced for planet appearance)
-          surfaceColor += uLightColor * spec1 * 0.3;
-          
-          // Subtle atmospheric rim lighting
-          vec3 rimColor = uColor * 2.0 * fresnel * heartPulse;
-          surfaceColor += rimColor;
-          
-          // Gentle planetary glow (much reduced)
-          vec3 emissive = uColor * 0.8 * heartPulse;
-          
-          vec3 finalColor = surfaceColor + emissive;
-          
-          gl_FragColor = vec4(finalColor, 1.0);
+          vec3 n = normalize(vNormalW);
+          vec3 v = normalize(cameraPosition - vWorldPosition);
+
+          // Solar granulation using FBM on world position
+          vec2 gUv = vec2(vWorldPosition.x, vWorldPosition.y) * uGranulation;
+          float gran = fbm(gUv + uTime * 0.15) * 0.7 + fbm(gUv * 1.9 - uTime * 0.1) * 0.3;
+          gran = smoothstep(0.2, 0.9, gran);
+
+          // Make the center brighter than the rim
+          float center = pow(max(dot(n, v), 0.0), 1.5);
+          float flicker = 0.85 + 0.15 * sin(uTime * 8.0 + vWorldPosition.x * 2.0);
+
+          vec3 color = uColor * (1.2 + 1.6 * gran) * center * uEmissiveIntensity * flicker;
+          gl_FragColor = vec4(color, 1.0);
         }
       `,
-      side: DoubleSide
+      // FrontSide prevents backface lighting artifacts at grazing angles
+      side: 0,
+      transparent: false,
+      depthWrite: true,
+      depthTest: true
     });
     return material;
   }, []);
@@ -216,43 +111,92 @@ export default function HeartPlanet() {
     const material = new ShaderMaterial({
       uniforms: {
         uTime: { value: 0 },
-        uColor: { value: new Color("#FC54AF") }
+        uColor: { value: new Color("#FC54AF") },
+        uStrength: { value: 1.0 }
       },
       vertexShader: `
-        varying vec3 vNormal;
-        varying vec3 vPosition;
+        varying vec3 vNormalW;
+        varying vec3 vWorldPosition;
         
         void main() {
-          vNormal = normalize(normalMatrix * normal);
-          vPosition = position;
+          // Compute world-space normal and position for correct view direction
+          vNormalW = normalize(normalMatrix * normal);
+          vec4 worldPos = modelMatrix * vec4(position, 1.0);
+          vWorldPosition = worldPos.xyz;
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
       `,
       fragmentShader: `
         uniform float uTime;
         uniform vec3 uColor;
+        uniform float uStrength;
         
-        varying vec3 vNormal;
-        varying vec3 vPosition;
+        varying vec3 vNormalW;
+        varying vec3 vWorldPosition;
         
         void main() {
-          vec3 viewDir = normalize(cameraPosition - vPosition);
-          float fresnel = 1.0 - abs(dot(vNormal, viewDir));
+          // Correct view direction in world space
+          vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+          float fresnel = 1.0 - abs(dot(normalize(vNormalW), viewDir));
           fresnel = pow(fresnel, 2.0);
-          
-          // Intense solar atmosphere pulsing
+           
+          // Stronger solar atmosphere pulsing
           float pulse = sin(uTime * 2.0) * 0.8 + 1.6;
           float heartPulse = sin(uTime * 3.0) * 0.6 + 1.4;
-          
-          vec3 atmosphereColor = uColor * 75.0 * fresnel * pulse * heartPulse;
-          float alpha = fresnel * 5.0 * pulse;
-          
+           
+          vec3 atmosphereColor = uColor * 120.0 * fresnel * pulse * heartPulse * uStrength;
+          float alpha = fresnel * 0.9; // additive blending; alpha acts as weight
+           
           gl_FragColor = vec4(atmosphereColor, alpha);
         }
       `,
       transparent: true,
-      side: 2 // DoubleSide
+      blending: AdditiveBlending,
+      depthWrite: false,
+      // BackSide for a clean halo silhouette without inner-face artifacts
+      side: 1
     });
+    // Keep additive layers out of tone mapping to preserve intensity
+    (material as any).toneMapped = false;
+    return material;
+  }, []);
+
+  // Inner frontside glow to brighten the core towards camera
+  const innerGlowMaterial = useMemo(() => {
+    const material = new ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 },
+        uColor: { value: new Color("#FF77C6") },
+        uIntensity: { value: 2.0 }
+      },
+      vertexShader: `
+        varying vec3 vNormalW;
+        varying vec3 vWorldPosition;
+        void main(){
+          vNormalW = normalize(normalMatrix * normal);
+          vWorldPosition = (modelMatrix * vec4(position,1.0)).xyz;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float uTime;
+        uniform vec3 uColor;
+        uniform float uIntensity;
+        varying vec3 vNormalW;
+        varying vec3 vWorldPosition;
+        void main(){
+          vec3 v = normalize(cameraPosition - vWorldPosition);
+          float center = pow(max(dot(normalize(vNormalW), v), 0.0), 3.0);
+          vec3 c = uColor * uIntensity * center;
+          gl_FragColor = vec4(c, center);
+        }
+      `,
+      transparent: true,
+      blending: AdditiveBlending,
+      depthWrite: false,
+      side: 0
+    });
+    (material as any).toneMapped = false;
     return material;
   }, []);
 
@@ -267,14 +211,13 @@ export default function HeartPlanet() {
     if (atmosphereMaterial.uniforms) {
       atmosphereMaterial.uniforms.uTime.value = time;
     }
+    if (innerGlowMaterial.uniforms) {
+      innerGlowMaterial.uniforms.uTime.value = time;
+    }
     
     if (meshRef.current) {
       // Slow rotation
-      meshRef.current.rotation.y += delta * 0.2;
-      
-      // Subtle heartbeat pulsing (less dramatic for planet-like appearance)
-      const heartbeat = 1 + Math.sin(time * 3) * 0.05 + Math.sin(time * 6) * 0.02;
-      meshRef.current.scale.setScalar(heartbeat);
+      meshRef.current.rotation.y += delta * 0.15;
     }
     
     if (atmosphereRef.current) {
@@ -283,53 +226,44 @@ export default function HeartPlanet() {
   });
 
   return (
-    <group position={[0, 0, 0]} scale={[0.8, 0.8, 0.8]} rotation={new Euler(0, 0, Math.PI)}>
+    <group position={[0, 0, 0]} scale={[0.85, 0.85, 0.85]}>
       {/* Single core heart planet body with bright shader material */}
       <mesh ref={meshRef} position={[0, 0, 0]} geometry={heartGeometry}>
         <primitive object={planetMaterial} />
       </mesh>
-      
-      {/* Subtle planetary atmosphere */}
-      <mesh ref={atmosphereRef} position={[0, 0, 0]} scale={[1.1, 1.1, 1.1]}>
-        <sphereGeometry args={[heartRadius, 32, 16]} />
-        <meshStandardMaterial 
-          color="#FC54AF" 
-          emissive="#FC54AF"
-          emissiveIntensity={0.3}
-          transparent 
-          opacity={0.15}
-        />
+
+      {/* Inner frontside glow overlay */}
+      <mesh position={[0, 0, 0]} scale={[1.02, 1.02, 1.02]}>
+        <sphereGeometry args={[heartRadius, 64, 32]} />
+        <primitive object={innerGlowMaterial} />
       </mesh>
       
-      {/* Outer atmospheric glow - very subtle for realistic planet */}
-      <mesh position={[0, 0, 0]} scale={[1.25, 1.25, 1.25]}>
+      {/* Stronger solar corona (additive, backface only) */}
+      <mesh ref={atmosphereRef} position={[0, 0, 0]} scale={[1.25, 1.25, 1.25]}>
+        <sphereGeometry args={[heartRadius, 32, 16]} />
+        <primitive object={atmosphereMaterial} />
+      </mesh>
+      
+      {/* Outer far glow (very soft) */}
+      <mesh position={[0, 0, 0]} scale={[1.55, 1.55, 1.55]}>
         <sphereGeometry args={[heartRadius, 24, 12]} />
-        <meshBasicMaterial 
-          color="#FC54AF" 
-          transparent 
-          opacity={0.08} 
-          side={2}
+        <meshBasicMaterial
+          color="#FC54AF"
+          transparent
+          opacity={0.04}
+          depthWrite={false}
+          blending={AdditiveBlending}
+          side={1}
         />
       </mesh>
       
       {/* Planetary lighting - gentle illumination */}
-      <ambientLight intensity={0.3} />
-      <pointLight 
-        position={[8, 6, 10]} 
-        color="#FFFFFF" 
-        intensity={2.0}
-        distance={50}
-        decay={0.5}
-      />
+      <ambientLight intensity={0.1} />
+      {/* Keep an external white light subtle so emissive dominates */}
+      <pointLight position={[8, 6, 10]} color="#FFFFFF" intensity={0.6} distance={50} decay={0.5} />
       
       {/* Subtle heart-colored accent lighting */}
-      <pointLight 
-        position={[0, 0, 0]} 
-        color="#FC54AF" 
-        intensity={1.0}
-        distance={15}
-        decay={2.0}
-      />
+      <pointLight position={[0, 0, 0]} color="#FC54AF" intensity={1.5} distance={18} decay={2.0} />
     </group>
   );
 }

@@ -79,23 +79,12 @@ function setState(partial: Partial<State>) {
 function getState() { return state; }
 function subscribe(l: () => void) { listeners.add(l); return () => listeners.delete(l); }
 
-export function usePlayerStore<T = State>(selector?: (s: State) => T): T {
-  const getSnapshot = React.useCallback(() => state, []);
-  const useSyncExternalStore = (React as any).useSyncExternalStore;
-  const snap = useSyncExternalStore && typeof useSyncExternalStore === 'function'
-    ? useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
-    : state; // fallback without SSR correctness
-  return (selector ? selector(snap) : (snap as unknown as T));
-}
+// Imperative store API for components/utilities
+export const playerStore = {
+  getState,
+  setState,
+  subscribe,
+};
 
-// Attach imperative helpers to match zustand API usage in code
-(usePlayerStore as any).getState = getState;
-(usePlayerStore as any).setState = setState;
-(usePlayerStore as any).subscribe = subscribe;
-
-// Type declaration for static properties on the function (non-breaking)
-export namespace usePlayerStore {
-  export const getState: () => State = getState;
-  export const setState: (partial: Partial<State>) => void = setState;
-  export const subscribe: (l: () => void) => () => void = subscribe;
-}
+// Back-compat named exports for types
+export type PlayerState = State;

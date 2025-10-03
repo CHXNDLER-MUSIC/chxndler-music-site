@@ -11,6 +11,8 @@ function identifyElement(element: HTMLElement): string {
   const ariaLabel = element.getAttribute('aria-label')?.toLowerCase() || '';
   const title = element.getAttribute('title')?.toLowerCase() || '';
   const dataId = element.getAttribute('data-id')?.toLowerCase() || '';
+  const dataSong = element.getAttribute('data-song') || '';
+  const dataSlug = element.getAttribute('data-slug') || '';
   const tagName = element.tagName.toLowerCase();
   const parentElement = element.parentElement;
   const parentClass = String(parentElement?.className || '').toLowerCase();
@@ -108,8 +110,19 @@ function identifyElement(element: HTMLElement): string {
     }
   }
 
-  // Generic collect card
-  if (text.includes('collect card') || className.includes('collect') || className.includes('btn-')) {
+  // Generic collect card (enhanced with data attributes + aria-label)
+  if (text.includes('collect card') || ariaLabel.includes('collect') || className.includes('collect') || className.includes('btn-')) {
+    // Prefer explicit data-song on target or ancestors
+    const ownSong = dataSong || element.getAttribute('data-song');
+    if (ownSong) return `🎴 Collect Card: ${ownSong}`;
+    try {
+      const elWithSong = element.closest('[data-song]') as HTMLElement | null;
+      const song = elWithSong?.getAttribute('data-song');
+      if (song) return `🎴 Collect Card: ${song}`;
+    } catch {}
+    // Parse from aria-label like "Collect Card: Be My Bee"
+    const m = (element.getAttribute('aria-label') || '').match(/collect\s*card\s*:\s*(.+)/i);
+    if (m && m[1]) return `🎴 Collect Card: ${m[1]}`;
     return '🎴 Collect Card';
   }
 

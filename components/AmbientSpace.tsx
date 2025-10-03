@@ -160,15 +160,17 @@ export default function AmbientSpace({
     } catch {}
   }, [introSrc, playingMusic, suspend, volume]);
 
-  // Global unlock: if autoplay is blocked, allow key press to enable
+  // Global unlock: if autoplay is blocked, allow user interaction (keyboard or pointer) to enable
   // Respect suspend and playingMusic — do not start ambient while a song is playing or UI is suspended
   useEffect(() => {
     if (!needEnable) return;
     if (suspend || playingMusic) return; // don't attach unlock while we should be silent
     const onAnyInteract = () => { enable(); };
     window.addEventListener('keydown', onAnyInteract, { passive: true } as any);
+    window.addEventListener('pointerdown', onAnyInteract, { passive: true } as any);
     return () => {
       window.removeEventListener('keydown', onAnyInteract as any);
+      window.removeEventListener('pointerdown', onAnyInteract as any);
     };
   }, [needEnable, suspend, playingMusic]);
 
@@ -178,6 +180,12 @@ export default function AmbientSpace({
       const amb = ambRef.current;
       const intro = introRef.current;
       if (!amb) return;
+      // Respect suspension and active music: do not start ambient while suspended,
+      // during music playback, or when a user-selected track is active.
+      if (suspend || playingMusic || userSelectedSong) {
+        setNeedEnable(true);
+        return;
+      }
       // If ambient is already playing and we're not suspended or playing music,
       // do not restart it — just ensure it is audible. Restarting can sound like a cut.
       if (!amb.paused && !suspend && !playingMusic) {
@@ -213,7 +221,31 @@ export default function AmbientSpace({
     };
     window.addEventListener('ambient:play', onAmbientPlay as any);
     return () => { window.removeEventListener('ambient:play', onAmbientPlay as any); };
-  }, [introSrc, volume]);
+  }, [introSrc, volume, suspend, playingMusic, userSelectedSong]);
+
+  // Prime ambient silently within a user gesture to satisfy autoplay policies
+  // without producing sound yet. We keep it muted/volume 0 until explicit play.
+  useEffect(() => {
+    const onAmbientPrime = () => {
+      const amb = ambRef.current;
+      if (!amb) return;
+      try {
+        amb.muted = true;
+        amb.volume = 0;
+        // Start playback muted to unlock; ignore failures silently
+        amb.play().then(() => {
+          setNeedEnable(false);
+        }).catch(() => {
+          // If blocked, leave needEnable true so a subsequent user pointerdown enables it
+          setNeedEnable(true);
+        });
+      } catch {
+        // No-op
+      }
+    };
+    window.addEventListener('ambient:prime', onAmbientPrime as any);
+    return () => { window.removeEventListener('ambient:prime', onAmbientPrime as any); };
+  }, []);
 
   useEffect(() => {
     const amb = ambRef.current;

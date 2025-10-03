@@ -19,7 +19,7 @@ import { sfx } from "@/lib/sfx";
 import { LINKS, POS } from "@/config/cockpit";
 import { tracks } from "@/lib/songs-consolidated";
 import { buildPlanetSongs } from "@/lib/planets";
-import { usePlayerStore } from "@/store/usePlayerStore";
+import { playerStore } from "@/store/usePlayerStore";
 import PrewarmThree from "@/components/PrewarmThree";
 import { track } from "@/lib/analytics";
 import PreloadMedia from "@/components/PreloadMedia";
@@ -53,6 +53,8 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [homeIntroEnabled, setHomeIntroEnabled] = useState(false);
   const [pendingHomePower, setPendingHomePower] = useState(false);
   const [pendingTrackPlay, setPendingTrackPlay] = useState(false);
+  // Hide 3D planets during warp when a song is selected; reveal on warp SFX end
+  const [hidePlanetsForSelection, setHidePlanetsForSelection] = useState(false);
   const [pendingOverlayReveal, setPendingOverlayReveal] = useState(false); // wait to show overlay until warp SFX ends
   const trackPlayTimerRef = React.useRef(undefined);
   // Keep ambient suspended initially, but allow faster startup
@@ -234,7 +236,7 @@ export default function DashboardApp({ initialSlug } = {}) {
 
     // STEP 1: Hide all planets when a song is selected
     try {
-      usePlayerStore.getState().setPlanetsVisible(false);
+      playerStore.getState().setPlanetsVisible(false);
     } catch {}
 
     // STEP 2: Stop all music immediately when song is selected
@@ -297,8 +299,9 @@ export default function DashboardApp({ initialSlug } = {}) {
     // Switch MediaPlayer channel; MediaPlayer handles audio swap and loading
     setChannelIdx(idx);
     
-    // Set flag to start song when video begins playing (onBasePlaying callback)
+    // Set flags for selection sequencing: hide planets during warp, start song on base video playing
     setPendingTrackPlay(true);
+    setHidePlanetsForSelection(true);
     
     // Let MediaPlayer handle audio element configuration through its index change
     // Don't manually set src here to avoid race conditions
@@ -329,17 +332,13 @@ export default function DashboardApp({ initialSlug } = {}) {
   }, [channelIdx, mounted, userSelected, warpActive, uiUnlocked]);
   const { hudSongs, holoSongs } = React.useMemo(() => buildPlanetSongs(), []);
   React.useEffect(() => {
-    try {
-      if (usePlayerStore && typeof usePlayerStore.getState === 'function') {
-        usePlayerStore.getState().initSongs(holoSongs);
-      }
-    } catch {}
+    try { playerStore.getState().initSongs(holoSongs); } catch {}
   }, [holoSongs]);
   React.useEffect(() => {
     if (!curTrack || homeMode) return;
     const slug = (curTrack.slug || "").toLowerCase();
     if (slug) {
-      try { usePlayerStore.getState().setMain(slug); } catch {}
+    try { playerStore.getState().setMain(slug); } catch {}
     }
   }, [curTrack?.slug, homeMode]);
 
@@ -403,6 +402,10 @@ export default function DashboardApp({ initialSlug } = {}) {
     if (startButtonWarpRef.current) return; // Skip if start button is handling warp
     const t = tracks.find((x) => x.slug === initialSlug);
     if (!t) return;
+    // Ensure planets are hidden when arriving on a song route
+    try { playerStore.getState().setPlanetsVisible(false); } catch {}
+    // Ensure focused planet is this route's song
+    try { playerStore.getState().setMain(t.slug || ''); } catch {}
     // Deep link unlocks overlay UI so buttons can show after warp
     setUiUnlocked(true);
     // Enable SFX when unlocking UI for deep links
@@ -433,6 +436,7 @@ export default function DashboardApp({ initialSlug } = {}) {
     // Defer audio until warp completes and base sky is playing
     try { buttonSfxWaitRef.current = null; } catch {}
     setPendingTrackPlay(true);
+    setHidePlanetsForSelection(true);
     // Trigger warp overlay and switch sky to this song
     setAllowWarp(true);
     setNextSky(skyFor(t.slug));
@@ -528,13 +532,26 @@ export default function DashboardApp({ initialSlug } = {}) {
           setBeamColor('blue'); // Keep blue as default
         }, 100);
       } else if (!explicitClose) {
-        // Switch to blue - close everything first (only if not explicitly closing another display)
+        // Switch to blue - ensure sequence: close pink → beam blue → open blue
+        const comingFromPink = joinAlienOpen || beamColor === 'pink';
         closeAllDisplays();
-        setTimeout(() => {
-          setBeamColor('blue');
-          setBeamEnabled(true);
-          setShowHUD(true);
-        }, 150);
+        if (comingFromPink) {
+          // Wait for pink to close, then flip beam to blue, then open blue HUD
+          setTimeout(() => {
+            setBeamColor('blue');
+            setBeamEnabled(true);
+            setTimeout(() => {
+              setShowHUD(true);
+            }, 140);
+          }, 150);
+        } else {
+          // Normal: simple close then open
+          setTimeout(() => {
+            setBeamColor('blue');
+            setBeamEnabled(true);
+            setShowHUD(true);
+          }, 150);
+        }
       }
     }
   }, [beamColor, showHUD, joinAlienOpen, beamTransitioning, explicitClose]);
@@ -685,6 +702,31 @@ export default function DashboardApp({ initialSlug } = {}) {
     };
   }, [beamEnabled, showHUD, cardModalOpen, uiUnlocked, showOverlayUI, warpActive]);
 
+  // Compute background-position for the lightbeam base PNG so it anchors under the blue button
+  const [beamBaseBgPos, setBeamBaseBgPos] = useState(null);
+  useEffect(() => {
+    function computeBeamBaseBgPos() {
+      try {
+        const root = document.documentElement;
+        const cs = getComputedStyle(root);
+        const buttonsBottomStr = cs.getPropertyValue('--buttons-bottom').trim();
+        const buttonsBottom = parseFloat(buttonsBottomStr || '31') || 31; // percent
+        const nudgePx = parseFloat(cs.getPropertyValue('--beam-base-nudge')) || 0; // px
+        const vh = window.innerHeight || 0;
+        // Align the PNG vertically with the blue button baseline (same position as power button wrapper)
+        // Power wrapper sits at bottom: <percent> with a translateY(8px) push down
+        const fromTopForBg = Math.max(0, Math.round((vh - (vh * (buttonsBottom / 100))) + 8 + nudgePx));
+        // Use top-origin background position for consistency
+        setBeamBaseBgPos(`center ${fromTopForBg}px`);
+      } catch {
+        // Fallback stays null; CSS default will be used
+      }
+    }
+    computeBeamBaseBgPos();
+    window.addEventListener('resize', computeBeamBaseBgPos);
+    return () => window.removeEventListener('resize', computeBeamBaseBgPos);
+  }, []);
+
   // Position the blue display slightly lower than the light beam top  
   const hudBottom = useMemo(() => 'calc(var(--display-touch-top) - 30px)', []);
 
@@ -700,10 +742,11 @@ export default function DashboardApp({ initialSlug } = {}) {
           className="fixed inset-0 z-20 pointer-events-none cockpit-bg"
           aria-hidden="true" 
         />
+        {/* Hide light beam base until client vars are ready to avoid jump */}
         <div 
           className="fixed inset-0 z-[100] pointer-events-none lightbeam-base-bg"
           aria-hidden="true" 
-          style={{ opacity: 1 }}
+          style={{ opacity: 0 }}
         />
       </main>
     );
@@ -734,30 +777,57 @@ export default function DashboardApp({ initialSlug } = {}) {
         minDurationMs={3000}
         offsetY="-1vh"
         onWarpSfxEnd={() => {
+          // Prepare focused selection but keep planets hidden; reveal after song starts playing
+          try {
+            const slug = (curTrack && curTrack.slug) ? curTrack.slug : null;
+            if (slug) { playerStore.getState().setMain(slug); }
+          } catch {}
           // If we're landing on home via Start, reveal overlay/UI after warp finishes
           // Only revert to home if this isn't a user-selected song
           if (pendingOverlayReveal && !userSelected && !pendingTrackPlay) {
             // Ensure we are in home mode (CHXNDLER) before revealing HUD
             try { setHomeMode(true); } catch {}
             try { setUserSelected(false); } catch {}
-            try { usePlayerStore.setState({ mainId: null }); } catch {}
+            try { playerStore.setState({ mainId: null }); } catch {}
             try { setLinks({ spotify: LINKS.spotify, apple: LINKS.apple }); } catch {}
-            // Enable welcome VO on opening/home page and release ambient suspend so it plays after warp
+            // Enable welcome VO on opening/home page; keep ambient suspended for now.
             try { setHomeIntroEnabled(true); } catch {}
-            try { setAmbientSuspended(false); } catch {}
             // Don't set welcomeHasPlayed here - wait for audio to actually finish
             // Switch background sky in the same render pass for simultaneous reveal
             try {
               if (nextSky) { setSky(nextSky); setNextSky(null); }
             } catch {}
-            // Play the button sound at reveal time; do not start ambient on home
-            try { sfx.playAndWait('button', 0.9).catch(()=>{}); } catch {}
+            // Play the button sound; start ambient + welcome VO only after it finishes
+            try {
+              const p = sfx.playAndWait('button', 0.9);
+              let settled = false;
+              const startAmbient = () => {
+                if (settled) return; settled = true;
+                try { setAmbientSuspended(false); } catch {}
+                try { window.dispatchEvent(new CustomEvent('ambient:play')); } catch {}
+              };
+              p.then(startAmbient).catch(() => {
+                // If SFX fails, still start ambient soon after to avoid silence
+                setTimeout(startAmbient, 200);
+              });
+              // Watchdog: if SFX promise neither resolves nor rejects (shouldn't happen),
+              // start after a generous timeout to avoid getting stuck on silence.
+              setTimeout(() => { if (!settled) startAmbient(); }, 3000);
+            } catch {
+              // If SFX throws synchronously, still resume ambient shortly after
+              setTimeout(() => {
+                try { setAmbientSuspended(false); } catch {}
+                try { window.dispatchEvent(new CustomEvent('ambient:play')); } catch {}
+              }, 300);
+            }
             try { setShowOverlayUI(true); } catch {}
             try { setBeamEnabled(true); } catch {}
             try { setShowHUD(true); } catch {}
             try { setBeamOnly(false); } catch {}
             try { setPowerBusy(false); } catch {}
             try { setLandingRevealReady(true); } catch {}
+            // Ensure homepage shows all planets after warp
+            try { playerStore.getState().setPlanetsVisible(true); } catch {}
             // Clear one-time flag to avoid repeats on later Starts
             try { welcomeOnStartRef.current = false; } catch {}
             setPendingOverlayReveal(false);
@@ -839,7 +909,7 @@ export default function DashboardApp({ initialSlug } = {}) {
             // Now that space.mp4 is playing
             setHomeMode(true);
             // Clear any selected planet for home mode
-            try { usePlayerStore.setState({ mainId: null }); } catch {}
+            try { playerStore.setState({ mainId: null }); } catch {}
             // Do not enable welcome VO on home
             if (!firstStartDone && !welcomeHasPlayed) {
               welcomeOnStartRef.current = false;
@@ -849,8 +919,9 @@ export default function DashboardApp({ initialSlug } = {}) {
             }
             setUserSelected(false);
             setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
-            // Keep ambient active on home/opening page so space music continues
-            setAmbientSuspended(false);
+            // Keep ambient suspended until warp SFX fully ends; we'll enable it in onWarpSfxEnd
+            // so ambient (space-music.mp3) starts only after the blue display is showing.
+            setAmbientSuspended(true);
             // Let ambient continue during UI transitions for smoother experience
             // Defer overlay/UI reveal until warp SFX has finished
             setPendingOverlayReveal(true);
@@ -962,8 +1033,11 @@ export default function DashboardApp({ initialSlug } = {}) {
         aria-hidden="true" 
         style={{
           // Keep the light beam base PNG visible on the opening page and during warp
-          opacity: (landingMode || (uiUnlocked && showOverlayUI)) ? 1 : 0,
-          transition: 'opacity 400ms ease-in-out'
+          // Only show after we've computed the correct background position to prevent initial jump
+          opacity: (landingMode || (uiUnlocked && showOverlayUI)) && !!beamBaseBgPos ? 1 : 0,
+          transition: 'opacity 400ms ease-in-out',
+          // Dynamically anchor PNG under the blue button
+          backgroundPosition: beamBaseBgPos || undefined
         }}
       />
       
@@ -1004,15 +1078,18 @@ export default function DashboardApp({ initialSlug } = {}) {
             // Immediately clear dimming so the wheel brightens right away on Start
             (window).__CHX_SHOW_DIMMING_OVERLAY = false;
           } catch {}
+          // Prime ambient silently within this user gesture to satisfy autoplay policies
+          try { window.dispatchEvent(new CustomEvent('ambient:prime')); } catch {}
+          // Do not start ambient here; wait until warp finishes and the HUD/blue display is visible
           // If a main song is currently playing, use Start to toggle play/pause
           if (isPlaying) {
             setToggleSignal((n) => n + 1);
             return;
           }
-          // Toggle planet visibility when Start button is clicked
-          try {
-            usePlayerStore.getState().togglePlanets();
-          } catch {}
+          // Show all planets on homepage after Start
+          try { playerStore.getState().setPlanetsVisible(true); } catch {}
+          try { playerStore.setState({ mainId: null }); } catch {}
+          try { setHidePlanetsForSelection(false); } catch {}
           // Homepage Start flow (warp to home reveal)
           if (!welcomeHasPlayed) { 
             welcomeOnStartRef.current = true;
@@ -1027,15 +1104,13 @@ export default function DashboardApp({ initialSlug } = {}) {
           setHomeMode(false);
           startButtonWarpRef.current = true;
 
-          // Stop any playing audio and clear track state
+          // Stop any playing main track audio and clear track state (leave ambient to AmbientSpace logic)
           try {
             const a = document.querySelector('audio[data-audio-player="1"]');
             if (a) { a.pause(); try { a.currentTime = 0; } catch {}; try { a.muted = true; } catch {}; try { a.removeAttribute('src'); } catch {}; try { a.load(); } catch {} }
-            const ambient = document.querySelector('audio[data-ambient="1"]');
-            if (ambient) { ambient.pause(); try { ambient.currentTime = 0; } catch {} }
           } catch {}
           setIsPlaying(false);
-          try { usePlayerStore.setState({ mainId: null }); } catch {}
+          try { playerStore.setState({ mainId: null }); } catch {}
           setShowHUD(false);
           setShowOverlayUI(false);
           setBeamEnabled(false);
@@ -1090,9 +1165,10 @@ export default function DashboardApp({ initialSlug } = {}) {
                   track={(homeMode && !userSelected && !pendingTrackPlay) ? undefined : curTrack}
                   currentId={(homeMode && !userSelected && !pendingTrackPlay) ? undefined : curTrack?.slug}
                   playing={(homeMode && !userSelected && !pendingTrackPlay) ? ambientPlaying : isPlaying}
-                  hidePlanetsUntilPlaying={pendingTrackPlay}
+                  hidePlanetsUntilPlaying={hidePlanetsForSelection}
                   beamOnly={beamOnly}
                   beamEnabled={beamEnabled}
+                  joinAlienOpen={joinAlienOpen}
                 />
               </div>
               {!showHUD ? (
@@ -1106,7 +1182,7 @@ export default function DashboardApp({ initialSlug } = {}) {
                     if (!uiUnlocked) return;
                     setShowDimmingOverlay(false);
                     setHomeMode(true);
-                    try { usePlayerStore.setState({ mainId: null }); } catch {}
+                    try { playerStore.setState({ mainId: null }); } catch {}
                     // Check if welcome audio is currently playing before disabling
                     try {
                       const intro = document.querySelector('audio[data-intro="1"]');
@@ -1131,16 +1207,37 @@ export default function DashboardApp({ initialSlug } = {}) {
               <MediaPlayer
                 onSkyChange={(webm, mp4, key) => setNextSky({ webm, mp4, key })}
                 onPlayingChange={(p) => { 
-                  setIsPlaying(p); 
-                  // Do not auto-start ambient when a song stops on home
+                  setIsPlaying(p);
+                  // When a song starts playing, reveal only the focused planet
+                  if (p) {
+                    try {
+                      const slug = (curTrack && curTrack.slug) ? curTrack.slug : (tracks[channelIdx]?.slug || null);
+                      if (slug) { playerStore.getState().setMain(slug); }
+                      playerStore.getState().setPlanetsVisible(true);
+                      setHidePlanetsForSelection(false);
+                    } catch {}
+                    // Track actual music start with song metadata
+                    try {
+                      const t = curTrack || tracks[channelIdx];
+                      if (t && (t.slug || t.title)) {
+                        track('music_started', { song_slug: (t.slug || '').toLowerCase(), payload: { song_title: t.title } });
+                      }
+                    } catch {}
+                  }
                 }}
                 onAudioReady={() => {}}
                 onTrackChange={(t) => { 
 
                   setCurTrack(t); 
                   if (userSelected) { setLinks({ spotify: t.spotify || LINKS.spotify, apple: t.apple || LINKS.apple }); } else { setLinks({ spotify: LINKS.spotify, apple: LINKS.apple }); } 
-                  // Update planet system focus to match currently playing song
-                  try { usePlayerStore.getState().setMain(t.slug || ''); } catch {}
+                  // Update planet system focus only when not on homepage flow
+                  try {
+                    if (userSelected || pendingTrackPlay || !homeMode) {
+                      playerStore.getState().setMain(t.slug || '');
+                    } else {
+                      playerStore.setState({ mainId: null });
+                    }
+                  } catch {}
                 }}
                 playSignal={playSignal}
                 toggleSignal={toggleSignal}

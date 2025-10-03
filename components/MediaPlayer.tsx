@@ -53,6 +53,14 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const [duration, setDuration] = useState(0);
   const [animationTime, setAnimationTime] = useState(0);
   const seekingRef = useRef(false);
+  
+  // Prefer the live duration from the audio element to avoid UI lag before
+  // loadedmetadata updates state. Falls back to state if needed.
+  const liveDuration = (() => {
+    const a = audioRef.current;
+    const d = a && isFinite(a.duration) && a.duration > 0 ? a.duration : duration;
+    return isFinite(d) && d > 0 ? d : 0;
+  })();
   // Structured sections and derived chorus times
   const sections = useMemo(() => {
     const secs = (cur as any)?.sections as { time: number; label: string; kind?: string }[] | undefined;
@@ -472,6 +480,9 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       setVolume(vol); 
     };
     const onTimeUpdate = () => { 
+      // Ignore native timeupdate events while the user is actively seeking
+      // to prevent the cursor from "snapping back" mid-drag/click.
+      if (seekingRef.current) return;
       const newTime = a.currentTime;
       setCurrentTime(newTime);
       if (DEBUG_MEDIA) {
@@ -482,6 +493,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       }
     };
     const onLoadedMetadata = () => { setDuration(a.duration); };
+    const onDurationChange = () => { if (isFinite(a.duration) && a.duration > 0) setDuration(a.duration); };
     const onCanPlayThrough = () => { try { onAudioReady && onAudioReady(true); } catch {} };
     const onCanPlay = () => { try { onAudioReady && onAudioReady(true); } catch {} };
     const onSeeked = () => { 
@@ -501,6 +513,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     a.addEventListener('volumechange', onVolumeChange);
     a.addEventListener('timeupdate', onTimeUpdate);
     a.addEventListener('loadedmetadata', onLoadedMetadata);
+    a.addEventListener('durationchange', onDurationChange as any);
     a.addEventListener('canplaythrough', onCanPlayThrough as any);
     a.addEventListener('canplay', onCanPlay as any);
     a.addEventListener('seeked', onSeeked);
@@ -519,6 +532,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       a.removeEventListener('volumechange', onVolumeChange);
       a.removeEventListener('timeupdate', onTimeUpdate);
       a.removeEventListener('loadedmetadata', onLoadedMetadata);
+      a.removeEventListener('durationchange', onDurationChange as any);
       a.removeEventListener('canplaythrough', onCanPlayThrough as any);
       a.removeEventListener('canplay', onCanPlay as any);
       a.removeEventListener('seeked', onSeeked);
@@ -654,28 +668,45 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           <div 
             className="waveform" 
             aria-label="Audio waveform visualization"
-            onClick={(e) => {
+            onPointerDown={(e) => {
               const a = audioRef.current;
-              if (!a || !duration) return;
+              const d = liveDuration;
+              if (!a || !d) return;
               
-              // Calculate click position relative to waveform
-              const rect = e.currentTarget.getBoundingClientRect();
-              const clickX = e.clientX - rect.left;
-              const progress = Math.max(0, Math.min(1, clickX / rect.width));
-              const newTime = progress * duration;
-              
-              // Set seeking flag and immediately update cursor position
-              seekingRef.current = true;
-              setCurrentTime(newTime);
-              
-              // Seek to the clicked position - seeked event will clear the flag
-              const seekTime = Math.max(0, Math.min(duration - 0.2, newTime));
-              a.currentTime = seekTime;
-              
+              // Helper to compute and apply seek time from a given clientX
+              const applySeekFromClientX = (clientX: number) => {
+                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+                const progress = rect.width > 0 ? (x / rect.width) : 0;
+                const newTime = progress * d;
+                seekingRef.current = true; // lock out rAF/timeupdate while scrubbing
+                setCurrentTime(newTime);   // immediate visual update
+                const seekTime = Math.max(0, Math.min(Math.max(0, d - 0.2), newTime));
+                try { a.currentTime = seekTime; } catch {}
+                return { progress, newTime };
+              };
+
+              // Prevent text selection/scroll jank while dragging
+              try { (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); } catch {}
+              e.preventDefault();
+
+              const first = applySeekFromClientX(e.clientX);
+              // Start/resume playback on interaction to match previous click behavior
               intentionalPlayRef.current = true;
               a.play().catch(() => {});
               setPlaying(true);
-              gaTrack("seek_waveform", { slug: cur.slug, seconds: newTime, progress });
+              gaTrack("seek_waveform", { slug: cur.slug, seconds: first.newTime, progress: first.progress });
+
+              const onMove = (ev: PointerEvent) => {
+                applySeekFromClientX(ev.clientX);
+              };
+              const onUp = () => {
+                seekingRef.current = false; // allow normal updates again; seeked will also sync
+                window.removeEventListener('pointermove', onMove);
+                window.removeEventListener('pointerup', onUp);
+              };
+              window.addEventListener('pointermove', onMove);
+              window.addEventListener('pointerup', onUp, { once: true } as any);
             }}
             style={{ cursor: 'pointer' }}
           >
@@ -722,7 +753,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 });
                 
                 // Use same calculation as cursor for perfect sync - ensure consistent progress calculation
-                const progress = (duration > 0 && isFinite(currentTime) && isFinite(duration)) ? Math.max(0, Math.min(1, currentTime / duration)) : 0;
+                const d = liveDuration;
+                const progress = (d > 0 && isFinite(currentTime)) ? Math.max(0, Math.min(1, currentTime / d)) : 0;
                 
                 return (
                   <>
@@ -762,10 +794,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               })()}
             </svg>
             {/* Section markers (verse/chorus/bridge/intro/outro) */}
-            {duration > 0 && sections.length > 0 && (
+            {liveDuration > 0 && sections.length > 0 && (
               <div className="section-markers" aria-hidden>
                 {sections.map((s, i) => {
-                  const pct = Math.max(0, Math.min(100, (s.time / duration) * 100));
+                  const pct = Math.max(0, Math.min(100, (s.time / liveDuration) * 100));
                   if (pct <= 0 || pct >= 100) return null;
                   const kind = (s.kind || '').toLowerCase();
                   const klass = kind ? `section-marker ${kind}` : 'section-marker';
@@ -777,13 +809,13 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                       style={{ left: `${pct}%` }}
                       title={`${s.label} (${Math.round(s.time)}s)`}
                       onClick={() => {
-                        const a = audioRef.current; if (!a || !duration) return;
+                        const a = audioRef.current; if (!a || !liveDuration) return;
                         
                         // Set seeking flag and immediately update cursor position
                         seekingRef.current = true;
                         setCurrentTime(s.time);
                         
-                        const seekTime = Math.max(0, Math.min(duration - 0.2, s.time));
+                        const seekTime = Math.max(0, Math.min(liveDuration - 0.2, s.time));
                         a.currentTime = seekTime;
                         
                         intentionalPlayRef.current = true; // Mark as intentional play
@@ -803,7 +835,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             <div
               className="absolute top-0 h-full flex flex-col items-center justify-center pointer-events-none z-10 cursor-transition"
               style={{
-                left: `${Math.max(0, Math.min(100, (duration > 0 && isFinite(currentTime) && isFinite(duration) ? (currentTime / duration) * 100 : 0)))}%`,
+                left: `${Math.max(0, Math.min(100, (liveDuration > 0 && isFinite(currentTime) ? (currentTime / liveDuration) * 100 : 0)))}%`,
                 transform: 'translateX(-50%)',
                 width: '32px',
               }}
@@ -843,7 +875,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                   border: `1px solid ${currentElementColor}44`,
                 }}
               >
-                {duration > 0 ? Math.floor((currentTime / duration) * 100) : 0}%
+                {liveDuration > 0 ? Math.floor((currentTime / liveDuration) * 100) : 0}%
               </div>
               {currentSection ? (
                 <div 
@@ -905,7 +937,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         {chorusTimes.length > 0 && (
           <button
             onClick={() => {
-              const a = audioRef.current; if (!a || !duration) return;
+              const a = audioRef.current; if (!a || !liveDuration) return;
               const now = a.currentTime;
               const next = chorusTimes.find((t) => t > now + 0.75) ?? chorusTimes[0];
               
@@ -913,7 +945,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               seekingRef.current = true;
               setCurrentTime(next);
               
-              const seekTime = Math.max(0, Math.min(duration - 0.2, next));
+              const seekTime = Math.max(0, Math.min(liveDuration - 0.2, next));
               a.currentTime = seekTime;
               
               intentionalPlayRef.current = true; // Mark as intentional play
@@ -1037,6 +1069,9 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           display: flex;
           align-items: center;
           justify-content: center;
+          user-select: none;
+          -webkit-user-select: none;
+          touch-action: none; /* allow precise pointer scrubbing without scrolling */
         }
 
         /* Section markers */

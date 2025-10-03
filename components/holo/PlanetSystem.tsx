@@ -4,7 +4,7 @@ import React, { useEffect } from "react";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { AdditiveBlending, Group as ThreeGroup } from "three";
 // drei removed to avoid external asset/preset loading that can abort in some runtimes
-import { usePlayerStore } from "@/store/usePlayerStore";
+import { playerStore } from "@/store/usePlayerStore";
 import Planet from "@/components/holo/Planet";
 import HeartPlanet from "@/components/holo/HeartPlanet";
 import { computePlanetLayout } from "@/lib/planetLayout";
@@ -12,7 +12,9 @@ import { getEntriesByRing } from "@/lib/planetRegistry";
 
 function InvalidateOnState() {
   const invalidate = useThree((s) => s.invalidate);
-  const { mainId, hoverId, songs, planetsVisible } = usePlayerStore();
+  const [storeSnap, setStoreSnap] = React.useState(() => playerStore.getState());
+  React.useEffect(() => playerStore.subscribe(() => setStoreSnap(playerStore.getState())), []);
+  const { mainId, hoverId, songs, planetsVisible } = storeSnap;
   useEffect(() => {
     // Throttle invalidation to prevent excessive re-renders
     const timeout = setTimeout(() => {
@@ -24,8 +26,10 @@ function InvalidateOnState() {
 }
 
 export default function PlanetSystem({ showAll = false, hideUntilPlaying = false }: { showAll?: boolean; hideUntilPlaying?: boolean }) {
-  console.log("🌍 PlanetSystem rendering with showAll:", showAll, "songs count:", usePlayerStore.getState().songs.length);
-  const { songs, mainId, prevMainId, hoverId, planetsVisible, setPlanetsVisible } = usePlayerStore();
+  console.log("🌍 PlanetSystem rendering with showAll:", showAll, "songs count:", playerStore.getState().songs.length);
+  const [storeSnap, setStoreSnap] = React.useState(() => playerStore.getState());
+  React.useEffect(() => playerStore.subscribe(() => setStoreSnap(playerStore.getState())), []);
+  const { songs, mainId, prevMainId, hoverId, planetsVisible } = storeSnap as any;
   const focusId = showAll ? null : (mainId ?? songs[0]?.id);
   const focus = showAll ? null : (songs.find((s) => s.id === focusId) ?? songs[0]);
   
@@ -54,8 +58,9 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         dpr={[1, 2]}
         // Pull the camera back and widen FOV so the full system fits
         // Much more horizontal viewpoint: lower camera height and pull back slightly
-        // Zoom out even more for CHXNDLER homepage when showAll is true - increased for much wider planet spread
-        camera={{ position: [0.2, -0.2, showAll ? 70 : 20], fov: showAll ? 85 : 48 }}
+        // Zoom out a touch more on the homepage (showAll=true)
+        // Zoom out a bit more on homepage (showAll) so the full system fits comfortably
+        camera={{ position: [0.2, -0.2, showAll ? 100 : 20], fov: showAll ? 92 : 48 }}
         gl={{ antialias: true, alpha: true }}
         frameloop="demand"
       >
@@ -72,8 +77,8 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         <InvalidateOnState />
         <ZoomOnChange focusId={focusId} />
 
-        {/* Heart planet at the center - only when showing all planets and planets are visible */}
-        {showAll && planetsVisible && <HeartPlanet />}
+        {/* Heart planet at the center - always on homepage (showAll) */}
+        {showAll && <HeartPlanet />}
         
         {/* Removed debug helper sphere that was visible on the homepage */}
 
@@ -82,13 +87,14 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         {/* Enlarge full-system view on homepage so it spans the blue display width */}
         <group scale={showAll ? 1.45 : 1}>
         <SystemGroup>
-          {/* Orbit guides only when showing the full system and planets are visible */}
-          {showAll && planetsVisible ? <OrbitGuides /> : null}
+          {/* Orbit guides on homepage regardless of planetsVisible */}
+          {showAll ? <OrbitGuides /> : null}
           {/* Show planets based on mode and visibility state */}
           {(() => {
             console.log("🌍 PlanetSystem rendering decision:", { planetsVisible, showAll, songsCount: songs.length });
-            if (!planetsVisible) {
-              console.log("🌍 PlanetSystem: Not rendering planets - planetsVisible is false");
+            // On homepage (showAll), force planets visible regardless of planetsVisible state
+            if (!showAll && !planetsVisible) {
+              console.log("🌍 PlanetSystem: Not rendering planets - planetsVisible is false and not homepage");
               return null;
             }
             if (showAll) {
@@ -136,7 +142,9 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
 }
 
 function OrbitGuides() {
-  const { songs } = usePlayerStore();
+  const [storeSnap, setStoreSnap] = React.useState(() => playerStore.getState());
+  React.useEffect(() => playerStore.subscribe(() => setStoreSnap(playerStore.getState())), []);
+  const { songs } = storeSnap as any;
   const layout = React.useMemo(() => computePlanetLayout(songs as any), [songs]);
   const rings = React.useMemo(() => {
     const map = new Map<number, { r: number; tiltDeg: number }>();
@@ -216,12 +224,13 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
   const { camera, invalidate } = useThree();
   // Use different base values based on showAll mode - access via props context
   const isShowAll = focusId === null;
-  const base = React.useRef({ z: isShowAll ? 70 : 35, fov: isShowAll ? 85 : 65 });
+  // Match Canvas camera defaults; give more room in showAll to see every planet
+  const base = React.useRef({ z: isShowAll ? 100 : 35, fov: isShowAll ? 92 : 65 });
   const anim = React.useRef<{ t: number; d: number; active: boolean }>({ t: 0, d: 0.8, active: false });
 
   React.useEffect(() => {
     // Update base values based on current mode
-    base.current = { z: isShowAll ? 70 : 35, fov: isShowAll ? 85 : 65 };
+    base.current = { z: isShowAll ? 84 : 35, fov: isShowAll ? 85 : 65 };
     
     // Only restart zoom animation if we have a focusId (not in showAll/home mode)
     if (focusId) {

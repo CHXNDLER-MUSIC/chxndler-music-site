@@ -1,11 +1,15 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import { usePlayerStore } from "@/store/usePlayerStore";
+import { playerStore } from "@/store/usePlayerStore";
 import { useCycleList } from "@/lib/useCycleList";
 
 export default function SongList({ onSongChange }: { onSongChange?: (id: string) => void }) {
-  const { songs, mainId, hoverId, setHover, setMain } = usePlayerStore();
+  const [storeSnap, setStoreSnap] = React.useState(() => playerStore.getState());
+  React.useEffect(() => playerStore.subscribe(() => setStoreSnap(playerStore.getState())), []);
+  const { songs, mainId, hoverId } = storeSnap as any;
+  const setHover = (id: string | null) => playerStore.getState().setHover(id);
+  const setMain = (id: string) => playerStore.getState().setMain(id);
   
   console.log('🎵 SongList render:', { songsCount: songs.length, mainId, songs });
   const main = songs.find((s) => s.id === mainId);
@@ -146,6 +150,11 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
             onFocus={() => setHover(s.id)}
             onBlur={() => setHover(null)}
             onClick={(e) => {
+              try {
+                // Immediately hide all planets for warp transition
+                playerStore.getState().setPlanetsVisible(false);
+              } catch {}
+              // Set the selected song as main (also hides planets by default in store)
               setMain(s.id);
             }}
             style={{ 
