@@ -52,6 +52,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [animationTime, setAnimationTime] = useState(0);
+  const [seeking, setSeeking] = useState(false);
   const seekingRef = useRef(false);
   
   // Prefer the live duration from the audio element to avoid UI lag before
@@ -501,6 +502,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       const newTime = a.currentTime;
       setCurrentTime(newTime);
       seekingRef.current = false;
+      setSeeking(false); // re-enable smooth transitions
       if (DEBUG_MEDIA) dlog('audio event: seeked to', newTime);
     };
 
@@ -680,6 +682,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 const progress = rect.width > 0 ? (x / rect.width) : 0;
                 const newTime = progress * d;
                 seekingRef.current = true; // lock out rAF/timeupdate while scrubbing
+                setSeeking(true); // trigger UI update for instant cursor movement
                 setCurrentTime(newTime);   // immediate visual update
                 const seekTime = Math.max(0, Math.min(Math.max(0, d - 0.2), newTime));
                 try { a.currentTime = seekTime; } catch {}
@@ -702,6 +705,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               };
               const onUp = () => {
                 seekingRef.current = false; // allow normal updates again; seeked will also sync
+                setSeeking(false); // re-enable smooth transitions
                 window.removeEventListener('pointermove', onMove);
                 window.removeEventListener('pointerup', onUp);
               };
@@ -813,6 +817,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                         
                         // Set seeking flag and immediately update cursor position
                         seekingRef.current = true;
+                        setSeeking(true);
                         setCurrentTime(s.time);
                         
                         const seekTime = Math.max(0, Math.min(liveDuration - 0.2, s.time));
@@ -833,7 +838,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             
             {/* Time cursor with element icon - positioned to match animated circle exactly */}
             <div
-              className="absolute top-0 h-full flex flex-col items-center justify-center pointer-events-none z-10 cursor-transition"
+              className={`absolute top-0 h-full flex flex-col items-center justify-center pointer-events-none z-10 cursor-transition ${playing ? 'playing' : ''} ${seeking ? 'seeking' : ''}`}
               style={{
                 left: `${Math.max(0, Math.min(100, (liveDuration > 0 && isFinite(currentTime) ? (currentTime / liveDuration) * 100 : 0)))}%`,
                 transform: 'translateX(-50%)',
@@ -943,6 +948,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               
               // Set seeking flag and immediately update cursor position
               seekingRef.current = true;
+              setSeeking(true);
               setCurrentTime(next);
               
               const seekTime = Math.max(0, Math.min(liveDuration - 0.2, next));
@@ -1267,7 +1273,13 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         }
         
         .cursor-transition {
-          /* Removed transition for real-time cursor movement */
+          transition: left 0.1s linear;
+        }
+        .cursor-transition.playing {
+          transition: left 0.05s linear;
+        }
+        .cursor-transition.seeking {
+          transition: none; /* Instant movement while seeking */
         }
       `}</style>
     </div>

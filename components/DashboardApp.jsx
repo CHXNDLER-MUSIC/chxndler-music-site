@@ -975,6 +975,15 @@ export default function DashboardApp({ initialSlug } = {}) {
               if (intro) { intro.pause(); intro.currentTime = 0; }
             } catch {}
             setAmbientSuspended(true);
+            // Reveal the focused planet immediately after warp/base video is playing.
+            // Keep other planets hidden; only the selected planet should show now.
+            try {
+              const slug = (curTrack && curTrack.slug) ? curTrack.slug : (tracks[channelIdx]?.slug || null);
+              if (slug) {
+                playerStore.getState().setMain(slug);
+              }
+              playerStore.getState().setPlanetsVisible(true);
+            } catch {}
             // Clear any pending fallback timers now that we'll start playback here
             if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
             // UI has already been revealed at warp end. Now, only start the song MP3
@@ -1070,7 +1079,7 @@ export default function DashboardApp({ initialSlug } = {}) {
       <SteeringWheelOverlay
         POS={POS}
         playing={isPlaying}
-        showUI={uiUnlocked && showOverlayUI && !warpActive}
+        showUI={uiUnlocked && showOverlayUI && !warpActive && !showDimmingOverlay}
         onJoinToggle={setJoinAlienOpen}
         onBeamColorChange={handleBeamToggle}
         closeAllSignal={uiCloseSignal}
@@ -1165,7 +1174,7 @@ export default function DashboardApp({ initialSlug } = {}) {
               zIndex: 93,
               borderRadius: 'var(--display-border-radius)',
               ['--hud-y']: `${hudYOffset}px`,
-              pointerEvents: (uiUnlocked && showOverlayUI) ? 'auto' : 'none'
+              pointerEvents: (uiUnlocked && showOverlayUI && !showDimmingOverlay) ? 'auto' : 'none'
             }}
           >
             <div className="relative h-full w-full p-0" style={{ overflow: 'visible' }} suppressHydrationWarning>
@@ -1175,9 +1184,9 @@ export default function DashboardApp({ initialSlug } = {}) {
                 suppressHydrationWarning
                 key={safariRefreshKey} // Force re-render on Safari when needed
                 style={{ 
-                  opacity: (uiUnlocked && showOverlayUI && showHUD && !warpActive) ? 1 : 0,
-                  pointerEvents: (uiUnlocked && showOverlayUI && showHUD && !warpActive) ? 'auto' : 'none', 
-                  visibility: (uiUnlocked && showOverlayUI) ? 'visible' : 'hidden',
+                  opacity: (uiUnlocked && showOverlayUI && showHUD && !warpActive && !showDimmingOverlay) ? 1 : 0,
+                  pointerEvents: (uiUnlocked && showOverlayUI && showHUD && !warpActive && !showDimmingOverlay) ? 'auto' : 'none', 
+                  visibility: (uiUnlocked && showOverlayUI && !showDimmingOverlay) ? 'visible' : 'hidden',
                   transition: 'opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)',
                   willChange: 'opacity',
                   transform: 'translateZ(0)' // Force hardware acceleration on Safari
@@ -1188,7 +1197,7 @@ export default function DashboardApp({ initialSlug } = {}) {
                   songs={hudSongs}
                   onSongChange={onSongChange}
                   track={(homeMode && !userSelected && !pendingTrackPlay) ? undefined : curTrack}
-                  currentId={(homeMode && !userSelected && !pendingTrackPlay) ? undefined : curTrack?.slug}
+                  currentId={!initialSlug ? undefined : curTrack?.slug}
                   playing={(homeMode && !userSelected && !pendingTrackPlay) ? ambientPlaying : isPlaying}
                   hidePlanetsUntilPlaying={hidePlanetsForSelection}
                   beamOnly={beamOnly}
@@ -1307,7 +1316,7 @@ export default function DashboardApp({ initialSlug } = {}) {
       ) : null}
 
 
-      {mounted && uiUnlocked && showOverlayUI && showHUD && process.env.NEXT_PUBLIC_HOLOHUD === '1' ? (
+      {mounted && uiUnlocked && showOverlayUI && showHUD && !showDimmingOverlay && process.env.NEXT_PUBLIC_HOLOHUD === '1' ? (
         <HoloHUD
           track={(homeMode && !userSelected && !pendingTrackPlay) ? undefined : curTrack}
           playing={effectivelyPlaying}

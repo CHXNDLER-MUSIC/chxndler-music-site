@@ -61,10 +61,9 @@ export async function POST(req: NextRequest) {
     const ua = body.user_agent || req.headers.get('user-agent') || 'unknown';
 
     // Supabase admin client, using public schema
-    // Use the analytics schema to align with SUPABASE_SETUP.sql
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
       auth: { persistSession: false },
-      db: { schema: 'analytics' },
+      db: { schema: 'public' },
     });
 
     // Ensure session row exists: try RPC first, then direct upsert fallback

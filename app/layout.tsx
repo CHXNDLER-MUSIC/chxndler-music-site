@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import React from "react";
 import ClickTracker from "@/components/ClickTracker";
 import AnalyticsWidget from "@/components/AnalyticsWidget";
+import PageViewTracker from "@/components/PageViewTracker";
 import { AudioProvider } from "@/app/providers/AudioProvider";
 
 export const metadata: Metadata = {
@@ -54,6 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="font-sans">
         <AudioProvider>
+          <PageViewTracker />
           <ClickTracker />
           <AnalyticsWidget />
           {children}

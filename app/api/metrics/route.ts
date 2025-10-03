@@ -23,10 +23,10 @@ export async function GET(_req: NextRequest) {
   if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
     return j(500, { error: 'Supabase environment variables not set' });
   }
-  // Read from analytics schema to match where events are stored
+  // Read from public schema where events are stored
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
     auth: { persistSession: false },
-    db: { schema: 'analytics' },
+    db: { schema: 'public' },
   });
 
   const countHead = async (builder: any) => {

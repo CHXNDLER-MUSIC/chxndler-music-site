@@ -37,7 +37,6 @@ export default function HoloJoinButton({
         type="button"
         className={`hub ${isActive ? "hub-active" : ""}`}
         aria-label={label}
-        data-no-track
         onClick={handleActivate as any}
         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleActivate(); } }}

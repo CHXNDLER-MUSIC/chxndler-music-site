@@ -38,10 +38,17 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
   React.useEffect(() => {
     try {
       if (!playerStore.getState().songs || playerStore.getState().songs.length === 0) {
+        console.log('🌍 PlanetSystem: Initializing songs...');
         const { holoSongs } = buildPlanetSongs();
+        console.log('🌍 PlanetSystem: Built songs:', holoSongs.length);
         playerStore.getState().initSongs(holoSongs as any);
+        console.log('🌍 PlanetSystem: Songs initialized to store, new count:', playerStore.getState().songs.length);
+      } else {
+        console.log('🌍 PlanetSystem: Songs already initialized, count:', playerStore.getState().songs.length);
       }
-    } catch {}
+    } catch (e) {
+      console.error('🌍 PlanetSystem: Error initializing songs:', e);
+    }
   }, []);
   
   // Context-aware planet visibility management
@@ -69,10 +76,9 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         style={{ background: 'transparent' }}
         dpr={[1, 2]}
         // Pull the camera back and widen FOV so the full system fits
-        // Much more horizontal viewpoint: lower camera height and pull back slightly
-        // Zoom out a touch more on the homepage (showAll=true)
-        // Zoom out a touch further on homepage (showAll)
-        camera={{ position: [0.2, -0.2, showAll ? 112 : 20], fov: showAll ? 92 : 48 }}
+        // Elevated viewpoint: camera positioned above to look down at the planet system
+        // Zoom out more on the homepage (showAll=true) for better overview
+        camera={{ position: [0.2, 15, showAll ? 112 : 20], fov: showAll ? 92 : 48 }}
         gl={{ antialias: true, alpha: true }}
         onCreated={({ gl }) => {
           // Lift exposure so emissive and additive layers pop without bloom
@@ -226,6 +232,8 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
       // If no focusId (home mode), ensure camera is at base position
       anim.current.active = false;
       const camera_: any = camera;
+      camera_.position.x = 0.2;
+      camera_.position.y = 15;
       camera_.position.z = base.current.z;
       camera_.fov = base.current.fov;
       camera_.updateProjectionMatrix();
@@ -245,12 +253,16 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
     const closeFov = 46;
     // use a bell curve around 0.5
     const bell = Math.sin(Math.PI * ease);
+    (camera as any).position.x = 0.2;
+    (camera as any).position.y = 15;
     (camera as any).position.z = base.current.z - (base.current.z - closeZ) * bell;
     (camera as any).fov = base.current.fov - (base.current.fov - closeFov) * bell;
     (camera as any).updateProjectionMatrix();
     anim.current.t += dt;
     if (anim.current.t >= anim.current.d) {
       anim.current.active = false;
+      (camera as any).position.x = 0.2;
+      (camera as any).position.y = 15;
       (camera as any).position.z = base.current.z;
       (camera as any).fov = base.current.fov;
       (camera as any).updateProjectionMatrix();
