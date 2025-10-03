@@ -12,6 +12,7 @@ export default function SteeringWheelOverlay({
   POS,
   playing,
   showUI = true,
+  uiUnlocked = false,
   onPowerToggle,
   onJoinToggle,
   onBeamColorChange,
@@ -23,6 +24,7 @@ export default function SteeringWheelOverlay({
   POS: any;
   playing?: boolean;
   showUI?: boolean;
+  uiUnlocked?: boolean;
   onPowerToggle?: () => void;
   onJoinToggle?: (showJoin: boolean) => void;
   onBeamColorChange?: (color: 'blue' | 'yellow' | 'pink' | 'off') => void;
@@ -45,6 +47,10 @@ export default function SteeringWheelOverlay({
   const [suspendYellowPanel, setSuspendYellowPanel] = useState(false);
   const yellowFromPinkTimeoutA = useRef<number | null>(null);
   const yellowFromPinkTimeoutB = useRef<number | null>(null);
+  
+  // Use the uiUnlocked prop passed from DashboardApp instead of reading from window
+  const isUIUnlocked = uiUnlocked;
+  
 
   // Set mounted after component mounts to prevent immediate hover sounds
   useEffect(() => {
@@ -120,7 +126,7 @@ export default function SteeringWheelOverlay({
   }
 
   const handleJoinAlienToggle = useCallback(() => {
-    if (!showUI) return;
+    if (!showUI || !isUIUnlocked) return;
     
     // Play button sound
     try {
@@ -144,7 +150,7 @@ export default function SteeringWheelOverlay({
       // Explicit analytics event for Join Aliens button (avoid relying on global click label)
       try { track('join_aliens_click'); } catch {}
     }
-  }, [showJoin, onBeamColorChange, showUI]);
+  }, [showJoin, onBeamColorChange, showUI, isUIUnlocked]);
 
   // Helper function to get responsive values
   const getResponsiveValue = (config: any) => {
@@ -312,7 +318,7 @@ export default function SteeringWheelOverlay({
           left: '50%',
           transform: 'translate(-50%, 8px)',
           zIndex: 92,
-          pointerEvents: showUI && !isDimmingOverlayActive ? 'auto' : 'none',
+          pointerEvents: showUI && !isDimmingOverlayActive && isUIUnlocked ? 'auto' : 'none',
           opacity: showUI ? 1 : 0,
           // Match beam (400ms) and HUD (300ms) fade timing
           transition: 'opacity 350ms ease',
@@ -328,7 +334,7 @@ export default function SteeringWheelOverlay({
                   className={`power-btn ${activeBeamColor === 'blue' && showUI ? 'power-btn-active' : ''}`}
                   onMouseEnter={() => { if (!showUI || !mounted) return; try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
                   onClick={() => {
-                    if (!showUI) return;
+                    if (!showUI || !isUIUnlocked) return;
                     // Play button sound
                     try {
                       const a = buttonRef.current;
@@ -383,7 +389,7 @@ export default function SteeringWheelOverlay({
           left: `calc(50% - ${buttonOffsetPx}px - 10px)`, // Nudge slightly further left
           transform: 'translate(-50%, 8px)',
           zIndex: 92,
-          pointerEvents: showUI && !isDimmingOverlayActive ? 'auto' : 'none',
+          pointerEvents: showUI && !isDimmingOverlayActive && isUIUnlocked ? 'auto' : 'none',
           opacity: showUI ? 1 : 0,
           // Match beam (400ms) and HUD (300ms) fade timing
           transition: 'opacity 350ms ease',
@@ -411,7 +417,7 @@ export default function SteeringWheelOverlay({
                 closeSignal={closeAllSignal}
                 suspend={suspendUI || suspendYellowPanel}
                 onToggle={(isOpen) => {
-                  if (!showUI) return;
+                  if (!showUI || !isUIUnlocked) return;
                   if (isOpen) {
                     // Play button sound
                     try {
@@ -471,7 +477,7 @@ export default function SteeringWheelOverlay({
           left: `calc(50% + ${buttonOffsetPx}px + 10px)`, // Nudge slightly further right
           transform: 'translate(-50%, 8px)',
           zIndex: 92,
-          pointerEvents: showUI && !isDimmingOverlayActive ? 'auto' : 'none',
+          pointerEvents: showUI && !isDimmingOverlayActive && isUIUnlocked ? 'auto' : 'none',
           opacity: showUI ? 1 : 0,
           // Match beam (400ms) and HUD (300ms) fade timing
           transition: 'opacity 350ms ease',

@@ -274,7 +274,7 @@ export default function AmbientSpace({
   } else {
       console.log('AmbientSpace: neither playingMusic nor suspend, checking if should resume ambient');
       // If a welcome VO is pending, hold ambient until an explicit ambient:play signal
-      // This ensures space-music.mp3 starts only after the welcome VO finishes (after button.mp3)
+      // This ensures space-music.mp3 starts together with the welcome VO after button.mp3 finishes
       if (introPendingRef.current) {
         console.log('AmbientSpace: intro pending; deferring ambient resume until ambient:play');
         return cancelFade();

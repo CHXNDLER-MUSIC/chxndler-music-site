@@ -840,7 +840,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             <div
               className={`absolute top-0 h-full flex flex-col items-center justify-center pointer-events-none z-10 cursor-transition ${playing ? 'playing' : ''} ${seeking ? 'seeking' : ''}`}
               style={{
-                left: `${Math.max(0, Math.min(100, (liveDuration > 0 && isFinite(currentTime) ? (currentTime / liveDuration) * 100 : 0)))}%`,
+                left: `${(() => {
+                  const progressPercent = Math.max(0, Math.min(100, (liveDuration > 0 && isFinite(currentTime) ? (currentTime / liveDuration) * 100 : 0)));
+                  return progressPercent;
+                })()}%`,
                 transform: 'translateX(-50%)',
                 width: '32px',
               }}
@@ -856,8 +859,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               
               {/* Chxndler cursor icon - positioned exactly at circle center (cy="50" = 50% height) */}
               <img
-                src="/elements/chxndler.png"
-                alt="Chxndler cursor"
+                src={`/elements/${currentElement}.png`}
+                alt={`${cur?.title || 'Current track'} cursor`}
                 className="absolute w-[2rem] h-[2rem] min-w-[2rem] min-h-[2rem] brightness-150 saturate-125"
                 style={{ 
                   top: '50%', // Match the circle's cy="50" position exactly

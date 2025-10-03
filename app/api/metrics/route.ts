@@ -44,7 +44,6 @@ export async function GET(_req: NextRequest) {
       yt,
       sp,
       am,
-      joinPinkByLabel,
       joinExplicit,
       joinSubmitClicks,
     ] = await Promise.all([
@@ -55,7 +54,6 @@ export async function GET(_req: NextRequest) {
       countHead(supabase.from('events').eq('event_type', 'click').contains('payload', { element_label: '📱 YouTube' })),
       countHead(supabase.from('events').eq('event_type', 'click').contains('payload', { element_label: '🎵 Spotify' })),
       countHead(supabase.from('events').eq('event_type', 'click').contains('payload', { element_label: '🎵 Apple Music' })),
-      countHead(supabase.from('events').eq('event_type', 'click').contains('payload', { element_label: '🚀 Join Aliens' })),
       countHead(supabase.from('events').eq('event_type', 'join_aliens_click')),
       countHead(supabase.from('events').eq('event_type', 'join_aliens_submit')),
     ]);
@@ -121,7 +119,7 @@ export async function GET(_req: NextRequest) {
       startClicks,
       commsClicks,
       socials: { instagram: ig, tiktok: tt, youtube: yt, spotify: sp, apple: am },
-      joinPinkClicks: joinPinkByLabel + joinExplicit,
+      joinPinkClicks: joinExplicit,
       joinSubmitClicks,
       songPlays,
       coverClicks,

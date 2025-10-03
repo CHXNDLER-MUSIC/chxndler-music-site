@@ -11,7 +11,6 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
   const setHover = (id: string | null) => playerStore.getState().setHover(id);
   const setMain = (id: string) => playerStore.getState().setMain(id);
   
-  console.log('🎵 SongList render:', { songsCount: songs.length, mainId, songs });
   const main = songs.find((s) => s.id === mainId);
   const { activeId, setActiveId, handleKeyDown, next, prev } = useCycleList(songs, mainId || undefined, (id) => setMain(id));
 
@@ -135,7 +134,6 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
         <div className="text-cyan-300 p-4">No songs available</div>
       )}
       {songs.map((s) => {
-        console.log('🎵 Rendering song button:', s.title);
         const isMain = s.id === mainId;
         const isHover = s.id === hoverId;
         return (
@@ -159,6 +157,11 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
               } catch {}
               // Set the selected song as main (also hides planets by default in store)
               setMain(s.id);
+              
+              // Call the onSongChange callback to notify parent (DashboardApp)
+              if (onSongChange) {
+                onSongChange(s.id);
+              }
             }}
             style={{ 
               cursor: 'pointer',

@@ -45,6 +45,8 @@ export default function JoinAliens({ visible = true } = {}) {
       setEmail("");
       setPhone("");
       setStatus("ok");
+      // Track successful submission when "WELCOME ABOARD" appears
+      try { track('join_aliens_success'); } catch {}
     } catch (e) {
       if (process.env.NODE_ENV !== 'production') { /* eslint-disable-next-line no-console */ console.error("Join submit failed", e); }
       setStatus("error");

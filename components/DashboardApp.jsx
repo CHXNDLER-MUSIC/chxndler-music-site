@@ -239,6 +239,7 @@ export default function DashboardApp({ initialSlug } = {}) {
       console.warn('DashboardApp: onSongChange - track not found for id:', id, 'slug:', slug);
       return;
     }
+    
 
     // STEP 1: Hide all planets when a song is selected
     try {
@@ -846,6 +847,7 @@ export default function DashboardApp({ initialSlug } = {}) {
             try { setPowerBusy(false); } catch {}
             try { setLandingRevealReady(true); } catch {}
             // Ensure homepage shows all planets after warp
+            console.log('🌍 DashboardApp: onWarpSfxEnd - Setting planets visible for homepage');
             try { playerStore.getState().setPlanetsVisible(true); } catch {}
             // Clear one-time flag to avoid repeats on later Starts
             try { welcomeOnStartRef.current = false; } catch {}
@@ -913,11 +915,14 @@ export default function DashboardApp({ initialSlug } = {}) {
               }, 2000);
             } catch {}
           }
-          // Defer applying nextSky until overlay UI is visible so base stays lightspeed
-          // If this warp was due to Start (not track selection), prepare to land on home.
-          // For song selections (userSelected), do not fall back to home even if timers race.
-          if (!pendingTrackPlay && !userSelected) setPendingHomePower(true);
-          else {
+          // Conditional warp destination:
+          // - Start button: always go to CHXNDLER homepage
+          // - Song selection: go to that song
+          if (startButtonWarpRef.current || (!pendingTrackPlay && !userSelected)) {
+            // Start button was pressed OR no track/user selection pending - go to homepage
+            setPendingHomePower(true);
+          } else {
+            // Song selection - proceed to that song (handled by onBasePlaying)
             // Only start UI fade-in and audio sequencing when the base sky MP4 is confirmed playing via onBasePlaying
           }
         }}
@@ -934,6 +939,7 @@ export default function DashboardApp({ initialSlug } = {}) {
             // Now that space.mp4 is playing
             setHomeMode(true);
             // Make sure all planets are visible on the homepage after Start
+            console.log('🌍 DashboardApp: onBasePlaying - Setting planets visible for homepage');
             try { playerStore.getState().setPlanetsVisible(true); } catch {}
             // Clear any selected planet for home mode
             try { playerStore.setState({ mainId: null }); } catch {}
@@ -1080,11 +1086,88 @@ export default function DashboardApp({ initialSlug } = {}) {
         POS={POS}
         playing={isPlaying}
         showUI={uiUnlocked && showOverlayUI && !warpActive && !showDimmingOverlay}
+        uiUnlocked={uiUnlocked}
         onJoinToggle={setJoinAlienOpen}
         onBeamColorChange={handleBeamToggle}
         closeAllSignal={uiCloseSignal}
         suspendUI={warpActive}
         hideStartButton={false}
+        onLaunch={() => {
+          // Start button flow - unlock UI and prepare homepage warp
+          console.log('🚀 DashboardApp: Start button clicked!');
+          
+          // Enable SFX immediately within the user gesture
+          try { 
+            sfx.setEnabled(true); 
+            (window).__CHX_UI_UNLOCKED = true; 
+            (window).__CHX_SHOW_DIMMING_OVERLAY = false;
+          } catch {}
+          
+          // Prime ambient silently within this user gesture to satisfy autoplay policies
+          try { window.dispatchEvent(new CustomEvent('ambient:prime')); } catch {}
+          
+          // If a main song is currently playing, use Start to toggle play/pause
+          if (isPlaying) {
+            setToggleSignal((n) => n + 1);
+            return;
+          }
+          
+          // CRITICAL: Show all planets immediately when Start is pressed
+          console.log('🌍 DashboardApp: Setting all planets visible for homepage');
+          try { 
+            playerStore.getState().setPlanetsVisible(true); 
+            console.log('🌍 DashboardApp: setPlanetsVisible(true) called');
+          } catch {}
+          try { 
+            playerStore.setState({ mainId: null }); 
+            console.log('🌍 DashboardApp: mainId set to null');
+          } catch {}
+          try { 
+            setHidePlanetsForSelection(false); 
+            console.log('🌍 DashboardApp: hidePlanetsForSelection set to false');
+          } catch {}
+          
+          // Homepage Start flow (warp to home reveal)
+          if (!welcomeHasPlayed) { 
+            welcomeOnStartRef.current = true;
+          }
+          setPendingOverlayReveal(true);
+          setUiUnlocked(true);
+          setShowDimmingOverlay(false);
+          setLandingRevealReady(true);
+          
+          // Prepare warp to homepage
+          setUserSelected(false);
+          setHomeMode(false);
+          startButtonWarpRef.current = true;
+          
+          // Stop any playing main track audio and clear track state
+          try {
+            const a = document.querySelector('audio[data-audio-player="1"]');
+            if (a) { a.pause(); try { a.currentTime = 0; } catch {}; try { a.muted = true; } catch {}; try { a.removeAttribute('src'); } catch {}; try { a.load(); } catch {} }
+          } catch {}
+          setIsPlaying(false);
+          
+          // Clear current track to ensure homepage state
+          setCurTrack(null);
+          setChannelIdx(0);
+          setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
+          
+          // Set up UI states for homepage warp
+          setShowHUD(false);
+          setShowOverlayUI(false);
+          setBeamEnabled(false);
+          setPendingHomePower(true);
+          setAllowWarp(true);
+          setSky(SPACE_SKY);
+          setNextSky(null);
+          
+          // Keep ambient suspended until warp SFX fully ends
+          setAmbientSuspended(true);
+          
+          // Start warp sequence
+          setFlySignal((n) => n + 1);
+        }}
         onPowerToggle={() => { 
           // Manual power toggle should not start new welcome audio, but don't interrupt if it's already playing
           if (!welcomeOnStartRef.current) {
@@ -1197,7 +1280,7 @@ export default function DashboardApp({ initialSlug } = {}) {
                   songs={hudSongs}
                   onSongChange={onSongChange}
                   track={(homeMode && !userSelected && !pendingTrackPlay) ? undefined : curTrack}
-                  currentId={!initialSlug ? undefined : curTrack?.slug}
+                  currentId={(homeMode && !userSelected && !pendingTrackPlay) ? undefined : curTrack?.slug}
                   playing={(homeMode && !userSelected && !pendingTrackPlay) ? ambientPlaying : isPlaying}
                   hidePlanetsUntilPlaying={hidePlanetsForSelection}
                   beamOnly={beamOnly}

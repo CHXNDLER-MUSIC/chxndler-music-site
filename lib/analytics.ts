@@ -81,7 +81,10 @@ export function track(
     const lastMap: Map<string, number> = (window as any).__chx_analytics_last;
     if (dedupeKey && cooldownMs > 0) {
       const last = lastMap.get(dedupeKey) || 0;
-      if (now - last < cooldownMs) return; // suppress duplicate
+      if (now - last < cooldownMs) {
+        console.log(`track: suppressing duplicate ${event_type} (${dedupeKey}), cooldown: ${cooldownMs}ms, time since last: ${now - last}ms`);
+        return; // suppress duplicate
+      }
       lastMap.set(dedupeKey, now);
     }
   } catch {}
@@ -100,11 +103,15 @@ export function track(
   const payload = explicitPayload ?? (rest && Object.keys(rest).length ? rest : null);
 
   const body = { session_id, event_type, page, referrer, song_slug, payload } as any;
+  console.log(`track: sending ${event_type} event:`, body);
   try {
     if (navigator.sendBeacon) {
       const blob = new Blob([JSON.stringify(body)], { type: 'application/json' });
       const ok = navigator.sendBeacon('/api/track', blob);
-      if (ok) return;
+      if (ok) {
+        console.log(`track: successfully sent ${event_type} via sendBeacon`);
+        return;
+      }
     }
   } catch {}
   try {
@@ -113,11 +120,16 @@ export function track(
       headers: { 'content-type': 'application/json' },
       keepalive: true,
       body: JSON.stringify(body),
-    }).catch(() => {});
+    }).then(response => {
+      console.log(`track: fetch response for ${event_type}:`, response.status, response.statusText);
+    }).catch((error) => {
+      console.error(`track: fetch error for ${event_type}:`, error);
+    });
   } catch {}
 }
 
 export function trackPageView() {
+  console.log('trackPageView: called for current page:', typeof window !== 'undefined' ? window.location.pathname + window.location.search : 'server');
   track('page_view');
 }
 

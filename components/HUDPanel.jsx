@@ -616,6 +616,7 @@ export default function HUDPanel({
               const trackingSong = (!currentId ? 'chxndler_home' : (track?.slug || active || 'unknown'));
               const trackingTitle = (!currentId ? 'CHXNDLER Home' : (track?.title || 'Unknown'));
               
+              
               return (
                 <div
                   onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {}; try { const a = hoverCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
