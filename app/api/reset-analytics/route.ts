@@ -40,22 +40,31 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Analytics schema client
+    // Public schema client (where events are actually stored)
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-      auth: { persistSession: false },
-      db: { schema: 'analytics' },
-    });
-    // Public schema client (for legacy tables, if present)
-    const supabasePublic = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
       auth: { persistSession: false },
       db: { schema: 'public' },
     });
 
     const results: Record<string, any> = {};
 
-    // Delete all analytics events; keep sessions by default
+    // Delete all events from public schema (where track API stores them)
     try {
       const res = await supabase.from('events').delete().neq('event_type', '');
+      if (res.error && !res.error.message?.includes('schema cache')) throw res.error;
+      results.public_events = 'ok';
+    } catch (e: any) {
+      results.public_events = `error: ${e?.message || e}`;
+    }
+
+    // Also try analytics schema for any legacy data
+    const supabaseAnalytics = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+      auth: { persistSession: false },
+      db: { schema: 'analytics' },
+    });
+    
+    try {
+      const res = await supabaseAnalytics.from('events').delete().neq('event_type', '');
       if (res.error && !res.error.message?.includes('schema cache')) throw res.error;
       results.analytics_events = 'ok';
     } catch (e: any) {
@@ -66,7 +75,7 @@ export async function POST(req: NextRequest) {
     const legacyTables = ['music_events', 'click_events', 'ab_test_events', 'user_flow_events'];
     for (const t of legacyTables) {
       try {
-        const res = await supabasePublic.from(t as any).delete().neq('id', '');
+        const res = await supabase.from(t as any).delete().neq('id', '');
         if (res.error) {
           // Ignore relation-not-found errors
           const msg = String(res.error.message || '');

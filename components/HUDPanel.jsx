@@ -106,6 +106,13 @@ export default function HUDPanel({
   beamEnabled = undefined, // optional external control for beam fade (true/false)
   joinAlienOpen = false, // disable cover art interaction when pink display is open
 }) {
+  console.log('🌍 HUDPanel: Component rendering with props:', { 
+    currentId, 
+    showAll: !currentId, 
+    songsLength: songs?.length, 
+    trackTitle: track?.title 
+  });
+  
   const hoverCoverRef = useRef(null);
   const clickCoverRef = useRef(null);
   const closeCoverRef = useRef(null);

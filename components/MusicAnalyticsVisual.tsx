@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getClickAnalyticsLocal, clearClickAnalyticsLocal } from "../lib/analytics";
+import { getClickAnalyticsLocal, clearClickAnalyticsLocal, clearAnalyticsCache } from "../lib/analytics";
 import { tracks } from "@/lib/songs-consolidated";
 
 interface MusicStats {
@@ -251,8 +251,9 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                     res = await attempt(key);
                   }
                   if (!res.ok) throw new Error(`reset failed (${res.status})`);
-                  // Clear local click analytics too
+                  // Clear local click analytics and deduplication cache
                   try { clearClickAnalyticsLocal(); } catch {}
+                  try { clearAnalyticsCache(); } catch {}
                   // Reload server + local metrics
                   await loadServerMetrics();
                   loadMusicAnalytics();

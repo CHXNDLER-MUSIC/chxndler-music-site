@@ -170,7 +170,69 @@ export default function DashboardApp({ initialSlug } = {}) {
       clearInterval(interval);
     };
   }, []);
-  
+
+  // Ensure planets are visible on homepage load
+  useEffect(() => {
+    // Only run this for homepage (no initialSlug)
+    if (!initialSlug) {
+      console.log('🌍 DashboardApp: Homepage load - ensuring planets are visible');
+      try {
+        // CRITICAL: Always show planets on homepage load - do this immediately
+        const currentState = playerStore.getState();
+        console.log('🌍 DashboardApp: Current planetsVisible state:', currentState.planetsVisible);
+        
+        playerStore.getState().setPlanetsVisible(true);
+        playerStore.setState({ mainId: null }); // Ensure no specific song is selected (showAll mode)
+        
+        // Verify the state was set
+        const newState = playerStore.getState();
+        console.log('🌍 DashboardApp: After setting - planetsVisible:', newState.planetsVisible);
+        
+        // CRITICAL: Ensure songs are initialized for planet rendering
+        const currentSongs = playerStore.getState().songs;
+        console.log('🌍 DashboardApp: Current songs in store:', currentSongs.length);
+        console.log('🌍 DashboardApp: Songs in store:', currentSongs.map(s => s.id));
+        
+        if (currentSongs.length === 0) {
+          console.log('🌍 DashboardApp: NO SONGS IN STORE - This is likely the problem!');
+          try {
+            const { buildPlanetSongs } = require('@/lib/planets');
+            const { holoSongs } = buildPlanetSongs();
+            console.log('🌍 DashboardApp: Built', holoSongs.length, 'songs for planets');
+            console.log('🌍 DashboardApp: Sample songs:', holoSongs.slice(0, 3).map(s => ({ id: s.id, title: s.title })));
+            
+            playerStore.getState().initSongs(holoSongs);
+            const finalCount = playerStore.getState().songs.length;
+            console.log('🌍 DashboardApp: Songs initialized, new count:', finalCount);
+            
+            if (finalCount === 0) {
+              console.error('🌍 DashboardApp: CRITICAL ERROR - Songs still 0 after initialization!');
+            }
+          } catch (error) {
+            console.error('🌍 DashboardApp: Error loading songs:', error);
+          }
+        } else {
+          console.log('🌍 DashboardApp: Songs already loaded, count:', currentSongs.length);
+        }
+        
+        // Verification: check final state
+        const finalState = playerStore.getState();
+        console.log('🌍 DashboardApp: Homepage planets initialized - planetsVisible=', finalState.planetsVisible, 'mainId=', finalState.mainId, 'songs=', finalState.songs.length);
+        
+        // Force a re-render to ensure planets appear
+        setTimeout(() => {
+          const verifyState = playerStore.getState();
+          console.log('🌍 DashboardApp: Verification - planetsVisible=', verifyState.planetsVisible, 'songs=', verifyState.songs.length);
+          if (!verifyState.planetsVisible && verifyState.songs.length > 0) {
+            console.log('🌍 DashboardApp: Force-setting planets visible after delay');
+            playerStore.getState().setPlanetsVisible(true);
+          }
+        }, 100);
+      } catch (e) {
+        console.warn('🌍 DashboardApp: Error initializing homepage planets:', e);
+      }
+    }
+  }, []); // Only run once on mount
 
   // Centralized HUD power sequencing: play SFX then run beam/HUD fades
   const triggerHudPower = React.useCallback((turnOn) => {
@@ -500,10 +562,14 @@ export default function DashboardApp({ initialSlug } = {}) {
         setExplicitClose(true);
         closeAllDisplays();
         setTimeout(() => {
-          setBeamColor('blue');
-          setBeamTransitioning(false);
-          setExplicitClose(false);
-          // Explicitly keep all displays closed when closing pink
+          // Don't flash blue - just turn off beam completely then reset to blue  
+          setBeamEnabled(false);
+          setTimeout(() => {
+            setBeamColor('blue');
+            setBeamTransitioning(false);
+            setExplicitClose(false);
+            // Explicitly keep all displays closed when closing pink
+          }, 100);
         }, 150);
       } else {
         // Switch to pink - close everything first
@@ -872,18 +938,24 @@ export default function DashboardApp({ initialSlug } = {}) {
         minDurationMs={3000}
         offsetY="-1vh"
         onWarpSfxEnd={() => {
-          // Only hide planets during song selection warps, NOT Start button warps
+          // After song selection warp, show only the selected planet
           if (userSelected || pendingTrackPlay) {
-            console.log('🌍 DashboardApp: onWarpSfxEnd - Hiding planets during SONG selection warp');
-            try { playerStore.getState().setPlanetsVisible(false); } catch {}
+            console.log('🌍 DashboardApp: onWarpSfxEnd - Showing selected planet after SONG selection warp');
+            try { 
+              const slug = (curTrack && curTrack.slug) ? curTrack.slug : null;
+              if (slug) { 
+                playerStore.getState().setMain(slug);
+                playerStore.getState().setPlanetsVisible(true);
+              }
+            } catch {}
           } else {
             console.log('🌍 DashboardApp: onWarpSfxEnd - START button warp, keeping planets visible');
+            // For Start button warps, prepare focused selection
+            try {
+              const slug = (curTrack && curTrack.slug) ? curTrack.slug : null;
+              if (slug) { playerStore.getState().setMain(slug); }
+            } catch {}
           }
-          // Prepare focused selection but keep planets hidden; reveal after song starts playing
-          try {
-            const slug = (curTrack && curTrack.slug) ? curTrack.slug : null;
-            if (slug) { playerStore.getState().setMain(slug); }
-          } catch {}
           // If we're landing on home via Start, reveal overlay/UI after warp finishes
           // Only revert to home if this isn't a user-selected song
           if (pendingOverlayReveal && !userSelected && !pendingTrackPlay) {
@@ -1284,17 +1356,22 @@ export default function DashboardApp({ initialSlug } = {}) {
           } catch {}
           
           // Homepage Start flow (warp to home reveal)
-          // ALWAYS enable welcome VO on Start button - should play every time
-          welcomeOnStartRef.current = true;
-          setHomeIntroEnabled(true);
-          console.log('🎵 DashboardApp: Start button - ALWAYS enabling welcome VO');
+          // Only enable welcome VO on FIRST Start button press per session
+          if (!firstStartDone) {
+            welcomeOnStartRef.current = true;
+            setHomeIntroEnabled(true);
+            console.log('🎵 DashboardApp: Start button - First time, enabling welcome VO');
+            // Reset welcome VO state only on first start
+            setWelcomeHasPlayed(false);
+          } else {
+            welcomeOnStartRef.current = false;
+            setHomeIntroEnabled(false);
+            console.log('🎵 DashboardApp: Start button - Subsequent press, skipping welcome VO');
+          }
           setPendingOverlayReveal(true);
           setUiUnlocked(true);
           setShowDimmingOverlay(false);
           setLandingRevealReady(true);
-          
-          // Reset welcome VO state so it can play every time Start is pressed
-          setWelcomeHasPlayed(false);
           
           // Prepare warp to homepage
           setUserSelected(false);
@@ -1369,10 +1446,16 @@ export default function DashboardApp({ initialSlug } = {}) {
           try { playerStore.setState({ mainId: null }); } catch {}
           try { setHidePlanetsForSelection(false); } catch {}
           // Homepage Start flow (warp to home reveal)
-          // ALWAYS enable welcome VO on Start button - should play every time
-          welcomeOnStartRef.current = true;
-          setHomeIntroEnabled(true);
-          console.log('🎵 DashboardApp: Start button - ALWAYS enabling welcome VO');
+          // Only enable welcome VO on FIRST Start button press per session
+          if (!firstStartDone) {
+            welcomeOnStartRef.current = true;
+            setHomeIntroEnabled(true);
+            console.log('🎵 DashboardApp: Start button - First time, enabling welcome VO');
+          } else {
+            welcomeOnStartRef.current = false;
+            setHomeIntroEnabled(false);
+            console.log('🎵 DashboardApp: Start button - Subsequent press, skipping welcome VO');
+          }
           setPendingOverlayReveal(true);
           setUiUnlocked(true);
           setShowDimmingOverlay(false);
@@ -1428,14 +1511,21 @@ export default function DashboardApp({ initialSlug } = {}) {
                 className="absolute inset-0 p-0"
                 suppressHydrationWarning
                 key={safariRefreshKey} // Force re-render on Safari when needed
-                style={{ 
-                  opacity: (uiUnlocked && showOverlayUI && showHUD && !warpActive && !showDimmingOverlay) ? 1 : 0,
-                  pointerEvents: (uiUnlocked && showOverlayUI && showHUD && !warpActive && !showDimmingOverlay) ? 'auto' : 'none', 
-                  visibility: (uiUnlocked && showOverlayUI && !showDimmingOverlay) ? 'visible' : 'hidden',
-                  transition: 'opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)',
-                  willChange: 'opacity',
-                  transform: 'translateZ(0)' // Force hardware acceleration on Safari
-                }}
+                style={(() => {
+                  const normalCondition = uiUnlocked && showOverlayUI && showHUD && !warpActive && !showDimmingOverlay;
+                  const homepageCondition = homeMode && !warpActive; // Allow planets to show even with dimming overlay
+                  const shouldShow = normalCondition || homepageCondition;
+                  
+                  return {
+                    // Allow planets to be visible even when UI is locked (before Start is pressed)
+                    opacity: shouldShow ? 1 : 0,
+                    pointerEvents: normalCondition ? 'auto' : 'none', 
+                    visibility: shouldShow ? 'visible' : 'hidden',
+                    transition: 'opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+                    willChange: 'opacity',
+                    transform: 'translateZ(0)' // Force hardware acceleration on Safari
+                  };
+                })()}
               >
                 <HUDPanel
                   inConsole
@@ -1491,8 +1581,15 @@ export default function DashboardApp({ initialSlug } = {}) {
                   if (p) {
                     try {
                       const slug = (curTrack && curTrack.slug) ? curTrack.slug : (tracks[channelIdx]?.slug || null);
-                      if (slug) { playerStore.getState().setMain(slug); }
-                      playerStore.getState().setPlanetsVisible(true);
+                      if (slug) { 
+                        // Ensure we're in single-song mode (not homepage mode)
+                        console.log('🌍 DashboardApp: Song playing, focusing on:', slug);
+                        setUserSelected(true); // Ensure userSelected state is set
+                        setHomeMode(false); // Ensure we're not in homepage mode
+                        playerStore.getState().setMain(slug); // Focus the specific song
+                        // Show planets - the showAll logic should now be false, showing only focused planet
+                        playerStore.getState().setPlanetsVisible(true);
+                      }
                       setHidePlanetsForSelection(false);
                     } catch {}
                     // Track actual music start with song metadata
@@ -1501,6 +1598,11 @@ export default function DashboardApp({ initialSlug } = {}) {
                       if (t && (t.slug || t.title)) {
                         track('music_started', { song_slug: (t.slug || '').toLowerCase(), payload: { song_title: t.title } });
                       }
+                    } catch {}
+                  } else {
+                    // When playback stops, hide the planet
+                    try {
+                      playerStore.getState().setPlanetsVisible(false);
                     } catch {}
                   }
                 }}

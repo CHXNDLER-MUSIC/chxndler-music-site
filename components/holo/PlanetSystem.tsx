@@ -31,32 +31,60 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
   const [storeSnap, setStoreSnap] = React.useState(() => playerStore.getState());
   React.useEffect(() => playerStore.subscribe(() => setStoreSnap(playerStore.getState())), []);
   const { songs, mainId, prevMainId, hoverId, planetsVisible } = storeSnap as any;
+  
   const focusId = showAll ? null : (mainId ?? songs[0]?.id);
   const focus = showAll ? null : (songs.find((s) => s.id === focusId) ?? songs[0]);
 
   // Safety: ensure songs are initialized if not already populated
   React.useEffect(() => {
     try {
-      if (!playerStore.getState().songs || playerStore.getState().songs.length === 0) {
-        console.log('🌍 PlanetSystem: Initializing songs...');
+      const currentSongs = playerStore.getState().songs;
+      console.log('🌍 PlanetSystem: Checking songs initialization, current count:', currentSongs.length);
+      
+      if (!currentSongs || currentSongs.length === 0) {
+        console.log('🌍 PlanetSystem: No songs found, initializing...');
         const { holoSongs } = buildPlanetSongs();
         console.log('🌍 PlanetSystem: Built songs:', holoSongs.length);
-        playerStore.getState().initSongs(holoSongs as any);
-        console.log('🌍 PlanetSystem: Songs initialized to store, new count:', playerStore.getState().songs.length);
+        if (holoSongs.length > 0) {
+          playerStore.getState().initSongs(holoSongs as any);
+          console.log('🌍 PlanetSystem: Songs initialized to store, new count:', playerStore.getState().songs.length);
+        } else {
+          console.error('🌍 PlanetSystem: buildPlanetSongs returned empty array!');
+        }
       } else {
-        console.log('🌍 PlanetSystem: Songs already initialized, count:', playerStore.getState().songs.length);
+        console.log('🌍 PlanetSystem: Songs already initialized, count:', currentSongs.length);
       }
     } catch (e) {
       console.error('🌍 PlanetSystem: Error initializing songs:', e);
     }
   }, []);
   
+  // Also ensure songs are loaded after any store updates
+  React.useEffect(() => {
+    if ((!songs || songs.length === 0) && showAll) {
+      console.log('🌍 PlanetSystem: Homepage mode but no songs, forcing re-initialization...');
+      try {
+        const { holoSongs } = buildPlanetSongs();
+        if (holoSongs.length > 0) {
+          playerStore.getState().initSongs(holoSongs as any);
+        }
+      } catch (e) {
+        console.error('🌍 PlanetSystem: Error in forced re-initialization:', e);
+      }
+    }
+  }, [songs, showAll]);
+  
   // Context-aware planet visibility management
   // Note: We don't automatically show planets on homepage anymore
   // Let the user's toggle state (from start button) persist across views
   
   console.log("🌍 PlanetSystem state:", { showAll, planetsVisible, mainId, focusId, hideUntilPlaying, songsCount: songs.length });
-  console.log("🌍 PlanetSystem songs:", songs.map(s => s.id));
+  console.log("🌍 TRIGGER REFRESH - Debug mode active");
+  console.log("🌍 PlanetSystem render check:", { 
+    willRenderHeartPlanet: showAll && planetsVisible,
+    willRenderSongPlanets: planetsVisible && (showAll ? "ALL SONGS" : `SINGLE: ${focusId}`),
+    cameraZ: showAll ? 155 : 80
+  });
   
   
 
@@ -78,7 +106,7 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         // Pull the camera back and widen FOV so the full system fits
         // Elevated viewpoint: camera positioned above to look down at the planet system
         // Zoom out more on the homepage (showAll=true) for better overview
-        camera={{ position: [0.2, 18, showAll ? 155 : 32], fov: showAll ? 105 : 60 }}
+        camera={{ position: [0.2, 18, showAll ? 155 : 80], fov: showAll ? 105 : 75 }}
         gl={{ antialias: true, alpha: true }}
         onCreated={({ gl }) => {
           // Lift exposure so emissive and additive layers pop without bloom
@@ -101,7 +129,7 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         <ZoomOnChange focusId={focusId} />
 
         {/* Heart planet at the center - respect planetsVisible */}
-        {showAll && planetsVisible && <HeartPlanet />}
+        {showAll && <HeartPlanet />}
         
         {/* Removed debug helper sphere that was visible on the homepage */}
 
@@ -116,20 +144,56 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
           {(() => {
             console.log("🌍 PlanetSystem rendering decision:", { planetsVisible, showAll, songsCount: songs.length });
             // Respect planetsVisible everywhere, including homepage (Start toggles this on)
-            if (!planetsVisible) {
-              console.log("🌍 PlanetSystem: Not rendering planets - planetsVisible is false");
+            // TEMPORARY: Force planets visible on homepage for debugging
+            const forceVisible = showAll;
+            if (!planetsVisible && !forceVisible) {
+              console.log("🌍 PlanetSystem: Not rendering planets - planetsVisible is false, showAll is", showAll);
               return null;
             }
+            if (forceVisible && !planetsVisible) {
+              console.log("🌍 PlanetSystem: FORCING planets visible on homepage (planetsVisible=false but showAll=true)");
+            }
             if (showAll) {
-              console.log("🌍 PlanetSystem: Rendering", songs.length, "planets for homepage");
+              // Homepage mode: Show ALL song planets
+              console.log("🌍 PlanetSystem: Homepage mode - Rendering", songs.length, "song planets");
+              console.log("🌍 All songs data:", songs.map(s => ({ id: s.id, title: s.title })));
+              
+              // Check for duplicate IDs that could cause React rendering issues
+              const songIds = songs.map(s => s.id);
+              const uniqueIds = [...new Set(songIds)];
+              if (songIds.length !== uniqueIds.length) {
+                console.error("🌍 DUPLICATE SONG IDs FOUND:", songIds);
+                console.error("🌍 This could cause React to only render one planet!");
+              }
+              
+              if (songs.length === 0) {
+                console.log("🌍 PlanetSystem: NO SONGS AVAILABLE - this is the problem!");
+                return <div style={{color: 'red', position: 'absolute', top: 10, left: 10, zIndex: 1000}}>NO SONGS LOADED</div>;
+              }
+              
+              const planetElements = songs.map((s, index) => {
+                console.log(`🌍 Creating planet ${index + 1}/${songs.length}:`, s.id, s.title);
+                console.log(`🌍 Planet ${index + 1} orbital data:`, { 
+                  orbitRadius: s.planet?.orbitRadius, 
+                  color: s.planet?.color, 
+                  element: s.planet?.element 
+                });
+                return (
+                  <Planet key={s.id} song={s} isMain={false} isHover={hoverId === s.id} isMoon={false} isMuted={false} ringBaseOverride={44} />
+                );
+              });
+              
+              console.log(`🌍 Total Planet elements created: ${planetElements.length}`);
+              console.log(`🌍 Planet elements:`, planetElements);
+              
               return (
                 <>
-                  {songs.map((s, index) => {
-                    console.log(`🌍 Rendering planet ${index + 1}/${songs.length}:`, s.id, s.title);
-                    return (
-                      <Planet key={s.id} song={s} isMain={false} isHover={hoverId === s.id} isMoon={false} isMuted={false} ringBaseOverride={44} />
-                    );
-                  })}
+                  {planetElements}
+                  {/* TEST: Add a simple mesh to verify Three.js rendering works */}
+                  <mesh position={[25, 0, 0]}>
+                    <sphereGeometry args={[1, 16, 16]} />
+                    <meshBasicMaterial color="cyan" />
+                  </mesh>
                 </>
               );
             } else {
@@ -221,12 +285,12 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
   // Use different base values based on showAll mode - access via props context
   const isShowAll = focusId === null;
   // Match Canvas camera defaults; give more room in showAll to see every planet
-  const base = React.useRef({ z: isShowAll ? 155 : 48, fov: isShowAll ? 105 : 78 });
+  const base = React.useRef({ z: isShowAll ? 155 : 80, fov: isShowAll ? 105 : 75 });
   const anim = React.useRef<{ t: number; d: number; active: boolean }>({ t: 0, d: 0.8, active: false });
 
   React.useEffect(() => {
     // Update base values based on current mode
-    base.current = { z: isShowAll ? 155 : 48, fov: isShowAll ? 105 : 78 };
+    base.current = { z: isShowAll ? 155 : 80, fov: isShowAll ? 105 : 75 };
     
     // Only restart zoom animation if we have a focusId (not in showAll/home mode)
     if (focusId) {
@@ -256,8 +320,8 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
       ? 2 * t * t
       : 1 - Math.pow(-2 * t + 2, 2) / 2;
     // dolly closer at mid, then return - zoomed out slightly for better view
-    const closeZ = 32;
-    const closeFov = 58;
+    const closeZ = 50;
+    const closeFov = 65;
     // use a bell curve around 0.5
     const bell = Math.sin(Math.PI * ease);
     (camera as any).position.x = 0.2;

@@ -22,7 +22,7 @@ let state: State = {
   mainId: null,
   prevMainId: null,
   hoverId: null,
-  planetsVisible: true,
+  planetsVisible: false,
   initSongs: (songs: Song[]) => {
     console.log('🎵 PlayerStore: initSongs called', { currentLength: state.songs.length, newLength: songs.length });
     if (state.songs.length === 0) {

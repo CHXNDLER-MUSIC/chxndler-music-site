@@ -134,6 +134,7 @@ export default function JoinAliens({ visible = true } = {}) {
         type="submit"
         disabled={status === "loading" || status === "ok" || !isFormValid}
         aria-disabled={status === "loading" || status === "ok" || !isFormValid}
+        onClick={() => { try { track('join_aliens_click', { payload: { button_type: 'submit' } }); } catch {} }}
         style={{ 
           width: '100%',
           maxWidth: '220px'

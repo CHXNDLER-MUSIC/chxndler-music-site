@@ -382,8 +382,16 @@ export default function AmbientSpace({
       try { amb.muted = false; } catch {}
       amb.play().catch(()=>{});
     };
-    const onPause = () => { setTimeout(tryResume, 100); };
-    const onEnded = () => { setTimeout(tryResume, 0); };
+    const onPause = () => { 
+      console.log('🎵 AmbientSpace: Audio paused unexpectedly, will try resume in 100ms', {
+        playingMusic, suspend, userPausedRef: userPausedRef.current, userSelectedSong, introPending: introPendingRef.current
+      });
+      setTimeout(tryResume, 100); 
+    };
+    const onEnded = () => { 
+      console.log('🎵 AmbientSpace: Audio ended, will try resume immediately');
+      setTimeout(tryResume, 0); 
+    };
     amb.addEventListener('pause', onPause);
     amb.addEventListener('ended', onEnded);
     // Also periodically ensure it's playing in case of transient blockers
@@ -393,7 +401,7 @@ export default function AmbientSpace({
         console.log('Periodic check: audio unexpectedly paused, attempting resume');
         tryResume();
       }
-    }, 30000); // reduced frequency to every 30 seconds and only when needed
+    }, 60000); // reduced frequency to every 60 seconds to minimize interference
     return () => { 
       amb.removeEventListener('pause', onPause);
       amb.removeEventListener('ended', onEnded);
@@ -442,15 +450,15 @@ export default function AmbientSpace({
       }
       const t = amb.currentTime || 0;
       const last = lastTimeRef.current || 0;
-      const advanced = (t - last) > 0.05; // more lenient threshold - 50ms advance
+      const advanced = (t - last) > 0.1; // more lenient threshold - 100ms advance
       const now = performance.now();
       if (!advanced && !amb.paused && amb.readyState >= 2) {
         // Potential stall
         if (stuckSinceRef.current === undefined) stuckSinceRef.current = now;
         const stuckMs = now - (stuckSinceRef.current || now);
-        if (stuckMs > 30000) { // increased threshold to 30 seconds to avoid false positives
+        if (stuckMs > 60000) { // increased threshold to 60 seconds to avoid false positives
           // Instead of nudging playhead, just try to resume playback
-          console.log('Audio stall detected, attempting resume');
+          console.log('Audio stall detected after 60s, attempting resume');
           tryResume();
           stuckSinceRef.current = undefined;
         }
@@ -459,7 +467,7 @@ export default function AmbientSpace({
         stuckSinceRef.current = undefined;
       }
       lastTimeRef.current = t;
-    }, 3000); // increased interval to 3 seconds
+    }, 5000); // increased interval to 5 seconds
 
     return () => {
       amb.removeEventListener('ended', onEnded);
@@ -508,7 +516,7 @@ export default function AmbientSpace({
   return (
     <>
       {/* Do not autoplay on mount; playback is orchestrated via effects when not suspended */}
-      <audio ref={ambRef} src={ambientSrc} preload="auto" playsInline muted data-ambient="1" />
+      <audio ref={ambRef} src={ambientSrc} preload="auto" playsInline muted loop data-ambient="1" />
       {introSrc ? <audio ref={introRef} src={introSrc} preload="auto" playsInline data-intro="1" /> : null}
       {/* Enable sound button hidden; global interaction starts audio automatically */}
     </>

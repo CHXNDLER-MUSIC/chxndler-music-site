@@ -67,7 +67,7 @@ export function track(
   })();
   const cooldownMs = (() => {
     switch (event_type) {
-      case 'page_view': return 5_000; // 5s per path
+      case 'page_view': return 10_000; // 10s per path
       case 'music_started': return 30_000; // 30s per song
       case 'join_aliens_click': return 3_000; // 3s
       case 'start_button_clicked': return 2_000; // 2s
@@ -266,6 +266,19 @@ export function clearClickAnalyticsLocal() {
     localStorage.removeItem(CLICKS_STORAGE_KEY);
   } catch (error) {
     console.warn('Failed to clear click analytics:', error);
+  }
+}
+
+export function clearAnalyticsCache() {
+  if (typeof window === 'undefined') return;
+  try {
+    // Clear the deduplication cache that prevents repeated events
+    if ('__chx_analytics_last' in window) {
+      (window as any).__chx_analytics_last = new Map<string, number>();
+    }
+    console.log('Analytics deduplication cache cleared');
+  } catch (error) {
+    console.warn('Failed to clear analytics cache:', error);
   }
 }
 

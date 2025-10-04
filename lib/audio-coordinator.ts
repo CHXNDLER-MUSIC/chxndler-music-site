@@ -61,11 +61,12 @@ class AudioCoordinator {
   private stopAmbientAudio() {
     try {
       const ambientAudio = document.querySelector('audio[data-ambient="1"]') as HTMLAudioElement;
-      if (ambientAudio) {
+      if (ambientAudio && this.currentSource !== 'ambient') {
+        // Only stop ambient if we're switching to a different source
         ambientAudio.pause();
         ambientAudio.currentTime = 0;
         ambientAudio.volume = 0;
-        console.log('🎵 AudioCoordinator: Stopped ambient audio (space-music.mp3)');
+        console.log('🎵 AudioCoordinator: Stopped ambient audio (space-music.mp3) for source:', this.currentSource);
       }
     } catch (e) {
       console.warn('🎵 AudioCoordinator: Error stopping ambient audio:', e);

@@ -148,7 +148,7 @@ export default function SteeringWheelOverlay({
       setActiveBeamColor('pink');
       onBeamColorChange?.('pink');
       // Explicit analytics event for Join Aliens button (avoid relying on global click label)
-      try { track('join_aliens_click'); } catch {}
+      try { track('join_aliens_click', { payload: { button_type: 'open_form' } }); } catch {}
     }
   }, [showJoin, onBeamColorChange, showUI, isUIUnlocked]);
 
@@ -452,10 +452,13 @@ export default function SteeringWheelOverlay({
                   } else {
                     // Menu is closing: turn displays off without auto-opening blue
                     if (activeBeamColor === 'yellow') {
-                      // Reset local state but don't emit a blue signal to parent
-                      suppressNextBeamNotifyRef.current = true;
-                      setActiveBeamColor('blue');
+                      // Don't flash blue - just turn off displays then reset color after delay
                       onBeamColorChange?.('off'); // tell parent to turn ALL displays off
+                      // Reset local state after beam turns off to avoid blue flash
+                      setTimeout(() => {
+                        suppressNextBeamNotifyRef.current = true;
+                        setActiveBeamColor('blue');
+                      }, 100);
                       // Also cancel any pending transition timers
                       if (yellowFromPinkTimeoutA.current) { window.clearTimeout(yellowFromPinkTimeoutA.current); yellowFromPinkTimeoutA.current = null; }
                       if (yellowFromPinkTimeoutB.current) { window.clearTimeout(yellowFromPinkTimeoutB.current); yellowFromPinkTimeoutB.current = null; }
@@ -486,7 +489,7 @@ export default function SteeringWheelOverlay({
         {(() => {
           const joinSize: number = 72; // Fixed size to match yellow and blue buttons
           return (
-            <div style={{ pointerEvents: 'auto' }}>
+            <div style={{ pointerEvents: showUI && !isDimmingOverlayActive && isUIUnlocked ? 'auto' : 'none' }}>
               <HoloJoinButton 
                 size={joinSize} 
                 label="Join Alien Display" 

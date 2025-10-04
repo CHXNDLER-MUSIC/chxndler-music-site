@@ -7,14 +7,7 @@ const nextConfig = {
   images: { remotePatterns: [{ protocol: 'https', hostname: 'images.unsplash.com' }] },
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },
-  // Avoid eval()-based devtool that can confuse React Refresh on some browsers
-  webpack(config, { dev }) {
-    if (dev) {
-      // Use external source maps instead of eval-source-map
-      config.devtool = 'source-map';
-    }
-    return config;
-  },
+  // Let Next.js handle devtool optimization automatically
   async headers() {
     if (!isProd) return [];
     return [
