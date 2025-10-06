@@ -864,7 +864,7 @@ function generatePlanetProperties(element: Element, type: PlanetType, baseRadius
 }
 
 // Data shape for HUD list component
-export type HudSong = { id: string; title: string; icon: Element; color: string };
+export type HudSong = { id: string; title: string; icon: Element; color: string; spotify?: string };
 
 // Data shape for hologram 3D system (store/usePlayerStore)
 export type PlanetType = "terrestrial" | "gas_giant" | "ice_world" | "desert" | "ocean" | "volcanic" | "crystal" | "toxic" | "metal";
@@ -1025,6 +1025,9 @@ function inferMotifsFromDescriptor(slug: string): { name: PlanetMotifName; color
 }
 
 export function buildPlanetSongs(): { hudSongs: HudSong[]; holoSongs: HoloSong[] } {
+  console.log('🚨 buildPlanetSongs: Starting build process');
+  console.log('🚨 buildPlanetSongs: tracks.length =', tracks.length);
+  console.log('🚨 buildPlanetSongs: tracks sample =', tracks.slice(0, 3));
   // Deterministic numeric seed from slug (stable across reloads)
   const seedFromSlug = (slug: string) => {
     let h = 2166136261; // FNV-1a base
@@ -1153,7 +1156,7 @@ export function buildPlanetSongs(): { hudSongs: HudSong[]; holoSongs: HoloSong[]
     const element = TITLE_ELEMENT_MAP[id] ?? pickElement(id, i);
     const color = ELEMENT_COLORS[element];
 
-    hudSongs.push({ id, title: t.title, icon: element, color });
+    hudSongs.push({ id, title: t.title, icon: element, color, spotify: t.spotify });
 
     // orbit spacing and speed with variety - increased distance from central heart planet
     const orbitRadius = 12.0 + (i % 8) * 2.0 + (i % 3) * 1.0;
@@ -1203,5 +1206,10 @@ export function buildPlanetSongs(): { hudSongs: HudSong[]; holoSongs: HoloSong[]
     });
   });
 
+  console.log('🚨 buildPlanetSongs: RESULT hudSongs.length =', hudSongs.length);
+  console.log('🚨 buildPlanetSongs: RESULT holoSongs.length =', holoSongs.length);
+  console.log('🚨 buildPlanetSongs: First few hudSongs =', hudSongs.slice(0, 3));
+  console.log('🚨 buildPlanetSongs: First few holoSongs =', holoSongs.slice(0, 3));
+  
   return { hudSongs, holoSongs };
 }

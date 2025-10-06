@@ -61,6 +61,10 @@ export function track(
         return 'join_click';
       case 'start_button_clicked':
         return 'start_btn';
+      case 'start_button_opening_page':
+        return 'start_opening';
+      case 'start_button_all_clicks':
+        return 'start_all';
       default:
         return '';
     }
@@ -71,6 +75,8 @@ export function track(
       case 'music_started': return 30_000; // 30s per song
       case 'join_aliens_click': return 3_000; // 3s
       case 'start_button_clicked': return 2_000; // 2s
+      case 'start_button_opening_page': return 0; // No cooldown - should only fire once per session
+      case 'start_button_all_clicks': return 1_000; // 1s cooldown to prevent rapid double-clicks
       default: return 0;
     }
   })();

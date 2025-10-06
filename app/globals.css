@@ -574,3 +574,43 @@ main {
 .btn-spotify:hover{ transform: translateZ(0) scale(1.04); box-shadow: 0 0 32px rgba(29,185,84,.8), inset 0 2px 0 rgba(255,255,255,.6), inset 0 -6px 16px rgba(0,0,0,.3); filter: saturate(1.05) brightness(1.03); }
 .btn-apple{ background: radial-gradient(100% 100% at 50% 30%, rgba(255,210,210,1), #FF3B30); box-shadow: 0 0 24px rgba(255,59,48,.55), inset 0 2px 0 rgba(255,255,255,.55), inset 0 -6px 14px rgba(0,0,0,.25); }
 .btn-apple:hover{ transform: translateZ(0) scale(1.04); box-shadow: 0 0 32px rgba(255,59,48,.8), inset 0 2px 0 rgba(255,255,255,.6), inset 0 -6px 16px rgba(0,0,0,.3); filter: saturate(1.05) brightness(1.03); }
+
+/* Spotify button in HUD waveform player */
+.spotify-btn-waveform-hud{
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1DB954, #1ed760);
+  border: 1px solid rgba(255,255,255,.4);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 12px rgba(29, 185, 84, 0.4);
+  flex-shrink: 0;
+}
+.spotify-btn-waveform-hud:hover{
+  background: linear-gradient(135deg, #1ed760, #22e55c);
+  transform: scale(1.08);
+  box-shadow: 0 0 18px rgba(29, 185, 84, 0.6);
+  border-color: rgba(255,255,255,.6);
+}
+.spotify-btn-waveform-hud:active{ transform: scale(0.95); }
+
+.spotify-btn-unavailable-hud{
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(128, 128, 128, 0.3);
+  border: 1px solid rgba(128, 128, 128, 0.5);
+  color: #888;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: not-allowed;
+  backdrop-filter: blur(4px);
+  flex-shrink: 0;
+}

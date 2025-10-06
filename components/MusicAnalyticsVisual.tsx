@@ -490,27 +490,46 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                     <button className="w-full text-left px-6 py-4 flex items-center justify-between hover:bg-cyan-500/10" onClick={() => setCardsOpen(!cardsOpen)}>
                       <span className="text-white font-medium">Cards</span>
                       <span className="text-cyan-200 font-bold">
-                        {(stats?.collectCardClicks || []).reduce((s: number, d: any)=> s + (d?.count||0), 0)}
+                        {(() => {
+                          // Sum per-track counts using the same pattern as Cover Art and Songs
+                          const total = (tracks || []).reduce((sum, t) => {
+                            const localCardCount = (() => {
+                              const match = (stats?.collectCardClicks || []).find(s => (s.title || '').toLowerCase() === (t.title || '').toLowerCase());
+                              return match?.count || 0;
+                            })();
+                            return sum + localCardCount;
+                          }, 0);
+                          return total;
+                        })()}
                       </span>
                     </button>
                     {cardsOpen && (
                       <div className="px-6 pb-6 space-y-3">
-                        {(stats?.collectCardClicks || [])
-                          .slice()
-                          .sort((a:any,b:any)=> (b?.count||0)-(a?.count||0))
-                          .map((row: any, idx: number) => (
-                            <div key={`${row?.song || idx}`} className="flex items-center gap-4">
+                        {tracks.map((t, idx) => {
+                          const slug = (t.slug || '').toLowerCase();
+                          const localCardCount = (() => {
+                            const match = (stats?.collectCardClicks || []).find(s => (s.title || '').toLowerCase() === (t.title || '').toLowerCase());
+                            return match?.count || 0;
+                          })();
+                          const count = localCardCount || 0;
+                          const max = Math.max(1, ...tracks.map(tt => {
+                            const local = (stats?.collectCardClicks || []).find(ss => (ss.title || '').toLowerCase() === (tt.title || '').toLowerCase())?.count || 0;
+                            return local;
+                          }));
+                          return (
+                            <div key={slug || idx} className="flex items-center gap-4">
                               <div className="flex-1">
                                 <div className="flex justify-between items-center mb-1">
-                                  <span className="text-white font-medium">{row?.title || row?.song || 'Unknown'}</span>
-                                  <span className="text-cyan-400 font-bold">{row?.count || 0} clicks</span>
+                                  <span className="text-white font-medium">{t.title}</span>
+                                  <span className="text-cyan-400 font-bold">{count} clicks</span>
                                 </div>
                                 <div className="bg-gray-700 rounded-full h-2 overflow-hidden">
-                                  <div className={`h-full bg-gradient-to-r from-teal-500 to-cyan-500 transition-all duration-500`} style={{ width: `${Math.max(((row?.count||0) / Math.max(1, ...(stats?.collectCardClicks || []).map((d:any)=> d?.count || 0))) * 100, 5)}%` }} />
+                                  <div className={`h-full bg-gradient-to-r from-teal-500 to-cyan-500 transition-all duration-500`} style={{ width: `${Math.max((count / max) * 100, 5)}%` }} />
                                 </div>
                               </div>
                             </div>
-                          ))}
+                          );
+                        })}
                       </div>
                     )}
                   </>

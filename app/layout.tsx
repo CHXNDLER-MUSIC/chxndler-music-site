@@ -5,6 +5,7 @@ import React from "react";
 import ClickTracker from "@/components/ClickTracker";
 import AnalyticsWidget from "@/components/AnalyticsWidget";
 import PageViewTracker from "@/components/PageViewTracker";
+import { Suspense } from "react";
 import { AudioProvider } from "@/app/providers/AudioProvider";
 
 export const metadata: Metadata = {
@@ -49,20 +50,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
             n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
             n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}
-            (window, document,'script','https://connect.facebook.net/en_US/fbevents.js'); fbq('init', '${mpId}'); fbq('track', 'PageView');
+            (window, document,'script','https://connect.facebook.net/en_US/fbevents.js'); fbq('init', '${mpId}');
           ` }} />
         ) : null}
       </head>
       <body className="font-sans">
         <AudioProvider>
-          <PageViewTracker />
+          <Suspense fallback={null}>
+            <PageViewTracker />
+          </Suspense>
           <ClickTracker />
           <AnalyticsWidget />
           {children}
         </AudioProvider>
         {mpId ? (
           <noscript>
-            <img height="1" width="1" style={{ display: "none" }} src={`https://www.facebook.com/tr?id=${mpId}&ev=PageView&noscript=1`} alt="" />
+            <img height="1" width="1" style={{ display: "none" }} src={`https://www.facebook.com/tr?id=${mpId}&noscript=1`} alt="" />
           </noscript>
         ) : null}
       </body>

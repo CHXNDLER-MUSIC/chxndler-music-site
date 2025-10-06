@@ -942,6 +942,64 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               </div>
             )}
             
+            {/* TEST BUTTON - ALWAYS VISIBLE */}
+            <div 
+              className="test-button-waveform"
+              title={`Test button - Track: ${cur.title} - Spotify: ${cur.spotify ? 'YES' : 'NO'}`}
+            >
+              TEST
+            </div>
+
+            {/* Spotify button positioned in waveform container */}
+            {cur.spotify ? (
+              <a
+                href={cur.spotify}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="spotify-btn-waveform"
+                title="Open on Spotify"
+                aria-label={`Open ${cur.title} on Spotify`}
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                  <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
+                </svg>
+              </a>
+            ) : (
+              <div 
+                className="spotify-btn-unavailable-waveform"
+                title={`No Spotify link available for ${cur.title}`}
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" opacity="0.5">
+                  <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
+                </svg>
+              </div>
+            )}
+
+            {/* Apple Music button positioned in waveform container */}
+            {cur.apple ? (
+              <a
+                href={cur.apple}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="apple-btn-waveform"
+                title="Open on Apple Music"
+                aria-label={`Open ${cur.title} on Apple Music`}
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                  <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                </svg>
+              </a>
+            ) : (
+              <div 
+                className="apple-btn-unavailable-waveform"
+                title={`No Apple Music link available for ${cur.title}`}
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" opacity="0.5">
+                  <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                </svg>
+              </div>
+            )}
+
             {/* Time cursor with element icon - positioned to match animated circle exactly */}
             <div
               className={`absolute top-0 h-full flex flex-col items-center justify-center pointer-events-none z-10 cursor-transition ${playing ? 'playing' : ''} ${seeking ? 'seeking' : ''}`}
@@ -1008,23 +1066,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             </div>
           </div>
           
-          {/* Spotify button positioned next to the waveform */}
-          {cur.spotify && (
-            <div className="spotify-btn-container">
-              <a
-                href={cur.spotify}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="spotify-btn"
-                title="Open on Spotify"
-                aria-label={`Open ${cur.title} on Spotify`}
-              >
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                  <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
-                </svg>
-              </a>
-            </div>
-          )}
         </div>
       </div>
       </div>
@@ -1056,6 +1097,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             </span>
           </button>
         )}
+        
         
         <div className="track-controls">
           <button onClick={prev} className="track-btn" aria-label="Previous">
@@ -1262,6 +1304,33 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         document.body
       ) : null}
 
+      {/* SPOTIFY BUTTON - CENTER OF ENTIRE SCREEN */}
+      {cur.spotify ? (
+        <a
+          href={cur.spotify}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="spotify-btn-fullscreen"
+          title="Open on Spotify"
+          aria-label={`Open ${cur.title} on Spotify`}
+        >
+          <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
+            <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
+          </svg>
+          <span style={{ marginLeft: '8px', fontSize: '16px', fontWeight: 'bold' }}>SPOTIFY</span>
+        </a>
+      ) : (
+        <div 
+          className="spotify-btn-unavailable-fullscreen"
+          title={`No Spotify link available for ${cur.title}`}
+        >
+          <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor" opacity="0.5">
+            <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
+          </svg>
+          <span style={{ marginLeft: '8px', fontSize: '14px', opacity: 0.7 }}>Not Available</span>
+        </div>
+      )}
+
       {/* SFX: reuse an existing asset to avoid 404; you can provide distinct files in /public/ui */}
       <audio ref={uiClickRef}  src="/audio/click.mp3" preload="auto" />
       <audio ref={detentRef}   src="/audio/warp.mp3" preload="auto" />
@@ -1269,19 +1338,19 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       <style jsx>{`
         /* Waveform wrapper to contain both waveform and spotify button */
         .waveform-wrapper {
-          position: absolute;
-          bottom: -12px;
-          right: 0;
+          position: relative;
           display: flex;
           align-items: center;
           gap: 12px;
+          justify-content: flex-end;
+          margin-top: 8px;
         }
         
-        /* Waveform visualization container */
+        /* Waveform visualization container - slightly wider to accommodate both buttons */
         .waveform-container{
-          width: 24vw;
+          width: 26vw;
           height: 20vw;
-          min-width: 120px;
+          min-width: 130px;
           min-height: 90px;
           max-width: 160px;
           max-height: 120px;
@@ -1292,24 +1361,57 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           border-radius: 16px;
           border: 1px solid ${currentElementColor}40;
           backdrop-filter: blur(8px);
-          overflow: hidden;
+          overflow: visible;
         }
         
-        /* Spotify button container - positioned next to waveform */
-        .spotify-btn-container {
+        /* Spotify button - positioned next to play/pause in controls */
+        .spotify-btn {
+          width: 36px;
+          height: 36px;
+          border-radius: 8px;
+          background: linear-gradient(135deg, #1DB954, #1ed760);
+          color: white;
           display: flex;
           align-items: center;
           justify-content: center;
+          text-decoration: none;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 8px rgba(29, 185, 84, 0.5);
+          border: 2px solid rgba(255, 255, 255, 0.2);
           flex-shrink: 0;
-          padding: 8px;
-          background: rgba(29, 185, 84, 0.15);
-          border-radius: 12px;
-          border: 1px solid rgba(29, 185, 84, 0.4);
-          backdrop-filter: blur(8px);
         }
         
-        /* Spotify button - compact circular design */
-        .spotify-btn {
+        .spotify-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(29, 185, 84, 0.6);
+          background: linear-gradient(135deg, #1ed760, #22e55c);
+        }
+        
+        .spotify-btn:active {
+          transform: translateY(0);
+        }
+        
+        .spotify-btn-debug {
+          width: 36px;
+          height: 36px;
+          border-radius: 8px;
+          background: rgba(255, 0, 0, 0.3);
+          color: red;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-decoration: none;
+          font-size: 8px;
+          border: 2px solid red;
+          flex-shrink: 0;
+        }
+        
+        /* Spotify button positioned LEFT of center in waveform container */
+        .spotify-btn-waveform {
+          position: absolute;
+          top: 50%;
+          left: 42%;
+          transform: translate(-50%, -50%);
           width: 40px;
           height: 40px;
           border-radius: 50%;
@@ -1320,17 +1422,156 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           justify-content: center;
           text-decoration: none;
           transition: all 0.3s ease;
-          box-shadow: 0 2px 12px rgba(29, 185, 84, 0.4);
-          border: 2px solid rgba(255, 255, 255, 0.2);
+          box-shadow: 0 4px 16px rgba(29, 185, 84, 0.6);
+          border: 3px solid rgba(255, 255, 255, 0.4);
+          z-index: 30;
+          backdrop-filter: blur(8px);
         }
         
-        .spotify-btn:hover {
-          transform: scale(1.1);
-          box-shadow: 0 4px 16px rgba(29, 185, 84, 0.5);
+        .spotify-btn-waveform:hover {
+          transform: translate(-50%, -50%) scale(1.15);
+          box-shadow: 0 6px 20px rgba(29, 185, 84, 0.8);
+          background: linear-gradient(135deg, #1ed760, #22e55c);
         }
         
-        .spotify-btn:active {
-          transform: scale(0.95);
+        .spotify-btn-waveform:active {
+          transform: translate(-50%, -50%) scale(0.95);
+        }
+        
+        .spotify-btn-unavailable-waveform {
+          position: absolute;
+          top: 50%;
+          left: 42%;
+          transform: translate(-50%, -50%);
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: rgba(128, 128, 128, 0.3);
+          color: #888;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-decoration: none;
+          border: 3px solid rgba(128, 128, 128, 0.5);
+          z-index: 30;
+          backdrop-filter: blur(8px);
+          cursor: not-allowed;
+        }
+        
+        /* Apple Music button positioned RIGHT of center in waveform container */
+        .apple-btn-waveform {
+          position: absolute;
+          top: 50%;
+          left: 58%;
+          transform: translate(-50%, -50%);
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #FF3B30, #FF2D55);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-decoration: none;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 16px rgba(255, 59, 48, 0.6);
+          border: 3px solid rgba(255, 255, 255, 0.4);
+          z-index: 31;
+          backdrop-filter: blur(8px);
+        }
+        
+        .apple-btn-waveform:hover {
+          transform: translate(-50%, -50%) scale(1.15);
+          box-shadow: 0 6px 20px rgba(255, 59, 48, 0.8);
+          background: linear-gradient(135deg, #FF2D55, #FF1744);
+        }
+        
+        .apple-btn-waveform:active {
+          transform: translate(-50%, -50%) scale(0.95);
+        }
+        
+        .apple-btn-unavailable-waveform {
+          position: absolute;
+          top: 50%;
+          left: 58%;
+          transform: translate(-50%, -50%);
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: rgba(128, 128, 128, 0.3);
+          color: #888;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-decoration: none;
+          border: 3px solid rgba(128, 128, 128, 0.5);
+          z-index: 31;
+          backdrop-filter: blur(8px);
+          cursor: not-allowed;
+        }
+        
+        .test-button-waveform {
+          position: absolute;
+          top: 20px;
+          left: 20px;
+          width: 60px;
+          height: 40px;
+          background: yellow;
+          color: black;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 12px;
+          font-weight: bold;
+          border: 3px solid black;
+          z-index: 50;
+          cursor: pointer;
+        }
+        
+        /* FULLSCREEN SPOTIFY BUTTON - CENTER OF ENTIRE SCREEN */
+        .spotify-btn-fullscreen {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 200px;
+          height: 80px;
+          background: linear-gradient(135deg, #1DB954, #1ed760);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-decoration: none;
+          border-radius: 16px;
+          box-shadow: 0 8px 32px rgba(29, 185, 84, 0.8);
+          border: 4px solid rgba(255, 255, 255, 0.3);
+          z-index: 9999;
+          backdrop-filter: blur(8px);
+          transition: all 0.3s ease;
+        }
+        
+        .spotify-btn-fullscreen:hover {
+          transform: translate(-50%, -50%) scale(1.1);
+          box-shadow: 0 12px 40px rgba(29, 185, 84, 1);
+        }
+        
+        .spotify-btn-unavailable-fullscreen {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 220px;
+          height: 80px;
+          background: rgba(128, 128, 128, 0.3);
+          color: #888;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 16px;
+          border: 4px solid rgba(128, 128, 128, 0.5);
+          z-index: 9999;
+          backdrop-filter: blur(8px);
+          cursor: not-allowed;
         }
         
         .waveform {

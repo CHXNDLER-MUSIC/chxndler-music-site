@@ -25,10 +25,12 @@ export function computePlanetLayout(
     minScale?: number; maxScale?: number;
   } = {}
 ): Record<string, LayoutOut> {
+  console.log('🌍 PlanetLayout: computePlanetLayout called with', songs.length, 'songs');
+  console.log('🌍 PlanetLayout: Song IDs:', songs.map(s => s.id));
   const {
     // Push satellites even farther from the center heart planet with increased spacing
-    ringGap = 20.0,
-    baseRadius = 68.0,
+    ringGap = 25.0,
+    baseRadius = 75.0,
     eccMin = 0.05,
     eccMax = 0.22,
     tiltPerRing = 6,
@@ -45,23 +47,27 @@ export function computePlanetLayout(
       byRing.get(r)!.push(s);
     }
   } else {
-    const perRing = 7; // ~6–8 per ring
+    const perRing = 5; // Reduce to 5 per ring for better distribution of 15 songs (3 rings: 5+5+5) 
     const ringCount = Math.max(1, Math.ceil(songs.length / perRing));
     for (let i = 0; i < songs.length; i++) {
       const r = Math.floor(i / perRing);
       if (!byRing.has(r)) byRing.set(r, []);
       byRing.get(r)!.push(songs[i]);
     }
-    // Balance last ring if very uneven
-    const last = byRing.get(ringCount - 1);
-    const prev = byRing.get(ringCount - 2);
-    if (ringCount > 1 && last && prev && last.length < Math.floor(perRing * 0.5)) {
-      // move a few from prev to last
-      const need = Math.min(prev.length - Math.ceil(perRing * 0.5), Math.ceil((perRing - last.length) / 2));
-      if (need > 0) {
-        const moved = prev.splice(prev.length - need, need);
-        last.unshift(...moved);
-      }
+    console.log('🌍 PlanetLayout: Distributing', songs.length, 'songs across', ringCount, 'rings');
+    console.log('🌍 PlanetLayout: Ring distribution:', Array.from(byRing.entries()).map(([ring, songs]) => `Ring ${ring}: ${songs.length} songs`));
+  }
+  // Balance last ring if very uneven
+  const finalRingCount = Math.max(1, Math.ceil(songs.length / 5));
+  const finalPerRing = 5;
+  const last = byRing.get(finalRingCount - 1);
+  const prev = byRing.get(finalRingCount - 2);
+  if (finalRingCount > 1 && last && prev && last.length < Math.floor(finalPerRing * 0.5)) {
+    // move a few from prev to last
+    const need = Math.min(prev.length - Math.ceil(finalPerRing * 0.5), Math.ceil((finalPerRing - last.length) / 2));
+    if (need > 0) {
+      const moved = prev.splice(prev.length - need, need);
+      last.unshift(...moved);
     }
   }
 
@@ -82,10 +88,10 @@ export function computePlanetLayout(
   }
 
   const ringIndices = Array.from(byRing.keys()).sort((a, b) => a - b);
-  const ringCount = ringIndices.length;
+  const totalRings = ringIndices.length;
   for (const ringIndex of ringIndices) {
     const list = byRing.get(ringIndex)!;
-    const eccBase = lerp(eccMin, eccMax, ringCount > 1 ? ringIndex / (ringCount - 1) : 0);
+    const eccBase = lerp(eccMin, eccMax, totalRings > 1 ? ringIndex / (totalRings - 1) : 0);
     const tiltDeg = ringIndex * tiltPerRing;
     for (let i = 0; i < list.length; i++) {
       const s = list[i];
@@ -117,6 +123,8 @@ export function computePlanetLayout(
     }
   }
 
+  console.log('🌍 PlanetLayout: Returning layout for', Object.keys(out).length, 'planets');
+  console.log('🌍 PlanetLayout: Layout keys:', Object.keys(out));
   return out;
 }
 
@@ -124,20 +132,27 @@ export function usePlanetLayout(songId: string): LayoutOut | undefined {
   // Local subscription to the store
   const [songs, setSongs] = useState(() => playerStore.getState().songs as any);
   useEffect(() => playerStore.subscribe(() => setSongs(playerStore.getState().songs as any)), []);
+  
+  console.log('🌍 usePlanetLayout: Called for songId:', songId, 'songs count:', songs.length);
+  
   // Responsive opts: tighten on small screens
   const { innerWidth: w } = typeof window !== 'undefined' ? window : { innerWidth: 1280 } as any;
   const narrow = w < 640;
   const opts = useMemo(() => ({
     // Even larger spacing to clear the center heart with increased distances
-    ringGap: narrow ? 18.0 : 20.0,
-    baseRadius: narrow ? 62.0 : 68.0,
+    ringGap: narrow ? 22.0 : 25.0,
+    baseRadius: narrow ? 68.0 : 75.0,
     eccMin: 0.05, eccMax: 0.22,
     tiltPerRing: 6,
     minScale: 0.7,
     maxScale: narrow ? 1.05 : 1.25,
   }), [narrow]);
   const layout = useMemo(() => computePlanetLayout(songs as any, opts), [songs, opts]);
-  return layout[songId];
+  const result = layout[songId];
+  
+  console.log('🌍 usePlanetLayout: Result for', songId, ':', result);
+  
+  return result;
 }
 
 // Helpers

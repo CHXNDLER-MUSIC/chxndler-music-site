@@ -89,6 +89,10 @@ export default function HoloAudioBridge() {
       const WARP_MS = 1800;
       const warpTimeout = setTimeout(() => {
         console.log('🎵 HoloAudioBridge: Warp delay complete, playing', currentTrack.title);
+        
+        // Transition to single planet mode when song starts
+        playerStore.getState().setPlanetDisplayMode('single');
+        
         a.play().catch((err) => {
           console.error('🎵 HoloAudioBridge: Play failed', err);
         });

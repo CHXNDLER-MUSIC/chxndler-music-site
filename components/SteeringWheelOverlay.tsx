@@ -13,6 +13,7 @@ export default function SteeringWheelOverlay({
   playing,
   showUI = true,
   uiUnlocked = false,
+  joinAlienOpen = false,
   onPowerToggle,
   onJoinToggle,
   onBeamColorChange,
@@ -25,6 +26,7 @@ export default function SteeringWheelOverlay({
   playing?: boolean;
   showUI?: boolean;
   uiUnlocked?: boolean;
+  joinAlienOpen?: boolean;
   onPowerToggle?: () => void;
   onJoinToggle?: (showJoin: boolean) => void;
   onBeamColorChange?: (color: 'blue' | 'yellow' | 'pink' | 'off') => void;
@@ -38,7 +40,7 @@ export default function SteeringWheelOverlay({
   const pauseRef = useRef<HTMLAudioElement|null>(null);
   const hoverRef = useRef<HTMLAudioElement|null>(null);
   const buttonRef = useRef<HTMLAudioElement|null>(null);
-  const [showJoin, setShowJoin] = useState(false);
+  // Use joinAlienOpen prop instead of local state
   const [activeBeamColor, setActiveBeamColor] = useState<'blue' | 'yellow' | 'pink'>('blue');
   const [mounted, setMounted] = useState(false);
   const [startSpotlight, setStartSpotlight] = useState(false);
@@ -58,10 +60,7 @@ export default function SteeringWheelOverlay({
     return () => clearTimeout(timer);
   }, []);
 
-  // Notify parent when showJoin changes
-  useEffect(() => {
-    onJoinToggle?.(showJoin);
-  }, [showJoin, onJoinToggle]);
+  // Parent manages joinAlienOpen state directly
 
   // Notify parent when beam color changes without coupling to callback identity
   const onBeamColorChangeRef = useRef<typeof onBeamColorChange>();
@@ -91,9 +90,8 @@ export default function SteeringWheelOverlay({
 
   // Pink display stays open until pink button is clicked - no click-outside behavior
 
-  // On external close signal (warp start), close pink join panel and reset local beam tint
+  // On external close signal (warp start), reset local beam tint and clear timers
   useEffect(() => {
-    setShowJoin(false);
     setActiveBeamColor('blue');
     // Clear any pending yellow transition timers
     if (yellowFromPinkTimeoutA.current) { window.clearTimeout(yellowFromPinkTimeoutA.current); yellowFromPinkTimeoutA.current = null; }
@@ -103,12 +101,14 @@ export default function SteeringWheelOverlay({
 
   function handleLaunch() {
     const willPause = !!playing;
-    // Track Start press once per mount (counts the central button as Start even if styled as Play)
+    // Track Start press - separate events for opening page vs subsequent clicks
     try {
       if (!startTrackedRef.current) {
-        track('start_button_clicked');
+        track('start_button_opening_page');
         startTrackedRef.current = true;
       }
+      // Always track all start button clicks
+      track('start_button_all_clicks');
     } catch {}
     // Trigger toggle action first so downstream can open streaming links within a user gesture
     try { onLaunch(); } catch {}
@@ -134,23 +134,18 @@ export default function SteeringWheelOverlay({
       if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
     } catch {}
     
-    // Simple toggle: only control pink display and beam
-    if (showJoin) {
-      // Close pink display without auto-opening blue display
-      setShowJoin(false);
-      // Reset local state but don't emit a blue signal to parent
-      suppressNextBeamNotifyRef.current = true;
-      setActiveBeamColor('blue');
-      onBeamColorChange?.('off'); // tell parent to turn ALL displays off
+    // Let parent handleBeamToggle manage all display coordination
+    if (joinAlienOpen && activeBeamColor === 'pink') {
+      // Currently showing pink - close it
+      onBeamColorChange?.('off');
     } else {
-      // Open pink display
-      setShowJoin(true);
-      setActiveBeamColor('pink');
+      // Open pink display (parent will close others first)
       onBeamColorChange?.('pink');
-      // Explicit analytics event for Join Aliens button (avoid relying on global click label)
-      try { track('join_aliens_click', { payload: { button_type: 'open_form' } }); } catch {}
     }
-  }, [showJoin, onBeamColorChange, showUI, isUIUnlocked]);
+    
+    // Explicit analytics event for Join Aliens button
+    try { track('join_aliens_click', { payload: { button_type: joinAlienOpen ? 'close_form' : 'open_form' } }); } catch {}
+  }, [joinAlienOpen, activeBeamColor, onBeamColorChange, showUI, isUIUnlocked]);
 
   // Helper function to get responsive values
   const getResponsiveValue = (config: any) => {
@@ -341,23 +336,8 @@ export default function SteeringWheelOverlay({
                       if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
                     } catch {}
 
-                    // If pink display is open, sequence: close pink → beam blue → open blue
-                    if (showJoin || activeBeamColor === 'pink') {
-                      // Close pink without auto-opening blue immediately
-                      setShowJoin(false);
-                      onBeamColorChange?.('off');
-                      // After close animation, flip beam to blue and trigger blue display
-                      setTimeout(() => {
-                        setActiveBeamColor('blue');
-                        onBeamColorChange?.('blue');
-                        onPowerToggle?.();
-                      }, 180);
-                    } else {
-                      // Normal blue toggle
-                      setActiveBeamColor('blue');
-                      onBeamColorChange?.('blue');
-                      onPowerToggle?.();
-                    }
+                    // Let parent handleBeamToggle manage all display coordination
+                    onBeamColorChange?.('blue');
                   }}
                   aria-label="Power"
                   title="Power"
@@ -425,11 +405,10 @@ export default function SteeringWheelOverlay({
                       if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
                     } catch {}
                     // If pink display is open, sequence: fade out pink → switch beam → fade in yellow panel
-                    if (showJoin || activeBeamColor === 'pink') {
+                    if (joinAlienOpen || activeBeamColor === 'pink') {
                       // Prevent yellow panel from showing while pink fades out and beam flips
                       setSuspendYellowPanel(true);
-                      // Start pink fade-out
-                      setShowJoin(false);
+                      // Start pink fade-out (parent will handle setJoinAlienOpen)
                       onBeamColorChange?.('off');
                       // After pink fade completes (~350ms), flip beam to yellow
                       yellowFromPinkTimeoutA.current = window.setTimeout(() => {
@@ -441,13 +420,9 @@ export default function SteeringWheelOverlay({
                         }, 170);
                       }, 360);
                     } else {
-                      // Close other displays first (especially blue display)
-                      onBeamColorChange?.('off'); // Close all displays first
-                      // Then set yellow beam after a brief delay
-                      setTimeout(() => {
-                        setActiveBeamColor('yellow');
-                        onBeamColorChange?.('yellow');
-                      }, 100);
+                      // Switch to yellow immediately without closing first
+                      setActiveBeamColor('yellow');
+                      onBeamColorChange?.('yellow');
                     }
                   } else {
                     // Menu is closing: turn displays off without auto-opening blue
@@ -518,8 +493,8 @@ export default function SteeringWheelOverlay({
               left: '50%',
               transform: 'translateX(-50%)',
               zIndex: 125,
-              pointerEvents: showJoin && !suspendUI ? 'auto' : 'none',
-              opacity: showJoin && !suspendUI ? 1 : 0,
+              pointerEvents: joinAlienOpen && !suspendUI ? 'auto' : 'none',
+              opacity: joinAlienOpen && !suspendUI ? 1 : 0,
               // Match surrounding UI fade for consistency
               transition: 'opacity 350ms ease',
             }}
@@ -548,7 +523,7 @@ export default function SteeringWheelOverlay({
                 animation: 'pinkPanelPulse 2.6s ease-in-out infinite',
               }}
             >
-              <JoinAliens visible={showJoin && !suspendUI} />
+              <JoinAliens visible={joinAlienOpen && !suspendUI} />
             </div>
           </div>
         );
@@ -561,6 +536,7 @@ export default function SteeringWheelOverlay({
       {/* Start button positioned directly on top of the wheel */}
       {!hideStartButton && <button
         onClick={handleLaunch}
+        data-no-track
         className={`pointer-events-auto wheel-play${isStart ? ' chx' : ''} no-spotlight`}
         style={{
           position: "absolute",
@@ -575,7 +551,7 @@ export default function SteeringWheelOverlay({
           transform: `translate(-50%, 0)`,
           zIndex: 105,
           // Ensure this button doesn't interfere with join form clicks
-          pointerEvents: showJoin ? 'none' : 'auto',
+          pointerEvents: joinAlienOpen ? 'none' : 'auto',
         }}
         onMouseEnter={() => { if (!mounted) return; try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
         aria-label={isStart ? "Start" : (playing ? "Pause" : "Play")}

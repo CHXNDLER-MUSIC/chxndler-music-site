@@ -43,9 +43,23 @@ export default function AmbientSpace({
     if (ms <= 0) { amb.volume = clamp01(to); if (then) then(); return; }
     const start = performance.now();
     const step = (now: number) => {
+      // Check if audio element still exists and is in a valid state
+      if (!amb || amb.paused) {
+        rafRef.current = undefined;
+        if (then) then();
+        return;
+      }
       const t = Math.min(1, (now - start) / ms);
       const v = from + (to - from) * t;
-      amb.volume = clamp01(v);
+      // Only set volume if the element is still valid and playing
+      try {
+        amb.volume = clamp01(v);
+      } catch (e) {
+        console.warn('Failed to set volume during fade:', e);
+        rafRef.current = undefined;
+        if (then) then();
+        return;
+      }
       if (t < 1) rafRef.current = requestAnimationFrame(step);
       else { rafRef.current = undefined; if (then) then(); }
     };
@@ -383,10 +397,11 @@ export default function AmbientSpace({
       amb.play().catch(()=>{});
     };
     const onPause = () => { 
-      console.log('🎵 AmbientSpace: Audio paused unexpectedly, will try resume in 100ms', {
+      console.log('🎵 AmbientSpace: Audio paused unexpectedly, will try resume in 2 seconds', {
         playingMusic, suspend, userPausedRef: userPausedRef.current, userSelectedSong, introPending: introPendingRef.current
       });
-      setTimeout(tryResume, 100); 
+      // Increased delay to 2 seconds to avoid rapid pause/resume cycles that could cause cutting out
+      setTimeout(tryResume, 2000); 
     };
     const onEnded = () => { 
       console.log('🎵 AmbientSpace: Audio ended, will try resume immediately');
@@ -401,7 +416,7 @@ export default function AmbientSpace({
         console.log('Periodic check: audio unexpectedly paused, attempting resume');
         tryResume();
       }
-    }, 60000); // reduced frequency to every 60 seconds to minimize interference
+    }, 300000); // increased frequency to every 5 minutes to minimize interference
     return () => { 
       amb.removeEventListener('pause', onPause);
       amb.removeEventListener('ended', onEnded);
@@ -450,15 +465,15 @@ export default function AmbientSpace({
       }
       const t = amb.currentTime || 0;
       const last = lastTimeRef.current || 0;
-      const advanced = (t - last) > 0.1; // more lenient threshold - 100ms advance
+      const advanced = (t - last) > 0.5; // more lenient threshold - 500ms advance to reduce false positives
       const now = performance.now();
       if (!advanced && !amb.paused && amb.readyState >= 2) {
         // Potential stall
         if (stuckSinceRef.current === undefined) stuckSinceRef.current = now;
         const stuckMs = now - (stuckSinceRef.current || now);
-        if (stuckMs > 60000) { // increased threshold to 60 seconds to avoid false positives
+        if (stuckMs > 120000) { // increased threshold to 120 seconds (2 minutes) to avoid false positives
           // Instead of nudging playhead, just try to resume playback
-          console.log('Audio stall detected after 60s, attempting resume');
+          console.log('Audio stall detected after 2 minutes, attempting resume');
           tryResume();
           stuckSinceRef.current = undefined;
         }
@@ -467,7 +482,7 @@ export default function AmbientSpace({
         stuckSinceRef.current = undefined;
       }
       lastTimeRef.current = t;
-    }, 5000); // increased interval to 5 seconds
+    }, 10000); // increased interval to 10 seconds to reduce interference
 
     return () => {
       amb.removeEventListener('ended', onEnded);

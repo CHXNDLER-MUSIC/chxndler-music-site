@@ -63,10 +63,18 @@ class AudioCoordinator {
       const ambientAudio = document.querySelector('audio[data-ambient="1"]') as HTMLAudioElement;
       if (ambientAudio && this.currentSource !== 'ambient') {
         // Only stop ambient if we're switching to a different source
-        ambientAudio.pause();
-        ambientAudio.currentTime = 0;
-        ambientAudio.volume = 0;
-        console.log('🎵 AudioCoordinator: Stopped ambient audio (space-music.mp3) for source:', this.currentSource);
+        // Use a gentler fade-out instead of immediate pause to prevent cutting out
+        const fadeOut = () => {
+          if (ambientAudio.volume > 0.1) {
+            ambientAudio.volume = Math.max(0, ambientAudio.volume - 0.1);
+            setTimeout(fadeOut, 50);
+          } else {
+            ambientAudio.volume = 0;
+            ambientAudio.pause();
+          }
+        };
+        fadeOut();
+        console.log('🎵 AudioCoordinator: Gently fading out ambient audio (space-music.mp3) for source:', this.currentSource);
       }
     } catch (e) {
       console.warn('🎵 AudioCoordinator: Error stopping ambient audio:', e);
@@ -87,11 +95,25 @@ class AudioCoordinator {
     }
   }
 
+  private forceStopAmbientAudio() {
+    try {
+      const ambientAudio = document.querySelector('audio[data-ambient="1"]') as HTMLAudioElement;
+      if (ambientAudio) {
+        ambientAudio.pause();
+        ambientAudio.currentTime = 0;
+        ambientAudio.volume = 0;
+        console.log('🎵 AudioCoordinator: Force stopped and reset ambient audio (space-music.mp3)');
+      }
+    } catch (e) {
+      console.warn('🎵 AudioCoordinator: Error force stopping ambient audio:', e);
+    }
+  }
+
   // Force stop all audio
   stopAll() {
     console.log('🎵 AudioCoordinator: Stopping ALL audio sources');
     this.stopMainAudio();
-    this.stopAmbientAudio();
+    this.forceStopAmbientAudio();
     this.stopIntroAudio();
     this.currentSource = null;
     this.notifyListeners();

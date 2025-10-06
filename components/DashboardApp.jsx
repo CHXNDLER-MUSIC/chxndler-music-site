@@ -177,16 +177,17 @@ export default function DashboardApp({ initialSlug } = {}) {
     if (!initialSlug) {
       console.log('🌍 DashboardApp: Homepage load - ensuring planets are visible');
       try {
-        // CRITICAL: Always show planets on homepage load - do this immediately
+        // CRITICAL: Always show all planets on homepage load - use new planetDisplayMode system
         const currentState = playerStore.getState();
-        console.log('🌍 DashboardApp: Current planetsVisible state:', currentState.planetsVisible);
+        console.log('🌍 DashboardApp: Current planetDisplayMode state:', currentState.planetDisplayMode);
         
-        playerStore.getState().setPlanetsVisible(true);
-        playerStore.setState({ mainId: null }); // Ensure no specific song is selected (showAll mode)
+        playerStore.getState().setPlanetDisplayMode('all');
+        playerStore.getState().setPlanetsVisible(true); // CRITICAL: Ensure planets are visible
+        playerStore.setState({ mainId: null }); // Ensure no specific song is selected
         
         // Verify the state was set
         const newState = playerStore.getState();
-        console.log('🌍 DashboardApp: After setting - planetsVisible:', newState.planetsVisible);
+        console.log('🌍 DashboardApp: After setting - planetDisplayMode:', newState.planetDisplayMode);
         
         // CRITICAL: Ensure songs are initialized for planet rendering
         const currentSongs = playerStore.getState().songs;
@@ -542,15 +543,21 @@ export default function DashboardApp({ initialSlug } = {}) {
     if (beamTransitioning) return; // Prevent rapid changes during transitions
     
     // Always close ALL displays first, then open the target display
-    const closeAllDisplays = () => {
+    const closeAllDisplays = (skipYellowClose = false) => {
       setShowHUD(false);
       setJoinAlienOpen(false);
       setBeamEnabled(false);
+      // Force-close yellow menu and any other UI elements, unless we're opening yellow
+      if (!skipYellowClose) {
+        setUiCloseSignal(prev => prev + 1);
+      }
     };
     
     if (color === 'off') {
       // Explicit request to turn everything off without switching to blue display
-      closeAllDisplays();
+      // Check if this is part of a pink-to-yellow transition by looking at current beam color
+      const skipYellowClose = beamColor === 'pink'; // Don't force-close yellow menu during pink-to-yellow transition
+      closeAllDisplays(skipYellowClose);
       setBeamColor('blue'); // reset baseline without opening HUD
       return;
     }
@@ -584,45 +591,49 @@ export default function DashboardApp({ initialSlug } = {}) {
       }
     } else if (color === 'yellow') {
       if (beamColor === 'yellow') {
-        // Already showing yellow - keep beam active but menu will close itself
-        // Do nothing - let yellow menu handle its own toggle
-      } else {
-        // Switch to yellow - close everything first
+        // Already showing yellow - toggle off without opening blue display
+        setBeamTransitioning(true);
+        setExplicitClose(true);
         closeAllDisplays();
+        setTimeout(() => {
+          setBeamColor('blue'); // Reset to blue but keep displays closed
+          setBeamTransitioning(false);
+          setExplicitClose(false);
+        }, 150);
+      } else {
+        // Switch to yellow - close other displays but don't force-close yellow menu
+        setBeamTransitioning(true);
+        closeAllDisplays(true); // Skip yellow close since we're opening it
         setTimeout(() => {
           setBeamColor('yellow');
           setBeamEnabled(true);
-          // Yellow menu will open itself
+          setBeamTransitioning(false);
+          // Yellow menu will open itself via HoloHubMenu onToggle
         }, 150);
       }
     } else if (color === 'blue') {
       if (beamColor === 'blue' && showHUD) {
         // Already showing blue - toggle off
+        setBeamTransitioning(true);
+        setExplicitClose(true);
         closeAllDisplays();
         setTimeout(() => {
           setBeamColor('blue'); // Keep blue as default
-        }, 100);
+          setBeamTransitioning(false);
+          setExplicitClose(false);
+        }, 150);
       } else if (!explicitClose) {
-        // Switch to blue - ensure sequence: close pink → beam blue → open blue
-        const comingFromPink = joinAlienOpen || beamColor === 'pink';
+        // Switch to blue - ensure sequence: close other displays → beam blue → open blue
+        setBeamTransitioning(true);
         closeAllDisplays();
-        if (comingFromPink) {
-          // Wait for pink to close, then flip beam to blue, then open blue HUD
+        setTimeout(() => {
+          setBeamColor('blue');
+          setBeamEnabled(true);
           setTimeout(() => {
-            setBeamColor('blue');
-            setBeamEnabled(true);
-            setTimeout(() => {
-              setShowHUD(true);
-            }, 140);
-          }, 150);
-        } else {
-          // Normal: simple close then open
-          setTimeout(() => {
-            setBeamColor('blue');
-            setBeamEnabled(true);
             setShowHUD(true);
-          }, 150);
-        }
+            setBeamTransitioning(false);
+          }, 140);
+        }, 150);
       }
     }
   }, [beamColor, showHUD, joinAlienOpen, beamTransitioning, explicitClose]);
@@ -1072,7 +1083,10 @@ export default function DashboardApp({ initialSlug } = {}) {
             try { setLandingRevealReady(true); } catch {}
             // Ensure homepage shows all planets after warp
             console.log('🌍 DashboardApp: onWarpSfxEnd - Setting planets visible for homepage');
-            try { playerStore.getState().setPlanetsVisible(true); } catch {}
+            try { 
+              playerStore.getState().setPlanetDisplayMode('all');
+              playerStore.getState().setPlanetsVisible(true); 
+            } catch {}
             // Clear one-time flag to avoid repeats on later Starts
             try { welcomeOnStartRef.current = false; } catch {}
             setPendingOverlayReveal(false);
@@ -1168,8 +1182,11 @@ export default function DashboardApp({ initialSlug } = {}) {
             // Now that space.mp4 is playing
             setHomeMode(true);
             // Make sure all planets are visible on the homepage after Start
-            console.log('🌍 DashboardApp: onBasePlaying - Setting planets visible for homepage');
-            try { playerStore.getState().setPlanetsVisible(true); } catch {}
+            console.log('🌍 DashboardApp: onBasePlaying - Setting planets to all mode for homepage');
+            try { 
+              playerStore.getState().setPlanetDisplayMode('all'); 
+              playerStore.getState().setPlanetsVisible(true);
+            } catch {}
             // Clear any selected planet for home mode
             try { playerStore.setState({ mainId: null }); } catch {}
             // Don't enable welcome VO in this path - it's handled in onWarpSfxEnd
@@ -1216,7 +1233,7 @@ export default function DashboardApp({ initialSlug } = {}) {
               if (slug) {
                 playerStore.getState().setMain(slug);
               }
-              playerStore.getState().setPlanetsVisible(true);
+              playerStore.getState().setPlanetDisplayMode('single');
             } catch {}
             // Clear any pending fallback timers now that we'll start playback here
             if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
@@ -1315,6 +1332,7 @@ export default function DashboardApp({ initialSlug } = {}) {
         playing={isPlaying}
         showUI={uiUnlocked && showOverlayUI && !warpActive && !showDimmingOverlay}
         uiUnlocked={uiUnlocked}
+        joinAlienOpen={joinAlienOpen}
         onJoinToggle={setJoinAlienOpen}
         onBeamColorChange={handleBeamToggle}
         closeAllSignal={uiCloseSignal}
@@ -1341,10 +1359,11 @@ export default function DashboardApp({ initialSlug } = {}) {
           }
           
           // CRITICAL: Show all planets immediately when Start is pressed
-          console.log('🌍 DashboardApp: Setting all planets visible for homepage');
+          console.log('🌍 DashboardApp: Setting all planets mode for homepage');
           try { 
-            playerStore.getState().setPlanetsVisible(true); 
-            console.log('🌍 DashboardApp: setPlanetsVisible(true) called');
+            playerStore.getState().setPlanetDisplayMode('all'); 
+            playerStore.getState().setPlanetsVisible(true); // CRITICAL: Force planets visible
+            console.log('🌍 DashboardApp: setPlanetDisplayMode(all) and setPlanetsVisible(true) called');
           } catch {}
           try { 
             playerStore.setState({ mainId: null }); 
@@ -1442,7 +1461,10 @@ export default function DashboardApp({ initialSlug } = {}) {
             return;
           }
           // Show all planets on homepage after Start
-          try { playerStore.getState().setPlanetsVisible(true); } catch {}
+          try { 
+            playerStore.getState().setPlanetDisplayMode('all'); 
+            playerStore.getState().setPlanetsVisible(true); // CRITICAL: Force planets visible
+          } catch {}
           try { playerStore.setState({ mainId: null }); } catch {}
           try { setHidePlanetsForSelection(false); } catch {}
           // Homepage Start flow (warp to home reveal)
@@ -1527,6 +1549,19 @@ export default function DashboardApp({ initialSlug } = {}) {
                   };
                 })()}
               >
+                {(() => {
+                  const currentIdValue = (homeMode && !userSelected && !pendingTrackPlay) ? undefined : curTrack?.slug;
+                  const showAllValue = !currentIdValue;
+                  console.log('🌍 DashboardApp: HUDPanel props debug:', {
+                    homeMode,
+                    userSelected,
+                    pendingTrackPlay,
+                    currentIdValue,
+                    showAllValue,
+                    hudSongsLength: hudSongs?.length
+                  });
+                  return null;
+                })()}
                 <HUDPanel
                   inConsole
                   songs={hudSongs}
