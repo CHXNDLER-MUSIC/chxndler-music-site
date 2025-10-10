@@ -1962,29 +1962,31 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
           finalVisible: planetsVisible && !shouldHide 
         });
         
-        // Hide non-focused planets when a song is selected
-        // Respect planetsVisible everywhere (homepage toggled by Start button)
-        s.mesh.visible = (planetsVisible) && !shouldHide;
-        
+        // Hide non-focused planets when a song is selected.
+        // CRITICAL: In homepage mode (showAll=true), ALWAYS show satellites regardless of planetsVisible.
+        const finalVisible = ((showAll ? true : planetsVisible) && !shouldHide);
+        s.mesh.visible = finalVisible;
+
         console.log(`🌍 Planet ${s.id} FINAL visibility decision:`, {
+          showAll,
           planetsVisible,
           shouldHide,
-          finalVisible: (planetsVisible) && !shouldHide
+          finalVisible
         });
         
         // Hide atmosphere, rings, and other elements along with the main planet
         if (s.atmosphereMesh) {
-          s.atmosphereMesh.visible = (planetsVisible) && !shouldHide;
+          s.atmosphereMesh.visible = finalVisible;
         }
         
         if (s.ringMesh) {
-          s.ringMesh.visible = (planetsVisible) && !shouldHide;
+          s.ringMesh.visible = finalVisible;
         }
         
         // Hide all child elements (moons, clouds, storms, etc.)
         if (s.mesh.children && s.mesh.children.length > 0) {
           s.mesh.children.forEach(child => {
-            child.visible = (planetsVisible) && !shouldHide;
+            child.visible = finalVisible;
           });
         }
         
@@ -2269,19 +2271,25 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
   useEffect(() => {
     // Build system from songs when available
     const sys = groupRef.current; if (!sys) return;
-    if (!songs || !songs.length) return;
+    // Fallback: if store has no songs in homepage mode, build from tracks immediately
+    let songsToUse = songs as any[] | undefined;
+    if ((!songs || !songs.length) && showAll) {
+      try {
+        const { holoSongs } = buildPlanetSongs();
+        if (holoSongs && holoSongs.length) {
+          songsToUse = holoSongs as any[];
+          // Also initialize the store for subsequent updates
+          try { playerStore.getState().initSongs(holoSongs as any); } catch {}
+        }
+      } catch {}
+    }
+    if (!songsToUse || !songsToUse.length) return;
     const focusId = showAll ? null : mainId;
     
-    console.log("🌍 PlanetSystemRaw useEffect:", { 
-      showAll, 
-      planetsVisible, 
-      mainId, 
-      focusId, 
-      songsCount: songs.length 
-    });
+    // Debug removed for production
     
     // Do not force-enable planets on homepage; Start button toggles visibility
-    console.log("🌍 PlanetSystemRaw visibility gate:", { showAll, planetsVisible });
+    // visibility gate
     // Clear existing satellites
     for (const s of satsRef.current) {
       try { sys.remove(s.mesh); (s.mesh.geometry as any)?.dispose?.(); (s.mesh.material as any)?.dispose?.(); } catch {}
@@ -2405,15 +2413,14 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
       }
     }
     // Find the maximum ring index to identify outermost ring
-    const maxRingIndex = Math.max(...songs.map(song => {
+    const maxRingIndex = Math.max(...songsToUse.map(song => {
       const lay = layout ? (layout as any)[song.id] : undefined;
       return lay?.ringIndex ?? 0;
     }));
 
     // Create a planet for every song (including main)
-    console.log("🌍 Creating planets for", songs.length, "songs");
-    songs.forEach((song, idx) => {
-      console.log(`🌍 Creating planet ${idx + 1}/${songs.length}: ${song.id} (${song.title})`);
+    // Create a planet for every song (including main)
+    songsToUse.forEach((song, idx) => {
       const id = song.id;
       const lay = layout ? (layout as any)[id] : undefined;
       const spacingMul = 1.0; // consistent spacing with layout

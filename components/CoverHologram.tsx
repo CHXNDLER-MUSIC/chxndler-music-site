@@ -58,6 +58,9 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
   const [hovered, setHovered] = useState(false);
   const [hasRealCard, setHasRealCard] = useState(false);
   const closeCoverRef = useRef(null);
+  // Plays when opening the card from the cover art
+  const openDingRef = useRef(null);
+  // Plays when flipping the card front/back
   const flipCoverRef = useRef(null);
 
   useEffect(() => {
@@ -73,9 +76,9 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
   }, [src]);
   
   const handleClick = () => {
-    // Play flip sound when opening the card
+    // Play card ding when opening the card (do not play flip)
     try { 
-      const a = flipCoverRef.current; 
+      const a = openDingRef.current; 
       if (a && a.readyState >= 2) { 
         a.currentTime = 0; 
         a.volume = 0.6; 
@@ -193,6 +196,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                     cursor: hasRealCard ? 'pointer' : 'default'
                   }}
                   onClick={hasRealCard ? () => { 
+                    // Flip the card and play flip sound
                     try { const a = flipCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
                     setCardFlipped(!cardFlipped); 
                   } : undefined}
@@ -416,6 +420,10 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
       `}</style>
       
       <audio ref={closeCoverRef} src="/audio/close.mp3" preload="auto" />
+      <audio ref={openDingRef} preload="auto">
+        <source src="/audio/card-ding.mp3" type="audio/mpeg" />
+        <source src="/audio/card-ding.mp4" type="audio/mp4" />
+      </audio>
       <audio ref={flipCoverRef} src="/audio/flip.mp3" preload="auto" />
     </motion.div>
   );

@@ -101,6 +101,7 @@ export default function HUDPanel({
   currentId,
   holoPop = false,
   playing = false,
+  showAllPlanets = false,
   hidePlanetsUntilPlaying = false,
   beamOnly = false,
   beamEnabled = undefined, // optional external control for beam fade (true/false)
@@ -141,6 +142,8 @@ export default function HUDPanel({
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1.0);
+  const lastNonZeroVolumeRef = useRef(1.0);
+  const VOLUME_STORAGE_KEY = 'mediaPlayer:volume';
   const [animationTime, setAnimationTime] = useState(0);
   // Direct ref to the currently tracked audio element for live reads during render
   const liveAudioRef = useRef(null);
@@ -249,6 +252,19 @@ export default function HUDPanel({
       // Store ref for live cursor position calculations
       liveAudioRef.current = a;
       
+      // Load saved volume and apply to audio element
+      try {
+        const saved = (typeof window !== 'undefined') ? localStorage.getItem(VOLUME_STORAGE_KEY) : null;
+        if (saved != null) {
+          const v = parseFloat(saved);
+          if (!isNaN(v) && v >= 0 && v <= 1) {
+            a.volume = v;
+            setVolume(v);
+            if (v > 0) lastNonZeroVolumeRef.current = v;
+          }
+        }
+      } catch {}
+      
       const onTimeUpdate = () => { 
         if (DEBUG_MEDIA) dlog('HUDPanel: timeupdate', a.currentTime);
         setProgress(a.currentTime); 
@@ -257,7 +273,11 @@ export default function HUDPanel({
         if (DEBUG_MEDIA) dlog('HUDPanel: durationchange', a.duration);
         setDuration(a.duration || 0); 
       };
-      const onVolumeChange = () => { setVolume(a.volume); };
+      const onVolumeChange = () => { 
+        const v = Math.max(0, Math.min(1, a.volume));
+        setVolume(v); 
+        if (v > 0) lastNonZeroVolumeRef.current = v;
+      };
       // Update progress immediately on seek events (works even when paused)
       const onSeek = () => { 
         try { setProgress(isFinite(a.currentTime) ? a.currentTime : 0); } catch {}
@@ -314,6 +334,11 @@ export default function HUDPanel({
       return findAndConnectAudio();
     }
   }, [mounted, currentId]); // Re-run when currentId changes to switch between ambient and main player
+
+  // Persist volume to localStorage when it changes
+  useEffect(() => {
+    try { if (typeof window !== 'undefined') localStorage.setItem(VOLUME_STORAGE_KEY, String(Math.max(0, Math.min(1, volume)))); } catch {}
+  }, [volume]);
 
   // Animation loop for smooth cursor movement when playing
   useEffect(() => {
@@ -545,8 +570,7 @@ export default function HUDPanel({
               pointerEvents: 'none' // Allow clicks to pass through to elements below
             }}
           >
-            {can3D ? (
-              <div className="w-full h-full" style={{ pointerEvents: 'none' }}>
+            <div className="w-full h-full" style={{ pointerEvents: 'none' }}>
                 <ErrorBoundary 
                   key={preferRaw3D ? 'raw' : 'r3f'}
                   fallback={null} 
@@ -565,47 +589,29 @@ export default function HUDPanel({
                 >
                   {/* Show all planets on homepage (no currentId), and focus when a song is selected */}
                   {preferRaw3D ? (
-                    <PlanetSystemRaw showAll={!currentId} hideUntilPlaying={!!hidePlanetsUntilPlaying} onSongChange={onSongChange} />
+                    <PlanetSystemRaw showAll={showAllPlanets || !currentId} hideUntilPlaying={!!hidePlanetsUntilPlaying} onSongChange={onSongChange} />
                   ) : (
-                    <PlanetSystem showAll={!currentId} hideUntilPlaying={!!hidePlanetsUntilPlaying} onSongChange={onSongChange} />
+                    <PlanetSystem showAll={showAllPlanets || !currentId} hideUntilPlaying={!!hidePlanetsUntilPlaying} onSongChange={onSongChange} />
                   )}
                 </ErrorBoundary>
               </div>
-            ) : (
-              <div className="w-full h-full grid place-items-center">
-                {threeFailed ? (
-                  <div
-                    style={{
-                      fontSize: 8, letterSpacing: '0.04em', fontWeight: 700,
-                      color: '#EFFFFF', textShadow: '0 0 10px rgba(25,227,255,0.8), 0 0 24px rgba(25,227,255,0.45)',
-                      background: 'linear-gradient(180deg, rgba(0,0,0,.38), rgba(0,0,0,.22))',
-                      border: '1px solid rgba(25,227,255,.35)', borderRadius: 4, padding: '4px 6px',
-                      boxShadow: '0 10px 24px rgba(0,0,0,.35), 0 0 22px rgba(25,227,255,.35)'
-                    }}
-                    aria-live="polite"
-                  >
-                    3D disabled: {threeFailed}
-                  </div>
-                ) : null}
-              </div>
-            )}
           </div>
           {/* Background removed for transparent HUD */}
           {/* Cover art moved into right column above the song list */}
           {/* Holographic beam overlays removed */}
           {/* Bloom layers removed */}
           <div
-            className={`relative ${inConsole ? 'p-2' : 'p-4'}`}
-            style={{ 
-              opacity: contentOpacity, 
-              transition: 'opacity 240ms ease', 
-              pointerEvents: contentOpacity > 0.01 ? 'auto' : 'none', 
-              minHeight: inConsole ? 380 : 480,
-              width: '100%',
-              height: '100%'
-            }}
-            ref={innerRef}
-          >
+              className={`relative ${inConsole ? 'p-2' : 'p-4'}`}
+              style={{ 
+                opacity: contentOpacity, 
+                transition: 'opacity 240ms ease', 
+                pointerEvents: contentOpacity > 0.01 ? 'auto' : 'none', 
+                minHeight: inConsole ? 380 : 480,
+                width: '100%',
+                height: '100%'
+              }}
+              ref={innerRef}
+            >
 
 
           
@@ -710,6 +716,111 @@ export default function HUDPanel({
                     );
                   }
                 })()}
+
+                {/* Volume control next to Spotify icon */}
+                <div 
+                  className="hud-volume"
+                  role="group" 
+                  aria-label="Volume"
+                  style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                >
+                  <button
+                    className="hud-volume-btn"
+                    onClick={() => {
+                      try { sfx.play('click', 0.4); } catch {}
+                      const a = liveAudioRef.current; if (!a) return;
+                      if (a.volume === 0) {
+                        const restore = Math.max(0.05, Math.min(1, lastNonZeroVolumeRef.current || volume || 1));
+                        a.volume = restore; setVolume(restore);
+                      } else {
+                        if (a.volume > 0) lastNonZeroVolumeRef.current = a.volume;
+                        a.volume = 0; setVolume(0);
+                      }
+                    }}
+                    aria-label={volume === 0 ? 'Unmute' : 'Mute'}
+                    title={volume === 0 ? 'Unmute' : 'Mute'}
+                    style={{
+                      width: 28, height: 28, borderRadius: 8, border: 'none',
+                      background: 'rgba(25,227,255,0.14)', color: '#19E3FF',
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {volume === 0 ? (
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
+                        <path d="M16.5 12l3.5 3.5-1.5 1.5L15 13.5 11.5 17H8l-4-4V11l4-4h3.5l3.5 3.5 3.5-3.5 1.5 1.5L16.5 12zM10 8.5L7.5 11H6v2h1.5L10 15.5V8.5z"/>
+                      </svg>
+                    ) : volume < 0.5 ? (
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
+                        <path d="M3 10v4h4l5 5V5L7 10H3zm10.5 2c0-1.77-.77-3.29-2-4.3v8.6c1.23-1.01 2-2.53 2-4.3z"/>
+                      </svg>
+                    ) : (
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
+                        <path d="M3 10v4h4l5 5V5L7 10H3zm8 2c0 2.21-1.79 4-4 4v-2c1.1 0 2-.9 2-2s-.9-2-2-2V8c2.21 0 4 1.79 4 4zm4.5 0c0-3.04-1.72-5.64-4.25-6.92l-.75 1.86C12.6 8.2 14 9.96 14 12s-1.4 3.8-3.5 4.06l.75 1.86C18.28 17.64 19.5 15.04 19.5 12z"/>
+                      </svg>
+                    )}
+                  </button>
+                  <div
+                    className="hud-volume-bar"
+                    role="slider"
+                    aria-label="Volume"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={Math.round(volume * 100)}
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'ArrowLeft') { e.preventDefault(); const a = liveAudioRef.current; if (!a) return; a.volume = Math.max(0, Math.min(1, volume - 0.05)); }
+                      else if (e.key === 'ArrowRight') { e.preventDefault(); const a = liveAudioRef.current; if (!a) return; a.volume = Math.max(0, Math.min(1, volume + 0.05)); }
+                    }}
+                    onPointerDown={(e) => {
+                      const a = liveAudioRef.current; if (!a) return;
+                      const el = e.currentTarget;
+                      const applyFromClientX = (clientX) => {
+                        const rect = el.getBoundingClientRect();
+                        const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+                        const pct = rect.width > 0 ? (x / rect.width) : 0;
+                        const newVol = Math.max(0, Math.min(1, pct));
+                        a.volume = newVol; setVolume(newVol);
+                        if (newVol > 0) lastNonZeroVolumeRef.current = newVol;
+                      };
+                      try { el.setPointerCapture?.(e.pointerId); } catch {}
+                      e.preventDefault();
+                      try { sfx.play('click', 0.3); } catch {}
+                      applyFromClientX(e.clientX);
+                      const onMove = (ev) => applyFromClientX(ev.clientX);
+                      const onUp = () => {
+                        window.removeEventListener('pointermove', onMove);
+                        window.removeEventListener('pointerup', onUp);
+                      };
+                      window.addEventListener('pointermove', onMove);
+                      window.addEventListener('pointerup', onUp, { once: true });
+                    }}
+                    style={{
+                      width: 120,
+                      height: 6,
+                      background: 'rgba(255,255,255,0.12)',
+                      borderRadius: 3,
+                      overflow: 'hidden',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <div 
+                      className="hud-volume-fill" 
+                      style={{ 
+                        width: `${Math.round(volume * 100)}%`, 
+                        height: '100%', 
+                        background: 'linear-gradient(90deg, #19E3FF, #FC54AF)',
+                        boxShadow: (volume <= 0.01) 
+                          ? 'none' 
+                          : `0 0 ${4 + 12*volume}px #19E3FF, 0 0 ${6 + 20*volume}px #FC54AF, 0 0 ${10 + 28*volume}px rgba(252,84,175,${0.15 + 0.35*volume})`,
+                        transition: 'width 0.15s linear, box-shadow 0.15s linear'
+                      }}
+                    />
+                  </div>
+                  <span className="hud-volume-text" style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', minWidth: 32, textAlign: 'right' }}>
+                    {Math.round(volume * 100)}%
+                  </span>
+                </div>
                 
                 {/* Waveform visualization */}
                 <div className="flex-1">
@@ -883,32 +994,7 @@ export default function HUDPanel({
                               
                               return (
                                 <g>
-                                  {/* Vertical progress line removed per design */}
-                                  {/* Progress indicator circle */}
-                                  <circle
-                                    cx={progressX}
-                                    cy="16"
-                                    r="3"
-                                    fill={hexToRgba(elementColor, 1)}
-                                    stroke="white"
-                                    strokeWidth="1"
-                                    style={{
-                                      filter: `drop-shadow(0 0 8px ${hexToRgba(elementColor, 0.9)})`,
-                                    }}
-                                  />
-                                  
-                                  {/* Animated pulse when playing */}
-                                  {playing && (
-                                    <circle
-                                      cx={progressX}
-                                      cy="16"
-                                      r="2"
-                                      fill={hexToRgba(elementColor, 0.6)}
-                                    >
-                                      <animate attributeName="r" values="2;6;2" dur="1.5s" repeatCount="indefinite" />
-                                      <animate attributeName="opacity" values="0.6;0.2;0.6" dur="1.5s" repeatCount="indefinite" />
-                                    </circle>
-                                  )}
+                                  {/* Progress dot and pulse removed: element icon now serves as the playhead */}
                                 </g>
                               );
                             })()}
@@ -1015,8 +1101,6 @@ export default function HUDPanel({
           </div>
         </div>
 
-        </div>
-
         {/* Song selector positioned outside content opacity container to avoid beamOnly blocking */}
         <div className="absolute" style={{ 
           left: inConsole ? 6 : 8, 
@@ -1086,8 +1170,6 @@ export default function HUDPanel({
             />
           </div>
 
-        {/* bottom-corner buttons removed per design request */}
-        </motion.div>
       {/* styles moved to app/globals.css to avoid styled-jsx in this module */}
       {/* brand button styles moved to app/globals.css */}
       <audio ref={hoverCoverRef} preload="auto">
@@ -1096,6 +1178,8 @@ export default function HUDPanel({
       </audio>
       <audio ref={clickCoverRef} src="/audio/click.mp3" preload="auto" />
       <audio ref={closeCoverRef} src="/audio/close.mp3" preload="auto" />
+        </div>
+      </motion.div>
       </div>
 
     </motion.section>

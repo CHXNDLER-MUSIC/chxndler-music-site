@@ -51,6 +51,48 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const intentionalPlayRef = useRef(false); // Track when play is intentionally triggered
   const [pickerOpen, setPickerOpen] = useState(false);
   const [volume, setVolume] = useState(1.0);
+  const lastNonZeroVolumeRef = useRef(1.0);
+  const VOLUME_STORAGE_KEY = 'mediaPlayer:volume';
+  // Track homepage vs. song-selected view via playerStore's planet display mode
+  const [planetDisplayMode, setPlanetDisplayMode] = useState<'all' | 'single' | 'hidden'>('all');
+  useEffect(() => {
+    // Lazy-require store to avoid SSR import issues
+    try {
+      const { playerStore } = require("@/store/usePlayerStore");
+      // Initialize local state
+      setPlanetDisplayMode(playerStore.getState().planetDisplayMode as any);
+      // Subscribe for changes
+      const unsub = playerStore.subscribe(() => {
+        const next = playerStore.getState().planetDisplayMode as any;
+        setPlanetDisplayMode(next);
+      });
+      return () => { try { unsub && unsub(); } catch {} };
+    } catch {
+      // If store is unavailable (e.g., during SSR), default to 'all'
+    }
+  }, []);
+
+  // Load saved volume on mount and apply to audio
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const saved = localStorage.getItem(VOLUME_STORAGE_KEY);
+      if (saved != null) {
+        const v = parseFloat(saved);
+        if (isFinite(v) && v >= 0 && v <= 1) {
+          setVolume(v);
+          if (v > 0) lastNonZeroVolumeRef.current = v;
+          const a = audioRef.current; if (a) a.volume = v;
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Persist volume changes
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try { localStorage.setItem(VOLUME_STORAGE_KEY, String(Math.max(0, Math.min(1, volume)))); } catch {}
+  }, [volume]);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [animationTime, setAnimationTime] = useState(0);
@@ -258,10 +300,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         }
       } catch {}
       
-      // Ensure audio is unmuted and has proper volume before playing
+      // Ensure audio is unmuted before playing; preserve current volume
       try {
         a.muted = false;
-        a.volume = 1.0;
+        // Do not override user volume here
         console.log('MediaPlayer: Unmuted audio element for', cur?.title);
       } catch {}
       
@@ -303,7 +345,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         } catch {}
         // As above, only load if needed to avoid resetting mid-play when already correct
         try { if (a2.readyState < 2) a2.load(); } catch {}
-        try { a2.muted = false; a2.volume = 1.0; } catch {}
+        try { a2.muted = false; /* preserve volume */ } catch {}
         intentionalPlayRef.current = true; // Mark as intentional play
         a2.play().then(() => { if (DEBUG_MEDIA) dlog('playSignal: fallback first-with-audio played'); setPlaying(true); if (onPlayingChange) onPlayingChange(true); gaTrack("play", { slug: tracks[withAudio].slug }); }).catch((e)=>{ if (DEBUG_MEDIA) dwarn('playSignal: fallback play rejected', e?.name, e?.message); setPlaying(false); });
       }, 0);
@@ -399,7 +441,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       if (warpPlayTimerRef.current !== undefined) { clearTimeout(warpPlayTimerRef.current); warpPlayTimerRef.current = undefined; }
       if (cur?.src) {
         // Don't reload - just resume from current position
-        try { a.muted = false; a.volume = 1.0; } catch {}
+        try { a.muted = false; /* preserve volume */ } catch {}
         intentionalPlayRef.current = true; // Mark as intentional play
         a.play().then(() => {
           setPlaying(true); if (onPlayingChange) onPlayingChange(true); gaTrack("play", { slug: cur.slug });
@@ -458,7 +500,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       
       // Ensure audio is unmuted and has proper volume
       a.muted = false;
-      a.volume = 1.0;
+      // Preserve user-selected volume
       
       // Simple play attempt first, fallback to retry logic if needed
       a.play()
@@ -569,7 +611,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     const onStalled = () => { if (DEBUG_MEDIA) dlog('audio event: stalled'); };
     const onVolumeChange = () => { 
       const vol = Math.max(0, Math.min(1, a.volume)); 
-      setVolume(vol); 
+      setVolume(vol);
+      if (vol > 0) lastNonZeroVolumeRef.current = vol;
     };
     const onTimeUpdate = () => { 
       // Ignore native timeupdate events while the user is actively seeking
@@ -661,7 +704,11 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                   a.src = originalSrc;
                 }
                 a.muted = false; 
-                a.volume = 1;
+                // Restore user volume (saved or last known)
+                try {
+                  const restore = Math.max(0, Math.min(1, lastNonZeroVolumeRef.current || volume || 1));
+                  a.volume = restore;
+                } catch {}
               } catch {}
             }, 100);
           })
@@ -672,7 +719,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 a.src = originalSrc;
               }
               a.muted = false; 
-              a.volume = 1;
+              try {
+                const restore = Math.max(0, Math.min(1, lastNonZeroVolumeRef.current || volume || 1));
+                a.volume = restore;
+              } catch {}
             } catch {}
           });
       } catch {}
@@ -942,16 +992,87 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               </div>
             )}
             
-            {/* TEST BUTTON - ALWAYS VISIBLE */}
-            <div 
-              className="test-button-waveform"
-              title={`Test button - Track: ${cur.title} - Spotify: ${cur.spotify ? 'YES' : 'NO'}`}
-            >
-              TEST
+            {/* Volume control placed next to the Spotify button inside waveform */}
+            <div className="waveform-volume" role="group" aria-label="Volume">
+              <button
+                className="waveform-volume-btn"
+                onClick={() => {
+                  const a = audioRef.current; if (!a) return; uiClick();
+                  if (a.volume === 0) {
+                    const restore = Math.max(0.05, Math.min(1, lastNonZeroVolumeRef.current || volume || 1));
+                    a.volume = restore; setVolume(restore);
+                  } else {
+                    if (a.volume > 0) lastNonZeroVolumeRef.current = a.volume;
+                    a.volume = 0; setVolume(0);
+                  }
+                }}
+                aria-label={volume === 0 ? 'Unmute' : 'Mute'}
+                title={volume === 0 ? 'Unmute' : 'Mute'}
+              >
+                {volume === 0 ? (
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
+                    <path d="M16.5 12l3.5 3.5-1.5 1.5L15 13.5 11.5 17H8l-4-4V11l4-4h3.5l3.5 3.5 3.5-3.5 1.5 1.5L16.5 12zM10 8.5L7.5 11H6v2h1.5L10 15.5V8.5z"/>
+                  </svg>
+                ) : volume < 0.5 ? (
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
+                    <path d="M3 10v4h4l5 5V5L7 10H3zm10.5 2c0-1.77-.77-3.29-2-4.3v8.6c1.23-1.01 2-2.53 2-4.3z"/>
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
+                    <path d="M3 10v4h4l5 5V5L7 10H3zm8 2c0 2.21-1.79 4-4 4v-2c1.1 0 2-.9 2-2s-.9-2-2-2V8c2.21 0 4 1.79 4 4zm4.5 0c0-3.04-1.72-5.64-4.25-6.92l-.75 1.86C12.6 8.2 14 9.96 14 12s-1.4 3.8-3.5 4.06l.75 1.86C18.28 17.64 19.5 15.04 19.5 12z"/>
+                  </svg>
+                )}
+              </button>
+              <div
+                className="waveform-volume-bar"
+                role="slider"
+                aria-label="Volume"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(volume * 100)}
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowLeft') { e.preventDefault(); adjustVolume(-0.05); }
+                  else if (e.key === 'ArrowRight') { e.preventDefault(); adjustVolume(0.05); }
+                }}
+                onPointerDown={(e) => {
+                  const a = audioRef.current; if (!a) return;
+                  const el = e.currentTarget as HTMLDivElement;
+                  const applyFromClientX = (clientX: number) => {
+                    const rect = el.getBoundingClientRect();
+                    const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+                    const pct = rect.width > 0 ? (x / rect.width) : 0;
+                    const newVol = Math.max(0, Math.min(1, pct));
+                    a.volume = newVol; setVolume(newVol);
+                    if (newVol > 0) lastNonZeroVolumeRef.current = newVol;
+                  };
+                  try { el.setPointerCapture?.(e.pointerId); } catch {}
+                  e.preventDefault(); uiClick();
+                  applyFromClientX(e.clientX);
+                  const onMove = (ev: PointerEvent) => applyFromClientX(ev.clientX);
+                  const onUp = () => {
+                    window.removeEventListener('pointermove', onMove);
+                    window.removeEventListener('pointerup', onUp);
+                  };
+                  window.addEventListener('pointermove', onMove);
+                  window.addEventListener('pointerup', onUp, { once: true } as any);
+                }}
+              >
+                <div 
+                  className="waveform-volume-fill" 
+                  style={{ 
+                    width: `${volume * 100}%`,
+                    boxShadow: (volume <= 0.01) 
+                      ? 'none' 
+                      : `0 0 ${3 + 10*volume}px #19E3FF, 0 0 ${5 + 16*volume}px #FC54AF, 0 0 ${8 + 22*volume}px rgba(252,84,175,${0.15 + 0.35*volume})`
+                  }} 
+                />
+              </div>
+              <span className="waveform-volume-text">{Math.round(volume * 100)}%</span>
             </div>
 
             {/* Spotify button positioned in waveform container */}
-            {cur.spotify ? (
+            {planetDisplayMode === 'single' && cur.spotify ? (
               <a
                 href={cur.spotify}
                 target="_blank"
@@ -967,7 +1088,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             ) : (
               <div 
                 className="spotify-btn-unavailable-waveform"
-                title={`No Spotify link available for ${cur.title}`}
+                title={planetDisplayMode === 'single' ? `No Spotify link available for ${cur.title}` : 'Select a song to enable Spotify'}
               >
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" opacity="0.5">
                   <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
@@ -976,7 +1097,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             )}
 
             {/* Apple Music button positioned in waveform container */}
-            {cur.apple ? (
+            {planetDisplayMode === 'single' && cur.apple ? (
               <a
                 href={cur.apple}
                 target="_blank"
@@ -985,17 +1106,18 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 title="Open on Apple Music"
                 aria-label={`Open ${cur.title} on Apple Music`}
               >
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                  <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                {/* Stylized music note to resemble Apple Music mark */}
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden>
+                  <path d="M16.5 3.5v10.6c0 2.2-1.8 3.8-3.9 4.2-1.7.3-3.1-.4-3.1-1.9 0-1.2 1-2.3 2.6-2.6 1.1-.2 2.1.1 2.6.7V7.4l6-1.3v7.9c0 2.2-1.8 3.8-3.9 4.2-1.7.3-3.1-.4-3.1-1.9 0-1.2 1-2.3 2.6-2.6 1.1-.2 2.1.1 2.6.7V5.1l-6 1.3V3.5h1.6z"/>
                 </svg>
               </a>
             ) : (
               <div 
                 className="apple-btn-unavailable-waveform"
-                title={`No Apple Music link available for ${cur.title}`}
+                title={planetDisplayMode === 'single' ? `No Apple Music link available for ${cur.title}` : 'Select a song to enable Apple Music'}
               >
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" opacity="0.5">
-                  <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" opacity="0.5" aria-hidden>
+                  <path d="M16.5 3.5v10.6c0 2.2-1.8 3.8-3.9 4.2-1.7.3-3.1-.4-3.1-1.9 0-1.2 1-2.3 2.6-2.6 1.1-.2 2.1.1 2.6.7V7.4l6-1.3v7.9c0 2.2-1.8 3.8-3.9 4.2-1.7.3-3.1-.4-3.1-1.9 0-1.2 1-2.3 2.6-2.6 1.1-.2 2.1.1 2.6.7V5.1l-6 1.3V3.5h1.6z"/>
                 </svg>
               </div>
             )}
@@ -1159,8 +1281,91 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         </button>
         
         <div className="volume-control">
-          <div className="volume-bar">
-            <div className="volume-fill" style={{ width: `${volume * 100}%` }}></div>
+          {/* Mute/Unmute button */}
+          <button
+            className="track-btn"
+            onClick={() => {
+              const a = audioRef.current; if (!a) return;
+              uiClick();
+              if (a.volume === 0) {
+                const restore = Math.max(0.05, Math.min(1, lastNonZeroVolumeRef.current || 1));
+                a.volume = restore;
+                setVolume(restore);
+              } else {
+                // Remember last non-zero volume and set to 0
+                if (a.volume > 0) lastNonZeroVolumeRef.current = a.volume;
+                a.volume = 0;
+                setVolume(0);
+              }
+            }}
+            aria-label={volume === 0 ? 'Unmute' : 'Mute'}
+            title={volume === 0 ? 'Unmute' : 'Mute'}
+          >
+            {volume === 0 ? (
+              // Muted icon
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
+                <path d="M16.5 12l3.5 3.5-1.5 1.5L15 13.5 11.5 17H8l-4-4V11l4-4h3.5l3.5 3.5 3.5-3.5 1.5 1.5L16.5 12zM10 8.5L7.5 11H6v2h1.5L10 15.5V8.5z"/>
+              </svg>
+            ) : volume < 0.5 ? (
+              // Low volume icon
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
+                <path d="M3 10v4h4l5 5V5L7 10H3zm10.5 2c0-1.77-.77-3.29-2-4.3v8.6c1.23-1.01 2-2.53 2-4.3z"/>
+              </svg>
+            ) : (
+              // High volume icon
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
+                <path d="M3 10v4h4l5 5V5L7 10H3zm8 2c0 2.21-1.79 4-4 4v-2c1.1 0 2-.9 2-2s-.9-2-2-2V8c2.21 0 4 1.79 4 4zm4.5 0c0-3.04-1.72-5.64-4.25-6.92l-.75 1.86C12.6 8.2 14 9.96 14 12s-1.4 3.8-3.5 4.06l.75 1.86C18.28 17.64 19.5 15.04 19.5 12z"/>
+              </svg>
+            )}
+          </button>
+
+          {/* Volume bar (click/drag to set) */}
+          <div
+            className="volume-bar"
+            role="slider"
+            aria-label="Volume"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(volume * 100)}
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowLeft') { e.preventDefault(); adjustVolume(-0.05); }
+              else if (e.key === 'ArrowRight') { e.preventDefault(); adjustVolume(0.05); }
+            }}
+            onPointerDown={(e) => {
+              const a = audioRef.current; if (!a) return;
+              const el = e.currentTarget as HTMLDivElement;
+              const applyFromClientX = (clientX: number) => {
+                const rect = el.getBoundingClientRect();
+                const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+                const pct = rect.width > 0 ? (x / rect.width) : 0;
+                const newVol = Math.max(0, Math.min(1, pct));
+                a.volume = newVol;
+                setVolume(newVol);
+                if (newVol > 0) lastNonZeroVolumeRef.current = newVol;
+              };
+              try { el.setPointerCapture?.(e.pointerId); } catch {}
+              e.preventDefault();
+              uiClick();
+              applyFromClientX(e.clientX);
+              const onMove = (ev: PointerEvent) => applyFromClientX(ev.clientX);
+              const onUp = () => {
+                window.removeEventListener('pointermove', onMove);
+                window.removeEventListener('pointerup', onUp);
+              };
+              window.addEventListener('pointermove', onMove);
+              window.addEventListener('pointerup', onUp, { once: true } as any);
+            }}
+          >
+            <div 
+              className="volume-fill" 
+              style={{ 
+                width: `${volume * 100}%`,
+                boxShadow: (volume <= 0.01)
+                  ? 'none'
+                  : `0 0 ${4 + 12*volume}px #19E3FF, 0 0 ${6 + 20*volume}px #FC54AF, 0 0 ${10 + 28*volume}px rgba(252,84,175,${0.15 + 0.35*volume})`
+              }}
+            />
           </div>
           <span className="volume-text">{Math.round(volume * 100)}%</span>
         </div>
@@ -1213,7 +1418,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                       
                       // Ensure audio is unmuted and has proper volume
                       a.muted = false;
-                      a.volume = 1.0;
+                      // Preserve user-selected volume
                       
                       console.log('🎵 Picker: Attempting to play', selectedTrack.title, selectedTrack.src);
                       
@@ -1304,32 +1509,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         document.body
       ) : null}
 
-      {/* SPOTIFY BUTTON - CENTER OF ENTIRE SCREEN */}
-      {cur.spotify ? (
-        <a
-          href={cur.spotify}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="spotify-btn-fullscreen"
-          title="Open on Spotify"
-          aria-label={`Open ${cur.title} on Spotify`}
-        >
-          <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
-            <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
-          </svg>
-          <span style={{ marginLeft: '8px', fontSize: '16px', fontWeight: 'bold' }}>SPOTIFY</span>
-        </a>
-      ) : (
-        <div 
-          className="spotify-btn-unavailable-fullscreen"
-          title={`No Spotify link available for ${cur.title}`}
-        >
-          <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor" opacity="0.5">
-            <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
-          </svg>
-          <span style={{ marginLeft: '8px', fontSize: '14px', opacity: 0.7 }}>Not Available</span>
-        </div>
-      )}
 
       {/* SFX: reuse an existing asset to avoid 404; you can provide distinct files in /public/ui */}
       <audio ref={uiClickRef}  src="/audio/click.mp3" preload="auto" />
@@ -1510,23 +1689,47 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           cursor: not-allowed;
         }
         
-        .test-button-waveform {
+        /* Inline waveform volume next to Spotify button */
+        .waveform-volume {
           position: absolute;
-          top: 20px;
-          left: 20px;
-          width: 60px;
-          height: 40px;
-          background: yellow;
-          color: black;
+          top: 50%;
+          left: 26%; /* to the left of the Spotify button at 42% */
+          transform: translate(-50%, -50%);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 8px;
+          border-radius: 10px;
+          border: 1px solid rgba(25,227,255,0.35);
+          background: rgba(6,182,212,0.10);
+          backdrop-filter: blur(8px);
+          box-shadow: 0 2px 10px rgba(25,227,255,0.25);
+          z-index: 32;
+        }
+        .waveform-volume-btn {
+          width: 26px;
+          height: 26px;
+          border-radius: 6px;
+          border: none;
+          background: rgba(25,227,255,0.14);
+          color: #19E3FF;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 12px;
-          font-weight: bold;
-          border: 3px solid black;
-          z-index: 50;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .waveform-volume-btn:hover { background: rgba(25,227,255,0.22); transform: translateY(-1px); }
+        .waveform-volume-bar {
+          width: 60px;
+          height: 5px;
+          background: rgba(255,255,255,0.12);
+          border-radius: 3px;
+          overflow: hidden;
           cursor: pointer;
         }
+        .waveform-volume-fill { height: 100%; background: linear-gradient(90deg, #19E3FF, #FC54AF); border-radius: 3px; transition: width 0.15s linear, box-shadow 0.15s linear; }
+        .waveform-volume-text { font-size: 10px; color: rgba(255,255,255,0.85); min-width: 26px; text-align: right; }
         
         /* FULLSCREEN SPOTIFY BUTTON - CENTER OF ENTIRE SCREEN */
         .spotify-btn-fullscreen {
@@ -1573,6 +1776,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           backdrop-filter: blur(8px);
           cursor: not-allowed;
         }
+
+        
         
         .waveform {
           position: relative;
@@ -1738,11 +1943,12 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         }
         
         .volume-bar {
-          width: 60px;
-          height: 4px;
+          width: 80px;
+          height: 6px;
           background: rgba(255,255,255,0.1);
-          border-radius: 2px;
+          border-radius: 3px;
           overflow: hidden;
+          cursor: pointer;
         }
         
         .volume-fill {

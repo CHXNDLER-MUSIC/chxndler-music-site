@@ -14,6 +14,7 @@ export default function SteeringWheelOverlay({
   showUI = true,
   uiUnlocked = false,
   joinAlienOpen = false,
+  blueActive = false,
   onPowerToggle,
   onJoinToggle,
   onBeamColorChange,
@@ -27,6 +28,8 @@ export default function SteeringWheelOverlay({
   showUI?: boolean;
   uiUnlocked?: boolean;
   joinAlienOpen?: boolean;
+  // True when the blue HUD or beam is currently active/visible
+  blueActive?: boolean;
   onPowerToggle?: () => void;
   onJoinToggle?: (showJoin: boolean) => void;
   onBeamColorChange?: (color: 'blue' | 'yellow' | 'pink' | 'off') => void;
@@ -326,7 +329,7 @@ export default function SteeringWheelOverlay({
               {onPowerToggle ? (
                 <button
                   type="button"
-                  className={`power-btn ${activeBeamColor === 'blue' && showUI ? 'power-btn-active' : ''}`}
+                  className={`power-btn ${(blueActive && showUI) ? 'power-btn-active' : ''}`}
                   onMouseEnter={() => { if (!showUI || !mounted) return; try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
                   onClick={() => {
                     if (!showUI || !isUIUnlocked) return;
@@ -336,8 +339,12 @@ export default function SteeringWheelOverlay({
                       if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
                     } catch {}
 
-                    // Let parent handleBeamToggle manage all display coordination
-                    onBeamColorChange?.('blue');
+                    // Toggle behavior: if blue is active, turn OFF; otherwise turn ON blue
+                    if (blueActive) {
+                      onBeamColorChange?.('off');
+                    } else {
+                      onBeamColorChange?.('blue');
+                    }
                   }}
                   aria-label="Power"
                   title="Power"

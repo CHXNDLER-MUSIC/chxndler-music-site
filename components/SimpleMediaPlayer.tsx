@@ -165,39 +165,7 @@ export default function MediaPlayer({
                 }}
               />
               
-              {/* Animated playing indicator */}
-              {isPlaying && (
-                <g>
-                  {/* Pulse effect at current position */}
-                  <circle
-                    cx={progress * 800}
-                    cy="50"
-                    r="3"
-                    fill={elementColor}
-                    opacity="0.8"
-                    style={{
-                      filter: `drop-shadow(0 0 6px ${elementColor})`,
-                    }}
-                  >
-                    <animate attributeName="r" values="3;8;3" dur="2s" repeatCount="indefinite" />
-                    <animate attributeName="opacity" values="0.8;0.3;0.8" dur="2s" repeatCount="indefinite" />
-                  </circle>
-                  
-                  {/* Moving frequency indicators */}
-                  {[...Array(5)].map((_, i) => (
-                    <rect
-                      key={i}
-                      x={Math.max(0, progress * 800 - 40 + i * 10)}
-                      y={45 + Math.sin(animationTime * 0.2 + i) * 3}
-                      width="2"
-                      height={8 + Math.sin(animationTime * 0.3 + i * 2) * 4}
-                      fill={elementColor}
-                      opacity={0.6 - i * 0.1}
-                      rx="1"
-                    />
-                  ))}
-                </g>
-              )}
+              {/* Animated indicator removed: element icon now serves as the playhead */}
             </svg>
             
             {/* Time cursor with element icon */}

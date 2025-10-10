@@ -64,7 +64,7 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
     <>
       <style jsx>{`
         .song-list-scroll::-webkit-scrollbar {
-          width: 12px;
+          width: 16px;
           background: rgba(0,0,0,0.3);
         }
         .song-list-scroll::-webkit-scrollbar-track {
@@ -78,12 +78,13 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
             rgba(25,227,255,0.6) 50%, 
             rgba(25,227,255,0.4) 100%
           );
-          border-radius: 8px;
-          border: 1px solid rgba(25,227,255,0.3);
+          border-radius: 10px;
+          border: 2px solid rgba(25,227,255,0.35);
           box-shadow: 
-            0 0 8px rgba(25,227,255,0.6),
-            inset 0 0 4px rgba(25,227,255,0.4);
-          animation: scrollGlow 2s ease-in-out infinite alternate;
+            0 0 14px rgba(25,227,255,0.7),
+            0 0 28px rgba(25,227,255,0.35),
+            inset 0 0 6px rgba(25,227,255,0.45);
+          animation: scrollGlow 1.8s ease-in-out infinite alternate;
         }
         .song-list-scroll::-webkit-scrollbar-thumb:hover {
           background: linear-gradient(180deg, 
@@ -92,20 +93,21 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
             rgba(25,227,255,0.6) 100%
           );
           box-shadow: 
-            0 0 12px rgba(25,227,255,0.8),
-            inset 0 0 6px rgba(25,227,255,0.6);
+            0 0 20px rgba(25,227,255,0.9),
+            0 0 40px rgba(25,227,255,0.45),
+            inset 0 0 10px rgba(25,227,255,0.6);
           animation: none;
         }
         @keyframes scrollGlow {
           0% {
             box-shadow: 
-              0 0 8px rgba(25,227,255,0.4),
-              inset 0 0 4px rgba(25,227,255,0.2);
+              0 0 10px rgba(25,227,255,0.5),
+              inset 0 0 5px rgba(25,227,255,0.3);
           }
           100% {
             box-shadow: 
-              0 0 16px rgba(25,227,255,0.8),
-              inset 0 0 8px rgba(25,227,255,0.5);
+              0 0 22px rgba(25,227,255,0.9),
+              inset 0 0 12px rgba(25,227,255,0.6);
           }
         }
       `}</style>
@@ -126,8 +128,8 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
         onKeyDown={handleKeyDown}
         className="flex-1 overflow-y-auto overflow-x-hidden pr-1 song-list-scroll w-full"
         style={{
-          scrollbarWidth: 'thin',
-          scrollbarColor: 'rgba(25,227,255,0.6) rgba(0,0,0,0.2)',
+          scrollbarWidth: 'auto',
+          scrollbarColor: 'rgba(25,227,255,0.7) rgba(0,0,0,0.25)',
         }}
       >
       {songs.length === 0 && (

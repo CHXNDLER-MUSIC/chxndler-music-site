@@ -74,6 +74,32 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [beamTransitioning, setBeamTransitioning] = useState(false); // prevent rapid beam changes
   const [explicitClose, setExplicitClose] = useState(false); // track when explicitly closing without opening another display
   const [safariRefreshKey, setSafariRefreshKey] = useState(0); // Safari refresh mechanism
+  // Unified timing constants for display/beam sequencing
+  // Allow previous beam/display to complete fades (beam has 400ms opacity fade)
+  const BEAM_SWITCH_DELAY_MS = 450; // slightly >400ms to avoid overlap
+  const BLUE_OPEN_AFTER_BEAM_MS = 140; // time from beam enable to blue HUD open
+
+  // Live refs for visibility guards (avoid stale closures in timeouts)
+  const showHUDRef = React.useRef(showHUD);
+  React.useEffect(() => { showHUDRef.current = showHUD; }, [showHUD]);
+  const beamEnabledRef = React.useRef(beamEnabled);
+  React.useEffect(() => { beamEnabledRef.current = beamEnabled; }, [beamEnabled]);
+
+  // Guard: wait until blue HUD and beam are fully hidden before continuing (with a hard cap)
+  const waitUntilBlueHidden = React.useCallback((next) => {
+    const start = Date.now();
+    const MAX_WAIT = 900; // ms safety cap
+    const TICK = 50; // ms polling cadence
+    const step = () => {
+      const blueHidden = !showHUDRef.current && !beamEnabledRef.current;
+      if (blueHidden || Date.now() - start > MAX_WAIT) {
+        try { next(); } catch {}
+      } else {
+        setTimeout(step, TICK);
+      }
+    };
+    setTimeout(step, TICK);
+  }, []);
   const SPACE_SKY = { webm: "/skies/space.webm", mp4: "/skies/space.mp4", key: "space" };
 
   // Spotlight follows Start button dimensions/position exactly
@@ -300,10 +326,11 @@ export default function DashboardApp({ initialSlug } = {}) {
     }
     
 
-    // STEP 1: Hide all planets when a song is selected
-    console.log('🌍 DashboardApp: onSongChange - Hiding planets for song selection');
+    // Keep planets visible on homepage when a song is selected
+    console.log('🌍 DashboardApp: onSongChange - Keeping planets visible for song selection');
     try {
-      playerStore.getState().setPlanetsVisible(false);
+      playerStore.getState().setPlanetsVisible(true);
+      playerStore.getState().setPlanetDisplayMode('all');
     } catch {}
 
     // STEP 2: Stop all music immediately when song is selected
@@ -354,7 +381,8 @@ export default function DashboardApp({ initialSlug } = {}) {
 
     // Mark as user-driven to suppress fly/warp flashes on index change
     setUserSelected(true);
-    setHomeMode(false);
+    // Stay in home mode so orbit rings + planets remain visible
+    setHomeMode(true);
     // Clear any pending home overlay reveal since we're selecting a specific song
     setPendingOverlayReveal(false);
 
@@ -366,9 +394,9 @@ export default function DashboardApp({ initialSlug } = {}) {
     // Switch MediaPlayer channel; MediaPlayer handles audio swap and loading
     setChannelIdx(idx);
     
-    // Set flags for selection sequencing: hide planets during warp, start song on base video playing
+    // Set flags for selection sequencing: keep planets visible during warp on homepage
     setPendingTrackPlay(true);
-    setHidePlanetsForSelection(true);
+    setHidePlanetsForSelection(false);
     
     // Let MediaPlayer handle audio element configuration through its index change
     // Don't manually set src here to avoid race conditions
@@ -540,7 +568,8 @@ export default function DashboardApp({ initialSlug } = {}) {
 
   // Handle beam color control with strict mutual exclusion between displays
   const handleBeamToggle = React.useCallback((color) => {
-    if (beamTransitioning) return; // Prevent rapid changes during transitions
+    // Allow immediate OFF even during transitions; otherwise guard
+    if (beamTransitioning && color !== 'off') return;
     
     // Always close ALL displays first, then open the target display
     const closeAllDisplays = (skipYellowClose = false) => {
@@ -582,12 +611,13 @@ export default function DashboardApp({ initialSlug } = {}) {
         // Switch to pink - close everything first
         setBeamTransitioning(true);
         closeAllDisplays();
-        setTimeout(() => {
+        // Strictly wait for blue HUD + beam to be fully hidden before enabling pink
+        waitUntilBlueHidden(() => {
           setBeamColor('pink');
           setBeamEnabled(true);
           setJoinAlienOpen(true);
           setBeamTransitioning(false);
-        }, 150);
+        });
       }
     } else if (color === 'yellow') {
       if (beamColor === 'yellow') {
@@ -609,19 +639,19 @@ export default function DashboardApp({ initialSlug } = {}) {
           setBeamEnabled(true);
           setBeamTransitioning(false);
           // Yellow menu will open itself via HoloHubMenu onToggle
-        }, 150);
+        }, BEAM_SWITCH_DELAY_MS);
       }
     } else if (color === 'blue') {
-      if (beamColor === 'blue' && showHUD) {
+      const blueActiveNow = (beamColor === 'blue') && (beamEnabled || showHUD);
+      if (blueActiveNow) {
         // Already showing blue - toggle off
         setBeamTransitioning(true);
         setExplicitClose(true);
         closeAllDisplays();
-        setTimeout(() => {
-          setBeamColor('blue'); // Keep blue as default
-          setBeamTransitioning(false);
-          setExplicitClose(false);
-        }, 150);
+        // Keep baseline color set to blue but everything hidden/off (no delay needed)
+        setBeamColor('blue');
+        setBeamTransitioning(false);
+        setExplicitClose(false);
       } else if (!explicitClose) {
         // Switch to blue - ensure sequence: close other displays → beam blue → open blue
         setBeamTransitioning(true);
@@ -632,8 +662,8 @@ export default function DashboardApp({ initialSlug } = {}) {
           setTimeout(() => {
             setShowHUD(true);
             setBeamTransitioning(false);
-          }, 140);
-        }, 150);
+          }, BLUE_OPEN_AFTER_BEAM_MS);
+        }, BEAM_SWITCH_DELAY_MS);
       }
     }
   }, [beamColor, showHUD, joinAlienOpen, beamTransitioning, explicitClose]);
@@ -949,13 +979,13 @@ export default function DashboardApp({ initialSlug } = {}) {
         minDurationMs={3000}
         offsetY="-1vh"
         onWarpSfxEnd={() => {
-          // After song selection warp, show only the selected planet
+          // After song selection warp, keep planets visible on homepage
           if (userSelected || pendingTrackPlay) {
-            console.log('🌍 DashboardApp: onWarpSfxEnd - Showing selected planet after SONG selection warp');
             try { 
               const slug = (curTrack && curTrack.slug) ? curTrack.slug : null;
               if (slug) { 
-                playerStore.getState().setMain(slug);
+                playerStore.getState().setMain(slug, true);
+                playerStore.getState().setPlanetDisplayMode('all');
                 playerStore.getState().setPlanetsVisible(true);
               }
             } catch {}
@@ -1094,9 +1124,8 @@ export default function DashboardApp({ initialSlug } = {}) {
         }}
         onFlyStart={() => {
           setWarpActive(true);
-          // Force planets hidden during selection warp to avoid showing all planets mid-transition
-          if (pendingTrackPlay || userSelected) {
-            console.log('🌍 DashboardApp: onFlyStart - Hiding planets during selection warp');
+          // Keep planets visible during selection warp on homepage; only hide on non-home flows
+          if ((pendingTrackPlay || userSelected) && !homeMode) {
             try { playerStore.getState().setPlanetsVisible(false); } catch {}
           }
           // MediaPlayer will handle its own pause/resume logic for song changes
@@ -1126,9 +1155,12 @@ export default function DashboardApp({ initialSlug } = {}) {
               } catch {}
             }
             setAmbientSuspended(true);
-            // Keep planets hidden until playback starts (onPlayingChange will re-enable)
-            console.log('🌍 DashboardApp: onFlyEnd - Hiding planets until playback starts');
-            try { playerStore.getState().setPlanetsVisible(false); } catch {}
+            // Keep planets visible on homepage; hide only for non-home flows
+            if (!homeMode) {
+              try { playerStore.getState().setPlanetsVisible(false); } catch {}
+            } else {
+              try { playerStore.getState().setPlanetDisplayMode('all'); playerStore.getState().setPlanetsVisible(true); } catch {}
+            }
           }
           // If a track play is pending, begin UI fade-in immediately at warp end
           // and start the button SFX right away so it completes before music starts
@@ -1333,6 +1365,7 @@ export default function DashboardApp({ initialSlug } = {}) {
         showUI={uiUnlocked && showOverlayUI && !warpActive && !showDimmingOverlay}
         uiUnlocked={uiUnlocked}
         joinAlienOpen={joinAlienOpen}
+        blueActive={!!(beamEnabled || showHUD)}
         onJoinToggle={setJoinAlienOpen}
         onBeamColorChange={handleBeamToggle}
         closeAllSignal={uiCloseSignal}
@@ -1535,8 +1568,19 @@ export default function DashboardApp({ initialSlug } = {}) {
                 key={safariRefreshKey} // Force re-render on Safari when needed
                 style={(() => {
                   const normalCondition = uiUnlocked && showOverlayUI && showHUD && !warpActive && !showDimmingOverlay;
-                  const homepageCondition = homeMode && !warpActive; // Allow planets to show even with dimming overlay
-                  const shouldShow = normalCondition || homepageCondition;
+                  // First page should NOT show the blue display until Start unlocks UI
+                  const shouldShow = normalCondition;
+                  
+                  console.log('🌍 DashboardApp: Visibility debug:', {
+                    homeMode,
+                    warpActive,
+                    uiUnlocked,
+                    showOverlayUI,
+                    showHUD,
+                    showDimmingOverlay,
+                    normalCondition,
+                    shouldShow
+                  });
                   
                   return {
                     // Allow planets to be visible even when UI is locked (before Start is pressed)
@@ -1569,6 +1613,7 @@ export default function DashboardApp({ initialSlug } = {}) {
                   track={(homeMode && !userSelected && !pendingTrackPlay) ? undefined : curTrack}
                   currentId={(homeMode && !userSelected && !pendingTrackPlay) ? undefined : curTrack?.slug}
                   playing={(homeMode && !userSelected && !pendingTrackPlay) ? ambientPlaying : isPlaying}
+                  showAllPlanets={homeMode}
                   hidePlanetsUntilPlaying={hidePlanetsForSelection}
                   beamOnly={beamOnly}
                   beamEnabled={beamEnabled}
@@ -1612,18 +1657,18 @@ export default function DashboardApp({ initialSlug } = {}) {
                 onSkyChange={(webm, mp4, key) => setNextSky({ webm, mp4, key })}
                 onPlayingChange={(p) => { 
                   setIsPlaying(p);
-                  // When a song starts playing, reveal only the focused planet
+                  // When a song starts playing, keep planets visible on homepage
                   if (p) {
                     try {
                       const slug = (curTrack && curTrack.slug) ? curTrack.slug : (tracks[channelIdx]?.slug || null);
                       if (slug) { 
-                        // Ensure we're in single-song mode (not homepage mode)
-                        console.log('🌍 DashboardApp: Song playing, focusing on:', slug);
-                        setUserSelected(true); // Ensure userSelected state is set
-                        setHomeMode(false); // Ensure we're not in homepage mode
-                        playerStore.getState().setMain(slug); // Focus the specific song
-                        // Show planets - the showAll logic should now be false, showing only focused planet
-                        playerStore.getState().setPlanetsVisible(true);
+                        console.log('🌍 DashboardApp: Song playing on home, keeping all planets visible:', slug);
+                        setUserSelected(true);
+                        // Stay in home mode to retain orbit rings + all planets
+                        setHomeMode(true);
+                        // Preserve planet visibility when selecting main
+                        try { playerStore.getState().setMain(slug, true); } catch {}
+                        try { playerStore.getState().setPlanetDisplayMode('all'); playerStore.getState().setPlanetsVisible(true); } catch {}
                       }
                       setHidePlanetsForSelection(false);
                     } catch {}
@@ -1635,9 +1680,14 @@ export default function DashboardApp({ initialSlug } = {}) {
                       }
                     } catch {}
                   } else {
-                    // When playback stops, hide the planet
+                    // When playback stops, keep planets visible on homepage
                     try {
-                      playerStore.getState().setPlanetsVisible(false);
+                      if (homeMode) {
+                        playerStore.getState().setPlanetDisplayMode('all');
+                        playerStore.getState().setPlanetsVisible(true);
+                      } else {
+                        playerStore.getState().setPlanetsVisible(false);
+                      }
                     } catch {}
                   }
                 }}
