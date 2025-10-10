@@ -35,6 +35,8 @@ type Metrics = {
   joinSubmitClicks: number;
   songPlays: Record<string, { count: number; title?: string }>;
   coverClicks: Record<string, { count: number; title?: string }>;
+  spotifySongClicks?: Record<string, { count: number; title?: string }>;
+  appleSongClicks?: Record<string, { count: number; title?: string }>;
 };
 
 export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualProps) {
@@ -419,6 +421,9 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                       <span className="text-white font-medium">Spotify</span>
                       <span className="text-cyan-200 font-bold">
                         {(() => {
+                          if (metrics?.spotifySongClicks && Object.keys(metrics.spotifySongClicks).length) {
+                            return Object.values(metrics.spotifySongClicks).reduce((sum, it) => sum + (it?.count || 0), 0);
+                          }
                           const list = stats?.spotifySongClicks || [];
                           return list.reduce((sum, it) => sum + (it.count || 0), 0);
                         })()}
@@ -427,10 +432,16 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                     {spSongsOpen && (
                       <div className="px-6 pb-6 space-y-3">
                         {tracks.map((t, idx) => {
-                          const entry = (stats?.spotifySongClicks || []).find(s => (s.title || '').toLowerCase() === (t.title || '').toLowerCase());
-                          const count = entry?.count || 0;
+                          const lower = (t.title || '').toLowerCase();
+                          // Prefer server metrics; fall back to local click analytics
+                          const serverCount = metrics?.spotifySongClicks?.[lower]?.count || 0;
+                          const localEntry = (stats?.spotifySongClicks || []).find(s => (s.title || '').toLowerCase() === lower);
+                          const count = serverCount || localEntry?.count || 0;
                           const max = Math.max(1, ...tracks.map(tt => {
-                            const e = (stats?.spotifySongClicks || []).find(s => (s.title || '').toLowerCase() === (tt.title || '').toLowerCase());
+                            const lt = (tt.title || '').toLowerCase();
+                            const sCount = metrics?.spotifySongClicks?.[lt]?.count || 0;
+                            if (sCount > 0) return sCount;
+                            const e = (stats?.spotifySongClicks || []).find(s => (s.title || '').toLowerCase() === lt);
                             return e?.count || 0;
                           }));
                           return (
@@ -454,6 +465,9 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                       <span className="text-white font-medium">Apple Music</span>
                       <span className="text-cyan-200 font-bold">
                         {(() => {
+                          if (metrics?.appleSongClicks && Object.keys(metrics.appleSongClicks).length) {
+                            return Object.values(metrics.appleSongClicks).reduce((sum, it) => sum + (it?.count || 0), 0);
+                          }
                           const list = stats?.appleSongClicks || [];
                           return list.reduce((sum, it) => sum + (it.count || 0), 0);
                         })()}
@@ -462,10 +476,15 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                     {amSongsOpen && (
                       <div className="px-6 pb-6 space-y-3">
                         {tracks.map((t, idx) => {
-                          const entry = (stats?.appleSongClicks || []).find(s => (s.title || '').toLowerCase() === (t.title || '').toLowerCase());
-                          const count = entry?.count || 0;
+                          const lower = (t.title || '').toLowerCase();
+                          const serverCount = metrics?.appleSongClicks?.[lower]?.count || 0;
+                          const localEntry = (stats?.appleSongClicks || []).find(s => (s.title || '').toLowerCase() === lower);
+                          const count = serverCount || localEntry?.count || 0;
                           const max = Math.max(1, ...tracks.map(tt => {
-                            const e = (stats?.appleSongClicks || []).find(s => (s.title || '').toLowerCase() === (tt.title || '').toLowerCase());
+                            const lt = (tt.title || '').toLowerCase();
+                            const sCount = metrics?.appleSongClicks?.[lt]?.count || 0;
+                            if (sCount > 0) return sCount;
+                            const e = (stats?.appleSongClicks || []).find(s => (s.title || '').toLowerCase() === lt);
                             return e?.count || 0;
                           }));
                           return (

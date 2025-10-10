@@ -681,7 +681,7 @@ export default function HUDPanel({
                     title={title} 
                     slug={trackingSong}
                     inline={true} 
-                    size={110}
+                    size={96}
                   />
                 </div>
               );
@@ -841,6 +841,7 @@ export default function HUDPanel({
                 >
                   <button
                     className="hud-volume-btn"
+                    onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                     onClick={() => {
                       try { sfx.play('click', 0.4); } catch {}
                       // Only open/close dropdown; do not change volume on click
@@ -966,6 +967,7 @@ export default function HUDPanel({
                       })()}`,
                     }}
                     onMouseEnter={(e) => {
+                      try { sfx.play('hover', 0.35); } catch {}
                       const currentSong = resolvedSongs.find(s => s.id === active);
                       const elementColor = currentSong?.color || '#19E3FF';
                       const r = parseInt(elementColor.slice(1, 3), 16);

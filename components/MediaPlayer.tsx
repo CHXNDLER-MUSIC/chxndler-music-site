@@ -996,9 +996,11 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                   return Math.max(0.02, Math.min(0.95, amplitude));
                 });
                 
-                // Use same calculation as cursor for perfect sync - ensure consistent progress calculation
+                // Use live audio time for perfect sync (falls back to state); respect seeking override
                 const d = liveDuration;
-                const progress = (d > 0 && isFinite(currentTime)) ? Math.max(0, Math.min(1, currentTime / d)) : 0;
+                const liveT = (audioRef.current && isFinite(audioRef.current.currentTime)) ? audioRef.current.currentTime : currentTime;
+                const t = (seekPositionRef.current !== null) ? seekPositionRef.current : liveT;
+                const progress = (d > 0 && isFinite(t)) ? Math.max(0, Math.min(1, t / d)) : 0;
                 
                 return (
                   <>
@@ -1221,8 +1223,9 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               className={`absolute top-0 h-full flex flex-col items-center justify-center pointer-events-none z-10 cursor-transition ${playing ? 'playing' : ''} ${seeking ? 'seeking' : ''}`}
               style={{
                 left: `${(() => {
-                  // Use ref for immediate visual feedback during seeking, otherwise use state
-                  const timeToUse = seekPositionRef.current !== null ? seekPositionRef.current : currentTime;
+                  // Use ref for immediate visual feedback during seeking; otherwise, read from the live audio element to avoid state lag
+                  const liveT = (audioRef.current && isFinite(audioRef.current.currentTime)) ? audioRef.current.currentTime : currentTime;
+                  const timeToUse = seekPositionRef.current !== null ? seekPositionRef.current : liveT;
                   const progressPercent = Math.max(0, Math.min(100, (liveDuration > 0 && isFinite(timeToUse) ? (timeToUse / liveDuration) * 100 : 0)));
                   return progressPercent;
                 })()}%`,
@@ -1265,7 +1268,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                   border: `1px solid ${currentElementColor}44`,
                 }}
               >
-                {liveDuration > 0 ? Math.floor((currentTime / liveDuration) * 100) : 0}%
+                {(() => {
+                  const liveT = (audioRef.current && isFinite(audioRef.current.currentTime)) ? audioRef.current.currentTime : currentTime;
+                  return liveDuration > 0 ? Math.floor(((seekPositionRef.current ?? liveT) / liveDuration) * 100) : 0;
+                })()}%
               </div>
               {currentSection ? (
                 <div 
@@ -2204,11 +2210,9 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         }
         
         .cursor-transition {
-          transition: left 0.1s linear;
+          transition: none; /* Eliminate smoothing to avoid visual lag */
         }
-        .cursor-transition.playing {
-          transition: left 0.05s linear;
-        }
+        .cursor-transition.playing { transition: none; }
         .cursor-transition.seeking {
           transition: none; /* Instant movement while seeking */
         }
