@@ -53,6 +53,16 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const [volume, setVolume] = useState(1.0);
   const lastNonZeroVolumeRef = useRef(1.0);
   const VOLUME_STORAGE_KEY = 'mediaPlayer:volume';
+  // Popover visibility for volume controls
+  const [showMainVolumePopover, setShowMainVolumePopover] = useState(false);
+  const [showWaveformVolumePopover, setShowWaveformVolumePopover] = useState(false);
+  const mainVolRef = useRef<HTMLDivElement|null>(null);
+  const waveVolRef = useRef<HTMLDivElement|null>(null);
+  // Lyrics state
+  const [lyricsOpen, setLyricsOpen] = useState(false);
+  const [lyricsLoading, setLyricsLoading] = useState(false);
+  const [lyricsError, setLyricsError] = useState<string | null>(null);
+  const lyricsCacheRef = useRef<Map<string, string>>(new Map());
   // Track homepage vs. song-selected view via playerStore's planet display mode
   const [planetDisplayMode, setPlanetDisplayMode] = useState<'all' | 'single' | 'hidden'>('all');
   useEffect(() => {
@@ -164,6 +174,56 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     
     return unsubscribe;
   }, []);
+
+  // Close volume popovers on outside click or Escape
+  useEffect(() => {
+    const onDocDown = (e: MouseEvent | TouchEvent) => {
+      const t = e.target as Node | null;
+      const inMain = !!(mainVolRef.current && t && mainVolRef.current.contains(t));
+      const inWave = !!(waveVolRef.current && t && waveVolRef.current.contains(t));
+      if (!inMain) setShowMainVolumePopover(false);
+      if (!inWave) setShowWaveformVolumePopover(false);
+      // Close lyrics popover when clicking outside waveform container
+      try {
+        const wf = document.querySelector('.waveform-container');
+        if (wf && t && !wf.contains(t)) setLyricsOpen(false);
+      } catch {}
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setShowMainVolumePopover(false); setShowWaveformVolumePopover(false); }
+    };
+    document.addEventListener('mousedown', onDocDown);
+    document.addEventListener('touchstart', onDocDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocDown);
+      document.removeEventListener('touchstart', onDocDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, []);
+
+  // Close lyrics when track changes
+  useEffect(() => { setLyricsOpen(false); setLyricsError(null); }, [idx]);
+
+  async function ensureLyricsLoaded(slug: string) {
+    if (lyricsCacheRef.current.has(slug)) return;
+    setLyricsLoading(true);
+    setLyricsError(null);
+    try {
+      const res = await fetch(`/api/lyrics/${encodeURIComponent(slug)}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || `Lyrics not found (${res.status})`);
+      }
+      const data = await res.json();
+      const content = String(data?.content || '');
+      lyricsCacheRef.current.set(slug, content);
+    } catch (e: any) {
+      setLyricsError(e?.message || 'Failed to load lyrics');
+    } finally {
+      setLyricsLoading(false);
+    }
+  }
 
 
   // Notify parent only when `playing` changes; avoid depending on inline callbacks
@@ -993,21 +1053,20 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             )}
             
             {/* Volume control placed next to the Spotify button inside waveform */}
-            <div className="waveform-volume" role="group" aria-label="Volume">
+            <div className="waveform-volume" role="group" aria-label="Volume" ref={waveVolRef}>
+              <div className="volume-button-wrap">
               <button
                 className="waveform-volume-btn"
                 onClick={() => {
                   const a = audioRef.current; if (!a) return; uiClick();
-                  if (a.volume === 0) {
-                    const restore = Math.max(0.05, Math.min(1, lastNonZeroVolumeRef.current || volume || 1));
-                    a.volume = restore; setVolume(restore);
-                  } else {
-                    if (a.volume > 0) lastNonZeroVolumeRef.current = a.volume;
-                    a.volume = 0; setVolume(0);
-                  }
+                  // Only open/close the dropdown; do not change volume on click
+                  setShowMainVolumePopover(false);
+                  setShowWaveformVolumePopover(v => !v);
                 }}
-                aria-label={volume === 0 ? 'Unmute' : 'Mute'}
-                title={volume === 0 ? 'Unmute' : 'Mute'}
+                aria-haspopup="true"
+                aria-expanded={showWaveformVolumePopover}
+                aria-label="Volume"
+                title="Volume"
               >
                 {volume === 0 ? (
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
@@ -1023,53 +1082,82 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                   </svg>
                 )}
               </button>
-              <div
-                className="waveform-volume-bar"
-                role="slider"
-                aria-label="Volume"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={Math.round(volume * 100)}
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'ArrowLeft') { e.preventDefault(); adjustVolume(-0.05); }
-                  else if (e.key === 'ArrowRight') { e.preventDefault(); adjustVolume(0.05); }
-                }}
-                onPointerDown={(e) => {
-                  const a = audioRef.current; if (!a) return;
-                  const el = e.currentTarget as HTMLDivElement;
-                  const applyFromClientX = (clientX: number) => {
-                    const rect = el.getBoundingClientRect();
-                    const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
-                    const pct = rect.width > 0 ? (x / rect.width) : 0;
-                    const newVol = Math.max(0, Math.min(1, pct));
-                    a.volume = newVol; setVolume(newVol);
-                    if (newVol > 0) lastNonZeroVolumeRef.current = newVol;
-                  };
-                  try { el.setPointerCapture?.(e.pointerId); } catch {}
-                  e.preventDefault(); uiClick();
-                  applyFromClientX(e.clientX);
-                  const onMove = (ev: PointerEvent) => applyFromClientX(ev.clientX);
-                  const onUp = () => {
-                    window.removeEventListener('pointermove', onMove);
-                    window.removeEventListener('pointerup', onUp);
-                  };
-                  window.addEventListener('pointermove', onMove);
-                  window.addEventListener('pointerup', onUp, { once: true } as any);
-                }}
-              >
-                <div 
-                  className="waveform-volume-fill" 
-                  style={{ 
-                    width: `${volume * 100}%`,
-                    boxShadow: (volume <= 0.01) 
-                      ? 'none' 
-                      : `0 0 ${3 + 10*volume}px #19E3FF, 0 0 ${5 + 16*volume}px #FC54AF, 0 0 ${8 + 22*volume}px rgba(252,84,175,${0.15 + 0.35*volume})`
-                  }} 
-                />
+              {showWaveformVolumePopover ? (
+                <div className="volume-popover dropdown" role="dialog" aria-label="Adjust volume">
+                  <div
+                    className="volume-slider-vertical"
+                    role="slider"
+                    aria-orientation="vertical"
+                    aria-label="Volume"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={Math.round(volume * 100)}
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'ArrowUp') { e.preventDefault(); adjustVolume(0.05); }
+                      else if (e.key === 'ArrowDown') { e.preventDefault(); adjustVolume(-0.05); }
+                    }}
+                    onPointerDown={(e) => {
+                      const a = audioRef.current; if (!a) return;
+                      const el = e.currentTarget as HTMLDivElement;
+                      const applyFromClientY = (clientY: number) => {
+                        const rect = el.getBoundingClientRect();
+                        const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
+                        const pct = rect.height > 0 ? (1 - (y / rect.height)) : 0;
+                        const newVol = Math.max(0, Math.min(1, pct));
+                        a.volume = newVol; setVolume(newVol);
+                        if (newVol > 0) lastNonZeroVolumeRef.current = newVol;
+                      };
+                      try { el.setPointerCapture?.(e.pointerId); } catch {}
+                      e.preventDefault(); uiClick();
+                      applyFromClientY(e.clientY);
+                      const onMove = (ev: PointerEvent) => applyFromClientY(ev.clientY);
+                      const onUp = () => {
+                        window.removeEventListener('pointermove', onMove);
+                        window.removeEventListener('pointerup', onUp);
+                      };
+                      window.addEventListener('pointermove', onMove);
+                      window.addEventListener('pointerup', onUp, { once: true } as any);
+                    }}
+                  >
+                    <div className="volume-slider-track" />
+                    <div className="volume-slider-level" style={{ height: `${volume * 100}%` }} />
+                    <div className="volume-slider-thumb" style={{ bottom: `calc(${volume * 100}% - 7px)` }} />
+                  </div>
+                  <div className="volume-percent">{Math.round(volume * 100)}%</div>
+                </div>
+              ) : null}
               </div>
-              <span className="waveform-volume-text">{Math.round(volume * 100)}%</span>
             </div>
+
+            {/* Lyrics button inside waveform */}
+            <button
+              className="lyrics-btn-waveform"
+              onClick={async () => { uiClick(); await ensureLyricsLoaded(cur.slug); setLyricsOpen(v => !v); }}
+              aria-expanded={lyricsOpen}
+              aria-controls="lyrics-popover"
+              title="Lyrics"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
+                <path d="M4 4h16v12H5.17L4 17.17V4zm2 2v8h12V6H6zm0 12h10v2H6v-2z"/>
+              </svg>
+              <span className="lyrics-btn-text">Lyrics</span>
+            </button>
+
+            {lyricsOpen ? (
+              <div id="lyrics-popover" className="lyrics-popover" role="dialog" aria-label={`Lyrics for ${cur.title}`}>
+                {lyricsLoading ? (
+                  <div className="lyrics-status">Loading…</div>
+                ) : lyricsError ? (
+                  <div className="lyrics-error">{lyricsError}</div>
+                ) : (
+                  <div className="lyrics-content">
+                    {lyricsCacheRef.current.get(cur.slug) || 'No lyrics available.'}
+                  </div>
+                )}
+                <button className="lyrics-close" onClick={() => setLyricsOpen(false)} aria-label="Close lyrics">✕</button>
+              </div>
+            ) : null}
 
             {/* Spotify button positioned in waveform container */}
             {planetDisplayMode === 'single' && cur.spotify ? (
@@ -1280,26 +1368,20 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           <span>Track</span>
         </button>
         
-        <div className="volume-control">
+        <div className="volume-control" ref={mainVolRef}>
           {/* Mute/Unmute button */}
+          <div className="volume-button-wrap">
           <button
-            className="track-btn"
+            className="track-btn volume-btn"
             onClick={() => {
               const a = audioRef.current; if (!a) return;
               uiClick();
-              if (a.volume === 0) {
-                const restore = Math.max(0.05, Math.min(1, lastNonZeroVolumeRef.current || 1));
-                a.volume = restore;
-                setVolume(restore);
-              } else {
-                // Remember last non-zero volume and set to 0
-                if (a.volume > 0) lastNonZeroVolumeRef.current = a.volume;
-                a.volume = 0;
-                setVolume(0);
-              }
+              // Only open/close the dropdown; do not change volume on click
+              setShowWaveformVolumePopover(false);
+              setShowMainVolumePopover(v => !v);
             }}
-            aria-label={volume === 0 ? 'Unmute' : 'Mute'}
-            title={volume === 0 ? 'Unmute' : 'Mute'}
+            aria-label="Volume"
+            title="Volume"
           >
             {volume === 0 ? (
               // Muted icon
@@ -1319,55 +1401,53 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             )}
           </button>
 
-          {/* Volume bar (click/drag to set) */}
-          <div
-            className="volume-bar"
-            role="slider"
-            aria-label="Volume"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(volume * 100)}
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'ArrowLeft') { e.preventDefault(); adjustVolume(-0.05); }
-              else if (e.key === 'ArrowRight') { e.preventDefault(); adjustVolume(0.05); }
-            }}
-            onPointerDown={(e) => {
-              const a = audioRef.current; if (!a) return;
-              const el = e.currentTarget as HTMLDivElement;
-              const applyFromClientX = (clientX: number) => {
-                const rect = el.getBoundingClientRect();
-                const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
-                const pct = rect.width > 0 ? (x / rect.width) : 0;
-                const newVol = Math.max(0, Math.min(1, pct));
-                a.volume = newVol;
-                setVolume(newVol);
-                if (newVol > 0) lastNonZeroVolumeRef.current = newVol;
-              };
-              try { el.setPointerCapture?.(e.pointerId); } catch {}
-              e.preventDefault();
-              uiClick();
-              applyFromClientX(e.clientX);
-              const onMove = (ev: PointerEvent) => applyFromClientX(ev.clientX);
-              const onUp = () => {
-                window.removeEventListener('pointermove', onMove);
-                window.removeEventListener('pointerup', onUp);
-              };
-              window.addEventListener('pointermove', onMove);
-              window.addEventListener('pointerup', onUp, { once: true } as any);
-            }}
-          >
-            <div 
-              className="volume-fill" 
-              style={{ 
-                width: `${volume * 100}%`,
-                boxShadow: (volume <= 0.01)
-                  ? 'none'
-                  : `0 0 ${4 + 12*volume}px #19E3FF, 0 0 ${6 + 20*volume}px #FC54AF, 0 0 ${10 + 28*volume}px rgba(252,84,175,${0.15 + 0.35*volume})`
-              }}
-            />
+          {showMainVolumePopover ? (
+            <div className="volume-popover dropdown" role="dialog" aria-label="Adjust volume">
+              <div
+                className="volume-slider-vertical"
+                role="slider"
+                aria-orientation="vertical"
+                aria-label="Volume"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(volume * 100)}
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowUp') { e.preventDefault(); adjustVolume(0.05); }
+                  else if (e.key === 'ArrowDown') { e.preventDefault(); adjustVolume(-0.05); }
+                }}
+                onPointerDown={(e) => {
+                  const a = audioRef.current; if (!a) return;
+                  const el = e.currentTarget as HTMLDivElement;
+                  const applyFromClientY = (clientY: number) => {
+                    const rect = el.getBoundingClientRect();
+                    const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
+                    const pct = rect.height > 0 ? (1 - (y / rect.height)) : 0;
+                    const newVol = Math.max(0, Math.min(1, pct));
+                    a.volume = newVol;
+                    setVolume(newVol);
+                    if (newVol > 0) lastNonZeroVolumeRef.current = newVol;
+                  };
+                  try { el.setPointerCapture?.(e.pointerId); } catch {}
+                  e.preventDefault(); uiClick();
+                  applyFromClientY(e.clientY);
+                  const onMove = (ev: PointerEvent) => applyFromClientY(ev.clientY);
+                  const onUp = () => {
+                    window.removeEventListener('pointermove', onMove);
+                    window.removeEventListener('pointerup', onUp);
+                  };
+                  window.addEventListener('pointermove', onMove);
+                  window.addEventListener('pointerup', onUp, { once: true } as any);
+                }}
+              >
+                <div className="volume-slider-track" />
+                <div className="volume-slider-level" style={{ height: `${volume * 100}%` }} />
+                <div className="volume-slider-thumb" style={{ bottom: `calc(${volume * 100}% - 7px)` }} />
+              </div>
+              <div className="volume-percent">{Math.round(volume * 100)}%</div>
+            </div>
+          ) : null}
           </div>
-          <span className="volume-text">{Math.round(volume * 100)}%</span>
         </div>
       </div>
 
@@ -1688,6 +1768,63 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           backdrop-filter: blur(8px);
           cursor: not-allowed;
         }
+
+        /* Lyrics button inside waveform (right edge, vertically centered) */
+        .lyrics-btn-waveform {
+          position: absolute;
+          top: 50%;
+          right: 6px;
+          transform: translateY(-50%);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 10px;
+          height: 32px;
+          border-radius: 10px;
+          border: 1px solid rgba(25,227,255,0.4);
+          background: rgba(6,182,212,0.10);
+          color: #e6f7ff;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          z-index: 40;
+          box-shadow: 0 0 12px rgba(25,227,255,0.25);
+        }
+        .lyrics-btn-waveform:hover { transform: translateY(-50%) translateX(-1px); background: rgba(6,182,212,0.18); }
+        .lyrics-btn-text { font-size: 12px; }
+
+        /* Lyrics popover anchored to waveform */
+        .lyrics-popover {
+          position: absolute;
+          top: 50%;
+          right: 6px;
+          transform: translate(calc(100% + 8px), -50%);
+          width: min(60vw, 420px);
+          max-height: 40vh;
+          overflow: auto;
+          padding: 12px 14px 36px 14px;
+          border-radius: 14px;
+          background: rgba(3,10,20,0.9);
+          border: 1px solid rgba(25,227,255,0.45);
+          box-shadow: 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(25,227,255,0.35);
+          backdrop-filter: blur(8px);
+          color: #e6f7ff;
+          z-index: 1000;
+        }
+        .lyrics-content { white-space: pre-wrap; line-height: 1.4; font-size: 12px; }
+        .lyrics-status { font-size: 12px; opacity: 0.8; }
+        .lyrics-error { font-size: 12px; color: #ff7b7b; }
+        .lyrics-close {
+          position: absolute;
+          right: 8px;
+          bottom: 8px;
+          border: 0;
+          background: rgba(255,255,255,0.1);
+          color: #fff;
+          width: 28px;
+          height: 28px;
+          border-radius: 8px;
+          cursor: pointer;
+        }
         
         /* Inline waveform volume next to Spotify button */
         .waveform-volume {
@@ -1707,29 +1844,22 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           z-index: 32;
         }
         .waveform-volume-btn {
-          width: 26px;
-          height: 26px;
-          border-radius: 6px;
-          border: none;
-          background: rgba(25,227,255,0.14);
-          color: #19E3FF;
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          border: 3px solid rgba(255, 255, 255, 0.4);
+          background: radial-gradient(circle at 30% 30%, #19E3FF, #0EA8D0);
+          color: white;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: all 0.25s ease;
+          box-shadow: 0 4px 16px rgba(25,227,255,0.6);
         }
-        .waveform-volume-btn:hover { background: rgba(25,227,255,0.22); transform: translateY(-1px); }
-        .waveform-volume-bar {
-          width: 60px;
-          height: 5px;
-          background: rgba(255,255,255,0.12);
-          border-radius: 3px;
-          overflow: hidden;
-          cursor: pointer;
-        }
-        .waveform-volume-fill { height: 100%; background: linear-gradient(90deg, #19E3FF, #FC54AF); border-radius: 3px; transition: width 0.15s linear, box-shadow 0.15s linear; }
-        .waveform-volume-text { font-size: 10px; color: rgba(255,255,255,0.85); min-width: 26px; text-align: right; }
+        .waveform-volume-btn:hover { transform: scale(1.1); box-shadow: 0 6px 22px rgba(25,227,255,0.75); }
+        .waveform-volume-btn:active { transform: scale(0.95); }
+        /* Removed legacy horizontal waveform volume bar styles */
         
         /* FULLSCREEN SPOTIFY BUTTON - CENTER OF ENTIRE SCREEN */
         .spotify-btn-fullscreen {
@@ -1915,6 +2045,17 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           background: rgba(25,227,255,0.2);
           transform: translateY(-1px);
         }
+
+        /* Glowing volume button (main controls) similar to Spotify button */
+        .volume-btn {
+          border-radius: 50%;
+          border: 3px solid rgba(255, 255, 255, 0.4);
+          background: radial-gradient(circle at 30% 30%, #19E3FF, #0EA8D0);
+          color: white;
+          box-shadow: 0 4px 16px rgba(25,227,255,0.6);
+        }
+        .volume-btn:hover { transform: translateY(-1px) scale(1.08); box-shadow: 0 6px 20px rgba(25,227,255,0.8); }
+        .volume-btn:active { transform: scale(0.95); }
         
         .selector-btn {
           display: flex;
@@ -1942,27 +2083,64 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           min-width: 80px;
         }
         
-        .volume-bar {
-          width: 80px;
-          height: 6px;
-          background: rgba(255,255,255,0.1);
-          border-radius: 3px;
-          overflow: hidden;
-          cursor: pointer;
-        }
-        
-        .volume-fill {
-          height: 100%;
-          background: linear-gradient(90deg, #19E3FF, #FC54AF);
-          border-radius: 2px;
-          transition: width 0.2s ease;
-        }
+        /* Removed legacy horizontal main volume bar styles */
         
         .volume-text {
           font-size: 10px;
           color: rgba(255,255,255,0.7);
           min-width: 28px;
         }
+
+        /* Vertical volume popover (opens to the left of the button) */
+        .volume-control { position: relative; }
+        .waveform-volume { position: absolute; }
+        .volume-popover {
+          position: absolute;
+          top: 0;
+          transform: none;
+          padding: 10px 10px;
+          border-radius: 12px;
+          background: rgba(3, 10, 20, 0.86);
+          border: 1px solid rgba(25,227,255,0.5);
+          box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 0 22px rgba(25,227,255,0.55);
+          backdrop-filter: blur(8px);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          z-index: 1000;
+        }
+        .volume-popover.dropdown { top: calc(100% + 8px); left: 50%; transform: translateX(-50%); }
+        .volume-percent { font-size: 11px; color: #19E3FF; text-shadow: 0 0 10px rgba(25,227,255,0.7); text-align: center; }
+        .volume-slider-vertical {
+          position: relative;
+          width: 10px;
+          height: 120px;
+          cursor: pointer;
+          touch-action: none;
+        }
+        .volume-slider-track {
+          position: absolute; left: 4px; right: 4px; top: 0; bottom: 0;
+          border-radius: 6px;
+          background: rgba(255,255,255,0.15);
+          box-shadow: inset 0 0 8px rgba(25,227,255,0.25);
+        }
+        .volume-slider-level {
+          position: absolute; left: 0; right: 0; bottom: 0;
+          margin: 0 0; /* align with track */
+          background: #19E3FF;
+          border-radius: 0 0 6px 6px;
+          box-shadow: 0 0 12px rgba(25,227,255,0.65), 0 0 18px rgba(25,227,255,0.45);
+        }
+        .volume-slider-thumb {
+          position: absolute; left: 50%; transform: translateX(-50%);
+          width: 14px; height: 14px; border-radius: 50%;
+          background: #19E3FF;
+          border: 2px solid #19E3FF;
+          box-shadow: 0 0 14px rgba(25,227,255,0.9);
+          pointer-events: none;
+        }
+        .volume-button-wrap { position: relative; display: inline-flex; }
         
         @keyframes pulse {
           0%, 100% { opacity: 0.6; transform: scale(1); }

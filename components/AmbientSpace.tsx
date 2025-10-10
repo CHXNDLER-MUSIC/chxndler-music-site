@@ -71,15 +71,15 @@ export default function AmbientSpace({
     const amb = ambRef.current;
     const intro = introRef.current;
     if (!amb || suspend) return; // Don't start if suspended
-    // Pre-set volume so audio is audible immediately
-    const initialBed = clamp01(introPendingRef.current && !playingMusic ? Math.min(volume, 0.75) : volume);
-    amb.volume = initialBed;
+    // Pre-set volume so audio is audible immediately (no ducking)
+    const initialVol = clamp01(volume);
+    amb.volume = initialVol;
     // Start unmuted for immediate audio
     try { amb.muted = false; amb.removeAttribute('muted'); } catch {}
     // As soon as ambient reports 'playing', unmute immediately and ensure bed volume
     const onAmbPlaying = () => {
       try { amb.muted = false; amb.removeAttribute('muted'); } catch {}
-      amb.volume = initialBed;
+      amb.volume = initialVol;
       try { amb.removeEventListener('playing', onAmbPlaying as any); } catch {}
     };
     try { amb.addEventListener('playing', onAmbPlaying as any, { once: true } as any); } catch {}
@@ -87,13 +87,13 @@ export default function AmbientSpace({
     const tryAmbient = amb.play().then(() => {
       // Ensure unmuted immediately on successful play
       try { amb.muted = false; amb.removeAttribute('muted'); } catch {}
-      amb.volume = initialBed;
+      amb.volume = initialVol;
       // Register as active audio source
       try { audioCoordinator.setActiveSource('ambient'); } catch (e) { console.warn('audioCoordinator error:', e); }
     }).catch(() => {
       // Even if play fails, unmute so it's ready when resumed
       try { amb.muted = false; amb.removeAttribute('muted'); } catch {}
-      amb.volume = initialBed;
+      amb.volume = initialVol;
     });
     // Try to play intro once on first load, but wait until ambient is actually playing
     let tryIntro: Promise<any>|undefined;
@@ -105,17 +105,16 @@ export default function AmbientSpace({
         const onIntroPlay = () => { 
           console.log('🎵 AmbientSpace: Welcome VO started playing');
           introPlayingRef.current = true; 
-          // Ensure ambient is audibly present under the VO from the very start
+          // Ensure ambient is unmuted; keep volume constant during VO
           try { amb.muted = false; amb.removeAttribute('muted'); } catch {}
-          amb.volume = clamp01(Math.min(volume, 0.75)); // Increased from 0.5 to 0.75 for better audibility
+          amb.volume = clamp01(volume);
           // Register intro as active audio source
           try { audioCoordinator.setActiveSource('intro'); } catch (e) { console.warn('audioCoordinator error:', e); }
         };
         const onIntroEnd  = () => { 
-          console.log('🎵 AmbientSpace: Welcome VO ended, returning to ambient');
+          console.log('🎵 AmbientSpace: Welcome VO ended');
           introPlayingRef.current = false; 
-          fadeVolume(volume, 400);
-          // Switch back to ambient as active source
+          // Switch back to ambient as active source (ambient volume unchanged)
           try { audioCoordinator.setActiveSource('ambient'); } catch (e) { console.warn('audioCoordinator error:', e); }
         };
         intro.addEventListener('play', onIntroPlay);
@@ -149,12 +148,8 @@ export default function AmbientSpace({
       } else {
         // Always unmute ambient once playback is permitted
         try { amb.muted = false; amb.removeAttribute('muted'); } catch {}
-        // If intro is about to play or already playing, hold ambient at a lower bed
-        if (introPlayingRef.current || (intro && introSrc && introPendingRef.current)) {
-          amb.volume = clamp01(Math.min(volume, 0.75));
-        } else {
-          fadeVolume(clamp01(volume), 100); // Much faster fade for immediate audio response
-        }
+        // Keep ambient at configured volume; no ducking for VO
+        amb.volume = clamp01(volume);
       }
     });
     return cancelFade;
@@ -177,9 +172,9 @@ export default function AmbientSpace({
           const onIntroPlay = () => { 
             introPlayingRef.current = true; 
             try { amb.muted = false; amb.removeAttribute('muted'); } catch {}
-            amb.volume = clamp01(Math.min(volume, 0.75)); 
+            amb.volume = clamp01(volume);
           };
-          const onIntroEnd  = () => { introPlayingRef.current = false; fadeVolume(volume, 400); };
+          const onIntroEnd  = () => { introPlayingRef.current = false; };
           intro.addEventListener('play', onIntroPlay);
           intro.addEventListener('ended', onIntroEnd, { once: true });
           // Minimal delay after ambient reports playing
@@ -225,8 +220,8 @@ export default function AmbientSpace({
       try { amb.pause(); } catch {}
       try { amb.currentTime = 0; } catch {}
       try { amb.muted = false; amb.removeAttribute('muted'); } catch {}
-      const setBed = () => { amb.volume = clamp01(intro && introSrc ? Math.min(volume, 0.75) : volume); };
-      setBed();
+      const setAmbient = () => { amb.volume = clamp01(volume); };
+      setAmbient();
 
       // If welcome VO is available and pending, start both VO and ambient together
       if (intro && introSrc && introPendingRef.current && !introPlayingRef.current) {
@@ -234,11 +229,10 @@ export default function AmbientSpace({
         try { intro.volume = 0.9; } catch {}
         const handleIntroPlay = () => {
           introPlayingRef.current = true;
-          setBed();
+          setAmbient();
         };
         const handleIntroEnded = () => {
           introPlayingRef.current = false;
-          fadeVolume(clamp01(volume), 400);
           try { intro.removeEventListener('play', handleIntroPlay); } catch {}
         };
         try { intro.addEventListener('play', handleIntroPlay); } catch {}
@@ -246,7 +240,7 @@ export default function AmbientSpace({
         // Reset ambient fully, set bed, and start both back-to-back
         try { amb.pause(); } catch {}
         try { amb.currentTime = 0; } catch {}
-        setBed();
+        setAmbient();
         const p1 = amb.play().catch(()=>{});
         const p2 = intro.play().then(() => { introPendingRef.current = false; }).catch(() => { introPendingRef.current = false; });
         // Do not block on promises; return after queuing both plays
@@ -343,25 +337,16 @@ export default function AmbientSpace({
       }
       // Resume ambient then fade in when not suspended and not playing music
       if (!amb.paused) {
-        // If already playing, just fade volume up
+        // If already playing, just fade volume up to configured level
         try { amb.muted = false; amb.removeAttribute('muted'); } catch {}
-        // If intro is pending/playing, set bed volume immediately; else quick fade in
-        if (introPendingRef.current || introPlayingRef.current) {
-          amb.volume = clamp01(Math.min(volume, 0.75));
-        } else {
-          fadeVolume(clamp01(volume), 200);
-        }
+        fadeVolume(clamp01(volume), 200);
       } else {
-        // If paused, restart and fade in
-        amb.volume = clamp01(introPendingRef.current || introPlayingRef.current ? Math.min(volume, 0.75) : volume);
+        // If paused, restart and fade in at configured level
+        amb.volume = clamp01(volume);
         const ensurePlay = amb.play();
         ensurePlay.then(() => { 
           try { amb.muted = false; amb.removeAttribute('muted'); } catch {}
-          if (introPendingRef.current || introPlayingRef.current) {
-            amb.volume = clamp01(Math.min(volume, 0.75));
-          } else {
-            fadeVolume(clamp01(volume), 200);
-          }
+          fadeVolume(clamp01(volume), 200);
         }).catch(() => {
           console.log('Failed to resume ambient audio');
         });
@@ -506,9 +491,8 @@ export default function AmbientSpace({
       return;
     }
     try {
-      // Start with audible volume immediately and play both together if intro is pending
-      const targetVol = (!playingMusic && intro && introSrc && introPendingRef.current) ? Math.min(volume, 0.75) : volume;
-      amb.volume = clamp01(targetVol);
+      // Start with configured volume; do not duck for intro VO
+      amb.volume = clamp01(volume);
       try { amb.currentTime = 0; } catch {}
       try { amb.muted = false; amb.removeAttribute('muted'); } catch {}
 
@@ -518,9 +502,7 @@ export default function AmbientSpace({
         try { intro.volume = 0.9; } catch {}
         toPlay.push(intro.play().catch(()=>{}));
         introPendingRef.current = false;
-        // Restore ambient bed after VO ends
-        const onIntroEnd = () => { fadeVolume(clamp01(volume), 400); try { intro.removeEventListener('ended', onIntroEnd); } catch {} };
-        try { intro.addEventListener('ended', onIntroEnd, { once: true } as any); } catch {}
+        // Keep ambient at configured volume throughout VO; no special handling on end
       }
       await Promise.allSettled(toPlay);
       if (playingMusic) { introPendingRef.current = false; }
