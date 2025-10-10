@@ -15,6 +15,8 @@ interface MusicStats {
   coverClicks: Array<{ song: string; count: number; title?: string }>;
   cardClicks: Array<{ song: string; count: number; title?: string }>;
   collectCardClicks: Array<{ song: string; count: number; title?: string }>;
+  spotifySongClicks?: Array<{ song: string; count: number; title?: string }>;
+  appleSongClicks?: Array<{ song: string; count: number; title?: string }>;
   
   totalMusicInteractions: number;
   totalButtonClicks: number;
@@ -46,6 +48,8 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
   const [ytOpen, setYtOpen] = useState(false);
   const [spOpen, setSpOpen] = useState(false);
   const [amOpen, setAmOpen] = useState(false);
+  const [spSongsOpen, setSpSongsOpen] = useState(false);
+  const [amSongsOpen, setAmSongsOpen] = useState(false);
   const [socialOpen, setSocialOpen] = useState(true);
   const [joinOpen, setJoinOpen] = useState(true);
   const [musicOpen, setMusicOpen] = useState(true);
@@ -62,6 +66,8 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
         coverClicks: [],
         cardClicks: [],
         collectCardClicks: [],
+        spotifySongClicks: [],
+        appleSongClicks: [],
         totalMusicInteractions: 0,
         totalButtonClicks: 0,
       });
@@ -72,6 +78,8 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
     const socialButtons: Record<string, number> = {};
     const controlButtons: Record<string, number> = {};
     const musicButtons: Record<string, number> = {};
+    const spotifyBySong: Record<string, { count: number; title?: string }> = {};
+    const appleBySong: Record<string, { count: number; title?: string }> = {};
     const songSelections: Record<string, { count: number; title?: string }> = {};
     const coverClicks: Record<string, { count: number; title?: string }> = {};
     const cardClicks: Record<string, { count: number; title?: string }> = {};
@@ -96,9 +104,24 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
       } else if (label.includes('🎵 Spotify')) {
         musicButtons['Spotify'] = (musicButtons['Spotify'] || 0) + 1;
         totalButtonClicks++;
+        // Per-song breakdown when label carries a song
+        const m = label.match(/^🎵 Spotify:\s*(.+)$/);
+        if (m && m[1]) {
+          const name = m[1].trim();
+          const key = name.toLowerCase();
+          spotifyBySong[key] = spotifyBySong[key] || { count: 0, title: name };
+          spotifyBySong[key].count++;
+        }
       } else if (label.includes('🎵 Apple Music')) {
         musicButtons['Apple Music'] = (musicButtons['Apple Music'] || 0) + 1;
         totalButtonClicks++;
+        const m = label.match(/^🎵 Apple Music:\s*(.+)$/);
+        if (m && m[1]) {
+          const name = m[1].trim();
+          const key = name.toLowerCase();
+          appleBySong[key] = appleBySong[key] || { count: 0, title: name };
+          appleBySong[key].count++;
+        }
       }
       
       // Control Buttons  
@@ -171,6 +194,12 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
         .map(([song, data]) => ({ song, count: data.count, title: data.title }))
         .sort((a, b) => b.count - a.count),
       cardClicks: Object.entries(cardClicks)
+        .map(([song, data]) => ({ song, count: data.count, title: data.title }))
+        .sort((a, b) => b.count - a.count),
+      spotifySongClicks: Object.entries(spotifyBySong)
+        .map(([song, data]) => ({ song, count: data.count, title: data.title }))
+        .sort((a, b) => b.count - a.count),
+      appleSongClicks: Object.entries(appleBySong)
         .map(([song, data]) => ({ song, count: data.count, title: data.title }))
         .sort((a, b) => b.count - a.count),
       collectCardClicks: Object.entries(collectCardClicks)
@@ -385,6 +414,76 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                         <span className="text-cyan-200 font-bold">{stats?.controlButtons.find(b=>b.button==='Play/Pause')?.count || 0}</span>
                       </div>
                     </div>
+                    {/* Spotify per-song (from waveform/HUD) */}
+                    <button className="w-full text-left px-6 py-4 flex items-center justify-between hover:bg-cyan-500/10 border-b border-cyan-400/10" onClick={() => setSpSongsOpen(!spSongsOpen)}>
+                      <span className="text-white font-medium">Spotify</span>
+                      <span className="text-cyan-200 font-bold">
+                        {(() => {
+                          const list = stats?.spotifySongClicks || [];
+                          return list.reduce((sum, it) => sum + (it.count || 0), 0);
+                        })()}
+                      </span>
+                    </button>
+                    {spSongsOpen && (
+                      <div className="px-6 pb-6 space-y-3">
+                        {tracks.map((t, idx) => {
+                          const entry = (stats?.spotifySongClicks || []).find(s => (s.title || '').toLowerCase() === (t.title || '').toLowerCase());
+                          const count = entry?.count || 0;
+                          const max = Math.max(1, ...tracks.map(tt => {
+                            const e = (stats?.spotifySongClicks || []).find(s => (s.title || '').toLowerCase() === (tt.title || '').toLowerCase());
+                            return e?.count || 0;
+                          }));
+                          return (
+                            <div key={(t.slug||'')+':sp' || idx} className="flex items-center gap-4">
+                              <div className="flex-1">
+                                <div className="flex justify-between items-center mb-1">
+                                  <span className="text-white font-medium">{t.title}</span>
+                                  <span className="text-cyan-400 font-bold">{count} clicks</span>
+                                </div>
+                                <div className="bg-gray-700 rounded-full h-2 overflow-hidden">
+                                  <div className={`h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-500`} style={{ width: `${Math.max((count / max) * 100, 5)}%` }} />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {/* Apple Music per-song (from waveform/HUD) */}
+                    <button className="w-full text-left px-6 py-4 flex items-center justify-between hover:bg-cyan-500/10 border-b border-cyan-400/10" onClick={() => setAmSongsOpen(!amSongsOpen)}>
+                      <span className="text-white font-medium">Apple Music</span>
+                      <span className="text-cyan-200 font-bold">
+                        {(() => {
+                          const list = stats?.appleSongClicks || [];
+                          return list.reduce((sum, it) => sum + (it.count || 0), 0);
+                        })()}
+                      </span>
+                    </button>
+                    {amSongsOpen && (
+                      <div className="px-6 pb-6 space-y-3">
+                        {tracks.map((t, idx) => {
+                          const entry = (stats?.appleSongClicks || []).find(s => (s.title || '').toLowerCase() === (t.title || '').toLowerCase());
+                          const count = entry?.count || 0;
+                          const max = Math.max(1, ...tracks.map(tt => {
+                            const e = (stats?.appleSongClicks || []).find(s => (s.title || '').toLowerCase() === (tt.title || '').toLowerCase());
+                            return e?.count || 0;
+                          }));
+                          return (
+                            <div key={(t.slug||'')+':am' || idx} className="flex items-center gap-4">
+                              <div className="flex-1">
+                                <div className="flex justify-between items-center mb-1">
+                                  <span className="text-white font-medium">{t.title}</span>
+                                  <span className="text-cyan-400 font-bold">{count} clicks</span>
+                                </div>
+                                <div className="bg-gray-700 rounded-full h-2 overflow-hidden">
+                                  <div className={`h-full bg-gradient-to-r from-pink-500 to-red-500 transition-all duration-500`} style={{ width: `${Math.max((count / max) * 100, 5)}%` }} />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                 {/* Songs */}
                 <button className="w-full text-left px-6 py-4 flex items-center justify-between hover:bg-cyan-500/10 border-b border-cyan-400/10" onClick={() => setSongsOpen(!songsOpen)}>
                   <span className="text-white font-medium">Songs</span>

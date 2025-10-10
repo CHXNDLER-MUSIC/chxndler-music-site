@@ -134,7 +134,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
     <motion.div
       className={`cover-hologram-container ${hovered ? 'hovered' : ''} ${inline ? 'relative' : 'absolute left-1/2 z-30 -translate-x-1/2'} rounded-2xl cursor-pointer border-2 border-[#19E3FF]/80 bg-cyan-400/10 backdrop-blur-xl shadow-[0_0_18px_rgba(25,227,255,0.35)]`}
       style={inline ? { 
-        width: size + 16, // Add padding to size
+        width: size + 20, // Account for increased inner padding
       } : { 
         top: "calc(50% + 90px)", 
         transform: "translateX(-50%)",
@@ -162,7 +162,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
       }}
       aria-label={`View ${title} card`}
     >
-      <div className="cover-hologram-inner p-2">
+      <div className="cover-hologram-inner p-2.5">
         <Image
           src={src}
           alt={`${title} cover`}

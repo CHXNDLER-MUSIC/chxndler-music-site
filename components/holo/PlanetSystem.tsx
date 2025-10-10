@@ -37,13 +37,14 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
   const shouldShowSingle = planetDisplayMode === 'single';
   const shouldHide = planetDisplayMode === 'hidden';
   
-  // FORCE homepage mode when showAll prop is true - override all store state
-  // CRITICAL FIX: Always show all planets when showAll=true (homepage), ignore store state
-  const actualShouldShowAll = showAll ? true : shouldShowAll;
-  const actualShouldHide = showAll ? false : shouldHide; // Never hide when showAll is true
+  // Treat "showAll" as homepage-only when no main selection exists
+  const isHomeOverview = !!showAll && !mainId;
+  // FORCE homepage mode only for real home overview
+  const actualShouldShowAll = isHomeOverview ? true : shouldShowAll;
+  const actualShouldHide = isHomeOverview ? false : shouldHide; // Never hide in real home overview
   
-  // EMERGENCY FIX: Force store state on every render when showAll is true
-  if (showAll) {
+  // EMERGENCY FIX: Force store state only during true home overview
+  if (isHomeOverview) {
     try {
       const currentState = playerStore.getState();
       if (currentState.planetDisplayMode !== 'all' || !currentState.planetsVisible) {
@@ -63,7 +64,7 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
     try {
       const currentSongs = playerStore.getState().songs;
       // Force correct planet state when on homepage
-      if (showAll) {
+      if (isHomeOverview) {
         playerStore.getState().setPlanetDisplayMode('all');
         playerStore.getState().setPlanetsVisible(true);
       }
@@ -80,7 +81,7 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
   
   // Also ensure songs are loaded after any store updates
   React.useEffect(() => {
-    if ((!songs || songs.length === 0) && showAll) {
+    if ((!songs || songs.length === 0) && isHomeOverview) {
       try {
         const { holoSongs } = buildPlanetSongs();
         if (holoSongs.length > 0) {
@@ -88,7 +89,7 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         }
       } catch {}
     }
-  }, [songs, showAll]);
+  }, [songs, showAll, isHomeOverview]);
   
   // Context-aware planet visibility management
   // Note: We don't automatically show planets on homepage anymore
@@ -114,7 +115,7 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         // Hide completely when planetDisplayMode is 'hidden', but ALWAYS show when showAll is true (homepage)
         // Homepage (showAll=true) always shows planets regardless of other state
         // CRITICAL FIX: Force opacity=1 when showAll=true (homepage)
-        opacity: showAll ? 1 : (actualShouldHide || (!effectivePlanetsVisible && !showAll)) ? 0 : 1,
+        opacity: isHomeOverview ? 1 : (actualShouldHide || (!effectivePlanetsVisible && !isHomeOverview)) ? 0 : 1,
         transition: 'opacity 400ms ease-in-out'
       }}
     >
@@ -165,7 +166,7 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
               return null;
             }
             
-            if (actualShouldShowAll || showAll) {
+            if (actualShouldShowAll) {
               // Homepage mode: Show ALL song planets using proper Planet components
               
               if (songs.length === 0) {

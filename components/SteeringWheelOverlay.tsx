@@ -427,9 +427,16 @@ export default function SteeringWheelOverlay({
                         }, 170);
                       }, 360);
                     } else {
-                      // Switch to yellow immediately without closing first
+                      // Default path (blue → yellow): ask parent to switch beam,
+                      // and hold the yellow panel until the beam actually turns yellow
+                      setSuspendYellowPanel(true);
                       setActiveBeamColor('yellow');
                       onBeamColorChange?.('yellow');
+                      // DashboardApp waits ~450ms before enabling yellow beam
+                      // Release panel slightly after to ensure correct visual order
+                      window.setTimeout(() => {
+                        setSuspendYellowPanel(false);
+                      }, 470);
                     }
                   } else {
                     // Menu is closing: turn displays off without auto-opening blue

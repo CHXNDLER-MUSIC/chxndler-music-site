@@ -68,10 +68,36 @@ function identifyElement(element: HTMLElement): string {
     return '📱 YouTube';
   }
   if (text.includes('spotify') || href.includes('spotify') || className.includes('spotify') || title.includes('spotify') || dataId === 'sp') {
-    return '🎵 Spotify';
+    // Try to include song context when available (waveform/HUD buttons)
+    let songName = dataSong;
+    if (!songName) {
+      // Try closest ancestor carrying data-song
+      try {
+        const elWithSong = (element.closest && element.closest('[data-song]')) as HTMLElement | null;
+        songName = elWithSong?.getAttribute('data-song') || '';
+      } catch {}
+    }
+    if (!songName) {
+      // Try to parse from aria-label like "Open <Song> on Spotify"
+      const m = (element.getAttribute('aria-label') || '').match(/open\s+(.+?)\s+on\s+spotify/i);
+      if (m && m[1]) songName = m[1];
+    }
+    return songName ? `🎵 Spotify: ${songName}` : '🎵 Spotify';
   }
   if ((text.includes('apple') && (text.includes('music') || href.includes('music'))) || href.includes('apple') || className.includes('apple') || title.includes('apple') || dataId === 'am') {
-    return '🎵 Apple Music';
+    // Try to include song context when available (waveform/HUD buttons)
+    let songName = dataSong;
+    if (!songName) {
+      try {
+        const elWithSong = (element.closest && element.closest('[data-song]')) as HTMLElement | null;
+        songName = elWithSong?.getAttribute('data-song') || '';
+      } catch {}
+    }
+    if (!songName) {
+      const m = (element.getAttribute('aria-label') || '').match(/open\s+(.+?)\s+on\s+apple\s+music/i);
+      if (m && m[1]) songName = m[1];
+    }
+    return songName ? `🎵 Apple Music: ${songName}` : '🎵 Apple Music';
   }
 
   // Start/Play Button

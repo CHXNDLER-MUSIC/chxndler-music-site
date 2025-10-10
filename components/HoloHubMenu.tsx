@@ -112,15 +112,36 @@ export default function HoloHubMenu({
   const onHubClick = useCallback(() => {
     // Only proceed if not suspended - parent component controls this via suspend prop
     if (suspend) return;
-    
+
     // Play join-alien SFX on hub click
-    try { const a = joinRef.current; if (a) { a.currentTime = 0; a.volume = 0.95; void a.play(); } } catch {}
-    const newOpen = !open;
-    setOpen(newOpen);
-    // Notify parent of state change
-    onToggle?.(newOpen);
-    // After opening, focus first item
-    if (!open) setTimeout(() => firstItemRef.current?.focus(), 0);
+    try {
+      const a = joinRef.current;
+      if (a) { a.currentTime = 0; a.volume = 0.95; void a.play(); }
+    } catch {}
+
+    const wantOpen = !open;
+
+    if (wantOpen) {
+      // Ensure the hub/beam color activates first, then reveal the yellow panel
+      try { onToggle?.(true); } catch {}
+      // Defer opening to the next frame so the beam can render yellow first
+      if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+        window.requestAnimationFrame(() => {
+          setOpen(true);
+          // After opening, focus first item
+          setTimeout(() => firstItemRef.current?.focus(), 0);
+        });
+      } else {
+        setOpen(true);
+        setTimeout(() => firstItemRef.current?.focus(), 0);
+      }
+    } else {
+      // When closing, hide the panel immediately, then notify parent to deactivate beam
+      setOpen(false);
+      try { onToggle?.(false); } catch {}
+      // Return focus to hub on close for accessibility
+      setTimeout(() => hubRef.current?.focus(), 0);
+    }
   }, [open, onToggle, suspend]);
 
   const runItem = useCallback((it: HubItem, ev?: MouseEvent) => {

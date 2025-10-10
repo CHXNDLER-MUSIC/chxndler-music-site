@@ -30,9 +30,9 @@ import DevErrorLogger from "@/components/DevErrorLogger";
 // Prefer R3F-based system when compatible; otherwise fall back to raw Three.js
 const PlanetSystem = dynamic(() => import("@/components/holo/PlanetSystem"), { ssr: false });
 const PlanetSystemRaw = dynamic(() => import("@/components/holo/PlanetSystemRaw"), { ssr: false });
-import { sfx } from "@/lib/sfx";
 import { DEBUG_MEDIA, dlog, dwarn } from "@/lib/debug";
 import { ElementIcon as OptimizedElementIcon } from "@/lib/elementIcons";
+import { sfx } from "@/lib/sfx";
 
 // Use system font stack to avoid network font fetches during build
 
@@ -701,6 +701,7 @@ export default function HUDPanel({
                   onClick={handlePlayPause}
                   className="hud-play-btn-enhanced"
                   aria-label={playing ? "Pause" : "Play"}
+                  onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                 >
                   {playing ? (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -730,6 +731,10 @@ export default function HUDPanel({
                         className="spotify-btn-waveform-hud"
                         title="Open on Spotify"
                         aria-label={`Open ${currentSong?.title || 'current track'} on Spotify`}
+                        data-song={currentSong?.title || ''}
+                        data-slug={currentSong?.id || ''}
+                        onClick={(e) => { try { sfx.play('join-aliens', 0.9); } catch {} }}
+                        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                       >
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                           <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
@@ -772,8 +777,26 @@ export default function HUDPanel({
                         className="apple-btn-waveform-hud"
                         title="Open on Apple Music"
                         aria-label={`Open ${currentSong?.title || 'current track'} on Apple Music`}
+                        data-song={currentSong?.title || ''}
+                        data-slug={currentSong?.id || ''}
+                        onClick={() => { try { sfx.play('join-aliens', 0.9); } catch {} }}
+                        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                       >
-                        <img src="/elements/apple.png" width="16" height="16" alt="Apple" style={{ display:'block' }} />
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="22"
+                          height="22"
+                          fill="currentColor"
+                          role="img"
+                          aria-label="Music notes"
+                          style={{ display: 'block' }}
+                        >
+                          <ellipse cx="7.5" cy="18.2" rx="3.2" ry="3.4" />
+                          <ellipse cx="16.5" cy="16" rx="3.2" ry="3.4" />
+                          <rect x="9" y="6" width="2" height="11" rx="1" />
+                          <rect x="18" y="4" width="2" height="11" rx="1" />
+                          <path d="M11 6 L20 4 L20 6.5 L11 8.5 Z" />
+                        </svg>
                       </a>
                     );
                   } else {
@@ -788,7 +811,21 @@ export default function HUDPanel({
                         className="apple-btn-unavailable-hud"
                         title={titleText}
                       >
-                        <img src="/elements/apple.png" width="16" height="16" alt="Apple" style={{ display:'block', opacity: 0.5 }} />
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="22"
+                          height="22"
+                          fill="currentColor"
+                          role="img"
+                          aria-label="Music notes"
+                          style={{ display: 'block' }}
+                        >
+                          <ellipse cx="7.5" cy="18.2" rx="3.2" ry="3.4" />
+                          <ellipse cx="16.5" cy="16" rx="3.2" ry="3.4" />
+                          <rect x="9" y="6" width="2" height="11" rx="1" />
+                          <rect x="18" y="4" width="2" height="11" rx="1" />
+                          <path d="M11 6 L20 4 L20 6.5 L11 8.5 Z" />
+                        </svg>
                       </div>
                     );
                   }

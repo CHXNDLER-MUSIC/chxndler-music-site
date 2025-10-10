@@ -326,11 +326,11 @@ export default function DashboardApp({ initialSlug } = {}) {
     }
     
 
-    // Keep planets visible on homepage when a song is selected
-    console.log('🌍 DashboardApp: onSongChange - Keeping planets visible for song selection');
+    // Hide ALL planets immediately during warp sequence for song selection
+    console.log('🌍 DashboardApp: onSongChange - Hiding all planets during warp');
     try {
-      playerStore.getState().setPlanetsVisible(true);
-      playerStore.getState().setPlanetDisplayMode('all');
+      playerStore.getState().setPlanetsVisible(false);
+      playerStore.getState().setPlanetDisplayMode('hidden');
     } catch {}
 
     // STEP 2: Stop all music immediately when song is selected
@@ -381,7 +381,7 @@ export default function DashboardApp({ initialSlug } = {}) {
 
     // Mark as user-driven to suppress fly/warp flashes on index change
     setUserSelected(true);
-    // Stay in home mode so orbit rings + planets remain visible
+    // Stay in home mode during warp so UI continuity is maintained; we'll exit home after warp ends
     setHomeMode(true);
     // Clear any pending home overlay reveal since we're selecting a specific song
     setPendingOverlayReveal(false);
@@ -979,22 +979,25 @@ export default function DashboardApp({ initialSlug } = {}) {
         minDurationMs={3000}
         offsetY="-1vh"
         onWarpSfxEnd={() => {
-          // After song selection warp, keep planets visible on homepage
+          // After a song is selected, reveal ONLY the selected planet post-warp
           if (userSelected || pendingTrackPlay) {
             try { 
               const slug = (curTrack && curTrack.slug) ? curTrack.slug : null;
               if (slug) { 
-                playerStore.getState().setMain(slug, true);
-                playerStore.getState().setPlanetDisplayMode('all');
+                // Focus the selected planet and switch to single-planet mode
+                playerStore.getState().setMain(slug);
+                playerStore.getState().setPlanetDisplayMode('single');
                 playerStore.getState().setPlanetsVisible(true);
               }
             } catch {}
+            // Leave homepage mode so PlanetSystem doesn't force show-all
+            try { setHomeMode(false); } catch {}
           } else {
-            console.log('🌍 DashboardApp: onWarpSfxEnd - START button warp, keeping planets visible');
-            // For Start button warps, prepare focused selection
+            // Start button warp back to CHXNDLER (homepage): show ALL planets
+            console.log('🌍 DashboardApp: onWarpSfxEnd - START button warp, keeping all planets visible');
             try {
-              const slug = (curTrack && curTrack.slug) ? curTrack.slug : null;
-              if (slug) { playerStore.getState().setMain(slug); }
+              playerStore.getState().setPlanetDisplayMode('all');
+              playerStore.getState().setPlanetsVisible(true);
             } catch {}
           }
           // If we're landing on home via Start, reveal overlay/UI after warp finishes
@@ -1155,12 +1158,12 @@ export default function DashboardApp({ initialSlug } = {}) {
               } catch {}
             }
             setAmbientSuspended(true);
-            // Keep planets visible on homepage; hide only for non-home flows
-            if (!homeMode) {
-              try { playerStore.getState().setPlanetsVisible(false); } catch {}
-            } else {
-              try { playerStore.getState().setPlanetDisplayMode('all'); playerStore.getState().setPlanetsVisible(true); } catch {}
-            }
+            // Selection flow: transition to single-planet mode after warp
+            try { 
+              setHomeMode(false);
+              playerStore.getState().setPlanetDisplayMode('single');
+              playerStore.getState().setPlanetsVisible(true);
+            } catch {}
           }
           // If a track play is pending, begin UI fade-in immediately at warp end
           // and start the button SFX right away so it completes before music starts
@@ -1266,6 +1269,7 @@ export default function DashboardApp({ initialSlug } = {}) {
                 playerStore.getState().setMain(slug);
               }
               playerStore.getState().setPlanetDisplayMode('single');
+              try { setHomeMode(false); } catch {}
             } catch {}
             // Clear any pending fallback timers now that we'll start playback here
             if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
@@ -1657,18 +1661,22 @@ export default function DashboardApp({ initialSlug } = {}) {
                 onSkyChange={(webm, mp4, key) => setNextSky({ webm, mp4, key })}
                 onPlayingChange={(p) => { 
                   setIsPlaying(p);
-                  // When a song starts playing, keep planets visible on homepage
                   if (p) {
                     try {
                       const slug = (curTrack && curTrack.slug) ? curTrack.slug : (tracks[channelIdx]?.slug || null);
-                      if (slug) { 
-                        console.log('🌍 DashboardApp: Song playing on home, keeping all planets visible:', slug);
-                        setUserSelected(true);
-                        // Stay in home mode to retain orbit rings + all planets
-                        setHomeMode(true);
-                        // Preserve planet visibility when selecting main
-                        try { playerStore.getState().setMain(slug, true); } catch {}
-                        try { playerStore.getState().setPlanetDisplayMode('all'); playerStore.getState().setPlanetsVisible(true); } catch {}
+                      const isHomePlayback = homeMode && !userSelected && !pendingTrackPlay;
+                      if (slug) {
+                        if (isHomePlayback) {
+                          console.log('🌍 DashboardApp: Song playing in home mode — keep ALL planets visible');
+                          // Home/ambient case: keep all planets
+                          try { playerStore.getState().setMain(slug, true); } catch {}
+                          try { playerStore.getState().setPlanetDisplayMode('all'); playerStore.getState().setPlanetsVisible(true); } catch {}
+                        } else {
+                          console.log('🌍 DashboardApp: Song playing after selection — show SINGLE planet');
+                          try { playerStore.getState().setMain(slug); } catch {}
+                          try { playerStore.getState().setPlanetDisplayMode('single'); playerStore.getState().setPlanetsVisible(true); } catch {}
+                          try { setHomeMode(false); } catch {}
+                        }
                       }
                       setHidePlanetsForSelection(false);
                     } catch {}
