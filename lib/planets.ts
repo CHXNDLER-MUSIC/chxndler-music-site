@@ -864,7 +864,7 @@ function generatePlanetProperties(element: Element, type: PlanetType, baseRadius
 }
 
 // Data shape for HUD list component
-export type HudSong = { id: string; title: string; icon: Element; color: string; spotify?: string };
+export type HudSong = { id: string; title: string; icon: Element; color: string; spotify?: string; apple?: string };
 
 // Data shape for hologram 3D system (store/usePlayerStore)
 export type PlanetType = "terrestrial" | "gas_giant" | "ice_world" | "desert" | "ocean" | "volcanic" | "crystal" | "toxic" | "metal";
@@ -1156,7 +1156,7 @@ export function buildPlanetSongs(): { hudSongs: HudSong[]; holoSongs: HoloSong[]
     const element = TITLE_ELEMENT_MAP[id] ?? pickElement(id, i);
     const color = ELEMENT_COLORS[element];
 
-    hudSongs.push({ id, title: t.title, icon: element, color, spotify: t.spotify });
+    hudSongs.push({ id, title: t.title, icon: element, color, spotify: t.spotify, apple: t.apple });
 
     // orbit spacing and speed with variety - increased distance from central heart planet
     const orbitRadius = 12.0 + (i % 8) * 2.0 + (i % 3) * 1.0;

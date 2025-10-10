@@ -63,17 +63,32 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
   // Plays when flipping the card front/back
   const flipCoverRef = useRef(null);
 
+  // Compute a preferred card image path based on slugified title/slug.
+  const computedCardSrc = (() => {
+    // Prefer explicit slug when provided, else derive from title
+    const s = (slug && slug.toLowerCase()) || title.toLowerCase().replace(/[’'\"]/g, "").replace(/[()]/g, " ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    return `/card/${s}.png`;
+  })();
+
   useEffect(() => {
     setMounted(true);
-    // Check if a real card exists by trying to load the card image
-    const cardSrc = src.replace('/cover/', '/card/');
-    if (cardSrc !== src) { // Only check if we actually have a cover image path
-      const img = new window.Image();
-      img.onload = () => setHasRealCard(true);
-      img.onerror = () => setHasRealCard(false);
-      img.src = cardSrc;
-    }
-  }, [src]);
+    // Check if a real card exists by trying to load the computed card image
+    const img = new window.Image();
+    img.onload = () => setHasRealCard(true);
+    img.onerror = () => {
+      // Fallback: try the simple cover->card replacement as a backup
+      const fallback = src.replace('/cover/', '/card/');
+      if (fallback !== src) {
+        const img2 = new window.Image();
+        img2.onload = () => setHasRealCard(true);
+        img2.onerror = () => setHasRealCard(false);
+        img2.src = fallback;
+      } else {
+        setHasRealCard(false);
+      }
+    };
+    img.src = computedCardSrc;
+  }, [src, slug, title]);
   
   const handleClick = () => {
     // Play card ding when opening the card (do not play flip)
@@ -193,13 +208,14 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                   className="card-flip-container"
                   style={{
                     position: 'relative',
-                    cursor: hasRealCard ? 'pointer' : 'default'
+                    cursor: 'pointer'
                   }}
-                  onClick={hasRealCard ? () => { 
-                    // Flip the card and play flip sound
+                  onClick={() => { 
+                    // Flip the card and play flip sound regardless of card availability;
+                    // the front image already falls back to cover if a card image is missing.
                     try { const a = flipCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
-                    setCardFlipped(!cardFlipped); 
-                  } : undefined}
+                    setCardFlipped((v) => !v); 
+                  }}
                 >
                   <div 
                     className="card-flip-inner"
@@ -212,12 +228,18 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                     {/* Front side */}
                     <div style={{ backfaceVisibility: 'hidden', transform: 'rotateY(0deg)' }}>
                       <img
-                        src={src.replace('/cover/', '/card/')}
+                        src={computedCardSrc}
                         alt={title}
                         className="tilt-img"
                         onError={(e)=>{
-                          // If card doesn't exist, show the original cover art
-                          e.currentTarget.src = src;
+                          // If computed card doesn't exist, fall back to legacy mapping, then to cover
+                          const fallback = src.replace('/cover/', '/card/');
+                          if (fallback && fallback !== src) {
+                            e.currentTarget.onerror = () => { e.currentTarget.src = src; };
+                            e.currentTarget.src = fallback;
+                          } else {
+                            e.currentTarget.src = src;
+                          }
                         }}
                       />
                     </div>

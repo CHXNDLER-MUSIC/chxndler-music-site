@@ -58,6 +58,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const [showWaveformVolumePopover, setShowWaveformVolumePopover] = useState(false);
   const mainVolRef = useRef<HTMLDivElement|null>(null);
   const waveVolRef = useRef<HTMLDivElement|null>(null);
+  const mainVolBtnRef = useRef<HTMLButtonElement|null>(null);
+  const waveVolBtnRef = useRef<HTMLButtonElement|null>(null);
+  const [mainPopoverPos, setMainPopoverPos] = useState<{left:number; top:number} | null>(null);
+  const [wavePopoverPos, setWavePopoverPos] = useState<{left:number; top:number} | null>(null);
   // Lyrics state
   const [lyricsOpen, setLyricsOpen] = useState(false);
   const [lyricsLoading, setLyricsLoading] = useState(false);
@@ -201,6 +205,26 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       document.removeEventListener('keydown', onKey);
     };
   }, []);
+
+  // Keep popover positions in sync on resize/scroll
+  useEffect(() => {
+    const updatePositions = () => {
+      if (showMainVolumePopover && mainVolBtnRef.current) {
+        const r = mainVolBtnRef.current.getBoundingClientRect();
+        setMainPopoverPos({ left: r.left + r.width / 2, top: r.bottom + 8 });
+      }
+      if (showWaveformVolumePopover && waveVolBtnRef.current) {
+        const r = waveVolBtnRef.current.getBoundingClientRect();
+        setWavePopoverPos({ left: r.left + r.width / 2, top: r.bottom + 8 });
+      }
+    };
+    window.addEventListener('resize', updatePositions);
+    window.addEventListener('scroll', updatePositions, true);
+    return () => {
+      window.removeEventListener('resize', updatePositions);
+      window.removeEventListener('scroll', updatePositions, true);
+    };
+  }, [showMainVolumePopover, showWaveformVolumePopover]);
 
   // Close lyrics when track changes
   useEffect(() => { setLyricsOpen(false); setLyricsError(null); }, [idx]);
@@ -1056,12 +1080,20 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             <div className="waveform-volume" role="group" aria-label="Volume" ref={waveVolRef}>
               <div className="volume-button-wrap">
               <button
+                ref={waveVolBtnRef}
                 className="waveform-volume-btn"
                 onClick={() => {
                   const a = audioRef.current; if (!a) return; uiClick();
                   // Only open/close the dropdown; do not change volume on click
                   setShowMainVolumePopover(false);
-                  setShowWaveformVolumePopover(v => !v);
+                  setShowWaveformVolumePopover(v => {
+                    const next = !v;
+                    if (next && waveVolBtnRef.current) {
+                      const r = waveVolBtnRef.current.getBoundingClientRect();
+                      setWavePopoverPos({ left: r.left + r.width / 2, top: r.bottom + 8 });
+                    }
+                    return next;
+                  });
                 }}
                 aria-haspopup="true"
                 aria-expanded={showWaveformVolumePopover}
@@ -1082,51 +1114,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                   </svg>
                 )}
               </button>
-              {showWaveformVolumePopover ? (
-                <div className="volume-popover dropdown" role="dialog" aria-label="Adjust volume">
-                  <div
-                    className="volume-slider-vertical"
-                    role="slider"
-                    aria-orientation="vertical"
-                    aria-label="Volume"
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-valuenow={Math.round(volume * 100)}
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'ArrowUp') { e.preventDefault(); adjustVolume(0.05); }
-                      else if (e.key === 'ArrowDown') { e.preventDefault(); adjustVolume(-0.05); }
-                    }}
-                    onPointerDown={(e) => {
-                      const a = audioRef.current; if (!a) return;
-                      const el = e.currentTarget as HTMLDivElement;
-                      const applyFromClientY = (clientY: number) => {
-                        const rect = el.getBoundingClientRect();
-                        const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
-                        const pct = rect.height > 0 ? (1 - (y / rect.height)) : 0;
-                        const newVol = Math.max(0, Math.min(1, pct));
-                        a.volume = newVol; setVolume(newVol);
-                        if (newVol > 0) lastNonZeroVolumeRef.current = newVol;
-                      };
-                      try { el.setPointerCapture?.(e.pointerId); } catch {}
-                      e.preventDefault(); uiClick();
-                      applyFromClientY(e.clientY);
-                      const onMove = (ev: PointerEvent) => applyFromClientY(ev.clientY);
-                      const onUp = () => {
-                        window.removeEventListener('pointermove', onMove);
-                        window.removeEventListener('pointerup', onUp);
-                      };
-                      window.addEventListener('pointermove', onMove);
-                      window.addEventListener('pointerup', onUp, { once: true } as any);
-                    }}
-                  >
-                    <div className="volume-slider-track" />
-                    <div className="volume-slider-level" style={{ height: `${volume * 100}%` }} />
-                    <div className="volume-slider-thumb" style={{ bottom: `calc(${volume * 100}% - 7px)` }} />
-                  </div>
-                  <div className="volume-percent">{Math.round(volume * 100)}%</div>
-                </div>
-              ) : null}
+              {null}
               </div>
             </div>
 
@@ -1160,7 +1148,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             ) : null}
 
             {/* Spotify button positioned in waveform container */}
-            {planetDisplayMode === 'single' && cur.spotify ? (
+            {cur.spotify ? (
               <a
                 href={cur.spotify}
                 target="_blank"
@@ -1176,7 +1164,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             ) : (
               <div 
                 className="spotify-btn-unavailable-waveform"
-                title={planetDisplayMode === 'single' ? `No Spotify link available for ${cur.title}` : 'Select a song to enable Spotify'}
+                title={`No Spotify link available for ${cur.title}`}
               >
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" opacity="0.5">
                   <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
@@ -1184,8 +1172,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               </div>
             )}
 
-            {/* Apple Music button positioned in waveform container */}
-            {planetDisplayMode === 'single' && cur.apple ? (
+            {/* Apple logo button in waveform container */}
+            {cur.apple ? (
               <a
                 href={cur.apple}
                 target="_blank"
@@ -1194,18 +1182,27 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 title="Open on Apple Music"
                 aria-label={`Open ${cur.title} on Apple Music`}
               >
-                {/* Stylized music note to resemble Apple Music mark */}
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden>
-                  <path d="M16.5 3.5v10.6c0 2.2-1.8 3.8-3.9 4.2-1.7.3-3.1-.4-3.1-1.9 0-1.2 1-2.3 2.6-2.6 1.1-.2 2.1.1 2.6.7V7.4l6-1.3v7.9c0 2.2-1.8 3.8-3.9 4.2-1.7.3-3.1-.4-3.1-1.9 0-1.2 1-2.3 2.6-2.6 1.1-.2 2.1.1 2.6.7V5.1l-6 1.3V3.5h1.6z"/>
+                {/* White beamed music note (Apple-like) */}
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden>
+                  <circle cx="9" cy="16.2" r="2.4" />
+                  <circle cx="17" cy="14.2" r="2.4" />
+                  <rect x="8.2" y="8.0" width="1.6" height="7.6" rx="0.8" />
+                  <rect x="16.2" y="6.0" width="1.6" height="8.4" rx="0.8" />
+                  <rect x="9.0" y="7.0" width="9.0" height="2.0" rx="1.0" />
                 </svg>
               </a>
             ) : (
               <div 
                 className="apple-btn-unavailable-waveform"
-                title={planetDisplayMode === 'single' ? `No Apple Music link available for ${cur.title}` : 'Select a song to enable Apple Music'}
+                title={`No Apple Music link available for ${cur.title}`}
               >
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" opacity="0.5" aria-hidden>
-                  <path d="M16.5 3.5v10.6c0 2.2-1.8 3.8-3.9 4.2-1.7.3-3.1-.4-3.1-1.9 0-1.2 1-2.3 2.6-2.6 1.1-.2 2.1.1 2.6.7V7.4l6-1.3v7.9c0 2.2-1.8 3.8-3.9 4.2-1.7.3-3.1-.4-3.1-1.9 0-1.2 1-2.3 2.6-2.6 1.1-.2 2.1.1 2.6.7V5.1l-6 1.3V3.5h1.6z"/>
+                {/* White beamed music note (disabled) */}
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" opacity={0.5} aria-hidden>
+                  <circle cx="9" cy="16.2" r="2.4" />
+                  <circle cx="17" cy="14.2" r="2.4" />
+                  <rect x="8.2" y="8.0" width="1.6" height="7.6" rx="0.8" />
+                  <rect x="16.2" y="6.0" width="1.6" height="8.4" rx="0.8" />
+                  <rect x="9.0" y="7.0" width="9.0" height="2.0" rx="1.0" />
                 </svg>
               </div>
             )}
@@ -1372,13 +1369,21 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           {/* Mute/Unmute button */}
           <div className="volume-button-wrap">
           <button
+            ref={mainVolBtnRef}
             className="track-btn volume-btn"
             onClick={() => {
               const a = audioRef.current; if (!a) return;
               uiClick();
               // Only open/close the dropdown; do not change volume on click
               setShowWaveformVolumePopover(false);
-              setShowMainVolumePopover(v => !v);
+              setShowMainVolumePopover(v => {
+                const next = !v;
+                if (next && mainVolBtnRef.current) {
+                  const r = mainVolBtnRef.current.getBoundingClientRect();
+                  setMainPopoverPos({ left: r.left + r.width / 2, top: r.bottom + 8 });
+                }
+                return next;
+              });
             }}
             aria-label="Volume"
             title="Volume"
@@ -1401,52 +1406,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             )}
           </button>
 
-          {showMainVolumePopover ? (
-            <div className="volume-popover dropdown" role="dialog" aria-label="Adjust volume">
-              <div
-                className="volume-slider-vertical"
-                role="slider"
-                aria-orientation="vertical"
-                aria-label="Volume"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={Math.round(volume * 100)}
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'ArrowUp') { e.preventDefault(); adjustVolume(0.05); }
-                  else if (e.key === 'ArrowDown') { e.preventDefault(); adjustVolume(-0.05); }
-                }}
-                onPointerDown={(e) => {
-                  const a = audioRef.current; if (!a) return;
-                  const el = e.currentTarget as HTMLDivElement;
-                  const applyFromClientY = (clientY: number) => {
-                    const rect = el.getBoundingClientRect();
-                    const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
-                    const pct = rect.height > 0 ? (1 - (y / rect.height)) : 0;
-                    const newVol = Math.max(0, Math.min(1, pct));
-                    a.volume = newVol;
-                    setVolume(newVol);
-                    if (newVol > 0) lastNonZeroVolumeRef.current = newVol;
-                  };
-                  try { el.setPointerCapture?.(e.pointerId); } catch {}
-                  e.preventDefault(); uiClick();
-                  applyFromClientY(e.clientY);
-                  const onMove = (ev: PointerEvent) => applyFromClientY(ev.clientY);
-                  const onUp = () => {
-                    window.removeEventListener('pointermove', onMove);
-                    window.removeEventListener('pointerup', onUp);
-                  };
-                  window.addEventListener('pointermove', onMove);
-                  window.addEventListener('pointerup', onUp, { once: true } as any);
-                }}
-              >
-                <div className="volume-slider-track" />
-                <div className="volume-slider-level" style={{ height: `${volume * 100}%` }} />
-                <div className="volume-slider-thumb" style={{ bottom: `calc(${volume * 100}% - 7px)` }} />
-              </div>
-              <div className="volume-percent">{Math.round(volume * 100)}%</div>
-            </div>
-          ) : null}
+          {null}
           </div>
         </div>
       </div>
@@ -1594,6 +1554,100 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       <audio ref={uiClickRef}  src="/audio/click.mp3" preload="auto" />
       <audio ref={detentRef}   src="/audio/warp.mp3" preload="auto" />
 
+      {typeof document !== 'undefined' && showWaveformVolumePopover && wavePopoverPos ? createPortal(
+        <div className="volume-popover" role="dialog" aria-label="Adjust volume" style={{ position:'fixed', left: wavePopoverPos.left, top: wavePopoverPos.top, transform:'translateX(-50%)', zIndex: 2147483647 }}>
+          <div
+            className="volume-slider-vertical"
+            role="slider"
+            aria-orientation="vertical"
+            aria-label="Volume"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(volume * 100)}
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowUp') { e.preventDefault(); adjustVolume(0.05); }
+              else if (e.key === 'ArrowDown') { e.preventDefault(); adjustVolume(-0.05); }
+            }}
+            onPointerDown={(e) => {
+              const a = audioRef.current; if (!a) return;
+              const el = e.currentTarget as HTMLDivElement;
+              const applyFromClientY = (clientY: number) => {
+                const rect = el.getBoundingClientRect();
+                const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
+                const pct = rect.height > 0 ? (1 - (y / rect.height)) : 0;
+                const newVol = Math.max(0, Math.min(1, pct));
+                a.volume = newVol; setVolume(newVol);
+                if (newVol > 0) lastNonZeroVolumeRef.current = newVol;
+              };
+              try { el.setPointerCapture?.(e.pointerId); } catch {}
+              e.preventDefault(); uiClick();
+              applyFromClientY(e.clientY);
+              const onMove = (ev: PointerEvent) => applyFromClientY(ev.clientY);
+              const onUp = () => {
+                window.removeEventListener('pointermove', onMove);
+                window.removeEventListener('pointerup', onUp);
+              };
+              window.addEventListener('pointermove', onMove);
+              window.addEventListener('pointerup', onUp, { once: true } as any);
+            }}
+          >
+            <div className="volume-slider-track" />
+            <div className="volume-slider-level" style={{ height: `${volume * 100}%` }} />
+            <div className="volume-slider-thumb" style={{ bottom: `calc(${volume * 100}% - 7px)` }} />
+          </div>
+          <div className="volume-percent">{Math.round(volume * 100)}%</div>
+        </div>,
+        document.body
+      ) : null}
+
+      {typeof document !== 'undefined' && showMainVolumePopover && mainPopoverPos ? createPortal(
+        <div className="volume-popover" role="dialog" aria-label="Adjust volume" style={{ position:'fixed', left: mainPopoverPos.left, top: mainPopoverPos.top, transform:'translateX(-50%)', zIndex: 2147483647 }}>
+          <div
+            className="volume-slider-vertical"
+            role="slider"
+            aria-orientation="vertical"
+            aria-label="Volume"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(volume * 100)}
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowUp') { e.preventDefault(); adjustVolume(0.05); }
+              else if (e.key === 'ArrowDown') { e.preventDefault(); adjustVolume(-0.05); }
+            }}
+            onPointerDown={(e) => {
+              const a = audioRef.current; if (!a) return;
+              const el = e.currentTarget as HTMLDivElement;
+              const applyFromClientY = (clientY: number) => {
+                const rect = el.getBoundingClientRect();
+                const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
+                const pct = rect.height > 0 ? (1 - (y / rect.height)) : 0;
+                const newVol = Math.max(0, Math.min(1, pct));
+                a.volume = newVol; setVolume(newVol);
+                if (newVol > 0) lastNonZeroVolumeRef.current = newVol;
+              };
+              try { el.setPointerCapture?.(e.pointerId); } catch {}
+              e.preventDefault(); uiClick();
+              applyFromClientY(e.clientY);
+              const onMove = (ev: PointerEvent) => applyFromClientY(ev.clientY);
+              const onUp = () => {
+                window.removeEventListener('pointermove', onMove);
+                window.removeEventListener('pointerup', onUp);
+              };
+              window.addEventListener('pointermove', onMove);
+              window.addEventListener('pointerup', onUp, { once: true } as any);
+            }}
+          >
+            <div className="volume-slider-track" />
+            <div className="volume-slider-level" style={{ height: `${volume * 100}%` }} />
+            <div className="volume-slider-thumb" style={{ bottom: `calc(${volume * 100}% - 7px)` }} />
+          </div>
+          <div className="volume-percent">{Math.round(volume * 100)}%</div>
+        </div>,
+        document.body
+      ) : null}
+
       <style jsx>{`
         /* Waveform wrapper to contain both waveform and spotify button */
         .waveform-wrapper {
@@ -1683,7 +1737,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           transition: all 0.3s ease;
           box-shadow: 0 4px 16px rgba(29, 185, 84, 0.6);
           border: 3px solid rgba(255, 255, 255, 0.4);
-          z-index: 30;
+          z-index: 100;
           backdrop-filter: blur(8px);
         }
         
@@ -1712,60 +1766,46 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           justify-content: center;
           text-decoration: none;
           border: 3px solid rgba(128, 128, 128, 0.5);
-          z-index: 30;
+          z-index: 90;
           backdrop-filter: blur(8px);
           cursor: not-allowed;
         }
         
-        /* Apple Music button positioned RIGHT of center in waveform container */
+        /* Apple Music note icon (right of center) */
         .apple-btn-waveform {
           position: absolute;
           top: 50%;
           left: 58%;
           transform: translate(-50%, -50%);
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #FF3B30, #FF2D55);
-          color: white;
+          width: 24px;
+          height: 24px;
+          color: #FFFFFF;
           display: flex;
           align-items: center;
           justify-content: center;
           text-decoration: none;
-          transition: all 0.3s ease;
-          box-shadow: 0 4px 16px rgba(255, 59, 48, 0.6);
-          border: 3px solid rgba(255, 255, 255, 0.4);
-          z-index: 31;
-          backdrop-filter: blur(8px);
+          transition: transform 0.2s ease, opacity 0.2s ease;
+          z-index: 100;
+          background: transparent;
+          border: none;
         }
-        
-        .apple-btn-waveform:hover {
-          transform: translate(-50%, -50%) scale(1.15);
-          box-shadow: 0 6px 20px rgba(255, 59, 48, 0.8);
-          background: linear-gradient(135deg, #FF2D55, #FF1744);
-        }
-        
-        .apple-btn-waveform:active {
-          transform: translate(-50%, -50%) scale(0.95);
-        }
-        
+        .apple-btn-waveform:hover { transform: translate(-50%, -50%) scale(1.08); opacity: 0.95; }
+        .apple-btn-waveform:active { transform: translate(-50%, -50%) scale(0.96); }
         .apple-btn-unavailable-waveform {
           position: absolute;
           top: 50%;
           left: 58%;
           transform: translate(-50%, -50%);
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          background: rgba(128, 128, 128, 0.3);
-          color: #888;
+          width: 24px;
+          height: 24px;
+          color: rgba(255,255,255,0.5);
           display: flex;
           align-items: center;
           justify-content: center;
           text-decoration: none;
-          border: 3px solid rgba(128, 128, 128, 0.5);
-          z-index: 31;
-          backdrop-filter: blur(8px);
+          z-index: 90;
+          background: transparent;
+          border: none;
           cursor: not-allowed;
         }
 

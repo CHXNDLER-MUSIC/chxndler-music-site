@@ -109,7 +109,7 @@ const RAW: Omit<Track, "slug" | "type" | "subtitle">[] = [
     { time: 117.5, label: "Chorus 2", kind: "chorus" },
     { time: 150.2, label: "Final Chorus", kind: "chorus" }
   ] },
-  { title: "POKÉMON",                             spotify:"https://open.spotify.com/track/7uzO8MyTy8402703kP2Xuk", apple:"https://music.apple.com/us/album/pok%C3%A9mon-single/1807448784", cover:"/cover/pokemon.png", src: "/tracks/pokemon.mp3", sections: [
+  { title: "POKÉMON",                             spotify:"https://open.spotify.com/track/7uzO8MyTy8402703kP2Xuk", apple:"https://music.apple.com/us/album/pok%C3%A9mon-single/1807448784", cover:"/cover/pokémon.png", src: "/tracks/pokemon.mp3", sections: [
     { time: 11.6, label: "Verse 1", kind: "verse" },
     { time: 41.3, label: "Chorus 1", kind: "chorus" },
     { time: 71.0, label: "Verse 2", kind: "verse" },

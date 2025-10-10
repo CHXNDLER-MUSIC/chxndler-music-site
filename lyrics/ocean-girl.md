@@ -1,34 +1,37 @@
 # OCEAN GIRL
 
-[Verse 1]
-Salt in the air and the moon on your shoulder
-Tide pulls us close as the night’s getting colder
-Footprints dissolve where the white water curls
-You pull me under, my ocean girl
+Ocean girl, you float like light
+Fade in slow, kiss me right
+Emerald eyes shine like the sea 
+You light up every part of me
 
-[Pre-Chorus]
-Heartbeat in sync with the waves when you’re near
-Whisper my name and the whole coast can hear
+You’re my wave, you’re my sun
+You show up, then you run
+I don’t mind, I don’t fight
+I just wanna feel this right
 
-[Chorus]
-Wash over me, take me back to the start
-You rush through my veins like a flood in the dark
-Every time you turn, I return like the tide
-Ocean girl, carry me home tonight
+Ooh… don’t need to say much
+Ooh… love moves like us
 
-[Verse 2]
-Ship in a bottle, I’m breaking the glass
-Dive in your eyes, leave the past in the past
-Silver reflections on ripple and pearl
-You pull me under, my ocean girl
+Ocean girl, you speak in tides
+Say one word, shift my mind
+You see the storm behind my eyes 
+Then drown the noise in lullabies
 
-[Bridge]
-If I drift too far, light a beacon in the foam
-I will follow every current just to find my way back home
+Ocean girl, your love runs deep
+You are wild and you are free
+Every time you drift to sea
+You always come right back to me
 
-[Final Chorus]
-Wash over me, take me back to the start
-You rush through my veins like a flood in the dark
-Every time you turn, I return like the tide
-Ocean girl, carry me home tonight
+You’re my wave, you’re my sun
+You show up, then you run
+I don’t mind, I don’t fight
+I just wanna feel this right
 
+Ooh… don’t need to say much
+Ooh… love moves like us
+
+You’re my wave, you’re my sun
+You show up, then you run
+I don’t mind, I don’t fight
+I just wanna feel this right

@@ -148,6 +148,8 @@ export default function HUDPanel({
   // Volume popover (HUD waveform controls)
   const [showHudVolumePopover, setShowHudVolumePopover] = useState(false);
   const hudVolRef = useRef(null);
+  const hudVolBtnRef = useRef(null);
+  const [hudPopoverPos, setHudPopoverPos] = useState(null);
   // Direct ref to the currently tracked audio element for live reads during render
   const liveAudioRef = useRef(null);
   useEffect(() => {
@@ -196,6 +198,21 @@ export default function HUDPanel({
     }
     return () => { mounted = false; };
   }, []);
+
+  useEffect(() => {
+    const updatePos = () => {
+      if (showHudVolumePopover && hudVolBtnRef.current) {
+        const r = hudVolBtnRef.current.getBoundingClientRect();
+        setHudPopoverPos({ left: r.left + r.width/2, top: r.bottom + 8 });
+      }
+    };
+    window.addEventListener('resize', updatePos);
+    window.addEventListener('scroll', updatePos, true);
+    return () => {
+      window.removeEventListener('resize', updatePos);
+      window.removeEventListener('scroll', updatePos, true);
+    };
+  }, [showHudVolumePopover]);
   // Bridge to 3D store available if installed
 
   // Mark mounted for any client-only adjustments; panel is imported with ssr:false
@@ -739,6 +756,44 @@ export default function HUDPanel({
                   }
                 })()}
 
+                {/* Apple Music button positioned directly next to Spotify */}
+                {(() => {
+                  const currentSong = resolvedSongs.find(s => s.id === active);
+                  const appleUrl = currentSong?.apple;
+
+                  // Only show clickable Apple button when a song is selected (currentId exists)
+                  // On homepage (!currentId), always show disabled button
+                  if (currentId && appleUrl) {
+                    return (
+                      <a
+                        href={appleUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="apple-btn-waveform-hud"
+                        title="Open on Apple Music"
+                        aria-label={`Open ${currentSong?.title || 'current track'} on Apple Music`}
+                      >
+                        <img src="/elements/apple.png" width="16" height="16" alt="Apple" style={{ display:'block' }} />
+                      </a>
+                    );
+                  } else {
+                    // Show disabled button on homepage or when no Apple link available
+                    const isHomepage = !currentId;
+                    const titleText = isHomepage 
+                      ? 'Apple Music not available on homepage' 
+                      : `No Apple Music link available for ${currentSong?.title || 'current track'}`;
+
+                    return (
+                      <div 
+                        className="apple-btn-unavailable-hud"
+                        title={titleText}
+                      >
+                        <img src="/elements/apple.png" width="16" height="16" alt="Apple" style={{ display:'block', opacity: 0.5 }} />
+                      </div>
+                    );
+                  }
+                })()}
+
                 {/* Volume control next to Spotify icon */}
                 <div 
                   className="hud-volume"
@@ -752,7 +807,14 @@ export default function HUDPanel({
                     onClick={() => {
                       try { sfx.play('click', 0.4); } catch {}
                       // Only open/close dropdown; do not change volume on click
-                      setShowHudVolumePopover(v => !v);
+                      setShowHudVolumePopover(v => {
+                        const next = !v;
+                        if (next && hudVolBtnRef.current) {
+                          const r = hudVolBtnRef.current.getBoundingClientRect();
+                          setHudPopoverPos({ left: r.left + r.width/2, top: r.bottom + 8 });
+                        }
+                        return next;
+                      });
                     }}
                     aria-label="Volume"
                     title="Volume"
@@ -763,80 +825,87 @@ export default function HUDPanel({
                       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                       cursor: 'pointer', boxShadow: '0 4px 16px rgba(25,227,255,0.6)'
                     }}
+                    ref={hudVolBtnRef}
                   >
                     {volume === 0 ? (
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
-                        <path d="M16.5 12l3.5 3.5-1.5 1.5L15 13.5 11.5 17H8l-4-4V11l4-4h3.5l3.5 3.5 3.5-3.5 1.5 1.5L16.5 12zM10 8.5L7.5 11H6v2h1.5L10 15.5V8.5z"/>
+                      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+                        {/* Speaker base */}
+                        <polygon points="4,10 8,10 13,6 13,18 8,14 4,14" fill="currentColor" />
+                        {/* Mute X overlay */}
+                        <line x1="15" y1="9" x2="21" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        <line x1="21" y1="9" x2="15" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                       </svg>
                     ) : volume < 0.5 ? (
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
-                        <path d="M3 10v4h4l5 5V5L7 10H3zm10.5 2c0-1.77-.77-3.29-2-4.3v8.6c1.23-1.01 2-2.53 2-4.3z"/>
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden>
+                        <path d="M3 9v6h4l5 5V4L7 9H3zm10.5 3c0-1.77-.77-3.29-2-4.3v8.6c1.23-1.01 2-2.53 2-4.3z"/>
                       </svg>
                     ) : (
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
-                        <path d="M3 10v4h4l5 5V5L7 10H3zm8 2c0 2.21-1.79 4-4 4v-2c1.1 0 2-.9 2-2s-.9-2-2-2V8c2.21 0 4 1.79 4 4zm4.5 0c0-3.04-1.72-5.64-4.25-6.92l-.75 1.86C12.6 8.2 14 9.96 14 12s-1.4 3.8-3.5 4.06l.75 1.86C18.28 17.64 19.5 15.04 19.5 12z"/>
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden>
+                        <path d="M3 9v6h4l5 5V4L7 9H3zm10.5 3c0-1.77-.77-3.29-2-4.3v8.6c1.23-1.01 2-2.53 2-4.3zM19 12c0-3.04-1.72-5.64-4.25-6.92l-.75 1.86C16 8.2 17.5 9.96 17.5 12s-1.5 3.8-3.5 4.06l.75 1.86C17.28 17.64 19 15.04 19 12z"/>
                       </svg>
                     )}
                   </button>
-                  {showHudVolumePopover ? (
-                    <div
-                      role="dialog"
-                      aria-label="Adjust volume"
-                      style={{
-                        position: 'absolute', top: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)',
-                        padding: '10px 10px', borderRadius: 12,
-                        background: 'rgba(3,10,20,0.86)',
-                        border: '1px solid rgba(25,227,255,0.5)',
-                        boxShadow: '0 8px 24px rgba(0,0,0,0.35), 0 0 22px rgba(25,227,255,0.55)',
-                        backdropFilter: 'blur(8px)',
-                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, zIndex: 1000
-                      }}
-                    >
-                      <div
-                        role="slider"
-                        aria-orientation="vertical"
-                        aria-label="Volume"
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                        aria-valuenow={Math.round(volume * 100)}
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'ArrowUp') { e.preventDefault(); const a = liveAudioRef.current; if (!a) return; a.volume = Math.max(0, Math.min(1, volume + 0.05)); }
-                          else if (e.key === 'ArrowDown') { e.preventDefault(); const a = liveAudioRef.current; if (!a) return; a.volume = Math.max(0, Math.min(1, volume - 0.05)); }
-                        }}
-                        onPointerDown={(e) => {
-                          const a = liveAudioRef.current; if (!a) return;
-                          const el = e.currentTarget;
-                          const applyFromClientY = (clientY) => {
-                            const rect = el.getBoundingClientRect();
-                            const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
-                            const pct = rect.height > 0 ? (1 - (y / rect.height)) : 0;
-                            const newVol = Math.max(0, Math.min(1, pct));
-                            a.volume = newVol; setVolume(newVol);
-                            if (newVol > 0) lastNonZeroVolumeRef.current = newVol;
-                          };
-                          try { el.setPointerCapture?.(e.pointerId); } catch {}
-                          e.preventDefault(); try { sfx.play('click', 0.3); } catch {}
-                          applyFromClientY(e.clientY);
-                          const onMove = (ev) => applyFromClientY(ev.clientY);
-                          const onUp = () => {
-                            window.removeEventListener('pointermove', onMove);
-                            window.removeEventListener('pointerup', onUp);
-                          };
-                          window.addEventListener('pointermove', onMove);
-                          window.addEventListener('pointerup', onUp, { once: true });
-                        }}
-                        style={{ position: 'relative', width: 10, height: 120, cursor: 'pointer', touchAction: 'none' }}
-                      >
-                        <div style={{ position: 'absolute', left: 4, right: 4, top: 0, bottom: 0, borderRadius: 6, background: 'rgba(255,255,255,0.15)', boxShadow: 'inset 0 0 8px rgba(25,227,255,0.25)' }} />
-                        <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: `${Math.round(volume*100)}%`, background: '#19E3FF', borderRadius: '0 0 6px 6px', boxShadow: '0 0 12px rgba(25,227,255,0.65), 0 0 18px rgba(25,227,255,0.45)' }} />
-                        <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', width: 14, height: 14, borderRadius: '50%', background: '#19E3FF', border: '2px solid #19E3FF', boxShadow: '0 0 14px rgba(25,227,255,0.9)', bottom: `calc(${Math.round(volume*100)}% - 7px)`, pointerEvents: 'none' }} />
-                      </div>
-                      <div style={{ fontSize: 12, color: '#19E3FF', textShadow: '0 0 10px rgba(25,227,255,0.7)' }}>{Math.round(volume * 100)}%</div>
-                    </div>
-                  ) : null}
+                  {null}
                 </div>
-                
+
+                {typeof document !== 'undefined' && showHudVolumePopover && hudPopoverPos ? require('react-dom').createPortal(
+                  <div
+                    role="dialog"
+                    aria-label="Adjust volume"
+                    style={{
+                      position: 'fixed', left: hudPopoverPos.left, top: hudPopoverPos.top, transform: 'translateX(-50%)',
+                      padding: '10px 10px', borderRadius: 12,
+                      background: 'rgba(3,10,20,0.86)',
+                      border: '1px solid rgba(25,227,255,0.5)',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.35), 0 0 22px rgba(25,227,255,0.55)',
+                      backdropFilter: 'blur(8px)',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, zIndex: 2147483647
+                    }}
+                  >
+                    <div
+                      role="slider"
+                      aria-orientation="vertical"
+                      aria-label="Volume"
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={Math.round(volume * 100)}
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'ArrowUp') { e.preventDefault(); const a = liveAudioRef.current; if (!a) return; a.volume = Math.max(0, Math.min(1, volume + 0.05)); }
+                        else if (e.key === 'ArrowDown') { e.preventDefault(); const a = liveAudioRef.current; if (!a) return; a.volume = Math.max(0, Math.min(1, volume - 0.05)); }
+                      }}
+                      onPointerDown={(e) => {
+                        const a = liveAudioRef.current; if (!a) return;
+                        const el = e.currentTarget;
+                        const applyFromClientY = (clientY) => {
+                          const rect = el.getBoundingClientRect();
+                          const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
+                          const pct = rect.height > 0 ? (1 - (y / rect.height)) : 0;
+                          const newVol = Math.max(0, Math.min(1, pct));
+                          a.volume = newVol; setVolume(newVol);
+                          if (newVol > 0) lastNonZeroVolumeRef.current = newVol;
+                        };
+                        try { el.setPointerCapture?.(e.pointerId); } catch {}
+                        e.preventDefault(); try { sfx.play('click', 0.3); } catch {}
+                        applyFromClientY(e.clientY);
+                        const onMove = (ev) => applyFromClientY(ev.clientY);
+                        const onUp = () => {
+                          window.removeEventListener('pointermove', onMove);
+                          window.removeEventListener('pointerup', onUp);
+                        };
+                        window.addEventListener('pointermove', onMove);
+                        window.addEventListener('pointerup', onUp, { once: true });
+                      }}
+                      style={{ position: 'relative', width: 10, height: 120, cursor: 'pointer', touchAction: 'none' }}
+                    >
+                      <div style={{ position: 'absolute', left: 4, right: 4, top: 0, bottom: 0, borderRadius: 6, background: 'rgba(255,255,255,0.15)', boxShadow: 'inset 0 0 8px rgba(25,227,255,0.25)' }} />
+                      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: `${Math.round(volume*100)}%`, background: '#19E3FF', borderRadius: '0 0 6px 6px', boxShadow: '0 0 12px rgba(25,227,255,0.65), 0 0 18px rgba(25,227,255,0.45)' }} />
+                      <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', width: 14, height: 14, borderRadius: '50%', background: '#19E3FF', border: '2px solid #19E3FF', boxShadow: '0 0 14px rgba(25,227,255,0.9)', bottom: `calc(${Math.round(volume*100)}% - 7px)`, pointerEvents: 'none' }} />
+                    </div>
+                    <div style={{ fontSize: 12, color: '#19E3FF', textShadow: '0 0 10px rgba(25,227,255,0.7)' }}>{Math.round(volume * 100)}%</div>
+                  </div>,
+                  document.body
+                ) : null}
                 {/* Waveform visualization */}
                 <div className="flex-1">
                   <div 
