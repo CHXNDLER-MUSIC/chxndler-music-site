@@ -70,6 +70,30 @@ export async function GET(_req: NextRequest) {
       console.error('[metrics] start click query failed:', scError);
     }
 
+    // Comms hub (yellow button) total clicks
+    const { count: commsClickCount, error: commsErr } = await supabase
+      .from('events')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_type', 'comms_hub_click');
+    if (commsErr) {
+      console.error('[metrics] comms hub click query failed:', commsErr);
+    }
+
+    // Join Aliens (pink button) total clicks
+    const { count: joinPinkClickCount, error: jpErr } = await supabase
+      .from('events')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_type', 'join_aliens_click');
+    if (jpErr) {
+      console.error('[metrics] join aliens click query failed:', jpErr);
+    }
+
+    // Join Aliens successful submits (optional extra)
+    const { count: joinSubmitCount } = await supabase
+      .from('events')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_type', 'join_aliens_success');
+
     // Aggregate Spotify/Apple clicks from click_events.element_label
     const socials = { instagram: 0, tiktok: 0, youtube: 0, spotify: 0, apple: 0 } as Record<string, number>;
 
@@ -130,10 +154,10 @@ export async function GET(_req: NextRequest) {
     return j(200, {
       pageViews: pageViewCount || 0,
       startClicks: startClickCount || 0,
-      commsClicks: 0,
+      commsClicks: commsClickCount || 0,
       socials,
-      joinPinkClicks: 0,
-      joinSubmitClicks: 0,
+      joinPinkClicks: joinPinkClickCount || 0,
+      joinSubmitClicks: joinSubmitCount || 0,
       songPlays: {},
       coverClicks: {},
       spotifySongClicks,

@@ -564,6 +564,11 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   
   function toggle() {
     console.log('🎵 Toggle button clicked - current state:', { playing, paused: audioRef.current?.paused, src: cur.src });
+    // Cancel any pending auto-play timer from warp sequence to respect user intent
+    if (warpPlayTimerRef.current !== undefined) {
+      clearTimeout(warpPlayTimerRef.current);
+      warpPlayTimerRef.current = undefined;
+    }
     uiClick();
     const a = audioRef.current; 
     if (!a) {
@@ -619,6 +624,11 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     }
     else { 
       console.log('🎵 Audio is playing, pausing');
+      // Also cancel any pending auto-starts when the user explicitly pauses
+      if (warpPlayTimerRef.current !== undefined) {
+        clearTimeout(warpPlayTimerRef.current);
+        warpPlayTimerRef.current = undefined;
+      }
       a.pause();
       setPlaying(false); // Ensure immediate UI update
       stateMachine.current.send({ type: 'PAUSE' });
@@ -1225,7 +1235,11 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 left: `${(() => {
                   // Use ref for immediate visual feedback during seeking; otherwise, read from the live audio element to avoid state lag
                   const liveT = (audioRef.current && isFinite(audioRef.current.currentTime)) ? audioRef.current.currentTime : currentTime;
-                  const timeToUse = seekPositionRef.current !== null ? seekPositionRef.current : liveT;
+                  // Nudge cursor slightly ahead to compensate for render/audio output latency while playing
+                  const CURSOR_LEAD_SEC = 0.08;
+                  const baseT = seekPositionRef.current !== null ? seekPositionRef.current : liveT;
+                  const isPaused = !!(audioRef.current ? audioRef.current.paused : !playing);
+                  const timeToUse = (!seekingRef.current && !isPaused) ? Math.min(liveDuration || Infinity, baseT + CURSOR_LEAD_SEC) : baseT;
                   const progressPercent = Math.max(0, Math.min(100, (liveDuration > 0 && isFinite(timeToUse) ? (timeToUse / liveDuration) * 100 : 0)));
                   return progressPercent;
                 })()}%`,
@@ -1270,7 +1284,11 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               >
                 {(() => {
                   const liveT = (audioRef.current && isFinite(audioRef.current.currentTime)) ? audioRef.current.currentTime : currentTime;
-                  return liveDuration > 0 ? Math.floor(((seekPositionRef.current ?? liveT) / liveDuration) * 100) : 0;
+                  const CURSOR_LEAD_SEC = 0.08;
+                  const baseT = (seekPositionRef.current ?? liveT);
+                  const isPaused = !!(audioRef.current ? audioRef.current.paused : !playing);
+                  const t = (!seekingRef.current && !isPaused) ? Math.min(liveDuration || Infinity, baseT + CURSOR_LEAD_SEC) : baseT;
+                  return liveDuration > 0 ? Math.floor(((t) / liveDuration) * 100) : 0;
                 })()}%
               </div>
               {currentSection ? (

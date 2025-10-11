@@ -267,7 +267,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
               </div>
             </div>
             {hasRealCard && (
-              <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 z-10">
+              <div className="absolute top-px left-1/2 transform -translate-x-1/2 z-10">
                 <div className="ocean-cta-wrap relative">
                   <a
                     href={getPurchaseUrl(title)}
@@ -278,6 +278,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                     aria-label={`Collect Card: ${title}`}
                     data-song={title}
                     data-slug={title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}
+                    onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
                     onClick={(e) => {
                       try { e.preventDefault(); } catch {}
                       
@@ -405,7 +406,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
         .ocean-cta-wrap{ position:relative; }
         .btn-ocean{
           position:relative; display:inline-grid; place-items:center;
-          padding: 8px 12px; border-radius: 10px; font-weight:800; letter-spacing:.06em; font-size: 12px;
+          padding: 5px 12px; border-radius: 10px; font-weight:800; letter-spacing:.06em; font-size: 12px; line-height: 1.1;
           color:#001014; text-transform:uppercase; font-family: InterLocal, system-ui, sans-serif;
           background: radial-gradient(100% 100% at 50% 20%, rgba(255,255,210,0.95), #F2EF1D);
           border: 1px solid rgba(255,255,255,.24);
@@ -442,10 +443,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
       `}</style>
       
       <audio ref={closeCoverRef} src="/audio/close.mp3" preload="auto" />
-      <audio ref={openDingRef} preload="auto">
-        <source src="/audio/card-ding.mp3" type="audio/mpeg" />
-        <source src="/audio/card-ding.mp4" type="audio/mp4" />
-      </audio>
+      <audio ref={openDingRef} src="/audio/card-ding.mp3" preload="auto" />
       <audio ref={flipCoverRef} src="/audio/flip.mp3" preload="auto" />
     </motion.div>
   );

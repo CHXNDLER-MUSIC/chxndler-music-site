@@ -121,6 +121,9 @@ export default function HoloHubMenu({
 
     const wantOpen = !open;
 
+    // Track yellow hub (comms) button clicks for analytics totals
+    try { track('comms_hub_click', { payload: { open: wantOpen } }); } catch {}
+
     if (wantOpen) {
       // Ensure the hub/beam color activates first, then reveal the yellow panel
       try { onToggle?.(true); } catch {}

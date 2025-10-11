@@ -381,8 +381,8 @@ export default function DashboardApp({ initialSlug } = {}) {
 
     // Mark as user-driven to suppress fly/warp flashes on index change
     setUserSelected(true);
-    // Stay in home mode during warp so UI continuity is maintained; we'll exit home after warp ends
-    setHomeMode(true);
+    // Exit home overview immediately so planets can hide during warp
+    setHomeMode(false);
     // Clear any pending home overlay reveal since we're selecting a specific song
     setPendingOverlayReveal(false);
 
@@ -653,25 +653,48 @@ export default function DashboardApp({ initialSlug } = {}) {
         setBeamTransitioning(false);
         setExplicitClose(false);
       } else if (!explicitClose) {
-        // Switch to blue - ensure sequence: close other displays → beam blue → open blue
-        setBeamTransitioning(true);
-        closeAllDisplays();
-        setTimeout(() => {
-          setBeamColor('blue');
-          setBeamEnabled(true);
+        // Special handling: when coming from pink, fade out pink first, then flip beam to blue,
+        // then reveal the blue display — keep the beam ON during color change for smoothness.
+        const comingFromPink = (beamColor === 'pink') || joinAlienOpen;
+        if (comingFromPink) {
+          setBeamTransitioning(true);
+          // Start pink display fade-out only; do not turn off the beam so its color can flip smoothly
+          try { setShowHUD(false); } catch {}
+          try { setJoinAlienOpen(false); } catch {}
+          // Ensure the beam is enabled during the color switch; if it was off for any reason, turn it on
+          try { setBeamEnabled(true); } catch {}
+          // Pink display opacity transition is ~350ms in SteeringWheelOverlay; give it a touch more time
+          const PINK_FADE_MS = 360;
           setTimeout(() => {
-            setShowHUD(true);
-            setBeamTransitioning(false);
-          }, BLUE_OPEN_AFTER_BEAM_MS);
-        }, BEAM_SWITCH_DELAY_MS);
+            setBeamColor('blue');
+            setTimeout(() => {
+              setShowHUD(true);
+              setBeamTransitioning(false);
+            }, BLUE_OPEN_AFTER_BEAM_MS);
+          }, PINK_FADE_MS);
+        } else {
+          // Default path: close other displays → beam blue → open blue
+          setBeamTransitioning(true);
+          closeAllDisplays();
+          setTimeout(() => {
+            setBeamColor('blue');
+            setBeamEnabled(true);
+            setTimeout(() => {
+              setShowHUD(true);
+              setBeamTransitioning(false);
+            }, BLUE_OPEN_AFTER_BEAM_MS);
+          }, BEAM_SWITCH_DELAY_MS);
+        }
       }
     }
   }, [beamColor, showHUD, joinAlienOpen, beamTransitioning, explicitClose]);
 
-  // Spacebar and Pause key toggle
+  // Spacebar and Pause key toggle (ignore when 3D system is active)
   React.useEffect(() => {
     const handleKeyDown = (e) => {
       if (!uiUnlocked) return; // Ignore all media key input before Start
+      // If 3D planet system is active, do not react to global space/pause keys
+      try { if ((window).__CHX_3D_ACTIVE) return; } catch {}
       // Trigger on spacebar (not in input fields) or pause/media keys (anywhere)
       const tag = (e.target?.tagName || '').toUpperCase();
       const inTextField = tag === 'INPUT' || tag === 'TEXTAREA' || (e.target?.isContentEditable === true);
@@ -687,6 +710,7 @@ export default function DashboardApp({ initialSlug } = {}) {
           const mainIsPlaying = !!(main && !main.paused && (main.currentTime || 0) > 0);
           const ambientIsPlaying = !!(ambient && !ambient.paused && (ambient.currentTime || 0) > 0);
           const introIsPlaying = !!(intro && !intro.paused && (intro.currentTime || 0) > 0);
+          const isHome = !!homeMode;
 
           // 1) If a main song is currently playing, always control it
           if (mainIsPlaying || isPlaying) {
@@ -694,18 +718,8 @@ export default function DashboardApp({ initialSlug } = {}) {
             try { sfx.play('click', 0.6); } catch {}
             return;
           }
-          
-          // 2) If user has selected a song (not on homepage), control the main player regardless of ambient state
-          if (userSelected || !homeMode) {
-            if (main && ((main.getAttribute('src') || main.src || '').length > 0 || main.readyState >= 2)) {
-              setToggleSignal((n) => n + 1);
-              try { sfx.play('click', 0.6); } catch {}
-              return;
-            }
-          }
-          
-          // 3) Only control ambient if we're on the CHXNDLER homepage (homeMode) and user hasn't selected a song
-          if (homeMode && !userSelected) {
+          // 2) If on the CHXNDLER homepage, control the ambient space music
+          if (isHome) {
             if (ambientIsPlaying) {
               try { window.dispatchEvent(new CustomEvent('ambient:userPause')); } catch {}
               ambient.pause();
@@ -716,6 +730,15 @@ export default function DashboardApp({ initialSlug } = {}) {
             if (ambient) {
               try { window.dispatchEvent(new CustomEvent('ambient:userPlay')); } catch {}
               ambient.play().catch(()=>{});
+              try { sfx.play('click', 0.6); } catch {}
+              return;
+            }
+          }
+
+          // 3) Off homepage: control the main player when available
+          if (!isHome) {
+            if (main && ((main.getAttribute('src') || main.src || '').length > 0 || main.readyState >= 2)) {
+              setToggleSignal((n) => n + 1);
               try { sfx.play('click', 0.6); } catch {}
               return;
             }
@@ -1127,9 +1150,11 @@ export default function DashboardApp({ initialSlug } = {}) {
         }}
         onFlyStart={() => {
           setWarpActive(true);
-          // Keep planets visible during selection warp on homepage; only hide on non-home flows
-          if ((pendingTrackPlay || userSelected) && !homeMode) {
+          // Song selection: hide ALL planets immediately before warp
+          if (pendingTrackPlay || userSelected) {
+            try { playerStore.getState().setPlanetDisplayMode('hidden'); } catch {}
             try { playerStore.getState().setPlanetsVisible(false); } catch {}
+            try { setHomeMode(false); } catch {}
           }
           // MediaPlayer will handle its own pause/resume logic for song changes
           // Don't interfere with audio here - let MediaPlayer manage it
@@ -1680,13 +1705,15 @@ export default function DashboardApp({ initialSlug } = {}) {
                       }
                       setHidePlanetsForSelection(false);
                     } catch {}
-                    // Track actual music start with song metadata
-                    try {
-                      const t = curTrack || tracks[channelIdx];
-                      if (t && (t.slug || t.title)) {
-                        track('music_started', { song_slug: (t.slug || '').toLowerCase(), payload: { song_title: t.title } });
-                      }
-                    } catch {}
+                    // Track music_started ONLY when not in home overview playback
+                    if (!isHomePlayback) {
+                      try {
+                        const t = curTrack || tracks[channelIdx];
+                        if (t && (t.slug || t.title)) {
+                          track('music_started', { song_slug: (t.slug || '').toLowerCase(), payload: { song_title: t.title } });
+                        }
+                      } catch {}
+                    }
                   } else {
                     // When playback stops, keep planets visible on homepage
                     try {

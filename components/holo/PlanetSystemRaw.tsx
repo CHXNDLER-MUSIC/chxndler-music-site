@@ -32,6 +32,11 @@ type Sat = {
 };
 
 export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = false, onSongChange }: { showAll?: boolean; hideUntilPlaying?: boolean; onSongChange?: (id: string) => void }) {
+  // Mark 3D system as active so global key handlers can avoid interfering
+  React.useEffect(() => {
+    try { (window as any).__CHX_3D_ACTIVE = true; } catch {}
+    return () => { try { (window as any).__CHX_3D_ACTIVE = false; } catch {} };
+  }, []);
   const mountRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);

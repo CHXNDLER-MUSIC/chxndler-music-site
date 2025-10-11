@@ -110,8 +110,8 @@ export default function SteeringWheelOverlay({
         track('start_button_opening_page');
         startTrackedRef.current = true;
       }
-      // Always track all start button clicks
-      track('start_button_all_clicks');
+      // Track canonical start button click (used by metrics API)
+      track('start_button_clicked');
     } catch {}
     // Trigger toggle action first so downstream can open streaming links within a user gesture
     try { onLaunch(); } catch {}
@@ -330,6 +330,7 @@ export default function SteeringWheelOverlay({
                 <button
                   type="button"
                   className={`power-btn ${(blueActive && showUI) ? 'power-btn-active' : ''}`}
+                  data-analytics={`⚡ Power Toggle: ${blueActive ? 'off' : 'on'}`}
                   onMouseEnter={() => { if (!showUI || !mounted) return; try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
                   onClick={() => {
                     if (!showUI || !isUIUnlocked) return;

@@ -110,10 +110,9 @@ export default function HoloAudioBridge() {
         const ae = document.activeElement as HTMLElement | null;
         if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || (ae as any).isContentEditable)) return;
       } catch {}
-      const a = audioRef.current; if (!a) return;
-      if (e.key === ' ') { e.preventDefault(); if (a.paused) a.play().catch(()=>{}); else a.pause(); }
-      else if (e.key === 'Enter') { e.preventDefault(); if (a.paused) a.play().catch(()=>{}); else a.pause(); }
-      else if (e.key === 'ArrowLeft') { 
+      // Do not bind space/enter to audio in the 3D panel to avoid affecting planets
+      // Only support arrow navigation between planets
+      if (e.key === 'ArrowLeft') { 
         e.preventDefault(); 
         const currentIndex = songs.findIndex(s => s.id === mainId);
         if (currentIndex >= 0) {

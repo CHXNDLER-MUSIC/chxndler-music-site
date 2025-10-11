@@ -215,7 +215,8 @@ export default function Planet({
         'dwarf': 0.3 + sizeVar * 0.8 + shapeVar * 0.4         // 0.3-1.5x - small orbital bodies
       }[planetType] || (0.9 + sizeVar * 0.8);
   const ORBIT_MULT = shapeBasedOrbitMult;
-  const HOVER_MULT = 1.25;
+  // Increase hover emphasis: slightly larger when hovered
+  const HOVER_MULT = 1.35;
   const FOCUS_EMPHASIS_MULT = 1.4; // Additional scale boost for focused planets
   const scaleTarget = Math.max(0.01, isMain
     ? base * MAIN_MULT * FOCUS_EMPHASIS_MULT * mainSizeJitter
@@ -577,7 +578,8 @@ export default function Planet({
     const theta = safeLayoutAngle0 + safeAngleRef + safePhaseOffset;
     let x = a * Math.cos(theta);
     let z = b * Math.sin(theta);
-    const hoverWobble = isHover && !isMain ? 0.005 : 0.0;
+    // Increase oscillation while hovered for clearer feedback
+    const hoverWobble = isHover && !isMain ? 0.012 : 0.0;
     x += (0.02 + wobbleExtra + hoverWobble) * Math.sin(t * 0.9 + (idHash % 17));
     z += (0.02 + wobbleExtra + hoverWobble) * Math.sin(t * 1.1 + (idHash % 31));
     const tilt = MathUtils.degToRad(layoutTiltDeg || 0);
@@ -610,9 +612,9 @@ export default function Planet({
       const safeRotSpeed = isFinite(rotSpeed) ? rotSpeed : 0.8;
       const safeDelta = isFinite(d) ? d : 0.016;
       meshRef.current.rotation.y += safeRotSpeed * safeDelta;
-      // Subtle oscillating pulse on hover (+heart pulse)
+      // Stronger oscillating pulse on hover (+heart pulse)
       const elapsedTime = isFinite(state.clock.elapsedTime) ? state.clock.elapsedTime : 0;
-      const hPulse = isHover ? 1 + 0.03 * Math.sin(elapsedTime * 6) : 1;
+      const hPulse = isHover ? 1 + 0.06 * Math.sin(elapsedTime * 6) : 1;
       const heartPulse = element === 'heart' ? (1 + 0.06 * Math.sin(elapsedTime * 2.4)) : 1.0;
       const safeHPulse = isFinite(hPulse) ? hPulse : 1.0;
       const safeHeartPulse = isFinite(heartPulse) ? heartPulse : 1.0;
@@ -780,7 +782,7 @@ export default function Planet({
             <meshBasicMaterial
               color={ringColor}
               transparent
-              opacity={0.6}
+              opacity={0.72}
               depthWrite={false}
               blending={AdditiveBlending}
             />
@@ -791,7 +793,7 @@ export default function Planet({
             <meshBasicMaterial
               color={ringColor}
               transparent
-              opacity={0.14}
+              opacity={0.2}
               depthWrite={false}
               blending={AdditiveBlending}
             />
@@ -801,13 +803,13 @@ export default function Planet({
 
       {/* Hover halo: a soft additive glow only while hovering a song */}
       {isHover && (
-        <mesh scale={1.11}>
+        <mesh scale={1.16}>
           <sphereGeometry args={[1, 64, 64]} />
           <meshBasicMaterial
             // Use ringColor (tuned for luminance) biased toward white for a clean halo
             color={new Color(ringColor).lerp(new Color('#FFFFFF'), 0.4)}
             transparent
-            opacity={0.12}
+            opacity={0.2}
             depthWrite={false}
             blending={AdditiveBlending}
             side={2}

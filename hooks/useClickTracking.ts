@@ -5,6 +5,11 @@ import { trackClick, generateClickId, storeClickData, type ClickData } from "../
 
 // Enhanced element identification function
 function identifyElement(element: HTMLElement): string {
+  // Highest priority: explicit analytics label on the element
+  try {
+    const explicit = (element.getAttribute('data-analytics') || '').trim();
+    if (explicit) return explicit;
+  } catch {}
   const text = element.textContent?.toLowerCase().trim() || '';
   const className = String(element.className || '').toLowerCase();
   const href = element.getAttribute('href')?.toLowerCase() || '';
@@ -42,8 +47,10 @@ function identifyElement(element: HTMLElement): string {
   } catch {}
 
   // Beam Color Buttons (Power/Blue, Comms/Yellow, Join/Pink)
-  if (ariaLabel.includes('power') || title.includes('power') || className.includes('power-btn')) {
-    return '⚡ Power Button';
+  if (className.includes('power-btn')) {
+    // Only count the actual blue power button; prefer explicit label when present
+    const explicit = element.getAttribute('data-analytics');
+    return (explicit && explicit.trim()) || '⚡ Power Button';
   }
   // Only track the actual pink JOIN THE ALIENS button, not input fields
   if (tagName === 'button' && (text.includes('join the aliens') || text.includes('welcome aboard') || text.includes('submitting') || text.includes('try again'))) {

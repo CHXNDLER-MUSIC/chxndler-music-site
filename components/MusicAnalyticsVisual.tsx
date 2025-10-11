@@ -341,14 +341,18 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                 <button className="w-full text-left p-6 border-b border-yellow-400/20 flex items-center justify-between" onClick={() => setSocialOpen(!socialOpen)}>
                   <h3 className="text-lg font-bold text-yellow-200">SOCIAL MEDIA</h3>
                   {(() => {
-                    // Compute total using the same fallback as row values so totals match
+                    // Total here represents yellow hub button clicks
+                    const total = metrics?.commsClicks;
+                    if (typeof total === 'number') {
+                      return <div className="text-sm text-yellow-100/80 mt-1">Total: {total}</div>;
+                    }
+                    // Fallback: approximate from per-platform clicks when server metric absent
                     const ig = metrics?.socials?.instagram ?? (stats?.socialButtons.find(b=>b.button==='Instagram')?.count || 0);
                     const yt = metrics?.socials?.youtube   ?? (stats?.socialButtons.find(b=>b.button==='YouTube')?.count || 0);
                     const am = metrics?.socials?.apple     ?? (stats?.musicButtons.find(b=>b.button==='Apple Music')?.count || 0);
                     const sp = metrics?.socials?.spotify   ?? (stats?.musicButtons.find(b=>b.button==='Spotify')?.count || 0);
                     const tt = metrics?.socials?.tiktok    ?? (stats?.socialButtons.find(b=>b.button==='TikTok')?.count || 0);
-                    const total = ig + yt + am + sp + tt;
-                    return <div className="text-sm text-yellow-100/80 mt-1">Total: {total}</div>;
+                    return <div className="text-sm text-yellow-100/80 mt-1">Total: {ig + yt + am + sp + tt}</div>;
                   })()}
                 </button>
                 {socialOpen && (

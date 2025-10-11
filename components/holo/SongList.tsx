@@ -153,8 +153,10 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
             onFocus={() => setHover(s.id)}
             onBlur={() => setHover(null)}
             onClick={(e) => {
+              // Immediately hide all planets before warp
+              try { playerStore.getState().setPlanetsVisible(false); } catch {}
               // Use the new planetDisplayMode system for clean state management
-              setMain(s.id); // This already sets planetDisplayMode to 'hidden' in the store
+              setMain(s.id); // This sets planetDisplayMode to 'hidden' in the store
               
               // Call the onSongChange callback to notify parent (DashboardApp)
               if (onSongChange) {

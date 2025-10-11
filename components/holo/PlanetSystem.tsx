@@ -27,6 +27,11 @@ function InvalidateOnState() {
 }
 
 export default function PlanetSystem({ showAll = false, hideUntilPlaying = false }: { showAll?: boolean; hideUntilPlaying?: boolean }) {
+  // Mark 3D system as active so global key handlers can avoid interfering
+  React.useEffect(() => {
+    try { (window as any).__CHX_3D_ACTIVE = true; } catch {}
+    return () => { try { (window as any).__CHX_3D_ACTIVE = false; } catch {} };
+  }, []);
   const [storeSnap, setStoreSnap] = React.useState(() => playerStore.getState());
   React.useEffect(() => playerStore.subscribe(() => setStoreSnap(playerStore.getState())), []);
   const { songs, mainId, prevMainId, hoverId, planetsVisible, planetDisplayMode } = storeSnap as any;
