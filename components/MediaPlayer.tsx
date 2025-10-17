@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { createPortal } from "react-dom";
 import { tracks as ALL, type Track } from "@/lib/songs-consolidated";
 import { skyFor, verifyAllTrackSkies } from "@/lib/sky";
@@ -1135,8 +1136,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               </div>
             )}
             
-            {/* Volume control placed next to the Spotify button inside waveform */}
-            <div className="waveform-volume" role="group" aria-label="Volume" ref={waveVolRef}>
+            {/* Volume control and Lyrics link grouped together */}
+            <div className="waveform-volume" role="group" aria-label="Volume and Lyrics" ref={waveVolRef}>
               <div className="volume-button-wrap">
               <button
                 ref={waveVolBtnRef}
@@ -1176,36 +1177,21 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               </button>
               {null}
               </div>
+              {/* Lyrics link next to volume button, navigates to lyrics page for current song */}
+              <Link
+                href={`/lyrics/${cur.slug}`}
+                className="lyrics-link-waveform"
+                title={`Lyrics for ${cur.title}`}
+                aria-label={`View lyrics for ${cur.title}`}
+                onMouseEnter={playHover}
+              >
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
+                  <path d="M4 4h16v12H5.17L4 17.17V4zm2 2v8h12V6H6zm0 12h10v2H6v-2z"/>
+                </svg>
+                <span className="lyrics-link-text">Lyrics</span>
+              </Link>
             </div>
 
-            {/* Lyrics button inside waveform */}
-            <button
-              className="lyrics-btn-waveform"
-              onClick={async () => { uiClick(); await ensureLyricsLoaded(cur.slug); setLyricsOpen(v => !v); }}
-              aria-expanded={lyricsOpen}
-              aria-controls="lyrics-popover"
-              title="Lyrics"
-            >
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
-                <path d="M4 4h16v12H5.17L4 17.17V4zm2 2v8h12V6H6zm0 12h10v2H6v-2z"/>
-              </svg>
-              <span className="lyrics-btn-text">Lyrics</span>
-            </button>
-
-            {lyricsOpen ? (
-              <div id="lyrics-popover" className="lyrics-popover" role="dialog" aria-label={`Lyrics for ${cur.title}`}>
-                {lyricsLoading ? (
-                  <div className="lyrics-status">Loading…</div>
-                ) : lyricsError ? (
-                  <div className="lyrics-error">{lyricsError}</div>
-                ) : (
-                  <div className="lyrics-content">
-                    {lyricsCacheRef.current.get(cur.slug) || 'No lyrics available.'}
-                  </div>
-                )}
-                <button className="lyrics-close" onClick={() => setLyricsOpen(false)} aria-label="Close lyrics">✕</button>
-              </div>
-            ) : null}
 
             {/* Spotify button positioned in waveform container */}
             {cur.spotify ? (
@@ -1888,62 +1874,23 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           cursor: not-allowed;
         }
 
-        /* Lyrics button inside waveform (right edge, vertically centered) */
-        .lyrics-btn-waveform {
-          position: absolute;
-          top: 50%;
-          right: 6px;
-          transform: translateY(-50%);
-          display: flex;
+        /* Lyrics link next to volume control */
+        .lyrics-link-waveform {
+          display: inline-flex;
           align-items: center;
           gap: 6px;
           padding: 6px 10px;
-          height: 32px;
+          height: 28px;
           border-radius: 10px;
-          border: 1px solid rgba(25,227,255,0.4);
+          border: 1px solid rgba(25,227,255,0.35);
           background: rgba(6,182,212,0.10);
           color: #e6f7ff;
-          cursor: pointer;
+          text-decoration: none;
           transition: all 0.2s ease;
-          z-index: 40;
-          box-shadow: 0 0 12px rgba(25,227,255,0.25);
+          box-shadow: 0 2px 10px rgba(25,227,255,0.25);
         }
-        .lyrics-btn-waveform:hover { transform: translateY(-50%) translateX(-1px); background: rgba(6,182,212,0.18); }
-        .lyrics-btn-text { font-size: 12px; }
-
-        /* Lyrics popover anchored to waveform */
-        .lyrics-popover {
-          position: absolute;
-          top: 50%;
-          right: 6px;
-          transform: translate(calc(100% + 8px), -50%);
-          width: min(60vw, 420px);
-          max-height: 40vh;
-          overflow: auto;
-          padding: 12px 14px 36px 14px;
-          border-radius: 14px;
-          background: rgba(3,10,20,0.9);
-          border: 1px solid rgba(25,227,255,0.45);
-          box-shadow: 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(25,227,255,0.35);
-          backdrop-filter: blur(8px);
-          color: #e6f7ff;
-          z-index: 1000;
-        }
-        .lyrics-content { white-space: pre-wrap; line-height: 1.4; font-size: 12px; }
-        .lyrics-status { font-size: 12px; opacity: 0.8; }
-        .lyrics-error { font-size: 12px; color: #ff7b7b; }
-        .lyrics-close {
-          position: absolute;
-          right: 8px;
-          bottom: 8px;
-          border: 0;
-          background: rgba(255,255,255,0.1);
-          color: #fff;
-          width: 28px;
-          height: 28px;
-          border-radius: 8px;
-          cursor: pointer;
-        }
+        .lyrics-link-waveform:hover { transform: translateX(-1px); background: rgba(6,182,212,0.18); }
+        .lyrics-link-text { font-size: 12px; }
         
         /* Inline waveform volume next to Spotify button */
         .waveform-volume {
@@ -1953,7 +1900,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           transform: translate(-50%, -50%);
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 10px;
           padding: 6px 8px;
           border-radius: 10px;
           border: 1px solid rgba(25,227,255,0.35);

@@ -467,12 +467,26 @@ export default function HUDPanel({
       try { window.dispatchEvent(new CustomEvent('ambient:userPause')); } catch {}
       return;
     } else {
-      // When a song is selected, control the main player
-      if (a.paused) {
-        a.play().catch(() => {});
-      } else {
-        a.pause();
-      }
+      // When a song is selected, prefer the MediaPlayer's toggle API to keep
+      // internal state machine, timers, and audio coordinator in sync.
+      try {
+        const api = (window || {});
+        if (api && typeof api.mainPlayerToggle === 'function') {
+          api.mainPlayerToggle();
+          return;
+        }
+      } catch {}
+
+      // Fallback: directly toggle the audio element
+      try {
+        if (a.paused) {
+          // Ensure unmuted before attempting play
+          try { a.muted = false; } catch {}
+          a.play().catch(() => {});
+        } else {
+          a.pause();
+        }
+      } catch {}
     }
   };
 
