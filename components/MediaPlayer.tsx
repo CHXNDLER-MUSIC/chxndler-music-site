@@ -582,7 +582,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       clearTimeout(warpPlayTimerRef.current);
       warpPlayTimerRef.current = undefined;
     }
-    uiClick();
     const a = audioRef.current; 
     if (!a) {
       console.error('🎵 No audio element found in toggle');
@@ -612,6 +611,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           console.log('🎵 Toggle: Play successful');
           stateMachine.current.send({ type: 'PLAY' });
           gaTrack("play", { slug: cur.slug });
+          // Play click SFX via WebAudio after successful start (won't steal gesture)
+          try { sfx.play('click', 0.5); } catch {}
         })
         .catch((error) => {
           console.log('🎵 Toggle: Simple play failed, trying with retry logic', error?.name);
@@ -627,6 +628,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               console.log('🎵 Toggle: Retry play successful');
               stateMachine.current.send({ type: 'PLAY' });
               gaTrack("play", { slug: cur.slug });
+              try { sfx.play('click', 0.5); } catch {}
             })
             .catch((retryError) => {
               console.error('🔴 Toggle: All play attempts failed', retryError);
@@ -647,6 +649,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       stateMachine.current.send({ type: 'PAUSE' });
       gaTrack("pause", { slug: cur.slug }); 
       console.log('🎵 Pause completed');
+      // Safe to play UI click on pause (no conflict with main play)
+      try { uiClick(); } catch {}
     }
   }
 

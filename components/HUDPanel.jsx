@@ -681,7 +681,7 @@ export default function HUDPanel({
                     title={title} 
                     slug={trackingSong}
                     inline={true} 
-                    size={96}
+                    size={112}
                   />
                 </div>
               );

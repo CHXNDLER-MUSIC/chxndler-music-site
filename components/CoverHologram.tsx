@@ -51,7 +51,7 @@ const getPurchaseUrl = (title: string) => {
   return url;
 };
 
-export default function CoverHologram({ src, title, slug, inline = false, size = 168, onCardOpen }: { src: string; title: string; slug?: string; inline?: boolean; size?: number; onCardOpen?: () => void }) {
+export default function CoverHologram({ src, title, slug, inline = false, size = 180, onCardOpen }: { src: string; title: string; slug?: string; inline?: boolean; size?: number; onCardOpen?: () => void }) {
   const [showCard, setShowCard] = useState(false);
   const [cardFlipped, setCardFlipped] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -139,7 +139,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
       } : { 
         top: "calc(50% + 90px)", 
         transform: "translateX(-50%)",
-        width: "280px"
+        width: "300px"
       }}
       initial={{ opacity: 0, y: 20, rotateX: -8 }}
       animate={{ opacity: inline ? 1 : cockpit.cover.hologramOpacity, y: 0, rotateX: inline ? 0 : -cockpit.cover.tilt }}
