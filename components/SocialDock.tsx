@@ -77,6 +77,7 @@ export default function SocialDock() {
             rel="noopener noreferrer"
             aria-label={s.id}
             title={s.id}
+            data-id={s.id.toLowerCase().includes('insta') ? 'ig' : s.id.toLowerCase().includes('tiktok') ? 'tt' : s.id.toLowerCase().includes('tube') ? 'yt' : undefined}
             className="grid place-items-center rounded-2xl select-none"
             style={{
               height: `clamp(2.5rem, 6vw, 3.5rem)`,

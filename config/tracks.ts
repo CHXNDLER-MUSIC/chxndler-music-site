@@ -45,7 +45,7 @@ const TAGLINES: Record<string, string> = {
   "neon-skies": "Midnight painted in light.",
   "ocean-girl": "Love flows back like the tide.",
   "paris": "Poison love kissed anyway.",
-  "pok-mon": "Dream big, fight hard, never stop chasing.",
+  "pokemon": "Dream big, fight hard, never stop chasing.",
   "somebody-to-love": "You gave real love, they weren’t the one.",
   "studio": "Where dreams echo into sound.",
   "they-feel-too": "Every alien heart still aches.",

@@ -501,16 +501,15 @@ export default function HUDPanel({
       setAnimationTime(Date.now());
       
       // Update progress more frequently when playing for smoother cursor movement
-      // Track ambient audio on homepage, main player when song selected
-      const audioSelector = !currentId ? 'audio[data-ambient="1"]' : 'audio[data-audio-player="1"]';
-      const a = document.querySelector(audioSelector);
+      // Use the connected audio element directly (set in findAndConnectAudio)
+      const a = liveAudioRef.current;
       
       if (a && !a.paused) {
         const newTime = a.currentTime;
         
         // Only update if time has actually changed to avoid unnecessary re-renders
         setProgress(prevTime => {
-          if (Math.abs(newTime - prevTime) > 0.01) { // Update if difference > 10ms
+          if (Math.abs(newTime - prevTime) > 0.005) { // Update if difference > 5ms
             return newTime;
           }
           return prevTime;
@@ -521,7 +520,6 @@ export default function HUDPanel({
         if (frameCount % 60 === 0 && DEBUG_MEDIA) {
           dlog('HUDPanel Animation Loop (Playing):', {
             audioType: !currentId ? 'ambient' : 'main',
-            selector: audioSelector,
             currentTime: newTime.toFixed(2),
             duration: a.duration?.toFixed(2) || 'unknown',
             progress: a.duration > 0 ? ((newTime / a.duration) * 100).toFixed(1) : 0,
@@ -871,6 +869,7 @@ export default function HUDPanel({
                         aria-label={`Open ${currentSong?.title || 'current track'} on Spotify`}
                         data-song={currentSong?.title || ''}
                         data-slug={currentSong?.id || ''}
+                        data-id="sp"
                         onClick={(e) => { try { sfx.play('join-aliens', 0.9); } catch {} }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                       >
@@ -917,6 +916,7 @@ export default function HUDPanel({
                         aria-label={`Open ${currentSong?.title || 'current track'} on Apple Music`}
                         data-song={currentSong?.title || ''}
                         data-slug={currentSong?.id || ''}
+                        data-id="am"
                         onClick={() => { try { sfx.play('join-aliens', 0.9); } catch {} }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                       >
@@ -995,13 +995,6 @@ export default function HUDPanel({
                     }}
                     aria-label="Volume"
                     title="Volume"
-                    style={{
-                      width: 28, height: 28, borderRadius: '50%',
-                      border: '3px solid rgba(255,255,255,0.4)',
-                      background: 'radial-gradient(circle at 30% 30%, #19E3FF, #0EA8D0)', color: 'white',
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      cursor: 'pointer', boxShadow: '0 4px 16px rgba(25,227,255,0.6)'
-                    }}
                     ref={hudVolBtnRef}
                   >
                     {volume === 0 ? (
@@ -1172,11 +1165,11 @@ export default function HUDPanel({
                     onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowLyricsPopover(false); } }}
                   >
                     {lyricsLoading ? (
-                      <div style={{ fontSize: 20, opacity: .99, color: '#F2EF1D', textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>Loading…</div>
+                      <div style={{ fontSize: 18, opacity: .99, color: '#F2EF1D', textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>Loading…</div>
                     ) : lyricsError ? (
-                      <div style={{ fontSize: 20, color: '#ff7b7b' }}>{lyricsError}</div>
+                      <div style={{ fontSize: 18, color: '#ff7b7b' }}>{lyricsError}</div>
                     ) : (
-                      <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: 20, color: '#F2EF1D', textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>{lyricsContent || 'No lyrics available.'}</div>
+                      <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: 18, color: '#F2EF1D', textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>{lyricsContent || 'No lyrics available.'}</div>
                     )}
                     {null}
                   </div>,
@@ -1392,7 +1385,9 @@ export default function HUDPanel({
                         })()}%`,
                         transform: 'translateX(-50%)',
                         width: '32px',
-                        transition: playing ? 'left 0.1s linear' : 'left 0.3s ease',
+                        // Remove transition while playing to avoid cursor lagging behind
+                        transition: playing ? 'none' : 'left 0.25s ease',
+                        willChange: 'left',
                       }}
                     >
                       {/* Element icon at cursor position */}

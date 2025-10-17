@@ -39,6 +39,22 @@ const getPurchaseUrl = (title: string) => {
     'were-just-friends': 'https://buy.stripe.com/14A14o99fbJrbVv8114gg0b',
     'were-just-friends-mickey-jas-remix': 'https://buy.stripe.com/aFa5kE3OV14N3oZchh4gg06',
     'were-just-friends-dmvrco-remix': 'https://buy.stripe.com/28EdRa0CJ5l38Jj9554gg03',
+    // New mappings from user-provided paylinks
+    'were-just-friends-acoustic': 'https://buy.stripe.com/6oU5kE99f9BjgbL6WX4gg0n',
+    'love-me-acoustic': 'https://buy.stripe.com/bJecN6adjcNv6Bb3KL4gg0o',
+    'love-me': 'https://buy.stripe.com/eVq3cwadj8xf3oZ0yz4gg0p',
+    'home-acoustic': 'https://buy.stripe.com/28E3cw3OV14N3oZbdd4gg0q',
+    'house-party-acoustic': 'https://buy.stripe.com/3cI14oetzbJr7Ff0yz4gg0r',
+    'house-party': 'https://buy.stripe.com/bJe28sdpv5l31gR0yz4gg0s',
+    'pink-moon': 'https://buy.stripe.com/bJecN6adjcNv6Bb3KL4gg0o',
+    'blue': 'https://buy.stripe.com/14AcN6clrdRz1gRbdd4gg0x',
+    'american-dream': 'https://buy.stripe.com/4gM9AUbhneVD3oZbdd4gg0w',
+    'always-on-my-mind-remix': 'https://buy.stripe.com/dRm9AUetz3cV0cNepp4gg0A',
+    'cheerleader': 'https://buy.stripe.com/cNi5kEadj5l37Ff2GH4gg0y',
+    'paris': 'https://buy.stripe.com/28E3cw3OV3cV0cN1CD4gg0z',
+    'pokmon': 'https://buy.stripe.com/7sY4gA5X35l39Nn0yz4gg0v', // POKÉMON (diacritic-stripped slug)
+    'pokemon': 'https://buy.stripe.com/7sY4gA5X35l39Nn0yz4gg0v', // Safety alias
+    'feeling-this': 'https://buy.stripe.com/28EcN6fxD7tb3oZ2GH4gg0u',
   };
   
   // Return specific URL or log error and fallback
@@ -215,7 +231,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                   onClick={() => { 
                     // Flip the card and play flip sound regardless of card availability;
                     // the front image already falls back to cover if a card image is missing.
-                    try { const a = flipCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
+                    try { const a = flipCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.45; a.play().catch(()=>{}); } } catch {}
                     setCardFlipped((v) => !v); 
                   }}
                 >

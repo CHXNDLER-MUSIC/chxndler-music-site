@@ -49,7 +49,7 @@ const AVAILABLE_SKY_VIDEOS: SkyVideoFile[] = [
   { filename: 'ocean-girl.mp4', path: '/skies/ocean-girl.mp4', slug: 'ocean-girl' },
   { filename: 'paris.mp4', path: '/skies/paris.mp4', slug: 'paris' },
   { filename: 'pink-moon.mp4', path: '/skies/pink-moon.mp4', slug: 'pink-moon' },
-  { filename: 'pokemon.mp4', path: '/skies/pokemon.mp4', slug: 'pok-mon' },
+  { filename: 'pokemon.mp4', path: '/skies/pokemon.mp4', slug: 'pokemon' },
   { filename: 'somebody-to-love.mp4', path: '/skies/somebody-to-love.mp4', slug: 'somebody-to-love' },
   { filename: 'space.mp4', path: '/skies/space.mp4', slug: 'space' },
   { filename: 'tienes-un-amigo.mp4', path: '/skies/tienes-un-amigo.mp4', slug: 'tienes-un-amigo' },

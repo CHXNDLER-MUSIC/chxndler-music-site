@@ -17,7 +17,7 @@ class SFXBus {
     click: "/audio/click.mp3",
     close: "/audio/close.mp3",
     scroll: "/audio/scroll.mp3",
-    volume: "/audio/volume.mp3",
+    volume: "/audio/scroll.mp3",
     join: "/audio/join-alien.mp3",
     "join-aliens": "/audio/join-alien.mp3", // alias for convenience
     "join-alien": "/audio/join-alien.mp3",

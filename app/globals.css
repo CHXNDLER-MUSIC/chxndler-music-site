@@ -525,10 +525,39 @@ main {
 }
 .hud-lyrics-btn:active{ transform: scale(0.95); }
 
+/* Volume button hover behavior to match lyrics button */
+.hud-volume-btn{
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #19E3FF, #0EA8D0);
+  border: 3px solid rgba(255,255,255,0.4);
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 16px rgba(25,227,255,0.6);
+}
+.hud-volume-btn:hover{
+  transform: scale(1.08);
+  box-shadow: 0 6px 22px rgba(25,227,255,0.9);
+  border-color: rgba(255,255,255,0.7);
+}
+.hud-volume-btn:active{ transform: scale(0.95); }
+
 /* Lyrics popover: typography only; scrollbar uses holo-scrollbar-yellow */
 .lyrics-popover-hud{
   font-family: 'Exo 2', InterLocal, sans-serif;
   text-transform: uppercase;
+  /* Match SongDropdown scrollbar thickness (especially in Firefox) */
+  scrollbar-width: auto; /* override thin from yellow variant */
+}
+
+/* Ensure consistent thickness in WebKit as well (explicit, though yellow variant already sets 16px) */
+.lyrics-popover-hud::-webkit-scrollbar {
+  width: 16px;
 }
 
 .hud-progress-bar-enhanced{

@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import path from 'path';
 import { promises as fs } from 'fs';
+import { slugify } from '@/lib/slug';
 
 async function readLyricsForSlug(slug: string): Promise<string | null> {
   const baseDir = process.cwd();
@@ -22,6 +23,20 @@ async function readLyricsForSlug(slug: string): Promise<string | null> {
       return buf.toString('utf8');
     } catch {}
   }
+  // Fallback: scan lyrics directory and match by normalized basename
+  try {
+    const entries = await fs.readdir(lyricsDir, { withFileTypes: true } as any);
+    for (const ent of entries) {
+      const name = (ent as any).name || '';
+      if (!name.toLowerCase().endsWith('.md')) continue;
+      const base = name.replace(/\.md$/i, '');
+      if (slugify(base) === slug) {
+        const p = path.join(lyricsDir, name);
+        const buf = await fs.readFile(p);
+        return buf.toString('utf8');
+      }
+    }
+  } catch {}
   return null;
 }
 

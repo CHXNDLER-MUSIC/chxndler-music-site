@@ -8,6 +8,7 @@ export default function IconButtonShell({
   children,
   onClickFX,
   onHoverFX,
+  dataId,
 }: {
   title: string;
   href: string;
@@ -15,6 +16,7 @@ export default function IconButtonShell({
   children: React.ReactNode;
   onClickFX?: () => void;
   onHoverFX?: () => void;
+  dataId?: string;
 }) {
   return (
     <>
@@ -23,6 +25,7 @@ export default function IconButtonShell({
         target="_blank"
         rel="noreferrer"
         title={title}
+        data-id={dataId}
         className="ck-icon-btn"
         style={{ "--btn-color": color } as React.CSSProperties}
         onMouseEnter={() => { if (onHoverFX) onHoverFX(); }}
@@ -96,4 +99,3 @@ export default function IconButtonShell({
     </>
   );
 }
-

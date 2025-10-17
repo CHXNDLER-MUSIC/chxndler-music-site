@@ -92,18 +92,20 @@ export default function HoloAudioBridge() {
       // Implement warp delay like MediaPlayer
       const WARP_MS = 1800;
       const warpTimeout = setTimeout(() => {
-        console.log('🎵 HoloAudioBridge: Warp delay complete, playing', currentTrack.title);
+        console.log('🎵 HoloAudioBridge: Warp delay complete, attempting to play', currentTrack.title);
 
-        // Reveal planets again and switch to single-planet mode post-warp
-        try {
-          playerStore.getState().setPlanetsVisible(true);
-        } catch {}
-        try {
-          playerStore.getState().setPlanetDisplayMode('single');
-        } catch {}
+        // After warp, only reveal the focused planet once playback actually starts
+        const onPlaying = () => {
+          try { playerStore.getState().setPlanetsVisible(true); } catch {}
+          try { playerStore.getState().setPlanetDisplayMode('single'); } catch {}
+          a.removeEventListener('playing', onPlaying);
+        };
+        a.addEventListener('playing', onPlaying, { once: true } as any);
 
         a.play().catch((err) => {
           console.error('🎵 HoloAudioBridge: Play failed', err);
+          // If play fails (autoplay restrictions), do not reveal planets yet
+          a.removeEventListener('playing', onPlaying);
         });
       }, WARP_MS);
       

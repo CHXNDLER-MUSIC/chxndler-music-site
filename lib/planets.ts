@@ -29,7 +29,7 @@ function pickElement(slug: string, index: number): Element {
   // Lightning songs
   if (s.includes("american-dream") || s.includes("blue") || s.includes("brain-freeze") ||
       s.includes("feeling-this") || s.includes("game-boy-heart") || s.includes("home") ||
-      s.includes("house-party") || s.includes("kid-forever") || s.includes("pok-mon")) return "lightning";
+      s.includes("house-party") || s.includes("kid-forever") || s.includes("pokemon")) return "lightning";
   
   // Water songs
   if (s.includes("letting-go") || s.includes("ocean-girl")) return "water";
@@ -307,7 +307,7 @@ export const SONG_PLANET_DATA: Record<string, {
     shape: "Playful rounded orb",
     surfaceElements: "Playgrounds, neon treehouses, cartoon slides"
   },
-  "pok-mon": {
+  "pokemon": {
     element: "lightning", 
     color: "#F2EF1D",
     surface: "Neon yellow surface textured like a glowing Poké Ball grid",
@@ -985,7 +985,6 @@ function inferMotifsFromDescriptor(slug: string): { name: PlanetMotifName; color
       slug.replace(/-blink-182-cover$/, ''),
       slug.replace(/^alien-/, ''),
       slug.replace(/\(.*\)$/, '').replace(/--+/g, '-').replace(/-$/, ''),
-      slug === 'pokemon' ? 'pok-mon' : slug,
     ];
     for (const a of aliases) { if (SONG_PLANET_DATA[a]) { d = SONG_PLANET_DATA[a]; break; } }
   }

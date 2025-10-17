@@ -331,6 +331,7 @@ export default function SteeringWheelOverlay({
                   type="button"
                   className={`power-btn ${(blueActive && showUI) ? 'power-btn-active' : ''}`}
                   data-analytics={`⚡ Power Toggle: ${blueActive ? 'off' : 'on'}`}
+                  data-id="power"
                   onMouseEnter={() => { if (!showUI || !mounted) return; try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
                   onClick={() => {
                     if (!showUI || !isUIUnlocked) return;

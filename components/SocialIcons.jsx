@@ -127,7 +127,7 @@ export default function SocialIcons({ LINKS, POS, trackLinks }) {
           <div key={it.key} data-key={it.key} className="ck-icon-wrap" style={{ left: leftCSS, top, width:size, height:size, transform: transformCSS }}>
             <span className="deck" aria-hidden />
             <span className="socket" aria-hidden />
-            <IconButtonShell title={it.title} href={it.href} color={it.color} onClickFX={playClick} onHoverFX={playHover}>
+            <IconButtonShell title={it.title} href={it.href} color={it.color} onClickFX={playClick} onHoverFX={playHover} dataId={it.key === 'instagram' ? 'ig' : it.key === 'tiktok' ? 'tt' : it.key === 'youtube' ? 'yt' : undefined}>
               {it.icon}
             </IconButtonShell>
           </div>

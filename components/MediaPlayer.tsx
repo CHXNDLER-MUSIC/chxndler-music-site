@@ -114,6 +114,26 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     if (typeof window === 'undefined') return;
     try { localStorage.setItem(VOLUME_STORAGE_KEY, String(Math.max(0, Math.min(1, volume)))); } catch {}
   }, [volume]);
+
+  // Ensure 3D planet toggles on only once the track actually starts playing (post-warp)
+  useEffect(() => {
+    const a = audioRef.current; if (!a) return;
+    const onPlaying = () => {
+      try {
+        const { playerStore } = require("@/store/usePlayerStore");
+        const st = playerStore.getState();
+        // Only switch if a song is selected and we aren't already in single mode
+        if (st.mainId && st.planetDisplayMode !== 'single') {
+          st.setPlanetDisplayMode('single');
+        }
+        if (!st.planetsVisible) {
+          st.setPlanetsVisible(true);
+        }
+      } catch {}
+    };
+    a.addEventListener('playing', onPlaying);
+    return () => { try { a.removeEventListener('playing', onPlaying); } catch {} };
+  }, []);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [animationTime, setAnimationTime] = useState(0);
@@ -1168,19 +1188,22 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 title="Volume"
               onMouseEnter={playHover}
               >
-                {volume === 0 ? (
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
-                    <path d="M16.5 12l3.5 3.5-1.5 1.5L15 13.5 11.5 17H8l-4-4V11l4-4h3.5l3.5 3.5 3.5-3.5 1.5 1.5L16.5 12zM10 8.5L7.5 11H6v2h1.5L10 15.5V8.5z"/>
-                  </svg>
-                ) : volume < 0.5 ? (
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
-                    <path d="M3 10v4h4l5 5V5L7 10H3zm10.5 2c0-1.77-.77-3.29-2-4.3v8.6c1.23-1.01 2-2.53 2-4.3z"/>
-                  </svg>
-                ) : (
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
-                    <path d="M3 10v4h4l5 5V5L7 10H3zm8 2c0 2.21-1.79 4-4 4v-2c1.1 0 2-.9 2-2s-.9-2-2-2V8c2.21 0 4 1.79 4 4zm4.5 0c0-3.04-1.72-5.64-4.25-6.92l-.75 1.86C12.6 8.2 14 9.96 14 12s-1.4 3.8-3.5 4.06l.75 1.86C18.28 17.64 19.5 15.04 19.5 12z"/>
-                  </svg>
-                )}
+                <div className="btn-glow"></div>
+                <span className="btn-icon">
+                  {volume === 0 ? (
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
+                      <path d="M16.5 12l3.5 3.5-1.5 1.5L15 13.5 11.5 17H8l-4-4V11l4-4h3.5l3.5 3.5 3.5-3.5 1.5 1.5L16.5 12zM10 8.5L7.5 11H6v2h1.5L10 15.5V8.5z"/>
+                    </svg>
+                  ) : volume < 0.5 ? (
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
+                      <path d="M3 10v4h4l5 5V5L7 10H3zm10.5 2c0-1.77-.77-3.29-2-4.3v8.6c1.23-1.01 2-2.53 2-4.3z"/>
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
+                      <path d="M3 10v4h4l5 5V5L7 10H3zm8 2c0 2.21-1.79 4-4 4v-2c1.1 0 2-.9 2-2s-.9-2-2-2V8c2.21 0 4 1.79 4 4zm4.5 0c0-3.04-1.72-5.64-4.25-6.92l-.75 1.86C12.6 8.2 14 9.96 14 12s-1.4 3.8-3.5 4.06l.75 1.86C18.28 17.64 19.5 15.04 19.5 12z"/>
+                    </svg>
+                  )}
+                </span>
               </button>
               {null}
               </div>
@@ -1209,15 +1232,16 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
 
             {/* Spotify button positioned in waveform container */}
             {cur.spotify ? (
-              <a
-                href={cur.spotify}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="spotify-btn-waveform"
-                title="Open on Spotify"
-                aria-label={`Open ${cur.title} on Spotify`}
-                data-song={cur.title}
-                data-slug={cur.slug}
+                <a
+                  href={cur.spotify}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="spotify-btn-waveform"
+                  title="Open on Spotify"
+                  aria-label={`Open ${cur.title} on Spotify`}
+                  data-song={cur.title}
+                  data-slug={cur.slug}
+                  data-id="sp"
               onMouseEnter={playHover}
               >
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
@@ -1246,6 +1270,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 aria-label={`Open ${cur.title} on Apple Music`}
                 data-song={cur.title}
                 data-slug={cur.slug}
+                data-id="am"
               >
                 {/* White beamed music note (Apple-like) */}
                 <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden>
@@ -1934,6 +1959,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           z-index: 32;
         }
         .waveform-volume-btn {
+          position: relative;
           width: 28px;
           height: 28px;
           border-radius: 50%;
@@ -1947,7 +1973,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           transition: all 0.25s ease;
           box-shadow: 0 4px 16px rgba(25,227,255,0.6);
         }
-        .waveform-volume-btn:hover { transform: scale(1.1); box-shadow: 0 6px 22px rgba(25,227,255,0.75); }
+        .waveform-volume-btn:hover { transform: scale(1.05); box-shadow: 0 6px 22px rgba(25,227,255,0.75); }
+        .waveform-volume-btn:hover .btn-glow { opacity: 1; animation: pulse 2s ease-in-out infinite; }
         .waveform-volume-btn:active { transform: scale(0.95); }
         /* Removed legacy horizontal waveform volume bar styles */
         

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { slugify } from '@/lib/slug';
 
 // Attempts to read a lyrics markdown file for a given slug with a few fallbacks
 async function tryReadLyricsFile(slug: string): Promise<string | null> {
@@ -23,6 +24,22 @@ async function tryReadLyricsFile(slug: string): Promise<string | null> {
       return buf.toString('utf8');
     } catch {}
   }
+  // Fallback: scan directory and match by normalized basename using slugify
+  try {
+    const entries = await fs.readdir(lyricsDir, { withFileTypes: true } as any);
+    for (const ent of entries) {
+      const isFile = typeof (ent as any).isFile === 'function' ? (ent as any).isFile() : true;
+      if (!isFile) continue;
+      const name = (ent as any).name || '';
+      if (!name.toLowerCase().endsWith('.md')) continue;
+      const base = name.replace(/\.md$/i, '');
+      if (slugify(base) === slug) {
+        const p = path.join(lyricsDir, name);
+        const buf = await fs.readFile(p);
+        return buf.toString('utf8');
+      }
+    }
+  } catch {}
   return null;
 }
 
@@ -43,4 +60,3 @@ export async function GET(
     return NextResponse.json({ error: e?.message || 'Failed to load lyrics' }, { status: 500 });
   }
 }
-

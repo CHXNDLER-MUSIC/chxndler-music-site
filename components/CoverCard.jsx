@@ -33,7 +33,8 @@ export default function CoverCard({ src = "/cover/ocean-girl.png", label, size =
   };
 
   const handleClick = () => {
-    sfx.play('flip', 0.7);
+    // Slightly reduce flip volume for a softer click
+    sfx.play('flip', 0.5);
   };
     
   return (

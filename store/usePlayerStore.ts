@@ -61,7 +61,8 @@ let state: State = {
       setState({ 
         prevMainId: state.mainId, 
         mainId: id, 
-        planetDisplayMode: 'hidden' // Hide during warp
+        planetDisplayMode: 'hidden', // Hide during warp
+        planetsVisible: false // Ensure all planets toggle off immediately
       });
     }
     
