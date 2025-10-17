@@ -104,7 +104,9 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
   
   // CRITICAL: Override planetsVisible when showAll is true (homepage mode) 
   // Always show planets on homepage regardless of store state
-  const effectivePlanetsVisible = showAll ? true : planetsVisible;
+  // Do not force-enable visibility based on showAll; honor store state.
+  // Homepage code ensures planetsVisible is true when appropriate.
+  const effectivePlanetsVisible = planetsVisible;
   
   // Debug planet visibility state
   
@@ -162,12 +164,13 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         <group scale={actualShouldShowAll ? 1.45 : 1}>
         <SystemGroup>
           {/* Orbit guides when showing all planets */}
-          {actualShouldShowAll ? <OrbitGuides /> : null}
+          {(actualShouldShowAll || shouldShowSingle) ? <OrbitGuides /> : null}
           
           {/* Clean planet rendering based on planetDisplayMode */}
           {(() => {
-            // CRITICAL FIX: Never hide when showAll=true (homepage)
-            if (actualShouldHide && !showAll) {
+            // Hide planets entirely when mode requests hidden (e.g., during warp),
+            // regardless of showAll prop passed from the parent.
+            if (actualShouldHide) {
               return null;
             }
             

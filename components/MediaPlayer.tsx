@@ -30,6 +30,9 @@ type Props = {
 };
 
 export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChange, onAudioReady, wrapChannels = true, startSignal = 0, startIndex = 0, playSignal = 0, toggleSignal = 0, showHUDPlay = true, index, onIndexChange, autoPlayOnIndex = true, unlockPlays = true }: Props) {
+  // Small positive lead time so UI tracks perceived audio output, not decoded timestamp
+  // Tuned conservatively to avoid overshoot on slower devices/browsers
+  const CURSOR_LEAD_SEC = 0.12;
   const [internalIdx, setInternalIdx] = useState(startIndex);
   const idx = (typeof index === 'number') ? index : internalIdx;
   const setIdx = (val: number | ((p:number)=>number)) => {
@@ -171,7 +174,17 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     const unsubscribe = stateMachine.current.onStateChange((state, context) => {
       console.log('🎵 State machine changed:', { state, context, isPlaying: context.isPlaying });
       setMediaState(state);
-      setPlaying(context.isPlaying);
+      // Reflect actual audio element state to keep UI icon accurate
+      try {
+        const a = audioRef.current;
+        if (a) {
+          setPlaying(!a.paused);
+        } else {
+          setPlaying(context.isPlaying);
+        }
+      } catch {
+        setPlaying(context.isPlaying);
+      }
       
       if (DEBUG_MEDIA) {
         dlog('Media state changed:', { state, context });
@@ -637,6 +650,29 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     }
   }
 
+  // Expose a direct, gesture-safe toggle so external HUD buttons can call play/pause
+  // within the same user click event. This helps bypass autoplay policy blocks
+  // that can occur when triggering play() from async effects.
+  useEffect(() => {
+    try {
+      (window as any).mainPlayerToggle = () => { try { toggle(); } catch {} };
+      (window as any).mainPlayerPlay = () => {
+        try {
+          const a = audioRef.current; if (!a) return;
+          if (a.paused) { a.muted = false; intentionalPlayRef.current = true; a.play().catch(()=>{}); }
+        } catch {}
+      };
+      (window as any).mainPlayerPause = () => { try { const a = audioRef.current; if (!a) return; if (!a.paused) a.pause(); } catch {} };
+    } catch {}
+    return () => {
+      try {
+        delete (window as any).mainPlayerToggle;
+        delete (window as any).mainPlayerPlay;
+        delete (window as any).mainPlayerPause;
+      } catch {}
+    };
+  }, []);
+
   useEffect(() => {
     // Keep local playing state in sync with the audio element's real state
     const a = audioRef.current; if (!a) return;
@@ -1008,9 +1044,13 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 
                 // Use live audio time for perfect sync (falls back to state); respect seeking override
                 const d = liveDuration;
-                const liveT = (audioRef.current && isFinite(audioRef.current.currentTime)) ? audioRef.current.currentTime : currentTime;
-                const t = (seekPositionRef.current !== null) ? seekPositionRef.current : liveT;
-                const progress = (d > 0 && isFinite(t)) ? Math.max(0, Math.min(1, t / d)) : 0;
+                const aEl = audioRef.current;
+                const liveT = (aEl && isFinite(aEl.currentTime)) ? aEl.currentTime : currentTime;
+                const baseT = (seekPositionRef.current !== null) ? seekPositionRef.current : liveT;
+                const isPaused = !!(aEl ? aEl.paused : !playing);
+                // Apply small lead only when playing and not seeking
+                const displayT = (!seekingRef.current && !isPaused) ? Math.min(d || Infinity, baseT + CURSOR_LEAD_SEC) : baseT;
+                const progress = (d > 0 && isFinite(displayT)) ? Math.max(0, Math.min(1, displayT / d)) : 0;
                 
                 return (
                   <>
@@ -1234,11 +1274,11 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               style={{
                 left: `${(() => {
                   // Use ref for immediate visual feedback during seeking; otherwise, read from the live audio element to avoid state lag
-                  const liveT = (audioRef.current && isFinite(audioRef.current.currentTime)) ? audioRef.current.currentTime : currentTime;
+                  const aEl = audioRef.current;
+                  const liveT = (aEl && isFinite(aEl.currentTime)) ? aEl.currentTime : currentTime;
                   // Nudge cursor slightly ahead to compensate for render/audio output latency while playing
-                  const CURSOR_LEAD_SEC = 0.08;
                   const baseT = seekPositionRef.current !== null ? seekPositionRef.current : liveT;
-                  const isPaused = !!(audioRef.current ? audioRef.current.paused : !playing);
+                  const isPaused = !!(aEl ? aEl.paused : !playing);
                   const timeToUse = (!seekingRef.current && !isPaused) ? Math.min(liveDuration || Infinity, baseT + CURSOR_LEAD_SEC) : baseT;
                   const progressPercent = Math.max(0, Math.min(100, (liveDuration > 0 && isFinite(timeToUse) ? (timeToUse / liveDuration) * 100 : 0)));
                   return progressPercent;
@@ -1283,10 +1323,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 }}
               >
                 {(() => {
-                  const liveT = (audioRef.current && isFinite(audioRef.current.currentTime)) ? audioRef.current.currentTime : currentTime;
-                  const CURSOR_LEAD_SEC = 0.08;
+                  const aEl = audioRef.current;
+                  const liveT = (aEl && isFinite(aEl.currentTime)) ? aEl.currentTime : currentTime;
                   const baseT = (seekPositionRef.current ?? liveT);
-                  const isPaused = !!(audioRef.current ? audioRef.current.paused : !playing);
+                  const isPaused = !!(aEl ? aEl.paused : !playing);
                   const t = (!seekingRef.current && !isPaused) ? Math.min(liveDuration || Infinity, baseT + CURSOR_LEAD_SEC) : baseT;
                   return liveDuration > 0 ? Math.floor(((t) / liveDuration) * 100) : 0;
                 })()}%
@@ -1319,7 +1359,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               console.log('🎵 Play/pause button clicked', { playing, event: e });
               toggle();
             }} 
-            className="play-pause-btn" 
+            className={`play-pause-btn ${playing ? 'playing' : ''}`} 
             aria-label={playing ? "Pause" : "Play"}
           onMouseEnter={playHover}
           >
@@ -1696,12 +1736,12 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         
         /* Waveform visualization container - slightly wider to accommodate both buttons */
         .waveform-container{
-          width: 26vw;
-          height: 20vw;
-          min-width: 130px;
-          min-height: 90px;
-          max-width: 160px;
-          max-height: 120px;
+          width: 28vw;
+          height: 22vw;
+          min-width: 140px;
+          min-height: 98px;
+          max-width: 170px;
+          max-height: 130px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -2086,8 +2126,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           inset: -4px;
           border-radius: 50%;
           background: radial-gradient(circle, rgba(25,227,255,0.4), transparent 70%);
-          animation: pulse 2s ease-in-out infinite;
+          opacity: 0; /* Only glow when playing */
+          animation: none;
         }
+        .play-pause-btn.playing .btn-glow { opacity: 1; animation: pulse 2s ease-in-out infinite; }
         
         .btn-icon {
           position: relative;

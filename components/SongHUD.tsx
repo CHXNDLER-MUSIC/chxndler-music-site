@@ -14,8 +14,8 @@ export default function SongHUD({ title, coverSrc, element }: { title: string; c
            boxShadow: '0 10px 24px rgba(0,0,0,.4)'
          }}>
       <div style={{ display:'flex', alignItems:'center', gap:12, minWidth: 320 }}>
-        <span className="hud-cover relative overflow-hidden" style={{ display: 'inline-block', borderRadius: 10, width: 48, height: 48 }}>
-          <Image src={coverSrc} alt={title} width={48} height={48} priority className="rounded object-cover w-full h-full" />
+        <span className="hud-cover relative overflow-hidden" style={{ display: 'inline-block', borderRadius: 10, width: 52, height: 52 }}>
+          <Image src={coverSrc} alt={title} width={52} height={52} priority className="rounded object-cover w-full h-full" />
           {/* Subtle blue interior to match waveform styling */}
           <span className="hud-blue-fill-overlay pointer-events-none absolute inset-0 mix-blend-overlay" />
           {/* Inner neon rim */}

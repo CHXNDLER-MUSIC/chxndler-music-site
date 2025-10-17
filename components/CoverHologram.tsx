@@ -134,7 +134,8 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
     <motion.div
       className={`cover-hologram-container ${hovered ? 'hovered' : ''} ${inline ? 'relative' : 'absolute left-1/2 z-30 -translate-x-1/2'} rounded-2xl cursor-pointer border-2 border-[#19E3FF]/80 bg-cyan-400/10 backdrop-blur-xl shadow-[0_0_18px_rgba(25,227,255,0.35)]`}
       style={inline ? { 
-        width: size + 20, // Account for increased inner padding
+        // Make the cover touch the sides of the blue box: no extra padding compensation
+        width: size,
       } : { 
         top: "calc(50% + 90px)", 
         transform: "translateX(-50%)",
@@ -147,7 +148,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
       }}
       transition={{ type: "spring", stiffness: 100, damping: 18 }}
       onClick={handleClick}
-      onMouseEnter={() => setHovered(true)}
+      onMouseEnter={() => { setHovered(true); try { sfx.play('hover', 0.35); } catch {} }}
       onMouseLeave={() => setHovered(false)}
       role="button"
       // Help analytics identify cover art context reliably
@@ -162,13 +163,13 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
       }}
       aria-label={`View ${title} card`}
     >
-      <div className="cover-hologram-inner p-2.5">
+      <div className="cover-hologram-inner p-0.5">
         <Image
           src={src}
           alt={`${title} cover`}
           width={size}
           height={size}
-          className="cover-hologram-image rounded-xl object-cover select-none w-full h-auto transition-all duration-300"
+          className="cover-hologram-image rounded-2xl object-cover select-none w-full h-auto transition-all duration-300"
           // Mirror attributes onto the image for robust targeting
           data-song={title}
           data-slug={(slug && slug.toLowerCase()) || title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}
@@ -210,6 +211,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                     position: 'relative',
                     cursor: 'pointer'
                   }}
+                  onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
                   onClick={() => { 
                     // Flip the card and play flip sound regardless of card availability;
                     // the front image already falls back to cover if a card image is missing.
@@ -316,6 +318,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
             <button
               type="button"
               aria-label="Close"
+              onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
               onClick={() => {
                 try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
                 setShowCard(false);
@@ -385,6 +388,24 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
           position:relative; border-radius: 16px; padding: 8px; background: transparent;
           outline: 1px solid rgba(25,227,255,.4);
           box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 0 36px rgba(25,227,255,.35);
+        }
+        /* Hover grow + glow on the card, similar to COLLECT CARD button */
+        .card-flip-container{ transition: transform .12s ease, box-shadow .18s ease, filter .18s ease; will-change: transform; }
+        .card-flip-container:hover{ transform: translateZ(0) scale(1.05); }
+        .card-frame:hover{
+          box-shadow:
+            0 0 52px rgba(25,227,255,.9),
+            0 0 90px rgba(25,227,255,.7),
+            0 0 140px rgba(25,227,255,0.5),
+            0 0 200px rgba(25,227,255,0.3),
+            inset 0 0 0 1px rgba(255,255,255,.12);
+          outline-color: rgba(25,227,255,.75);
+        }
+        .card-frame:hover .tilt-img{
+          filter: saturate(1.1) brightness(1.08) contrast(1.08)
+            drop-shadow(0 0 26px rgba(25,227,255,1))
+            drop-shadow(0 0 52px rgba(25,227,255,.8))
+            drop-shadow(0 0 96px rgba(25,227,255,.6));
         }
         .tilt-img{
           width: 100%; height: auto; display:block; object-fit: contain;

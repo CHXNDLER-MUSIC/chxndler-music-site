@@ -1968,8 +1968,8 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
         });
         
         // Hide non-focused planets when a song is selected.
-        // CRITICAL: In homepage mode (showAll=true), ALWAYS show satellites regardless of planetsVisible.
-        const finalVisible = ((showAll ? true : planetsVisible) && !shouldHide);
+        // Honor global planetsVisible even in homepage mode to avoid flicker during selection.
+        const finalVisible = (planetsVisible && !shouldHide);
         s.mesh.visible = finalVisible;
 
         console.log(`🌍 Planet ${s.id} FINAL visibility decision:`, {

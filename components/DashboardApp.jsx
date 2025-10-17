@@ -1715,13 +1715,15 @@ export default function DashboardApp({ initialSlug } = {}) {
                       } catch {}
                     }
                   } else {
-                    // When playback stops, keep planets visible on homepage
+                    // When playback stops/pauses:
+                    // - On homepage: keep all planets visible
+                    // - On song view: do not change planet visibility or mode
                     try {
                       if (homeMode) {
                         playerStore.getState().setPlanetDisplayMode('all');
                         playerStore.getState().setPlanetsVisible(true);
                       } else {
-                        playerStore.getState().setPlanetsVisible(false);
+                        // No-op on non-home views; preserve current planet visibility/state
                       }
                     } catch {}
                   }

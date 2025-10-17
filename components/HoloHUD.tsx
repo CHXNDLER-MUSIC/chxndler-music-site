@@ -40,8 +40,12 @@ export default function HoloHUD({
           type="button"
           className={`play-btn ${playing ? "on" : ""}`}
           onClick={() => {
-            // Delegate playback control to the main controller
-            // This ensures music only starts after the sky MP4 is playing
+            // Prefer direct toggle to keep play() inside the same user gesture
+            try {
+              const fn = (window as any).mainPlayerToggle;
+              if (typeof fn === 'function') { fn(); return; }
+            } catch {}
+            // Fallback: delegate to parent controller
             try { onToggle(); } catch {}
           }}
           aria-label={playing ? "Pause" : "Play"}
