@@ -269,7 +269,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
               </div>
             </div>
             {hasRealCard && (
-              <div className="absolute top-px left-1/2 transform -translate-x-1/2 z-10">
+              <div className="absolute top-[5px] left-1/2 transform -translate-x-1/2 z-10">
                 <div className="ocean-cta-wrap relative">
                   <a
                     href={getPurchaseUrl(title)}

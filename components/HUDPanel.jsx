@@ -3,6 +3,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 // 2D fallback hologram
 // 2D HUD removed per request; 3D only
 // 3D planet system (requires three/r3f/drei installed)
@@ -143,7 +144,80 @@ export default function HUDPanel({
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1.0);
   const lastNonZeroVolumeRef = useRef(1.0);
+  const hudVolumeSfxLastRef = useRef(0);
   const VOLUME_STORAGE_KEY = 'mediaPlayer:volume';
+  // Lyrics popover state
+  const [showLyricsPopover, setShowLyricsPopover] = useState(false);
+  const [lyricsLoading, setLyricsLoading] = useState(false);
+  const [lyricsError, setLyricsError] = useState(null);
+  const [lyricsContent, setLyricsContent] = useState('');
+  const lyricsBtnRef = useRef(null);
+  const [lyricsPopoverPos, setLyricsPopoverPos] = useState(null);
+  const lyricsScrollRef = useRef(null);
+  const lyricsLastScrollAtRef = useRef(0);
+
+  async function openLyricsPopover(slug){
+    try { sfx.play('click', 0.4); } catch {}
+    // Anchor position
+    try {
+      const r = lyricsBtnRef.current?.getBoundingClientRect?.();
+      const wrapper = innerRef.current?.parentElement || null; // outer HUD blue display wrapper (padding box)
+      if (wrapper && typeof window !== 'undefined') {
+        const rect = wrapper.getBoundingClientRect();
+        const cs = window.getComputedStyle(wrapper);
+        const pl = parseFloat(cs.paddingLeft || '0') || 0;
+        const pr = parseFloat(cs.paddingRight || '0') || 0;
+        const leftEdge = rect.left + pl;
+        const rightEdge = rect.right - pr;
+        const width = Math.max(0, rightEdge - leftEdge);
+        const top = r ? (r.bottom + 8) : (rect.top + 8);
+        setLyricsPopoverPos({ left: leftEdge, top, width });
+      } else if (r) {
+        setLyricsPopoverPos({ left: r.left + r.width/2, top: r.bottom + 8 });
+      }
+    } catch {}
+    setShowLyricsPopover(true);
+    setLyricsLoading(true);
+    setLyricsError(null);
+    setLyricsContent('');
+    try{
+      const res = await fetch(`/api/lyrics/${encodeURIComponent(slug)}`);
+      if (!res.ok) {
+        const data = await res.json().catch(()=>({}));
+        throw new Error(data?.error || `Lyrics not found (${res.status})`);
+      }
+      const data = await res.json();
+      setLyricsContent(String(data?.content || 'No lyrics available.'));
+    } catch(e){
+      setLyricsError((e && (e.message||e.name)) || 'Failed to load lyrics');
+    } finally {
+      setLyricsLoading(false);
+    }
+  }
+
+  // Recalculate popover alignment to blue display on resize while open
+  useEffect(() => {
+    if (!showLyricsPopover) return;
+    const recalc = () => {
+      try {
+        const r = lyricsBtnRef.current?.getBoundingClientRect?.();
+        const wrapper = innerRef.current?.parentElement || null;
+        if (wrapper && typeof window !== 'undefined') {
+          const rect = wrapper.getBoundingClientRect();
+          const cs = window.getComputedStyle(wrapper);
+          const pl = parseFloat(cs.paddingLeft || '0') || 0;
+          const pr = parseFloat(cs.paddingRight || '0') || 0;
+          const leftEdge = rect.left + pl;
+          const rightEdge = rect.right - pr;
+          const width = Math.max(0, rightEdge - leftEdge);
+          const top = r ? (r.bottom + 8) : (rect.top + 8);
+          setLyricsPopoverPos({ left: leftEdge, top, width });
+        }
+      } catch {}
+    };
+    window.addEventListener('resize', recalc);
+    return () => window.removeEventListener('resize', recalc);
+  }, [showLyricsPopover]);
   const [animationTime, setAnimationTime] = useState(0);
   // Volume popover (HUD waveform controls)
   const [showHudVolumePopover, setShowHudVolumePopover] = useState(false);
@@ -198,6 +272,44 @@ export default function HUDPanel({
     }
     return () => { mounted = false; };
   }, []);
+
+  // Close Lyrics popover on outside click / Escape
+  useEffect(() => {
+    if (!showLyricsPopover) return;
+    const onDocDown = (e) => {
+      const t = e.target;
+      const withinBtn = lyricsBtnRef.current && t && lyricsBtnRef.current.contains(t);
+      const dialog = document.querySelector('[aria-label="Lyrics"]');
+      const withinDialog = dialog && t && dialog.contains(t);
+      if (!withinBtn && !withinDialog) { try { sfx.play('close', 0.4); } catch {}; setShowLyricsPopover(false); }
+    };
+    const onKey = (e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowLyricsPopover(false); } };
+    document.addEventListener('mousedown', onDocDown);
+    document.addEventListener('touchstart', onDocDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocDown);
+      document.removeEventListener('touchstart', onDocDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [showLyricsPopover]);
+
+  // Play subtle scroll SFX while scrolling lyrics (rate-limited)
+  useEffect(() => {
+    if (!showLyricsPopover) return;
+    const el = lyricsScrollRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      const last = lyricsLastScrollAtRef.current || 0;
+      if (now - last > 260) {
+        lyricsLastScrollAtRef.current = now;
+        try { sfx.play('scroll', 0.28); } catch {}
+      }
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => { try { el.removeEventListener('scroll', onScroll); } catch {} };
+  }, [showLyricsPopover]);
 
   useEffect(() => {
     const updatePos = () => {
@@ -365,10 +477,11 @@ export default function HUDPanel({
     const onDocDown = (e) => {
       const t = e.target;
       if (hudVolRef.current && t && !hudVolRef.current.contains(t)) {
+        try { sfx.play('close', 0.4); } catch {}
         setShowHudVolumePopover(false);
       }
     };
-    const onKey = (e) => { if (e.key === 'Escape') setShowHudVolumePopover(false); };
+    const onKey = (e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowHudVolumePopover(false); } };
     document.addEventListener('mousedown', onDocDown);
     document.addEventListener('touchstart', onDocDown);
     document.addEventListener('keydown', onKey);
@@ -463,8 +576,19 @@ export default function HUDPanel({
     }
     
     if (!currentId) {
-      // Do not play ambient audio on homepage
-      try { window.dispatchEvent(new CustomEvent('ambient:userPause')); } catch {}
+      // Homepage: directly toggle ambient (space-music.mp3)
+      try {
+        if (a.paused) {
+          // Clear user-paused flag and try to resume ambient
+          try { window.dispatchEvent(new CustomEvent('ambient:userPlay')); } catch {}
+          try { a.muted = false; } catch {}
+          a.play().catch(() => {});
+        } else {
+          // Pause ambient and mark as user-paused to prevent auto-resume
+          a.pause();
+          try { window.dispatchEvent(new CustomEvent('ambient:userPause')); } catch {}
+        }
+      } catch {}
       return;
     } else {
       // When a song is selected, prefer the MediaPlayer's toggle API to keep
@@ -865,6 +989,7 @@ export default function HUDPanel({
                           const r = hudVolBtnRef.current.getBoundingClientRect();
                           setHudPopoverPos({ left: r.left + r.width/2, top: r.bottom + 8 });
                         }
+                        if (!next) { try { sfx.play('close', 0.4); } catch {} }
                         return next;
                       });
                     }}
@@ -898,6 +1023,67 @@ export default function HUDPanel({
                     )}
                   </button>
                   {null}
+                  {(() => {
+                    const isHome = !currentId;
+                    const currentSong = resolvedSongs.find(s => s.id === active);
+                    if (isHome) {
+                      // Homepage: pop out CHXNDLER lyrics in the same popover UI
+                      return (
+                        <button
+                          ref={lyricsBtnRef}
+                          type="button"
+                          className="hud-lyrics-btn"
+                          title="Lyrics for CHXNDLER"
+                          aria-label="View lyrics for CHXNDLER"
+                          data-id="lyrics"
+                          data-song="CHXNDLER"
+                          aria-haspopup="dialog"
+                          aria-expanded={showLyricsPopover}
+                          onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                          onClick={() => {
+                            if (showLyricsPopover) { try { sfx.play('close', 0.4); } catch {}; setShowLyricsPopover(false); return; }
+                            openLyricsPopover('chxndler');
+                          }}
+                        >
+                          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                            <rect x="5" y="5" width="14" height="10" rx="4" ry="4" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                            <circle cx="8" cy="16" r="1.2" fill="currentColor" />
+                            <circle cx="6.2" cy="18" r="1.1" fill="currentColor" />
+                            <rect x="10" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+                            <rect x="13.6" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+                          </svg>
+                        </button>
+                      );
+                    }
+                    const slug = currentSong?.id;
+                    if (!slug) return null;
+                    return (
+                      <button
+                        ref={lyricsBtnRef}
+                        type="button"
+                        className="hud-lyrics-btn"
+                        title={`Lyrics for ${currentSong?.title || 'current track'}`}
+                        aria-label={`View lyrics for ${currentSong?.title || 'current track'}`}
+                        data-id="lyrics"
+                        data-song={currentSong?.title || ''}
+                        aria-haspopup="dialog"
+                        aria-expanded={showLyricsPopover}
+                        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                        onClick={() => {
+                          if (showLyricsPopover) { try { sfx.play('close', 0.4); } catch {}; setShowLyricsPopover(false); return; }
+                          openLyricsPopover(slug);
+                        }}
+                      >
+                        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                          <rect x="5" y="5" width="14" height="10" rx="4" ry="4" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                          <circle cx="8" cy="16" r="1.2" fill="currentColor" />
+                          <circle cx="6.2" cy="18" r="1.1" fill="currentColor" />
+                          <rect x="10" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+                          <rect x="13.6" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+                        </svg>
+                      </button>
+                    );
+                  })()}
                 </div>
 
                 {typeof document !== 'undefined' && showHudVolumePopover && hudPopoverPos ? require('react-dom').createPortal(
@@ -923,12 +1109,14 @@ export default function HUDPanel({
                       aria-valuenow={Math.round(volume * 100)}
                       tabIndex={0}
                       onKeyDown={(e) => {
-                        if (e.key === 'ArrowUp') { e.preventDefault(); const a = liveAudioRef.current; if (!a) return; a.volume = Math.max(0, Math.min(1, volume + 0.05)); }
-                        else if (e.key === 'ArrowDown') { e.preventDefault(); const a = liveAudioRef.current; if (!a) return; a.volume = Math.max(0, Math.min(1, volume - 0.05)); }
+                        const playVol = () => { const now = (typeof performance !== 'undefined' ? performance.now() : Date.now()); const last = hudVolumeSfxLastRef.current || 0; if (now - last > 150) { hudVolumeSfxLastRef.current = now; try { sfx.play('volume', 0.32); } catch {} } };
+                        if (e.key === 'ArrowUp') { e.preventDefault(); const a = liveAudioRef.current; if (!a) return; a.volume = Math.max(0, Math.min(1, volume + 0.05)); playVol(); }
+                        else if (e.key === 'ArrowDown') { e.preventDefault(); const a = liveAudioRef.current; if (!a) return; a.volume = Math.max(0, Math.min(1, volume - 0.05)); playVol(); }
                       }}
                       onPointerDown={(e) => {
                         const a = liveAudioRef.current; if (!a) return;
                         const el = e.currentTarget;
+                        const playVol = () => { const now = (typeof performance !== 'undefined' ? performance.now() : Date.now()); const last = hudVolumeSfxLastRef.current || 0; if (now - last > 120) { hudVolumeSfxLastRef.current = now; try { sfx.play('volume', 0.28); } catch {} } };
                         const applyFromClientY = (clientY) => {
                           const rect = el.getBoundingClientRect();
                           const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
@@ -936,9 +1124,10 @@ export default function HUDPanel({
                           const newVol = Math.max(0, Math.min(1, pct));
                           a.volume = newVol; setVolume(newVol);
                           if (newVol > 0) lastNonZeroVolumeRef.current = newVol;
+                          playVol();
                         };
                         try { el.setPointerCapture?.(e.pointerId); } catch {}
-                        e.preventDefault(); try { sfx.play('click', 0.3); } catch {}
+                        e.preventDefault(); playVol();
                         applyFromClientY(e.clientY);
                         const onMove = (ev) => applyFromClientY(ev.clientY);
                         const onUp = () => {
@@ -948,13 +1137,48 @@ export default function HUDPanel({
                         window.addEventListener('pointermove', onMove);
                         window.addEventListener('pointerup', onUp, { once: true });
                       }}
-                      style={{ position: 'relative', width: 10, height: 120, cursor: 'pointer', touchAction: 'none' }}
+                      style={{ position: 'relative', width: 28, height: 120, cursor: 'pointer', touchAction: 'none', overflow: 'hidden', borderRadius: 12 }}
                     >
-                      <div style={{ position: 'absolute', left: 4, right: 4, top: 0, bottom: 0, borderRadius: 6, background: 'rgba(255,255,255,0.15)', boxShadow: 'inset 0 0 8px rgba(25,227,255,0.25)' }} />
-                      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: `${Math.round(volume*100)}%`, background: '#19E3FF', borderRadius: '0 0 6px 6px', boxShadow: '0 0 12px rgba(25,227,255,0.65), 0 0 18px rgba(25,227,255,0.45)' }} />
-                      <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', width: 14, height: 14, borderRadius: '50%', background: '#19E3FF', border: '2px solid #19E3FF', boxShadow: '0 0 14px rgba(25,227,255,0.9)', bottom: `calc(${Math.round(volume*100)}% - 7px)`, pointerEvents: 'none' }} />
+                      <div style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, borderRadius: 12, background: 'rgba(0,0,0,0.82)', boxShadow: 'inset 0 0 22px rgba(25,227,255,0.60), inset 0 0 44px rgba(25,227,255,0.36)' }} />
+                      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: `${Math.round(volume*100)}%`, background: 'linear-gradient(180deg, #9FEAFF 0%, #19E3FF 100%)', borderRadius: '0 0 12px 12px', boxShadow: '0 0 60px rgba(25,227,255,1), 0 0 120px rgba(25,227,255,1), 0 0 180px rgba(25,227,255,0.95)' }} />
                     </div>
                     <div style={{ fontSize: 12, color: '#19E3FF', textShadow: '0 0 10px rgba(25,227,255,0.7)' }}>{Math.round(volume * 100)}%</div>
+                  </div>,
+                  document.body
+                ) : null}
+
+                {typeof document !== 'undefined' && showLyricsPopover && lyricsPopoverPos ? require('react-dom').createPortal(
+                  <div
+                    role="dialog"
+                    aria-label="Lyrics"
+                    className="lyrics-popover-hud holo-scrollbar-yellow"
+                    ref={lyricsScrollRef}
+                    style={{
+                      position: 'fixed',
+                      left: (lyricsPopoverPos && lyricsPopoverPos.left) || 0,
+                      top: (lyricsPopoverPos && lyricsPopoverPos.top) || 0,
+                      transform: (lyricsPopoverPos && lyricsPopoverPos.width) ? 'none' : 'translateX(-50%)',
+                      padding: '12px 14px 36px 14px', borderRadius: 14,
+                      background: 'rgba(3,10,20,0.9)',
+                      border: '1px solid rgba(242,239,29,0.55)',
+                      boxShadow: '0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(242,239,29,0.45)',
+                      backdropFilter: 'blur(8px)',
+                      color: '#F2EF1D',
+                      zIndex: 2147483647,
+                      width: (lyricsPopoverPos && lyricsPopoverPos.width) ? lyricsPopoverPos.width : 'min(98vw, 1400px)',
+                      maxHeight: '70vh',
+                      overflow: 'auto'
+                    }}
+                    onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowLyricsPopover(false); } }}
+                  >
+                    {lyricsLoading ? (
+                      <div style={{ fontSize: 20, opacity: .99, color: '#F2EF1D', textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>Loading…</div>
+                    ) : lyricsError ? (
+                      <div style={{ fontSize: 20, color: '#ff7b7b' }}>{lyricsError}</div>
+                    ) : (
+                      <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: 20, color: '#F2EF1D', textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>{lyricsContent || 'No lyrics available.'}</div>
+                    )}
+                    {null}
                   </div>,
                   document.body
                 ) : null}

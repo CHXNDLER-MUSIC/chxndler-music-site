@@ -1955,25 +1955,26 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
         
         // Hide/show planets based on focus - when a song is selected, only show that planet
         const isFocused = mainId && s.id === mainId;
-        const shouldHide = !showAll && mainId && !isFocused;
+        const shouldHide = !effectiveShowAll && mainId && !isFocused;
         
         // Debug planet visibility logic
         console.log(`🌍 Planet ${s.id} visibility:`, { 
           planetsVisible, 
-          showAll, 
+          showAll: effectiveShowAll, 
           mainId, 
           isFocused, 
           shouldHide, 
-          finalVisible: planetsVisible && !shouldHide 
+          finalVisible: planetsVisible && effectiveMode !== 'hidden' && !shouldHide 
         });
         
         // Hide non-focused planets when a song is selected.
         // Honor global planetsVisible even in homepage mode to avoid flicker during selection.
-        const finalVisible = (planetsVisible && !shouldHide);
+        // Also respect 'hidden' mode during warp.
+        const finalVisible = (planetsVisible && effectiveMode !== 'hidden' && !shouldHide);
         s.mesh.visible = finalVisible;
 
         console.log(`🌍 Planet ${s.id} FINAL visibility decision:`, {
-          showAll,
+          showAll: effectiveShowAll,
           planetsVisible,
           shouldHide,
           finalVisible
@@ -2257,28 +2258,33 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
   // Sync planets to songs from the global store for closer match to previous visuals
   const [storeSnap, setStoreSnap] = React.useState(() => playerStore.getState());
   React.useEffect(() => playerStore.subscribe(() => setStoreSnap(playerStore.getState())), []);
-  const { songs, mainId, hoverId, planetsVisible } = storeSnap as any;
+  const { songs, mainId, hoverId, planetsVisible, planetDisplayMode } = storeSnap as any;
+  
+  // Respect global planet display mode; treat prop showAll as homepage-only when there's no selection
+  const isHomeOverview = !!showAll && !mainId;
+  const effectiveMode: 'all' | 'single' | 'hidden' = isHomeOverview ? 'all' : (planetDisplayMode || 'all');
+  const effectiveShowAll = effectiveMode === 'all';
   const hoverRef = useRef<string | null>(null);
   useEffect(() => { hoverRef.current = hoverId || null; }, [hoverId]);
   // Compute layout with consistent spacing (matching planetLayout defaults)
   const layout = useMemo(() => (
     songs && songs.length 
       ? computePlanetLayout(songs as any, { 
-          ringGap: showAll ? 2.2 : 1.8, 
-          baseRadius: showAll ? 5.2 : 3.5, 
+          ringGap: effectiveShowAll ? 2.2 : 1.8, 
+          baseRadius: effectiveShowAll ? 5.2 : 3.5, 
           tiltPerRing: 6, 
           minScale: 0.7, 
-          maxScale: showAll ? 1.35 : 1.25 
+          maxScale: effectiveShowAll ? 1.35 : 1.25 
         }) 
       : undefined
-  ), [songs, showAll]);
+  ), [songs, effectiveShowAll]);
 
   useEffect(() => {
     // Build system from songs when available
     const sys = groupRef.current; if (!sys) return;
     // Fallback: if store has no songs in homepage mode, build from tracks immediately
     let songsToUse = songs as any[] | undefined;
-    if ((!songs || !songs.length) && showAll) {
+    if ((!songs || !songs.length) && effectiveShowAll) {
       try {
         const { holoSongs } = buildPlanetSongs();
         if (holoSongs && holoSongs.length) {
@@ -2289,7 +2295,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
       } catch {}
     }
     if (!songsToUse || !songsToUse.length) return;
-    const focusId = showAll ? null : mainId;
+    const focusId = effectiveShowAll ? null : mainId;
     
     // Debug removed for production
     
@@ -2324,7 +2330,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
     connectionLinesRef.current = [];
     
     // Reset camera to overview position when showing all planets
-    if (showAll || !focusId) {
+    if (effectiveShowAll || !focusId) {
       // Zoom out a touch more on homepage overview
       targetCameraPos.current.set(0, 1.2, 20.0);
       targetCameraLookAt.current.set(0, 0, 0);
@@ -2335,8 +2341,8 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
         (particleSystemRef.current.material as any).opacity = 0.2;
       }
 
-      // Single bright central heart planet when using raw system (only when showAll is true)
-      if (showAll) {
+      // Single bright central heart planet when using raw system (only when showing all planets)
+      if (effectiveShowAll) {
         try {
           const heartGeo = createHeartGeometry(2.0); // Smaller size
           // Single bright material with emissive properties
@@ -2473,7 +2479,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
     const main = mainRef.current.mesh;
     if (main) main.visible = false; // no separate central planet; every song has its own
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [songs, mainId, showAll, planetsVisible, layout && Object.keys(layout).join(',')]);
+  }, [songs, mainId, effectiveShowAll, planetsVisible, layout && Object.keys(layout).join(',')]);
 
   // When the selected song changes, create central planet and update orbital system
   useEffect(() => {
@@ -2681,8 +2687,8 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
       className="absolute inset-0"
       style={{
         background: 'transparent',
-        // Gate visibility solely by global planetsVisible to avoid flicker during selection
-        opacity: planetsVisible ? 1 : 0,
+        // Gate visibility by global planetsVisible and respect 'hidden' mode (during warp)
+        opacity: planetsVisible && effectiveMode !== 'hidden' ? 1 : 0,
         transition: 'opacity 400ms ease-in-out'
       }}
     />

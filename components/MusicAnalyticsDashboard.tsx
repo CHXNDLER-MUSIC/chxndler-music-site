@@ -191,7 +191,7 @@ export default function MusicAnalyticsDashboard({ onClose, embedded = false }: M
           </div>
         </div>
 
-        <div className="overflow-y-auto max-h-[calc(90vh-100px)]">
+        <div className="overflow-y-auto max-h-[calc(90vh-100px)] holo-scrollbar-yellow">
           {!stats ? (
             <div className="p-6 text-center">Loading music analytics...</div>
           ) : stats.totalEvents === 0 ? (

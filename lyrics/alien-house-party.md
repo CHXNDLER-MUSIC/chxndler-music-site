@@ -1,7 +1,6 @@
-# ALIEN (HOUSE PARTY)
-
 I want to tell you that I’m thinking about you
-I can’t stop thinking about the night we met 
+I can’t stop thinking about 
+the night we met 
 Can’t seem to forget 
 The look you gave me when I said 
 I think you should stay a little longer
@@ -25,7 +24,8 @@ I don’t want this to end before it even began
 I feel like an alien and I don’t say anything
 
 I want to tell you that I’m thinking about you
-I can’t stop thinking about the night we met 
+I can’t stop thinking about 
+the night we met 
 Can’t seem to forget 
 The look you gave me when I said 
 I think you should stay a little longer
@@ -53,7 +53,8 @@ But what if you don’t feel the same way at all
 So I don’t say anything
 
 I want to tell you that I’m thinking about you
-I can’t stop thinking about the night we met 
+I can’t stop thinking about 
+the night we met 
 Can’t seem to forget 
 The look you gave me when I said 
 I think you should stay a little longer

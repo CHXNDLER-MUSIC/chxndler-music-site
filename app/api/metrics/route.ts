@@ -114,6 +114,7 @@ export async function GET(_req: NextRequest) {
     // Per-song breakdown: fetch labels and group in memory
     const spotifySongClicks: Record<string, { count: number; title: string }> = {};
     const appleSongClicks: Record<string, { count: number; title: string }> = {};
+    const lyricsSongClicks: Record<string, { count: number; title: string }> = {};
 
     const spRows = await supabase
       .from('events')
@@ -151,6 +152,25 @@ export async function GET(_req: NextRequest) {
       }
     }
 
+    // Lyrics clicks breakdown
+    const lyRows = await supabase
+      .from('events')
+      .select('payload')
+      .eq('event_type', 'click')
+      .filter('payload->>element_label', 'ilike', '📝 Lyrics%')
+      .limit(5000);
+    if (!lyRows.error && Array.isArray(lyRows.data)) {
+      for (const r of lyRows.data as Array<{ payload: any }>) {
+        const label = (r?.payload?.element_label as string) || '';
+        const m = label.match(/^📝\s*Lyrics:\s*(.+)$/i);
+        const title = m && m[1] ? m[1].trim() : '';
+        const key = (title || 'CHXNDLER').toLowerCase();
+        const usedTitle = title || 'CHXNDLER';
+        lyricsSongClicks[key] = lyricsSongClicks[key] || { count: 0, title: usedTitle };
+        lyricsSongClicks[key].count++;
+      }
+    }
+
     return j(200, {
       pageViews: pageViewCount || 0,
       startClicks: startClickCount || 0,
@@ -162,6 +182,7 @@ export async function GET(_req: NextRequest) {
       coverClicks: {},
       spotifySongClicks,
       appleSongClicks,
+      lyricsSongClicks,
       debug: {
         connectionTest: 'passed',
         totalEvents: testConnection.count || 0

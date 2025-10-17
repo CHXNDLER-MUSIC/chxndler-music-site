@@ -503,6 +503,34 @@ main {
 @media (min-width: 768px) { .media-player-responsive { right: calc(7rem + 1rem); } }
 @media (min-width: 1024px) { .media-player-responsive { right: calc(8rem + 1rem); } }
 
+/* Lyrics (speech bubble) button in HUD — match play button hover feel */
+.hud-lyrics-btn{
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #FFF76A, #F2EF1D);
+  border: 3px solid rgba(255,255,255,.5);
+  color: #000; /* icon color */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 16px rgba(242,239,29,.55);
+}
+.hud-lyrics-btn:hover{
+  transform: scale(1.08);
+  box-shadow: 0 6px 22px rgba(242,239,29,.9);
+  border-color: rgba(255,255,255,.7);
+}
+.hud-lyrics-btn:active{ transform: scale(0.95); }
+
+/* Lyrics popover: typography only; scrollbar uses holo-scrollbar-yellow */
+.lyrics-popover-hud{
+  font-family: 'Exo 2', InterLocal, sans-serif;
+  text-transform: uppercase;
+}
+
 .hud-progress-bar-enhanced{
   position: relative;
   width: 100%;

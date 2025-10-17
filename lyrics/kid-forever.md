@@ -1,5 +1,3 @@
-# KID FOREVER (永遠の子供)
-
 私たちの真のテスト (Gotta catch 'em all)
 私たちの真のテスト (Gotta catch 'em all)
 私たちの真のテスト (Gotta catch 'em all)

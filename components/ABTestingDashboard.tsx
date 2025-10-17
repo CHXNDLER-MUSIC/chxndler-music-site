@@ -120,7 +120,7 @@ export default function ABTestingDashboard({ onClose, embedded = false }: ABTest
           </div>
         </div>
 
-        <div className="overflow-y-auto max-h-[calc(90vh-100px)]">
+        <div className="overflow-y-auto max-h-[calc(90vh-100px)] holo-scrollbar-yellow">
           <div className="p-6 space-y-8">
             {/* A/B Test Assignments */}
             <div>
@@ -168,7 +168,7 @@ export default function ABTestingDashboard({ onClose, embedded = false }: ABTest
                   
                   <div className="bg-green-50 rounded-lg p-4">
                     <h4 className="font-semibold text-green-800 mb-3">Recent Flow Events</h4>
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                    <div className="space-y-2 max-h-40 overflow-y-auto holo-scrollbar-yellow">
                       {flowEvents.slice(-10).reverse().map((event, index) => (
                         <div key={index} className="text-xs border-b border-green-200 pb-1">
                           <div className="font-medium text-green-700 capitalize">

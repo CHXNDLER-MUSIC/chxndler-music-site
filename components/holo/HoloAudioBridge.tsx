@@ -42,6 +42,10 @@ export default function HoloAudioBridge() {
     const a = audioRef.current; if (!a) return;
     if (!currentTrack) return;
     
+    // Immediately hide all planets during warp regardless of selection source
+    try { playerStore.getState().setPlanetsVisible(false); } catch {}
+    try { playerStore.getState().setPlanetDisplayMode('hidden'); } catch {}
+
     // Stop current song before loading new one
     try {
       a.pause();

@@ -1,5 +1,3 @@
-# OCEAN GIRL (REMIX)
-
 Ocean girl, you float like light
 Fade in slow, kiss me right
 Emerald eyes shine like the sea 

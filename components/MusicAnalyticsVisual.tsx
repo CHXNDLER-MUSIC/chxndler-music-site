@@ -17,6 +17,7 @@ interface MusicStats {
   collectCardClicks: Array<{ song: string; count: number; title?: string }>;
   spotifySongClicks?: Array<{ song: string; count: number; title?: string }>;
   appleSongClicks?: Array<{ song: string; count: number; title?: string }>;
+  lyricsSongClicks?: Array<{ song: string; count: number; title?: string }>;
   
   totalMusicInteractions: number;
   totalButtonClicks: number;
@@ -37,6 +38,7 @@ type Metrics = {
   coverClicks: Record<string, { count: number; title?: string }>;
   spotifySongClicks?: Record<string, { count: number; title?: string }>;
   appleSongClicks?: Record<string, { count: number; title?: string }>;
+  lyricsSongClicks?: Record<string, { count: number; title?: string }>;
 };
 
 export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualProps) {
@@ -52,6 +54,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
   const [amOpen, setAmOpen] = useState(false);
   const [spSongsOpen, setSpSongsOpen] = useState(false);
   const [amSongsOpen, setAmSongsOpen] = useState(false);
+  const [lySongsOpen, setLySongsOpen] = useState(false);
   const [socialOpen, setSocialOpen] = useState(true);
   const [joinOpen, setJoinOpen] = useState(true);
   const [musicOpen, setMusicOpen] = useState(true);
@@ -82,6 +85,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
     const musicButtons: Record<string, number> = {};
     const spotifyBySong: Record<string, { count: number; title?: string }> = {};
     const appleBySong: Record<string, { count: number; title?: string }> = {};
+    const lyricsBySong: Record<string, { count: number; title?: string }> = {};
     const songSelections: Record<string, { count: number; title?: string }> = {};
     const coverClicks: Record<string, { count: number; title?: string }> = {};
     const cardClicks: Record<string, { count: number; title?: string }> = {};
@@ -123,6 +127,19 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
           const key = name.toLowerCase();
           appleBySong[key] = appleBySong[key] || { count: 0, title: name };
           appleBySong[key].count++;
+        }
+      } else if (label.includes('📝 Lyrics')) {
+        // Lyrics per-song
+        const m = label.match(/^📝\s*Lyrics:\s*(.+)$/);
+        if (m && m[1]) {
+          const name = m[1].trim();
+          const key = name.toLowerCase();
+          lyricsBySong[key] = lyricsBySong[key] || { count: 0, title: name };
+          lyricsBySong[key].count++;
+        } else {
+          // Generic lyrics click (no song name)
+          lyricsBySong['chxndler'] = lyricsBySong['chxndler'] || { count: 0, title: 'CHXNDLER' };
+          lyricsBySong['chxndler'].count++;
         }
       }
       
@@ -202,6 +219,9 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
         .map(([song, data]) => ({ song, count: data.count, title: data.title }))
         .sort((a, b) => b.count - a.count),
       appleSongClicks: Object.entries(appleBySong)
+        .map(([song, data]) => ({ song, count: data.count, title: data.title }))
+        .sort((a, b) => b.count - a.count),
+      lyricsSongClicks: Object.entries(lyricsBySong)
         .map(([song, data]) => ({ song, count: data.count, title: data.title }))
         .sort((a, b) => b.count - a.count),
       collectCardClicks: Object.entries(collectCardClicks)
@@ -314,7 +334,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
           </div>
         </div>
 
-        <div className="overflow-y-auto max-h-[calc(90vh-100px)] pb-24">
+        <div className="overflow-y-auto max-h-[calc(90vh-100px)] pb-24 holo-scrollbar-yellow">
           {(!stats || stats.totalMusicInteractions === 0) && !metrics ? (
             <div className="p-8 text-center text-gray-400">
               <div className="text-6xl mb-4">🎵</div>
@@ -500,6 +520,50 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                                 </div>
                                 <div className="bg-gray-700 rounded-full h-2 overflow-hidden">
                                   <div className={`h-full bg-gradient-to-r from-pink-500 to-red-500 transition-all duration-500`} style={{ width: `${Math.max((count / max) * 100, 5)}%` }} />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Lyrics per-song */}
+                    <button className="w-full text-left px-6 py-4 flex items-center justify-between hover:bg-cyan-500/10 border-b border-cyan-400/10" onClick={() => setLySongsOpen(!lySongsOpen)}>
+                      <span className="text-white font-medium">Lyrics</span>
+                      <span className="text-cyan-200 font-bold">
+                        {(() => {
+                          if (metrics?.lyricsSongClicks && Object.keys(metrics.lyricsSongClicks).length) {
+                            return Object.values(metrics.lyricsSongClicks).reduce((sum, it) => sum + (it?.count || 0), 0);
+                          }
+                          const list = stats?.lyricsSongClicks || [];
+                          return list.reduce((sum, it) => sum + (it.count || 0), 0);
+                        })()}
+                      </span>
+                    </button>
+                    {lySongsOpen && (
+                      <div className="px-6 pb-6 space-y-3">
+                        {tracks.map((t, idx) => {
+                          const lower = (t.title || '').toLowerCase();
+                          const serverCount = metrics?.lyricsSongClicks?.[lower]?.count || 0;
+                          const localEntry = (stats?.lyricsSongClicks || []).find(s => (s.title || '').toLowerCase() === lower);
+                          const count = serverCount || localEntry?.count || 0;
+                          const max = Math.max(1, ...tracks.map(tt => {
+                            const lt = (tt.title || '').toLowerCase();
+                            const sCount = metrics?.lyricsSongClicks?.[lt]?.count || 0;
+                            if (sCount > 0) return sCount;
+                            const e = (stats?.lyricsSongClicks || []).find(s => (s.title || '').toLowerCase() === lt);
+                            return e?.count || 0;
+                          }));
+                          return (
+                            <div key={(t.slug||'')+':ly' || idx} className="flex items-center gap-4">
+                              <div className="flex-1">
+                                <div className="flex justify-between items-center mb-1">
+                                  <span className="text-white font-medium">{t.title}</span>
+                                  <span className="text-cyan-400 font-bold">{count} clicks</span>
+                                </div>
+                                <div className="bg-gray-700 rounded-full h-2 overflow-hidden">
+                                  <div className={`h-full bg-gradient-to-r from-yellow-400 to-amber-500 transition-all duration-500`} style={{ width: `${Math.max((count / max) * 100, 5)}%` }} />
                                 </div>
                               </div>
                             </div>

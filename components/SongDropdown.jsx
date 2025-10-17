@@ -46,6 +46,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
   const [highlight, setHighlight] = useState(0);
   const rootRef = useRef(null);
   const listRef = useRef(null);
+  const lastScrollAtRef = useRef(0);
   const optMeasureRef = useRef(null);
   const [maxListHeight, setMaxListHeight] = useState(null);
   const [triggerRect, setTriggerRect] = useState(null);
@@ -96,6 +97,23 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
       }
     });
     return () => cancelAnimationFrame(raf);
+  }, [open]);
+
+  // Play subtle scroll SFX while scrolling the dropdown (rate-limited)
+  useEffect(() => {
+    if (!open) return;
+    const el = listRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+      const last = lastScrollAtRef.current || 0;
+      if (now - last > 220) {
+        lastScrollAtRef.current = now;
+        try { sfx.play('scroll', 0.22); } catch {}
+      }
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => { try { el.removeEventListener('scroll', onScroll); } catch {} };
   }, [open]);
 
   // Keyboard for the closed combobox cycles songs directly

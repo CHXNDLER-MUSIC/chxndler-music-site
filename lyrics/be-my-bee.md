@@ -1,5 +1,3 @@
-# BE MY BEE
-
 On a Tuesday 
 Getting lost in the park
 It is a first date and I’m falling apart 

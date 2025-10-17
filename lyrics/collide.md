@@ -1,5 +1,3 @@
-# COLLIDE
-
 She wakes up early, barely 7:30, 
 White cardigan, hair nice and curly
 Sugar in her coffee, I drink it black

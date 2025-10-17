@@ -1,5 +1,3 @@
-# HOME
-
 3000 miles away 
 I lost myself out in space
 Searching for a place to call home 

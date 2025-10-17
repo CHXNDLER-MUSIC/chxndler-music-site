@@ -51,6 +51,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const audioRef = useRef<HTMLAudioElement|null>(null);
   const uiClickRef = useRef<HTMLAudioElement|null>(null);
   const detentRef = useRef<HTMLAudioElement|null>(null);
+  const volumeSfxLastRef = useRef<number>(0);
   const warpPlayTimerRef = useRef<number|undefined>(undefined);
   const isInitialMountRef = useRef(true);
   const intentionalPlayRef = useRef(false); // Track when play is intentionally triggered
@@ -565,6 +566,12 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   function prev() { uiClick(); setIdx((p) => wrapChannels ? (p - 1 + tracks.length) % tracks.length : Math.max(0, p - 1)); }
   function next() { uiClick(); setIdx((p) => wrapChannels ? (p + 1) % tracks.length : Math.min(tracks.length - 1, p + 1)); }
   
+  function playVolumeSfx() {
+    const now = (typeof performance !== 'undefined' ? performance.now() : Date.now()) as number;
+    const last = volumeSfxLastRef.current || 0;
+    if (now - last > 130) { volumeSfxLastRef.current = now; try { sfx.play('volume', 0.3); } catch {} }
+  }
+
   function adjustVolume(delta: number) {
     const a = audioRef.current; if (!a) return;
     const newVolume = Math.max(0, Math.min(1, volume + delta));
@@ -573,7 +580,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     if (isFinite(newVolume) && newVolume >= 0 && newVolume <= 1) {
       a.volume = newVolume;
     }
-    uiClick();
+    playVolumeSfx();
   }
   
   function toggle() {
@@ -1183,12 +1190,19 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 className="lyrics-link-waveform"
                 title={`Lyrics for ${cur.title}`}
                 aria-label={`View lyrics for ${cur.title}`}
+                data-song={cur.title}
+                data-slug={cur.slug}
+                data-id="lyrics"
                 onMouseEnter={playHover}
               >
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
-                  <path d="M4 4h16v12H5.17L4 17.17V4zm2 2v8h12V6H6zm0 12h10v2H6v-2z"/>
+                {/* Thought bubble with quotes inside */}
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                  <rect x="5" y="5" width="14" height="10" rx="4" ry="4" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                  <circle cx="8" cy="16" r="1.2" fill="currentColor" />
+                  <circle cx="6.2" cy="18" r="1.1" fill="currentColor" />
+                  <rect x="10" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+                  <rect x="13.6" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
                 </svg>
-                <span className="lyrics-link-text">Lyrics</span>
               </Link>
             </div>
 
@@ -1453,21 +1467,29 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             title="Volume"
             onMouseEnter={playHover}
           >
+            {/* Hover glow to match play/pause */}
+            <div className="btn-glow"></div>
             {volume === 0 ? (
               // Muted icon
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
-                <path d="M16.5 12l3.5 3.5-1.5 1.5L15 13.5 11.5 17H8l-4-4V11l4-4h3.5l3.5 3.5 3.5-3.5 1.5 1.5L16.5 12zM10 8.5L7.5 11H6v2h1.5L10 15.5V8.5z"/>
-              </svg>
+              <span className="btn-icon">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
+                  <path d="M16.5 12l3.5 3.5-1.5 1.5L15 13.5 11.5 17H8l-4-4V11l4-4h3.5l3.5 3.5 3.5-3.5 1.5 1.5L16.5 12zM10 8.5L7.5 11H6v2h1.5L10 15.5V8.5z"/>
+                </svg>
+              </span>
             ) : volume < 0.5 ? (
               // Low volume icon
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
-                <path d="M3 10v4h4l5 5V5L7 10H3zm10.5 2c0-1.77-.77-3.29-2-4.3v8.6c1.23-1.01 2-2.53 2-4.3z"/>
-              </svg>
+              <span className="btn-icon">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
+                  <path d="M3 10v4h4l5 5V5L7 10H3zm10.5 2c0-1.77-.77-3.29-2-4.3v8.6c1.23-1.01 2-2.53 2-4.3z"/>
+                </svg>
+              </span>
             ) : (
               // High volume icon
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
-                <path d="M3 10v4h4l5 5V5L7 10H3zm8 2c0 2.21-1.79 4-4 4v-2c1.1 0 2-.9 2-2s-.9-2-2-2V8c2.21 0 4 1.79 4 4zm4.5 0c0-3.04-1.72-5.64-4.25-6.92l-.75 1.86C12.6 8.2 14 9.96 14 12s-1.4 3.8-3.5 4.06l.75 1.86C18.28 17.64 19.5 15.04 19.5 12z"/>
-              </svg>
+              <span className="btn-icon">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
+                  <path d="M3 10v4h4l5 5V5L7 10H3zm8 2c0 2.21-1.79 4-4 4v-2c1.1 0 2-.9 2-2s-.9-2-2-2V8c2.21 0 4 1.79 4 4zm4.5 0c0-3.04-1.72-5.64-4.25-6.92l-.75 1.86C12.6 8.2 14 9.96 14 12s-1.4 3.8-3.5 4.06l.75 1.86C18.28 17.64 19.5 15.04 19.5 12z"/>
+                </svg>
+              </span>
             )}
           </button>
 
@@ -1644,9 +1666,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 const newVol = Math.max(0, Math.min(1, pct));
                 a.volume = newVol; setVolume(newVol);
                 if (newVol > 0) lastNonZeroVolumeRef.current = newVol;
+                playVolumeSfx();
               };
               try { el.setPointerCapture?.(e.pointerId); } catch {}
-              e.preventDefault(); uiClick();
+              e.preventDefault(); playVolumeSfx();
               applyFromClientY(e.clientY);
               const onMove = (ev: PointerEvent) => applyFromClientY(ev.clientY);
               const onUp = () => {
@@ -1691,9 +1714,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 const newVol = Math.max(0, Math.min(1, pct));
                 a.volume = newVol; setVolume(newVol);
                 if (newVol > 0) lastNonZeroVolumeRef.current = newVol;
+                playVolumeSfx();
               };
               try { el.setPointerCapture?.(e.pointerId); } catch {}
-              e.preventDefault(); uiClick();
+              e.preventDefault(); playVolumeSfx();
               applyFromClientY(e.clientY);
               const onMove = (ev: PointerEvent) => applyFromClientY(ev.clientY);
               const onUp = () => {
@@ -1876,21 +1900,21 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
 
         /* Lyrics link next to volume control */
         .lyrics-link-waveform {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          border: 3px solid rgba(255, 255, 255, 0.5);
+          background: radial-gradient(circle at 30% 30%, #FFF76A, #F2EF1D);
+          color: #000;
           display: inline-flex;
           align-items: center;
-          gap: 6px;
-          padding: 6px 10px;
-          height: 28px;
-          border-radius: 10px;
-          border: 1px solid rgba(25,227,255,0.35);
-          background: rgba(6,182,212,0.10);
-          color: #e6f7ff;
+          justify-content: center;
           text-decoration: none;
-          transition: all 0.2s ease;
-          box-shadow: 0 2px 10px rgba(25,227,255,0.25);
+          transition: all 0.25s ease;
+          box-shadow: 0 4px 16px rgba(242,239,29,0.55);
         }
-        .lyrics-link-waveform:hover { transform: translateX(-1px); background: rgba(6,182,212,0.18); }
-        .lyrics-link-text { font-size: 12px; }
+        .lyrics-link-waveform:hover { transform: scale(1.1); box-shadow: 0 6px 22px rgba(242,239,29,0.9); }
+        .lyrics-link-waveform:active { transform: scale(0.95); }
         
         /* Inline waveform volume next to Spotify button */
         .waveform-volume {
@@ -2116,6 +2140,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
 
         /* Glowing volume button (main controls) similar to Spotify button */
         .volume-btn {
+          position: relative;
           border-radius: 50%;
           border: 3px solid rgba(255, 255, 255, 0.4);
           background: radial-gradient(circle at 30% 30%, #19E3FF, #0EA8D0);
@@ -2123,6 +2148,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           box-shadow: 0 4px 16px rgba(25,227,255,0.6);
         }
         .volume-btn:hover { transform: translateY(-1px) scale(1.08); box-shadow: 0 6px 20px rgba(25,227,255,0.8); }
+        .volume-btn:hover .btn-glow { opacity: 1; animation: pulse 2s ease-in-out infinite; }
         .volume-btn:active { transform: scale(0.95); }
         
         .selector-btn {
@@ -2166,7 +2192,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           position: absolute;
           top: 0;
           transform: none;
-          padding: 10px 10px;
+          padding: 6px 4px; /* even thinner sides for minimal black padding */
           border-radius: 12px;
           background: rgba(3, 10, 20, 0.86);
           border: 1px solid rgba(25,227,255,0.5);

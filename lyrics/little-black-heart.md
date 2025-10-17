@@ -1,5 +1,3 @@
-# LITTLE BLACK HEART
-
 Did it hurt when you fell from heaven?
 You were only eighteen
 I can see you in the moonlight

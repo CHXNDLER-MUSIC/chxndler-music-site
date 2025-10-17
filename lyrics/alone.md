@@ -1,5 +1,3 @@
-# ALONE
-
 Give me what I needed
 I don’t want to be alone  
 Give me what I needed

@@ -1,5 +1,3 @@
-# I MIGHT FALL IN LOVE WITH YOU
-
 We slept through the sunrise
 See myself in your eyes
 We kiss like butterflies

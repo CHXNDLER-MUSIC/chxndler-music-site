@@ -1,5 +1,3 @@
-# COLORS OF OUR HOME
-
 Do you remember
 We’d lay (there) forever
 Watching the flowers bloom

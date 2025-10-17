@@ -1,5 +1,3 @@
-# PARIS
-
 She said hello, she was letting me know
 We shared friends in Soho
 She is a pain in the nose

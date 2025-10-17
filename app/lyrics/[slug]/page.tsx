@@ -39,7 +39,9 @@ export default async function LyricsPage({ params }: { params: { slug: string } 
           border: '1px solid rgba(25,227,255,0.45)',
           borderRadius: 14,
           boxShadow: '0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(25,227,255,0.35)',
-          backdropFilter: 'blur(8px)'
+          backdropFilter: 'blur(8px)',
+          fontFamily: '\u0027Orbitron\u0027, InterLocal, sans-serif',
+          textTransform: 'uppercase'
         }}
       >
         <div className="px-5 py-4 border-b border-cyan-300/30">
@@ -53,4 +55,3 @@ export default async function LyricsPage({ params }: { params: { slug: string } 
     </div>
   );
 }
-

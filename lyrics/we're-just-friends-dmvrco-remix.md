@@ -1,5 +1,3 @@
-# WE'RE JUST FRIENDS
-
 I don't want to like you, but I like to talk to you, we're just friends
 
 I don't want to like you, but I like to talk to you

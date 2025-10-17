@@ -23,6 +23,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <link rel="icon" href="/logo/CHXNDLER_Logo.png" sizes="any" />
         <link rel="icon" href="/logo/CHXNDLER_Logo.png" type="image/png" />
+        {/* Fonts: Orbitron (lyrics page) and Exo 2 (lyrics popover) */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700&display=swap" rel="stylesheet" />
 
         <link rel="preload" as="image" href="/elements/instagram.png" />
         <link rel="preload" as="image" href="/elements/tiktok.png" />

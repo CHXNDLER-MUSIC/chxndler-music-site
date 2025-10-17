@@ -176,7 +176,7 @@ export default function AnalyticsDashboard({ onClose, embedded = false }: Analyt
           </div>
         </div>
 
-        <div className="overflow-y-auto max-h-[calc(90vh-100px)]">
+        <div className="overflow-y-auto max-h-[calc(90vh-100px)] holo-scrollbar-yellow">
           {!stats ? (
             <div className="p-6 text-center">Loading...</div>
           ) : stats.totalClicks === 0 ? (
@@ -251,7 +251,7 @@ export default function AnalyticsDashboard({ onClose, embedded = false }: Analyt
               {/* Recent Clicks */}
               <div>
                 <h3 className="text-lg font-semibold mb-4">Recent Clicks</h3>
-                <div className="bg-gray-50 rounded-lg p-4 max-h-80 overflow-y-auto">
+                <div className="bg-gray-50 rounded-lg p-4 max-h-80 overflow-y-auto holo-scrollbar-yellow">
                   {stats.recentClicks.map((click) => (
                     <div
                       key={click.id}

@@ -1,6 +1,3 @@
-# LETTING GO
-
-
 It’s been a while since I’ve seen you
 I heard you were selling coconuts on the beach
 Heard you lived in a school bus  

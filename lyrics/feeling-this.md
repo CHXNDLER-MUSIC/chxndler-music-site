@@ -1,5 +1,3 @@
-# FEELING THIS
-
 I got no regret right now (I'm feeling this)
 The air is so cold and low (I'm feeling this)
 Let me go in her room (I'm feeling this)

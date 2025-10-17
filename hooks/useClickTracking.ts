@@ -15,6 +15,7 @@ function identifyElement(element: HTMLElement): string {
   const href = element.getAttribute('href')?.toLowerCase() || '';
   const ariaLabel = element.getAttribute('aria-label')?.toLowerCase() || '';
   const title = element.getAttribute('title')?.toLowerCase() || '';
+  const roleAttr = element.getAttribute('role')?.toLowerCase() || '';
   const dataId = element.getAttribute('data-id')?.toLowerCase() || '';
   const dataSong = element.getAttribute('data-song') || '';
   const dataSlug = element.getAttribute('data-slug') || '';
@@ -52,8 +53,10 @@ function identifyElement(element: HTMLElement): string {
     const explicit = element.getAttribute('data-analytics');
     return (explicit && explicit.trim()) || '⚡ Power Button';
   }
-  // Only track the actual pink JOIN THE ALIENS button, not input fields
-  if (tagName === 'button' && (text.includes('join the aliens') || text.includes('welcome aboard') || text.includes('submitting') || text.includes('try again'))) {
+  // Only track the actual pink JOIN THE ALIENS button/links, not input fields
+  if ((tagName === 'button' || roleAttr === 'button' || tagName === 'a') &&
+      (text.includes('join the aliens') || text.includes('join aliens') || ariaLabel.includes('join aliens') || title.includes('join aliens') ||
+       text.includes('welcome aboard') || text.includes('submitting') || text.includes('try again'))) {
     return '🚀 Join Aliens';
   }
   // Check if this is a social media button first, then fall back to general comms hub
@@ -62,6 +65,31 @@ function identifyElement(element: HTMLElement): string {
       !dataId && !title.includes('instagram') && !title.includes('tiktok') && !title.includes('youtube') && 
       !title.includes('spotify') && !title.includes('apple')) {
     return '📡 Comms Hub';
+  }
+
+  // Lyrics links/buttons (waveform link, HUD button, or any /lyrics/ link)
+  {
+    const isLyricsClass = className.includes('lyrics-link-waveform') || className.includes('hud-lyrics-btn');
+    const isLyricsHref = href.includes('/lyrics/');
+    const isLyricsLabel = ariaLabel.includes('lyrics');
+    if (isLyricsClass || isLyricsHref || isLyricsLabel) {
+      // Try to resolve song title from data-song, aria-label, or title
+      let songName = dataSong || '';
+      if (!songName) {
+        // Look up the nearest ancestor carrying data-song
+        try {
+          const elWithSong = (element.closest && element.closest('[data-song]')) as HTMLElement | null;
+          songName = elWithSong?.getAttribute('data-song') || '';
+        } catch {}
+      }
+      if (!songName) {
+        // Parse common aria-label/title patterns like "View lyrics for <Song>"
+        const labelSrc = element.getAttribute('aria-label') || element.getAttribute('title') || '';
+        const m = labelSrc.match(/lyrics\s*(?:for|:\s*)\s*(.+)/i);
+        if (m && m[1]) songName = m[1].trim();
+      }
+      return songName ? `📝 Lyrics: ${songName}` : '📝 Lyrics';
+    }
   }
 
   // Social Media Buttons (enhanced with data-id detection)
@@ -153,10 +181,22 @@ function identifyElement(element: HTMLElement): string {
   ];
 
   for (const song of songPatterns) {
-    const matchesSong = song.pattern.some(pattern => 
-      text.includes(pattern) || href.includes(pattern.replace(/\s+/g, '-')) || 
-      className.includes(pattern.replace(/\s+/g, '-'))
-    );
+    const matchesSong = song.pattern.some(pattern => {
+      const slugPat = pattern.replace(/\s+/g, '-');
+      const inHrefOrClass = href.includes(slugPat) || className.includes(slugPat);
+      let inText = false;
+      // Avoid false positives like "Join Aliens" matching the song "Alien"
+      if (pattern === 'alien') {
+        try {
+          inText = /\balien\b/.test(text); // match whole word only
+        } catch {
+          inText = text.includes('alien');
+        }
+      } else {
+        inText = text.includes(pattern);
+      }
+      return inText || inHrefOrClass;
+    });
     
     if (matchesSong) {
       if (text.includes('collect') || className.includes('collect') || className.includes('btn-')) {

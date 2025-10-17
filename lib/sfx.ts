@@ -15,6 +15,9 @@ class SFXBus {
   private files: Record<string, string> = {
     hover: "/audio/hover.mp3",
     click: "/audio/click.mp3",
+    close: "/audio/close.mp3",
+    scroll: "/audio/scroll.mp3",
+    volume: "/audio/volume.mp3",
     join: "/audio/join-alien.mp3",
     "join-aliens": "/audio/join-alien.mp3", // alias for convenience
     "join-alien": "/audio/join-alien.mp3",
@@ -34,8 +37,8 @@ class SFXBus {
       const Ctor = window.AudioContext || (window as any).webkitAudioContext;
       if (!Ctor) return (this.ctx = null);
       this.ctx = new Ctor();
-      // Pre-decode common sounds in background (add warp/button for start flow)
-      this.preload(["hover", "click", "join", "select", "button", "warp"]).catch(() => {});
+      // Pre-decode common sounds in background (add warp/button/close for start flow)
+      this.preload(["hover", "click", "close", "join", "select", "button", "warp", "scroll", "volume"]).catch(() => {});
     } catch {
       this.ctx = null;
     }
