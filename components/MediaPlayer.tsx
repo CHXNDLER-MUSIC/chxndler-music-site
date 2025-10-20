@@ -1278,6 +1278,14 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                   data-song={cur.title}
                   data-slug={cur.slug}
                   data-id="sp"
+                  onClick={() => {
+                    try {
+                      gaTrack('spotify_clicked', {
+                        song_slug: cur.slug,
+                        payload: { song_title: cur.title, location: 'waveform_player', href: cur.spotify }
+                      });
+                    } catch {}
+                  }}
               onMouseEnter={playHover}
               >
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
@@ -1307,6 +1315,14 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 data-song={cur.title}
                 data-slug={cur.slug}
                 data-id="am"
+                onClick={() => {
+                  try {
+                    gaTrack('apple_music_clicked', {
+                      song_slug: cur.slug,
+                      payload: { song_title: cur.title, location: 'waveform_player', href: cur.apple }
+                    });
+                  } catch {}
+                }}
               >
                 {/* White beamed music note (Apple-like) */}
                 <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden>
@@ -1574,14 +1590,13 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                   const selectedTrack = tracks[i];
                   setIdx(i); 
                   setPickerOpen(false);
-                  // Hide all 3D planets when a new song is selected from the picker
+                  // Focus the selected planet immediately when picking a new song
                   try {
-                    // Lazily import playerStore to avoid SSR issues
                     const { playerStore } = require("@/store/usePlayerStore");
-                    playerStore.getState().setPlanetsVisible(false);
-                    // Sync focused planet selection with the chosen track
                     if (selectedTrack?.slug) {
-                      playerStore.getState().setMain(selectedTrack.slug);
+                      playerStore.getState().setMain(selectedTrack.slug, true);
+                      playerStore.getState().setPlanetDisplayMode('single');
+                      playerStore.getState().setPlanetsVisible(true);
                     }
                   } catch {}
                   

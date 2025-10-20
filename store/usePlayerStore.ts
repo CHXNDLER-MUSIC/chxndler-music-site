@@ -2,6 +2,7 @@
 
 import React from "react";
 import type { Song } from "@/data/songs";
+import { buildPlanetSongs } from "@/lib/planets";
 
 type PlanetDisplayMode = 'all' | 'single' | 'hidden';
 
@@ -21,8 +22,21 @@ type State = {
 };
 
 // Minimal, dependency-free store using useSyncExternalStore
+// Prebuild songs at module load so first render has data
+// This avoids a first-paint where only the center heart appears until effects run.
+const __prebuiltSongs = (() => {
+  try {
+    const { holoSongs } = buildPlanetSongs();
+    if (Array.isArray(holoSongs) && holoSongs.length > 0) return holoSongs as unknown as Song[];
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn("playerStore: Failed to prebuild songs:", e);
+  }
+  return [] as Song[];
+})();
+
 let state: State = {
-  songs: [],
+  songs: __prebuiltSongs,
   mainId: null,
   prevMainId: null,
   hoverId: null,

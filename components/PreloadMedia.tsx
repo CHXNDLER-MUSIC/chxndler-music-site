@@ -23,6 +23,27 @@ export default function PreloadMedia({ maxImage = 6, maxAudio = 3, maxVideo = 2,
 
     function take<T>(arr: T[], n: number): T[] { return n > 0 ? arr.slice(0, n) : arr; }
 
+    // Adaptive caps: if user has Data Saver on, on a slow connection,
+    // or on a small/mobile screen, dramatically reduce or disable preloading.
+    try {
+      const conn: any = (navigator as any)?.connection || (navigator as any)?.mozConnection || (navigator as any)?.webkitConnection;
+      const saveData = !!conn?.saveData;
+      const effType: string = String(conn?.effectiveType || '').toLowerCase();
+      const slowLink = effType.includes('2g') || effType.includes('3g');
+      const isSmallScreen = typeof window !== 'undefined' ? (window.innerWidth <= 768) : false;
+
+      if (saveData || slowLink || isSmallScreen) {
+        // Images: just a couple of covers to warm UI
+        maxImage = Math.min(maxImage, 2);
+        // Audio: avoid prefetch; browser will get what's needed on demand
+        maxAudio = 0;
+        // Video: do NOT prime heavy backgrounds on constrained devices
+        maxVideo = 0;
+        // Only consider a few tracks for any light preloads
+        limitTracks = Math.min(limitTracks || 9999, 4);
+      }
+    } catch {}
+
     // Build datasets
     const tlist = take(tracks, limitTracks || tracks.length);
     const images = tlist.map(t => t.cover).filter(Boolean) as string[];
@@ -132,9 +153,9 @@ export default function PreloadMedia({ maxImage = 6, maxAudio = 3, maxVideo = 2,
     });
 
     // Fire queues with modest concurrency caps
-    runQueue(take(images, images.length), preloadImage, Math.max(1, maxImage)).catch(()=>{});
-    runQueue(take(audios, audios.length), preloadAudio, Math.max(1, maxAudio)).catch(()=>{});
-    runQueue(take(videos, videos.length), preloadVideo, Math.max(1, maxVideo)).catch(()=>{});
+    if (maxImage > 0) runQueue(take(images, images.length), preloadImage, Math.max(1, maxImage)).catch(()=>{});
+    if (maxAudio > 0) runQueue(take(audios, audios.length), preloadAudio, Math.max(1, maxAudio)).catch(()=>{});
+    if (maxVideo > 0) runQueue(take(videos, videos.length), preloadVideo, Math.max(1, maxVideo)).catch(()=>{});
 
     return () => { cancelled = true; aborts.forEach(fn => { try { fn(); } catch {} }); };
   }, [maxImage, maxAudio, maxVideo, limitTracks]);

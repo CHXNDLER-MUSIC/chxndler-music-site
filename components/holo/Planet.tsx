@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Group, Mesh, AdditiveBlending, Color, DataTexture, RGBAFormat, UnsignedByteType, RepeatWrapping, Vector2, Vector3, Texture, TextureLoader, MathUtils } from "three";
+import { Group, Mesh, AdditiveBlending, Color, DataTexture, RGBAFormat, UnsignedByteType, RepeatWrapping, Vector2, Vector3, Texture, TextureLoader, MathUtils, RedFormat } from "three";
 import { useFrame } from "@react-three/fiber";
 import HoloMaterial from "@/components/HoloMaterial";
 import type { Song } from "@/data/songs";
@@ -26,6 +26,8 @@ export default function Planet({
   isMuted?: boolean;
   ringBaseOverride?: number;
 }) {
+  // Toggle to render planets with physically based materials and realistic textures
+  const REALISTIC_PLANETS = true;
   // Enable procedural surface/normal/roughness maps for more realistic shading
   const USE_PROCEDURAL = true;
   // Global size scaling; increase base so all planets are much larger
@@ -262,14 +264,14 @@ export default function Planet({
   const externalMap = null;
 
   // Only build procedural textures when enabled and no external map
-  const { colorTex, normalTex, roughTex, cloudsTex } = useMemo(() => {
+  const { colorTex, normalTex, roughTex, cloudsTex, heightTex } = useMemo(() => {
     if (!USE_PROCEDURAL || (USE_EXTERNAL_TEXTURES && externalMap)) {
       const empty = new DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1, RGBAFormat, UnsignedByteType);
       empty.needsUpdate = true;
-      return { colorTex: empty, normalTex: empty, roughTex: empty, cloudsTex: empty } as any;
+      return { colorTex: empty, normalTex: empty, roughTex: empty, cloudsTex: empty, heightTex: empty } as any;
     }
     try {
-      const size = 2048; // Ultra-high resolution for maximum detail and realism
+      const size = 2048; // High resolution procedural PBR maps
       const base = new Color(color);
       const light = base.clone().lerp(new Color('#ffffff'), 0.25);
       const dark = base.clone().multiplyScalar(0.55);
@@ -278,68 +280,86 @@ export default function Planet({
       const dataNormal = new Uint8Array(size * size * 4);
       const dataRough = new Uint8Array(size * size * 4);
       const dataClouds = new Uint8Array(size * size * 4);
+      const dataHeightU8 = new Uint8Array(size * size); // single channel for displacement
       let ph = 0;
       for (let i = 0; i < song.id.length; i++) ph = (ph * 31 + song.id.charCodeAt(i)) % 9973;
       const phase = ph * 0.001;
       const bandFreq = 8 + (ph % 7);
       // Ultra-advanced multi-octave noise for ultra-realistic terrain with holographic surface patterns
-      const noise = (x: number, y: number) => {
-        // Primary landform noise (continents, major features) with holographic interference
-        const n1 = Math.sin(x * 0.27 + phase) * Math.cos(y * 0.23 - phase * 1.7);
-        const n2 = Math.sin((x + y) * 0.11 + phase * 2.3);
-        const n3 = Math.sin(x * 0.41 + phase * 1.3) * Math.cos(y * 0.37 + phase * 0.9);
-        const n4 = Math.sin((x - y) * 0.19 + phase * 2.7) * 0.6;
-        
-        // Medium-scale features (mountain ranges, river systems) with digital artifacts
-        const n5 = Math.sin(x * 1.1 + phase * 0.7) * Math.cos(y * 1.3 - phase * 1.1) * 0.3;
-        const n6 = Math.sin((x * 2.1 + y * 1.9) * 0.5 + phase * 3.1) * 0.2;
-        
-        // Fine-scale details (local terrain, small-scale geology) with scan line interference
-        const n7 = Math.sin(x * 3.7 + phase * 1.2) * Math.cos(y * 4.1 - phase * 0.8) * 0.15;
-        const n8 = Math.sin((x * 5.3 - y * 4.7) * 0.3 + phase * 2.8) * 0.1;
-        
-        // Ultra-fine surface texture with holographic noise
-        const n9 = Math.sin(x * 8.9 + phase * 0.9) * Math.cos(y * 9.7 + phase * 1.5) * 0.08;
-        const n10 = Math.sin((x * 12.1 + y * 11.3) * 0.2 + phase * 4.2) * 0.05;
-        
-        // Micro-detail surface features (enhanced realism) with digital grid patterns
-        const n11 = Math.sin(x * 15.7 + phase * 1.8) * Math.cos(y * 16.3 - phase * 2.1) * 0.03;
-        const n12 = Math.sin((x * 21.1 - y * 19.7) * 0.15 + phase * 5.2) * 0.02;
-        const n13 = Math.sin(x * 28.3 + phase * 2.7) * Math.cos(y * 31.1 + phase * 3.3) * 0.015;
-        
-        // Add holographic surface pattern overlays
-        const holoGrid1 = Math.sin(x * 45.0 + phase * 3.0) * Math.sin(y * 45.0 + phase * 2.5) * 0.008;
-        const holoGrid2 = Math.sin(x * 90.0 + phase * 4.0) * Math.sin(y * 90.0 + phase * 3.5) * 0.004;
-        const holoScanlines = Math.sin(y * 180.0 + phase * 5.0) * 0.006;
-        
-        // Digital artifact patterns (like holographic projection errors)
-        const digitalNoise1 = Math.floor(Math.sin(x * 25.0 + phase) * 4.0) / 4.0 * 0.01;
-        const digitalNoise2 = Math.floor(Math.sin(y * 30.0 + phase * 1.5) * 3.0) / 3.0 * 0.008;
-        
-        // Combine all octaves with appropriate weights plus holographic effects
-        return (n1 + n2 + n3 * 0.7 + n4 * 0.5 + n5 * 0.4 + n6 * 0.25 + n7 * 0.15 + n8 * 0.1 + 
-                n9 * 0.08 + n10 * 0.05 + n11 * 0.03 + n12 * 0.02 + n13 * 0.015 + 
-                holoGrid1 + holoGrid2 + holoScanlines + digitalNoise1 + digitalNoise2) * 0.22;
+      // Value noise + fBM for natural continents and mountains
+      const fade = (t: number) => t * t * (3 - 2 * t);
+      const frac = (v: number) => v - Math.floor(v);
+      const hash2 = (x: number, y: number) => {
+        // Deterministic pseudo-random
+        const s = Math.sin(x * 127.1 + y * 311.7 + phase) * 43758.5453;
+        return frac(Math.abs(s));
+      };
+      const vnoise = (x: number, y: number) => {
+        const xi = Math.floor(x), yi = Math.floor(y);
+        const xf = x - xi, yf = y - yi;
+        const a = hash2(xi, yi);
+        const b = hash2(xi + 1, yi);
+        const c = hash2(xi, yi + 1);
+        const d = hash2(xi + 1, yi + 1);
+        const u = fade(xf), v = fade(yf);
+        return (
+          a * (1 - u) * (1 - v) +
+          b * u * (1 - v) +
+          c * (1 - u) * v +
+          d * u * v
+        );
+      };
+      const fbm2 = (x: number, y: number, oct: number, lac = 2.0, gain = 0.5) => {
+        let amp = 0.5, freq = 1.0, sum = 0.0, norm = 0.0;
+        for (let o = 0; o < oct; o++) {
+          sum += amp * vnoise(x * freq, y * freq);
+          norm += amp;
+          freq *= lac; amp *= gain;
+        }
+        return sum / Math.max(1e-6, norm);
       };
       let p = 0; let idx = 0;
       for (let j = 0; j < size; j++) {
         const v = j / (size - 1);
-        const lat = (v - 0.5) * 2;
+        const latN = v; // [0,1]
+        const lat = (v - 0.5) * Math.PI; // [-pi/2, pi/2]
         for (let i = 0; i < size; i++) {
-          const n = noise(i, j);
-          // Advanced geological features
-          const continentalNoise = Math.sin(i * 0.15 + phase) * Math.cos(j * 0.12 - phase) * 0.6 + 0.5;
-          const oceanicPattern = Math.sin(lat * (bandFreq * 1.3) + n * 2.1) * 0.5 + 0.5;
-          const tectonicLines = Math.sin((i + j) * 0.08 + phase * 1.5) > 0.7 ? 0.3 : 0;
+          const u = i / (size - 1);
+          const lon = u * Math.PI * 2.0; // [0, 2pi]
+          // Spherical coordinates provide better planet-scale continuity
+          // Elevation from fBM value noise in spherical chart
+          const eContinents = fbm2(lon * 0.6, lat * 0.6, 5, 2.0, 0.55);
+          const eMountains  = Math.pow(fbm2(lon * 2.2 + 37.1, lat * 2.2 - 12.3, 4, 2.1, 0.5), 1.6);
+          const eDetail     = fbm2(lon * 6.0 - 11.7, lat * 6.0 + 7.9, 3, 2.0, 0.55);
+          // Latitudinal temperature proxy (equator warm, poles cold)
+          const temp = Math.cos(lat) * 0.5 + 0.5; // 1 at equator, 0 at poles
+          // Moisture (randomized by id but correlated spatially)
+          const moist = fbm2(lon * 1.2 + 100.0, lat * 1.2 - 50.0, 3, 2.0, 0.6);
+          // Base elevation
+          let elev = eContinents * 0.65 + eMountains * 0.35 + eDetail * 0.15;
+          // Shift by type: terrestrials more continental contrast; dwarfs more craters (later)
+          if (planetType === 'terrestrial') elev = elev * 1.05 + 0.05;
+          if (planetType === 'dwarf') elev = elev * 0.95 + 0.02;
+          if (planetType === 'neptune' || planetType === 'gas-giant') elev = 0.5 + (eDetail - 0.5) * 0.15;
+          // Sea level threshold controls land vs ocean coverage
+          const seaLevel = 0.52;
+          const elevation = Math.max(0, Math.min(1, elev));
+          const isOcean = elevation < seaLevel && planetType === 'terrestrial';
           
-          // Polar ice caps (brighten near poles)
-          const polarDistance = Math.abs(lat);
-          const polarCaps = polarDistance > 0.7 ? Math.pow((polarDistance - 0.7) / 0.3, 2) * 0.4 : 0;
+          // Poles get snow/ice; modulate by temperature
+          const polar = Math.pow(1 - temp, 2.5);
           
-          // Equatorial features (different for each element)
-          const equatorialBand = Math.exp(-Math.pow(lat * 3, 2)) * 0.2;
+          // Craters for dwarfs
+          let crater = 0;
+          if (planetType === 'dwarf') {
+            const cNoise = fbm2(lon * 8.0 + 13.0, lat * 8.0 - 21.0, 2, 2.0, 0.7);
+            crater = Math.max(0, cNoise * 1.4 - 0.9);
+          }
           
-          let bands = (oceanicPattern * 0.6) + (continentalNoise * 0.4) - tectonicLines + polarCaps + equatorialBand;
+          // Gas/ice giant banding pattern
+          const bandsGiant = Math.sin(lat * (planetType === 'gas-giant' ? 12.0 : 8.0) + phase * 1.2) * 0.5 + 0.5;
+
+          // Biome color selection
           // Rough element inference from color if element not passed
           const elemColor = (song as any)?.planet?.element || '';
           const isWater = (elemColor || '').toLowerCase() === 'water';
@@ -349,62 +369,53 @@ export default function Planet({
           // Planet type booleans for material properties
           const isGasGiant = planetType === 'gas-giant';
           const isNeptune = planetType === 'neptune';
-          // Advanced element-specific terrain features
-          let bandBoost = 1.0;
-          if (isWater) {
-            bandBoost = 1.7;
-            // Oceanic ridges and trenches
-            const ridges = Math.sin(i * 0.09 + phase) * Math.sin(j * 0.07 - phase) > 0.6 ? 0.25 : 0;
-            const trenches = Math.sin(i * 0.06 + phase * 1.3) * Math.cos(j * 0.08 - phase * 0.9) < -0.7 ? -0.2 : 0;
-            // Coral reef patterns near equator
-            const reefs = equatorialBand > 0.1 ? Math.sin(i * 0.31 + j * 0.29) > 0.6 ? 0.15 : 0 : 0;
-            bands += ridges * 0.3 + trenches + reefs;
-          } else if (isEarth) {
-            bandBoost = 0.9;
-            // Mountain ranges and valleys
-            const mountains = Math.sin(lat * 12 + n * 3) > 0.5 ? 0.3 : 0;
-            const valleys = Math.sin(lat * 8 + n * 2.5) < -0.6 ? -0.2 : 0;
-            // Desert patterns
-            const deserts = Math.abs(lat) > 0.2 && Math.abs(lat) < 0.5 ? Math.sin(i * 0.25) > 0.3 ? -0.15 : 0 : 0;
-            bands += mountains + valleys + deserts;
-          } else if (isDark) {
-            bandBoost = 0.65;
-            // Volcanic and lava patterns
-            const volcanic = Math.sin((i + j) * 0.13 + phase * 2) > 0.8 ? 0.5 : 0;
-            const lavaFlows = Math.sin(i * 0.17 + phase) * Math.cos(j * 0.21 - phase) > 0.75 ? 0.3 : 0;
-            // Obsidian plains
-            const plains = Math.sin(lat * 6) > -0.2 && Math.sin(lat * 6) < 0.2 ? -0.25 : 0;
-            bands += volcanic * 0.4 + lavaFlows * 0.2 - plains;
+          // Color mapping based on biome
+          let c = new Color();
+          if (isGasGiant || isNeptune) {
+            // Physically-inspired banded colors
+            const baseG = isGasGiant ? new Color('#d2b48c') : new Color('#2e5aac');
+            const hiG   = isGasGiant ? new Color('#f6e2b3') : new Color('#72a6ff');
+            c = baseG.lerp(hiG, bandsGiant * 0.85 + 0.1);
+          } else if (isOcean) {
+            // Deep to shallow ocean blues
+            const depth = Math.max(0, Math.min(1, (seaLevel - elevation) / seaLevel));
+            const deep = new Color('#003f5c');
+            const shallow = new Color('#2f9ed2');
+            c = deep.lerp(shallow, Math.pow(1 - depth, 0.7));
           } else {
-            bandBoost = 1.15;
-            // Generic rocky terrain with canyons
-            const canyons = Math.sin(i * 0.11 + j * 0.13) < -0.7 ? -0.3 : 0;
-            bands += canyons;
+            // Land biomes
+            const h = (elevation - seaLevel) / (1 - seaLevel); // [0..1] above sea
+            const aridity = 1 - moist; // deserts when high
+            const low = new Color('#e0cda9'); // sand
+            const grass = new Color('#6aa84f');
+            const dirt = new Color('#91684a');
+            const rock = new Color('#7a7a7a');
+            const snow = new Color('#ffffff');
+            if (h < 0.15) {
+              // beaches/shore
+              c = low.lerp(grass, Math.max(0, Math.min(1, (h / 0.15) * (1 - aridity * 0.7))));
+            } else if (h < 0.5) {
+              // plains/forests vs deserts
+              const t = (h - 0.15) / 0.35;
+              const green = grass.lerp(dirt, t * 0.4);
+              const desert = low;
+              c = desert.lerp(green, Math.max(0, Math.min(1, 1 - aridity)));
+            } else if (h < 0.8) {
+              // highlands
+              const t = (h - 0.5) / 0.3;
+              c = dirt.lerp(rock, t);
+            } else {
+              // alpine/snow with polar influence
+              const t = Math.min(1, (h - 0.8) / 0.2 + polar * 0.7);
+              c = rock.lerp(snow, t);
+            }
           }
-          bands = Math.max(0, Math.min(1, 0.5 + (bands - 0.5) * bandBoost));
-          if (isLightning) {
-            // Advanced electrical storm patterns
-            const stormCell1 = Math.sin((i + ph) * 0.22) * Math.cos((j - ph) * 0.176);
-            const stormCell2 = Math.sin((i - ph) * 0.18) * Math.cos((j + ph * 0.8) * 0.205);
-            const stormCell3 = Math.sin((i + j + ph) * 0.15) * Math.cos((i - j - ph) * 0.19);
-            const electricField = (stormCell1 + stormCell2 * 0.7 + stormCell3 * 0.5) * 0.4;
-            
-            // Lightning network patterns
-            const lightningBolt = Math.sin(i * 0.31 + j * 0.29 + phase * 4) > 0.85 ? 0.7 : 0;
-            const electricArcs = Math.sin(i * 0.41 - j * 0.37 + phase * 6) > 0.9 ? 0.5 : 0;
-            
-            // Plasma storms (larger scale)
-            const plasmaStorm = Math.sin(i * 0.07 + j * 0.09 + phase) > 0.6 ? 0.3 : 0;
-            
-            bands = Math.min(1.0, Math.max(0.0, bands + 0.4 * electricField + lightningBolt * 0.5 + electricArcs * 0.3 + plasmaStorm * 0.2));
-          }
-          const mixT = Math.min(1, Math.max(0, bands * 0.85 + (n + 0.5) * 0.15));
-          // Base color from bands
-          const c = dark.clone().lerp(light, mixT);
-          // Enhanced crater and geological features with planet-type specific patterns
-          const nx = Math.sin((i + ph) * 0.045) * Math.cos((j - ph) * 0.04) * 0.5 + 0.5;
-          const secondaryNoise = Math.sin((i * 1.3 + ph) * 0.067) * Math.cos((j * 1.1 - ph) * 0.052) * 0.3 + 0.5;
-          const combinedNoise = (nx * 0.7 + secondaryNoise * 0.3);
+          
+          // Subtle tint toward song theme color to keep art direction
+          c = c.lerp(base, 0.15);
+          
+          // Dwarf crater rims brighten slightly
+          const combinedNoise = elevation;
           
           // Planet-type specific surface features
           let surfacePattern = 0;
@@ -466,14 +477,17 @@ export default function Planet({
           // Enhanced height mapping with rim elevation
           const craterDepthMul = isEarth ? 0.4 : isDark ? 0.38 : isWater ? 0.15 : 0.32;
           const rimHeightBoost = isEarth ? 0.12 : isDark ? 0.05 : isWater ? 0.08 : 0.1;
-          const baseHeight = (mixT * 0.6 + (n + 0.5) * 0.4);
+          const baseHeight = elevation;
           const depthModifier = 1.0 - (craterDepthMul * spots + 0.12 * core);
           const h = (baseHeight * depthModifier) + (rimHeightBoost * rims);
-          dataHeight[idx] = Math.max(0, Math.min(1, h));
+          const hClamped = Math.max(0, Math.min(1, h));
+          dataHeight[idx] = hClamped;
+          // Store into 8-bit single-channel height for displacement
+          dataHeightU8[idx] = Math.floor(hClamped * 255);
           // Enhanced roughness mapping
           let rough = 0.6 + (1.0 - h) * 0.4;
           // Element-specific roughness characteristics
-          if (isWater) rough *= 0.7; // smoother surfaces
+          if (isWater || isOcean) rough = 0.18; // smoother water
           else if (isEarth) rough += 0.2; // rougher terrain
           else if (isDark) rough += 0.15; // volcanic texture
           
@@ -495,8 +509,8 @@ export default function Planet({
           const weatherPattern = (atmo1 * 0.5 + atmo2 * 0.3 + atmo3 * 0.2) + stormSystems + jetStreams;
           
           // Element-specific atmospheric characteristics
-          const atmoThreshold = isWater ? 0.78 : isEarth ? 0.85 : isDark ? 0.9 : isLightning ? 0.75 : 0.82;
-          const atmoIntensity = isWater ? 6.2 : isEarth ? 4.1 : isDark ? 2.8 : isLightning ? 7.5 : 4.8;
+          const atmoThreshold = isWater || planetType === 'terrestrial' ? 0.75 : isEarth ? 0.85 : isDark ? 0.9 : isLightning ? 0.75 : 0.82;
+          const atmoIntensity = planetType === 'gas-giant' ? 3.8 : planetType === 'neptune' ? 4.2 : isWater ? 6.2 : isEarth ? 4.1 : isDark ? 2.8 : isLightning ? 7.5 : 4.8;
           const ca = weatherPattern > atmoThreshold ? (weatherPattern - atmoThreshold) * atmoIntensity : 0.0;
           const ca8 = Math.floor(Math.min(1, Math.max(0, ca)) * 255);
           dataClouds[p] = 255; dataClouds[p + 1] = 255; dataClouds[p + 2] = 255; dataClouds[p + 3] = ca8;
@@ -515,7 +529,8 @@ export default function Planet({
           const hU = sobel(i, j - 1); const hD = sobel(i, j + 1);
           const dx = (hR - hL);
           const dy = (hD - hU);
-          let nx = -dx * 2.0, ny = -dy * 2.0, nz = 1.0;
+          // Stronger normal magnitude for crisper lighting
+          let nx = -dx * 4.5, ny = -dy * 4.5, nz = 1.0;
           const inv = 1.0 / Math.sqrt(nx * nx + ny * ny + nz * nz);
           nx *= inv; ny *= inv; nz *= inv;
           dataNormal[p] = Math.floor((nx * 0.5 + 0.5) * 255);
@@ -532,10 +547,20 @@ export default function Planet({
       texRough.needsUpdate = true; texRough.wrapS = texRough.wrapT = RepeatWrapping;
       const texClouds = new DataTexture(dataClouds, size, size, RGBAFormat, UnsignedByteType);
       texClouds.needsUpdate = true; texClouds.wrapS = texClouds.wrapT = RepeatWrapping;
-      return { colorTex: texColor, normalTex: texNormal, roughTex: texRough, cloudsTex: texClouds };
+      // Single-channel height map for displacement
+      const texHeight = new DataTexture(dataHeightU8, size, size, RedFormat, UnsignedByteType);
+      texHeight.needsUpdate = true; texHeight.wrapS = texHeight.wrapT = RepeatWrapping;
+      // Improve texture sharpness at grazing angles
+      const aniso = 16;
+      texColor.anisotropy = aniso;
+      texNormal.anisotropy = aniso;
+      texRough.anisotropy = aniso;
+      texClouds.anisotropy = aniso;
+      texHeight.anisotropy = aniso;
+      return { colorTex: texColor, normalTex: texNormal, roughTex: texRough, cloudsTex: texClouds, heightTex: texHeight };
     } catch {
       const empty = new DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1, RGBAFormat, UnsignedByteType);
-      empty.needsUpdate = true; return { colorTex: empty, normalTex: empty, roughTex: empty, cloudsTex: empty } as any;
+      empty.needsUpdate = true; return { colorTex: empty, normalTex: empty, roughTex: empty, cloudsTex: empty, heightTex: empty } as any;
     }
   }, [song.id, color]);
 
@@ -844,55 +869,103 @@ export default function Planet({
               default: return <sphereGeometry args={[1, shapeParams.widthSegments, shapeParams.heightSegments]} />; // Low-poly sphere
             }
           } else {
-            // All other shapes use sphereGeometry with different segment counts and scaling
-            return <sphereGeometry args={[1, shapeParams.widthSegments, shapeParams.heightSegments]} />;
+            // All other shapes use sphereGeometry with planet-type tuned segment counts
+            const baseW = (
+              planetType === 'gas-giant' ? 96 :
+              planetType === 'neptune' ? 84 :
+              planetType === 'terrestrial' ? 72 : 56
+            );
+            const baseH = (
+              planetType === 'gas-giant' ? 64 :
+              planetType === 'neptune' ? 56 :
+              planetType === 'terrestrial' ? 48 : 36
+            );
+            const segW = Math.max(16, Math.floor(baseW * (isMain ? 2 : 1)));
+            const segH = Math.max(12, Math.floor(baseH * (isMain ? 2 : 1)));
+            return <sphereGeometry args={[1, segW, segH]} />;
           }
         })()}
-        <HoloMaterial
-          baseColor={baseColor}
-          glowColor={innerColor}
-          scanIntensity={
-            planetType === 'gas-giant' ? (isMain ? 0.9 : (isHover ? 0.85 : 0.75)) :
-            planetType === 'neptune' ? (isMain ? 0.8 : (isHover ? 0.75 : 0.65)) :
-            planetType === 'dwarf' ? (isMain ? 0.65 : (isHover ? 0.6 : 0.5)) :
-            element === 'lightning' ? (isMain ? 1.0 : (isHover ? 0.95 : 0.85)) :
-            element === 'fire' ? (isMain ? 0.85 : (isHover ? 0.8 : 0.7)) :
-            element === 'water' ? (isMain ? 0.75 : (isHover ? 0.7 : 0.6)) :
-            element === 'magic' ? (isMain ? 1.05 : (isHover ? 1.0 : 0.9)) :
-            isMain ? 0.8 : (isHover ? 0.75 : 0.65)
-          }
-          fresnelPower={
-            (isMain ? 2.2 : 2.6) * 
-            (planetType === 'gas-giant' ? 0.8 : 
-             planetType === 'neptune' ? 0.85 : 
-             planetType === 'dwarf' ? 1.2 : 
-             element === 'darkness' ? 1.15 : 
-             element === 'lightning' ? 0.95 : 
-             element === 'water' ? 0.85 : 1.0)
-          }
-          brighten={
-            (isMain ? 1.6 : (isHover ? 1.7 : 1.5)) * 
-            (planetType === 'gas-giant' ? 1.2 : 
-             planetType === 'neptune' ? 1.15 : 
-             planetType === 'dwarf' ? 0.95 : 
-             element === 'fire' ? 1.25 : 
-             element === 'lightning' ? 1.2 : 
-             element === 'magic' ? 1.3 : 
-             element === 'water' ? 1.0 : 1.05)
-          }
-          alpha={
-            (isMain ? 0.55 : (isHover ? 0.6 : 0.45)) * 
-            (planetType === 'gas-giant' ? 1.3 : 
-             planetType === 'neptune' ? 1.2 : 
-             planetType === 'dwarf' ? 0.9 : 
-             element === 'darkness' ? 1.0 : 
-             element === 'water' ? 1.25 : 
-             element === 'lightning' ? 1.3 : 
-             element === 'magic' ? 1.4 : 1.1) *
-            1.0
-          }
-          depthFactor={depthFactor}
-        />
+        {REALISTIC_PLANETS ? (
+          <meshPhysicalMaterial
+            map={colorTex as any}
+            normalMap={normalTex as any}
+            roughnessMap={roughTex as any}
+            displacementMap={heightTex as any}
+            // Stronger terrain on rocky worlds, minimal on gas/ice giants
+            displacementScale={
+              planetType === 'gas-giant' ? 0.0 :
+              planetType === 'neptune' ? 0.06 :
+              planetType === 'terrestrial' ? 0.22 :
+              0.12
+            }
+            displacementBias={
+              planetType === 'gas-giant' ? 0.0 :
+              planetType === 'neptune' ? -0.005 :
+              planetType === 'terrestrial' ? -0.02 :
+              -0.012
+            }
+            roughness={0.9}
+            metalness={0.0}
+            clearcoat={0.15}
+            clearcoatRoughness={0.6}
+            envMapIntensity={0.5}
+            normalScale={
+              new Vector2(
+                (planetType === 'gas-giant' ? 0.8 : planetType === 'neptune' ? 1.2 : planetType === 'terrestrial' ? 3.0 : 2.0),
+                (planetType === 'gas-giant' ? 0.8 : planetType === 'neptune' ? 1.2 : planetType === 'terrestrial' ? 3.0 : 2.0)
+              )
+            }
+            ior={1.33}
+            specularIntensity={0.2}
+            color={'#ffffff'}
+          />
+        ) : (
+          <HoloMaterial
+            baseColor={baseColor}
+            glowColor={innerColor}
+            scanIntensity={
+              planetType === 'gas-giant' ? (isMain ? 0.9 : (isHover ? 0.85 : 0.75)) :
+              planetType === 'neptune' ? (isMain ? 0.8 : (isHover ? 0.75 : 0.65)) :
+              planetType === 'dwarf' ? (isMain ? 0.65 : (isHover ? 0.6 : 0.5)) :
+              element === 'lightning' ? (isMain ? 1.0 : (isHover ? 0.95 : 0.85)) :
+              element === 'fire' ? (isMain ? 0.85 : (isHover ? 0.8 : 0.7)) :
+              element === 'water' ? (isMain ? 0.75 : (isHover ? 0.7 : 0.6)) :
+              element === 'magic' ? (isMain ? 1.05 : (isHover ? 1.0 : 0.9)) :
+              isMain ? 0.8 : (isHover ? 0.75 : 0.65)
+            }
+            fresnelPower={
+              (isMain ? 2.2 : 2.6) * 
+              (planetType === 'gas-giant' ? 0.8 : 
+               planetType === 'neptune' ? 0.85 : 
+               planetType === 'dwarf' ? 1.2 : 
+               element === 'darkness' ? 1.15 : 
+               element === 'lightning' ? 0.95 : 
+               element === 'water' ? 0.85 : 1.0)
+            }
+            brighten={
+              (isMain ? 1.6 : (isHover ? 1.7 : 1.5)) * 
+              (planetType === 'gas-giant' ? 1.2 : 
+               planetType === 'neptune' ? 1.15 : 
+               planetType === 'dwarf' ? 0.95 : 
+               element === 'fire' ? 1.25 : 
+               element === 'lightning' ? 1.2 : 
+               element === 'magic' ? 1.3 : 
+               element === 'water' ? 1.0 : 1.05)
+            }
+            alpha={
+              (isMain ? 0.55 : (isHover ? 0.6 : 0.45)) * 
+              (planetType === 'gas-giant' ? 1.3 : 
+               planetType === 'neptune' ? 1.2 : 
+               planetType === 'dwarf' ? 0.9 : 
+               element === 'darkness' ? 1.0 : 
+               element === 'water' ? 1.25 : 
+               element === 'lightning' ? 1.3 : 
+               element === 'magic' ? 1.4 : 1.1) *
+              1.0
+            }
+            depthFactor={depthFactor}
+          />
+        )}
         
         {/* Enhanced holographic wireframe overlay with size-based complexity */}
         <mesh scale={1.001}>
@@ -906,8 +979,8 @@ export default function Planet({
           <meshBasicMaterial 
             color={new Color(color).lerp(new Color('#FFFFFF'), 0.6)}
             transparent
-            opacity={planetType === 'gas-giant' ? 0.18 : 
-                     planetType === 'neptune' ? 0.15 : 0.12}
+            opacity={planetType === 'gas-giant' ? 0.1 : 
+                     planetType === 'neptune' ? 0.08 : 0.06}
             wireframe
             depthWrite={false}
             blending={AdditiveBlending}
@@ -920,9 +993,9 @@ export default function Planet({
           <meshBasicMaterial
             color={new Color(color).lerp(new Color('#FFFFFF'), 0.8)}
             transparent
-            opacity={planetType === 'gas-giant' ? 0.12 : 
-                     planetType === 'neptune' ? 0.10 : 
-                     planetType === 'terrestrial' ? 0.08 : 0.06}
+            opacity={planetType === 'gas-giant' ? 0.06 : 
+                     planetType === 'neptune' ? 0.05 : 
+                     planetType === 'terrestrial' ? 0.04 : 0.03}
             depthWrite={false}
             blending={AdditiveBlending}
           />
@@ -936,7 +1009,7 @@ export default function Planet({
               <meshBasicMaterial
                 color={new Color(color).lerp(new Color('#FFFF00'), 0.4)}
                 transparent
-                opacity={0.06}
+                opacity={0.03}
                 depthWrite={false}
                 blending={AdditiveBlending}
               />
@@ -946,7 +1019,7 @@ export default function Planet({
               <meshBasicMaterial
                 color={new Color(color).lerp(new Color('#00FFFF'), 0.5)}
                 transparent
-                opacity={0.04}
+                opacity={0.02}
                 depthWrite={false}
                 blending={AdditiveBlending}
               />
@@ -1119,7 +1192,7 @@ export default function Planet({
         </points>
       ) : null}
 
-      {/* Holographic atmospheric data overlay - very subtle */}
+      {/* Cloud layer */}
       <mesh ref={cloudsRef} scale={
         planetType === 'gas-giant' ? (1.025 + sizeVar * 0.015) : 
         planetType === 'neptune' ? (1.015 + sizeVar * 0.01) : 
@@ -1131,34 +1204,46 @@ export default function Planet({
         element === 'darkness' ? (1.005 + sizeVar * 0.003) : 
         1.006 + sizeVar * 0.005
       }>
-        <sphereGeometry args={[1, 48, 48]} />
-        <meshBasicMaterial 
-          color={
-            planetType === 'gas-giant' ? new Color(color).lerp(new Color('#FFFFFF'), 0.8) : 
-            planetType === 'neptune' ? new Color("#CCDDFF").lerp(new Color(color), 0.5) : 
-            planetType === 'dwarf' ? new Color(color).lerp(new Color('#888888'), 0.8) : 
-            element === 'water' ? new Color("#E6F7FF") : 
-            element === 'fire' ? new Color("#FFE6CC") : 
-            element === 'lightning' ? new Color("#F0F8FF") : 
-            element === 'magic' ? new Color(color).lerp(new Color('#DDA0DD'), 0.7) :
-            element === 'darkness' ? new Color("#1A1A2E") : 
-            new Color('white').lerp(new Color(color), 0.6)
-          } 
-          transparent 
-          opacity={
-            planetType === 'gas-giant' ? 0.06 : 
-            planetType === 'neptune' ? 0.05 : 
-            planetType === 'dwarf' ? 0.015 : 
-            element === 'water' ? 0.04 : 
-            element === 'magic' ? 0.03 : 
-            element === 'fire' ? 0.05 : 
-            element === 'lightning' ? 0.045 : 
-            element === 'darkness' ? 0.025 : 
-            0.025
-          } 
-          depthWrite={false}
-          blending={AdditiveBlending}
-        />
+        <sphereGeometry args={[1, 80, 64]} />
+        {REALISTIC_PLANETS ? (
+          <meshStandardMaterial
+            map={cloudsTex as any}
+            transparent
+            depthWrite={false}
+            opacity={1}
+            color={'#ffffff'}
+            roughness={1}
+            metalness={0}
+          />
+        ) : (
+          <meshBasicMaterial 
+            color={
+              planetType === 'gas-giant' ? new Color(color).lerp(new Color('#FFFFFF'), 0.8) : 
+              planetType === 'neptune' ? new Color("#CCDDFF").lerp(new Color(color), 0.5) : 
+              planetType === 'dwarf' ? new Color(color).lerp(new Color('#888888'), 0.8) : 
+              element === 'water' ? new Color("#E6F7FF") : 
+              element === 'fire' ? new Color("#FFE6CC") : 
+              element === 'lightning' ? new Color("#F0F8FF") : 
+              element === 'magic' ? new Color(color).lerp(new Color('#DDA0DD'), 0.7) :
+              element === 'darkness' ? new Color("#1A1A2E") : 
+              new Color('white').lerp(new Color(color), 0.6)
+            } 
+            transparent 
+            opacity={
+              planetType === 'gas-giant' ? 0.06 : 
+              planetType === 'neptune' ? 0.05 : 
+              planetType === 'dwarf' ? 0.015 : 
+              element === 'water' ? 0.04 : 
+              element === 'magic' ? 0.03 : 
+              element === 'fire' ? 0.05 : 
+              element === 'lightning' ? 0.045 : 
+              element === 'darkness' ? 0.025 : 
+              0.025
+            } 
+            depthWrite={false}
+            blending={AdditiveBlending}
+          />
+        )}
       </mesh>
       
       {/* Minimal holographic atmospheric effects */}

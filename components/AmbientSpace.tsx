@@ -482,6 +482,57 @@ export default function AmbientSpace({
     };
   }, [playingMusic, suspend, userSelectedSong]);
 
+  // Guard: some devices misreport MP3 duration (~6s) and fire 'ended' early.
+  // Detect suspiciously short duration and repair by nudging currentTime or reloading src.
+  useEffect(() => {
+    const amb = ambRef.current; if (!amb) return;
+
+    let fixedOnce = false;
+    const isSuspectDuration = () => isFinite(amb.duration) && amb.duration > 0 && amb.duration < 10; // ~6s bug
+
+    const attemptRepair = (reason: string) => {
+      if (playingMusic || suspend || userSelectedSong) return;
+      try { amb.muted = false; } catch {}
+      // First try a gentle nudge forward which often forces a full file parse
+      try {
+        if (!fixedOnce) {
+          amb.currentTime = Math.min(0.2, (amb.duration || 0.2) * 0.04);
+          fixedOnce = true;
+          amb.play().catch(()=>{});
+          return;
+        }
+      } catch {}
+      // If still broken, force a cache-busted reload without changing user-facing volume
+      const vol = amb.volume;
+      const wasPlaying = !amb.paused;
+      try {
+        const base = (ambientSrc || '').split('#')[0];
+        amb.src = `${base}?fix=${Date.now()}#t=0.01,`;
+        amb.load();
+      } catch {}
+      amb.volume = vol;
+      if (wasPlaying) amb.play().catch(()=>{});
+    };
+
+    const onMeta = () => { if (isSuspectDuration()) attemptRepair('metadata'); };
+    const onDurChange = () => { if (isSuspectDuration()) attemptRepair('durationchange'); };
+    const onTU = () => {
+      if (!amb) return;
+      if (isSuspectDuration() && amb.currentTime > 4 && !amb.paused) {
+        attemptRepair('timeupdate');
+      }
+    };
+
+    amb.addEventListener('loadedmetadata', onMeta);
+    amb.addEventListener('durationchange', onDurChange);
+    amb.addEventListener('timeupdate', onTU);
+    return () => {
+      amb.removeEventListener('loadedmetadata', onMeta);
+      amb.removeEventListener('durationchange', onDurChange);
+      amb.removeEventListener('timeupdate', onTU);
+    };
+  }, [ambientSrc, playingMusic, suspend, userSelectedSong]);
+
   const enable = async () => {
     const amb = ambRef.current;
     const intro = introRef.current;

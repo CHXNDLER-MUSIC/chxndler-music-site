@@ -326,11 +326,12 @@ export default function DashboardApp({ initialSlug } = {}) {
     }
     
 
-    // Hide ALL planets immediately during warp sequence for song selection
-    console.log('🌍 DashboardApp: onSongChange - Hiding all planets during warp');
+    // Focus the selected planet immediately and bring camera closer
+    console.log('🌍 DashboardApp: onSongChange - Focusing selected planet');
     try {
-      playerStore.getState().setPlanetsVisible(false);
-      playerStore.getState().setPlanetDisplayMode('hidden');
+      playerStore.getState().setMain(slug, true);
+      playerStore.getState().setPlanetDisplayMode('single');
+      playerStore.getState().setPlanetsVisible(true);
     } catch {}
 
     // STEP 2: Stop all music immediately when song is selected
@@ -1841,8 +1842,10 @@ export default function DashboardApp({ initialSlug } = {}) {
         </div>
       ) : null}
 
-      {/* Background preloader: covers + first ~5s of audio/skies */}
-      {mounted ? <PreloadMedia maxImage={8} maxAudio={3} maxVideo={2} /> : null}
+      {/* Background preloader: defer until Start unlock to avoid heavy work on load */}
+      {mounted && uiUnlocked ? (
+        <PreloadMedia maxImage={8} maxAudio={3} maxVideo={2} />
+      ) : null}
 
 
     </main>

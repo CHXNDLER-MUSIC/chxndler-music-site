@@ -60,14 +60,16 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
     return () => { el.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onResize); if (raf) cancelAnimationFrame(raf); };
   }, [hoverId, songs.length, setHover]);
 
-  // Handle keyboard selection: ensure planets hide when selecting with Enter
+  // Handle keyboard selection: focus the selected planet and zoom camera
   const onListKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      try { playerStore.getState().setPlanetsVisible(false); } catch {}
       const id = activeId || mainId || undefined;
       if (id) {
-        setMain(id);
+        // Set main without toggling planet visibility, then focus the planet
+        playerStore.getState().setMain(id, true);
+        try { playerStore.getState().setPlanetDisplayMode('single'); } catch {}
+        try { playerStore.getState().setPlanetsVisible(true); } catch {}
         if (onSongChange) onSongChange(id);
       }
       return;
@@ -168,15 +170,13 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
             onFocus={() => setHover(s.id)}
             onBlur={() => setHover(null)}
             onClick={(e) => {
-              // Immediately hide all planets before warp
-              try { playerStore.getState().setPlanetsVisible(false); } catch {}
-              // Use the new planetDisplayMode system for clean state management
-              setMain(s.id); // This sets planetDisplayMode to 'hidden' in the store
-              
-              // Call the onSongChange callback to notify parent (DashboardApp)
-              if (onSongChange) {
-                onSongChange(s.id);
-              }
+              // Focus the clicked planet immediately and zoom camera in
+              playerStore.getState().setMain(s.id, true);
+              try { playerStore.getState().setPlanetDisplayMode('single'); } catch {}
+              try { playerStore.getState().setPlanetsVisible(true); } catch {}
+
+              // Notify parent (e.g., to start playback) without altering focus state
+              if (onSongChange) onSongChange(s.id);
             }}
             style={{ 
               cursor: 'pointer',

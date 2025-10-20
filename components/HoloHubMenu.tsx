@@ -158,12 +158,14 @@ export default function HoloHubMenu({
         am: '🎵 Apple Music',
       };
       const element_label = labelMap[(it.id || '').toLowerCase()] || it.label || '📡 Comms Hub';
+      // Send server-facing click with a class marker so backend can filter yellow-hub clicks
       track('click', {
         payload: {
           element_tag: 'button',
-          element_class: 'item',
+          element_class: 'item holo-hub',
           element_text: it.label,
           element_label,
+          data_id: it.id,
         }
       });
 

@@ -341,6 +341,21 @@ export default function SteeringWheelOverlay({
                       if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
                     } catch {}
 
+                    // Track explicit power button click so analytics reflect blue button usage
+                    try {
+                      track('click', {
+                        payload: {
+                          element_tag: 'button',
+                          element_class: 'power-btn',
+                          element_text: 'Power',
+                          element_label: '⚡ Power Button',
+                          data_id: 'power',
+                        }
+                      });
+                      // Also expose a dedicated event for possible server aggregation
+                      track('power_button_clicked');
+                    } catch {}
+
                     // Toggle behavior: if blue is active, turn OFF; otherwise turn ON blue
                     if (blueActive) {
                       onBeamColorChange?.('off');
@@ -423,10 +438,10 @@ export default function SteeringWheelOverlay({
                       yellowFromPinkTimeoutA.current = window.setTimeout(() => {
                         setActiveBeamColor('yellow');
                         onBeamColorChange?.('yellow');
-                        // Parent applies a ~150ms delay before enabling the beam; un-suspend panel slightly after
+                        // Parent enables the yellow beam shortly after; un-suspend panel with extra buffer so the beam is clearly visible first
                         yellowFromPinkTimeoutB.current = window.setTimeout(() => {
                           setSuspendYellowPanel(false);
-                        }, 170);
+                        }, 220);
                       }, 360);
                     } else {
                       // Default path (blue → yellow): ask parent to switch beam,
@@ -435,10 +450,10 @@ export default function SteeringWheelOverlay({
                       setActiveBeamColor('yellow');
                       onBeamColorChange?.('yellow');
                       // DashboardApp waits ~450ms before enabling yellow beam
-                      // Release panel slightly after to ensure correct visual order
+                      // Release panel with a larger cushion so the beam turns yellow first on all devices
                       window.setTimeout(() => {
                         setSuspendYellowPanel(false);
-                      }, 470);
+                      }, 560);
                     }
                   } else {
                     // Menu is closing: turn displays off without auto-opening blue

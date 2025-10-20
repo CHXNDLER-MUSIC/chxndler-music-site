@@ -185,10 +185,12 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
       e.preventDefault();
       const id = items[highlight]?.id;
       if (id) { 
-        setActiveId(id); 
-        // Ensure planets toggle off when a song is selected via keyboard
-        try { playerStore.getState().setPlanetsVisible(false); } catch {}
-        onChange?.(id); 
+        setActiveId(id);
+        // Focus the selected planet and reveal it immediately
+        try { playerStore.getState().setMain(id, true); } catch {}
+        try { playerStore.getState().setPlanetDisplayMode('single'); } catch {}
+        try { playerStore.getState().setPlanetsVisible(true); } catch {}
+        onChange?.(id);
       }
       setOpen(false);
       // Playback will start after warp SFX delay via MediaPlayer
@@ -293,10 +295,11 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                     song_icon: s.icon || 'none'
                   });
                   
-                  // Hide all planets immediately when a song is selected from the dropdown
-                  try { playerStore.getState().setPlanetsVisible(false); } catch {}
-
-                  setActiveId(s.id); 
+                  // Focus the clicked planet: set as main, switch to single planet view, and show planets
+                  setActiveId(s.id);
+                  try { playerStore.getState().setMain(s.id, true); } catch {}
+                  try { playerStore.getState().setPlanetDisplayMode('single'); } catch {}
+                  try { playerStore.getState().setPlanetsVisible(true); } catch {}
                   if (onChange) {
                     onChange(s.id);
                   }

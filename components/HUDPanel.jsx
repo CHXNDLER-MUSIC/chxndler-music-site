@@ -1474,24 +1474,17 @@ export default function HUDPanel({
               currentId={currentId}
               onChange={(id) => {
                 setActive(id);
-                
-                // Hide all planets immediately when a song is selected from dropdown
+
+                // Focus the selected planet immediately in the HUD
                 try {
-                  playerStore.getState().setPlanetsVisible(false);
+                  playerStore.getState().setMain(id, true);
+                  playerStore.getState().setPlanetDisplayMode('single');
+                  playerStore.getState().setPlanetsVisible(true);
+                  console.log('🎵 HUDPanel: Focused main planet', id);
                 } catch (error) {
-                  console.error('Failed to hide planets:', error);
+                  console.error('Failed to focus planet:', error);
                 }
-                
-                // Set as main planet in player store so it becomes focused in dashboard
-                try {
-                  playerStore.getState().setMain(id);
-                  console.log('🎵 HUDPanel: Set main planet to', id);
-                } catch (error) {
-                  console.error('Failed to set main planet:', error);
-                }
-                
-                // Do not re-enable planets here; next route controls when to show the focused planet
-                
+
                 // Stop ambient space music when switching songs
                 try {
                   const ambient = document.querySelector('audio[data-ambient="1"]');
@@ -1514,13 +1507,6 @@ export default function HUDPanel({
                 }
                 
                 onSongChange?.(id);
-                try {
-                  if (usePlayerStore?.getState) {
-                  playerStore.getState().setMain(id);
-                  }
-                } catch (error) {
-                  if (DEBUG_MEDIA) dwarn('HUDPanel: failed to update player store', error);
-                }
                 // Stay in place; DashboardApp.onSongChange handles switch without spotlight/route
               }}
             />

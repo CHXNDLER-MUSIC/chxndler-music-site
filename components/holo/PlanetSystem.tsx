@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
-import { AdditiveBlending, Group as ThreeGroup } from "three";
+import { AdditiveBlending, Group as ThreeGroup, SRGBColorSpace } from "three";
 // drei removed to avoid external asset/preset loading that can abort in some runtimes
 import { playerStore } from "@/store/usePlayerStore";
 import Planet from "@/components/holo/Planet";
@@ -132,16 +132,29 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
       <Canvas
         className="absolute inset-0"
         style={{ background: 'transparent' }}
-        dpr={[1, 2]}
+        // Lower DPR on mobile to reduce fill rate cost
+        dpr={(() => {
+          if (typeof window !== 'undefined') {
+            const w = window.innerWidth || 0;
+            if (w <= 768) return [1, 1.5];
+          }
+          return [1, 2];
+        })()}
         // Pull the camera back and widen FOV so the full system fits
         // Elevated viewpoint: camera positioned above to look down at the planet system
         // Zoom out more when showing all planets for better overview
-        camera={{ position: [0.2, 18, actualShouldShowAll ? 180 : 80], fov: actualShouldShowAll ? 120 : 75 }}
-        gl={{ antialias: true, alpha: true }}
+        camera={{ position: [0.2, 18, actualShouldShowAll ? 180 : 95], fov: actualShouldShowAll ? 120 : 75 }}
+        // Prefer low-power context on small devices; disable MSAA which is expensive on mobile GPUs
+        gl={{ antialias: false, alpha: true, powerPreference: 'low-power' }}
         onCreated={({ gl }) => {
           // Lift exposure so emissive and additive layers pop without bloom
           // @ts-ignore three typings vary by version
           gl.toneMappingExposure = 1.6;
+          // Ensure correct color space + PBR energy handling
+          // @ts-ignore renderer instance
+          gl.outputColorSpace = SRGBColorSpace;
+          // @ts-ignore renderer instance
+          gl.physicallyCorrectLights = true;
         }}
         frameloop="demand"
       >
@@ -323,12 +336,12 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
   // Use different base values based on showAll mode - access via props context
   const isShowAll = focusId === null;
   // Match Canvas camera defaults; give more room in showAll to see every planet
-  const base = React.useRef({ z: isShowAll ? 180 : 80, fov: isShowAll ? 120 : 75 });
+  const base = React.useRef({ z: isShowAll ? 180 : 95, fov: isShowAll ? 120 : 75 });
   const anim = React.useRef<{ t: number; d: number; active: boolean }>({ t: 0, d: 0.8, active: false });
 
   React.useEffect(() => {
     // Update base values based on current mode
-    base.current = { z: isShowAll ? 180 : 80, fov: isShowAll ? 120 : 75 };
+    base.current = { z: isShowAll ? 180 : 95, fov: isShowAll ? 120 : 75 };
     
     // Only restart zoom animation if we have a focusId (not in showAll/home mode)
     if (focusId) {

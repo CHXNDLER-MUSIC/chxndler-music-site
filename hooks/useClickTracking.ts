@@ -269,6 +269,29 @@ export function useClickTracking() {
         console.log('Social/Music button clicked:', enhancedLabel, target);
       }
       
+      // Normalize href from nearest anchor and infer common data-ids when missing
+      const anchor = (target.tagName.toLowerCase() === 'a' ? (target as HTMLAnchorElement) : (target.closest && target.closest('a'))) as HTMLAnchorElement | null;
+      const href = (anchor && (anchor.getAttribute('href') || anchor.href)) || target.getAttribute('href') || undefined;
+      const hrefLower = (href || '').toLowerCase();
+      const explicitId = (target.getAttribute('data-id') || '').toLowerCase();
+      const titleLower = (target.getAttribute('title') || '').toLowerCase();
+      const clsLower = String(target.className || '').toLowerCase();
+      const ariaLower = (target.getAttribute('aria-label') || '').toLowerCase();
+      const inferredId = (() => {
+        if (explicitId) return explicitId;
+        if (hrefLower.includes('instagram.')) return 'ig';
+        if (hrefLower.includes('tiktok.')) return 'tt';
+        if (hrefLower.includes('youtube.') || hrefLower.includes('youtu.be')) return 'yt';
+        if (hrefLower.includes('spotify.')) return 'sp';
+        if (hrefLower.includes('music.apple') || hrefLower.includes('itunes.')) return 'am';
+        if (titleLower.includes('instagram') || clsLower.includes('instagram')) return 'ig';
+        if (titleLower.includes('tiktok') || clsLower.includes('tiktok')) return 'tt';
+        if (titleLower.includes('youtube') || clsLower.includes('youtube')) return 'yt';
+        if (titleLower.includes('spotify') || clsLower.includes('spotify') || ariaLower.includes('spotify')) return 'sp';
+        if (titleLower.includes('apple') || clsLower.includes('apple') || ariaLower.includes('apple')) return 'am';
+        return '';
+      })();
+
       const clickData: ClickData = {
         id: generateClickId(),
         timestamp: Date.now(),
@@ -277,10 +300,10 @@ export function useClickTracking() {
           className: String(target.className || ""),
           id: target.id || "",
           textContent: target.textContent?.trim().slice(0, 100) || "",
-          href: target.getAttribute('href') || undefined,
+          href,
           role: target.getAttribute('role') || undefined,
           ariaLabel: target.getAttribute('aria-label') || undefined,
-          dataId: target.getAttribute('data-id') || undefined,
+          dataId: (inferredId || undefined),
         },
         position: {
           x: event.clientX,

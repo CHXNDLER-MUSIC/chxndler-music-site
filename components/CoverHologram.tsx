@@ -73,11 +73,21 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
   const [mounted, setMounted] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [hasRealCard, setHasRealCard] = useState(false);
+  // ELEMENT popover state
+  const [showElementsPopover, setShowElementsPopover] = useState(false);
+  const [elementsLoading, setElementsLoading] = useState(false);
+  const [elementsError, setElementsError] = useState<string | null>(null);
+  const [elementsContent, setElementsContent] = useState('');
+  const elementBtnRef = useRef<HTMLButtonElement | null>(null);
+  const [elementsPopoverPos, setElementsPopoverPos] = useState<{ left: number; top: number; width?: number } | null>(null);
   const closeCoverRef = useRef(null);
   // Plays when opening the card from the cover art
   const openDingRef = useRef(null);
   // Plays when flipping the card front/back
   const flipCoverRef = useRef(null);
+  // Plays a subtle sound when scrolling elements popover
+  const scrollAudioRef = useRef<HTMLAudioElement | null>(null);
+  const lastScrollSoundRef = useRef<number>(0);
 
   // Compute a preferred card image path based on slugified title/slug.
   const computedCardSrc = (() => {
@@ -135,6 +145,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
   useEffect(() => {
     if (!showCard) {
       setCardFlipped(false);
+      setShowElementsPopover(false);
     }
   }, [showCard]);
 
@@ -145,6 +156,22 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [showCard]);
+
+  // Close Elements popover on outside click / Escape
+  useEffect(() => {
+    if (!showElementsPopover) return;
+    const onDoc = (e: MouseEvent) => {
+      const t = e.target as HTMLElement;
+      const withinBtn = elementBtnRef.current && t && elementBtnRef.current.contains(t);
+      const dialog = document.querySelector('[aria-label="Elements"]');
+      const withinDialog = dialog && t && (dialog as HTMLElement).contains(t);
+      if (!withinBtn && !withinDialog) { try { sfx.play('close', 0.4); } catch {}; setShowElementsPopover(false); }
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowElementsPopover(false); } };
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey); };
+  }, [showElementsPopover]);
 
   return (
     <motion.div
@@ -286,48 +313,79 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
             </div>
             {hasRealCard && (
               <div className="absolute top-[5px] left-1/2 transform -translate-x-1/2 z-10">
-                <div className="ocean-cta-wrap relative">
-                  <a
-                    href={getPurchaseUrl(title)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-ocean"
-                    title="Collect this card"
-                    aria-label={`Collect Card: ${title}`}
-                    data-song={title}
-                    data-slug={title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}
+                <div className="buttons-row" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {/* ELEMENT button (💠) */}
+                  <button
+                    ref={elementBtnRef}
+                    type="button"
+                    className="btn-element"
+                    title="Elements"
+                    aria-label="Elements"
                     onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
-                    onClick={(e) => {
-                      try { e.preventDefault(); } catch {}
-                      
-                      // Play click sound
-                      try { sfx.play('click', 0.7); } catch {}
-                      
-                      // Track collect card button click
+                    onClick={async () => {
+                      try { sfx.play('click', 0.6); } catch {}
+                      if (showElementsPopover) { setShowElementsPopover(false); return; }
+                      // Position popover under this button
                       try {
-                        track('collect_card_clicked', { 
-                          song_slug: title?.toLowerCase().replace(/\s+/g, '-'),
-                          card_src: src,
-                          payload: { 
-                            song_title: title,
-                            card_image: src,
-                            stripe_url: e.currentTarget.href 
-                          } 
-                        });
+                        const r = elementBtnRef.current?.getBoundingClientRect();
+                        if (r) setElementsPopoverPos({ left: Math.round(r.left + r.width/2), top: r.bottom + 8 });
                       } catch {}
-                      
+                      // Load content if not already loaded
+                      setElementsLoading(true);
+                      setElementsError(null);
+                      setElementsContent('');
                       try {
-                        const el = e.currentTarget;
-                        el.classList.remove('is-rippling');
-                        void el.offsetWidth;
-                        el.classList.add('is-rippling');
-                        setTimeout(() => { window.open(el.href, '_blank', 'noopener,noreferrer'); }, 520);
-                      } catch { window.open((e.currentTarget || {}).href, '_blank', 'noopener,noreferrer'); }
+                        const res = await fetch('/api/elements');
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data?.error || `Failed to load ELEMENTS.md`);
+                        setElementsContent(String(data?.content || ''));
+                      } catch (e: any) {
+                        setElementsError(e?.message || 'Failed to load ELEMENTS.md');
+                      } finally {
+                        setElementsLoading(false);
+                        setShowElementsPopover(true);
+                      }
                     }}
                   >
-                    <span className="btn-label" style={{ whiteSpace: 'nowrap' }}>COLLECT CARD</span>
-                    <span className="btn-ripple" aria-hidden />
-                  </a>
+                    <span className="btn-element-glyph" aria-hidden>💠</span>
+                    <span className="sr-only">Elements</span>
+                  </button>
+
+                  {/* Collect Card (existing) */}
+                  <div className="ocean-cta-wrap relative">
+                    <a
+                      href={getPurchaseUrl(title)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-ocean"
+                      title="Collect this card"
+                      aria-label={`Collect Card: ${title}`}
+                      data-song={title}
+                      data-slug={title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}
+                      onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
+                      onClick={(e) => {
+                        try { e.preventDefault(); } catch {}
+                        try { sfx.play('click', 0.7); } catch {}
+                        try {
+                          track('collect_card_clicked', { 
+                            song_slug: title?.toLowerCase().replace(/\s+/g, '-'),
+                            card_src: src,
+                            payload: { song_title: title, card_image: src, stripe_url: e.currentTarget.href } 
+                          });
+                        } catch {}
+                        try {
+                          const el = e.currentTarget;
+                          el.classList.remove('is-rippling');
+                          void el.offsetWidth;
+                          el.classList.add('is-rippling');
+                          setTimeout(() => { window.open(el.href, '_blank', 'noopener,noreferrer'); }, 520);
+                        } catch { window.open((e.currentTarget || {}).href, '_blank', 'noopener,noreferrer'); }
+                      }}
+                    >
+                      <span className="btn-label" style={{ whiteSpace: 'nowrap' }}>COLLECT CARD</span>
+                      <span className="btn-ripple" aria-hidden />
+                    </a>
+                  </div>
                 </div>
               </div>
             )}
@@ -347,7 +405,61 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
         </div>,
         document.body
       ) : null}
-      
+
+      {/* Elements Popover (portal-rendered) */}
+      {typeof document !== 'undefined' && showElementsPopover && elementsPopoverPos ? createPortal(
+        <div
+          role="dialog"
+          aria-label="Elements"
+          className="elements-popover holo-scrollbar-yellow"
+          style={{
+            position: 'fixed',
+            left: '50%',
+            top: elementsPopoverPos.top,
+            transform: 'translateX(-50%)',
+            padding: '14px 16px',
+            borderRadius: 12,
+            background: 'rgba(3,10,20,0.86)',
+            border: '1px solid rgba(25,227,255,0.5)',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.35), 0 0 22px rgba(25,227,255,0.55)',
+            backdropFilter: 'blur(8px)',
+            color: '#F2EF1D',
+            zIndex: 2147483647,
+            width: 'min(92vw, 560px)',
+            maxWidth: 'min(92vw, 560px)',
+            maxHeight: '72vh',
+            overflowY: 'auto'
+          } as any}
+          onClick={(e) => e.stopPropagation()}
+          onScroll={() => {
+            try {
+              const now = Date.now();
+              if (now - lastScrollSoundRef.current > 260) {
+                const a = scrollAudioRef.current as any;
+                if (a) {
+                  a.currentTime = 0;
+                  a.volume = 0.25;
+                  a.play().catch(() => {});
+                }
+                lastScrollSoundRef.current = now;
+              }
+            } catch {}
+          }}
+          onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowElementsPopover(false); } }}
+        >
+          {elementsLoading ? (
+            <div style={{ fontSize: 16 }}>Loading…</div>
+          ) : elementsError ? (
+            <div style={{ fontSize: 16, color: '#ff7b7b' }}>{elementsError}</div>
+          ) : (
+            <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: 16, textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>
+              {elementsContent || 'No elements content available.'}
+            </div>
+          )}
+        </div>,
+        document.body
+      ) : null}
+
       <style jsx>{`
         /* Cover Hologram Hover Effects */
         .cover-hologram-container {
@@ -441,6 +553,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
           50%      { transform: rotateX(13deg) rotateY(-13deg) scale(1.04); }
         }
         .ocean-cta-wrap{ position:relative; }
+        .buttons-row{ position: relative; justify-content: center; }
         .btn-ocean{
           position:relative; display:inline-grid; place-items:center;
           padding: 5px 12px; border-radius: 10px; font-weight:800; letter-spacing:.06em; font-size: 12px; line-height: 1.1;
@@ -477,11 +590,53 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
           60% { opacity:.25; transform: scale(1.6); }
           100% { opacity:0; transform: scale(2.2); }
         }
+        /* Elements popover: no entrance animation, stronger scrollbar */
+        .elements-popover { animation: none !important; transition: none !important; }
+        .elements-popover::-webkit-scrollbar { width: 18px; }
+        .elements-popover::-webkit-scrollbar-thumb {
+          box-shadow:
+            0 0 18px rgba(242,239,29,0.8),
+            0 0 36px rgba(242,239,29,0.5),
+            inset 0 0 10px rgba(255,255,255,0.22);
+        }
+        /* ELEMENT button (💠) styles */
+        .btn-element{
+          position:absolute; display:inline-grid; place-items:center;
+          top: 50%; transform: translateY(-50%);
+          right: calc(50% + 96px);
+          width: 32px; height: 32px; border-radius: 50%; font-weight:800; letter-spacing:.06em; font-size: 16px; line-height: 1.1;
+          color:#001014; text-transform:none; font-family: InterLocal, system-ui, sans-serif;
+          background: radial-gradient(100% 100% at 50% 20%, rgba(200,255,255,0.95), #19E3FF);
+          border: 1px solid rgba(255,255,255,.24);
+          box-shadow: 0 0 20px rgba(25,227,255,.55), inset 0 2px 0 rgba(255,255,255,.6), inset 0 -8px 16px rgba(0,0,0,.22);
+          transition: transform .12s ease, box-shadow .18s ease, filter .18s ease;
+          overflow:hidden;
+        }
+        .btn-element:hover{
+          transform: translateY(-50%) scale(1.05);
+          box-shadow:
+            0 0 36px rgba(25,227,255,.95),
+            0 0 80px rgba(25,227,255,.55),
+            inset 0 2px 0 rgba(255,255,255,.7),
+            inset 0 -10px 18px rgba(0,0,0,.28);
+          filter: saturate(1.08) brightness(1.07);
+          animation: elementGlow 1.8s ease-in-out infinite;
+        }
+        .btn-element:active{ transform: scale(.98); }
+        @keyframes elementGlow {
+          0%, 100% {
+            box-shadow: 0 0 36px rgba(25,227,255,.95), 0 0 80px rgba(25,227,255,.55), inset 0 2px 0 rgba(255,255,255,.7), inset 0 -10px 18px rgba(0,0,0,.28);
+          }
+          50% {
+            box-shadow: 0 0 52px rgba(25,227,255,1), 0 0 110px rgba(25,227,255,.7), inset 0 2px 0 rgba(255,255,255,.75), inset 0 -12px 20px rgba(0,0,0,.3);
+          }
+        }
       `}</style>
-      
+
       <audio ref={closeCoverRef} src="/audio/close.mp3" preload="auto" />
       <audio ref={openDingRef} src="/audio/card-ding.mp3" preload="auto" />
       <audio ref={flipCoverRef} src="/audio/flip.mp3" preload="auto" />
+      <audio ref={scrollAudioRef} src="/audio/scroll.mp3" preload="auto" />
     </motion.div>
   );
 }

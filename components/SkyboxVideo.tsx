@@ -53,6 +53,18 @@ export default function SkyboxVideo({
   React.useEffect(() => { onFlyEndRef.current = onFlyEnd; }, [onFlyEnd]);
   React.useEffect(() => { onBasePlayingRef.current = onBasePlaying; }, [onBasePlaying]);
   
+  // Reduce video preloading on constrained devices (mobile/save-data/slow link)
+  const lightMode = React.useMemo(() => {
+    try {
+      const conn: any = (navigator as any)?.connection || (navigator as any)?.mozConnection || (navigator as any)?.webkitConnection;
+      const saveData = !!conn?.saveData;
+      const effType: string = String(conn?.effectiveType || '').toLowerCase();
+      const slowLink = effType.includes('2g') || effType.includes('3g');
+      const isSmallScreen = typeof window !== 'undefined' ? (window.innerWidth <= 768) : false;
+      return saveData || slowLink || isSmallScreen;
+    } catch { return false; }
+  }, []);
+  
   // Brief zoom/blur to simulate flying to another world
   // Do not trigger on initial mount; only on subsequent flySignal changes
   const flyInitRef = React.useRef(false);
@@ -199,7 +211,7 @@ export default function SkyboxVideo({
         <video
           ref={baseRef}
           key={videoKey}
-          autoPlay muted loop playsInline preload="auto" controls={false}
+          autoPlay muted loop playsInline preload={lightMode ? 'metadata' : 'auto'} controls={false}
           // Prevent any default interactions that could open the video URL
           // on some mobile browsers when tapping during/after warp
           controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
