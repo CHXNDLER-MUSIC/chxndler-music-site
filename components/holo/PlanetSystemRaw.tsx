@@ -2429,9 +2429,9 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
       return lay?.ringIndex ?? 0;
     }));
 
-    // Create a planet for every song (including main)
-    // Create a planet for every song (including main)
-    songsToUse.forEach((song, idx) => {
+    // Create planets: in homepage mode render ALL, otherwise render ONLY the focused planet
+    const renderList = effectiveShowAll ? songsToUse : songsToUse.filter(s => s.id === focusId);
+    renderList.forEach((song, idx) => {
       const id = song.id;
       const lay = layout ? (layout as any)[id] : undefined;
       const spacingMul = 1.0; // consistent spacing with layout
@@ -2449,9 +2449,9 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
       };
       
       // Emphasize current song slightly
-      if (id === focusId) {
+      if (!effectiveShowAll && id === focusId) {
         planetData.radius *= 1.25;
-      } else {
+      } else if (effectiveShowAll) {
         planetData.radius *= 0.95;
       }
       

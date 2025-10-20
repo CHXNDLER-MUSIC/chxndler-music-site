@@ -102,14 +102,39 @@ export async function GET(_req: NextRequest) {
       .from('events')
       .select('*', { count: 'exact', head: true })
       .eq('event_type', 'click')
-      .filter('payload->>element_label', 'ilike', '🎵 Spotify%');
+      .filter('payload->>element_label', 'ilike', '🎵 Spotify%')
+      .filter('payload->>element_class', 'ilike', '%holo-hub%');
     const { count: appleTotal } = await supabase
       .from('events')
       .select('*', { count: 'exact', head: true })
       .eq('event_type', 'click')
-      .filter('payload->>element_label', 'ilike', '🎵 Apple Music%');
+      .filter('payload->>element_label', 'ilike', '🎵 Apple Music%')
+      .filter('payload->>element_class', 'ilike', '%holo-hub%');
     socials.spotify = spotifyTotal || 0;
     socials.apple = appleTotal || 0;
+
+    // Totals for Instagram/TikTok/YouTube
+    const { count: igTotal } = await supabase
+      .from('events')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_type', 'click')
+      .filter('payload->>element_label', 'ilike', '📱 Instagram%')
+      .filter('payload->>element_class', 'ilike', '%holo-hub%');
+    const { count: ttTotal } = await supabase
+      .from('events')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_type', 'click')
+      .filter('payload->>element_label', 'ilike', '📱 TikTok%')
+      .filter('payload->>element_class', 'ilike', '%holo-hub%');
+    const { count: ytTotal } = await supabase
+      .from('events')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_type', 'click')
+      .filter('payload->>element_label', 'ilike', '📱 YouTube%')
+      .filter('payload->>element_class', 'ilike', '%holo-hub%');
+    socials.instagram = igTotal || 0;
+    socials.tiktok = ttTotal || 0;
+    socials.youtube = ytTotal || 0;
 
     // Per-song breakdown: fetch labels and group in memory
     const spotifySongClicks: Record<string, { count: number; title: string }> = {};

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getClickAnalyticsLocal, clearClickAnalyticsLocal, clearAnalyticsCache } from "../lib/analytics";
+import { getClickAnalyticsLocal, clearClickAnalyticsLocal, clearAnalyticsCache, getRunningMetricsLocal, clearRunningMetricsLocal } from "../lib/analytics";
 import { tracks } from "@/lib/songs-consolidated";
 
 interface MusicStats {
@@ -302,8 +302,9 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                     res = await attempt(key);
                   }
                   if (!res.ok) throw new Error(`reset failed (${res.status})`);
-                  // Clear local click analytics and deduplication cache
+                  // Clear local click analytics, running totals and deduplication cache
                   try { clearClickAnalyticsLocal(); } catch {}
+                  try { clearRunningMetricsLocal(); } catch {}
                   try { clearAnalyticsCache(); } catch {}
                   // Reload server + local metrics
                   await loadServerMetrics();
@@ -346,11 +347,11 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
               {/* Headline site metrics */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 p-4 rounded-xl border border-cyan-500/20">
-                  <div className="text-3xl font-bold text-cyan-400">{metrics?.pageViews ?? 0}</div>
+                  <div className="text-3xl font-bold text-cyan-400">{(() => { const local = getRunningMetricsLocal(); return (metrics?.pageViews ?? local.pageViews) || 0; })()}</div>
                   <div className="text-sm text-cyan-300/70">Page Views</div>
                 </div>
                 <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 p-4 rounded-xl border border-purple-500/20">
-                  <div className="text-3xl font-bold text-purple-400">{metrics?.startClicks ?? (stats?.controlButtons.find(b=>b.button==='Start')?.count || 0)}</div>
+                  <div className="text-3xl font-bold text-purple-400">{(() => { const local = getRunningMetricsLocal(); return metrics?.startClicks ?? local.startClicks ?? (stats?.controlButtons.find(b=>b.button==='Start')?.count || 0); })()}</div>
                   <div className="text-sm text-purple-300/70">Start Button Clicks</div>
                 </div>
                 
@@ -361,18 +362,30 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                 <button className="w-full text-left p-6 border-b border-yellow-400/20 flex items-center justify-between" onClick={() => setSocialOpen(!socialOpen)}>
                   <h3 className="text-lg font-bold text-yellow-200">SOCIAL MEDIA</h3>
                   {(() => {
-                    // Total here represents yellow hub button clicks
-                    const total = metrics?.commsClicks;
-                    if (typeof total === 'number') {
-                      return <div className="text-sm text-yellow-100/80 mt-1">Total: {total}</div>;
+                    // Total should reflect yellow-hub platform clicks (IG + YouTube + TikTok + Apple + Spotify)
+                    // Prefer server metrics; fall back to local click analytics filtered to yellow hub data-ids
+                    const haveServer = !!metrics;
+                    if (haveServer) {
+                      const ig = metrics?.socials?.instagram || 0;
+                      const yt = metrics?.socials?.youtube || 0;
+                      const tt = metrics?.socials?.tiktok || 0;
+                      const am = metrics?.socials?.apple || 0;
+                      const sp = metrics?.socials?.spotify || 0;
+                      return <div className="text-2xl font-extrabold text-yellow-100">{ig + yt + tt + am + sp}</div>;
                     }
-                    // Fallback: approximate from per-platform clicks when server metric absent
-                    const ig = metrics?.socials?.instagram ?? (stats?.socialButtons.find(b=>b.button==='Instagram')?.count || 0);
-                    const yt = metrics?.socials?.youtube   ?? (stats?.socialButtons.find(b=>b.button==='YouTube')?.count || 0);
-                    const am = metrics?.socials?.apple     ?? (stats?.musicButtons.find(b=>b.button==='Apple Music')?.count || 0);
-                    const sp = metrics?.socials?.spotify   ?? (stats?.musicButtons.find(b=>b.button==='Spotify')?.count || 0);
-                    const tt = metrics?.socials?.tiktok    ?? (stats?.socialButtons.find(b=>b.button==='TikTok')?.count || 0);
-                    return <div className="text-sm text-yellow-100/80 mt-1">Total: {ig + yt + am + sp + tt}</div>;
+                    try {
+                      const clicks = getClickAnalyticsLocal();
+                      const sum = (id: string) => clicks.filter(c => (c.element?.dataId || '').toLowerCase() === id).length;
+                      const total = sum('ig') + sum('yt') + sum('tt') + sum('am') + sum('sp');
+                      return <div className="text-2xl font-extrabold text-yellow-100">{total}</div>;
+                    } catch {
+                      const ig = stats?.socialButtons.find(b=>b.button==='Instagram')?.count || 0;
+                      const yt = stats?.socialButtons.find(b=>b.button==='YouTube')?.count || 0;
+                      const tt = stats?.socialButtons.find(b=>b.button==='TikTok')?.count || 0;
+                      const am = stats?.musicButtons.find(b=>b.button==='Apple Music')?.count || 0;
+                      const sp = stats?.musicButtons.find(b=>b.button==='Spotify')?.count || 0;
+                      return <div className="text-2xl font-extrabold text-yellow-100">{ig + yt + tt + am + sp}</div>;
+                    }
                   })()}
                 </button>
                 {socialOpen && (
@@ -380,9 +393,10 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                     {([
                       { key: 'Instagram', value: metrics?.socials?.instagram ?? (stats?.socialButtons.find(b=>b.button==='Instagram')?.count || 0), open: igOpen, setOpen: setIgOpen },
                       { key: 'YouTube', value: metrics?.socials?.youtube ?? (stats?.socialButtons.find(b=>b.button==='YouTube')?.count || 0), open: ytOpen, setOpen: setYtOpen },
+                      { key: 'TikTok', value: metrics?.socials?.tiktok ?? (stats?.socialButtons.find(b=>b.button==='TikTok')?.count || 0), open: ttOpen, setOpen: setTtOpen },
+                      // Keep streaming platforms listed below for convenience, but exclude from Social total
                       { key: 'Apple Music', value: metrics?.socials?.apple ?? (stats?.musicButtons.find(b=>b.button==='Apple Music')?.count || 0), open: amOpen, setOpen: setAmOpen },
                       { key: 'Spotify', value: metrics?.socials?.spotify ?? (stats?.musicButtons.find(b=>b.button==='Spotify')?.count || 0), open: spOpen, setOpen: setSpOpen },
-                      { key: 'TikTok', value: metrics?.socials?.tiktok ?? (stats?.socialButtons.find(b=>b.button==='TikTok')?.count || 0), open: ttOpen, setOpen: setTtOpen },
                     ] as Array<{key:string;value:number;open:boolean;setOpen:(v:boolean)=>void}>).map((it) => (
                       <div key={it.key}>
                         <button className="w-full text-left px-6 py-4 flex items-center justify-between hover:bg-yellow-500/10" onClick={() => it.setOpen(!it.open)}>
@@ -404,16 +418,16 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
               <div className="rounded-xl border border-pink-400/30 bg-pink-500/10">
                 <button className="w-full text-left p-6 border-b border-pink-400/20 flex items-center justify-between" onClick={() => setJoinOpen(!joinOpen)}>
                   <h3 className="text-lg font-bold text-pink-200">JOIN ALIENS</h3>
-                  <div className="text-sm text-pink-100/80 mt-1">Total: {metrics?.joinPinkClicks ?? (stats?.controlButtons.find(b=>b.button==='Join Aliens')?.count || 0)}</div>
+                  <div className="text-2xl font-extrabold text-pink-100">{(() => { const local = getRunningMetricsLocal(); return metrics?.joinSubmitClicks ?? local.joinSubmitClicks ?? 0; })()}</div>
                 </button>
                 {joinOpen && (
                   <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="bg-pink-500/20 p-4 rounded-xl border border-pink-400/30">
-                      <div className="text-3xl font-bold text-pink-300">{metrics?.joinPinkClicks ?? (stats?.controlButtons.find(b=>b.button==='Join Aliens')?.count || 0)}</div>
+                      <div className="text-3xl font-bold text-pink-300">{(() => { const local = getRunningMetricsLocal(); return metrics?.joinPinkClicks ?? local.joinPinkClicks ?? (stats?.controlButtons.find(b=>b.button==='Join Aliens')?.count || 0); })()}</div>
                       <div className="text-sm text-pink-200/90">Total Clicks</div>
                     </div>
                     <div className="bg-emerald-500/20 p-4 rounded-xl border border-emerald-400/30">
-                      <div className="text-3xl font-bold text-emerald-300">{metrics?.joinSubmitClicks ?? 0}</div>
+                      <div className="text-3xl font-bold text-emerald-300">{(() => { const local = getRunningMetricsLocal(); return metrics?.joinSubmitClicks ?? local.joinSubmitClicks ?? 0; })()}</div>
                       <div className="text-sm text-emerald-200/90">JOIN THE ALIENS Submits</div>
                     </div>
                   </div>
@@ -543,6 +557,33 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                     </button>
                     {lySongsOpen && (
                       <div className="px-6 pb-6 space-y-3">
+                        {/* CHXNDLER homepage lyrics button */}
+                        {(() => {
+                          const lower = 'chxndler';
+                          const serverCount = metrics?.lyricsSongClicks?.[lower]?.count || 0;
+                          const localEntry = (stats?.lyricsSongClicks || []).find(s => (s.title || '').toLowerCase() === 'chxndler');
+                          const count = serverCount || localEntry?.count || 0;
+                          const max = Math.max(1, count, ...tracks.map(tt => {
+                            const lt = (tt.title || '').toLowerCase();
+                            const sCount = metrics?.lyricsSongClicks?.[lt]?.count || 0;
+                            if (sCount > 0) return sCount;
+                            const e = (stats?.lyricsSongClicks || []).find(s => (s.title || '').toLowerCase() === lt);
+                            return e?.count || 0;
+                          }));
+                          return (
+                            <div className="flex items-center gap-4">
+                              <div className="flex-1">
+                                <div className="flex justify-between items-center mb-1">
+                                  <span className="text-white font-medium">CHXNDLER (Homepage Lyrics)</span>
+                                  <span className="text-cyan-400 font-bold">{count} clicks</span>
+                                </div>
+                                <div className="bg-gray-700 rounded-full h-2 overflow-hidden">
+                                  <div className={`h-full bg-gradient-to-r from-yellow-400 to-amber-500 transition-all duration-500`} style={{ width: `${Math.max((count / max) * 100, 5)}%` }} />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
                         {tracks.map((t, idx) => {
                           const lower = (t.title || '').toLowerCase();
                           const serverCount = metrics?.lyricsSongClicks?.[lower]?.count || 0;

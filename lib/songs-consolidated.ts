@@ -198,7 +198,7 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme">
     { time: 130.4, label: "Bridge", kind: "bridge" },
     { time: 145.1, label: "Final Chorus", kind: "chorus" }
   ] },
-  { title: "ALIEN (House Party)", spotify:"https://open.spotify.com/track/0b5y0gHMf3wLYX69B8S6g4", apple:"https://music.apple.com/us/album/alien-house-party/1757497439?i=1757497440", cover:"/cover/house-party.png", src: "/tracks/house-party.mp3", sections: [
+  { title: "HOUSE PARTY", spotify:"https://open.spotify.com/track/0b5y0gHMf3wLYX69B8S6g4", apple:"https://music.apple.com/us/album/alien-house-party/1757497439?i=1757497440", cover:"/cover/house-party.png", src: "/tracks/house-party.mp3", sections: [
     { time: 17.9, label: "Verse 1", kind: "verse" },
     { time: 50.6, label: "Chorus 1", kind: "chorus" },
     { time: 83.3, label: "Verse 2", kind: "verse" },

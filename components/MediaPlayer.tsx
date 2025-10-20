@@ -49,6 +49,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const stateMachine = useRef(new MediaStateMachine());
   const [mediaState, setMediaState] = useState<MediaState>('idle');
   const audioRef = useRef<HTMLAudioElement|null>(null);
+  const rootRef = useRef<HTMLDivElement|null>(null);
+  const isHoveredRef = useRef(false);
   const uiClickRef = useRef<HTMLAudioElement|null>(null);
   const detentRef = useRef<HTMLAudioElement|null>(null);
   const volumeSfxLastRef = useRef<number>(0);
@@ -921,6 +923,31 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     return () => window.removeEventListener("keydown", onKey);
   }, [idx, wrapChannels, tracks.length]);
 
+  // Local Space/MediaPlayPause handling when interacting with the waveform/player area.
+  // Uses capture phase + hover/focus containment to avoid double-triggering with DashboardApp.
+  useEffect(() => {
+    const onKeyCapture = (e: KeyboardEvent) => {
+      const isSpace = e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar';
+      const isMediaToggle = e.code === 'MediaPlayPause' || e.code === 'Pause' || e.key === 'MediaPlayPause';
+      if (!isSpace && !isMediaToggle) return;
+      // Ignore when typing
+      try {
+        const ae = (document.activeElement as HTMLElement | null);
+        if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || (ae as any).isContentEditable)) return;
+      } catch {}
+      // Only take over when the event target is inside the player UI, or the cursor is hovering it
+      const t = e.target as Node | null;
+      const inside = !!(rootRef.current && t && rootRef.current.contains(t));
+      if (!inside && !isHoveredRef.current) return;
+      // Prevent global handlers (e.g., DashboardApp) from also toggling
+      e.preventDefault();
+      e.stopPropagation();
+      try { toggle(); } catch {}
+    };
+    window.addEventListener('keydown', onKeyCapture, { capture: true } as any);
+    return () => window.removeEventListener('keydown', onKeyCapture, { capture: true } as any);
+  }, []);
+
   // Animation loop for waveform and smooth cursor movement
   useEffect(() => {
     let animationId: number;
@@ -962,7 +989,16 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   
 
   return (
-    <div className="hud-card console-hud h-full w-full relative" style={{ borderRadius: '16px' }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} aria-label="Media dock">
+    <div
+      ref={rootRef}
+      className="hud-card console-hud h-full w-full relative"
+      style={{ borderRadius: '16px' }}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+      onMouseEnter={() => { isHoveredRef.current = true; }}
+      onMouseLeave={() => { isHoveredRef.current = false; }}
+      aria-label="Media dock"
+    >
       <div className="flex flex-col h-full">
         <div className="flex items-start justify-between gap-3 flex-1">
           <div className="flex-1 min-w-0">

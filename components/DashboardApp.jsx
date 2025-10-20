@@ -426,7 +426,9 @@ export default function DashboardApp({ initialSlug } = {}) {
     prevIdxRef.current = channelIdx;
   }, [channelIdx, mounted, userSelected, warpActive, uiUnlocked]);
   const { hudSongs, holoSongs } = React.useMemo(() => buildPlanetSongs(), []);
-  React.useEffect(() => {
+  // Initialize planet songs as early as possible so the 3D system
+  // has data on the very first paint (prevents "only heart" flash).
+  React.useLayoutEffect(() => {
     try { playerStore.getState().initSongs(holoSongs); } catch {}
   }, [holoSongs]);
   React.useEffect(() => {

@@ -60,6 +60,21 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
     return () => { el.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onResize); if (raf) cancelAnimationFrame(raf); };
   }, [hoverId, songs.length, setHover]);
 
+  // Handle keyboard selection: ensure planets hide when selecting with Enter
+  const onListKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      try { playerStore.getState().setPlanetsVisible(false); } catch {}
+      const id = activeId || mainId || undefined;
+      if (id) {
+        setMain(id);
+        if (onSongChange) onSongChange(id);
+      }
+      return;
+    }
+    handleKeyDown(e as any);
+  };
+
   return (
     <>
       <style jsx>{`
@@ -125,7 +140,7 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
         role="listbox"
         aria-label="Songs"
         tabIndex={0}
-        onKeyDown={handleKeyDown}
+        onKeyDown={onListKeyDown}
         className="flex-1 overflow-y-auto overflow-x-hidden pr-1 song-list-scroll w-full"
         style={{
           scrollbarWidth: 'auto',

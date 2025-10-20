@@ -132,6 +132,11 @@ export function track(
       console.error(`track: fetch error for ${event_type}:`, error);
     });
   } catch {}
+
+  // Update local running totals so analytics don't reset on navigation
+  try {
+    incrementRunningMetricForEvent(event_type);
+  } catch {}
 }
 
 export function trackPageView() {
@@ -285,6 +290,85 @@ export function clearAnalyticsCache() {
     console.log('Analytics deduplication cache cleared');
   } catch (error) {
     console.warn('Failed to clear analytics cache:', error);
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Running totals (local) — fallback metrics that persist across pages
+// ----------------------------------------------------------------------------
+const RUNNING_METRICS_KEY = 'chx_running_metrics_v1';
+
+export type RunningMetrics = {
+  pageViews: number;
+  startClicks: number;
+  commsClicks: number;
+  joinPinkClicks: number;
+  joinSubmitClicks: number;
+};
+
+const DEFAULT_RUNNING_METRICS: RunningMetrics = {
+  pageViews: 0,
+  startClicks: 0,
+  commsClicks: 0,
+  joinPinkClicks: 0,
+  joinSubmitClicks: 0,
+};
+
+export function getRunningMetricsLocal(): RunningMetrics {
+  if (typeof window === 'undefined') return { ...DEFAULT_RUNNING_METRICS };
+  try {
+    const raw = localStorage.getItem(RUNNING_METRICS_KEY);
+    if (!raw) return { ...DEFAULT_RUNNING_METRICS };
+    const parsed = JSON.parse(raw);
+    return {
+      ...DEFAULT_RUNNING_METRICS,
+      ...(parsed && typeof parsed === 'object' ? parsed : {}),
+    } as RunningMetrics;
+  } catch {
+    return { ...DEFAULT_RUNNING_METRICS };
+  }
+}
+
+function setRunningMetricsLocal(next: RunningMetrics) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(RUNNING_METRICS_KEY, JSON.stringify(next));
+  } catch {}
+}
+
+export function clearRunningMetricsLocal() {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(RUNNING_METRICS_KEY);
+  } catch {}
+}
+
+export function incrementRunningMetric(key: keyof RunningMetrics, by = 1) {
+  const cur = getRunningMetricsLocal();
+  const next = { ...cur, [key]: Math.max(0, (cur[key] as number) + by) } as RunningMetrics;
+  setRunningMetricsLocal(next);
+}
+
+function incrementRunningMetricForEvent(eventType: string) {
+  switch (eventType) {
+    case 'page_view':
+      incrementRunningMetric('pageViews', 1);
+      break;
+    case 'start_button_clicked':
+      incrementRunningMetric('startClicks', 1);
+      break;
+    case 'comms_hub_click':
+      incrementRunningMetric('commsClicks', 1);
+      break;
+    case 'join_aliens_click':
+      incrementRunningMetric('joinPinkClicks', 1);
+      break;
+    case 'join_aliens_success':
+      incrementRunningMetric('joinSubmitClicks', 1);
+      break;
+    default:
+      // no-op for other events
+      break;
   }
 }
 

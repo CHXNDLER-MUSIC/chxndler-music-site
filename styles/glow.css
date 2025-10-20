@@ -111,7 +111,8 @@
 
 /* Yellow variant matching SongDropdown "holo-scrollbar" style */
 .holo-scrollbar-yellow { 
-  scrollbar-width: thin; /* Firefox */
+  /* Use wider scrollbar in Firefox to match dropdown thickness */
+  scrollbar-width: auto; /* Firefox */
   scrollbar-color: rgba(242,239,29,0.9) rgba(8,26,32,0.4); /* thumb track */
 }
 .holo-scrollbar-yellow::-webkit-scrollbar {

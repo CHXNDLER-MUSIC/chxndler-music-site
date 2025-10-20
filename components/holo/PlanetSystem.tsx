@@ -48,13 +48,16 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
   const actualShouldShowAll = isHomeOverview ? true : shouldShowAll;
   const actualShouldHide = isHomeOverview ? false : shouldHide; // Never hide in real home overview
   
-  // EMERGENCY FIX: Force store state only during true home overview
+  // EMERGENCY FIX (refined): Only normalize to 'all' on true home overview
+  // Do NOT override an explicit 'hidden' mode (e.g., right after a selection/warp)
   if (isHomeOverview) {
     try {
       const currentState = playerStore.getState();
-      if (currentState.planetDisplayMode !== 'all' || !currentState.planetsVisible) {
-        currentState.setPlanetDisplayMode('all');
-        currentState.setPlanetsVisible(true);
+      if (currentState.planetDisplayMode !== 'hidden') {
+        if (currentState.planetDisplayMode !== 'all' || !currentState.planetsVisible) {
+          currentState.setPlanetDisplayMode('all');
+          currentState.setPlanetsVisible(true);
+        }
       }
     } catch {}
   }

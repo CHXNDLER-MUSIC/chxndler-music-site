@@ -7,6 +7,7 @@ import { useAudio } from "@/app/providers/AudioProvider";
 import SongHUD from "@/components/SongHUD";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Song } from "@/lib/songs-consolidated";
+import { trackSongSelected } from "@/lib/analytics";
 
 const BGs: Record<string, any> = {
   space: dynamic(() => import("@/components/bg/SpaceBg"), { ssr: false }),
@@ -15,12 +16,32 @@ const BGs: Record<string, any> = {
 };
 
 export default function SongRouteClient({ song, nextSlug }: { song: Song; nextSlug: string }) {
-  const { loadTrack, play } = useAudio();
+  const { loadTrack, play, pause, playing } = useAudio();
 
   React.useEffect(() => {
+    // Track song selection on route entry for analytics
+    try { trackSongSelected(song.slug, song.title); } catch {}
     if (!song?.audioSrc) return;
     loadTrack(song.audioSrc);
-  }, [song?.audioSrc, loadTrack]);
+  }, [song?.audioSrc, song?.slug, song?.title, loadTrack]);
+
+  // Keyboard: Space/MediaPlayPause toggles play/pause (ignore when typing)
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      try {
+        const tag = (e.target as HTMLElement | null)?.tagName?.toUpperCase?.() || '';
+        const inTextField = tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as any)?.isContentEditable === true;
+        const isSpace = e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar';
+        const isMediaToggle = e.code === 'MediaPlayPause' || e.code === 'Pause' || e.key === 'MediaPlayPause';
+        if (!inTextField && (isSpace || isMediaToggle)) {
+          e.preventDefault();
+          if (playing) pause(); else play();
+        }
+      } catch {}
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [playing, play, pause]);
 
   const Bg = BGs[song.bg] || BGs.space;
   const prefetchNextBg = React.useRef(false);
@@ -54,4 +75,3 @@ export default function SongRouteClient({ song, nextSlug }: { song: Song; nextSl
     </div>
   );
 }
-

@@ -67,12 +67,11 @@ function identifyElement(element: HTMLElement): string {
     return '📡 Comms Hub';
   }
 
-  // Lyrics links/buttons (waveform link, HUD button, or any /lyrics/ link)
+  // Lyrics buttons only (waveform link next to volume, or HUD popover button)
   {
     const isLyricsClass = className.includes('lyrics-link-waveform') || className.includes('hud-lyrics-btn');
-    const isLyricsHref = href.includes('/lyrics/');
     const isLyricsLabel = ariaLabel.includes('lyrics');
-    if (isLyricsClass || isLyricsHref || isLyricsLabel) {
+    if (isLyricsClass || isLyricsLabel) {
       // Try to resolve song title from data-song, aria-label, or title
       let songName = dataSong || '';
       if (!songName) {

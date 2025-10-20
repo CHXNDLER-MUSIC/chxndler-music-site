@@ -422,8 +422,9 @@ export default function AmbientSpace({
       console.log('🎵 AmbientSpace: space-music.mp3 ended, checking if should loop');
       try { amb.currentTime = 0; } catch {}; 
       
-      // Only auto-resume/loop if we're not playing music and not suspended
-      if (!playingMusic && !suspend && !userSelectedSong && !introPendingRef.current) {
+      // Auto-resume/loop whenever we're not playing music and not suspended.
+      // Do NOT block looping solely because an intro VO is pending — this avoids a 6s cutoff stall.
+      if (!playingMusic && !suspend && !userSelectedSong) {
         console.log('🎵 AmbientSpace: Auto-looping space-music.mp3');
         tryResume(); 
       } else {
@@ -513,7 +514,21 @@ export default function AmbientSpace({
   return (
     <>
       {/* Do not autoplay on mount; playback is orchestrated via effects when not suspended */}
-      <audio ref={ambRef} src={ambientSrc} preload="auto" playsInline muted loop data-ambient="1" />
+      {/*
+        Notes:
+        - Append media fragment `#t=0,` to work around rare MP3 metadata issues where
+          browsers misreport duration (~6s) and prematurely end playback.
+        - Manage `muted` via effects (we remove the static attribute here) to avoid
+          React re-applying it on re-renders and to ensure unmute timing is explicit.
+      */}
+      <audio
+        ref={ambRef}
+        src={`${ambientSrc}#t=0,`}
+        preload="auto"
+        playsInline
+        loop
+        data-ambient="1"
+      />
       {introSrc ? <audio ref={introRef} src={introSrc} preload="auto" playsInline data-intro="1" /> : null}
       {/* Enable sound button hidden; global interaction starts audio automatically */}
     </>
