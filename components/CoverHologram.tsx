@@ -91,8 +91,17 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
 
   // Compute a preferred card image path based on slugified title/slug.
   const computedCardSrc = (() => {
-    // Prefer explicit slug when provided, else derive from title
-    const s = (slug && slug.toLowerCase()) || title.toLowerCase().replace(/[’'\"]/g, "").replace(/[()]/g, " ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    // Prefer explicit slug when provided; else derive a diacritic-safe slug from title
+    const safeFromTitle = title
+      .toLowerCase()
+      .normalize('NFD')
+      // Remove combining diacritics (e.g., é -> e)
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[’'\"]/g, '')
+      .replace(/[()]/g, ' ')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    const s = (slug && slug.toLowerCase()) || safeFromTitle;
     return `/card/${s}.png`;
   })();
 
@@ -107,7 +116,22 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
       if (fallback !== src) {
         const img2 = new window.Image();
         img2.onload = () => setHasRealCard(true);
-        img2.onerror = () => setHasRealCard(false);
+        img2.onerror = () => {
+          // Final fallback: try a diacritic-safe title-based path (e.g., POKÉMON -> /card/pokemon.png)
+          const asciiFromTitle = title
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[’'\"]/g, '')
+            .replace(/[()]/g, ' ')
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+          const lastTry = `/card/${asciiFromTitle}.png`;
+          const img3 = new window.Image();
+          img3.onload = () => setHasRealCard(true);
+          img3.onerror = () => setHasRealCard(false);
+          img3.src = lastTry;
+        };
         img2.src = fallback;
       } else {
         setHasRealCard(false);

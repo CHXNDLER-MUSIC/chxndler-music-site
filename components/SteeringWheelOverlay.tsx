@@ -103,7 +103,6 @@ export default function SteeringWheelOverlay({
   }, [closeAllSignal]);
 
   function handleLaunch() {
-    const willPause = !!playing;
     // Track Start press - separate events for opening page vs subsequent clicks
     try {
       if (!startTrackedRef.current) {
@@ -117,14 +116,7 @@ export default function SteeringWheelOverlay({
     try { onLaunch(); } catch {}
     // After first click, permanently disable the start spotlight
     if (startSpotlight) setStartSpotlight(false);
-    // Then play context-appropriate SFX without blocking the gesture
-    // Remove launch sound on start press; keep pause sound only when pausing
-    try {
-      if (willPause) {
-        const a = pauseRef.current;
-        if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
-      }
-    } catch {}
+    // Do not play pause sound on Start; Start always triggers launch/warp.
     // Do not toggle main track audio on Start. Playback is controlled via song selection.
   }
 

@@ -22,7 +22,9 @@ export default function AmbientSpace({
   const introRef = useRef<HTMLAudioElement|null>(null);
   const [needEnable, setNeedEnable] = useState(false);
   const rafRef = useRef<number|undefined>(undefined);
+  // Intro VO should play only once per session (first ambient trigger)
   const introPendingRef = useRef<boolean>(!!introSrc);
+  const introConsumedRef = useRef<boolean>(false);
   const introPlayingRef = useRef<boolean>(false);
   // Plays welcome VO alongside the first ambient start only
   const lastTimeRef = useRef<number>(0);
@@ -90,15 +92,17 @@ export default function AmbientSpace({
     return cancelFade;
   }, [suspend]);
 
-  // If introSrc becomes available after mount, mark it pending but do not auto-play
+  // If introSrc becomes available after mount, mark it pending exactly once.
   useEffect(() => {
     const amb = ambRef.current;
     const intro = introRef.current;
     if (!introSrc || !intro || !amb) return;
-    // Mark intro as pending when a new introSrc arrives (e.g., after first Start)
-    introPendingRef.current = true;
+    // Only (re)pend if we haven't already consumed it this session
+    if (!introConsumedRef.current) {
+      introPendingRef.current = true;
+    }
     // Do not auto-play; will be started via ambient:play
-  }, [introSrc, playingMusic, suspend, volume]);
+  }, [introSrc]);
 
   // Global unlock: if autoplay is blocked, allow user interaction (keyboard or pointer) to enable.
   // Respect playingMusic — but allow intro VO to start even while suspended.
@@ -153,7 +157,7 @@ export default function AmbientSpace({
         try { amb.currentTime = 0; } catch {}
         setAmbient();
         const p1 = amb.play().catch(()=>{});
-        const p2 = intro.play().then(() => { introPendingRef.current = false; }).catch(() => { introPendingRef.current = false; });
+        const p2 = intro.play().then(() => { introPendingRef.current = false; introConsumedRef.current = true; }).catch(() => { introPendingRef.current = false; introConsumedRef.current = true; });
         void p1; void p2;
         return;
       }

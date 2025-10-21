@@ -1387,11 +1387,8 @@ export default function DashboardApp({ initialSlug } = {}) {
           // Prime ambient silently within this user gesture to satisfy autoplay policies
           try { window.dispatchEvent(new CustomEvent('ambient:prime')); } catch {}
           
-          // If a main song is currently playing, use Start to toggle play/pause
-          if (isPlaying) {
-            setToggleSignal((n) => n + 1);
-            return;
-          }
+          // Ignore current playing state: Start always triggers warp to homepage
+          // Any currently playing main track will be stopped below before warp
           
           // CRITICAL: Show all planets immediately when Start is pressed
           console.log('🌍 DashboardApp: Setting all planets mode for homepage');
@@ -1490,11 +1487,8 @@ export default function DashboardApp({ initialSlug } = {}) {
           // Prime ambient silently within this user gesture to satisfy autoplay policies
           try { window.dispatchEvent(new CustomEvent('ambient:prime')); } catch {}
           // Do not start ambient here; wait until warp finishes and the HUD/blue display is visible
-          // If a main song is currently playing, use Start to toggle play/pause
-          if (isPlaying) {
-            setToggleSignal((n) => n + 1);
-            return;
-          }
+          // Ignore current playing state: Start always triggers warp to homepage
+          // Any currently playing main track will be stopped below before warp
           // Show all planets on homepage after Start
           try { 
             playerStore.getState().setPlanetDisplayMode('all'); 
