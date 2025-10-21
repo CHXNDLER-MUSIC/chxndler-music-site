@@ -2688,7 +2688,8 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
       style={{
         background: 'transparent',
         // Gate visibility by global planetsVisible and respect 'hidden' mode (during warp)
-        opacity: planetsVisible && effectiveMode !== 'hidden' ? 1 : 0,
+        // CRITICAL: On true homepage overview (showAll + no main selection), always show planets
+        opacity: isHomeOverview ? 1 : (planetsVisible && effectiveMode !== 'hidden' ? 1 : 0),
         transition: 'opacity 400ms ease-in-out'
       }}
     />

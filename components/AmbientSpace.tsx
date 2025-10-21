@@ -24,6 +24,7 @@ export default function AmbientSpace({
   const rafRef = useRef<number|undefined>(undefined);
   const introPendingRef = useRef<boolean>(!!introSrc);
   const introPlayingRef = useRef<boolean>(false);
+  // Plays welcome VO alongside the first ambient start only
   const lastTimeRef = useRef<number>(0);
   const stuckSinceRef = useRef<number|undefined>(undefined);
   const fadeDownTimerRef = useRef<number|undefined>(undefined);
@@ -66,11 +67,13 @@ export default function AmbientSpace({
     rafRef.current = requestAnimationFrame(step);
   }
 
-  // Attempt autoplay of ambient + one-time intro VO on mount (only if not suspended)
+  // Do NOT auto-play intro VO on mount. Only play with the first ambient:play.
   useEffect(() => {
     const amb = ambRef.current;
     const intro = introRef.current;
-    if (!amb || suspend) return; // Don't start if suspended
+    if (!amb) return;
+    // Never auto-play intro while suspended; wait for ambient:play trigger
+    if (suspend) return;
     // Pre-set volume so audio is audible immediately (no ducking)
     const initialVol = clamp01(volume);
     amb.volume = initialVol;
@@ -83,118 +86,27 @@ export default function AmbientSpace({
       try { amb.removeEventListener('playing', onAmbPlaying as any); } catch {}
     };
     try { amb.addEventListener('playing', onAmbPlaying as any, { once: true } as any); } catch {}
-    // Try to start ambient
-    const tryAmbient = amb.play().then(() => {
-      // Ensure unmuted immediately on successful play
-      try { amb.muted = false; amb.removeAttribute('muted'); } catch {}
-      amb.volume = initialVol;
-      // Register as active audio source
-      try { audioCoordinator.setActiveSource('ambient'); } catch (e) { console.warn('audioCoordinator error:', e); }
-    }).catch(() => {
-      // Even if play fails, unmute so it's ready when resumed
-      try { amb.muted = false; amb.removeAttribute('muted'); } catch {}
-      amb.volume = initialVol;
-    });
-    // Try to play intro once on first load, but wait until ambient is actually playing
-    let tryIntro: Promise<any>|undefined;
-    const startIntro = () => {
-      if (!intro || !introSrc || !introPendingRef.current || playingMusic) return;
-      console.log('🎵 AmbientSpace: Starting welcome VO sequence');
-      try {
-        intro.volume = 0.9;
-        const onIntroPlay = () => { 
-          console.log('🎵 AmbientSpace: Welcome VO started playing');
-          introPlayingRef.current = true; 
-          // Ensure ambient is unmuted; keep volume constant during VO
-          try { amb.muted = false; amb.removeAttribute('muted'); } catch {}
-          amb.volume = clamp01(volume);
-          // Register intro as active audio source
-          try { audioCoordinator.setActiveSource('intro'); } catch (e) { console.warn('audioCoordinator error:', e); }
-        };
-        const onIntroEnd  = () => { 
-          console.log('🎵 AmbientSpace: Welcome VO ended');
-          introPlayingRef.current = false; 
-          // Switch back to ambient as active source (ambient volume unchanged)
-          try { audioCoordinator.setActiveSource('ambient'); } catch (e) { console.warn('audioCoordinator error:', e); }
-        };
-        intro.addEventListener('play', onIntroPlay);
-        intro.addEventListener('ended', onIntroEnd, { once: true });
-        // Start intro VO immediately after ambient begins
-        tryIntro = new Promise<void>((resolve) => {
-          setTimeout(() => {
-            if (!introPendingRef.current || playingMusic) { resolve(); return; }
-            console.log('🎵 AmbientSpace: Attempting to play welcome VO');
-            intro.play().then(() => { 
-              introPendingRef.current = false; 
-              console.log('🎵 AmbientSpace: Welcome VO play successful');
-              resolve(); 
-            }).catch((e) => {
-              console.error('🎵 AmbientSpace: Welcome VO play failed:', e);
-              resolve();
-            });
-          }, 50); // Reduced delay from 100ms to 50ms
-        });
-      } catch {}
-    };
-    // Play intro after ambient reports playing; if ambient is already playing, start immediately
-    if (intro && introSrc && introPendingRef.current && !playingMusic) {
-      if (!amb.paused) startIntro();
-      else amb.addEventListener('playing', startIntro, { once: true } as any);
-    }
-    Promise.allSettled([tryAmbient, tryIntro].filter(Boolean) as Promise<any>[]).then((res) => {
-      const blocked = res.some(r => r && r.status === "rejected");
-      if (blocked) {
-        setNeedEnable(true);
-      } else {
-        // Always unmute ambient once playback is permitted
-        try { amb.muted = false; amb.removeAttribute('muted'); } catch {}
-        // Keep ambient at configured volume; no ducking for VO
-        amb.volume = clamp01(volume);
-      }
-    });
+    // Do not auto-start ambient here; wait for explicit triggers
     return cancelFade;
   }, [suspend]);
 
-  // If introSrc becomes available after mount (e.g., navigate to homepage), play it once
+  // If introSrc becomes available after mount, mark it pending but do not auto-play
   useEffect(() => {
     const amb = ambRef.current;
     const intro = introRef.current;
     if (!introSrc || !intro || !amb) return;
     // Mark intro as pending when a new introSrc arrives (e.g., after first Start)
     introPendingRef.current = true;
-    if (playingMusic || suspend) return;
-    if (!introPendingRef.current) return;
-    try {
-      const startIntro = () => {
-        if (!introPendingRef.current || playingMusic || suspend) return;
-        try {
-          intro.volume = 0.9;
-          const onIntroPlay = () => { 
-            introPlayingRef.current = true; 
-            try { amb.muted = false; amb.removeAttribute('muted'); } catch {}
-            amb.volume = clamp01(volume);
-          };
-          const onIntroEnd  = () => { introPlayingRef.current = false; };
-          intro.addEventListener('play', onIntroPlay);
-          intro.addEventListener('ended', onIntroEnd, { once: true });
-          // Minimal delay after ambient reports playing
-          setTimeout(() => {
-            if (!introPendingRef.current || playingMusic || suspend) return;
-            intro.play().then(() => { introPendingRef.current = false; }).catch(()=>{});
-          }, 100);
-        } catch {}
-      };
-      if (!amb.paused) startIntro();
-      else amb.addEventListener('playing', startIntro, { once: true } as any);
-      return () => { try { amb.removeEventListener('playing', startIntro as any); } catch {} };
-    } catch {}
+    // Do not auto-play; will be started via ambient:play
   }, [introSrc, playingMusic, suspend, volume]);
 
-  // Global unlock: if autoplay is blocked, allow user interaction (keyboard or pointer) to enable
-  // Respect suspend and playingMusic — do not start ambient while a song is playing or UI is suspended
+  // Global unlock: if autoplay is blocked, allow user interaction (keyboard or pointer) to enable.
+  // Respect playingMusic — but allow intro VO to start even while suspended.
   useEffect(() => {
     if (!needEnable) return;
-    if (suspend || playingMusic) return; // don't attach unlock while we should be silent
+    if (playingMusic) return;
+    // If suspended, only attach if an intro is pending (to allow VO-only start)
+    if (suspend && !introPendingRef.current) return;
     const onAnyInteract = () => { enable(); };
     window.addEventListener('keydown', onAnyInteract, { passive: true } as any);
     window.addEventListener('pointerdown', onAnyInteract, { passive: true } as any);
@@ -222,7 +134,6 @@ export default function AmbientSpace({
       try { amb.muted = false; amb.removeAttribute('muted'); } catch {}
       const setAmbient = () => { amb.volume = clamp01(volume); };
       setAmbient();
-
       // If welcome VO is available and pending, start both VO and ambient together
       if (intro && introSrc && introPendingRef.current && !introPlayingRef.current) {
         try { intro.currentTime = 0; } catch {}
@@ -243,16 +154,20 @@ export default function AmbientSpace({
         setAmbient();
         const p1 = amb.play().catch(()=>{});
         const p2 = intro.play().then(() => { introPendingRef.current = false; }).catch(() => { introPendingRef.current = false; });
-        // Do not block on promises; return after queuing both plays
         void p1; void p2;
         return;
       }
-
       // Otherwise, start ambient immediately
       amb.play().catch(()=>{});
     };
     window.addEventListener('ambient:play', onAmbientPlay as any);
-    return () => { window.removeEventListener('ambient:play', onAmbientPlay as any); };
+    // Expose a generic enable event to attempt starting audio (VO and/or ambient)
+    const onAmbientEnable = () => { enable(); };
+    window.addEventListener('ambient:enable', onAmbientEnable as any);
+    return () => { 
+      window.removeEventListener('ambient:play', onAmbientPlay as any); 
+      window.removeEventListener('ambient:enable', onAmbientEnable as any);
+    };
   }, [introSrc, volume, suspend, playingMusic, userSelectedSong]);
 
   // Prime ambient silently within a user gesture to satisfy autoplay policies
@@ -482,6 +397,8 @@ export default function AmbientSpace({
     };
   }, [playingMusic, suspend, userSelectedSong]);
 
+  // (No first-loop deferral; VO starts with first ambient play when pending)
+
   // Guard: some devices misreport MP3 duration (~6s) and fire 'ended' early.
   // Detect suspiciously short duration and repair by nudging currentTime or reloading src.
   useEffect(() => {
@@ -537,24 +454,25 @@ export default function AmbientSpace({
     const amb = ambRef.current;
     const intro = introRef.current;
     if (!amb) return;
-    // Do not start ambient if we are suspended or a song is playing or user selected a song
-    if (suspend || playingMusic || userSelectedSong) {
+    // Do not start ambient if a song is playing or user selected a song
+    if (playingMusic || userSelectedSong) {
       setNeedEnable(true);
       return;
     }
     try {
-      // Start with configured volume; do not duck for intro VO
-      amb.volume = clamp01(volume);
-      try { amb.currentTime = 0; } catch {}
-      try { amb.muted = false; amb.removeAttribute('muted'); } catch {}
-
-      const toPlay: Promise<any>[] = [amb.play()];
-      if (!playingMusic && intro && introSrc && introPendingRef.current) {
+      const toPlay: Promise<any>[] = [];
+      if (!suspend) {
+        // Start ambient only when not suspended
+        amb.volume = clamp01(volume);
+        try { amb.currentTime = 0; } catch {}
+        try { amb.muted = false; amb.removeAttribute('muted'); } catch {}
+        toPlay.push(amb.play());
+      }
+      if (intro && introSrc && introPendingRef.current) {
         try { intro.currentTime = 0; } catch {}
         try { intro.volume = 0.9; } catch {}
         toPlay.push(intro.play().catch(()=>{}));
         introPendingRef.current = false;
-        // Keep ambient at configured volume throughout VO; no special handling on end
       }
       await Promise.allSettled(toPlay);
       if (playingMusic) { introPendingRef.current = false; }

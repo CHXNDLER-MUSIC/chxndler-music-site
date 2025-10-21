@@ -7,6 +7,7 @@ export type Song = {
   slug: string;
   spotify?: string;
   apple?: string;
+  youtube?: string;
   src?: string;         // defaults to /tracks/<slug>.mp3
   cover?: string;       // defaults to /cover/<slug>.png
   type?: string;        // default "audio/mpeg"
@@ -175,7 +176,7 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme">
     { time: 140.5, label: "Bridge", kind: "bridge" },
     { time: 156.1, label: "Final Chorus", kind: "chorus" }
   ] },
-  { title: "WE'RE JUST FRIENDS", spotify:"https://open.spotify.com/track/2IffMAupdw2alpsISKFs8y", apple:"https://music.apple.com/us/album/were-just-friends/1662517763?i=1662517764", cover:"/cover/we're-just-friends.png", src: "/tracks/we're-just-friends.mp3", sections: [
+  { title: "WE'RE JUST FRIENDS", spotify:"https://open.spotify.com/track/2IffMAupdw2alpsISKFs8y", apple:"https://music.apple.com/us/album/were-just-friends/1662517763?i=1662517764", youtube:"https://www.youtube.com/watch?v=eQ4uBMn6cQ0", cover:"/cover/we're-just-friends.png", src: "/tracks/we're-just-friends.mp3", sections: [
     { time: 13.8, label: "Verse 1", kind: "verse" },
     { time: 44.5, label: "Chorus 1", kind: "chorus" },
     { time: 75.2, label: "Verse 2", kind: "verse" },
@@ -183,7 +184,7 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme">
     { time: 136.6, label: "Bridge", kind: "bridge" },
     { time: 152.3, label: "Final Chorus", kind: "chorus" }
   ] },
-  { title: "PARIS", spotify:"https://open.spotify.com/track/2luPTqZK9w5fJ30T4rLZut", apple:"https://music.apple.com/us/album/paris/1779879728?i=1779879729", sections: [
+  { title: "PARIS", spotify:"https://open.spotify.com/track/2luPTqZK9w5fJ30T4rLZut", apple:"https://music.apple.com/us/album/paris/1779879728?i=1779879729", youtube:"https://www.youtube.com/watch?v=J2qrS9EGRw8", sections: [
     { time: 19.4, label: "Verse 1", kind: "verse" },
     { time: 52.1, label: "Chorus 1", kind: "chorus" },
     { time: 84.8, label: "Verse 2", kind: "verse" },
@@ -198,7 +199,7 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme">
     { time: 130.4, label: "Bridge", kind: "bridge" },
     { time: 145.1, label: "Final Chorus", kind: "chorus" }
   ] },
-  { title: "HOUSE PARTY", spotify:"https://open.spotify.com/track/0b5y0gHMf3wLYX69B8S6g4", apple:"https://music.apple.com/us/album/alien-house-party/1757497439?i=1757497440", cover:"/cover/house-party.png", src: "/tracks/house-party.mp3", sections: [
+  { title: "HOUSE PARTY", spotify:"https://open.spotify.com/track/0b5y0gHMf3wLYX69B8S6g4", apple:"https://music.apple.com/us/album/alien-house-party/1757497439?i=1757497440", youtube:"https://www.youtube.com/watch?v=B6EyIK-gE1c", cover:"/cover/house-party.png", src: "/tracks/house-party.mp3", sections: [
     { time: 17.9, label: "Verse 1", kind: "verse" },
     { time: 50.6, label: "Chorus 1", kind: "chorus" },
     { time: 83.3, label: "Verse 2", kind: "verse" },
@@ -213,7 +214,7 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme">
     { time: 118.6, label: "Drop 2", kind: "chorus" },
     { time: 151.3, label: "Final Drop", kind: "chorus" }
   ] },
-  { title: "BABY", spotify:"https://open.spotify.com/track/3UEVjChARWDbY4ruOIbIl3", apple:"https://music.apple.com/us/album/baby/1823220422?i=1823220423", src: "/tracks/baby.mp3", sections: [
+  { title: "BABY", spotify:"https://open.spotify.com/track/3UEVjChARWDbY4ruOIbIl3", apple:"https://music.apple.com/us/album/baby/1823220422?i=1823220423", youtube:"https://www.youtube.com/watch?v=RqBs_MYhM6c", src: "/tracks/baby.mp3", sections: [
     { time: 15.8, label: "Verse 1", kind: "verse" },
     { time: 47.4, label: "Chorus 1", kind: "chorus" },
     { time: 79.0, label: "Verse 2", kind: "verse" },
@@ -221,7 +222,7 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme">
     { time: 142.2, label: "Bridge", kind: "bridge" },
     { time: 157.8, label: "Final Chorus", kind: "chorus" }
   ] },
-  { title: "OCEAN GIRL", spotify:"https://open.spotify.com/album/37niwECG0TJMuYFQdrJE3y?si=S_Btj1hMRU-RsnsVL2PBmQ", apple:"https://music.apple.com/us/album/ocean-girl/1829503198?i=1829503199", src: "/tracks/ocean-girl.mp3", sections: [
+  { title: "OCEAN GIRL", spotify:"https://open.spotify.com/album/37niwECG0TJMuYFQdrJE3y?si=S_Btj1hMRU-RsnsVL2PBmQ", apple:"https://music.apple.com/us/album/ocean-girl/1829503198?i=1829503199", youtube:"https://www.youtube.com/watch?v=GKfczFiNLn0", src: "/tracks/ocean-girl.mp3", sections: [
     { time: 16.7, label: "Verse 1", kind: "verse" },
     { time: 48.3, label: "Chorus 1", kind: "chorus" },
     { time: 79.9, label: "Verse 2", kind: "verse" },
@@ -229,14 +230,14 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme">
     { time: 143.1, label: "Bridge", kind: "bridge" },
     { time: 158.7, label: "Final Chorus", kind: "chorus" }
   ] },
-  { title: "OCEAN GIRL (ACOUSTIC)", spotify:"https://open.spotify.com/track/62KREyqgAQxmq3zqCT7oMh?si=506cf1906fac4275", apple:"https://music.apple.com/us/album/ocean-girl-acoustic/1830685266?i=1830685267", src: "/tracks/ocean-girl-acoustic.mp3", sections: [
+  { title: "OCEAN GIRL (ACOUSTIC)", spotify:"https://open.spotify.com/track/62KREyqgAQxmq3zqCT7oMh?si=506cf1906fac4275", apple:"https://music.apple.com/us/album/ocean-girl-acoustic/1830685266?i=1830685267", youtube:"https://www.youtube.com/watch?v=NsL3WC6L3fw", src: "/tracks/ocean-girl-acoustic.mp3", sections: [
     { time: 14.2, label: "Verse 1", kind: "verse" },
     { time: 43.8, label: "Chorus 1", kind: "chorus" },
     { time: 73.4, label: "Verse 2", kind: "verse" },
     { time: 103.0, label: "Chorus 2", kind: "chorus" },
     { time: 132.6, label: "Final Chorus", kind: "chorus" }
   ] },
-  { title: "OCEAN GIRL (REMIX)", spotify:"https://open.spotify.com/track/1wbgLONY1GsBZC5XW4MUzu?si=ff27a874552948c4", apple:"https://music.apple.com/us/album/ocean-girl-remix-single/1830764323", src: "/tracks/ocean-girl-remix.mp3", sections: [
+  { title: "OCEAN GIRL (REMIX)", spotify:"https://open.spotify.com/track/1wbgLONY1GsBZC5XW4MUzu?si=ff27a874552948c4", apple:"https://music.apple.com/us/album/ocean-girl-remix-single/1830764323", youtube:"https://www.youtube.com/watch?v=oGiRQCARek4", src: "/tracks/ocean-girl-remix.mp3", sections: [
     { time: 22.1, label: "Build Up", kind: "verse" },
     { time: 54.7, label: "Drop 1", kind: "chorus" },
     { time: 87.3, label: "Break", kind: "verse" },

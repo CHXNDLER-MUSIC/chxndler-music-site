@@ -162,20 +162,27 @@ export default function DashboardApp({ initialSlug } = {}) {
     };
   }, [mounted, showDimmingOverlay, computeStartSpotlight]);
 
-  // Listen for welcome audio ending to properly track when it has played
+  // Listen for welcome audio play/end and set a window-scoped flag so
+  // it only plays once per in-tab session (resets on full refresh).
   useEffect(() => {
-    const onIntroEnded = () => {
-      console.log('🎵 DashboardApp: Welcome audio ended, marking as played for this page load');
+    const onIntroPlay = () => {
+      console.log('🎵 DashboardApp: Welcome audio started');
+      // Only mark the window flag after VO ends to avoid unmounting the audio mid-play
       setWelcomeHasPlayed(true);
-      // Note: No longer storing in session storage - welcome VO can play again after page refresh
+    };
+    const onIntroEnded = () => {
+      console.log('🎵 DashboardApp: Welcome audio ended, confirming as played for this session');
+      try { (window).__CHX_WELCOME_PLAYED = true; } catch {}
+      setWelcomeHasPlayed(true);
     };
     
     // Listen for the intro audio ending
     const checkIntroElement = () => {
       const intro = document.querySelector('audio[data-intro="1"]');
       if (intro) {
+        intro.addEventListener('play', onIntroPlay, { once: true });
         intro.addEventListener('ended', onIntroEnded, { once: true });
-        return () => intro.removeEventListener('ended', onIntroEnded);
+        return () => { try { intro.removeEventListener('play', onIntroPlay); } catch {}; try { intro.removeEventListener('ended', onIntroEnded); } catch {} };
       }
       return null;
     };
@@ -192,9 +199,7 @@ export default function DashboardApp({ initialSlug } = {}) {
       }
     }, 100);
     
-    return () => {
-      clearInterval(interval);
-    };
+    return () => { clearInterval(interval); };
   }, []);
 
   // Ensure planets are visible on homepage load
@@ -460,6 +465,20 @@ export default function DashboardApp({ initialSlug } = {}) {
     }
   }, []);
 
+  // Enable welcome VO on first homepage open (before Start), once per refresh
+  useEffect(() => {
+    try {
+      const playedFlag = (typeof window !== 'undefined' && (window).__CHX_WELCOME_PLAYED === true);
+      if (homeMode && !playedFlag && !welcomeHasPlayed) {
+        setHomeIntroEnabled(true);
+        // Proactively prime and attempt enable to start VO ASAP
+        try { window.dispatchEvent(new CustomEvent('ambient:prime')); } catch {}
+        // Small delay to ensure <audio data-intro> is mounted, then try enable
+        setTimeout(() => { try { window.dispatchEvent(new CustomEvent('ambient:enable')); } catch {} }, 60);
+      }
+    } catch {}
+  }, [homeMode, welcomeHasPlayed]);
+
   // Track ambient audio playing state for accurate button state on homepage
   useEffect(() => {
     if (!mounted) return;
@@ -692,12 +711,10 @@ export default function DashboardApp({ initialSlug } = {}) {
     }
   }, [beamColor, showHUD, joinAlienOpen, beamTransitioning, explicitClose]);
 
-  // Spacebar and Pause key toggle (ignore when 3D system is active)
+  // Spacebar and Pause key toggle (works even when 3D is active)
   React.useEffect(() => {
     const handleKeyDown = (e) => {
       if (!uiUnlocked) return; // Ignore all media key input before Start
-      // If 3D planet system is active, do not react to global space/pause keys
-      try { if ((window).__CHX_3D_ACTIVE) return; } catch {}
       // Trigger on spacebar (not in input fields) or pause/media keys (anywhere)
       const tag = (e.target?.tagName || '').toUpperCase();
       const inTextField = tag === 'INPUT' || tag === 'TEXTAREA' || (e.target?.isContentEditable === true);
@@ -813,6 +830,7 @@ export default function DashboardApp({ initialSlug } = {}) {
       // Force welcome VO to play for debugging
       window.forceWelcomeVO = () => {
         console.log('🎵 ==> FORCING WELCOME VO <==');
+        try { delete (window).__CHX_WELCOME_PLAYED; } catch {}
         setHomeMode(true);
         setHomeIntroEnabled(true);
         setWelcomeHasPlayed(false);
@@ -970,7 +988,8 @@ export default function DashboardApp({ initialSlug } = {}) {
         <AmbientSpace 
           ambientSrc="/audio/space-music.mp3" 
           introSrc={(() => {
-            const shouldPlayWelcome = homeMode && homeIntroEnabled;
+            const playedFlag = (typeof window !== 'undefined' && (window).__CHX_WELCOME_PLAYED === true);
+            const shouldPlayWelcome = homeMode && homeIntroEnabled && !playedFlag;
             const introSrc = shouldPlayWelcome ? "/audio/welcome-to-the-heartverse.mp3" : undefined;
             console.log('🎵 DashboardApp: AmbientSpace introSrc decision:', { 
               homeMode, 
@@ -978,6 +997,7 @@ export default function DashboardApp({ initialSlug } = {}) {
               shouldPlayWelcome, 
               introSrc,
               welcomeHasPlayed,
+              welcomePlayedFlag: playedFlag,
               uiUnlocked,
               showOverlayUI,
               pendingOverlayReveal,
@@ -1041,79 +1061,29 @@ export default function DashboardApp({ initialSlug } = {}) {
             try {
               if (nextSky) { setSky(nextSky); setNextSky(null); }
             } catch {}
-            // Play the button sound; start ambient + welcome VO simultaneously from the beginning after it finishes
+            // Play the button sound; start ambient from the beginning after it finishes.
+            // Welcome VO will now play AFTER the first full ambient loop completes.
             try {
               const p = sfx.playAndWait('button', 0.9);
               let settled = false;
               const startAudioFromBeginning = () => {
                 if (settled) return; settled = true;
-                console.log('🎵 DashboardApp: Starting ambient + welcome VO from beginning');
+                console.log('🎵 DashboardApp: Starting ambient from beginning (VO delayed until after first loop)');
                 
-                // Reset both audio tracks to beginning and start them simultaneously
+                // Reset ambient to beginning and trigger ambient playback.
                 try {
                   const ambientEl = document.querySelector('audio[data-ambient="1"]');
-                  const introEl = document.querySelector('audio[data-intro="1"]');
                   
                   // Reset to beginning
                   if (ambientEl) {
                     ambientEl.currentTime = 0;
                     console.log('🎵 DashboardApp: Reset space-music.mp3 to beginning');
                   }
-                  if (introEl) {
-                    introEl.currentTime = 0;
-                    console.log('🎵 DashboardApp: Reset welcome-to-the-heartverse.mp3 to beginning');
-                  }
                   
-                  // Start both ambient and intro SIMULTANEOUSLY from the beginning
-                  console.log('🎵 DashboardApp: Starting ambient and welcome VO simultaneously');
-                  
-                  // Prepare both audio elements
-                  let ambientReady = false;
-                  let introReady = false;
-                  
-                  const startBothSimultaneously = () => {
-                    if (ambientReady && introReady) {
-                      console.log('🎵 DashboardApp: Both audio elements ready, starting simultaneously');
-                      const promises = [];
-                      
-                      if (ambientEl) {
-                        promises.push(ambientEl.play().catch(e => console.warn('Ambient play failed:', e)));
-                      }
-                      if (introEl && homeIntroEnabled) {
-                        promises.push(introEl.play().catch(e => console.warn('Intro play failed:', e)));
-                      }
-                      
-                      Promise.allSettled(promises).then(() => {
-                        console.log('🎵 DashboardApp: Simultaneous audio start completed');
-                        // Unmute ambient after both are playing
-                        setAmbientSuspended(false);
-                        try { audioCoordinator.setActiveSource('intro'); } catch {}
-                      });
-                    }
-                  };
-                  
-                  // Prepare ambient
-                  if (ambientEl) {
-                    ambientEl.currentTime = 0;
-                    ambientEl.volume = 0.75; // Set to bed volume under VO
-                    ambientEl.muted = false;
-                    ambientReady = true;
-                  } else {
-                    ambientReady = true;
-                  }
-                  
-                  // Prepare intro
-                  if (introEl && homeIntroEnabled) {
-                    introEl.currentTime = 0;
-                    introEl.volume = 0.9;
-                    introEl.muted = false;
-                    introReady = true;
-                  } else {
-                    introReady = true;
-                  }
-                  
-                  // Start both simultaneously
-                  startBothSimultaneously();
+                  // Trigger ambient start via coordinator event; AmbientSpace will
+                  // handle delayed VO playback after the first loop completes.
+                  setAmbientSuspended(false);
+                  try { window.dispatchEvent(new CustomEvent('ambient:play')); } catch {}
                   
                 } catch (e) {
                   console.error('🎵 DashboardApp: Error starting audio from beginning:', e);

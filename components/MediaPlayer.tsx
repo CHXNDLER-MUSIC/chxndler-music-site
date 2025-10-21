@@ -1009,6 +1009,250 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           </div>
           
         </div>
+        {/* Sleek integrated control bar - moved above waveform */}
+        <div className="sleek-controls mt-2">
+          {showHUDPlay && (
+            <button 
+              onClick={(e) => {
+                console.log('🎵 Play/pause button clicked', { playing, event: e });
+                toggle();
+              }} 
+              className={`play-pause-btn ${playing ? 'playing' : ''}`} 
+              aria-label={playing ? "Pause" : "Play"}
+              onMouseEnter={playHover}
+            >
+              <div className="btn-glow"></div>
+              <span className="btn-icon">
+                {playing ? (
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                    <rect x="6" y="4" width="4" height="16" rx="1" />
+                    <rect x="14" y="4" width="4" height="16" rx="1" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                )}
+              </span>
+            </button>
+          )}
+          
+          
+          <div className="track-controls">
+            <button onClick={prev} className="track-btn" aria-label="Previous">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+              </svg>
+            </button>
+            <button onClick={next} className="track-btn" aria-label="Next">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+              </svg>
+            </button>
+          </div>
+          {chorusTimes.length > 0 && (
+            <button
+              onClick={() => {
+                const a = audioRef.current; if (!a || !liveDuration) return;
+                const now = a.currentTime;
+                const next = chorusTimes.find((t) => t > now + 0.75) ?? chorusTimes[0];
+                
+                // Set seeking state FIRST to disable transitions
+                setSeeking(true);
+                seekingRef.current = true;
+                
+                // Store visual position for immediate cursor update
+                seekPositionRef.current = next;
+                setCurrentTime(next);
+                
+                const seekTime = Math.max(0, Math.min(liveDuration - 0.2, next));
+                a.currentTime = seekTime;
+                
+                intentionalPlayRef.current = true; // Mark as intentional play
+                a.play().catch(()=>{});
+                setPlaying(true);
+                gaTrack("jump_chorus", { slug: cur.slug, seconds: next });
+              }}
+              className="selector-btn"
+              aria-label="Jump to chorus"
+              title="Jump to chorus"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
+                <path d="M4 4h2v16H4zM8 12l10 6V6z" />
+              </svg>
+              <span>Chorus</span>
+            </button>
+          )}
+          
+          <button 
+            onClick={() => setPickerOpen((o)=>!o)} 
+            className="selector-btn" 
+            aria-haspopup="listbox" 
+            aria-expanded={pickerOpen} 
+            aria-label="Select song"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+            </svg>
+            <span>Track</span>
+          </button>
+          
+          <div className="volume-control" ref={mainVolRef}>
+            {/* Mute/Unmute button */}
+            <div className="volume-button-wrap">
+            <button
+              ref={mainVolBtnRef}
+              className="track-btn volume-btn"
+              onClick={() => {
+                const a = audioRef.current; if (!a) return;
+                uiClick();
+                // Only open/close the dropdown; do not change volume on click
+                setShowWaveformVolumePopover(false);
+                setShowMainVolumePopover(v => {
+                  const next = !v;
+                  if (next && mainVolBtnRef.current) {
+                    const r = mainVolBtnRef.current.getBoundingClientRect();
+                    setMainPopoverPos({ left: r.left + r.width / 2, top: r.bottom + 8 });
+                  }
+                  return next;
+                });
+              }}
+              aria-label="Volume"
+              title="Volume"
+              onMouseEnter={playHover}
+            >
+              {/* Hover glow to match play/pause */}
+              <div className="btn-glow"></div>
+              {volume === 0 ? (
+                // Muted icon
+                <span className="btn-icon">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
+                    <path d="M16.5 12l3.5 3.5-1.5 1.5L15 13.5 11.5 17H8l-4-4V11l4-4h3.5l3.5 3.5 3.5-3.5 1.5 1.5L16.5 12zM10 8.5L7.5 11H6v2h1.5L10 15.5V8.5z"/>
+                  </svg>
+                </span>
+              ) : volume < 0.5 ? (
+                // Low volume icon
+                <span className="btn-icon">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
+                    <path d="M3 10v4h4l5 5V5L7 10H3zm10.5 2c0-1.77-.77-3.29-2-4.3v8.6c1.23-1.01 2-2.53 2-4.3z"/>
+                  </svg>
+                </span>
+              ) : (
+                // High volume icon
+                <span className="btn-icon">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
+                    <path d="M3 10v4h4l5 5V5L7 10H3zm8 2c0 2.21-1.79 4-4 4v-2c1.1 0 2-.9 2-2s-.9-2-2-2V8c2.21 0 4 1.79 4 4zm4.5 0c0-3.04-1.72-5.64-4.25-6.92l-.75 1.86C12.6 8.2 14 9.96 14 12s-1.4 3.8-3.5 4.06l.75 1.86C18.28 17.64 19.5 15.04 19.5 12z"/>
+                  </svg>
+                </span>
+              )}
+            </button>
+
+            {null}
+            </div>
+          </div>
+
+          {/* Lyrics + YouTube + Inline volume moved into controls so waveform sits below */}
+          <div className="waveform-volume" role="group" aria-label="Lyrics, YouTube, and Volume" ref={waveVolRef}>
+            <Link
+              href={`/lyrics/${cur.slug}`}
+              className="lyrics-link-waveform"
+              title={`Lyrics for ${cur.title}`}
+              aria-label={`View lyrics for ${cur.title}`}
+              data-song={cur.title}
+              data-slug={cur.slug}
+              data-id="lyrics"
+              onMouseEnter={playHover}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                <rect x="5" y="5" width="14" height="10" rx="4" ry="4" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                <circle cx="8" cy="16" r="1.2" fill="currentColor" />
+                <circle cx="6.2" cy="18" r="1.1" fill="currentColor" />
+                <rect x="10" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+                <rect x="13.6" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+              </svg>
+            </Link>
+
+            {cur.youtube ? (
+              <a
+                href={cur.youtube}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="youtube-link-waveform"
+                title={`Open ${cur.title} on YouTube`}
+                aria-label={`Open ${cur.title} on YouTube`}
+                data-song={cur.title}
+                data-slug={cur.slug}
+                data-id="yt"
+                onClick={() => {
+                  try {
+                    gaTrack('youtube_clicked', {
+                      song_slug: cur.slug,
+                      payload: { song_title: cur.title, location: 'waveform_player', href: cur.youtube }
+                    });
+                  } catch {}
+                }}
+                onMouseEnter={playHover}
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                  <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                  <path d="M10 8l6 4-6 4z" fill="currentColor" />
+                </svg>
+              </a>
+            ) : (
+              <div 
+                className="youtube-link-unavailable-waveform"
+                title={`No YouTube link available for ${cur.title}`}
+                aria-hidden
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                  <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.6" opacity="0.55" />
+                  <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
+                </svg>
+              </div>
+            )}
+
+            <div className="volume-button-wrap">
+              <button
+                ref={waveVolBtnRef}
+                className="waveform-volume-btn"
+                onClick={() => {
+                  const a = audioRef.current; if (!a) return; uiClick();
+                  setShowMainVolumePopover(false);
+                  setShowWaveformVolumePopover(v => {
+                    const next = !v;
+                    if (next && waveVolBtnRef.current) {
+                      const r = waveVolBtnRef.current.getBoundingClientRect();
+                      setWavePopoverPos({ left: r.left + r.width / 2, top: r.bottom + 8 });
+                    }
+                    return next;
+                  });
+                }}
+                aria-haspopup="true"
+                aria-expanded={showWaveformVolumePopover}
+                aria-label="Volume"
+                title="Volume"
+                onMouseEnter={playHover}
+              >
+                <div className="btn-glow"></div>
+                <span className="btn-icon">
+                  {volume === 0 ? (
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
+                      <path d="M16.5 12l3.5 3.5-1.5 1.5L15 13.5 11.5 17H8l-4-4V11l4-4h3.5l3.5 3.5 3.5-3.5 1.5 1.5L16.5 12zM10 8.5L7.5 11H6v2h1.5L10 15.5V8.5z"/>
+                    </svg>
+                  ) : volume < 0.5 ? (
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
+                      <path d="M3 10v4h4l5 5V5L7 10H3zm10.5 2c0-1.77-.77-3.29-2-4.3v8.6c1.23-1.01 2-2.53 2-4.3z"/>
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
+                      <path d="M3 10v4h4l5 5V5L7 10H3zm8 2c0 2.21-1.79 4-4 4v-2c1.1 0 2-.9 2-2s-.9-2-2-2V8c2.21 0 4 1.79 4 4zm4.5 0c0-3.04-1.72-5.64-4.25-6.92l-.75 1.86C12.6 8.2 14 9.96 14 12s-1.4 3.8-3.5 4.06l.75 1.86C18.28 17.64 19.5 15.04 19.5 12z"/>
+                    </svg>
+                  )}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
         <div className="waveform-wrapper">
           <div className="waveform-container" title={cur.title}>
             <div 
@@ -1199,71 +1443,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               </div>
             )}
             
-            {/* Volume control and Lyrics link grouped together */}
-            <div className="waveform-volume" role="group" aria-label="Volume and Lyrics" ref={waveVolRef}>
-              <div className="volume-button-wrap">
-              <button
-                ref={waveVolBtnRef}
-                className="waveform-volume-btn"
-                onClick={() => {
-                  const a = audioRef.current; if (!a) return; uiClick();
-                  // Only open/close the dropdown; do not change volume on click
-                  setShowMainVolumePopover(false);
-                  setShowWaveformVolumePopover(v => {
-                    const next = !v;
-                    if (next && waveVolBtnRef.current) {
-                      const r = waveVolBtnRef.current.getBoundingClientRect();
-                      setWavePopoverPos({ left: r.left + r.width / 2, top: r.bottom + 8 });
-                    }
-                    return next;
-                  });
-                }}
-                aria-haspopup="true"
-                aria-expanded={showWaveformVolumePopover}
-                aria-label="Volume"
-                title="Volume"
-              onMouseEnter={playHover}
-              >
-                <div className="btn-glow"></div>
-                <span className="btn-icon">
-                  {volume === 0 ? (
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
-                      <path d="M16.5 12l3.5 3.5-1.5 1.5L15 13.5 11.5 17H8l-4-4V11l4-4h3.5l3.5 3.5 3.5-3.5 1.5 1.5L16.5 12zM10 8.5L7.5 11H6v2h1.5L10 15.5V8.5z"/>
-                    </svg>
-                  ) : volume < 0.5 ? (
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
-                      <path d="M3 10v4h4l5 5V5L7 10H3zm10.5 2c0-1.77-.77-3.29-2-4.3v8.6c1.23-1.01 2-2.53 2-4.3z"/>
-                    </svg>
-                  ) : (
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
-                      <path d="M3 10v4h4l5 5V5L7 10H3zm8 2c0 2.21-1.79 4-4 4v-2c1.1 0 2-.9 2-2s-.9-2-2-2V8c2.21 0 4 1.79 4 4zm4.5 0c0-3.04-1.72-5.64-4.25-6.92l-.75 1.86C12.6 8.2 14 9.96 14 12s-1.4 3.8-3.5 4.06l.75 1.86C18.28 17.64 19.5 15.04 19.5 12z"/>
-                    </svg>
-                  )}
-                </span>
-              </button>
-              {null}
-              </div>
-              {/* Lyrics link next to volume button, navigates to lyrics page for current song */}
-              <Link
-                href={`/lyrics/${cur.slug}`}
-                className="lyrics-link-waveform"
-                title={`Lyrics for ${cur.title}`}
-                aria-label={`View lyrics for ${cur.title}`}
-                data-song={cur.title}
-                data-slug={cur.slug}
-                data-id="lyrics"
-                onMouseEnter={playHover}
-              >
-                {/* Thought bubble with quotes inside */}
-                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                  <rect x="5" y="5" width="14" height="10" rx="4" ry="4" fill="none" stroke="currentColor" strokeWidth="1.6" />
-                  <circle cx="8" cy="16" r="1.2" fill="currentColor" />
-                  <circle cx="6.2" cy="18" r="1.1" fill="currentColor" />
-                  <rect x="10" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
-                  <rect x="13.6" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
-                </svg>
-              </Link>
-            </div>
+            {/* Lyrics/YouTube/Inline volume moved into controls above */}
 
 
             {/* Spotify button positioned in waveform container */}
@@ -1381,7 +1561,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               <img
                 src={`/elements/${currentElement}.png`}
                 alt={`${cur?.title || 'Current track'} cursor`}
-                className="absolute w-[2rem] h-[2rem] min-w-[2rem] min-h-[2rem] brightness-150 saturate-125"
+                className="absolute w-[1.8rem] h-[1.8rem] min-w-[1.8rem] min-h-[1.8rem] brightness-150 saturate-125"
                 style={{ 
                   top: '50%', // Match the circle's cy="50" position exactly
                   left: '50%',
@@ -1432,148 +1612,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       </div>
 
 
-      {/* Sleek integrated control bar */}
-      <div className="sleek-controls mt-3">
-        {showHUDPlay && (
-          <button 
-            onClick={(e) => {
-              console.log('🎵 Play/pause button clicked', { playing, event: e });
-              toggle();
-            }} 
-            className={`play-pause-btn ${playing ? 'playing' : ''}`} 
-            aria-label={playing ? "Pause" : "Play"}
-          onMouseEnter={playHover}
-          >
-            <div className="btn-glow"></div>
-            <span className="btn-icon">
-              {playing ? (
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                  <rect x="6" y="4" width="4" height="16" rx="1" />
-                  <rect x="14" y="4" width="4" height="16" rx="1" />
-                </svg>
-              ) : (
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              )}
-            </span>
-          </button>
-        )}
-        
-        
-        <div className="track-controls">
-          <button onClick={prev} className="track-btn" aria-label="Previous">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-              <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
-            </svg>
-          </button>
-          <button onClick={next} className="track-btn" aria-label="Next">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-              <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
-            </svg>
-          </button>
-        </div>
-        {chorusTimes.length > 0 && (
-          <button
-            onClick={() => {
-              const a = audioRef.current; if (!a || !liveDuration) return;
-              const now = a.currentTime;
-              const next = chorusTimes.find((t) => t > now + 0.75) ?? chorusTimes[0];
-              
-              // Set seeking state FIRST to disable transitions
-              setSeeking(true);
-              seekingRef.current = true;
-              
-              // Store visual position for immediate cursor update
-              seekPositionRef.current = next;
-              setCurrentTime(next);
-              
-              const seekTime = Math.max(0, Math.min(liveDuration - 0.2, next));
-              a.currentTime = seekTime;
-              
-              intentionalPlayRef.current = true; // Mark as intentional play
-              a.play().catch(()=>{});
-              setPlaying(true);
-              gaTrack("jump_chorus", { slug: cur.slug, seconds: next });
-            }}
-            className="selector-btn"
-            aria-label="Jump to chorus"
-            title="Jump to chorus"
-          >
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
-              <path d="M4 4h2v16H4zM8 12l10 6V6z" />
-            </svg>
-            <span>Chorus</span>
-          </button>
-        )}
-        
-        <button 
-          onClick={() => setPickerOpen((o)=>!o)} 
-          className="selector-btn" 
-          aria-haspopup="listbox" 
-          aria-expanded={pickerOpen} 
-          aria-label="Select song"
-        >
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-            <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
-          </svg>
-          <span>Track</span>
-        </button>
-        
-        <div className="volume-control" ref={mainVolRef}>
-          {/* Mute/Unmute button */}
-          <div className="volume-button-wrap">
-          <button
-            ref={mainVolBtnRef}
-            className="track-btn volume-btn"
-            onClick={() => {
-              const a = audioRef.current; if (!a) return;
-              uiClick();
-              // Only open/close the dropdown; do not change volume on click
-              setShowWaveformVolumePopover(false);
-              setShowMainVolumePopover(v => {
-                const next = !v;
-                if (next && mainVolBtnRef.current) {
-                  const r = mainVolBtnRef.current.getBoundingClientRect();
-                  setMainPopoverPos({ left: r.left + r.width / 2, top: r.bottom + 8 });
-                }
-                return next;
-              });
-            }}
-            aria-label="Volume"
-            title="Volume"
-            onMouseEnter={playHover}
-          >
-            {/* Hover glow to match play/pause */}
-            <div className="btn-glow"></div>
-            {volume === 0 ? (
-              // Muted icon
-              <span className="btn-icon">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
-                  <path d="M16.5 12l3.5 3.5-1.5 1.5L15 13.5 11.5 17H8l-4-4V11l4-4h3.5l3.5 3.5 3.5-3.5 1.5 1.5L16.5 12zM10 8.5L7.5 11H6v2h1.5L10 15.5V8.5z"/>
-                </svg>
-              </span>
-            ) : volume < 0.5 ? (
-              // Low volume icon
-              <span className="btn-icon">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
-                  <path d="M3 10v4h4l5 5V5L7 10H3zm10.5 2c0-1.77-.77-3.29-2-4.3v8.6c1.23-1.01 2-2.53 2-4.3z"/>
-                </svg>
-              </span>
-            ) : (
-              // High volume icon
-              <span className="btn-icon">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
-                  <path d="M3 10v4h4l5 5V5L7 10H3zm8 2c0 2.21-1.79 4-4 4v-2c1.1 0 2-.9 2-2s-.9-2-2-2V8c2.21 0 4 1.79 4 4zm4.5 0c0-3.04-1.72-5.64-4.25-6.92l-.75 1.86C12.6 8.2 14 9.96 14 12s-1.4 3.8-3.5 4.06l.75 1.86C18.28 17.64 19.5 15.04 19.5 12z"/>
-                </svg>
-              </span>
-            )}
-          </button>
-
-          {null}
-          </div>
-        </div>
-      </div>
+      {/* Controls moved above waveform; block removed from here */}
 
       {pickerOpen ? (
         <div className="picker hud-card mt-3" role="dialog" aria-label="Select a song">
@@ -1820,12 +1859,14 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           display: flex;
           align-items: center;
           gap: 12px;
-          justify-content: flex-end;
-          margin-top: 8px;
+          justify-content: center; /* center under controls */
+          margin-top: 6px;
+          width: 100%;
         }
         
         /* Waveform visualization container - slightly wider to accommodate both buttons */
         .waveform-container{
+          position: relative; /* make positioned context for absolute children */
           width: 28vw;
           height: 22vw;
           min-width: 140px;
@@ -1988,26 +2029,65 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           text-decoration: none;
           transition: all 0.25s ease;
           box-shadow: 0 4px 16px rgba(242,239,29,0.55);
+          flex: 0 0 auto;
+        }
+        .waveform-volume .youtube-link-waveform,
+        .waveform-volume .youtube-link-unavailable-waveform {
+          flex: 0 0 auto; /* prevent shrinking to zero if space is tight */
         }
         .lyrics-link-waveform:hover { transform: scale(1.1); box-shadow: 0 6px 22px rgba(242,239,29,0.9); }
         .lyrics-link-waveform:active { transform: scale(0.95); }
+
+        /* YouTube link (to the right of Lyrics) */
+        .youtube-link-waveform {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          border: 3px solid rgba(255,255,255,0.5);
+          background: radial-gradient(circle at 30% 30%, #FF6B6B, #FF0000);
+          color: #FFFFFF;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          text-decoration: none;
+          transition: all 0.25s ease;
+          box-shadow: 0 4px 16px rgba(255,0,0,0.5);
+          position: relative;
+          z-index: 600; /* sit above waveform/svg and streaming buttons */
+        }
+        .youtube-link-waveform:hover { transform: scale(1.1); box-shadow: 0 6px 22px rgba(255,0,0,0.85); }
+        .youtube-link-waveform:active { transform: scale(0.95); }
+        .youtube-link-unavailable-waveform {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          border: 3px solid rgba(255,255,255,0.35);
+          background: rgba(128,128,128,0.35);
+          color: rgba(255,255,255,0.85);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          z-index: 200;
+          cursor: not-allowed;
+        }
         
-        /* Inline waveform volume next to Spotify button */
+        /* Inline controls (lyrics/youtube/volume) now sit in the controls row */
         .waveform-volume {
-          position: absolute;
-          top: 50%;
-          left: 26%; /* to the left of the Spotify button at 42% */
-          transform: translate(-50%, -50%);
+          position: static;
+          transform: none;
           display: flex;
           align-items: center;
+          justify-content: flex-start;
+          white-space: nowrap;
           gap: 10px;
-          padding: 6px 8px;
+          padding: 0;
           border-radius: 10px;
-          border: 1px solid rgba(25,227,255,0.35);
-          background: rgba(6,182,212,0.10);
-          backdrop-filter: blur(8px);
-          box-shadow: 0 2px 10px rgba(25,227,255,0.25);
-          z-index: 32;
+          border: none;
+          background: transparent;
+          backdrop-filter: none;
+          box-shadow: none;
+          z-index: auto;
         }
         .waveform-volume-btn {
           position: relative;
@@ -2139,6 +2219,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         .sleek-controls {
           display: flex;
           align-items: center;
+          justify-content: center; /* center row so waveform can sit directly under */
+          flex-wrap: wrap; /* allow wrapping on smaller screens */
           gap: 12px;
           padding: 8px 12px;
           border-radius: 16px;

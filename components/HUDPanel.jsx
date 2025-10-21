@@ -829,15 +829,17 @@ export default function HUDPanel({
             left: inConsole ? 0 : 2, // Shift very slightly more to the left
             right: oneLinerRight, // Extend further to the right
             height: '55px',
-            bottom: inConsole ? -10 : -12 // Move down to avoid cutting into dropdown
+            bottom: inConsole ? -2 : -4 // Bring bottom border higher; reduce buffer
           }}>
             <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '10px' }}>
-              <div className="flex items-center gap-3 p-2">
+              <div className="flex flex-wrap items-start gap-3 pt-2 pr-2 pl-2 pb-0">
+                <div className="controls-row flex items-center gap-4 w-full" style={{ paddingTop: 2 }}>
                 <button 
                   onClick={handlePlayPause}
                   className="hud-play-btn-enhanced"
                   aria-label={playing ? "Pause" : "Play"}
                   onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                  style={{ marginTop: -1 }}
                 >
                   {playing ? (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -975,7 +977,7 @@ export default function HUDPanel({
                   role="group" 
                   aria-label="Volume"
                   ref={hudVolRef}
-                  style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}
                 >
                   <button
                     className="hud-volume-btn"
@@ -1016,41 +1018,50 @@ export default function HUDPanel({
                     )}
                   </button>
                   {null}
-                  {(() => {
-                    const isHome = !currentId;
-                    const currentSong = resolvedSongs.find(s => s.id === active);
-                    if (isHome) {
-                      // Homepage: pop out CHXNDLER lyrics in the same popover UI
+                {(() => {
+                  const isHome = !currentId;
+                  const currentSong = resolvedSongs.find(s => s.id === active);
+                  if (isHome) {
+                      // Homepage: lyrics popover for CHXNDLER + YouTube disabled
                       return (
-                        <button
-                          ref={lyricsBtnRef}
-                          type="button"
-                          className="hud-lyrics-btn"
-                          title="Lyrics for CHXNDLER"
-                          aria-label="View lyrics for CHXNDLER"
-                          data-id="lyrics"
-                          data-song="CHXNDLER"
-                          aria-haspopup="dialog"
-                          aria-expanded={showLyricsPopover}
-                          onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                          onClick={() => {
-                            if (showLyricsPopover) { try { sfx.play('close', 0.4); } catch {}; setShowLyricsPopover(false); return; }
-                            openLyricsPopover('chxndler');
-                          }}
-                        >
-                          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                            <rect x="5" y="5" width="14" height="10" rx="4" ry="4" fill="none" stroke="currentColor" strokeWidth="1.6" />
-                            <circle cx="8" cy="16" r="1.2" fill="currentColor" />
-                            <circle cx="6.2" cy="18" r="1.1" fill="currentColor" />
-                            <rect x="10" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
-                            <rect x="13.6" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
-                          </svg>
-                        </button>
+                        <>
+                          <button
+                            ref={lyricsBtnRef}
+                            type="button"
+                            className="hud-lyrics-btn"
+                            title="Lyrics for CHXNDLER"
+                            aria-label="View lyrics for CHXNDLER"
+                            data-id="lyrics"
+                            data-song="CHXNDLER"
+                            aria-haspopup="dialog"
+                            aria-expanded={showLyricsPopover}
+                            onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                            onClick={() => {
+                              if (showLyricsPopover) { try { sfx.play('close', 0.4); } catch {}; setShowLyricsPopover(false); return; }
+                              openLyricsPopover('chxndler');
+                            }}
+                          >
+                            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                              <rect x="5" y="5" width="14" height="10" rx="4" ry="4" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                              <circle cx="8" cy="16" r="1.2" fill="currentColor" />
+                              <circle cx="6.2" cy="18" r="1.1" fill="currentColor" />
+                              <rect x="10" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+                              <rect x="13.6" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+                            </svg>
+                          </button>
+                          <div className="youtube-btn-unavailable-hud" title="YouTube not available on homepage">
+                            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                              <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.6" opacity="0.55" />
+                              <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
+                            </svg>
+                          </div>
+                        </>
                       );
-                    }
-                    const slug = currentSong?.id;
-                    if (!slug) return null;
-                    return (
+                  }
+                  const slug = currentSong?.id;
+                  if (!slug) return null;
+                  return (
+                    <>
                       <button
                         ref={lyricsBtnRef}
                         type="button"
@@ -1075,8 +1086,35 @@ export default function HUDPanel({
                           <rect x="13.6" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
                         </svg>
                       </button>
-                    );
-                  })()}
+                      {currentSong?.youtube ? (
+                        <a
+                          href={currentSong.youtube}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="youtube-btn-waveform-hud"
+                          title={`Open ${currentSong.title} on YouTube`}
+                          aria-label={`Open ${currentSong.title} on YouTube`}
+                          data-song={currentSong.title}
+                          data-slug={currentSong.id}
+                          data-id="yt"
+                          onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                        >
+                          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                            <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                            <path d="M10 8l6 4-6 4z" fill="currentColor" />
+                          </svg>
+                        </a>
+                      ) : (
+                        <div className="youtube-btn-unavailable-hud" title={`No YouTube link available for ${currentSong?.title || 'current track'}`}>
+                          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                            <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.6" opacity="0.55" />
+                            <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
+                          </svg>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
                 </div>
 
                 {typeof document !== 'undefined' && showHudVolumePopover && hudPopoverPos ? require('react-dom').createPortal(
@@ -1175,8 +1213,9 @@ export default function HUDPanel({
                   </div>,
                   document.body
                 ) : null}
-                {/* Waveform visualization */}
-                <div className="flex-1">
+                </div>
+                {/* Waveform visualization (moved below controls and aligned left) */}
+                <div className="basis-full flex justify-start" style={{ marginTop: -2 }}>
                   <div 
                     className="waveform-container"
                     onClick={handleProgressClick}
@@ -1196,6 +1235,9 @@ export default function HUDPanel({
                         const b = parseInt(elementColor.slice(5, 7), 16);
                         return `rgba(${r}, ${g}, ${b}, 0.2)`;
                       })()}`,
+                      width: '100%',
+                      maxWidth: 420,
+                      minWidth: 240,
                     }}
                     onMouseEnter={(e) => {
                       try { sfx.play('hover', 0.35); } catch {}
@@ -1358,10 +1400,10 @@ export default function HUDPanel({
                     </svg>
                     
                     {/* Element icon cursor positioned above progress */}
-                    <div
-                      className="absolute top-0 h-full flex flex-col items-center justify-center pointer-events-none z-10 hud-cursor-transition"
-                      style={{
-                        left: `${(() => {
+                      <div
+                        className="absolute top-0 h-full flex flex-col items-center justify-center pointer-events-none z-10 hud-cursor-transition"
+                        style={{
+                          left: `${(() => {
                           // Prefer live audio element values; fall back to local state
                           const a = liveAudioRef.current;
                           const liveDur = (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
@@ -1393,9 +1435,9 @@ export default function HUDPanel({
                       {/* Element icon at cursor position */}
                       {(() => {
                         // Use CHXNDLER element when in home mode (no specific song selected)
-                        if (!currentId) {
-                          const elementIcon = 'chxndler';
-                          const elementColor = '#19E3FF';
+                          if (!currentId) {
+                            const elementIcon = 'chxndler';
+                            const elementColor = '#19E3FF';
                           
                           // Convert hex to rgba
                           const hexToRgba = (hex, alpha) => {
@@ -1405,20 +1447,22 @@ export default function HUDPanel({
                             return `rgba(${r}, ${g}, ${b}, ${alpha})`;
                           };
                           
-                          return (
-                            <img
-                              src={`/elements/${elementIcon}.png`}
-                              alt="CHXNDLER element"
-                              className="w-8 h-8 brightness-150 saturate-125"
-                              style={{
-                                filter: `drop-shadow(0 0 14px ${hexToRgba(elementColor, 1)}) drop-shadow(0 0 32px ${hexToRgba(elementColor, 0.8)}) drop-shadow(0 0 64px ${hexToRgba(elementColor, 0.35)})`,
-                              }}
-                              onError={(e) => {
-                                e.target.src = '/elements/music.png';
-                              }}
-                            />
-                          );
-                        }
+                            return (
+                              <img
+                                src={`/elements/${elementIcon}.png`}
+                                alt="CHXNDLER element"
+                                className="brightness-150 saturate-125"
+                                style={{
+                                  width: '1.8rem',
+                                  height: '1.8rem',
+                                  filter: `drop-shadow(0 0 14px ${hexToRgba(elementColor, 1)}) drop-shadow(0 0 32px ${hexToRgba(elementColor, 0.8)}) drop-shadow(0 0 64px ${hexToRgba(elementColor, 0.35)})`,
+                                }}
+                                onError={(e) => {
+                                  e.target.src = '/elements/music.png';
+                                }}
+                              />
+                            );
+                          }
                         
                         const currentSong = resolvedSongs.find(s => s.id === active);
                         const elementIcon = currentSong?.icon;
@@ -1433,21 +1477,23 @@ export default function HUDPanel({
                           return `rgba(${r}, ${g}, ${b}, ${alpha})`;
                         };
                         
-                        return (
-                          <img
-                            src={`/elements/${elementIcon}.png`}
-                            alt={`${currentSong?.title || 'Current song'} element`}
-                            className="w-8 h-8 brightness-150 saturate-125"
-                            style={{
-                              filter: `drop-shadow(0 0 14px ${hexToRgba(elementColor, 1)}) drop-shadow(0 0 32px ${hexToRgba(elementColor, 0.8)}) drop-shadow(0 0 64px ${hexToRgba(elementColor, 0.35)})`,
-                            }}
-                            onError={(e) => {
-                              e.target.src = '/elements/music.png';
-                            }}
-                          />
-                        );
-                      })()}
-                    </div>
+                          return (
+                            <img
+                              src={`/elements/${elementIcon}.png`}
+                              alt={`${currentSong?.title || 'Current song'} element`}
+                              className="brightness-150 saturate-125"
+                              style={{
+                                width: '1.8rem',
+                                height: '1.8rem',
+                                filter: `drop-shadow(0 0 14px ${hexToRgba(elementColor, 1)}) drop-shadow(0 0 32px ${hexToRgba(elementColor, 0.8)}) drop-shadow(0 0 64px ${hexToRgba(elementColor, 0.35)})`,
+                              }}
+                              onError={(e) => {
+                                e.target.src = '/elements/music.png';
+                              }}
+                            />
+                          );
+                        })()}
+                      </div>
                   </div>
                 </div>
                 
@@ -1460,9 +1506,9 @@ export default function HUDPanel({
         {/* Song selector positioned outside content opacity container to avoid beamOnly blocking */}
         <div className="absolute" style={{ 
           left: inConsole ? 6 : 8, 
-          bottom: 'calc(80px - 24px)', // Position above media player (80px height - 24px overlap)
+          bottom: 'calc(80px - 24px + 6px)', // Slightly higher above media player
           // Reserve dynamic space to the right so the dropdown never overlaps the cover
-          right: oneLinerRight + 4,
+          right: oneLinerRight + 4, // Slightly wider than current (~8px wider)
           maxWidth: 'none',
           zIndex: 99999,  // Highest z-index to ensure it's above everything
           pointerEvents: 'auto', // Explicitly enable pointer events

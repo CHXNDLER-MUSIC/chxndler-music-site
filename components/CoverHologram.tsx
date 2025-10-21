@@ -312,9 +312,9 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
               </div>
             </div>
             {hasRealCard && (
-              <div className="absolute top-[5px] left-1/2 transform -translate-x-1/2 z-10">
-                <div className="buttons-row" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  {/* ELEMENT button (💠) */}
+              <>
+                {/* Elements button in top-left within the blue border area */}
+                <div className="absolute top-1 left-2 z-10">
                   <button
                     ref={elementBtnRef}
                     type="button"
@@ -350,44 +350,48 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                     <span className="btn-element-glyph" aria-hidden>💠</span>
                     <span className="sr-only">Elements</span>
                   </button>
+                </div>
 
-                  {/* Collect Card (existing) */}
-                  <div className="ocean-cta-wrap relative">
-                    <a
-                      href={getPurchaseUrl(title)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn-ocean"
-                      title="Collect this card"
-                      aria-label={`Collect Card: ${title}`}
-                      data-song={title}
-                      data-slug={title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}
-                      onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
-                      onClick={(e) => {
-                        try { e.preventDefault(); } catch {}
-                        try { sfx.play('click', 0.7); } catch {}
-                        try {
-                          track('collect_card_clicked', { 
-                            song_slug: title?.toLowerCase().replace(/\s+/g, '-'),
-                            card_src: src,
-                            payload: { song_title: title, card_image: src, stripe_url: e.currentTarget.href } 
-                          });
-                        } catch {}
-                        try {
-                          const el = e.currentTarget;
-                          el.classList.remove('is-rippling');
-                          void el.offsetWidth;
-                          el.classList.add('is-rippling');
-                          setTimeout(() => { window.open(el.href, '_blank', 'noopener,noreferrer'); }, 520);
-                        } catch { window.open((e.currentTarget || {}).href, '_blank', 'noopener,noreferrer'); }
-                      }}
-                    >
-                      <span className="btn-label" style={{ whiteSpace: 'nowrap' }}>COLLECT CARD</span>
-                      <span className="btn-ripple" aria-hidden />
-                    </a>
+                {/* Centered Collect Card button */}
+                <div className="absolute top-[5px] left-1/2 transform -translate-x-1/2 z-10">
+                  <div className="buttons-row" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div className="ocean-cta-wrap relative">
+                      <a
+                        href={getPurchaseUrl(title)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-ocean"
+                        title="Collect this card"
+                        aria-label={`Collect Card: ${title}`}
+                        data-song={title}
+                        data-slug={title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}
+                        onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
+                        onClick={(e) => {
+                          try { e.preventDefault(); } catch {}
+                          try { sfx.play('click', 0.7); } catch {}
+                          try {
+                            track('collect_card_clicked', { 
+                              song_slug: title?.toLowerCase().replace(/\s+/g, '-'),
+                              card_src: src,
+                              payload: { song_title: title, card_image: src, stripe_url: e.currentTarget.href } 
+                            });
+                          } catch {}
+                          try {
+                            const el = e.currentTarget;
+                            el.classList.remove('is-rippling');
+                            void el.offsetWidth;
+                            el.classList.add('is-rippling');
+                            setTimeout(() => { window.open(el.href, '_blank', 'noopener,noreferrer'); }, 520);
+                          } catch { window.open((e.currentTarget || {}).href, '_blank', 'noopener,noreferrer'); }
+                        }}
+                      >
+                        <span className="btn-label" style={{ whiteSpace: 'nowrap' }}>COLLECT CARD</span>
+                        <span className="btn-ripple" aria-hidden />
+                      </a>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </>
             )}
             <button
               type="button"
@@ -601,10 +605,8 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
         }
         /* ELEMENT button (💠) styles */
         .btn-element{
-          position:absolute; display:inline-grid; place-items:center;
-          top: 50%; transform: translateY(-50%);
-          right: calc(50% + 96px);
-          width: 32px; height: 32px; border-radius: 50%; font-weight:800; letter-spacing:.06em; font-size: 16px; line-height: 1.1;
+          position: relative; display:inline-grid; place-items:center;
+          width: 30px; height: 30px; border-radius: 50%; font-weight:800; letter-spacing:.06em; font-size: 15px; line-height: 1.1;
           color:#001014; text-transform:none; font-family: InterLocal, system-ui, sans-serif;
           background: radial-gradient(100% 100% at 50% 20%, rgba(200,255,255,0.95), #19E3FF);
           border: 1px solid rgba(255,255,255,.24);
@@ -613,7 +615,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
           overflow:hidden;
         }
         .btn-element:hover{
-          transform: translateY(-50%) scale(1.05);
+          transform: scale(1.05);
           box-shadow:
             0 0 36px rgba(25,227,255,.95),
             0 0 80px rgba(25,227,255,.55),

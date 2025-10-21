@@ -275,7 +275,7 @@ main {
   overflow: hidden;
   /* Prevent HUD from shrinking on small screens */
   min-width: 460px;
-  min-height: 350px;
+  min-height: 480px;
 }
 
 /* Desktop: slightly deeper right-side concave and wider top taper */
@@ -696,6 +696,60 @@ main {
   border-color: rgba(255,255,255,.6);
 }
 .apple-btn-waveform-hud:active{ transform: scale(0.95); }
+
+.apple-btn-unavailable-hud{
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(128, 128, 128, 0.3);
+  border: 1px solid rgba(128, 128, 128, 0.5);
+  color: #888;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: not-allowed;
+  backdrop-filter: blur(4px);
+  flex-shrink: 0;
+}
+
+/* YouTube button in HUD waveform player */
+.youtube-btn-waveform-hud{
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #FF6B6B, #FF0000);
+  border: 3px solid rgba(255,255,255,0.5);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 16px rgba(255,0,0,0.5);
+  position: relative;
+  z-index: 2;
+}
+.youtube-btn-waveform-hud:hover{
+  transform: scale(1.08);
+  box-shadow: 0 6px 22px rgba(255,0,0,0.85);
+  border-color: rgba(255,255,255,.7);
+}
+.youtube-btn-waveform-hud:active{ transform: scale(0.95); }
+
+.youtube-btn-unavailable-hud{
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,0.35);
+  background: rgba(128,128,128,0.35);
+  color: rgba(255,255,255,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+  cursor: not-allowed;
+}
 
 .apple-btn-unavailable-hud{
   width: 28px;
