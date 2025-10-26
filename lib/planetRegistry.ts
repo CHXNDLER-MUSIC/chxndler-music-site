@@ -27,3 +27,7 @@ export function getEntriesByRing(): Map<number, PlanetEntry[]> {
   return byRing;
 }
 
+// Retrieve a single planet entry by id for camera targeting and focus logic
+export function getPlanetEntry(id: string): PlanetEntry | undefined {
+  return entries.get(id);
+}

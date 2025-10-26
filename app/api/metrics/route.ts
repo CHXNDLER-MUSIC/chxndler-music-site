@@ -94,6 +94,15 @@ export async function GET(_req: NextRequest) {
       .select('*', { count: 'exact', head: true })
       .eq('event_type', 'join_aliens_success');
 
+    // CHXNDLER brand button clicks (HUD brand button)
+    const { count: brandClickCount, error: brandErr } = await supabase
+      .from('events')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_type', 'chxndler_button_clicked');
+    if (brandErr) {
+      console.error('[metrics] chxndler button click query failed:', brandErr);
+    }
+
     // Aggregate Spotify/Apple clicks from click_events.element_label
     const socials = { instagram: 0, tiktok: 0, youtube: 0, spotify: 0, apple: 0 } as Record<string, number>;
 
@@ -202,6 +211,7 @@ export async function GET(_req: NextRequest) {
       commsClicks: commsClickCount || 0,
       socials,
       joinPinkClicks: joinPinkClickCount || 0,
+      brandClicks: brandClickCount || 0,
       joinSubmitClicks: joinSubmitCount || 0,
       songPlays: {},
       coverClicks: {},

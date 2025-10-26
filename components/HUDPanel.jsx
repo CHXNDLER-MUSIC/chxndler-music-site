@@ -135,7 +135,7 @@ export default function HUDPanel({
   const innerRef = useRef(null);
   const planetRef = useRef(null);
   const playerRef = useRef(null);
-  const [planetBottom, setPlanetBottom] = useState(88);
+  const [planetBottom, setPlanetBottom] = useState(56);
   // Dynamic spacing for song selector so it doesn't overlap the cover
   const coverRef = useRef(null);
   const [oneLinerRight, setOneLinerRight] = useState(inConsole ? 108 : 140);
@@ -165,6 +165,37 @@ export default function HUDPanel({
   const [brandContent, setBrandContent] = useState('');
   const brandScrollRef = useRef(null);
   const brandLastScrollAtRef = useRef(0);
+
+  // Storefront (Gem) popover state
+  const [showStorePopover, setShowStorePopover] = useState(false);
+  const storeBtnRef = useRef(null);
+  const [storePopoverPos, setStorePopoverPos] = useState(null);
+  const [storeIndex, setStoreIndex] = useState(0);
+  const storeScrollRef = useRef(null);
+  const storeLastScrollAtRef = useRef(0);
+  const products = [
+    {
+      id: 'sticker-pack',
+      title: 'Sticker Pack',
+      price: '$5',
+      image: '/elements/heart.png',
+      description: 'Holographic heart stickers. Bright, durable, and vibey.'
+    },
+    {
+      id: 'tee-classic',
+      title: 'CHXNDLER Tee',
+      price: '$28',
+      image: '/card/chxndler.png',
+      description: 'Soft black tee with CHXNDLER logo. Unisex fit, super comfy.'
+    },
+    {
+      id: 'poster-a3',
+      title: 'A3 Poster',
+      price: '$15',
+      image: '/cover/chxndler.png',
+      description: 'High-quality print. Perfect for studios and bedrooms.'
+    }
+  ];
 
   async function openLyricsPopover(slug){
     try { sfx.play('click', 0.4); } catch {}
@@ -288,6 +319,74 @@ export default function HUDPanel({
       document.removeEventListener('keydown', onKey);
     };
   }, [showBrandPopover]);
+
+  // Open Store (Gem) popover anchored to the gem button
+  const openStorePopover = async () => {
+    try { sfx.play('click', 0.4); } catch {}
+    try {
+      const r = storeBtnRef.current?.getBoundingClientRect?.();
+      const wrapper = innerRef.current?.parentElement || null; // outer HUD blue display wrapper (padding box)
+      if (wrapper && typeof window !== 'undefined') {
+        const rect = wrapper.getBoundingClientRect();
+        const cs = window.getComputedStyle(wrapper);
+        const pl = parseFloat(cs.paddingLeft || '0') || 0;
+        const pr = parseFloat(cs.paddingRight || '0') || 0;
+        const leftEdge = rect.left + pl;
+        const rightEdge = rect.right - pr;
+        const width = Math.max(0, rightEdge - leftEdge);
+        const top = r ? (r.bottom + 8) : (rect.top + 8);
+        setStorePopoverPos({ left: leftEdge, top, width });
+      } else if (r) {
+        setStorePopoverPos({ left: r.left + r.width/2, top: r.bottom + 8 });
+      }
+    } catch {}
+    setShowStorePopover(true);
+  };
+
+  // Close Store popover on outside click / Escape
+  useEffect(() => {
+    if (!showStorePopover) return;
+    const onDocDown = (e) => {
+      const t = e.target;
+      const withinBtn = storeBtnRef.current && t && storeBtnRef.current.contains(t);
+      const dialog = document.querySelector('[aria-label="Storefront"]');
+      const withinDialog = dialog && t && dialog.contains(t);
+      if (!withinBtn && !withinDialog) { try { sfx.play('close', 0.4); } catch {}; setShowStorePopover(false); }
+    };
+    const onKey = (e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowStorePopover(false); } };
+    document.addEventListener('mousedown', onDocDown);
+    document.addEventListener('touchstart', onDocDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocDown);
+      document.removeEventListener('touchstart', onDocDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [showStorePopover]);
+
+  // Recalculate store popover alignment to blue display on resize while open
+  useEffect(() => {
+    if (!showStorePopover) return;
+    const recalc = () => {
+      try {
+        const r = storeBtnRef.current?.getBoundingClientRect?.();
+        const wrapper = innerRef.current?.parentElement || null;
+        if (wrapper && typeof window !== 'undefined') {
+          const rect = wrapper.getBoundingClientRect();
+          const cs = window.getComputedStyle(wrapper);
+          const pl = parseFloat(cs.paddingLeft || '0') || 0;
+          const pr = parseFloat(cs.paddingRight || '0') || 0;
+          const leftEdge = rect.left + pl;
+          const rightEdge = rect.right - pr;
+          const width = Math.max(0, rightEdge - leftEdge);
+          const top = r ? (r.bottom + 8) : (rect.top + 8);
+          setStorePopoverPos({ left: leftEdge, top, width });
+        }
+      } catch {}
+    };
+    window.addEventListener('resize', recalc);
+    return () => window.removeEventListener('resize', recalc);
+  }, [showStorePopover]);
 
   // Recalculate brand popover alignment to blue display on resize while open
   useEffect(() => {
@@ -785,7 +884,8 @@ export default function HUDPanel({
           const ir = inner.getBoundingClientRect();
           const pr = player.getBoundingClientRect();
           // Reduce the gap so the 3D display extends to the media player
-          const gap = 0; // px space between planet and player
+          // Pull the planet system closer to the player (less bottom buffer)
+          const gap = -28; // px space between planet and player (negative = overlap slightly)
           const b = Math.max(0, ir.bottom - pr.top + gap);
           // Only update if there's a significant change to prevent micro-adjustments
           setPlanetBottom(prev => Math.abs(prev - b) > 2 ? b : prev);
@@ -905,15 +1005,15 @@ export default function HUDPanel({
           
           {/* Cover section at bottom right corner - using CoverHologram for pop-out functionality */}
           <div ref={coverRef} className="absolute" style={{ 
-            // Nudge slightly higher and to the left
+            // Nudge slightly higher and align to the right edge
             bottom: inConsole ? -6 : -18, 
-            right: inConsole ? -4 : -12, 
+            right: inConsole ? 0 : 0, 
             width: 'auto', 
             display: 'flex', 
             flexDirection: 'column',
             alignItems: 'flex-end',
-            // Reduce gap so the button sits closer to the cover (visibly lower)
-            gap: 2,
+            // Slightly larger gap so the button isn't attached to the cover
+            gap: 4,
             justifyContent: 'flex-end' 
           }}>
             {/* Brand button above the cover art */}
@@ -924,22 +1024,22 @@ export default function HUDPanel({
               className="brand-cover-btn"
               style={{
                 pointerEvents: joinAlienOpen ? 'none' : 'auto',
-                // Slightly taller brand button
-                // Match song dropdown total height (~44px incl. borders): set content height to 40px
-                height: 40,
+                // Slightly reduce height to feel tighter
+                height: 44,
                 // Inline-flex to vertically center text within fixed height
                 display: 'inline-flex',
                 alignItems: 'center',
-                // Match cover width (size=108) including 2px borders on both sides
-                width: 112,
+                justifyContent: 'center',
+                textAlign: 'center',
+                // Let width size to content; tighten padding to narrow button
                 boxSizing: 'border-box',
-                // Reduce padding so overall width matches cover art
-                padding: '0 4px 0 5px',
-                // Position tweak: move down a bit and slightly left
-                marginTop: 0,
-                // Pull button closer to cover (further down)
-                marginBottom: -2,
-                marginRight: 6,
+                // Tighter horizontal padding to reduce width
+                padding: '0 3px 0 3px',
+                // Pull the button up a touch so the top border moves slightly higher
+                marginTop: -7,
+                // Add a small space below the button so it doesn't attach to the cover
+                marginBottom: 0,
+                marginRight: 2,
                 borderRadius: 12,
                 border: '2px solid rgba(25,227,255,0.80)',
                 background: 'rgba(25,227,255,0.15)',
@@ -947,9 +1047,11 @@ export default function HUDPanel({
                 fontWeight: 700,
                 letterSpacing: '0.03em',
                 textTransform: 'uppercase',
-                // Slightly smaller text to fit within width
-                fontSize: 12,
+                // Slightly smaller font to further reduce width
+                fontSize: 14,
                 lineHeight: 1,
+                // Tighter, stronger glow close to the letters
+                textShadow: '0 0 6px rgba(242,239,29,1), 0 0 10px rgba(242,239,29,0.95), 0 0 16px rgba(242,239,29,0.8)',
                 backdropFilter: 'blur(6px)',
                 boxShadow: '0 0 20px rgba(25,227,255,0.35)'
               }}
@@ -959,11 +1061,18 @@ export default function HUDPanel({
                 try { const a = hoverCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.35; a.play().catch(()=>{}); } } catch {}
               }}
               onClick={() => { 
+                // Track brand button click to server analytics
+                try {
+                  const slug = (!currentId ? 'chxndler_home' : (track?.slug || active || 'unknown'));
+                  const title = (!currentId ? 'CHXNDLER Home' : (track?.title || 'Unknown'));
+                  trackAnalytics('chxndler_button_clicked', { song_slug: String(slug || ''), payload: { song_title: title, location: 'hud_brand_button' } });
+                } catch {}
                 if (showBrandPopover) { try { sfx.play('close', 0.4); } catch {}; setShowBrandPopover(false); return; }
                 openBrandPopover();
               }}
               data-id="brand"
             >
+              CHXNDLER
             </button>
             {(() => {
               const src = (!currentId ? DEFAULT_COVER : (track?.cover || DEFAULT_COVER));
@@ -984,7 +1093,7 @@ export default function HUDPanel({
                     title={title} 
                     slug={trackingSong}
                     inline={true} 
-                    size={108}
+                    size={92}
                   />
                 </div>
               );
@@ -994,13 +1103,15 @@ export default function HUDPanel({
           {/* Waveform Media Player - positioned below dropdown with proper spacing */}
           <div ref={playerRef} className="absolute" style={{ 
             left: inConsole ? 0 : 2, // Shift very slightly more to the left
-            right: oneLinerRight, // Extend further to the right
-            // Adjust height to move bottom edge up while keeping the top/buttons in place
-            height: '45px',
-            // Raise player so its bottom border meets the blue display edge
-            bottom: 'var(--hud-player-bottom-offset, 12px)'
+            right: oneLinerRight - 4, // Extend 4px further to the right
+            // Adjust height to allow internal bottom buffer
+            height: '60px',
+            // Keep player snug to the blue display; slightly lower
+            bottom: 'var(--hud-player-bottom-offset, 0px)',
+            // Nudge the entire container down a bit more
+            transform: 'translateY(6px)'
           }}>
-            <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '10px' }}>
+            <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '10px', paddingBottom: 6 }}>
               <div className="flex flex-wrap items-start gap-3 pt-0 pr-2 pl-2 pb-0">
                 <div className="controls-row flex items-center gap-4 w-full" style={{ paddingTop: 4 }}>
                 <button 
@@ -1144,6 +1255,51 @@ export default function HUDPanel({
                   }
                 })()}
 
+                {/* YouTube button moved to Gem's original position */}
+                {(() => {
+                  const isHome = !currentId;
+                  const currentSong = resolvedSongs.find(s => s.id === active);
+                  if (isHome) {
+                    return (
+                      <div className="youtube-btn-unavailable-hud" title="YouTube not available on homepage" style={{ marginTop: 1 }}>
+                        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                          <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.6" opacity="0.55" />
+                          <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
+                        </svg>
+                      </div>
+                    );
+                  }
+                  const slug = currentSong?.id;
+                  if (!slug) return null;
+                  return currentSong?.youtube ? (
+                    <a
+                      href={currentSong.youtube}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="youtube-btn-waveform-hud"
+                      style={{ marginTop: 1 }}
+                      title={`Open ${currentSong.title} on YouTube`}
+                      aria-label={`Open ${currentSong.title} on YouTube`}
+                      data-song={currentSong.title}
+                      data-slug={currentSong.id}
+                      data-id="yt"
+                      onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                    >
+                      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                        <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                        <path d="M10 8l6 4-6 4z" fill="currentColor" />
+                      </svg>
+                    </a>
+                  ) : (
+                    <div className="youtube-btn-unavailable-hud" title={`No YouTube link available for ${currentSong?.title || 'current track'}`} style={{ marginTop: 1 }}>
+                      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                        <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.6" opacity="0.55" />
+                        <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
+                      </svg>
+                    </div>
+                  );
+                })()}
+
                 {/* Volume control next to Spotify icon */}
                 <div 
                   className="hud-volume"
@@ -1261,33 +1417,33 @@ export default function HUDPanel({
                           <rect x="13.6" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
                         </svg>
                       </button>
-                      {currentSong?.youtube ? (
-                        <a
-                          href={currentSong.youtube}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="youtube-btn-waveform-hud"
-                          style={{ marginTop: 1 }}
-                          title={`Open ${currentSong.title} on YouTube`}
-                          aria-label={`Open ${currentSong.title} on YouTube`}
-                          data-song={currentSong.title}
-                          data-slug={currentSong.id}
-                          data-id="yt"
-                          onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                      {/* Gem (store) button moved to YouTube's original position */}
+                      <button
+                        type="button"
+                        ref={storeBtnRef}
+                        className="gem-btn-waveform-hud"
+                        style={{ marginTop: 1 }}
+                        title="Open Store"
+                        aria-haspopup="dialog"
+                        aria-expanded={showStorePopover}
+                        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                        onClick={() => {
+                          if (showStorePopover) { try { sfx.play('close', 0.4); } catch {}; setShowStorePopover(false); return; }
+                          openStorePopover();
+                        }}
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="16"
+                          height="16"
+                          fill="currentColor"
+                          role="img"
+                          aria-label="Gem"
                         >
-                          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                            <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.6" />
-                            <path d="M10 8l6 4-6 4z" fill="currentColor" />
-                          </svg>
-                        </a>
-                      ) : (
-                        <div className="youtube-btn-unavailable-hud" title={`No YouTube link available for ${currentSong?.title || 'current track'}`} style={{ marginTop: 1 }}>
-                          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                            <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.6" opacity="0.55" />
-                            <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
-                          </svg>
-                        </div>
-                      )}
+                          <path d="M12 2 L19 8 L12 22 L5 8 Z"/>
+                          <path d="M12 22 L12 8 M5 8 L19 8 M7.2 8 L12 2 L16.8 8" stroke="currentColor" strokeWidth="1.4" fill="none"/>
+                        </svg>
+                      </button>
                     </>
                   );
                 })()}
@@ -1354,6 +1510,116 @@ export default function HUDPanel({
                   document.body
                 ) : null}
 
+                {typeof document !== 'undefined' && showStorePopover && storePopoverPos ? require('react-dom').createPortal(
+                  <div
+                    role="dialog"
+                    aria-label="Storefront"
+                    className="lyrics-popover-hud"
+                    ref={storeScrollRef}
+                    style={{
+                      position: 'fixed',
+                      left: (storePopoverPos && storePopoverPos.left) || 0,
+                      top: (storePopoverPos && storePopoverPos.top) || 0,
+                      transform: (storePopoverPos && storePopoverPos.width) ? 'none' : 'translateX(-50%)',
+                      padding: '10px 12px 12px 12px', borderRadius: 14,
+                      background: 'rgba(20,3,14,0.9)',
+                      border: '1px solid rgba(252,84,175,0.55)',
+                      boxShadow: '0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(252,84,175,0.45)',
+                      backdropFilter: 'blur(8px)',
+                      color: '#FFD9EF',
+                      zIndex: 2147483647,
+                      width: (storePopoverPos && storePopoverPos.width) ? storePopoverPos.width : 'min(92vw, 520px)',
+                      maxHeight: '75vh',
+                      overflowY: 'auto',
+                      WebkitOverflowScrolling: 'touch',
+                      overscrollBehavior: 'contain'
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowStorePopover(false); }
+                      if (e.key === 'ArrowRight') { setStoreIndex((i) => (i + 1) % products.length); try { sfx.play('hover', 0.3); } catch {} }
+                      if (e.key === 'ArrowLeft') { setStoreIndex((i) => (i - 1 + products.length) % products.length); try { sfx.play('hover', 0.3); } catch {} }
+                    }}
+                  >
+                    {(() => {
+                      const item = products[Math.max(0, Math.min(products.length - 1, storeIndex))] || products[0];
+                      return (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                            <div style={{ fontWeight: 800, letterSpacing: '0.04em', color: '#FFC1E6', textShadow: '0 0 12px rgba(252,84,175,0.9), 0 0 24px rgba(252,84,175,0.55)' }}>
+                              Store
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <button
+                                aria-label="Previous item"
+                                onClick={() => { setStoreIndex((i) => (i - 1 + products.length) % products.length); try { sfx.play('hover', 0.35); } catch {} }}
+                                style={{
+                                  width: 28, height: 28, borderRadius: 999,
+                                  background: 'linear-gradient(135deg,#ff76c8,#ff3ea5)',
+                                  border: '1px solid rgba(255,255,255,0.5)', color: '#fff',
+                                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                  boxShadow: '0 4px 16px rgba(255, 62, 165, 0.45)'
+                                }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M15 6l-6 6 6 6"/></svg>
+                              </button>
+                              <button
+                                aria-label="Next item"
+                                onClick={() => { setStoreIndex((i) => (i + 1) % products.length); try { sfx.play('hover', 0.35); } catch {} }}
+                                style={{
+                                  width: 28, height: 28, borderRadius: 999,
+                                  background: 'linear-gradient(135deg,#ff76c8,#ff3ea5)',
+                                  border: '1px solid rgba(255,255,255,0.5)', color: '#fff',
+                                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                  boxShadow: '0 4px 16px rgba(255, 62, 165, 0.45)'
+                                }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 6l6 6-6 6"/></svg>
+                              </button>
+                              <button
+                                aria-label="Close store"
+                                onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowStorePopover(false); }}
+                                style={{
+                                  width: 28, height: 28, borderRadius: 999,
+                                  background: 'rgba(0,0,0,0.4)',
+                                  border: '1px solid rgba(252,84,175,0.45)', color: '#FFC1E6',
+                                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+                                }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6l12 12M6 18L18 6"/></svg>
+                              </button>
+                            </div>
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '96px 1fr', gap: 12, alignItems: 'center' }}>
+                            <div>
+                              <img src={item.image} alt={item.title} style={{ display: 'block', width: 96, height: 96, objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(252,84,175,0.35)', boxShadow: '0 6px 18px rgba(0,0,0,0.35)' }} />
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 16, fontWeight: 800, color: '#FFD9EF', textShadow: '0 0 10px rgba(252,84,175,0.9)' }}>{item.title}</div>
+                              <div style={{ fontSize: 14, opacity: 0.9, marginTop: 4 }}>{item.description}</div>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+                                <div style={{ fontSize: 15, fontWeight: 700, color: '#FFB9E1' }}>{item.price}</div>
+                                <button
+                                  onClick={() => { try { sfx.play('join', 0.75); } catch {} }}
+                                  style={{
+                                    padding: '6px 10px', borderRadius: 999,
+                                    background: 'linear-gradient(135deg,#ff3ea5,#ff76c8)',
+                                    border: '1px solid rgba(255,255,255,0.6)', color: '#fff', fontWeight: 700,
+                                    boxShadow: '0 6px 18px rgba(255, 62, 165, 0.45)'
+                                  }}
+                                >
+                                  Add to Cart
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                          {/* Removed helper hint per request */}
+                        </div>
+                      );
+                    })()}
+                  </div>,
+                  document.body
+                ) : null}
+
                 {typeof document !== 'undefined' && showLyricsPopover && lyricsPopoverPos ? require('react-dom').createPortal(
                   <div
                     role="dialog"
@@ -1401,7 +1667,8 @@ export default function HUDPanel({
                       left: (brandPopoverPos && brandPopoverPos.left) || 0,
                       top: (brandPopoverPos && brandPopoverPos.top) || 0,
                       transform: (brandPopoverPos && brandPopoverPos.width) ? 'none' : 'translateX(-50%)',
-                      padding: '12px 14px 16px 14px', borderRadius: 14,
+                      // Tighter top and bottom padding to pull content higher and tighten bottom
+                      padding: '8px 14px 10px 14px', borderRadius: 14,
                       background: 'rgba(3,10,20,0.9)',
                       border: '1px solid rgba(242,239,29,0.55)',
                       boxShadow: '0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(242,239,29,0.45)',
@@ -1416,12 +1683,9 @@ export default function HUDPanel({
                     }}
                     onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowBrandPopover(false); } }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-                      <img src="/logo/CHXNDLER_Logo.png" alt="CHXNDLER" style={{ height: 32, width: 'auto', filter: 'drop-shadow(0 0 10px rgba(242,239,29,0.8))' }} />
-                      <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>CHXNDLER</div>
-                    </div>
-                    {/* Brand photo at top before content */}
-                    <div style={{ margin: '8px 0 10px 0' }}>
+                    {/* Removed top CHXNDLER logo per request */}
+                    {/* Brand photo near the top; reduce top margin to move higher */}
+                    <div style={{ margin: '0 0 8px 0' }}>
                       <img
                         src="/chxndler-picture.png"
                         alt="CHXNDLER"
@@ -1470,6 +1734,8 @@ export default function HUDPanel({
                       width: '100%',
                       maxWidth: 420,
                       minWidth: 240,
+                      // Create internal gap below waveform within blue player by using margin
+                      marginBottom: 6,
                     }}
                     onMouseEnter={(e) => {
                       try { sfx.play('hover', 0.35); } catch {}
@@ -1738,7 +2004,7 @@ export default function HUDPanel({
         {/* Song selector positioned outside content opacity container to avoid beamOnly blocking */}
         <div className="absolute" style={{ 
           left: inConsole ? 6 : 8, 
-          bottom: 'calc(80px - 24px + 56px)', // Move dropdown higher (+24px)
+          bottom: 'calc(80px - 24px + 44px)', // Move dropdown very slightly lower (-4px)
           // Reserve dynamic space to the right so the dropdown never overlaps the cover
           right: oneLinerRight + 4, // Slightly wider than current (~8px wider)
           maxWidth: 'none',

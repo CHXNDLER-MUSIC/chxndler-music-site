@@ -1318,7 +1318,8 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
     // Heart equation parameters - optimized for planet-like roundness
     const scale = radius * 0.5;
     const thickness = scale * 1.2; // More volume for planet-like appearance
-    const heartness = 0.7; // Balanced between heart shape and roundness
+    // More circular to resemble a planet
+    const heartness = 0.5; // Balanced toward spherical
     
     // Generate vertices for solid heart shape using layered approach
     const layers = 24; // Good detail for planet
@@ -1349,12 +1350,14 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
           dir.y = 0;
         }
         
-        const targetCircleRadius = scale * 0.85 * heartScale;
+        // Push toward a more circular outline
+        const targetCircleRadius = scale * 0.95 * heartScale;
         const circleX = dir.x * targetCircleRadius;
         const circleY = dir.y * targetCircleRadius;
         
         // More circular blend for planet-like appearance
-        const roundness = 0.4 / heartness; // Significant rounding
+        // Stronger rounding (clamped)
+        const roundness = Math.min(0.95, 0.65 / heartness);
         const baseX = heartX * heartScale;
         const baseY = heartY * heartScale;
         const x = baseX * (1 - roundness) + circleX * roundness;
@@ -1762,6 +1765,13 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
     renderer.setClearColor(0x000000, 0);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(width, height);
+    // Boost brightness and use correct color space/energy (slightly reduced to avoid washout)
+    // @ts-ignore three versions differ
+    renderer.toneMappingExposure = 2.0;
+    // @ts-ignore
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    // @ts-ignore
+    renderer.physicallyCorrectLights = true;
     mount.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
@@ -1916,11 +1926,13 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
         // Drive planet shader uniforms
         try {
           const u: any = (centralPlanet.mesh.material as any).uniforms;
+          if (u && u.uTime) { u.uTime.value = t; }
           
           // Update atmosphere and weather for central planet
           centralPlanet.mesh.children.forEach(child => {
             if (child instanceof THREE.Mesh && child.material) {
               const childU: any = (child.material as any).uniforms;
+              if (childU && childU.uTime) { childU.uTime.value = t; }
               if (childU && childU.uGlow) {
                 childU.uGlow.value += (((hovered ? 1.8 : 1.2)) - childU.uGlow.value) * 0.18;
               }
@@ -1967,10 +1979,9 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
           finalVisible: planetsVisible && effectiveMode !== 'hidden' && !shouldHide 
         });
         
-        // Hide non-focused planets when a song is selected.
-        // Honor global planetsVisible even in homepage mode to avoid flicker during selection.
-        // Also respect 'hidden' mode during warp.
-        const finalVisible = (planetsVisible && effectiveMode !== 'hidden' && !shouldHide);
+        // Show all planets on homepage overview regardless of store hide state.
+        // Otherwise, honor global visibility and focus rules.
+        const finalVisible = effectiveShowAll ? true : (planetsVisible && effectiveMode !== 'hidden' && !shouldHide);
         s.mesh.visible = finalVisible;
 
         console.log(`🌍 Planet ${s.id} FINAL visibility decision:`, {
@@ -2344,18 +2355,101 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
       // Single bright central heart planet when using raw system (only when showing all planets)
       if (effectiveShowAll) {
         try {
-          const heartGeo = createHeartGeometry(2.0); // Smaller size
-          // Single bright material with emissive properties
-          const heartMat = new THREE.MeshBasicMaterial({ 
-            color: new THREE.Color('#FC54AF').multiplyScalar(3.0), // Very bright base color
-            emissive: new THREE.Color('#FC54AF').multiplyScalar(0.5) // Strong emissive glow
-          });
+          const heartGeo = createHeartGeometry(2.0);
+
+          // Textured glowing shader for the heart planet (raw three.js)
+          const heartUniforms = {
+            uTime: { value: 0 },
+            // Pink ramp
+            uColorCool: { value: new THREE.Color('#7A0F46') },
+            uColorMid:  { value: new THREE.Color('#FC54AF') },
+            uColorHot:  { value: new THREE.Color('#FFB1DC') },
+            uColorCore: { value: new THREE.Color('#FFE9F6') },
+            uScale: { value: 1.6 },
+            uDetail: { value: 3.5 },
+            uGranularity: { value: 8.0 },
+            uEmissiveBoost: { value: 3.0 },
+            uRimBoost: { value: 1.7 },
+            uNormalStrength: { value: 0.65 },
+          };
+          const heartVS = `
+            uniform float uTime;
+            varying vec3 vWorldPosition;
+            varying vec3 vNormalW;
+            varying vec3 vViewDir;
+            void main(){
+              vNormalW = normalize(normalMatrix * normal);
+              vec4 wp = modelMatrix * vec4(position, 1.0);
+              vWorldPosition = wp.xyz;
+              vViewDir = normalize(cameraPosition - vWorldPosition);
+              gl_Position = projectionMatrix * viewMatrix * wp;
+            }
+          `;
+          const heartFS = `
+            precision highp float;
+            uniform float uTime;
+            uniform vec3 uColorCool, uColorMid, uColorHot, uColorCore;
+            uniform float uScale, uDetail, uGranularity, uEmissiveBoost, uRimBoost, uNormalStrength;
+            varying vec3 vWorldPosition; varying vec3 vNormalW; varying vec3 vViewDir;
+            float hash3(vec3 p){ return fract(sin(dot(p, vec3(127.1,311.7, 74.7))) * 43758.5453123); }
+            float noise3(vec3 x){ vec3 i=floor(x); vec3 f=fract(x);
+              float n000=hash3(i+vec3(0.0)); float n100=hash3(i+vec3(1.0,0.0,0.0));
+              float n010=hash3(i+vec3(0.0,1.0,0.0)); float n110=hash3(i+vec3(1.0,1.0,0.0));
+              float n001=hash3(i+vec3(0.0,0.0,1.0)); float n101=hash3(i+vec3(1.0,0.0,1.0));
+              float n011=hash3(i+vec3(0.0,1.0,1.0)); float n111=hash3(i+vec3(1.0,1.0,1.0));
+              vec3 u=f*f*(3.0-2.0*f);
+              float nx00=mix(n000,n100,u.x); float nx10=mix(n010,n110,u.x);
+              float nx01=mix(n001,n101,u.x); float nx11=mix(n011,n111,u.x);
+              float nxy0=mix(nx00,nx10,u.y); float nxy1=mix(nx01,nx11,u.y);
+              return mix(nxy0,nxy1,u.z);
+            }
+            float fbm3(vec3 p){ float v=0.0; float a=0.55; for(int i=0;i<6;i++){ v+=a*noise3(p); p*=2.0; a*=0.5;} return v; }
+            float ridge3(vec3 p){ float n=fbm3(p); return 1.0-abs(2.0*n-1.0); }
+            vec3 swirl(vec3 p, float t){ float a=0.6*sin(t*0.25)+0.4*sin(t*0.73); float s=sin(a), c=cos(a);
+              mat3 R=mat3(c,0.0,s, 0.0,1.0,0.0, -s,0.0,c); return R*p; }
+            vec3 ramp(float x){ float t1=smoothstep(0.10,0.45,x); float t2=smoothstep(0.40,0.75,x); float t3=smoothstep(0.70,0.98,x);
+              vec3 c1=mix(uColorCool,uColorMid,t1); vec3 c2=mix(uColorMid,uColorHot,t2); vec3 c3=mix(uColorHot,uColorCore,t3); return mix(mix(c1,c2,t2), c3, t3);
+            }
+            void main(){
+              vec3 N=normalize(vNormalW); vec3 V=normalize(vViewDir); vec3 L=normalize(vec3(0.5,0.8,0.35));
+              vec3 P=swirl(vWorldPosition*uScale, uTime*0.9);
+              float base=fbm3(P+vec3(0.0,0.0,uTime*0.08));
+              float cells=ridge3(P*(1.5+uDetail)-vec3(0.0,0.0,uTime*0.06));
+              float micro=fbm3(P*uGranularity+vec3(uTime*0.2,0.0,-uTime*0.23));
+              float field=clamp(mix(mix(base,cells,0.55), micro, 0.35), 0.0, 1.0);
+              float flares=smoothstep(0.92,0.98, ridge3(P*3.3+7.0));
+              float e=0.02; float n0=fbm3(P); float nx=fbm3(P+vec3(e,0.0,0.0))-n0; float ny=fbm3(P+vec3(0.0,e,0.0))-n0; float nz=fbm3(P+vec3(0.0,0.0,e))-n0;
+              vec3 grad=normalize(vec3(nx,ny,nz)); vec3 Np=normalize(N + grad*(uNormalStrength*1.25));
+              vec3 col=ramp(field); col += vec3(1.0)*flares*0.5;
+              float dif=max(dot(Np,L),0.0); vec3 H=normalize(L+V); float spec=pow(max(dot(Np,H),0.0), 48.0)*0.7; float night=smoothstep(0.0,0.6,dif);
+              vec3 lit = col*(0.28 + 0.95*night) + vec3(1.0)*spec;
+              float fres=pow(1.0-abs(dot(N,V)), 1.35);
+              lit *= (1.0 + uEmissiveBoost*(0.65 + 0.35*sin(uTime*1.7)));
+              lit += lit*fres*uRimBoost;
+              gl_FragColor = vec4(lit, 1.0);
+            }
+          `;
+          const heartMat = new THREE.ShaderMaterial({ uniforms: heartUniforms, vertexShader: heartVS, fragmentShader: heartFS, transparent: false, depthWrite: true });
           const heartMesh = new THREE.Mesh(heartGeo, heartMat);
           heartMesh.position.set(0, 0, 0);
           heartMesh.rotation.z = Math.PI; // Ensure heart point faces downward
-          heartMesh.scale.set(0.8, 0.8, 0.8); // Make it smaller
+          heartMesh.scale.set(0.9, 0.9, 0.9);
           heartMesh.visible = true;
           sys.add(heartMesh);
+
+          // Atmosphere corona
+          const atmUniforms = { uTime: { value: 0 }, uColor: { value: new THREE.Color('#FC54AF') }, uStrength: { value: 28.0 } };
+          const atmVS = `varying vec3 vN; varying vec3 vP; void main(){ vN=normalize(normalMatrix*normal); vec4 wp=modelMatrix*vec4(position,1.0); vP=wp.xyz; gl_Position=projectionMatrix*viewMatrix*wp; }`;
+          const atmFS = `uniform float uTime; uniform vec3 uColor; uniform float uStrength; varying vec3 vN; varying vec3 vP; void main(){ vec3 V=normalize(cameraPosition - vP); float fres=1.0-abs(dot(normalize(vN),V)); fres=pow(fres,2.0); float pulse=sin(uTime*2.0)*0.45+1.25; float heartPulse=sin(uTime*3.0)*0.35+1.15; float rim=pow(fres,1.25); vec3 color=uColor*520.0*rim*pulse*heartPulse*uStrength; float a=rim; gl_FragColor=vec4(color,a);} `;
+          const atmMat = new THREE.ShaderMaterial({ uniforms: atmUniforms as any, vertexShader: atmVS, fragmentShader: atmFS, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: true, side: THREE.BackSide });
+          const atmMesh = new THREE.Mesh(heartGeo, atmMat);
+          atmMesh.scale.set(1.8, 1.8, 1.8);
+          heartMesh.add(atmMesh);
+
+          // Outer soft glow
+          const outerGlow = new THREE.Mesh(heartGeo, new THREE.MeshBasicMaterial({ color: '#FC54AF', transparent: true, opacity: 0.4, depthWrite: false, depthTest: true, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+          outerGlow.scale.set(2.4, 2.4, 2.4);
+          heartMesh.add(outerGlow);
 
           centralPlanetRef.current = { id: 'heart', mesh: heartMesh, originalSat: null };
         } catch {}

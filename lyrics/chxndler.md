@@ -1,1 +1,1 @@
-Long ago CHXNDLER arrived on Earth in search of a new place to call home. Raised by a family in Baltimore, CHXNDLER observed humanity for all its beauty and flaws. On a journey to find love in this world, CHXNDLER discovers what it means to be human. 
+Long ago CHXNDLER arrived on Earth in search of a new place to call home. Raised by a family in America, CHXNDLER observed humanity for all its beauty and flaws. On a journey to find love in this world, CHXNDLER discovers what it means to be human. 

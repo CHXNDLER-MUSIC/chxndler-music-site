@@ -201,7 +201,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
   if (!items.length) return null;
 
   return (
-    <div ref={rootRef} className="w-full relative z-[99999]" style={{ pointerEvents: 'auto' }}>
+    <div ref={rootRef} className="w-full relative z-[99999] mt-3" style={{ pointerEvents: 'auto' }}>
       {/* Trigger */}
       <button
         type="button"
@@ -216,7 +216,15 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
         className="songs-trigger w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-[10px] border-2 border-[#19E3FF]/80 bg-cyan-400/10 backdrop-blur-xl shadow-[0_0_18px_rgba(25,227,255,0.35)] focus:outline-none focus:ring-2 focus:ring-cyan-400"
       >
         <span className="flex items-center gap-2 min-w-0">
-          <span className="songs-icon">
+          <span
+            className="songs-icon"
+            style={!currentId ? {
+              // Bright white glow for music.png only on homepage
+              filter: 'brightness(2.0) contrast(1.12) drop-shadow(0 0 14px rgba(255,255,255,1)) drop-shadow(0 0 36px rgba(255,255,255,0.95)) drop-shadow(0 0 80px rgba(255,255,255,0.85))',
+              mixBlendMode: 'normal',
+              animation: 'none'
+            } : undefined}
+          >
             <OptimizedElementIcon 
               name={!currentId ? "music" : (current?.icon || "music")} 
               alt={!currentId ? "Music" : (current?.title || "Music")} 
@@ -225,7 +233,16 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
               height={28} 
             />
           </span>
-          <span className="songs-label truncate text-[16px] font-semibold tracking-wide">{!currentId ? 'MUSIC' : (current?.title || 'SONGS')}</span>
+          <span
+            className="songs-label truncate text-[16px] font-semibold tracking-wide"
+            style={!currentId ? {
+              color: '#ffffff',
+              // Tight, close white glow around the letters (no halo)
+              textShadow: '0 0 2px rgba(255,255,255,0.95), 0 0 6px rgba(255,255,255,0.65)'
+            } : undefined}
+          >
+            {!currentId ? 'MUSIC' : (current?.title || 'SONGS')}
+          </span>
         </span>
         <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden className="opacity-80 text-[#9EEBFF]"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
       </button>

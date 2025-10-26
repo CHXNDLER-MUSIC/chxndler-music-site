@@ -15,6 +15,7 @@ interface MusicStats {
   coverClicks: Array<{ song: string; count: number; title?: string }>;
   cardClicks: Array<{ song: string; count: number; title?: string }>;
   collectCardClicks: Array<{ song: string; count: number; title?: string }>;
+  youtubeSongClicks?: Array<{ song: string; count: number; title?: string }>;
   spotifySongClicks?: Array<{ song: string; count: number; title?: string }>;
   appleSongClicks?: Array<{ song: string; count: number; title?: string }>;
   lyricsSongClicks?: Array<{ song: string; count: number; title?: string }>;
@@ -36,6 +37,7 @@ type Metrics = {
   joinSubmitClicks: number;
   songPlays: Record<string, { count: number; title?: string }>;
   coverClicks: Record<string, { count: number; title?: string }>;
+  youtubeSongClicks?: Record<string, { count: number; title?: string }>;
   spotifySongClicks?: Record<string, { count: number; title?: string }>;
   appleSongClicks?: Record<string, { count: number; title?: string }>;
   lyricsSongClicks?: Record<string, { count: number; title?: string }>;
@@ -52,6 +54,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
   const [ytOpen, setYtOpen] = useState(false);
   const [spOpen, setSpOpen] = useState(false);
   const [amOpen, setAmOpen] = useState(false);
+  const [ytSongsOpen, setYtSongsOpen] = useState(false);
   const [spSongsOpen, setSpSongsOpen] = useState(false);
   const [amSongsOpen, setAmSongsOpen] = useState(false);
   const [lySongsOpen, setLySongsOpen] = useState(false);
@@ -71,6 +74,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
         coverClicks: [],
         cardClicks: [],
         collectCardClicks: [],
+        youtubeSongClicks: [],
         spotifySongClicks: [],
         appleSongClicks: [],
         totalMusicInteractions: 0,
@@ -83,6 +87,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
     const socialButtons: Record<string, number> = {};
     const controlButtons: Record<string, number> = {};
     const musicButtons: Record<string, number> = {};
+    const youtubeBySong: Record<string, { count: number; title?: string }> = {};
     const spotifyBySong: Record<string, { count: number; title?: string }> = {};
     const appleBySong: Record<string, { count: number; title?: string }> = {};
     const lyricsBySong: Record<string, { count: number; title?: string }> = {};
@@ -103,6 +108,16 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
         totalButtonClicks++;
       } else if (label.includes('📱 TikTok')) {
         socialButtons['TikTok'] = (socialButtons['TikTok'] || 0) + 1;
+        totalButtonClicks++;
+      } else if (label.includes('🎥 YouTube')) {
+        // Per-song YouTube clicks (from waveform/HUD)
+        const m = label.match(/^🎥 YouTube:\s*(.+)$/);
+        if (m && m[1]) {
+          const name = m[1].trim();
+          const key = name.toLowerCase();
+          youtubeBySong[key] = youtubeBySong[key] || { count: 0, title: name };
+          youtubeBySong[key].count++;
+        }
         totalButtonClicks++;
       } else if (label.includes('📱 YouTube')) {
         socialButtons['YouTube'] = (socialButtons['YouTube'] || 0) + 1;
@@ -159,6 +174,9 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
       } else if (label.includes('▶️ Play/Pause')) {
         controlButtons['Play/Pause'] = (controlButtons['Play/Pause'] || 0) + 1;
         totalButtonClicks++;
+      } else if (label.includes('⭐ CHXNDLER Button') || label.trim().toLowerCase() === 'chxndler') {
+        controlButtons['CHXNDLER'] = (controlButtons['CHXNDLER'] || 0) + 1;
+        totalButtonClicks++;
       }
       
       // Song/Music Interactions
@@ -213,6 +231,9 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
         .map(([song, data]) => ({ song, count: data.count, title: data.title }))
         .sort((a, b) => b.count - a.count),
       cardClicks: Object.entries(cardClicks)
+        .map(([song, data]) => ({ song, count: data.count, title: data.title }))
+        .sort((a, b) => b.count - a.count),
+      youtubeSongClicks: Object.entries(youtubeBySong)
         .map(([song, data]) => ({ song, count: data.count, title: data.title }))
         .sort((a, b) => b.count - a.count),
       spotifySongClicks: Object.entries(spotifyBySong)
@@ -453,6 +474,10 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                         <span className="text-white font-medium">Play/Pause</span>
                         <span className="text-cyan-200 font-bold">{stats?.controlButtons.find(b=>b.button==='Play/Pause')?.count || 0}</span>
                       </div>
+                      <div className="w-full px-6 py-4 flex items-center justify-between">
+                        <span className="text-white font-medium">chxndler</span>
+                        <span className="text-cyan-200 font-bold">{stats?.controlButtons.find(b=>b.button==='CHXNDLER')?.count || 0}</span>
+                      </div>
                     </div>
                     {/* Spotify per-song (from waveform/HUD) */}
                     <button className="w-full text-left px-6 py-4 flex items-center justify-between hover:bg-cyan-500/10 border-b border-cyan-400/10" onClick={() => setSpSongsOpen(!spSongsOpen)}>
@@ -491,6 +516,43 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                                 </div>
                                 <div className="bg-gray-700 rounded-full h-2 overflow-hidden">
                                   <div className={`h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-500`} style={{ width: `${Math.max((count / max) * 100, 5)}%` }} />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {/* YouTube per-song (from waveform/HUD) */}
+                    <button className="w-full text-left px-6 py-4 flex items-center justify-between hover:bg-cyan-500/10 border-b border-cyan-400/10" onClick={() => setYtSongsOpen(!ytSongsOpen)}>
+                      <span className="text-white font-medium">YouTube</span>
+                      <span className="text-cyan-200 font-bold">
+                        {(() => {
+                          const list = stats?.youtubeSongClicks || [];
+                          return list.reduce((sum, it) => sum + (it.count || 0), 0);
+                        })()}
+                      </span>
+                    </button>
+                    {ytSongsOpen && (
+                      <div className="px-6 pb-6 space-y-3">
+                        {tracks.map((t, idx) => {
+                          const lower = (t.title || '').toLowerCase();
+                          const localEntry = (stats?.youtubeSongClicks || []).find(s => (s.title || '').toLowerCase() === lower);
+                          const count = localEntry?.count || 0;
+                          const max = Math.max(1, ...tracks.map(tt => {
+                            const lt = (tt.title || '').toLowerCase();
+                            const e = (stats?.youtubeSongClicks || []).find(s => (s.title || '').toLowerCase() === lt);
+                            return e?.count || 0;
+                          }));
+                          return (
+                            <div key={(t.slug||'')+':yt' || idx} className="flex items-center gap-4">
+                              <div className="flex-1">
+                                <div className="flex justify-between items-center mb-1">
+                                  <span className="text-white font-medium">{t.title}</span>
+                                  <span className="text-cyan-400 font-bold">{count} clicks</span>
+                                </div>
+                                <div className="bg-gray-700 rounded-full h-2 overflow-hidden">
+                                  <div className={`h-full bg-gradient-to-r from-red-500 to-rose-600 transition-all duration-500`} style={{ width: `${Math.max((count / max) * 100, 5)}%` }} />
                                 </div>
                               </div>
                             </div>

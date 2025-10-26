@@ -23,7 +23,8 @@ export function createHeartGeometry(
   // Heart equation parameters
   const scale = size * 0.5;
   const thickness = scale * 1.0 * (options?.thicknessMultiplier ?? 1.0); // planet-like volume
-  const heartness = Math.max(0.3, Math.min(3.0, options?.heartness ?? 1.0));
+  // Allow stronger heart shaping up to 5.0
+  const heartness = Math.max(0.3, Math.min(5.0, options?.heartness ?? 1.0));
   
   // Generate vertices for solid heart shape using layered approach
   const layers = Math.floor(detail * 0.8); // number of depth slices

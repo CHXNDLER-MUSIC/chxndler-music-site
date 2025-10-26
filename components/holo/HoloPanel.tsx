@@ -53,7 +53,7 @@ export default function HoloPanel() {
 
       {/* Full-width cyan underglow to sell the hologram panel */}
       <div
-        className="pointer-events-none absolute inset-x-[-20px] -bottom-5 h-24 mix-blend-screen opacity-80"
+        className="pointer-events-none absolute inset-x-[-20px] -bottom-2 h-16 mix-blend-screen opacity-80"
         style={{
           background:
             'radial-gradient(70% 120% at 50% 100%, rgba(61,245,255,.42), rgba(61,245,255,0) 70%)',

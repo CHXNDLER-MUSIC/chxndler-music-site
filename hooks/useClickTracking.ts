@@ -99,7 +99,21 @@ function identifyElement(element: HTMLElement): string {
     return '📱 TikTok';
   }
   if (text.includes('youtube') || href.includes('youtube') || className.includes('youtube') || title.includes('youtube') || dataId === 'yt') {
-    return '📱 YouTube';
+    // Prefer per-song identification for YouTube buttons in the waveform/HUD
+    let songName = dataSong;
+    if (!songName) {
+      try {
+        const elWithSong = (element.closest && element.closest('[data-song]')) as HTMLElement | null;
+        songName = elWithSong?.getAttribute('data-song') || '';
+      } catch {}
+    }
+    if (!songName) {
+      // Parse from aria-label like "Open <Song> on YouTube"
+      const m = (element.getAttribute('aria-label') || '').match(/open\s+(.+?)\s+on\s+youtube/i);
+      if (m && m[1]) songName = m[1];
+    }
+    // Use a music-style label when we can associate a song; otherwise fall back to Social
+    return songName ? `🎥 YouTube: ${songName}` : '📱 YouTube';
   }
   if (text.includes('spotify') || href.includes('spotify') || className.includes('spotify') || title.includes('spotify') || dataId === 'sp') {
     // Try to include song context when available (waveform/HUD buttons)
@@ -141,6 +155,12 @@ function identifyElement(element: HTMLElement): string {
   // Only count play/pause from the waveform media player button
   if (className.includes('hud-play-btn')) {
     return '▶️ Play/Pause';
+  }
+
+  // CHXNDLER brand button (opens brand popover)
+  if (dataId === 'brand' || ariaLabel.includes('chxndler') || className.includes('brand-cover-btn') || text === 'chxndler') {
+    // For analytics: title it simply as "chxndler" in the Music section
+    return 'chxndler';
   }
 
   // All Songs - Check for specific song titles and slugs (from songs-consolidated.ts)

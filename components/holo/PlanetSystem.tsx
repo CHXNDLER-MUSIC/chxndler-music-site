@@ -2,14 +2,14 @@
 
 import React, { useEffect } from "react";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
-import { AdditiveBlending, Group as ThreeGroup, SRGBColorSpace } from "three";
+import { AdditiveBlending, Group as ThreeGroup, SRGBColorSpace, Vector3 } from "three";
 // drei removed to avoid external asset/preset loading that can abort in some runtimes
 import { playerStore } from "@/store/usePlayerStore";
 import Planet from "@/components/holo/Planet";
 import HeartPlanet from "@/components/holo/HeartPlanet";
 import { computePlanetLayout } from "@/lib/planetLayout";
 import { buildPlanetSongs } from "@/lib/planets";
-import { getEntriesByRing } from "@/lib/planetRegistry";
+import { getEntriesByRing, getPlanetEntry } from "@/lib/planetRegistry";
 
 function InvalidateOnState() {
   const invalidate = useThree((s) => s.invalidate);
@@ -149,7 +149,7 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         onCreated={({ gl }) => {
           // Lift exposure so emissive and additive layers pop without bloom
           // @ts-ignore three typings vary by version
-          gl.toneMappingExposure = 1.6;
+          gl.toneMappingExposure = 2.0;
           // Ensure correct color space + PBR energy handling
           // @ts-ignore renderer instance
           gl.outputColorSpace = SRGBColorSpace;
@@ -338,6 +338,8 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
   // Match Canvas camera defaults; give more room in showAll to see every planet
   const base = React.useRef({ z: isShowAll ? 180 : 95, fov: isShowAll ? 120 : 75 });
   const anim = React.useRef<{ t: number; d: number; active: boolean }>({ t: 0, d: 0.8, active: false });
+  // Targeting state for planet-focused camera moves
+  const target = React.useRef<{ pos: Vector3; look: Vector3; fov: number } | null>(null);
 
   React.useEffect(() => {
     // Update base values based on current mode
@@ -345,6 +347,22 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
     
     // Only restart zoom animation if we have a focusId (not in showAll/home mode)
     if (focusId) {
+      // Compute a camera target near the selected planet
+      const entry = getPlanetEntry(focusId);
+      if (entry) {
+        const planetPos = entry.getWorldPosition();
+        // Choose an offset that preserves current viewing direction but moves closer to the planet
+        const cam = camera as any;
+        const current = new Vector3(cam.position.x, cam.position.y, cam.position.z);
+        const dir = current.clone().sub(planetPos).normalize();
+        // Desired distance: closer again for stronger focus, still safe from clipping
+        const desiredDist = 20; // was 24 (prev 28)
+        const pos = planetPos.clone().add(dir.multiplyScalar(desiredDist));
+        target.current = { pos, look: planetPos.clone(), fov: 55 }; // was 60
+      } else {
+        // Fallback: simple dolly-in from base position
+        target.current = null;
+      }
       anim.current.t = 0;
       anim.current.active = true;
       // kick a few frames to ensure animation starts in demand mode
@@ -359,6 +377,8 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
       camera_.position.z = base.current.z;
       camera_.fov = base.current.fov;
       camera_.updateProjectionMatrix();
+      // Clear any previous target
+      target.current = null;
       invalidate();
     }
   }, [focusId, isShowAll, invalidate, camera]);
@@ -370,24 +390,46 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
     const ease = t < 0.5
       ? 2 * t * t
       : 1 - Math.pow(-2 * t + 2, 2) / 2;
-    // dolly closer at mid, then return - zoomed out slightly for better view
-    const closeZ = 50;
-    const closeFov = 65;
-    // use a bell curve around 0.5
-    const bell = Math.sin(Math.PI * ease);
-    (camera as any).position.x = 0.2;
-    (camera as any).position.y = 18;
-    (camera as any).position.z = base.current.z - (base.current.z - closeZ) * bell;
-    (camera as any).fov = base.current.fov - (base.current.fov - closeFov) * bell;
-    (camera as any).updateProjectionMatrix();
+    const cam = camera as any;
+    if (target.current) {
+      // Smoothly move camera toward planet-relative target
+      const { pos, look, fov } = target.current;
+      const cp = new Vector3(cam.position.x, cam.position.y, cam.position.z);
+      const np = cp.lerp(pos, ease); // ease toward target position
+      cam.position.x = np.x;
+      cam.position.y = np.y;
+      cam.position.z = np.z;
+      cam.fov = base.current.fov - (base.current.fov - fov) * ease;
+      cam.lookAt(look.x, look.y, look.z);
+      cam.updateProjectionMatrix();
+    } else {
+      // Fallback: dolly closer at mid, then return - zoomed out slightly for better view
+      const closeZ = 42; // was 46
+      const closeFov = 55; // was 60
+      const bell = Math.sin(Math.PI * ease); // bell curve around 0.5
+      cam.position.x = 0.2;
+      cam.position.y = 18;
+      cam.position.z = base.current.z - (base.current.z - closeZ) * bell;
+      cam.fov = base.current.fov - (base.current.fov - closeFov) * bell;
+      cam.updateProjectionMatrix();
+    }
     anim.current.t += dt;
     if (anim.current.t >= anim.current.d) {
       anim.current.active = false;
-      (camera as any).position.x = 0.2;
-      (camera as any).position.y = 18;
-      (camera as any).position.z = base.current.z;
-      (camera as any).fov = base.current.fov;
-      (camera as any).updateProjectionMatrix();
+      if (target.current) {
+        // Snap to final target for stability
+        const { pos, look, fov } = target.current;
+        cam.position.set(pos.x, pos.y, pos.z);
+        cam.fov = fov;
+        cam.lookAt(look.x, look.y, look.z);
+        cam.updateProjectionMatrix();
+      } else {
+        cam.position.x = 0.2;
+        cam.position.y = 18;
+        cam.position.z = base.current.z;
+        cam.fov = base.current.fov;
+        cam.updateProjectionMatrix();
+      }
     } else {
       // request next frame while animating (frameloop is demand)
       invalidate();
