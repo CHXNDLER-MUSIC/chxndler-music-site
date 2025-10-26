@@ -1,6 +1,1 @@
-Yoo it's CHXNDLER! 
-I think our signal's just synced... 
-Welcome to the HEARTVERSE <3
-I hope you find a world here that feels like home
-Are you an ALIEN too?
-Sitck around. Join us :p
+Long ago CHXNDLER arrived on Earth in search of a new place to call home. Raised by a family in Baltimore, CHXNDLER observed humanity for all its beauty and flaws. On a journey to find love in this world, CHXNDLER discovers what it means to be human. 

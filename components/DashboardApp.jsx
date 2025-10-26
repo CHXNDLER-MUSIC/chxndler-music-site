@@ -61,6 +61,8 @@ export default function DashboardApp({ initialSlug } = {}) {
   // Keep ambient suspended initially, but allow faster startup
   const [ambientSuspended, setAmbientSuspended] = useState(true);
   const [ambientPlaying, setAmbientPlaying] = useState(false);
+  // Track first page load in this mounted session
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [firstStartDone, setFirstStartDone] = useState(false);
   const [welcomeHasPlayed, setWelcomeHasPlayed] = useState(false); // tracks if welcome has been played (resets on page refresh)
   const welcomeOnStartRef = React.useRef(false); // signals that welcome VO should play now
@@ -75,9 +77,9 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [explicitClose, setExplicitClose] = useState(false); // track when explicitly closing without opening another display
   const [safariRefreshKey, setSafariRefreshKey] = useState(0); // Safari refresh mechanism
   // Unified timing constants for display/beam sequencing
-  // Allow previous beam/display to complete fades (beam has 400ms opacity fade)
-  const BEAM_SWITCH_DELAY_MS = 450; // slightly >400ms to avoid overlap
-  const BLUE_OPEN_AFTER_BEAM_MS = 140; // time from beam enable to blue HUD open
+  // Keep conservative defaults for overlapping transitions, but tighten a bit for snappier feel
+  const BEAM_SWITCH_DELAY_MS = 300; // was 450ms; faster when switching between colors
+  const BLUE_OPEN_AFTER_BEAM_MS = 90; // was 140ms; snappier blue HUD reveal after beam
 
   // Live refs for visibility guards (avoid stale closures in timeouts)
   const showHUDRef = React.useRef(showHUD);
@@ -167,13 +169,18 @@ export default function DashboardApp({ initialSlug } = {}) {
   useEffect(() => {
     const onIntroPlay = () => {
       console.log('🎵 DashboardApp: Welcome audio started');
-      // Only mark the window flag after VO ends to avoid unmounting the audio mid-play
+      // Mark as played immediately to ensure it never replays this session
+      try { (window).__CHX_WELCOME_PLAYED = true; } catch {}
+      // Also flip local state and stop offering intro on subsequent renders
       setWelcomeHasPlayed(true);
+      try { setHomeIntroEnabled(false); } catch {}
     };
     const onIntroEnded = () => {
       console.log('🎵 DashboardApp: Welcome audio ended, confirming as played for this session');
       try { (window).__CHX_WELCOME_PLAYED = true; } catch {}
       setWelcomeHasPlayed(true);
+      // After playing once, mark that the first load flow is complete
+      try { setIsFirstLoad(false); } catch {}
     };
     
     // Listen for the intro audio ending
@@ -469,7 +476,7 @@ export default function DashboardApp({ initialSlug } = {}) {
   useEffect(() => {
     try {
       const playedFlag = (typeof window !== 'undefined' && (window).__CHX_WELCOME_PLAYED === true);
-      if (homeMode && !playedFlag && !welcomeHasPlayed) {
+      if (homeMode && isFirstLoad && !playedFlag) {
         setHomeIntroEnabled(true);
         // Proactively prime and attempt enable to start VO ASAP
         try { window.dispatchEvent(new CustomEvent('ambient:prime')); } catch {}
@@ -477,7 +484,7 @@ export default function DashboardApp({ initialSlug } = {}) {
         setTimeout(() => { try { window.dispatchEvent(new CustomEvent('ambient:enable')); } catch {} }, 60);
       }
     } catch {}
-  }, [homeMode, welcomeHasPlayed]);
+  }, [homeMode, isFirstLoad]);
 
   // Track ambient audio playing state for accurate button state on homepage
   useEffect(() => {
@@ -675,6 +682,19 @@ export default function DashboardApp({ initialSlug } = {}) {
         setBeamTransitioning(false);
         setExplicitClose(false);
       } else if (!explicitClose) {
+        // Fast-path: if nothing is currently open, enable blue immediately (no pre-wait)
+        const nothingOpen = !joinAlienOpen && !showHUD && !beamEnabled;
+        if (nothingOpen) {
+          setBeamTransitioning(true);
+          setBeamColor('blue');
+          setBeamEnabled(true);
+          // very short cushion before revealing the HUD so the beam registers first
+          setTimeout(() => {
+            setShowHUD(true);
+            setBeamTransitioning(false);
+          }, BLUE_OPEN_AFTER_BEAM_MS);
+          return;
+        }
         // Special handling: when coming from pink, fade out pink first, then flip beam to blue,
         // then reveal the blue display — keep the beam ON during color change for smoothness.
         const comingFromPink = (beamColor === 'pink') || joinAlienOpen;
@@ -686,7 +706,7 @@ export default function DashboardApp({ initialSlug } = {}) {
           // Ensure the beam is enabled during the color switch; if it was off for any reason, turn it on
           try { setBeamEnabled(true); } catch {}
           // Pink display opacity transition is ~350ms in SteeringWheelOverlay; give it a touch more time
-          const PINK_FADE_MS = 360;
+          const PINK_FADE_MS = 320;
           setTimeout(() => {
             setBeamColor('blue');
             setTimeout(() => {
@@ -989,11 +1009,12 @@ export default function DashboardApp({ initialSlug } = {}) {
           ambientSrc="/audio/space-music.mp3" 
           introSrc={(() => {
             const playedFlag = (typeof window !== 'undefined' && (window).__CHX_WELCOME_PLAYED === true);
-            const shouldPlayWelcome = homeMode && homeIntroEnabled && !playedFlag;
+            const shouldPlayWelcome = homeMode && homeIntroEnabled && isFirstLoad && !playedFlag;
             const introSrc = shouldPlayWelcome ? "/audio/welcome-to-the-heartverse.mp3" : undefined;
             console.log('🎵 DashboardApp: AmbientSpace introSrc decision:', { 
               homeMode, 
               homeIntroEnabled, 
+              isFirstLoad,
               shouldPlayWelcome, 
               introSrc,
               welcomeHasPlayed,
@@ -1054,8 +1075,11 @@ export default function DashboardApp({ initialSlug } = {}) {
             try { setUserSelected(false); } catch {}
             try { playerStore.setState({ mainId: null }); } catch {}
             try { setLinks({ spotify: LINKS.spotify, apple: LINKS.apple }); } catch {}
-            // ALWAYS enable welcome VO on opening/home page after Start button warp
-            try { setHomeIntroEnabled(true); } catch {}
+            // Enable welcome VO only if it hasn't played this session
+            try {
+              const playedFlag = (typeof window !== 'undefined' && (window).__CHX_WELCOME_PLAYED === true);
+              setHomeIntroEnabled(!playedFlag);
+            } catch {}
             // Don't set welcomeHasPlayed here - wait for audio to actually finish
             // Switch background sky in the same render pass for simultaneous reveal
             try {
@@ -1367,7 +1391,7 @@ export default function DashboardApp({ initialSlug } = {}) {
         showUI={uiUnlocked && showOverlayUI && !warpActive && !showDimmingOverlay}
         uiUnlocked={uiUnlocked}
         joinAlienOpen={joinAlienOpen}
-        blueActive={!!(beamEnabled || showHUD)}
+        blueActive={beamColor === 'blue' && !!(beamEnabled || showHUD)}
         onJoinToggle={setJoinAlienOpen}
         onBeamColorChange={handleBeamToggle}
         closeAllSignal={uiCloseSignal}
@@ -1418,6 +1442,8 @@ export default function DashboardApp({ initialSlug } = {}) {
             welcomeOnStartRef.current = false;
             setHomeIntroEnabled(false);
             console.log('🎵 DashboardApp: Start button - Subsequent press, skipping welcome VO');
+            // Ensure first-load flag is off after second Start
+            try { setIsFirstLoad(false); } catch {}
           }
           setPendingOverlayReveal(true);
           setUiUnlocked(true);
@@ -1506,6 +1532,8 @@ export default function DashboardApp({ initialSlug } = {}) {
             welcomeOnStartRef.current = false;
             setHomeIntroEnabled(false);
             console.log('🎵 DashboardApp: Start button - Subsequent press, skipping welcome VO');
+            // Ensure first-load flag is off after second Start
+            try { setIsFirstLoad(false); } catch {}
           }
           setPendingOverlayReveal(true);
           setUiUnlocked(true);

@@ -206,7 +206,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
       } : { 
         top: "calc(50% + 90px)", 
         transform: "translateX(-50%)",
-        width: "300px"
+        width: "360px"
       }}
       initial={{ opacity: 0, y: 20, rotateX: -8 }}
       animate={{ opacity: inline ? 1 : cockpit.cover.hologramOpacity, y: 0, rotateX: inline ? 0 : -cockpit.cover.tilt }}
@@ -371,7 +371,14 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                       }
                     }}
                   >
-                    <span className="btn-element-glyph" aria-hidden>💠</span>
+                    <Image
+                      src="/elements/elementals.png"
+                      alt=""
+                      width={20}
+                      height={20}
+                      className="btn-element-icon"
+                      aria-hidden
+                    />
                     <span className="sr-only">Elements</span>
                   </button>
                 </div>
@@ -627,7 +634,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
             0 0 36px rgba(242,239,29,0.5),
             inset 0 0 10px rgba(255,255,255,0.22);
         }
-        /* ELEMENT button (💠) styles */
+        /* ELEMENT button icon styles */
         .btn-element{
           position: relative; display:inline-grid; place-items:center;
           width: 30px; height: 30px; border-radius: 50%; font-weight:800; letter-spacing:.06em; font-size: 15px; line-height: 1.1;
@@ -638,6 +645,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
           transition: transform .12s ease, box-shadow .18s ease, filter .18s ease;
           overflow:hidden;
         }
+        .btn-element-icon{ display:block; width:20px; height:20px; object-fit:contain; pointer-events:none; }
         .btn-element:hover{
           transform: scale(1.05);
           box-shadow:

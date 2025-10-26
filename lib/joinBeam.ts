@@ -2,7 +2,7 @@
 
 export const BEAM_TOP_RATIO = 0.26; // beam top offset from hub top, relative to size
 export const BEAM_WIDTH_RATIO = 2.0; // beam width relative to hub size
-export const BEAM_HEIGHT_RATIO = 0.5; // beam height relative to hub size
+export const BEAM_HEIGHT_RATIO = 0.47; // beam height relative to hub size (slightly shorter)
 export const BEAM_LEFT_OFFSET_RATIO = -0.5; // beam left offset relative to hub size
 
 export function beamTopPx(size: number): number {
@@ -25,4 +25,3 @@ export function beamHeightPx(size: number): number {
 export function beamLeftPx(size: number): number {
   return Math.round(size * BEAM_LEFT_OFFSET_RATIO);
 }
-

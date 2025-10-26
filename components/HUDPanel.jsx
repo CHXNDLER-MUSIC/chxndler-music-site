@@ -156,6 +156,16 @@ export default function HUDPanel({
   const lyricsScrollRef = useRef(null);
   const lyricsLastScrollAtRef = useRef(0);
 
+  // Brand (CHXNDLER) popover state
+  const [showBrandPopover, setShowBrandPopover] = useState(false);
+  const brandBtnRef = useRef(null);
+  const [brandPopoverPos, setBrandPopoverPos] = useState(null);
+  const [brandLoading, setBrandLoading] = useState(false);
+  const [brandError, setBrandError] = useState(null);
+  const [brandContent, setBrandContent] = useState('');
+  const brandScrollRef = useRef(null);
+  const brandLastScrollAtRef = useRef(0);
+
   async function openLyricsPopover(slug){
     try { sfx.play('click', 0.4); } catch {}
     // Anchor position
@@ -218,6 +228,107 @@ export default function HUDPanel({
     window.addEventListener('resize', recalc);
     return () => window.removeEventListener('resize', recalc);
   }, [showLyricsPopover]);
+
+  // Open brand popover anchored to the brand button
+  const openBrandPopover = async () => {
+    try { sfx.play('click', 0.4); } catch {}
+    try {
+      const r = brandBtnRef.current?.getBoundingClientRect?.();
+      const wrapper = innerRef.current?.parentElement || null; // outer HUD blue display wrapper (padding box)
+      if (wrapper && typeof window !== 'undefined') {
+        const rect = wrapper.getBoundingClientRect();
+        const cs = window.getComputedStyle(wrapper);
+        const pl = parseFloat(cs.paddingLeft || '0') || 0;
+        const pr = parseFloat(cs.paddingRight || '0') || 0;
+        const leftEdge = rect.left + pl;
+        const rightEdge = rect.right - pr;
+        const width = Math.max(0, rightEdge - leftEdge);
+        const top = r ? (r.bottom + 8) : (rect.top + 8);
+        setBrandPopoverPos({ left: leftEdge, top, width });
+      } else if (r) {
+        setBrandPopoverPos({ left: r.left + r.width/2, top: r.bottom + 8 });
+      }
+    } catch {}
+    setShowBrandPopover(true);
+    setBrandLoading(true);
+    setBrandError(null);
+    setBrandContent('');
+    try {
+      const res = await fetch(`/api/lyrics/${encodeURIComponent('chxndler')}`);
+      if (!res.ok) {
+        const data = await res.json().catch(()=>({}));
+        throw new Error(data?.error || `Content not found (${res.status})`);
+      }
+      const data = await res.json();
+      setBrandContent(String(data?.content || ''));
+    } catch(e){
+      setBrandError((e && (e.message||e.name)) || 'Failed to load content');
+    } finally {
+      setBrandLoading(false);
+    }
+  };
+
+  // Close Brand popover on outside click / Escape
+  useEffect(() => {
+    if (!showBrandPopover) return;
+    const onDocDown = (e) => {
+      const t = e.target;
+      const withinBtn = brandBtnRef.current && t && brandBtnRef.current.contains(t);
+      const dialog = document.querySelector('[aria-label="CHXNDLER"]');
+      const withinDialog = dialog && t && dialog.contains(t);
+      if (!withinBtn && !withinDialog) { try { sfx.play('close', 0.4); } catch {}; setShowBrandPopover(false); }
+    };
+    const onKey = (e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowBrandPopover(false); } };
+    document.addEventListener('mousedown', onDocDown);
+    document.addEventListener('touchstart', onDocDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocDown);
+      document.removeEventListener('touchstart', onDocDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [showBrandPopover]);
+
+  // Recalculate brand popover alignment to blue display on resize while open
+  useEffect(() => {
+    if (!showBrandPopover) return;
+    const recalc = () => {
+      try {
+        const r = brandBtnRef.current?.getBoundingClientRect?.();
+        const wrapper = innerRef.current?.parentElement || null;
+        if (wrapper && typeof window !== 'undefined') {
+          const rect = wrapper.getBoundingClientRect();
+          const cs = window.getComputedStyle(wrapper);
+          const pl = parseFloat(cs.paddingLeft || '0') || 0;
+          const pr = parseFloat(cs.paddingRight || '0') || 0;
+          const leftEdge = rect.left + pl;
+          const rightEdge = rect.right - pr;
+          const width = Math.max(0, rightEdge - leftEdge);
+          const top = r ? (r.bottom + 8) : (rect.top + 8);
+          setBrandPopoverPos({ left: leftEdge, top, width });
+        }
+      } catch {}
+    };
+    window.addEventListener('resize', recalc);
+    return () => window.removeEventListener('resize', recalc);
+  }, [showBrandPopover]);
+
+  // Play subtle scroll SFX while scrolling brand popover (rate-limited)
+  useEffect(() => {
+    if (!showBrandPopover) return;
+    const el = brandScrollRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      const last = brandLastScrollAtRef.current || 0;
+      if (now - last > 260) {
+        brandLastScrollAtRef.current = now;
+        try { sfx.play('scroll', 0.28); } catch {}
+      }
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => { try { el.removeEventListener('scroll', onScroll); } catch {} };
+  }, [showBrandPopover]);
   const [animationTime, setAnimationTime] = useState(0);
   // Volume popover (HUD waveform controls)
   const [showHudVolumePopover, setShowHudVolumePopover] = useState(false);
@@ -727,7 +838,8 @@ export default function HUDPanel({
             className="absolute inset-x-0 rounded-2xl pointer-events-none"
             style={{
               bottom: 0,
-              top: `calc(var(--hud-y, 0px) + ${inConsole ? 140 : 160}px)`,
+              // Raise the top edge further for a taller dashboard (bottom unchanged)
+              top: `calc(var(--hud-y, 0px) + ${inConsole ? 92 : 112}px)`,
               background: 'rgba(25,227,255,0.25)',
               boxShadow: '0 0 50px rgba(25,227,255,0.20), 0 0 70px rgba(25,227,255,0.35), 0 0 24px rgba(25,227,255,0.50)',
               border: '1px solid rgba(25,227,255,0.60)'
@@ -740,7 +852,8 @@ export default function HUDPanel({
             className="absolute inset-x-0"
             // Position 3D display higher within blue HUD area; allow only top bleed on homepage
             style={{ 
-              top: `calc(${inConsole ? 60 : 80}px + var(--hud-y, 0px)${!currentId ? ' - 18px' : ''})`, 
+              // Move the 3D planet system higher
+              top: `calc(${inConsole ? 44 : 64}px + var(--hud-y, 0px)${!currentId ? ' - 18px' : ''})`, 
               bottom: planetBottom,
               pointerEvents: 'none' // Allow clicks to pass through to elements below
             }}
@@ -792,12 +905,66 @@ export default function HUDPanel({
           
           {/* Cover section at bottom right corner - using CoverHologram for pop-out functionality */}
           <div ref={coverRef} className="absolute" style={{ 
-            bottom: inConsole ? -8 : -16, 
-            right: inConsole ? -8 : -16, 
+            // Nudge slightly higher and to the left
+            bottom: inConsole ? -6 : -18, 
+            right: inConsole ? -4 : -12, 
             width: 'auto', 
             display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'flex-end',
+            // Reduce gap so the button sits closer to the cover (visibly lower)
+            gap: 2,
             justifyContent: 'flex-end' 
           }}>
+            {/* Brand button above the cover art */}
+            <button
+              type="button"
+              aria-label="CHXNDLER"
+              title="CHXNDLER"
+              className="brand-cover-btn"
+              style={{
+                pointerEvents: joinAlienOpen ? 'none' : 'auto',
+                // Slightly taller brand button
+                // Match song dropdown total height (~44px incl. borders): set content height to 40px
+                height: 40,
+                // Inline-flex to vertically center text within fixed height
+                display: 'inline-flex',
+                alignItems: 'center',
+                // Match cover width (size=108) including 2px borders on both sides
+                width: 112,
+                boxSizing: 'border-box',
+                // Reduce padding so overall width matches cover art
+                padding: '0 4px 0 5px',
+                // Position tweak: move down a bit and slightly left
+                marginTop: 0,
+                // Pull button closer to cover (further down)
+                marginBottom: -2,
+                marginRight: 6,
+                borderRadius: 12,
+                border: '2px solid rgba(25,227,255,0.80)',
+                background: 'rgba(25,227,255,0.15)',
+                color: '#F2EF1D',
+                fontWeight: 700,
+                letterSpacing: '0.03em',
+                textTransform: 'uppercase',
+                // Slightly smaller text to fit within width
+                fontSize: 12,
+                lineHeight: 1,
+                backdropFilter: 'blur(6px)',
+                boxShadow: '0 0 20px rgba(25,227,255,0.35)'
+              }}
+              ref={brandBtnRef}
+              onMouseEnter={() => { 
+                try { sfx.play('hover', 0.35); } catch {}
+                try { const a = hoverCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.35; a.play().catch(()=>{}); } } catch {}
+              }}
+              onClick={() => { 
+                if (showBrandPopover) { try { sfx.play('close', 0.4); } catch {}; setShowBrandPopover(false); return; }
+                openBrandPopover();
+              }}
+              data-id="brand"
+            >
+            </button>
             {(() => {
               const src = (!currentId ? DEFAULT_COVER : (track?.cover || DEFAULT_COVER));
               const title = (!currentId ? 'CHXNDLER' : (track?.title || 'Unknown'));
@@ -817,7 +984,7 @@ export default function HUDPanel({
                     title={title} 
                     slug={trackingSong}
                     inline={true} 
-                    size={112}
+                    size={108}
                   />
                 </div>
               );
@@ -828,18 +995,20 @@ export default function HUDPanel({
           <div ref={playerRef} className="absolute" style={{ 
             left: inConsole ? 0 : 2, // Shift very slightly more to the left
             right: oneLinerRight, // Extend further to the right
-            height: '55px',
-            bottom: inConsole ? -2 : -4 // Bring bottom border higher; reduce buffer
+            // Adjust height to move bottom edge up while keeping the top/buttons in place
+            height: '45px',
+            // Raise player so its bottom border meets the blue display edge
+            bottom: 'var(--hud-player-bottom-offset, 12px)'
           }}>
             <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '10px' }}>
-              <div className="flex flex-wrap items-start gap-3 pt-2 pr-2 pl-2 pb-0">
-                <div className="controls-row flex items-center gap-4 w-full" style={{ paddingTop: 2 }}>
+              <div className="flex flex-wrap items-start gap-3 pt-0 pr-2 pl-2 pb-0">
+                <div className="controls-row flex items-center gap-4 w-full" style={{ paddingTop: 4 }}>
                 <button 
                   onClick={handlePlayPause}
                   className="hud-play-btn-enhanced"
                   aria-label={playing ? "Pause" : "Play"}
                   onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                  style={{ marginTop: -1 }}
+                  style={{ marginTop: 1 }}
                 >
                   {playing ? (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -867,6 +1036,7 @@ export default function HUDPanel({
                         target="_blank"
                         rel="noopener noreferrer"
                         className="spotify-btn-waveform-hud"
+                        style={{ marginTop: 1 }}
                         title="Open on Spotify"
                         aria-label={`Open ${currentSong?.title || 'current track'} on Spotify`}
                         data-song={currentSong?.title || ''}
@@ -890,6 +1060,7 @@ export default function HUDPanel({
                     return (
                       <div 
                         className="spotify-btn-unavailable-hud"
+                        style={{ marginTop: 1 }}
                         title={titleText}
                       >
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" opacity="0.5">
@@ -914,6 +1085,7 @@ export default function HUDPanel({
                         target="_blank"
                         rel="noopener noreferrer"
                         className="apple-btn-waveform-hud"
+                        style={{ marginTop: 1 }}
                         title="Open on Apple Music"
                         aria-label={`Open ${currentSong?.title || 'current track'} on Apple Music`}
                         data-song={currentSong?.title || ''}
@@ -949,6 +1121,7 @@ export default function HUDPanel({
                     return (
                       <div 
                         className="apple-btn-unavailable-hud"
+                        style={{ marginTop: 1 }}
                         title={titleText}
                       >
                         <svg
@@ -977,7 +1150,7 @@ export default function HUDPanel({
                   role="group" 
                   aria-label="Volume"
                   ref={hudVolRef}
-                  style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative', marginTop: 1 }}
                 >
                   <button
                     className="hud-volume-btn"
@@ -1029,6 +1202,7 @@ export default function HUDPanel({
                             ref={lyricsBtnRef}
                             type="button"
                             className="hud-lyrics-btn"
+                            style={{ marginTop: 1 }}
                             title="Lyrics for CHXNDLER"
                             aria-label="View lyrics for CHXNDLER"
                             data-id="lyrics"
@@ -1038,7 +1212,7 @@ export default function HUDPanel({
                             onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                             onClick={() => {
                               if (showLyricsPopover) { try { sfx.play('close', 0.4); } catch {}; setShowLyricsPopover(false); return; }
-                              openLyricsPopover('chxndler');
+                              openLyricsPopover('homepage');
                             }}
                           >
                             <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
@@ -1049,7 +1223,7 @@ export default function HUDPanel({
                               <rect x="13.6" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
                             </svg>
                           </button>
-                          <div className="youtube-btn-unavailable-hud" title="YouTube not available on homepage">
+                          <div className="youtube-btn-unavailable-hud" title="YouTube not available on homepage" style={{ marginTop: 1 }}>
                             <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
                               <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.6" opacity="0.55" />
                               <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
@@ -1066,6 +1240,7 @@ export default function HUDPanel({
                         ref={lyricsBtnRef}
                         type="button"
                         className="hud-lyrics-btn"
+                        style={{ marginTop: 1 }}
                         title={`Lyrics for ${currentSong?.title || 'current track'}`}
                         aria-label={`View lyrics for ${currentSong?.title || 'current track'}`}
                         data-id="lyrics"
@@ -1092,6 +1267,7 @@ export default function HUDPanel({
                           target="_blank"
                           rel="noopener noreferrer"
                           className="youtube-btn-waveform-hud"
+                          style={{ marginTop: 1 }}
                           title={`Open ${currentSong.title} on YouTube`}
                           aria-label={`Open ${currentSong.title} on YouTube`}
                           data-song={currentSong.title}
@@ -1105,7 +1281,7 @@ export default function HUDPanel({
                           </svg>
                         </a>
                       ) : (
-                        <div className="youtube-btn-unavailable-hud" title={`No YouTube link available for ${currentSong?.title || 'current track'}`}>
+                        <div className="youtube-btn-unavailable-hud" title={`No YouTube link available for ${currentSong?.title || 'current track'}`} style={{ marginTop: 1 }}>
                           <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
                             <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.6" opacity="0.55" />
                             <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
@@ -1210,6 +1386,62 @@ export default function HUDPanel({
                       <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: 18, color: '#F2EF1D', textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>{lyricsContent || 'No lyrics available.'}</div>
                     )}
                     {null}
+                  </div>,
+                  document.body
+                ) : null}
+
+                {typeof document !== 'undefined' && showBrandPopover && brandPopoverPos ? require('react-dom').createPortal(
+                  <div
+                    role="dialog"
+                    aria-label="CHXNDLER"
+                    className="lyrics-popover-hud holo-scrollbar-yellow"
+                    ref={brandScrollRef}
+                    style={{
+                      position: 'fixed',
+                      left: (brandPopoverPos && brandPopoverPos.left) || 0,
+                      top: (brandPopoverPos && brandPopoverPos.top) || 0,
+                      transform: (brandPopoverPos && brandPopoverPos.width) ? 'none' : 'translateX(-50%)',
+                      padding: '12px 14px 16px 14px', borderRadius: 14,
+                      background: 'rgba(3,10,20,0.9)',
+                      border: '1px solid rgba(242,239,29,0.55)',
+                      boxShadow: '0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(242,239,29,0.45)',
+                      backdropFilter: 'blur(8px)',
+                      color: '#F2EF1D',
+                      zIndex: 2147483647,
+                      width: (brandPopoverPos && brandPopoverPos.width) ? brandPopoverPos.width : 'min(92vw, 520px)',
+                      maxHeight: '75vh',
+                      overflowY: 'auto',
+                      WebkitOverflowScrolling: 'touch',
+                      overscrollBehavior: 'contain'
+                    }}
+                    onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowBrandPopover(false); } }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+                      <img src="/logo/CHXNDLER_Logo.png" alt="CHXNDLER" style={{ height: 32, width: 'auto', filter: 'drop-shadow(0 0 10px rgba(242,239,29,0.8))' }} />
+                      <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>CHXNDLER</div>
+                    </div>
+                    {/* Brand photo at top before content */}
+                    <div style={{ margin: '8px 0 10px 0' }}>
+                      <img
+                        src="/chxndler-picture.png"
+                        alt="CHXNDLER"
+                        style={{
+                          display: 'block',
+                          width: '100%',
+                          height: 'auto',
+                          borderRadius: 10,
+                          boxShadow: '0 6px 18px rgba(0,0,0,0.35)',
+                          border: '1px solid rgba(242,239,29,0.35)'
+                        }}
+                      />
+                    </div>
+                    {brandLoading ? (
+                      <div style={{ fontSize: 16, opacity: .99, color: '#F2EF1D', textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>Loading…</div>
+                    ) : brandError ? (
+                      <div style={{ fontSize: 16, color: '#ff7b7b' }}>{brandError}</div>
+                    ) : (
+                      <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: 16, color: '#F2EF1D', textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>{brandContent || ''}</div>
+                    )}
                   </div>,
                   document.body
                 ) : null}
@@ -1506,7 +1738,7 @@ export default function HUDPanel({
         {/* Song selector positioned outside content opacity container to avoid beamOnly blocking */}
         <div className="absolute" style={{ 
           left: inConsole ? 6 : 8, 
-          bottom: 'calc(80px - 24px + 6px)', // Slightly higher above media player
+          bottom: 'calc(80px - 24px + 56px)', // Move dropdown higher (+24px)
           // Reserve dynamic space to the right so the dropdown never overlaps the cover
           right: oneLinerRight + 4, // Slightly wider than current (~8px wider)
           maxWidth: 'none',

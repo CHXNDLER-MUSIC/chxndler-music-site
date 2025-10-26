@@ -51,7 +51,7 @@
   /* Lower the center light beam slightly (closer to bottom edge) */
   --beam-bottom-base: 348px;
   /* Reduce beam visual height to 80% */
-  --beam-height: 72px; /* 80% of 90px */
+  --beam-height: 68px; /* slightly shorter than 72px */
   --display-gap: 6px;
   --panel-gap: 8px;
   --touch-zone-height: 44px; /* iOS minimum touch target */
@@ -65,6 +65,11 @@
   /* Nudge the blue display slightly lower on screen */
   /* Increased gap to move all displays and beam down together */
   --beam-gap-px: 350px; /* Reduced to move blue display up slightly */
+  /* Pink display vertical nudge to meet the light beam */
+  --pink-bottom-nudge: 16px;
+  /* HUD waveform player bottom offset (raises player inside blue display) */
+  /* Nudge down very slightly for spacing */
+  --hud-player-bottom-offset: 34px;
   /* Fine-tune the vertical alignment of the light beam base PNG */
   /* Negative moves the PNG up; positive moves it down */
   /* Move the lightbeam base up very slightly */
@@ -417,6 +422,18 @@ main {
   box-shadow: 0 0 40px rgba(25,227,255,0.8), 0 0 60px rgba(25,227,255,0.6), 0 0 80px rgba(25,227,255,0.4);
 }
 
+/* Brand button that behaves like cover art on hover */
+.brand-cover-btn{
+  transition: transform 150ms ease, box-shadow 200ms ease, border-color 200ms ease, background-color 200ms ease;
+  will-change: transform, box-shadow;
+}
+.brand-cover-btn:hover{
+  transform: translateZ(0) scale(1.06);
+  box-shadow: 0 0 40px rgba(25,227,255,0.8), 0 0 60px rgba(25,227,255,0.6), 0 0 80px rgba(25,227,255,0.4);
+  border-color: rgba(25,227,255,0.8);
+  background: rgba(25,227,255,0.22);
+}
+
 
 /* Pink beam animation keyframes - flows upward */
 @keyframes pinkBeamFlow {
@@ -553,6 +570,10 @@ main {
   text-transform: uppercase;
   /* Match SongDropdown scrollbar thickness (especially in Firefox) */
   scrollbar-width: auto; /* override thin from yellow variant */
+  /* Ensure vertical scrolling works on all devices */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Ensure consistent thickness in WebKit as well (explicit, though yellow variant already sets 16px) */
