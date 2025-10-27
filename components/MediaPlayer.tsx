@@ -74,6 +74,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const [showYouTubePopover, setShowYouTubePopover] = useState(false);
   const [showSpotifyPopover, setShowSpotifyPopover] = useState(false);
   const [spEmbedUrl, setSpEmbedUrl] = useState<string | null>(null);
+  const [showApplePopover, setShowApplePopover] = useState(false);
+  const [amEmbedUrl, setAmEmbedUrl] = useState<string | null>(null);
   const [ytEmbedUrl, setYtEmbedUrl] = useState<string | null>(null);
   const ytBtnRef = useRef<HTMLAnchorElement|null>(null);
   // Lyrics state
@@ -216,6 +218,14 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [showSpotifyPopover]);
+
+  // Close Apple popout on Escape
+  useEffect(() => {
+    if (!showApplePopover) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowApplePopover(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showApplePopover]);
 
   // Subscribe to state machine changes
   useEffect(() => {
@@ -1576,13 +1586,24 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 data-song={cur.title}
                 data-slug={cur.slug}
                 data-id="am"
-                onClick={() => {
+                onClick={(e) => {
+                  try { e.preventDefault(); } catch {}
+                  try { uiClick(); } catch {}
+                  try { const a = audioRef.current; if (a) { a.pause(); setPlaying(false); } } catch {}
                   try {
                     gaTrack('apple_music_clicked', {
                       song_slug: cur.slug,
                       payload: { song_title: cur.title, location: 'waveform_player', href: cur.apple }
                     });
                   } catch {}
+                  try {
+                    const { toAppleEmbed } = require('@/lib/apple');
+                    const embed = toAppleEmbed(cur.apple);
+                    if (embed) { setAmEmbedUrl(embed); setShowApplePopover(true); }
+                    else { window.open(cur.apple, '_blank', 'noopener,noreferrer'); }
+                  } catch {
+                    try { window.open(cur.apple, '_blank', 'noopener,noreferrer'); } catch {}
+                  }
                 }}
               >
                 {/* White beamed music note (Apple-like) */}
@@ -1850,6 +1871,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               className="yt-close"
               aria-label="Close YouTube player"
               title="Close"
+              onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
               onClick={() => setShowYouTubePopover(false)}
             >
               <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
@@ -1878,6 +1900,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               aria-label="Close"
               title="Close"
               className="yt-close"
+              onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
               onClick={() => setShowSpotifyPopover(false)}
             >
               <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
@@ -1893,6 +1916,57 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               height={spEmbedUrl ? (() => { try { return require('@/lib/spotify').spotifyEmbedHeight(spEmbedUrl); } catch { return undefined; } })() : undefined}
               style={{ border: 'none', display: 'block' }}
             />
+          </div>
+        </div>,
+        document.body
+      ) : null}
+
+      {typeof document !== 'undefined' && showApplePopover && amEmbedUrl ? createPortal(
+        <div className="am-overlay" role="dialog" aria-label="Apple Music player" onClick={() => setShowApplePopover(false)}>
+          <div className="am-popover" onClick={(e) => { e.stopPropagation(); }}>
+            <button
+              aria-label="Close"
+              title="Close"
+              className="am-close"
+              onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+              onClick={() => setShowApplePopover(false)}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                <path fill="currentColor" d="M18.3 5.71L12 12l6.3 6.29-1.41 1.41L10.59 13.41 4.29 19.7 2.88 18.29 9.17 12 2.88 5.71 4.29 4.3 10.59 10.59 16.89 4.3z" />
+              </svg>
+            </button>
+            {(() => {
+              try {
+                const baseH = require('@/lib/apple').appleEmbedHeight(amEmbedUrl);
+                const scaleY = 1.35; // stretch vertically
+                const desiredH = Math.round(baseH * scaleY);
+                return (
+                  <div className="am-embed-zoom" style={{ height: desiredH, overflow: 'hidden' }}>
+                    <iframe
+                      src={amEmbedUrl}
+                      title="Apple Music player"
+                      allow="autoplay *; encrypted-media *; clipboard-write"
+                      loading="eager"
+                      width="100%"
+                      height={baseH}
+                      style={{ border: 'none', display: 'block', transform: `scaleY(${scaleY})`, transformOrigin: 'top center' }}
+                    />
+                  </div>
+                );
+              } catch {
+                return (
+                  <iframe
+                    src={amEmbedUrl}
+                    title="Apple Music player"
+                    allow="autoplay *; encrypted-media *; clipboard-write"
+                    loading="eager"
+                    width="100%"
+                    height={360}
+                    style={{ border: 'none', display: 'block' }}
+                  />
+                );
+              }
+            })()}
           </div>
         </div>,
         document.body
@@ -2206,6 +2280,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         }
         .youtube-link-waveform:hover { transform: scale(1.1); box-shadow: 0 6px 22px rgba(255,0,0,0.85); }
         .youtube-link-waveform:active { transform: scale(0.95); }
+        /* Make the YouTube icon fill the entire button */
+        .waveform-volume .youtube-link-waveform svg { width: 100%; height: 100%; }
         .youtube-link-unavailable-waveform {
           width: 28px;
           height: 28px;
@@ -2220,6 +2296,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           z-index: 200;
           cursor: not-allowed;
         }
+        .waveform-volume .youtube-link-unavailable-waveform svg { width: 100%; height: 100%; }
         
         /* Inline controls (lyrics/youtube/volume) now sit in the controls row */
         .waveform-volume {
@@ -2252,6 +2329,24 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           cursor: pointer;
           transition: all 0.25s ease;
           box-shadow: 0 4px 16px rgba(25,227,255,0.6);
+        }
+        /* White outer rim around volume button */
+        .waveform-volume-btn::before {
+          content: "";
+          position: absolute;
+          inset: -3px; /* extend slightly outside to form an outer rim */
+          border-radius: 50%;
+          box-shadow:
+            0 0 0 2px rgba(255,255,255,0.95), /* crisp white rim */
+            0 0 10px rgba(255,255,255,0.65), /* soft halo */
+            0 0 22px rgba(255,255,255,0.45); /* wider bloom */
+          pointer-events: none;
+        }
+        .waveform-volume-btn:hover::before {
+          box-shadow:
+            0 0 0 2px rgba(255,255,255,1),
+            0 0 12px rgba(255,255,255,0.85),
+            0 0 28px rgba(255,255,255,0.6);
         }
         .waveform-volume-btn:hover { transform: scale(1.05); box-shadow: 0 6px 22px rgba(25,227,255,0.75); }
         .waveform-volume-btn:hover .btn-glow { opacity: 1; animation: pulse 2s ease-in-out infinite; }
@@ -2568,9 +2663,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           box-shadow: 0 10px 40px rgba(0,0,0,0.5), 0 0 30px rgba(255,255,255,0.08);
           overflow: hidden;
           animation: ytZoomIn 160ms ease-out;
-          /* Slightly lower than before */
-          margin-top: -184px;
+          /* Lower on the screen */
+          margin-top: -60px;
         }
+        @media (max-width: 768px) { .yt-popover { margin-top: -30px; } }
         .yt-embed-wrap { position: absolute; inset: 0; }
         .yt-embed-wrap iframe { width: 100%; height: 100%; border: 0; }
         .yt-close {
@@ -2587,17 +2683,19 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          transition: transform 0.15s ease, background 0.15s ease;
+          box-shadow: 0 0 16px rgba(255,255,255,0.25);
+          transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
         }
-        .yt-close:hover { transform: scale(1.06); background: rgba(0,0,0,0.6); }
+        .yt-close:hover { transform: scale(1.1); background: rgba(0,0,0,0.6); box-shadow: 0 0 24px rgba(255,255,255,0.55); }
         .yt-close:active { transform: scale(0.95); }
 
         /* Spotify popout overlay */
         .sp-overlay {
           position: fixed;
           inset: 0;
-          background: rgba(0,0,0,0.6);
-          backdrop-filter: blur(2px);
+          /* No dim or blur for Spotify popout */
+          background: transparent;
+          backdrop-filter: none;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -2606,14 +2704,61 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         .sp-popover {
           position: relative;
           width: min(88vw, 420px);
-          background: #000;
+          /* Make container transparent to avoid visible gaps as black */
+          background: transparent;
           border-radius: 16px;
           border: 1px solid rgba(29,185,84,0.55);
-          box-shadow: 0 10px 40px rgba(0,0,0,0.5), 0 0 30px rgba(29,185,84,0.25);
+          /* Remove dark shadow to avoid any perceived dimming */
+          box-shadow: 0 0 20px rgba(29,185,84,0.28);
           overflow: hidden;
+          /* Move further down from center */
+          margin-top: 420px;
+        }
+        @media (max-width: 768px) { .sp-popover { margin-top: 300px; } }
+
+        /* Apple Music popout overlay */
+        .am-overlay {
+          position: fixed;
+          inset: 0;
+          /* No dim or blur for Apple popout */
+          background: transparent;
+          backdrop-filter: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 2147483647;
+        }
+        .am-popover {
+          position: relative;
+          width: min(88vw, 420px);
+          background: transparent; /* remove black fill */
+          border-radius: 16px;
+          border: 1px solid rgba(255,59,48,0.55);
+          box-shadow: 0 0 30px rgba(255,59,48,0.25); /* remove heavy dark drop shadow */
+          overflow: hidden;
+          /* Slightly below previous position */
           margin-top: -300px;
         }
-        @media (max-width: 768px) { .sp-popover { margin-top: -160px; } }
+        @media (max-width: 768px) { .am-popover { margin-top: -180px; } }
+        .am-close {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          border: 1px solid rgba(255,255,255,0.4);
+          background: rgba(0,0,0,0.45);
+          color: #fff;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          box-shadow: 0 0 16px rgba(255,255,255,0.25);
+          transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+        }
+        .am-close:hover { transform: scale(1.1); background: rgba(0,0,0,0.6); box-shadow: 0 0 24px rgba(255,255,255,0.55); }
+        .am-close:active { transform: scale(0.95); }
 
         @keyframes ytFadeIn { from { opacity: 0 } to { opacity: 1 } }
         @keyframes ytZoomIn { from { transform: scale(0.96); opacity: 0.8 } to { transform: scale(1); opacity: 1 } }

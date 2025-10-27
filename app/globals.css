@@ -886,3 +886,20 @@ img[src$="/elements/music.png"] {
   backdrop-filter: blur(4px);
   flex-shrink: 0;
 }
+/* Store popover controls: hover grow + glow */
+.store-arrow-btn,
+.store-add-btn{
+  transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease, filter 0.2s ease;
+}
+.store-arrow-btn:hover{
+  transform: scale(1.1);
+  box-shadow: 0 6px 22px rgba(255, 62, 165, 0.7), 0 0 28px rgba(255, 118, 200, 0.4);
+  border-color: rgba(255,255,255,0.7) !important;
+  filter: saturate(1.05) brightness(1.05);
+}
+.store-add-btn:hover{
+  transform: translateZ(0) scale(1.06);
+  box-shadow: 0 8px 24px rgba(255, 62, 165, 0.6), 0 0 40px rgba(255, 118, 200, 0.35);
+  border-color: rgba(255,255,255,0.75) !important;
+  filter: saturate(1.06) brightness(1.04);
+}

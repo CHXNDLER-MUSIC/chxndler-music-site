@@ -372,10 +372,10 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                     }}
                   >
                     <Image
-                      src="/elements/elementals.png"
+                      src="/elements/elementals.png?v=20241027"
                       alt=""
                       fill
-                      sizes="30px"
+                      sizes="34px"
                       className="btn-element-icon"
                       aria-hidden
                       style={{ objectFit: 'cover' }}
@@ -433,7 +433,9 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                 try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
                 setShowCard(false);
               }}
-              className="absolute -top-3 -right-3 rounded-full bg-[#19E3FF] text-black font-bold w-8 h-8 shadow-[0_0_20px_rgba(25,227,255,0.8)]"
+              onMouseOver={(e)=>{ try { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.08)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 28px rgba(25,227,255,1)'; } catch {} }}
+              onMouseOut={(e)=>{ try { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.0)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 20px rgba(25,227,255,0.8)'; } catch {} }}
+              className="absolute -top-3 -right-3 rounded-full bg-[#19E3FF] text-black font-bold w-8 h-8 shadow-[0_0_20px_rgba(25,227,255,0.8)] transition-transform"
               title="Close"
             >×</button>
             </div>
@@ -502,8 +504,12 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              boxShadow: '0 0 16px rgba(25,227,255,0.35)',
+              transition: 'transform 0.15s ease, box-shadow 0.15s ease'
             }}
+            onMouseOver={(e)=>{ try { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.08)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 24px rgba(25,227,255,0.75)'; } catch {} }}
+            onMouseOut={(e)=>{ try { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.0)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 16px rgba(25,227,255,0.35)'; } catch {} }}
           >
             <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
               <path fill="currentColor" d="M18.3 5.71L12 12l6.3 6.29-1.41 1.41L10.59 13.41 4.29 19.7 2.88 18.29 9.17 12 2.88 5.71 4.29 4.3 10.59 10.59 16.89 4.3z" />
@@ -513,12 +519,12 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
           {/* Header image at the top of the Elements popout */}
           <div style={{ marginBottom: 12 }}>
             <img
-              src="/elements/elementals.png"
+              src="/elements/elementals.png?v=20241027"
               alt="Elementals"
               style={{
                 display: 'block',
-                width: '42%',
-                maxWidth: 240,
+                width: '36%',
+                maxWidth: 200,
                 margin: '0 auto',
                 height: 'auto',
                 borderRadius: 0,
@@ -683,7 +689,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
         /* ELEMENT button icon styles */
         .btn-element{
           position: relative; display:inline-grid; place-items:center;
-          width: 30px; height: 30px; border-radius: 50%; font-weight:800; letter-spacing:.06em; font-size: 15px; line-height: 1.1;
+          width: 34px; height: 34px; border-radius: 50%; font-weight:800; letter-spacing:.06em; font-size: 15px; line-height: 1.1;
           color:#001014; text-transform:none; font-family: InterLocal, system-ui, sans-serif;
           background: transparent; /* fill entirely with elementals.png */
           border: 1px solid rgba(255,255,255,.24);

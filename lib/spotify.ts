@@ -18,14 +18,15 @@ export function spotifyEmbedHeight(url: string): number {
     const embed = toSpotifyEmbed(url) || url;
     const u = new URL(embed);
     const p = u.pathname;
-    if (p.startsWith('/embed/track')) return 152;
-    if (p.startsWith('/embed/episode')) return 232;
-    if (p.startsWith('/embed/show')) return 232;
-    if (p.startsWith('/embed/playlist')) return 352;
-    if (p.startsWith('/embed/album')) return 352;
-    if (p.startsWith('/embed/artist')) return 352;
-    return 352;
+    // Compact heights to reduce overall popout size
+    if (p.startsWith('/embed/track')) return 136;
+    if (p.startsWith('/embed/episode')) return 180;
+    if (p.startsWith('/embed/show')) return 180;
+    if (p.startsWith('/embed/playlist')) return 248;
+    if (p.startsWith('/embed/album')) return 248;
+    if (p.startsWith('/embed/artist')) return 248;
+    return 248;
   } catch {
-    return 352;
+    return 248;
   }
 }

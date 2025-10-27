@@ -136,6 +136,8 @@ export default function HUDPanel({
   const planetRef = useRef(null);
   const playerRef = useRef(null);
   const [planetBottom, setPlanetBottom] = useState(56);
+  // Vertical offset to raise/lower the Store (Gem) popover relative to its anchor
+  const STORE_POPOVER_Y_OFFSET = -176; // negative raises it upwards slightly more
   // Dynamic spacing for song selector so it doesn't overlap the cover
   const coverRef = useRef(null);
   const [oneLinerRight, setOneLinerRight] = useState(inConsole ? 108 : 140);
@@ -155,6 +157,8 @@ export default function HUDPanel({
   const [lyricsPopoverPos, setLyricsPopoverPos] = useState(null);
   const lyricsScrollRef = useRef(null);
   const lyricsLastScrollAtRef = useRef(0);
+  // Position lyrics popover relative to its anchor; smaller negative means less high
+  const LYRICS_POPOVER_Y_OFFSET = -40; // bring it further down compared to before
 
   // Brand (CHXNDLER) popover state
   const [showBrandPopover, setShowBrandPopover] = useState(false);
@@ -165,12 +169,16 @@ export default function HUDPanel({
   const [brandContent, setBrandContent] = useState('');
   const brandScrollRef = useRef(null);
   const brandLastScrollAtRef = useRef(0);
+  // Lift the CHXNDLER popover higher above its anchor
+  const BRAND_POPOVER_Y_OFFSET = 200; // pixels to shift upward when positioning
 
   // YouTube popout state (waveform HUD)
   const [showYouTubePopover, setShowYouTubePopover] = useState(false);
   const [showSpotifyPopover, setShowSpotifyPopover] = useState(false);
   const [spEmbedUrl, setSpEmbedUrl] = useState(null);
   const [ytEmbedUrl, setYtEmbedUrl] = useState('');
+  const [showApplePopover, setShowApplePopover] = useState(false);
+  const [amEmbedUrl, setAmEmbedUrl] = useState(null);
 
   // Storefront (Gem) popover state
   const [showStorePopover, setShowStorePopover] = useState(false);
@@ -179,6 +187,11 @@ export default function HUDPanel({
   const [storeIndex, setStoreIndex] = useState(0);
   const storeScrollRef = useRef(null);
   const storeLastScrollAtRef = useRef(0);
+  // Store-specific UI state: flip animations
+  const [beanieFlipped, setBeanieFlipped] = useState(false);
+  const [patchFlipped, setPatchFlipped] = useState(false);
+  const [beanieHovered, setBeanieHovered] = useState(false);
+  const [patchHovered, setPatchHovered] = useState(false);
   const products = [
     {
       id: 'pin',
@@ -191,25 +204,25 @@ export default function HUDPanel({
     {
       id: 'patch',
       title: 'PATCH',
-      image: '/store/patch.jpeg',
+      image: '/store/patch.png',
       url: 'https://buy.stripe.com/00w5kEgBHdRz1gRgxx4gg0C',
       price: '$5.00 USD',
-      description: 'A mark of belonging, something you can carry wherever you go. It’s a reminder that this isn’t just music, it’s a community.'
+      description: 'Stitch this into your world as a quiet reminder that this isn’t just music, it’s a community.'
     },
     {
       id: 'necklace',
       title: 'NECKLACE',
       image: '/store/necklace.png',
       url: 'https://buy.stripe.com/6oU3cw3OVfZH3oZ9554gg0D',
-      price: '$10.00 USD',
+      price: '$15.00 USD',
       description: 'A symbol of love, connection, and everything this world stands for. It’s a keepsake for the people who found home here.'
     },
     {
       id: 'beanie',
       title: 'BEANIE',
-      image: '/store/beanie.jpg',
+      image: '/store/beanie-front.png',
       url: 'https://buy.stripe.com/3cI3cw3OV8xf0cN2GH4gg0E',
-      price: '$25.00 USD',
+      price: '$30.00 USD',
       description: 'For the ones who wear their hearts out loud and aren’t afraid to stand out.'
     },
     {
@@ -227,6 +240,14 @@ export default function HUDPanel({
       url: 'https://buy.stripe.com/6oU28s717aFn1gR1CD4gg0I',
       price: '$25.00 USD',
       description: 'A classic you’ll wear everywhere. It’s lowkey, but it says everything it needs to.'
+    },
+    {
+      id: 'button',
+      title: 'BUTTON',
+      image: '/store/button.png',
+      url: 'https://buy.stripe.com/6oU14oclr8xfbVvbdd4gg0J',
+      price: '$5.00 USD',
+      description: 'A symbol of unity, curiosity, and courage for those who feel deeply and dream beyond the ordinary.'
     },
     {
       id: 'keychain',
@@ -252,18 +273,31 @@ export default function HUDPanel({
     try {
       const r = lyricsBtnRef.current?.getBoundingClientRect?.();
       const wrapper = innerRef.current?.parentElement || null; // outer HUD blue display wrapper (padding box)
+      // Position the popover to match the blue display's vertical bounds
       if (wrapper && typeof window !== 'undefined') {
         const rect = wrapper.getBoundingClientRect();
         const cs = window.getComputedStyle(wrapper);
         const pl = parseFloat(cs.paddingLeft || '0') || 0;
         const pr = parseFloat(cs.paddingRight || '0') || 0;
-        const leftEdge = rect.left + pl;
-        const rightEdge = rect.right - pr;
+        let leftEdge = rect.left + pl;
+        let rightEdge = rect.right - pr;
+        // Very slightly wider than the blue display on both sides
+        const HORIZONTAL_EXPAND = 12; // px to grow on each side
+        leftEdge = Math.max(8, leftEdge - HORIZONTAL_EXPAND);
+        rightEdge = Math.min((typeof window !== 'undefined' ? window.innerWidth : rightEdge), rightEdge + HORIZONTAL_EXPAND) - 8 + 8;
         const width = Math.max(0, rightEdge - leftEdge);
-        const top = r ? (r.bottom + 8) : (rect.top + 8);
-        setLyricsPopoverPos({ left: leftEdge, top, width });
+        // Bring the top down more while keeping the bottom aligned to blue display bottom; this also shortens the popover
+        const TOP_INSET = 136; // slightly lower + shorter
+        let top = rect.top + TOP_INSET;
+        top = Math.max(8, top);
+        const height = Math.max(100, rect.height - TOP_INSET);
+        setLyricsPopoverPos({ left: leftEdge, top, width, height });
       } else if (r) {
-        setLyricsPopoverPos({ left: r.left + r.width/2, top: r.bottom + 8 });
+        let top = r.bottom + 8 + LYRICS_POPOVER_Y_OFFSET;
+        top = Math.max(8, top);
+        // Slightly shorter default for fallback path as well
+        let height = Math.max(240, Math.min(560, (typeof window !== 'undefined' ? window.innerHeight * 0.46 : 340)));
+        setLyricsPopoverPos({ left: r.left + r.width/2, top, height });
       }
     } catch {}
     setShowLyricsPopover(true);
@@ -292,16 +326,23 @@ export default function HUDPanel({
       try {
         const r = lyricsBtnRef.current?.getBoundingClientRect?.();
         const wrapper = innerRef.current?.parentElement || null;
+        // Keep the same vertical alignment to the blue display as initial calculation
         if (wrapper && typeof window !== 'undefined') {
           const rect = wrapper.getBoundingClientRect();
           const cs = window.getComputedStyle(wrapper);
           const pl = parseFloat(cs.paddingLeft || '0') || 0;
           const pr = parseFloat(cs.paddingRight || '0') || 0;
-          const leftEdge = rect.left + pl;
-          const rightEdge = rect.right - pr;
+          let leftEdge = rect.left + pl;
+          let rightEdge = rect.right - pr;
+          const HORIZONTAL_EXPAND = 12;
+          leftEdge = Math.max(8, leftEdge - HORIZONTAL_EXPAND);
+          rightEdge = Math.min((typeof window !== 'undefined' ? window.innerWidth : rightEdge), rightEdge + HORIZONTAL_EXPAND) - 8 + 8;
           const width = Math.max(0, rightEdge - leftEdge);
-          const top = r ? (r.bottom + 8) : (rect.top + 8);
-          setLyricsPopoverPos({ left: leftEdge, top, width });
+          const TOP_INSET = 136; // keep resize calc consistent
+          let top = rect.top + TOP_INSET;
+          top = Math.max(8, top);
+          const height = Math.max(100, rect.height - TOP_INSET);
+          setLyricsPopoverPos({ left: leftEdge, top, width, height });
         }
       } catch {}
     };
@@ -323,10 +364,13 @@ export default function HUDPanel({
         const leftEdge = rect.left + pl;
         const rightEdge = rect.right - pr;
         const width = Math.max(0, rightEdge - leftEdge);
-        const top = r ? (r.bottom + 8) : (rect.top + 8);
+        const idealTop = r ? (r.bottom - BRAND_POPOVER_Y_OFFSET) : (rect.top + 8);
+        const top = Math.max(16, idealTop);
         setBrandPopoverPos({ left: leftEdge, top, width });
       } else if (r) {
-        setBrandPopoverPos({ left: r.left + r.width/2, top: r.bottom + 8 });
+        const idealTop = r.bottom - BRAND_POPOVER_Y_OFFSET;
+        const top = Math.max(16, idealTop);
+        setBrandPopoverPos({ left: r.left + r.width/2, top });
       }
     } catch {}
     setShowBrandPopover(true);
@@ -384,6 +428,13 @@ export default function HUDPanel({
     return () => window.removeEventListener('keydown', onKey);
   }, [showSpotifyPopover]);
 
+  useEffect(() => {
+    if (!showApplePopover) return;
+    const onKey = (e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowApplePopover(false); } };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showApplePopover]);
+
   // Open Store (Gem) popover anchored to the gem button
   const openStorePopover = async () => {
     try { sfx.play('click', 0.4); } catch {}
@@ -398,10 +449,15 @@ export default function HUDPanel({
         const leftEdge = rect.left + pl;
         const rightEdge = rect.right - pr;
         const width = Math.max(0, rightEdge - leftEdge);
-        const top = r ? (r.bottom + 8) : (rect.top + 8);
+        // Raise the store container so it sits higher relative to the HUD
+        let top = r ? (r.bottom + STORE_POPOVER_Y_OFFSET) : (rect.top + STORE_POPOVER_Y_OFFSET);
+        top = Math.max(8, top);
         setStorePopoverPos({ left: leftEdge, top, width });
       } else if (r) {
-        setStorePopoverPos({ left: r.left + r.width/2, top: r.bottom + 8 });
+        // Centered fallback position; also raise
+        let top = r.bottom + STORE_POPOVER_Y_OFFSET;
+        top = Math.max(8, top);
+        setStorePopoverPos({ left: r.left + r.width/2, top });
       }
     } catch {}
     // Ensure NECKLACE is the first item shown when opening the store
@@ -433,6 +489,14 @@ export default function HUDPanel({
     };
   }, [showStorePopover]);
 
+  // Reset store item flips/hover when cycling items so they always start on the front
+  useEffect(() => {
+    try { setBeanieFlipped(false); } catch {}
+    try { setPatchFlipped(false); } catch {}
+    try { setBeanieHovered(false); } catch {}
+    try { setPatchHovered(false); } catch {}
+  }, [storeIndex]);
+
   // Recalculate store popover alignment to blue display on resize while open
   useEffect(() => {
     if (!showStorePopover) return;
@@ -448,7 +512,9 @@ export default function HUDPanel({
           const leftEdge = rect.left + pl;
           const rightEdge = rect.right - pr;
           const width = Math.max(0, rightEdge - leftEdge);
-          const top = r ? (r.bottom + 8) : (rect.top + 8);
+          // Keep raised position on resize as well
+          let top = r ? (r.bottom + STORE_POPOVER_Y_OFFSET) : (rect.top + STORE_POPOVER_Y_OFFSET);
+          top = Math.max(8, top);
           setStorePopoverPos({ left: leftEdge, top, width });
         }
       } catch {}
@@ -472,7 +538,8 @@ export default function HUDPanel({
           const leftEdge = rect.left + pl;
           const rightEdge = rect.right - pr;
           const width = Math.max(0, rightEdge - leftEdge);
-          const top = r ? (r.bottom + 8) : (rect.top + 8);
+          const idealTop = r ? (r.bottom - BRAND_POPOVER_Y_OFFSET) : (rect.top + 8);
+          const top = Math.max(16, idealTop);
           setBrandPopoverPos({ left: leftEdge, top, width });
         }
       } catch {}
@@ -1284,7 +1351,18 @@ export default function HUDPanel({
                         data-song={currentSong?.title || ''}
                         data-slug={currentSong?.id || ''}
                         data-id="am"
-                        onClick={() => { try { sfx.play('join-aliens', 0.9); } catch {} }}
+                        onClick={(e) => {
+                          try { e.preventDefault(); } catch {}
+                          try { sfx.play('join-aliens', 0.9); } catch {}
+                          try {
+                            const { toAppleEmbed } = require('@/lib/apple');
+                            const embed = toAppleEmbed(appleUrl);
+                            if (embed) { setAmEmbedUrl(embed); setShowApplePopover(true); }
+                            else { window.open(appleUrl, '_blank', 'noopener,noreferrer'); }
+                          } catch {
+                            try { window.open(appleUrl, '_blank', 'noopener,noreferrer'); } catch {}
+                          }
+                        }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                       >
                         <svg
@@ -1676,6 +1754,98 @@ export default function HUDPanel({
                   document.body
                 ) : null}
 
+                {typeof document !== 'undefined' && showApplePopover && amEmbedUrl ? require('react-dom').createPortal(
+                  <div
+                    role="dialog"
+                    aria-label="Apple Music Player"
+                    onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowApplePopover(false); }}
+                    style={{
+                      position: 'fixed',
+                      inset: 0,
+                      background: 'transparent',
+                      // no dim or blur for Apple overlay
+                      zIndex: 2147483647,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <div
+                      onClick={(e) => { e.stopPropagation(); }}
+                      style={{
+                        position: 'relative',
+                        width: 'min(88vw, 420px)',
+                        background: 'transparent', // remove black fill
+                        border: '1px solid rgba(255,59,48,0.6)',
+                        boxShadow: '0 0 32px rgba(255,59,48,0.35)', // remove heavy dark drop shadow
+                        borderRadius: 14,
+                        overflow: 'hidden',
+                        // Slightly below previous position
+                        marginTop: -180
+                      }}
+                    >
+                      <button
+                        aria-label="Close"
+                        title="Close"
+                        onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 22px rgba(255,255,255,0.7)'; } catch {} }}
+                        onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1.0)'; e.currentTarget.style.boxShadow = 'none'; } catch {} }}
+                        onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowApplePopover(false); }}
+                        style={{
+                          position: 'absolute',
+                          top: 8,
+                          right: 8,
+                          width: 32,
+                          height: 32,
+                          borderRadius: 999,
+                          background: 'rgba(0,0,0,0.5)',
+                          color: '#fff',
+                          border: '1px solid rgba(255,255,255,0.5)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                          <path fill="currentColor" d="M18.3 5.71L12 12l6.3 6.29-1.41 1.41L10.59 13.41 4.29 19.7 2.88 18.29 9.17 12 2.88 5.71 4.29 4.3 10.59 10.59 16.89 4.3z" />
+                        </svg>
+                      </button>
+                      {(() => {
+                        try {
+                          const baseH = require('@/lib/apple').appleEmbedHeight(amEmbedUrl);
+                          const scaleY = 1.35; // stretch vertically
+                          const desiredH = Math.round(baseH * scaleY);
+                          return (
+                            <div className="am-embed-zoom" style={{ height: desiredH, overflow: 'hidden' }}>
+                              <iframe
+                                src={amEmbedUrl}
+                                title="Apple Music player"
+                                allow="autoplay *; encrypted-media *; clipboard-write"
+                                loading="eager"
+                                width="100%"
+                                height={baseH}
+                                style={{ border: 'none', display: 'block', transform: `scaleY(${scaleY})`, transformOrigin: 'top center' }}
+                              />
+                            </div>
+                          );
+                        } catch {
+                          return (
+                            <iframe
+                              src={amEmbedUrl}
+                              title="Apple Music player"
+                              allow="autoplay *; encrypted-media *; clipboard-write"
+                              loading="eager"
+                              width="100%"
+                              height={360}
+                              style={{ border: 'none', display: 'block' }}
+                            />
+                          );
+                        }
+                      })()}
+                    </div>
+                  </div>,
+                  document.body
+                ) : null}
+
                 {typeof document !== 'undefined' && showSpotifyPopover && spEmbedUrl ? require('react-dom').createPortal(
                   <div
                     role="dialog"
@@ -1708,6 +1878,8 @@ export default function HUDPanel({
                       <button
                         aria-label="Close"
                         title="Close"
+                        onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 22px rgba(255,255,255,0.7)'; } catch {} }}
+                        onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1.0)'; e.currentTarget.style.boxShadow = 'none'; } catch {} }}
                         onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowSpotifyPopover(false); }}
                         style={{
                           position: 'absolute',
@@ -1777,6 +1949,8 @@ export default function HUDPanel({
                       <button
                         aria-label="Close"
                         title="Close"
+                        onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 22px rgba(25,227,255,0.8)'; } catch {} }}
+                        onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 16px rgba(25,227,255,0.35)'; } catch {} }}
                         onClick={() => setShowYouTubePopover(false)}
                         style={{
                           position: 'absolute',
@@ -1821,16 +1995,17 @@ export default function HUDPanel({
                       position: 'fixed',
                       left: (storePopoverPos && storePopoverPos.left) || 0,
                       top: (storePopoverPos && storePopoverPos.top) || 0,
-                      transform: (storePopoverPos && storePopoverPos.width) ? 'none' : 'translateX(-50%)',
-                      padding: '10px 12px 12px 12px', borderRadius: 14,
+                      transform: (storePopoverPos && storePopoverPos.width) ? 'scale(1.04)' : 'translateX(-50%) scale(1.04)',
+                      transformOrigin: 'top center',
+                      padding: '10px 14px 18px 14px', borderRadius: 14,
                       background: 'rgba(20,3,14,0.9)',
                       border: '1px solid rgba(252,84,175,0.55)',
                       boxShadow: '0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(252,84,175,0.45)',
                       backdropFilter: 'blur(8px)',
                       color: '#FFD9EF',
                       zIndex: 2147483647,
-                      width: (storePopoverPos && storePopoverPos.width) ? storePopoverPos.width : 'min(92vw, 520px)',
-                      maxHeight: '75vh',
+                      width: (storePopoverPos && storePopoverPos.width) ? storePopoverPos.width : 'min(92vw, 560px)',
+                      maxHeight: '82vh',
                       overflowY: 'auto',
                       WebkitOverflowScrolling: 'touch',
                       overscrollBehavior: 'contain'
@@ -1845,6 +2020,8 @@ export default function HUDPanel({
                     <button
                       aria-label="Close store"
                       title="Close store"
+                      onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 26px rgba(252,84,175,0.95), 0 0 42px rgba(252,84,175,0.65)'; } catch {} }}
+                      onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 18px rgba(252,84,175,0.75), 0 0 32px rgba(252,84,175,0.45)'; } catch {} }}
                       onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowStorePopover(false); }}
                       style={{
                         position: 'absolute',
@@ -1871,19 +2048,126 @@ export default function HUDPanel({
                     {(() => {
                       const item = products[Math.max(0, Math.min(products.length - 1, storeIndex))] || products[0];
                       return (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
                             <div style={{ fontWeight: 800, letterSpacing: '0.04em', color: '#FFC1E6', textShadow: '0 0 12px rgba(252,84,175,0.9), 0 0 24px rgba(252,84,175,0.55)' }}>
                               The HEARTVERSE Collection
                             </div>
                           </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '96px 1fr', gap: 12, alignItems: 'center' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                              {/* Moved arrows above the PNG */}
+                          <div style={{ display: 'grid', gridTemplateColumns: '104px 1fr', gap: 12, alignItems: 'start' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                              {/* Product image. For PATCH and BEANIE, allow front/back flip like the card animation */}
+                              {item.id === 'patch' ? (
+                                <div
+                                  role="button"
+                                  aria-label="Flip patch"
+                                  title="Flip patch"
+                                  onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {}; setPatchHovered(true); }}
+                                  onMouseLeave={() => { setPatchHovered(false); }}
+                                  onClick={() => { try { sfx.play('flip', 0.45); } catch {}; setPatchFlipped(v => !v); }}
+                                  style={{
+                                    width: 104,
+                                    height: 104,
+                                    position: 'relative',
+                                    borderRadius: 10,
+                                    border: '1px solid rgba(252,84,175,0.35)',
+                                    boxShadow: patchHovered ? '0 8px 24px rgba(0,0,0,0.45)' : '0 6px 18px rgba(0,0,0,0.35)',
+                                    overflow: 'hidden',
+                                    cursor: 'pointer',
+                                    perspective: 600,
+                                    transition: 'transform .12s ease, box-shadow .18s ease, filter .18s ease',
+                                    transform: patchHovered ? 'translateZ(0) scale(1.05)' : 'none'
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      position: 'absolute',
+                                      inset: 0,
+                                      transition: 'transform 0.7s ease-in-out',
+                                      transformStyle: 'preserve-3d',
+                                      transform: patchFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                                    }}
+                                  >
+                                    {/* Front */}
+                                    <div style={{ position: 'absolute', inset: 0, backfaceVisibility: 'hidden', transform: 'rotateY(0deg)' }}>
+                                      <img
+                                        src={'/store/patch.png'}
+                                        alt={item.title}
+                                        style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }}
+                                        onError={(e)=>{ try { e.currentTarget.src = '/card/chxndler.png'; } catch {} }}
+                                      />
+                                    </div>
+                                    {/* Back */}
+                                    <div style={{ position: 'absolute', inset: 0, backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+                                      <img
+                                        src={'/store/patch-inverse.png'}
+                                        alt={`${item.title} back`}
+                                        style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }}
+                                        onError={(e)=>{ try { e.currentTarget.src = '/card/chxndler.png'; } catch {} }}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : item.id === 'beanie' ? (
+                                <div
+                                  role="button"
+                                  aria-label="Flip beanie"
+                                  title="Flip beanie"
+                                  onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {}; setBeanieHovered(true); }}
+                                  onMouseLeave={() => { setBeanieHovered(false); }}
+                                  onClick={() => { try { sfx.play('flip', 0.45); } catch {}; setBeanieFlipped(v => !v); }}
+                                  style={{
+                                    width: 104,
+                                    height: 104,
+                                    position: 'relative',
+                                    borderRadius: 10,
+                                    border: '1px solid rgba(252,84,175,0.35)',
+                                    boxShadow: beanieHovered ? '0 8px 24px rgba(0,0,0,0.45)' : '0 6px 18px rgba(0,0,0,0.35)',
+                                    overflow: 'hidden',
+                                    cursor: 'pointer',
+                                    perspective: 600,
+                                    transition: 'transform .12s ease, box-shadow .18s ease, filter .18s ease',
+                                    transform: beanieHovered ? 'translateZ(0) scale(1.05)' : 'none'
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      position: 'absolute',
+                                      inset: 0,
+                                      transition: 'transform 0.7s ease-in-out',
+                                      transformStyle: 'preserve-3d',
+                                      transform: beanieFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                                    }}
+                                  >
+                                    {/* Front */}
+                                    <div style={{ position: 'absolute', inset: 0, backfaceVisibility: 'hidden', transform: 'rotateY(0deg)' }}>
+                                      <img
+                                        src={'/store/beanie-front.png'}
+                                        alt={item.title}
+                                        style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }}
+                                        onError={(e)=>{ try { e.currentTarget.src = '/card/chxndler.png'; } catch {} }}
+                                      />
+                                    </div>
+                                    {/* Back */}
+                                    <div style={{ position: 'absolute', inset: 0, backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+                                      <img
+                                        src={'/store/beanie-back.png'}
+                                        alt={`${item.title} back`}
+                                        style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }}
+                                        onError={(e)=>{ try { e.currentTarget.src = '/card/chxndler.png'; } catch {} }}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <img src={item.image || '/card/chxndler.png'} alt={item.title} style={{ display: 'block', width: 104, height: 104, objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(252,84,175,0.35)', boxShadow: '0 6px 18px rgba(0,0,0,0.35)' }} onError={(e)=>{ try { e.currentTarget.src = '/card/chxndler.png'; } catch {} }} />
+                              )}
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                                 <button
                                   aria-label="Previous item"
-                                  onClick={() => { setStoreIndex((i) => (i - 1 + products.length) % products.length); try { sfx.play('hover', 0.35); } catch {} }}
+                                  className="store-arrow-btn"
+                                  onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                                  onClick={() => { setStoreIndex((i) => (i - 1 + products.length) % products.length); try { sfx.play('click', 0.35); } catch {} }}
                                   style={{
                                     width: 28, height: 28, borderRadius: 999,
                                     background: 'linear-gradient(135deg,#ff76c8,#ff3ea5)',
@@ -1896,7 +2180,9 @@ export default function HUDPanel({
                                 </button>
                                 <button
                                   aria-label="Next item"
-                                  onClick={() => { setStoreIndex((i) => (i + 1) % products.length); try { sfx.play('hover', 0.35); } catch {} }}
+                                  className="store-arrow-btn"
+                                  onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                                  onClick={() => { setStoreIndex((i) => (i + 1) % products.length); try { sfx.play('click', 0.35); } catch {} }}
                                   style={{
                                     width: 28, height: 28, borderRadius: 999,
                                     background: 'linear-gradient(135deg,#ff76c8,#ff3ea5)',
@@ -1908,7 +2194,6 @@ export default function HUDPanel({
                                   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 6l6 6-6 6"/></svg>
                                 </button>
                               </div>
-                              <img src={item.image || '/card/chxndler.png'} alt={item.title} style={{ display: 'block', width: 96, height: 96, objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(252,84,175,0.35)', boxShadow: '0 6px 18px rgba(0,0,0,0.35)' }} onError={(e)=>{ try { e.currentTarget.src = '/card/chxndler.png'; } catch {} }} />
                             </div>
                             <div>
                               <div style={{ fontSize: 16, fontWeight: 800, color: '#FFD9EF', textShadow: '0 0 10px rgba(252,84,175,0.9)' }}>{item.title}</div>
@@ -1917,11 +2202,13 @@ export default function HUDPanel({
                                 <div style={{ fontSize: 15, fontWeight: 700, color: '#FFB9E1' }}>{item.price || ''}</div>
                                 {item.url ? (
                                   <a
+                                    className="store-add-btn"
                                     href={item.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     data-id="store-item"
                                     data-item-id={item.id}
+                                    onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                                     onClick={() => {
                                       try { sfx.play('join', 0.75); } catch {}
                                       // Track merch item click with song context
@@ -1963,7 +2250,8 @@ export default function HUDPanel({
                       left: (lyricsPopoverPos && lyricsPopoverPos.left) || 0,
                       top: (lyricsPopoverPos && lyricsPopoverPos.top) || 0,
                       transform: (lyricsPopoverPos && lyricsPopoverPos.width) ? 'none' : 'translateX(-50%)',
-                      padding: '12px 14px 36px 14px', borderRadius: 14,
+                      // Tighten vertical padding so the bottom sits higher
+                      padding: '10px 14px 14px 14px', borderRadius: 14,
                       background: 'rgba(3,10,20,0.9)',
                       border: '1px solid rgba(242,239,29,0.55)',
                       boxShadow: '0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(242,239,29,0.45)',
@@ -1971,7 +2259,8 @@ export default function HUDPanel({
                       color: '#F2EF1D',
                       zIndex: 2147483647,
                       width: (lyricsPopoverPos && lyricsPopoverPos.width) ? lyricsPopoverPos.width : 'min(98vw, 1400px)',
-                      maxHeight: '70vh',
+                      // Fix height to the blue display area; slightly shorter fallback
+                      height: (lyricsPopoverPos && lyricsPopoverPos.height) ? lyricsPopoverPos.height : '42vh',
                       overflow: 'auto'
                     }}
                     onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowLyricsPopover(false); } }}
@@ -1980,6 +2269,8 @@ export default function HUDPanel({
                     <button
                       aria-label="Close lyrics"
                       title="Close"
+                      onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 26px rgba(242,239,29,0.95), 0 0 42px rgba(242,239,29,0.65)'; } catch {} }}
+                      onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 18px rgba(242,239,29,0.75), 0 0 32px rgba(242,239,29,0.45)'; } catch {} }}
                       onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowLyricsPopover(false); }}
                       style={{
                         position: 'absolute',
@@ -2047,6 +2338,8 @@ export default function HUDPanel({
                     <button
                       aria-label="Close CHXNDLER"
                       title="Close"
+                      onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 26px rgba(242,239,29,0.95), 0 0 42px rgba(242,239,29,0.65)'; } catch {} }}
+                      onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 18px rgba(242,239,29,0.75), 0 0 32px rgba(242,239,29,0.45)'; } catch {} }}
                       onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowBrandPopover(false); }}
                       style={{
                         position: 'absolute',

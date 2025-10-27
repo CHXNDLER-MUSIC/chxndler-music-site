@@ -3,6 +3,7 @@ import React, { useRef, useCallback, useEffect, useState } from "react";
 import { sfx } from "@/lib/sfx";
 import IconButtonShell from "@/components/IconButtonShell";
 import { toSpotifyEmbed, spotifyEmbedHeight } from "@/lib/spotify";
+import { toAppleEmbed, appleEmbedHeight } from "@/lib/apple";
 import { createPortal } from "react-dom";
 
 export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh:number; sizePx:number; gapPx?:number; tilt?:string; vertical?: boolean; mobile?: {sizePx:number; gapPx?:number}; tablet?: {sizePx:number; gapPx?:number} }, links:{ spotify?:string; apple?:string } }){
@@ -86,6 +87,8 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
 
   const [showSpotifyPopover, setShowSpotifyPopover] = useState(false);
   const [spEmbedUrl, setSpEmbedUrl] = useState<string | null>(null);
+  const [showApplePopover, setShowApplePopover] = useState(false);
+  const [amEmbedUrl, setAmEmbedUrl] = useState<string | null>(null);
 
   // Close on Escape
   useEffect(() => {
@@ -94,6 +97,12 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [showSpotifyPopover]);
+  useEffect(() => {
+    if (!showApplePopover) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowApplePopover(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showApplePopover]);
 
   return (
     <>
@@ -142,7 +151,22 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
           }
         >
           <span className="socket" aria-hidden />
-          <IconButtonShell title="Listen on Apple Music" href={links.apple} color="#FF3B30" onClickFX={playClick} onHoverFX={playHover}>
+          <IconButtonShell
+            title="Listen on Apple Music"
+            href={links.apple}
+            color="#FF3B30"
+            onClickFX={playClick}
+            onHoverFX={playHover}
+            onClick={() => {
+              try {
+                const embed = toAppleEmbed(links.apple!);
+                if (embed) { setAmEmbedUrl(embed); setShowApplePopover(true); }
+                else { window.open(links.apple!, '_blank', 'noopener,noreferrer'); }
+              } catch {
+                try { window.open(links.apple!, '_blank', 'noopener,noreferrer'); } catch {}
+              }
+            }}
+          >
             {AppleIcon}
           </IconButtonShell>
         </div>
@@ -192,6 +216,7 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
               aria-label="Close"
               title="Close"
               className="sp-close"
+              onMouseEnter={() => { try { const el = hoverRef.current; if (el) { el.currentTime = 0; el.volume = 0.35; el.play().catch(()=>{}); } } catch {} }}
               onClick={() => setShowSpotifyPopover(false)}
             >
               <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
@@ -212,6 +237,62 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
         document.body
       ) : null}
 
+      {typeof document !== 'undefined' && showApplePopover && amEmbedUrl ? createPortal(
+        <div
+          role="dialog"
+          aria-label="Apple Music"
+          className="am-overlay"
+          onClick={() => setShowApplePopover(false)}
+        >
+          <div className="am-popover" onClick={(e) => e.stopPropagation()}>
+            <button
+              aria-label="Close"
+              title="Close"
+              className="am-close"
+              onMouseEnter={() => { try { const el = hoverRef.current; if (el) { el.currentTime = 0; el.volume = 0.35; el.play().catch(()=>{}); } } catch {} }}
+              onClick={() => setShowApplePopover(false)}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                <path fill="currentColor" d="M18.3 5.71L12 12l6.3 6.29-1.41 1.41L10.59 13.41 4.29 19.7 2.88 18.29 9.17 12 2.88 5.71 4.29 4.3 10.59 10.59 16.89 4.3z" />
+              </svg>
+            </button>
+            {(() => {
+              try {
+                const baseH = amEmbedUrl ? appleEmbedHeight(amEmbedUrl) : 260;
+                const scaleY = 1.35; // stretch vertically
+                const desiredH = Math.round(baseH * scaleY);
+                return (
+                  <div className="am-embed-zoom" style={{ height: desiredH, overflow: 'hidden' }}>
+                    <iframe
+                      src={amEmbedUrl}
+                      title="Apple Music"
+                      allow="autoplay *; encrypted-media *; clipboard-write"
+                      loading="eager"
+                      width="100%"
+                      height={baseH}
+                      style={{ border: 'none', display: 'block', transform: `scaleY(${scaleY})`, transformOrigin: 'top center' }}
+                    />
+                  </div>
+                );
+              } catch {
+                return (
+                  <iframe
+                    src={amEmbedUrl}
+                    title="Apple Music"
+                    allow="autoplay *; encrypted-media *; clipboard-write"
+                    loading="eager"
+                    width="100%"
+                    height={360}
+                    style={{ border: 'none', display: 'block' }}
+                  />
+                );
+              }
+            })()}
+          </div>
+        </div>,
+        document.body
+      ) : null}
+
       <style jsx global>{`
         .sp-overlay {
           position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px);
@@ -223,16 +304,37 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
           border: 1px solid rgba(29,185,84,0.6);
           border-radius: 14px; overflow: hidden;
           box-shadow: 0 18px 46px rgba(0,0,0,0.55), 0 0 32px rgba(29,185,84,0.35);
-          margin-top: -300px;
+          /* Lower on screen than before */
+          margin-top: -60px;
         }
         .sp-close { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%;
           border: 1px solid rgba(255,255,255,0.4); background: rgba(0,0,0,0.45); color: #fff; display: inline-flex;
-          align-items: center; justify-content: center; cursor: pointer; transition: transform .15s ease, background .15s ease; }
-        .sp-close:hover { transform: scale(1.06); background: rgba(0,0,0,0.6); }
+          align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 0 16px rgba(255,255,255,0.25);
+          transition: transform .15s ease, background .15s ease, box-shadow .15s ease; }
+        .sp-close:hover { transform: scale(1.1); background: rgba(0,0,0,0.6); box-shadow: 0 0 24px rgba(255,255,255,0.55); }
         .sp-close:active { transform: scale(0.95); }
 
+        .am-overlay {
+          position: fixed; inset: 0; background: transparent; backdrop-filter: none;
+          display: flex; align-items: center; justify-content: center; z-index: 2147483647;
+        }
+        .am-popover {
+          position: relative; width: min(88vw, 420px);
+          background: transparent; /* remove black fill */
+          border: 1px solid rgba(255,59,48,0.6);
+          border-radius: 14px; overflow: hidden;
+          box-shadow: 0 0 32px rgba(255,59,48,0.35); /* remove heavy dark drop shadow */
+          margin-top: -300px;
+        }
+        .am-close { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%;
+          border: 1px solid rgba(255,255,255,0.4); background: rgba(0,0,0,0.45); color: #fff; display: inline-flex;
+          align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 0 16px rgba(255,255,255,0.25);
+          transition: transform .15s ease, background .15s ease, box-shadow .15s ease; }
+        .am-close:hover { transform: scale(1.1); background: rgba(0,0,0,0.6); box-shadow: 0 0 24px rgba(255,255,255,0.55); }
+        .am-close:active { transform: scale(0.95); }
         @media (max-width: 768px) {
-          .sp-popover { margin-top: -160px; }
+          .sp-popover { margin-top: -20px; }
+          .am-popover { margin-top: -180px; }
         }
       `}</style>
     </>

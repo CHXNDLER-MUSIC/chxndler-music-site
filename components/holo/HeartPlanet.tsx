@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useRef, useMemo } from "react";
-import { Mesh, ShaderMaterial, Color } from "three";
+import { Mesh, ShaderMaterial, Color, Group } from "three";
 import { createHeartGeometry } from "../../lib/heartGeometry";
 import { useFrame } from "@react-three/fiber";
 
 export default function HeartPlanet() {
   const meshRef = useRef<Mesh>(null);
+  const groupRef = useRef<Group>(null as any);
   // Planet size baseline (used to scale geometry & glows)
   const planetRadius = 2.0;
 
@@ -16,7 +17,7 @@ export default function HeartPlanet() {
       // Stronger heart silhouette for a clearer heart read
       heartness: 5.0,
       // Slimmer along Z to accent the heart profile for a stronger silhouette
-      thicknessMultiplier: 0.5,
+      thicknessMultiplier: 0.28,
     });
   }, [planetRadius]);
 
@@ -25,17 +26,17 @@ export default function HeartPlanet() {
     const material = new ShaderMaterial({
       uniforms: {
         uTime: { value: 0 },
-        // Sun-like color ramp (deep orange -> hot yellow -> near-white core)
-        uColorCool: { value: new Color('#7a2a00') },   // deep red-orange
-        uColorMid:  { value: new Color('#ff6a00') },   // orange
-        uColorHot:  { value: new Color('#ffd166') },   // warm yellow
-        uColorCore: { value: new Color('#fff6e0') },   // near-white core
+        // Heart color ramp (deep magenta -> brand pink -> soft highlight -> near-white rose)
+        uColorCool: { value: new Color('#5b0030') },   // deep magenta
+        uColorMid:  { value: new Color('#FC54AF') },   // CHXNDLER pink
+        uColorHot:  { value: new Color('#FF9EDC') },   // soft pink highlight
+        uColorCore: { value: new Color('#FFE6F5') },   // near-white rose core
         // Detail controls
         uScale: { value: 1.45 },
         uDetail: { value: 3.3 },
         uGranularity: { value: 7.0 },
-        uEmissiveBoost: { value: 2.2 },
-        uRimBoost: { value: 0.6 },
+        uEmissiveBoost: { value: 1.6 },
+        uRimBoost: { value: 0.85 },
         // Bump detail strength
         uNormalStrength: { value: 0.55 },
       },
@@ -126,7 +127,7 @@ export default function HeartPlanet() {
           vec3 N = normalize(vNormalW);
           vec3 V = normalize(vViewDir);
           // Fixed key light to create a day/night terminator
-          vec3 L = normalize(vec3(0.5, 0.8, 0.35));
+          vec3 L = normalize(vec3(0.4, 0.8, 0.25));
 
           // domain with scale and gentle swirl
           vec3 P = swirl(vWorldPosition * uScale, uTime * 0.9);
@@ -156,15 +157,15 @@ export default function HeartPlanet() {
 
           // No specular for a star; apply limb darkening for a sun-like read
           float mu = clamp(dot(Np, V), 0.0, 1.0);
-          float limb = 0.65 + 0.35 * pow(mu, 0.45); // brighter center, darker rim
+          float limb = 0.7 + 0.3 * pow(mu, 0.5); // brighter center, darker rim
           // Subtle day/night to keep form readable
           float dif = max(dot(Np, L), 0.0);
           float night = smoothstep(0.0, 0.55, dif);
           vec3 lit = col * (0.25 + 0.9 * night) * limb;
 
           // Emissive punch with very soft rim enhancement
-          float fres = pow(1.0 - abs(dot(N, V)), 1.25);
-          lit *= (1.0 + uEmissiveBoost * (0.55 + 0.45 * sin(uTime * 1.4)));
+          float fres = pow(1.0 - abs(dot(N, V)), 1.15);
+          lit *= (1.0 + uEmissiveBoost * (0.45 + 0.55 * sin(uTime * 1.2)));
           lit += lit * fres * uRimBoost;
 
           gl_FragColor = vec4(lit, 1.0);
@@ -200,6 +201,15 @@ export default function HeartPlanet() {
       // Slow rotation
       meshRef.current.rotation.y += delta * 0.12;
     }
+    // Subtle heartbeat scale on X/Y to sell heart silhouette
+    if (groupRef.current) {
+      const beat = 0.06 * Math.max(0, Math.sin(time * 2.2)) + 0.015 * Math.sin(time * 4.4);
+      const sx = 1.0 + beat;
+      const sy = 1.0 + beat * 0.9;
+      const sz = 1.0 - beat * 0.35;
+      // Slightly wider, slightly shorter, slightly thinner to sell heart shape
+      groupRef.current.scale.set(2.0 * sx, 1.55 * sy, 0.68 * sz);
+    }
     
     
     // removed billboard sizing
@@ -208,22 +218,22 @@ export default function HeartPlanet() {
   });
 
   return (
-    <group position={[0, 0, 0]} scale={[1.55, 1.45, 0.9]}>
+    <group ref={groupRef} position={[0, 0.05, 0]} scale={[2.0, 1.55, 0.68]}>
       {/* Core heart with realistic shading */}
       <mesh ref={meshRef} position={[0, 0, 0]} renderOrder={1}>
-        <primitive object={heartGeometry} />
-        <primitive object={planetMaterial} />
+        <primitive attach="geometry" object={heartGeometry} />
+        <primitive attach="material" object={planetMaterial} />
       </mesh>
       {/* No external glow layers */}
       
       {/* Planetary lighting - gentle illumination */}
-      <ambientLight intensity={0.15} />
+      <ambientLight intensity={0.12} />
       {/* Keep external lights very subtle to let emissive drive the look */}
-      <pointLight position={[8, 6, 10]} color="#ffffff" intensity={0.35} distance={50} decay={0.5} />
-      {/* Mild warm core lights for a hint of volumetric punch */}
-      <pointLight position={[0, 0, 0]} color="#fff0d0" intensity={6.0} distance={28} decay={1.6} />
-      <pointLight position={[0, 0, 2]} color="#ffd166" intensity={3.5} distance={24} decay={1.8} />
-      <pointLight position={[0, 0, -2]} color="#ff9f1c" intensity={3.5} distance={24} decay={1.8} />
+      <pointLight position={[8, 6, 10]} color="#ffffff" intensity={0.28} distance={50} decay={0.5} />
+      {/* Mild pink core lights for a hint of volumetric punch */}
+      <pointLight position={[0, 0, 0]} color="#FFD6EC" intensity={5.0} distance={28} decay={1.6} />
+      <pointLight position={[0, 0, 2]} color="#FF9EDC" intensity={3.0} distance={24} decay={1.8} />
+      <pointLight position={[0, 0, -2]} color="#FC54AF" intensity={2.6} distance={24} decay={1.8} />
     </group>
   );
 }
