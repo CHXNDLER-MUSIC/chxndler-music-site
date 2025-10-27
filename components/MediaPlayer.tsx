@@ -1935,38 +1935,15 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 <path fill="currentColor" d="M18.3 5.71L12 12l6.3 6.29-1.41 1.41L10.59 13.41 4.29 19.7 2.88 18.29 9.17 12 2.88 5.71 4.29 4.3 10.59 10.59 16.89 4.3z" />
               </svg>
             </button>
-            {(() => {
-              try {
-                const baseH = require('@/lib/apple').appleEmbedHeight(amEmbedUrl);
-                const scaleY = 1.35; // stretch vertically
-                const desiredH = Math.round(baseH * scaleY);
-                return (
-                  <div className="am-embed-zoom" style={{ height: desiredH, overflow: 'hidden' }}>
-                    <iframe
-                      src={amEmbedUrl}
-                      title="Apple Music player"
-                      allow="autoplay *; encrypted-media *; clipboard-write"
-                      loading="eager"
-                      width="100%"
-                      height={baseH}
-                      style={{ border: 'none', display: 'block', transform: `scaleY(${scaleY})`, transformOrigin: 'top center' }}
-                    />
-                  </div>
-                );
-              } catch {
-                return (
-                  <iframe
-                    src={amEmbedUrl}
-                    title="Apple Music player"
-                    allow="autoplay *; encrypted-media *; clipboard-write"
-                    loading="eager"
-                    width="100%"
-                    height={360}
-                    style={{ border: 'none', display: 'block' }}
-                  />
-                );
-              }
-            })()}
+            <iframe
+              src={amEmbedUrl}
+              title="Apple Music player"
+              allow="autoplay *; encrypted-media *; clipboard-write"
+              loading="eager"
+              width="100%"
+              height={(() => { try { return require('@/lib/apple').appleEmbedHeight(amEmbedUrl); } catch { return 360; } })()}
+              style={{ border: 'none', display: 'block' }}
+            />
           </div>
         </div>,
         document.body
@@ -2694,8 +2671,9 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           position: fixed;
           inset: 0;
           /* No dim or blur for Spotify popout */
-          background: transparent;
-          backdrop-filter: none;
+          background: transparent !important;
+          backdrop-filter: none !important;
+          filter: none !important;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -2708,13 +2686,13 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           background: transparent;
           border-radius: 16px;
           border: 1px solid rgba(29,185,84,0.55);
-          /* Remove dark shadow to avoid any perceived dimming */
-          box-shadow: 0 0 20px rgba(29,185,84,0.28);
+          /* Remove shadow to avoid any perceived dimming */
+          box-shadow: none;
           overflow: hidden;
           /* Slightly higher on the screen */
-          margin-top: 200px;
+          margin-top: 180px;
         }
-        @media (max-width: 768px) { .sp-popover { margin-top: 140px; } }
+        @media (max-width: 768px) { .sp-popover { margin-top: 120px; } }
 
         /* Apple Music popout overlay */
         .am-overlay {

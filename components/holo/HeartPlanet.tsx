@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useRef, useMemo } from "react";
-import { Mesh, ShaderMaterial, Color, Group, Matrix4, Vector3 } from "three";
-import { createHeartGeometry } from "../../lib/heartGeometry";
+import { Mesh, ShaderMaterial, Color, Group, Matrix4, Vector3, AdditiveBlending } from "three";
+import { createHeartExtrudedGeometry } from "@/lib/heartExtrude";
 import { useFrame } from "@react-three/fiber";
 
 export default function HeartPlanet() {
@@ -13,12 +13,8 @@ export default function HeartPlanet() {
 
   // Create heart geometry
   const heartGeometry = useMemo(() => {
-    return createHeartGeometry(planetRadius * 2, 180, {
-      // Stronger heart silhouette for a clearer heart read
-      heartness: 5.0,
-      // Slimmer along Z to accent the heart profile for a stronger silhouette
-      thicknessMultiplier: 0.12,
-    });
+    // True extruded 2D heart in XY, thin depth on Z
+    return createHeartExtrudedGeometry(planetRadius * 1.6, planetRadius * 0.12);
   }, [planetRadius]);
 
   // Sun-like emissive shader with animated plasma granulation
@@ -208,7 +204,7 @@ export default function HeartPlanet() {
       const sy = 1.0 + beat * 0.9;
       const sz = 1.0 - beat * 0.45;
       // Wider, shorter, thinner to sell heart proportions strongly
-      groupRef.current.scale.set(2.5 * sx, 2.0 * sy, 0.35 * sz);
+      groupRef.current.scale.set(2.6 * sx, 2.1 * sy, 0.30 * sz);
     }
     
     
@@ -218,11 +214,24 @@ export default function HeartPlanet() {
   });
 
   return (
-    <group ref={groupRef} position={[0, 0.05, 0]} scale={[2.5, 2.0, 0.35]}>
+    <group ref={groupRef} position={[0, 0.05, 0]} scale={[2.6, 2.1, 0.30]}>
       {/* Core heart with realistic shading */}
       <mesh ref={meshRef} position={[0, 0, 0]} renderOrder={1}>
         <primitive attach="geometry" object={heartGeometry} />
         <primitive attach="material" object={planetMaterial} />
+      </mesh>
+      {/* Thin outline glow for unmistakable silhouette */}
+      <mesh position={[0, 0, 0]} renderOrder={0}>
+        <primitive attach="geometry" object={heartGeometry} />
+        <meshBasicMaterial
+          color={"#FFB8E6"}
+          transparent
+          opacity={0.18}
+          depthWrite={false}
+          depthTest={false}
+          blending={AdditiveBlending}
+        />
+        <scale args={[1.03, 1.03, 1.03]} />
       </mesh>
       {/* No external glow layers */}
       

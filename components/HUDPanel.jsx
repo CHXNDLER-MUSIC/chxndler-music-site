@@ -11,7 +11,7 @@ import Link from "next/link";
 // are incompatible with React 19 and can crash on evaluation. We lazy-load it
 // only after probing availability, and fall back gracefully.
 import { playerStore } from "@/store/usePlayerStore";
-import { track as trackAnalytics } from "@/lib/analytics";
+import { track as trackAnalytics, storeClickData, generateClickId } from "@/lib/analytics";
 
 // We import the 3D system directly and only render on client via this client component
 
@@ -137,7 +137,7 @@ export default function HUDPanel({
   const playerRef = useRef(null);
   const [planetBottom, setPlanetBottom] = useState(56);
   // Vertical offset to raise/lower the Store (Gem) popover relative to its anchor
-  const STORE_POPOVER_Y_OFFSET = -176; // negative raises it upwards slightly more
+  const STORE_POPOVER_Y_OFFSET = -188; // raise top a bit more; bottom unchanged
   // Dynamic spacing for song selector so it doesn't overlap the cover
   const coverRef = useRef(null);
   const [oneLinerRight, setOneLinerRight] = useState(inConsole ? 108 : 140);
@@ -1205,6 +1205,29 @@ export default function HUDPanel({
                   const title = (!currentId ? 'CHXNDLER Home' : (track?.title || 'Unknown'));
                   trackAnalytics('chxndler_button_clicked', { song_slug: String(slug || ''), payload: { song_title: title, location: 'hud_brand_button' } });
                 } catch {}
+                // Also store a local click record so analytics UI can show counts without server
+                try {
+                  const id = generateClickId();
+                  const ts = Date.now();
+                  storeClickData({
+                    id,
+                    timestamp: ts,
+                    element: {
+                      tagName: 'button',
+                      className: 'brand-cover-btn',
+                      id: '',
+                      textContent: 'CHXNDLER',
+                      role: 'button',
+                      ariaLabel: 'CHXNDLER',
+                      dataId: 'brand',
+                    },
+                    position: { x: 0, y: 0, screenX: 0, screenY: 0 },
+                    viewport: { width: (typeof window!== 'undefined'? window.innerWidth:0), height: (typeof window!== 'undefined'? window.innerHeight:0) },
+                    page: { url: (typeof window!== 'undefined'? window.location.href:''), title: (typeof document!== 'undefined'? document.title:'') },
+                    userAgent: (typeof navigator!== 'undefined'? navigator.userAgent:'unknown'),
+                    enhancedLabel: '⭐ CHXNDLER Button',
+                  });
+                } catch {}
                 if (showBrandPopover) { try { sfx.play('close', 0.4); } catch {}; setShowBrandPopover(false); return; }
                 openBrandPopover();
               }}
@@ -1809,38 +1832,15 @@ export default function HUDPanel({
                           <path fill="currentColor" d="M18.3 5.71L12 12l6.3 6.29-1.41 1.41L10.59 13.41 4.29 19.7 2.88 18.29 9.17 12 2.88 5.71 4.29 4.3 10.59 10.59 16.89 4.3z" />
                         </svg>
                       </button>
-                      {(() => {
-                        try {
-                          const baseH = require('@/lib/apple').appleEmbedHeight(amEmbedUrl);
-                          const scaleY = 1.35; // stretch vertically
-                          const desiredH = Math.round(baseH * scaleY);
-                          return (
-                            <div className="am-embed-zoom" style={{ height: desiredH, overflow: 'hidden' }}>
-                              <iframe
-                                src={amEmbedUrl}
-                                title="Apple Music player"
-                                allow="autoplay *; encrypted-media *; clipboard-write"
-                                loading="eager"
-                                width="100%"
-                                height={baseH}
-                                style={{ border: 'none', display: 'block', transform: `scaleY(${scaleY})`, transformOrigin: 'top center' }}
-                              />
-                            </div>
-                          );
-                        } catch {
-                          return (
-                            <iframe
-                              src={amEmbedUrl}
-                              title="Apple Music player"
-                              allow="autoplay *; encrypted-media *; clipboard-write"
-                              loading="eager"
-                              width="100%"
-                              height={360}
-                              style={{ border: 'none', display: 'block' }}
-                            />
-                          );
-                        }
-                      })()}
+                      <iframe
+                        src={amEmbedUrl}
+                        title="Apple Music player"
+                        allow="autoplay *; encrypted-media *; clipboard-write"
+                        loading="eager"
+                        width="100%"
+                        height={(() => { try { return require('@/lib/apple').appleEmbedHeight(amEmbedUrl); } catch { return 360; } })()}
+                        style={{ border: 'none', display: 'block' }}
+                      />
                     </div>
                   </div>,
                   document.body
@@ -2217,6 +2217,29 @@ export default function HUDPanel({
                                         const songSlug = (typeof slug !== 'undefined' && slug) ? slug : (active || 'unknown');
                                         const songTitle = currentSong?.title || track?.title || 'Unknown';
                                         trackAnalytics('store_item_clicked', { song_slug: String(songSlug || ''), payload: { song_title: songTitle, item_id: item.id, item_title: item.title, location: 'hud_store_item' } });
+                                      } catch {}
+                                      // Store local click for analytics UI fallback
+                                      try {
+                                        const id = generateClickId();
+                                        const ts = Date.now();
+                                        storeClickData({
+                                          id,
+                                          timestamp: ts,
+                                          element: {
+                                            tagName: 'a',
+                                            className: 'store-add-btn',
+                                            id: '',
+                                            textContent: 'Add to Collection',
+                                            role: 'link',
+                                            ariaLabel: `Add ${item.title} to collection`,
+                                            dataId: 'store-item',
+                                          },
+                                          position: { x: 0, y: 0, screenX: 0, screenY: 0 },
+                                          viewport: { width: (typeof window!== 'undefined'? window.innerWidth:0), height: (typeof window!== 'undefined'? window.innerHeight:0) },
+                                          page: { url: (typeof window!== 'undefined'? window.location.href:''), title: (typeof document!== 'undefined'? document.title:'') },
+                                          userAgent: (typeof navigator!== 'undefined'? navigator.userAgent:'unknown'),
+                                          enhancedLabel: `🛍️ Store: ${item.title}`,
+                                        });
                                       } catch {}
                                     }}
                                     style={{

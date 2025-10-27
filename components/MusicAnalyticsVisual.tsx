@@ -19,6 +19,7 @@ interface MusicStats {
   spotifySongClicks?: Array<{ song: string; count: number; title?: string }>;
   appleSongClicks?: Array<{ song: string; count: number; title?: string }>;
   lyricsSongClicks?: Array<{ song: string; count: number; title?: string }>;
+  storeItems?: Array<{ id: string; title: string; count: number }>;
   
   totalMusicInteractions: number;
   totalButtonClicks: number;
@@ -35,12 +36,15 @@ type Metrics = {
   socials: { instagram: number; tiktok: number; youtube: number; spotify: number; apple: number };
   joinPinkClicks: number;
   joinSubmitClicks: number;
+  brandClicks?: number;
   songPlays: Record<string, { count: number; title?: string }>;
   coverClicks: Record<string, { count: number; title?: string }>;
   youtubeSongClicks?: Record<string, { count: number; title?: string }>;
   spotifySongClicks?: Record<string, { count: number; title?: string }>;
   appleSongClicks?: Record<string, { count: number; title?: string }>;
   lyricsSongClicks?: Record<string, { count: number; title?: string }>;
+  storeButtonClicks?: number;
+  storeItemClicks?: Record<string, { id: string; title: string; count: number }>;
 };
 
 export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualProps) {
@@ -49,6 +53,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
   const [songsOpen, setSongsOpen] = useState(false);
   const [coversOpen, setCoversOpen] = useState(false);
   const [cardsOpen, setCardsOpen] = useState(false);
+  const [storeOpen, setStoreOpen] = useState(false);
   const [igOpen, setIgOpen] = useState(false);
   const [ttOpen, setTtOpen] = useState(false);
   const [ytOpen, setYtOpen] = useState(false);
@@ -77,6 +82,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
         youtubeSongClicks: [],
         spotifySongClicks: [],
         appleSongClicks: [],
+        storeItems: [],
         totalMusicInteractions: 0,
         totalButtonClicks: 0,
       });
@@ -95,6 +101,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
     const coverClicks: Record<string, { count: number; title?: string }> = {};
     const cardClicks: Record<string, { count: number; title?: string }> = {};
     const collectCardClicks: Record<string, { count: number; title?: string }> = {};
+    const storeItems: Record<string, { count: number; title: string; id: string }> = {};
 
     let totalInteractions = 0;
     let totalButtonClicks = 0;
@@ -212,6 +219,14 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
         coverClicks[songKey].count++;
         totalInteractions++;
       }
+      // Store: Add to Collection (merch)
+      else if (label.startsWith('🛍️ Store:')) {
+        const title = label.replace('🛍️ Store:', '').trim();
+        const key = title.toLowerCase();
+        const idGuess = key.replace(/\s+/g, '-');
+        storeItems[key] = storeItems[key] || { count: 0, title: title || 'Item', id: idGuess };
+        storeItems[key].count++;
+      }
     });
 
     setStats({
@@ -247,6 +262,9 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
         .sort((a, b) => b.count - a.count),
       collectCardClicks: Object.entries(collectCardClicks)
         .map(([song, data]) => ({ song, count: data.count, title: data.title }))
+        .sort((a, b) => b.count - a.count),
+      storeItems: Object.entries(storeItems)
+        .map(([k, v]) => ({ id: v.id, title: v.title, count: v.count }))
         .sort((a, b) => b.count - a.count),
       totalMusicInteractions: totalInteractions,
       totalButtonClicks: totalButtonClicks,
@@ -476,7 +494,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                       </div>
                       <div className="w-full px-6 py-4 flex items-center justify-between">
                         <span className="text-white font-medium">chxndler</span>
-                        <span className="text-cyan-200 font-bold">{stats?.controlButtons.find(b=>b.button==='CHXNDLER')?.count || 0}</span>
+                        <span className="text-cyan-200 font-bold">{(() => { const fallback = stats?.controlButtons.find(b=>b.button==='CHXNDLER')?.count || 0; return (metrics?.brandClicks ?? fallback); })()}</span>
                       </div>
                     </div>
                     {/* Spotify per-song (from waveform/HUD) */}
@@ -814,6 +832,61 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                                 </div>
                                 <div className="bg-gray-700 rounded-full h-2 overflow-hidden">
                                   <div className={`h-full bg-gradient-to-r from-teal-500 to-cyan-500 transition-all duration-500`} style={{ width: `${Math.max((count / max) * 100, 5)}%` }} />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Store */}
+                    <button className="w-full text-left px-6 py-4 flex items-center justify-between hover:bg-cyan-500/10 border-t border-cyan-400/10" onClick={() => setStoreOpen(!storeOpen)}>
+                      <span className="text-white font-medium flex items-center gap-3">
+                        Store
+                        <span className="text-xs font-semibold text-cyan-200/80 bg-cyan-500/10 border border-cyan-400/20 rounded-full px-2 py-0.5">
+                          opens: {metrics?.storeButtonClicks ?? 0}
+                        </span>
+                      </span>
+                      <span className="text-cyan-200 font-bold">
+                        {(() => {
+                          // Prefer server: sum of all store item clicks
+                          if (metrics?.storeItemClicks && Object.keys(metrics.storeItemClicks).length) {
+                            return Object.values(metrics.storeItemClicks).reduce((sum, it:any) => sum + (it?.count || 0), 0);
+                          }
+                          const list = stats?.storeItems || [];
+                          return list.reduce((sum, it:any) => sum + (it.count || 0), 0);
+                        })()}
+                      </span>
+                    </button>
+                    {storeOpen && (
+                      <div className="px-6 pb-6 space-y-3">
+                        {([
+                          { id: 'sticker', title: 'STICKER' },
+                          { id: 'pin', title: 'PIN' },
+                          { id: 'patch', title: 'PATCH' },
+                          { id: 'necklace', title: 'NECKLACE' },
+                          { id: 'beanie', title: 'BEANIE' },
+                          { id: 'hat', title: 'HAT' },
+                          { id: 'house-party-poster', title: 'HOUSE PARTY POSTER' },
+                          { id: 'button', title: 'BUTTON' },
+                          { id: 'keychain', title: 'KEYCHAIN' },
+                        ] as Array<{id:string;title:string}>).map((prod) => {
+                          const serverCount = metrics?.storeItemClicks?.[prod.id]?.count || 0;
+                          const localCount = (() => {
+                            const found = (stats?.storeItems || []).find((s:any) => (s.title || '').toLowerCase() === prod.title.toLowerCase());
+                            return found?.count || 0;
+                          })();
+                          const count = serverCount || localCount || 0;
+                          return (
+                            <div key={prod.id} className="flex items-center gap-4">
+                              <div className="flex-1">
+                                <div className="flex justify-between items-center mb-1">
+                                  <span className="text-white font-medium">{prod.title}</span>
+                                  <span className="text-cyan-400 font-bold">{count} adds</span>
+                                </div>
+                                <div className="bg-gray-700 rounded-full h-2 overflow-hidden">
+                                  <div className={`h-full bg-gradient-to-r from-amber-400 to-pink-500 transition-all duration-500`} style={{ width: `${Math.max(count > 0 ? (count / Math.max(1, count)) * 100 : 5, 5)}%` }} />
                                 </div>
                               </div>
                             </div>

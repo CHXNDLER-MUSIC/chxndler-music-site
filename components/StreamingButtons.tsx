@@ -256,38 +256,15 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
                 <path fill="currentColor" d="M18.3 5.71L12 12l6.3 6.29-1.41 1.41L10.59 13.41 4.29 19.7 2.88 18.29 9.17 12 2.88 5.71 4.29 4.3 10.59 10.59 16.89 4.3z" />
               </svg>
             </button>
-            {(() => {
-              try {
-                const baseH = amEmbedUrl ? appleEmbedHeight(amEmbedUrl) : 260;
-                const scaleY = 1.35; // stretch vertically
-                const desiredH = Math.round(baseH * scaleY);
-                return (
-                  <div className="am-embed-zoom" style={{ height: desiredH, overflow: 'hidden' }}>
-                    <iframe
-                      src={amEmbedUrl}
-                      title="Apple Music"
-                      allow="autoplay *; encrypted-media *; clipboard-write"
-                      loading="eager"
-                      width="100%"
-                      height={baseH}
-                      style={{ border: 'none', display: 'block', transform: `scaleY(${scaleY})`, transformOrigin: 'top center' }}
-                    />
-                  </div>
-                );
-              } catch {
-                return (
-                  <iframe
-                    src={amEmbedUrl}
-                    title="Apple Music"
-                    allow="autoplay *; encrypted-media *; clipboard-write"
-                    loading="eager"
-                    width="100%"
-                    height={360}
-                    style={{ border: 'none', display: 'block' }}
-                  />
-                );
-              }
-            })()}
+            <iframe
+              src={amEmbedUrl}
+              title="Apple Music"
+              allow="autoplay *; encrypted-media *; clipboard-write"
+              loading="eager"
+              width="100%"
+              height={amEmbedUrl ? appleEmbedHeight(amEmbedUrl) : 360}
+              style={{ border: 'none', display: 'block' }}
+            />
           </div>
         </div>,
         document.body

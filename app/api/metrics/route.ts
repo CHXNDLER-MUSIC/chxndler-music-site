@@ -103,6 +103,15 @@ export async function GET(_req: NextRequest) {
       console.error('[metrics] chxndler button click query failed:', brandErr);
     }
 
+    // Store button clicks (HUD gem button)
+    const { count: storeButtonCount, error: storeBtnErr } = await supabase
+      .from('events')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_type', 'store_button_clicked');
+    if (storeBtnErr) {
+      console.error('[metrics] store button click query failed:', storeBtnErr);
+    }
+
     // Aggregate Spotify/Apple clicks from click_events.element_label
     const socials = { instagram: 0, tiktok: 0, youtube: 0, spotify: 0, apple: 0 } as Record<string, number>;
 
@@ -149,6 +158,7 @@ export async function GET(_req: NextRequest) {
     const spotifySongClicks: Record<string, { count: number; title: string }> = {};
     const appleSongClicks: Record<string, { count: number; title: string }> = {};
     const lyricsSongClicks: Record<string, { count: number; title: string }> = {};
+    const storeItemClicks: Record<string, { count: number; id: string; title: string }> = {};
 
     const spRows = await supabase
       .from('events')
@@ -205,6 +215,23 @@ export async function GET(_req: NextRequest) {
       }
     }
 
+    // Store item clicks breakdown by payload.item_id and payload.item_title
+    const stRows = await supabase
+      .from('events')
+      .select('payload')
+      .eq('event_type', 'store_item_clicked')
+      .limit(5000);
+    if (!stRows.error && Array.isArray(stRows.data)) {
+      for (const r of stRows.data as Array<{ payload: any }>) {
+        const pid = String(r?.payload?.item_id || '').toLowerCase();
+        const ptitle = String(r?.payload?.item_title || '').trim() || pid || 'item';
+        if (!pid && !ptitle) continue;
+        const key = pid || ptitle.toLowerCase();
+        if (!storeItemClicks[key]) storeItemClicks[key] = { count: 0, id: pid || key, title: ptitle };
+        storeItemClicks[key].count++;
+      }
+    }
+
     return j(200, {
       pageViews: pageViewCount || 0,
       startClicks: startClickCount || 0,
@@ -212,12 +239,14 @@ export async function GET(_req: NextRequest) {
       socials,
       joinPinkClicks: joinPinkClickCount || 0,
       brandClicks: brandClickCount || 0,
+      storeButtonClicks: storeButtonCount || 0,
       joinSubmitClicks: joinSubmitCount || 0,
       songPlays: {},
       coverClicks: {},
       spotifySongClicks,
       appleSongClicks,
       lyricsSongClicks,
+      storeItemClicks,
       debug: {
         connectionTest: 'passed',
         totalEvents: testConnection.count || 0
