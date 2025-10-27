@@ -227,7 +227,7 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
               src={spEmbedUrl}
               title="Spotify"
               allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-              loading="eager"
+              loading="lazy"
               width="100%"
               height={spEmbedUrl ? spotifyEmbedHeight(spEmbedUrl) : undefined}
               style={{ border: 'none', display: 'block' }}
@@ -260,7 +260,7 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
               src={amEmbedUrl}
               title="Apple Music"
               allow="autoplay *; encrypted-media *; clipboard-write"
-              loading="eager"
+              loading="lazy"
               width="100%"
               height={amEmbedUrl ? appleEmbedHeight(amEmbedUrl) : 360}
               style={{ border: 'none', display: 'block' }}
@@ -301,7 +301,7 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
           border: 1px solid rgba(255,59,48,0.6);
           border-radius: 14px; overflow: hidden;
           box-shadow: 0 0 32px rgba(255,59,48,0.35); /* remove heavy dark drop shadow */
-          margin-top: 220px;
+          margin-top: 380px;
         }
         .am-close { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%;
           border: 1px solid rgba(255,255,255,0.4); background: rgba(0,0,0,0.45); color: #fff; display: inline-flex;
@@ -311,7 +311,7 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
         .am-close:active { transform: scale(0.95); }
         @media (max-width: 768px) {
           .sp-popover { margin-top: -10px; }
-          .am-popover { margin-top: 120px; }
+          .am-popover { margin-top: 220px; }
         }
       `}</style>
     </>

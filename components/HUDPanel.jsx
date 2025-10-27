@@ -1836,7 +1836,7 @@ export default function HUDPanel({
                         src={amEmbedUrl}
                         title="Apple Music player"
                         allow="autoplay *; encrypted-media *; clipboard-write"
-                        loading="eager"
+                        loading="lazy"
                         width="100%"
                         height={(() => { try { return require('@/lib/apple').appleEmbedHeight(amEmbedUrl); } catch { return 360; } })()}
                         style={{ border: 'none', display: 'block' }}
@@ -1905,7 +1905,7 @@ export default function HUDPanel({
                         src={spEmbedUrl}
                         title="Spotify player"
                         allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                        loading="eager"
+                        loading="lazy"
                         width="100%"
                         height={spEmbedUrl ? (() => { try { return require('@/lib/spotify').spotifyEmbedHeight(spEmbedUrl); } catch { return undefined } })() : undefined}
                         style={{ border: 'none', display: 'block' }}
@@ -1978,7 +1978,7 @@ export default function HUDPanel({
                         title="YouTube player"
                         allow="autoplay; encrypted-media; picture-in-picture"
                         allowFullScreen
-                        loading="eager"
+                        loading="lazy"
                         style={{ border: 'none', width: '100%', height: '100%', display: 'block' }}
                       />
                     </div>

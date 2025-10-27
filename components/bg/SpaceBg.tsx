@@ -11,6 +11,7 @@ export default function SpaceBg({ active = true }: { active?: boolean }) {
       loop
       playsInline
       preload="metadata"
+      poster="/logo/CHXNDLER_Logo.png"
       srcMp4="/skies/space.mp4"
       style={{ opacity: active ? 1 : 0, transition: 'opacity 300ms ease' }}
     />

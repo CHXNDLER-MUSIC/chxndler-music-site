@@ -11,6 +11,7 @@ export default function ParisBg({ active = true }: { active?: boolean }) {
       loop
       playsInline
       preload="metadata"
+      poster="/cover/paris.png"
       srcMp4="/skies/paris.mp4"
       style={{ opacity: active ? 1 : 0, transition: 'opacity 300ms ease' }}
     />

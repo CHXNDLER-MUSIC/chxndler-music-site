@@ -11,6 +11,7 @@ export default function OceanBg({ active = true }: { active?: boolean }) {
       loop
       playsInline
       preload="metadata"
+      poster="/cover/ocean-girl.png"
       srcMp4="/skies/ocean-girl.mp4"
       style={{ opacity: active ? 1 : 0, transition: 'opacity 300ms ease' }}
     />
