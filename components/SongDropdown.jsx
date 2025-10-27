@@ -216,23 +216,24 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
         className="songs-trigger w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-[10px] border-2 border-[#19E3FF]/80 bg-cyan-400/10 backdrop-blur-xl shadow-[0_0_18px_rgba(25,227,255,0.35)] focus:outline-none focus:ring-2 focus:ring-cyan-400"
       >
         <span className="flex items-center gap-2 min-w-0">
-          <span
-            className="songs-icon"
-            style={!currentId ? {
-              // Bright white glow for music.png only on homepage
-              filter: 'brightness(2.0) contrast(1.12) drop-shadow(0 0 14px rgba(255,255,255,1)) drop-shadow(0 0 36px rgba(255,255,255,0.95)) drop-shadow(0 0 80px rgba(255,255,255,0.85))',
-              mixBlendMode: 'normal',
-              animation: 'none'
-            } : undefined}
-          >
-            <OptimizedElementIcon 
-              name={!currentId ? "music" : (current?.icon || "music")} 
-              alt={!currentId ? "Music" : (current?.title || "Music")} 
-              className="w-7 h-7 object-contain" 
-              width={28} 
-              height={28} 
-            />
-          </span>
+          {(() => {
+            const headerIconName = !currentId ? 'music' : (current?.icon || 'music');
+            const dataIcon = headerIconName === 'music' ? 'music' : 'element';
+            return (
+              <span
+                className="songs-icon"
+                data-icon={dataIcon}
+              >
+                <OptimizedElementIcon 
+                  name={headerIconName} 
+                  alt={!currentId ? "Music" : (current?.title || "Music")} 
+                  className="w-7 h-7 object-contain" 
+                  width={28} 
+                  height={28} 
+                />
+              </span>
+            );
+          })()}
           <span
             className="songs-label truncate text-[16px] font-semibold tracking-wide"
             style={!currentId ? {
@@ -398,6 +399,30 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
             drop-shadow(0 0 36px #19E3FF)
             drop-shadow(0 0 64px #19E3FF);
           mix-blend-mode: screen; will-change: transform; animation: holoPulse 2.2s ease-in-out infinite; transform: translateZ(0);
+        }
+        /* Force neon-white glow when the music icon is shown in header */
+        .songs-icon[data-icon="music"]{
+          filter: brightness(2.0) contrast(1.12)
+            drop-shadow(0 0 14px rgba(255,255,255,1))
+            drop-shadow(0 0 36px rgba(255,255,255,0.95))
+            drop-shadow(0 0 80px rgba(255,255,255,0.85));
+          -webkit-filter: brightness(2.0) contrast(1.12)
+            drop-shadow(0 0 14px rgba(255,255,255,1))
+            drop-shadow(0 0 36px rgba(255,255,255,0.95))
+            drop-shadow(0 0 80px rgba(255,255,255,0.85));
+          mix-blend-mode: normal;
+          animation: none;
+        }
+        .songs-icon[data-icon="music"] img{
+          display: block;
+          filter: brightness(2.0) contrast(1.15)
+            drop-shadow(0 0 12px rgba(255,255,255,1))
+            drop-shadow(0 0 28px rgba(255,255,255,0.95))
+            drop-shadow(0 0 60px rgba(255,255,255,0.9));
+          -webkit-filter: brightness(2.0) contrast(1.15)
+            drop-shadow(0 0 12px rgba(255,255,255,1))
+            drop-shadow(0 0 28px rgba(255,255,255,0.95))
+            drop-shadow(0 0 60px rgba(255,255,255,0.9));
         }
         .songs-label{ color:#EFFFFF; text-shadow: none; }
         .opt:hover .holo-icon{ 

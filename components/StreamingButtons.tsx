@@ -2,6 +2,8 @@
 import React, { useRef, useCallback, useEffect, useState } from "react";
 import { sfx } from "@/lib/sfx";
 import IconButtonShell from "@/components/IconButtonShell";
+import { toSpotifyEmbed, spotifyEmbedHeight } from "@/lib/spotify";
+import { createPortal } from "react-dom";
 
 export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh:number; sizePx:number; gapPx?:number; tilt?:string; vertical?: boolean; mobile?: {sizePx:number; gapPx?:number}; tablet?: {sizePx:number; gapPx?:number} }, links:{ spotify?:string; apple?:string } }){
   // Get responsive size based on screen width
@@ -82,6 +84,17 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
     />
   );
 
+  const [showSpotifyPopover, setShowSpotifyPopover] = useState(false);
+  const [spEmbedUrl, setSpEmbedUrl] = useState<string | null>(null);
+
+  // Close on Escape
+  useEffect(() => {
+    if (!showSpotifyPopover) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowSpotifyPopover(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showSpotifyPopover]);
+
   return (
     <>
       {links.spotify && (
@@ -94,7 +107,26 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
           }
         >
           <span className="socket" aria-hidden />
-          <IconButtonShell title="Listen on Spotify" href={links.spotify} color="#1DB954" onClickFX={playClick} onHoverFX={playHover}>
+          <IconButtonShell
+            title="Listen on Spotify"
+            href={links.spotify}
+            color="#1DB954"
+            onClickFX={playClick}
+            onHoverFX={playHover}
+            onClick={() => {
+              try {
+                const embed = toSpotifyEmbed(links.spotify!);
+                if (embed) {
+                  setSpEmbedUrl(embed);
+                  setShowSpotifyPopover(true);
+                } else {
+                  window.open(links.spotify!, '_blank', 'noopener,noreferrer');
+                }
+              } catch {
+                try { window.open(links.spotify!, '_blank', 'noopener,noreferrer'); } catch {}
+              }
+            }}
+          >
             {SpotifyIcon}
           </IconButtonShell>
         </div>
@@ -147,6 +179,62 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
         <source src="/audio/hover.mp3" type="audio/mpeg" />
         <source src="/audio/song-select.mp3" type="audio/mpeg" />
       </audio>
+
+      {typeof document !== 'undefined' && showSpotifyPopover && spEmbedUrl ? createPortal(
+        <div
+          role="dialog"
+          aria-label="Spotify"
+          className="sp-overlay"
+          onClick={() => setShowSpotifyPopover(false)}
+        >
+          <div className="sp-popover" onClick={(e) => e.stopPropagation()} style={{ height: spEmbedUrl ? spotifyEmbedHeight(spEmbedUrl) : undefined }}>
+            <button
+              aria-label="Close"
+              title="Close"
+              className="sp-close"
+              onClick={() => setShowSpotifyPopover(false)}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                <path fill="currentColor" d="M18.3 5.71L12 12l6.3 6.29-1.41 1.41L10.59 13.41 4.29 19.7 2.88 18.29 9.17 12 2.88 5.71 4.29 4.3 10.59 10.59 16.89 4.3z" />
+              </svg>
+            </button>
+            <iframe
+              src={spEmbedUrl}
+              title="Spotify"
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              loading="eager"
+              width="100%"
+              height={spEmbedUrl ? spotifyEmbedHeight(spEmbedUrl) : undefined}
+              style={{ border: 'none', display: 'block' }}
+            />
+          </div>
+        </div>,
+        document.body
+      ) : null}
+
+      <style jsx global>{`
+        .sp-overlay {
+          position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px);
+          display: flex; align-items: center; justify-content: center; z-index: 2147483647;
+        }
+        .sp-popover {
+          position: relative; width: min(88vw, 420px);
+          background: rgba(0,0,0,0.88);
+          border: 1px solid rgba(29,185,84,0.6);
+          border-radius: 14px; overflow: hidden;
+          box-shadow: 0 18px 46px rgba(0,0,0,0.55), 0 0 32px rgba(29,185,84,0.35);
+          margin-top: -300px;
+        }
+        .sp-close { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%;
+          border: 1px solid rgba(255,255,255,0.4); background: rgba(0,0,0,0.45); color: #fff; display: inline-flex;
+          align-items: center; justify-content: center; cursor: pointer; transition: transform .15s ease, background .15s ease; }
+        .sp-close:hover { transform: scale(1.06); background: rgba(0,0,0,0.6); }
+        .sp-close:active { transform: scale(0.95); }
+
+        @media (max-width: 768px) {
+          .sp-popover { margin-top: -160px; }
+        }
+      `}</style>
     </>
   );
 }

@@ -374,10 +374,11 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                     <Image
                       src="/elements/elementals.png"
                       alt=""
-                      width={20}
-                      height={20}
+                      fill
+                      sizes="30px"
                       className="btn-element-icon"
                       aria-hidden
+                      style={{ objectFit: 'cover' }}
                     />
                     <span className="sr-only">Elements</span>
                   </button>
@@ -450,7 +451,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
           style={{
             position: 'fixed',
             left: '50%',
-            top: elementsPopoverPos.top,
+            top: (elementsPopoverPos.top - 16),
             transform: 'translateX(-50%)',
             padding: '14px 16px',
             borderRadius: 12,
@@ -482,6 +483,33 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
           }}
           onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowElementsPopover(false); } }}
         >
+          {/* Close (X) button at top-right */}
+          <button
+            aria-label="Close"
+            title="Close"
+            onMouseEnter={() => { try { sfx.play('hover', 0.4); } catch {} }}
+            onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowElementsPopover(false); }}
+            style={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              width: 30,
+              height: 30,
+              borderRadius: 999,
+              border: '1px solid rgba(25,227,255,0.6)',
+              background: 'rgba(0,0,0,0.5)',
+              color: '#19E3FF',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer'
+            }}
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+              <path fill="currentColor" d="M18.3 5.71L12 12l6.3 6.29-1.41 1.41L10.59 13.41 4.29 19.7 2.88 18.29 9.17 12 2.88 5.71 4.29 4.3 10.59 10.59 16.89 4.3z" />
+            </svg>
+          </button>
+
           {/* Header image at the top of the Elements popout */}
           <div style={{ marginBottom: 12 }}>
             <img
@@ -489,8 +517,8 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
               alt="Elementals"
               style={{
                 display: 'block',
-                width: '50%',
-                maxWidth: 280,
+                width: '42%',
+                maxWidth: 240,
                 margin: '0 auto',
                 height: 'auto',
                 borderRadius: 0,
@@ -657,13 +685,23 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
           position: relative; display:inline-grid; place-items:center;
           width: 30px; height: 30px; border-radius: 50%; font-weight:800; letter-spacing:.06em; font-size: 15px; line-height: 1.1;
           color:#001014; text-transform:none; font-family: InterLocal, system-ui, sans-serif;
-          background: radial-gradient(100% 100% at 50% 20%, rgba(200,255,255,0.95), #19E3FF);
+          background: transparent; /* fill entirely with elementals.png */
           border: 1px solid rgba(255,255,255,.24);
-          box-shadow: 0 0 20px rgba(25,227,255,.55), inset 0 2px 0 rgba(255,255,255,.6), inset 0 -8px 16px rgba(0,0,0,.22);
+          box-shadow: 0 0 20px rgba(25,227,255,.55); /* remove inner insets so image fully reads */
           transition: transform .12s ease, box-shadow .18s ease, filter .18s ease;
-          overflow:hidden;
+          overflow: visible; /* allow icon/glow to sit on top of the button without clipping */
+          z-index: 12;
         }
-        .btn-element-icon{ display:block; width:20px; height:20px; object-fit:contain; pointer-events:none; }
+        .btn-element-icon{ 
+          position: absolute; 
+          inset: 0; 
+          width: 100%; 
+          height: 100%; 
+          object-fit: cover; 
+          display: block; 
+          pointer-events: none; 
+          transform: scale(1.08); /* slightly overfill so art sits on top of circular border */
+        }
         .btn-element:hover{
           transform: scale(1.05);
           box-shadow:

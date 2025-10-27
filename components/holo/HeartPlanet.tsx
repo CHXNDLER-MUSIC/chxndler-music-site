@@ -15,8 +15,8 @@ export default function HeartPlanet() {
     return createHeartGeometry(planetRadius * 2, 96, {
       // Stronger heart silhouette for a clearer heart read
       heartness: 5.0,
-      // Slimmer along Z to accent the heart profile
-      thicknessMultiplier: 0.6,
+      // Slimmer along Z to accent the heart profile for a stronger silhouette
+      thicknessMultiplier: 0.5,
     });
   }, [planetRadius]);
 

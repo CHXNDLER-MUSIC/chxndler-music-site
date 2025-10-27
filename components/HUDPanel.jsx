@@ -168,6 +168,8 @@ export default function HUDPanel({
 
   // YouTube popout state (waveform HUD)
   const [showYouTubePopover, setShowYouTubePopover] = useState(false);
+  const [showSpotifyPopover, setShowSpotifyPopover] = useState(false);
+  const [spEmbedUrl, setSpEmbedUrl] = useState(null);
   const [ytEmbedUrl, setYtEmbedUrl] = useState('');
 
   // Storefront (Gem) popover state
@@ -239,6 +241,7 @@ export default function HUDPanel({
       title: 'HOUSE PARTY POSTER',
       image: '/store/house-party-poster.png',
       url: 'https://buy.stripe.com/dRmfZi0CJ4gZ3oZ2GH4gg0G',
+      price: '$20.00 USD',
       description: 'This poster captures the night the HEARTVERSE came alive. Hang it up and remember when you joined the story.'
     }
   ];
@@ -373,6 +376,13 @@ export default function HUDPanel({
     document.addEventListener('keydown', onKey);
     return () => { document.removeEventListener('keydown', onKey); };
   }, [showYouTubePopover]);
+
+  useEffect(() => {
+    if (!showSpotifyPopover) return;
+    const onKey = (e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowSpotifyPopover(false); } };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showSpotifyPopover]);
 
   // Open Store (Gem) popover anchored to the gem button
   const openStorePopover = async () => {
@@ -1214,7 +1224,18 @@ export default function HUDPanel({
                         data-song={currentSong?.title || ''}
                         data-slug={currentSong?.id || ''}
                         data-id="sp"
-                        onClick={(e) => { try { sfx.play('join-aliens', 0.9); } catch {} }}
+                        onClick={(e) => {
+                          try { e.preventDefault(); } catch {}
+                          try { sfx.play('join-aliens', 0.9); } catch {}
+                          try {
+                            const { toSpotifyEmbed } = require('@/lib/spotify');
+                            const embed = toSpotifyEmbed(spotifyUrl);
+                            if (embed) { setSpEmbedUrl(embed); setShowSpotifyPopover(true); }
+                            else { window.open(spotifyUrl, '_blank', 'noopener,noreferrer'); }
+                          } catch {
+                            try { window.open(spotifyUrl, '_blank', 'noopener,noreferrer'); } catch {}
+                          }
+                        }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                       >
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
@@ -1458,6 +1479,7 @@ export default function HUDPanel({
                   const currentSong = resolvedSongs.find(s => s.id === active);
                   if (isHome) {
                       // Homepage: lyrics popover for CHXNDLER + YouTube disabled
+                      // Also show the Store (gem) button as ACTIVE on homepage
                       return (
                         <>
                           <button
@@ -1485,12 +1507,42 @@ export default function HUDPanel({
                               <rect x="13.6" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
                             </svg>
                           </button>
-                          <div className="youtube-btn-unavailable-hud" title="YouTube not available on homepage" style={{ marginTop: 1 }}>
-                            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                              <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.6" opacity="0.55" />
-                              <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
-                            </svg>
-                          </div>
+                          {/* YouTube is already rendered in the main controls row; don't duplicate here on homepage */}
+                          {/* Gem (store) button should be active on homepage too */}
+                          <button
+                            type="button"
+                            ref={storeBtnRef}
+                            className="gem-btn-waveform-hud"
+                            style={{ marginTop: 1 }}
+                            title="Open Store"
+                            data-id="store"
+                            data-song="CHXNDLER"
+                            aria-haspopup="dialog"
+                            aria-expanded={showStorePopover}
+                            onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                            onClick={() => {
+                              // Track store button click on homepage
+                              try {
+                                const songSlug = 'homepage';
+                                const songTitle = 'CHXNDLER';
+                                trackAnalytics('store_button_clicked', { song_slug: String(songSlug || ''), payload: { song_title: songTitle, location: 'hud_store_button_home' } });
+                              } catch {}
+                              if (showStorePopover) { try { sfx.play('close', 0.4); } catch {}; setShowStorePopover(false); return; }
+                              openStorePopover();
+                            }}
+                          >
+                            <img
+                              src="/elements/store.png"
+                              alt="Store"
+                              width="16"
+                              height="16"
+                              style={{
+                                display: 'block',
+                                objectFit: 'contain',
+                                filter: 'drop-shadow(0 0 4px #FF3EA5) drop-shadow(0 0 10px #FF3EA5) drop-shadow(0 0 16px #FF3EA5)'
+                              }}
+                            />
+                          </button>
                         </>
                       );
                   }
@@ -1624,12 +1676,11 @@ export default function HUDPanel({
                   document.body
                 ) : null}
 
-                {typeof document !== 'undefined' && showYouTubePopover && ytEmbedUrl ? require('react-dom').createPortal(
+                {typeof document !== 'undefined' && showSpotifyPopover && spEmbedUrl ? require('react-dom').createPortal(
                   <div
                     role="dialog"
-                    aria-label="YouTube Player"
-                    className="yt-overlay"
-                    onClick={() => setShowYouTubePopover(false)}
+                    aria-label="Spotify Player"
+                    onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowSpotifyPopover(false); }}
                     style={{
                       position: 'fixed',
                       inset: 0,
@@ -1642,17 +1693,85 @@ export default function HUDPanel({
                     }}
                   >
                     <div
+                      onClick={(e) => { e.stopPropagation(); }}
+                      style={{
+                        position: 'relative',
+                        width: 'min(88vw, 420px)',
+                        background: 'rgba(0,0,0,0.9)',
+                        border: '1px solid rgba(29,185,84,0.6)',
+                        boxShadow: '0 18px 46px rgba(0,0,0,0.55), 0 0 32px rgba(29,185,84,0.35)',
+                        borderRadius: 14,
+                        overflow: 'hidden',
+                        marginTop: -300
+                      }}
+                    >
+                      <button
+                        aria-label="Close"
+                        title="Close"
+                        onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowSpotifyPopover(false); }}
+                        style={{
+                          position: 'absolute',
+                          top: 8,
+                          right: 8,
+                          width: 32,
+                          height: 32,
+                          borderRadius: 999,
+                          background: 'rgba(0,0,0,0.5)',
+                          color: '#fff',
+                          border: '1px solid rgba(255,255,255,0.5)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                          <path fill="currentColor" d="M18.3 5.71L12 12l6.3 6.29-1.41 1.41L10.59 13.41 4.29 19.7 2.88 18.29 9.17 12 2.88 5.71 4.29 4.3 10.59 10.59 16.89 4.3z" />
+                        </svg>
+                      </button>
+                      <iframe
+                        src={spEmbedUrl}
+                        title="Spotify player"
+                        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                        loading="eager"
+                        width="100%"
+                        height={spEmbedUrl ? (() => { try { return require('@/lib/spotify').spotifyEmbedHeight(spEmbedUrl); } catch { return undefined } })() : undefined}
+                        style={{ border: 'none', display: 'block' }}
+                      />
+                    </div>
+                  </div>,
+                  document.body
+                ) : null}
+
+                {typeof document !== 'undefined' && showYouTubePopover && ytEmbedUrl ? require('react-dom').createPortal(
+                  <div
+                    role="dialog"
+                    aria-label="YouTube Player"
+                    className="yt-overlay"
+                    onClick={() => setShowYouTubePopover(false)}
+                    style={{
+                      position: 'fixed',
+                      inset: 0,
+                      background: 'transparent',
+                      backdropFilter: 'none',
+                      zIndex: 2147483647,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <div
                       className="yt-popover"
                       onClick={(e) => { e.stopPropagation(); }}
                       style={{
                         position: 'relative',
-                        width: 'min(92vw, 980px)',
+                        width: 'min(84vw, 660px)',
                         aspectRatio: '16 / 9',
                         background: 'rgba(3,10,20,0.92)',
                         border: '1px solid rgba(25,227,255,0.6)',
                         boxShadow: '0 18px 46px rgba(0,0,0,0.55), 0 0 32px rgba(25,227,255,0.45)',
                         borderRadius: 14,
-                        overflow: 'hidden'
+                        overflow: 'hidden',
+                        marginTop: -184
                       }}
                     >
                       <button
@@ -1722,6 +1841,33 @@ export default function HUDPanel({
                       if (e.key === 'ArrowLeft') { setStoreIndex((i) => (i - 1 + products.length) % products.length); try { sfx.play('close', 0.45); } catch {} }
                     }}
                   >
+                    {/* Pink close button in the top-right corner */}
+                    <button
+                      aria-label="Close store"
+                      title="Close store"
+                      onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowStorePopover(false); }}
+                      style={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        width: 32,
+                        height: 32,
+                        borderRadius: 9999,
+                        background: 'rgba(0,0,0,0.35)',
+                        border: '2px solid rgba(252,84,175,0.85)',
+                        color: '#FF3EA5',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 0 18px rgba(252,84,175,0.75), 0 0 32px rgba(252,84,175,0.45)',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+                        <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                        <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                      </svg>
+                    </button>
                     {(() => {
                       const item = products[Math.max(0, Math.min(products.length - 1, storeIndex))] || products[0];
                       return (
@@ -1730,49 +1876,38 @@ export default function HUDPanel({
                             <div style={{ fontWeight: 800, letterSpacing: '0.04em', color: '#FFC1E6', textShadow: '0 0 12px rgba(252,84,175,0.9), 0 0 24px rgba(252,84,175,0.55)' }}>
                               The HEARTVERSE Collection
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <button
-                                aria-label="Previous item"
-                                onClick={() => { setStoreIndex((i) => (i - 1 + products.length) % products.length); try { sfx.play('hover', 0.35); } catch {} }}
-                                style={{
-                                  width: 28, height: 28, borderRadius: 999,
-                                  background: 'linear-gradient(135deg,#ff76c8,#ff3ea5)',
-                                  border: '1px solid rgba(255,255,255,0.5)', color: '#fff',
-                                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                  boxShadow: '0 4px 16px rgba(255, 62, 165, 0.45)'
-                                }}
-                              >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M15 6l-6 6 6 6"/></svg>
-                              </button>
-                              <button
-                                aria-label="Next item"
-                                onClick={() => { setStoreIndex((i) => (i + 1) % products.length); try { sfx.play('hover', 0.35); } catch {} }}
-                                style={{
-                                  width: 28, height: 28, borderRadius: 999,
-                                  background: 'linear-gradient(135deg,#ff76c8,#ff3ea5)',
-                                  border: '1px solid rgba(255,255,255,0.5)', color: '#fff',
-                                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                  boxShadow: '0 4px 16px rgba(255, 62, 165, 0.45)'
-                                }}
-                              >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 6l6 6-6 6"/></svg>
-                              </button>
-                              <button
-                                aria-label="Close store"
-                                onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowStorePopover(false); }}
-                                style={{
-                                  width: 28, height: 28, borderRadius: 999,
-                                  background: 'rgba(0,0,0,0.4)',
-                                  border: '1px solid rgba(252,84,175,0.45)', color: '#FFC1E6',
-                                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
-                                }}
-                              >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6l12 12M6 18L18 6"/></svg>
-                              </button>
-                            </div>
                           </div>
                           <div style={{ display: 'grid', gridTemplateColumns: '96px 1fr', gap: 12, alignItems: 'center' }}>
-                            <div>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                              {/* Moved arrows above the PNG */}
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                <button
+                                  aria-label="Previous item"
+                                  onClick={() => { setStoreIndex((i) => (i - 1 + products.length) % products.length); try { sfx.play('hover', 0.35); } catch {} }}
+                                  style={{
+                                    width: 28, height: 28, borderRadius: 999,
+                                    background: 'linear-gradient(135deg,#ff76c8,#ff3ea5)',
+                                    border: '1px solid rgba(255,255,255,0.5)', color: '#fff',
+                                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                    boxShadow: '0 4px 16px rgba(255, 62, 165, 0.45)'
+                                  }}
+                                >
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M15 6l-6 6 6 6"/></svg>
+                                </button>
+                                <button
+                                  aria-label="Next item"
+                                  onClick={() => { setStoreIndex((i) => (i + 1) % products.length); try { sfx.play('hover', 0.35); } catch {} }}
+                                  style={{
+                                    width: 28, height: 28, borderRadius: 999,
+                                    background: 'linear-gradient(135deg,#ff76c8,#ff3ea5)',
+                                    border: '1px solid rgba(255,255,255,0.5)', color: '#fff',
+                                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                    boxShadow: '0 4px 16px rgba(255, 62, 165, 0.45)'
+                                  }}
+                                >
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 6l6 6-6 6"/></svg>
+                                </button>
+                              </div>
                               <img src={item.image || '/card/chxndler.png'} alt={item.title} style={{ display: 'block', width: 96, height: 96, objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(252,84,175,0.35)', boxShadow: '0 6px 18px rgba(0,0,0,0.35)' }} onError={(e)=>{ try { e.currentTarget.src = '/card/chxndler.png'; } catch {} }} />
                             </div>
                             <div>
@@ -1841,6 +1976,33 @@ export default function HUDPanel({
                     }}
                     onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowLyricsPopover(false); } }}
                   >
+                    {/* Obvious yellow close button in the top-right corner */}
+                    <button
+                      aria-label="Close lyrics"
+                      title="Close"
+                      onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowLyricsPopover(false); }}
+                      style={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        width: 32,
+                        height: 32,
+                        borderRadius: 9999,
+                        background: 'rgba(0,0,0,0.35)',
+                        border: '2px solid rgba(242,239,29,0.85)',
+                        color: '#F2EF1D',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 0 18px rgba(242,239,29,0.75), 0 0 32px rgba(242,239,29,0.45)',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+                        <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                        <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                      </svg>
+                    </button>
                     {lyricsLoading ? (
                       <div style={{ fontSize: 18, opacity: .99, color: '#F2EF1D', textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>Loading…</div>
                     ) : lyricsError ? (
@@ -1881,6 +2043,33 @@ export default function HUDPanel({
                     tabIndex={0}
                     onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowBrandPopover(false); } }}
                   >
+                    {/* Obvious yellow close button in the top-right corner */}
+                    <button
+                      aria-label="Close CHXNDLER"
+                      title="Close"
+                      onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowBrandPopover(false); }}
+                      style={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        width: 32,
+                        height: 32,
+                        borderRadius: 9999,
+                        background: 'rgba(0,0,0,0.35)',
+                        border: '2px solid rgba(242,239,29,0.85)',
+                        color: '#F2EF1D',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 0 18px rgba(242,239,29,0.75), 0 0 32px rgba(242,239,29,0.45)',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+                        <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                        <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                      </svg>
+                    </button>
                     {/* Removed top CHXNDLER logo per request */}
                     {/* Brand photo near the top; reduce top margin to move higher */}
                     <div style={{ margin: '0 0 8px 0' }}>
@@ -2172,6 +2361,7 @@ export default function HUDPanel({
                                 }}
                                 onError={(e) => {
                                   e.target.src = '/elements/music.png';
+                                  try { e.target.style.filter = 'drop-shadow(0 0 10px #FFFFFF) drop-shadow(0 0 24px rgba(255,255,255,0.9)) drop-shadow(0 0 48px rgba(255,255,255,0.6))'; } catch {}
                                 }}
                               />
                             );
@@ -2198,10 +2388,13 @@ export default function HUDPanel({
                               style={{
                                 width: '1.8rem',
                                 height: '1.8rem',
-                                filter: `drop-shadow(0 0 14px ${hexToRgba(elementColor, 1)}) drop-shadow(0 0 32px ${hexToRgba(elementColor, 0.8)}) drop-shadow(0 0 64px ${hexToRgba(elementColor, 0.35)})`,
+                                filter: elementIcon === 'music'
+                                  ? 'drop-shadow(0 0 10px #FFFFFF) drop-shadow(0 0 24px rgba(255,255,255,0.9)) drop-shadow(0 0 48px rgba(255,255,255,0.6))'
+                                  : `drop-shadow(0 0 14px ${hexToRgba(elementColor, 1)}) drop-shadow(0 0 32px ${hexToRgba(elementColor, 0.8)}) drop-shadow(0 0 64px ${hexToRgba(elementColor, 0.35)})`,
                               }}
                               onError={(e) => {
                                 e.target.src = '/elements/music.png';
+                                try { e.target.style.filter = 'drop-shadow(0 0 10px #FFFFFF) drop-shadow(0 0 24px rgba(255,255,255,0.9)) drop-shadow(0 0 48px rgba(255,255,255,0.6))'; } catch {}
                               }}
                             />
                           );

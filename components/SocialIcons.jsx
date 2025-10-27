@@ -63,6 +63,10 @@ export default function SocialIcons({ LINKS, POS, trackLinks }) {
   const minIconSize = Math.max(18, Math.round(size * 0.50)); // minimum size for small screens
   const maxIconSize = Math.round(size * 0.72); // maximum size for large screens
   const iconSize = `clamp(${minIconSize}px, ${Math.round(size * 0.64)}px, ${maxIconSize}px)`;
+  // Slightly larger YouTube icon to better fill the button
+  const ytMinIconSize = Math.max(18, Math.round(size * 0.62));
+  const ytMaxIconSize = Math.round(size * 0.90);
+  const youtubeIconSize = `clamp(${ytMinIconSize}px, ${Math.round(size * 0.78)}px, ${ytMaxIconSize}px)`;
   const tiktokIconSize = `clamp(${Math.max(12, Math.round(minIconSize * 0.8))}px, ${Math.round(size * 0.45)}px, ${Math.round(maxIconSize * 0.7)}px)`;
   const clickRef = useRef(null);
   const hoverRef = useRef(null);
@@ -103,7 +107,7 @@ export default function SocialIcons({ LINKS, POS, trackLinks }) {
   const items = [
     { key: 'instagram', title: 'Instagram', href: LINKS.instagram, color: colorFor('instagram'), icon: <Icon.Instagram size={iconSize} /> },
     { key: 'tiktok',    title: 'TikTok',    href: LINKS.tiktok,    color: colorFor('tiktok'),    icon: <Icon.TikTok size={tiktokIconSize} /> },
-    { key: 'youtube',   title: 'YouTube',   href: LINKS.youtube,   color: colorFor('youtube'),   icon: <Icon.YouTube size={iconSize} /> },
+    { key: 'youtube',   title: 'YouTube',   href: LINKS.youtube,   color: colorFor('youtube'),   icon: <Icon.YouTube size={youtubeIconSize} /> },
   ];
 
   return (

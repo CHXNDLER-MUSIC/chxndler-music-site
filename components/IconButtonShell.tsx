@@ -8,6 +8,7 @@ export default function IconButtonShell({
   children,
   onClickFX,
   onHoverFX,
+  onClick,
   dataId,
 }: {
   title: string;
@@ -16,6 +17,7 @@ export default function IconButtonShell({
   children: React.ReactNode;
   onClickFX?: () => void;
   onHoverFX?: () => void;
+  onClick?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   dataId?: string;
 }) {
   return (
@@ -31,6 +33,7 @@ export default function IconButtonShell({
         onMouseEnter={() => { if (onHoverFX) onHoverFX(); }}
         onMouseDown={(e)=>{ if(onClickFX) onClickFX(); (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(1px) scale(0.985)"; }}
         onMouseUp={(e)=>{ (e.currentTarget as HTMLAnchorElement).style.transform = "none"; }}
+        onClick={(e) => { if (onClick) { try { e.preventDefault(); } catch {} onClick(e); } }}
       >
         <span className="logo-glow">{children}</span>
       </a>

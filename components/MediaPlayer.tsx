@@ -72,6 +72,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const [wavePopoverPos, setWavePopoverPos] = useState<{left:number; top:number} | null>(null);
   // YouTube popout state
   const [showYouTubePopover, setShowYouTubePopover] = useState(false);
+  const [showSpotifyPopover, setShowSpotifyPopover] = useState(false);
+  const [spEmbedUrl, setSpEmbedUrl] = useState<string | null>(null);
   const [ytEmbedUrl, setYtEmbedUrl] = useState<string | null>(null);
   const ytBtnRef = useRef<HTMLAnchorElement|null>(null);
   // Lyrics state
@@ -206,6 +208,14 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     window.addEventListener('keydown', onKey);
     return () => { try { window.removeEventListener('keydown', onKey); } catch {} };
   }, [showYouTubePopover]);
+
+  // Close Spotify popout on Escape
+  useEffect(() => {
+    if (!showSpotifyPopover) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowSpotifyPopover(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showSpotifyPopover]);
 
   // Subscribe to state machine changes
   useEffect(() => {
@@ -1516,15 +1526,28 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                   data-song={cur.title}
                   data-slug={cur.slug}
                   data-id="sp"
-                  onClick={() => {
+                  onClick={(e) => {
+                    try { e.preventDefault(); } catch {}
+                    try { uiClick(); } catch {}
+                    // Pause site audio while Spotify embed plays
+                    try { const a = audioRef.current; if (a) { a.pause(); setPlaying(false); } } catch {}
+                    // Track analytics
                     try {
                       gaTrack('spotify_clicked', {
                         song_slug: cur.slug,
                         payload: { song_title: cur.title, location: 'waveform_player', href: cur.spotify }
                       });
                     } catch {}
+                    try {
+                      const { toSpotifyEmbed } = require('@/lib/spotify');
+                      const embed = toSpotifyEmbed(cur.spotify);
+                      if (embed) { setSpEmbedUrl(embed); setShowSpotifyPopover(true); }
+                      else { window.open(cur.spotify, '_blank', 'noopener,noreferrer'); }
+                    } catch {
+                      try { window.open(cur.spotify, '_blank', 'noopener,noreferrer'); } catch {}
+                    }
                   }}
-              onMouseEnter={playHover}
+                  onMouseEnter={playHover}
               >
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
                   <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
@@ -1621,14 +1644,19 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 alt={`${cur?.title || 'Current track'} cursor`}
                 className="absolute w-[1.8rem] h-[1.8rem] min-w-[1.8rem] min-h-[1.8rem] brightness-150 saturate-125"
                 style={{ 
-                  top: '50%', // Match the circle's cy="50" position exactly
+                  top: '50%',
                   left: '50%',
-                  transform: 'translate(-50%, -50%)', // Center the icon on the exact circle position
-                  filter: `drop-shadow(0 0 14px ${currentElementColor}) drop-shadow(0 0 32px ${currentElementColor}AA) drop-shadow(0 0 64px ${currentElementColor}55)`,
+                  transform: 'translate(-50%, -50%)',
+                  filter: currentElement === 'music'
+                    ? 'drop-shadow(0 0 10px #FFFFFF) drop-shadow(0 0 24px rgba(255,255,255,0.9)) drop-shadow(0 0 48px rgba(255,255,255,0.6))'
+                    : `drop-shadow(0 0 14px ${currentElementColor}) drop-shadow(0 0 32px ${currentElementColor}AA) drop-shadow(0 0 64px ${currentElementColor}55)`,
                   animation: playing ? 'cursorPulse 2s ease-in-out infinite' : 'none'
                 }}
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/elements/music.png';
+                  const img = (e.target as HTMLImageElement);
+                  img.src = '/elements/music.png';
+                  // Ensure neon white glow on fallback
+                  img.style.filter = 'drop-shadow(0 0 10px #FFFFFF) drop-shadow(0 0 24px rgba(255,255,255,0.9)) drop-shadow(0 0 48px rgba(255,255,255,0.6))';
                 }}
               />
               
@@ -1837,6 +1865,34 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 loading="eager"
               />
             </div>
+          </div>
+        </div>,
+        document.body
+      ) : null}
+
+      {/* Spotify popout overlay */}
+      {typeof document !== 'undefined' && showSpotifyPopover && spEmbedUrl ? createPortal(
+        <div className="sp-overlay" role="dialog" aria-label="Spotify player" onClick={() => setShowSpotifyPopover(false)}>
+          <div className="sp-popover" onClick={(e) => { e.stopPropagation(); }}>
+            <button
+              aria-label="Close"
+              title="Close"
+              className="yt-close"
+              onClick={() => setShowSpotifyPopover(false)}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                <path fill="currentColor" d="M18.3 5.71L12 12l6.3 6.29-1.41 1.41L10.59 13.41 4.29 19.7 2.88 18.29 9.17 12 2.88 5.71 4.29 4.3 10.59 10.59 16.89 4.3z" />
+              </svg>
+            </button>
+            <iframe
+              src={spEmbedUrl}
+              title="Spotify player"
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              loading="eager"
+              width="100%"
+              height={spEmbedUrl ? (() => { try { return require('@/lib/spotify').spotifyEmbedHeight(spEmbedUrl); } catch { return undefined; } })() : undefined}
+              style={{ border: 'none', display: 'block' }}
+            />
           </div>
         </div>,
         document.body
@@ -2504,7 +2560,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         }
         .yt-popover {
           position: relative;
-          width: min(92vw, 860px);
+          width: min(84vw, 660px);
           aspect-ratio: 16 / 9;
           background: #000;
           border-radius: 16px;
@@ -2512,6 +2568,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           box-shadow: 0 10px 40px rgba(0,0,0,0.5), 0 0 30px rgba(255,255,255,0.08);
           overflow: hidden;
           animation: ytZoomIn 160ms ease-out;
+          /* Slightly lower than before */
+          margin-top: -184px;
         }
         .yt-embed-wrap { position: absolute; inset: 0; }
         .yt-embed-wrap iframe { width: 100%; height: 100%; border: 0; }
@@ -2533,6 +2591,29 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         }
         .yt-close:hover { transform: scale(1.06); background: rgba(0,0,0,0.6); }
         .yt-close:active { transform: scale(0.95); }
+
+        /* Spotify popout overlay */
+        .sp-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.6);
+          backdrop-filter: blur(2px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 2147483647;
+        }
+        .sp-popover {
+          position: relative;
+          width: min(88vw, 420px);
+          background: #000;
+          border-radius: 16px;
+          border: 1px solid rgba(29,185,84,0.55);
+          box-shadow: 0 10px 40px rgba(0,0,0,0.5), 0 0 30px rgba(29,185,84,0.25);
+          overflow: hidden;
+          margin-top: -300px;
+        }
+        @media (max-width: 768px) { .sp-popover { margin-top: -160px; } }
 
         @keyframes ytFadeIn { from { opacity: 0 } to { opacity: 1 } }
         @keyframes ytZoomIn { from { transform: scale(0.96); opacity: 0.8 } to { transform: scale(1); opacity: 1 } }

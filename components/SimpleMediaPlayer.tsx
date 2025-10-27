@@ -54,6 +54,8 @@ export default function MediaPlayer({
   isPlaying: boolean;
 }) {
   const elementColor = getSongElementColor(title);
+  const iconSrc = getSongIcon(title);
+  const isDefaultMusicIcon = iconSrc.endsWith('/elements/music.png');
   const [animationTime, setAnimationTime] = useState(0);
   
   // Generate realistic audio waveform data
@@ -181,10 +183,14 @@ export default function MediaPlayer({
               
               {/* Element-shaped cursor icon */}
               <img
-                src={getSongIcon(title)}
+                src={iconSrc}
                 alt={`${title} element`}
                 className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 transform w-[2rem] h-[2rem] min-w-[2rem] min-h-[2rem] brightness-150 saturate-125"
-                style={{ filter: `drop-shadow(0 0 14px ${elementColor}) drop-shadow(0 0 32px ${elementColor}AA) drop-shadow(0 0 64px ${elementColor}55)` }}
+                style={{
+                  filter: isDefaultMusicIcon
+                    ? 'drop-shadow(0 0 10px #FFFFFF) drop-shadow(0 0 24px rgba(255,255,255,0.9)) drop-shadow(0 0 48px rgba(255,255,255,0.6))'
+                    : `drop-shadow(0 0 14px ${elementColor}) drop-shadow(0 0 32px ${elementColor}AA) drop-shadow(0 0 64px ${elementColor}55)`
+                }}
               />
               
               {/* Time display */}
