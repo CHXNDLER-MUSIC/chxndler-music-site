@@ -166,8 +166,7 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         <pointLight position={[-4, 2, 4]} intensity={0.35} color={"#4ff"} />
         {/* Console-emitted cyan from below */}
         <pointLight position={[0, -1.4, 0.6]} intensity={1.1} color={"#19E3FF"} distance={9} />
-        {/* Very soft magenta secondary glow for depth */}
-        <pointLight position={[0.8, -1.0, -0.4]} intensity={0.26} color={"#FC54AF"} distance={7.5} />
+        {/* Removed magenta secondary light to avoid pink aura */}
         <InvalidateOnState />
         <ZoomOnChange focusId={actualShouldShowAll ? null : focusId} />
 

@@ -166,6 +166,10 @@ export default function HUDPanel({
   const brandScrollRef = useRef(null);
   const brandLastScrollAtRef = useRef(0);
 
+  // YouTube popout state (waveform HUD)
+  const [showYouTubePopover, setShowYouTubePopover] = useState(false);
+  const [ytEmbedUrl, setYtEmbedUrl] = useState('');
+
   // Storefront (Gem) popover state
   const [showStorePopover, setShowStorePopover] = useState(false);
   const storeBtnRef = useRef(null);
@@ -175,25 +179,67 @@ export default function HUDPanel({
   const storeLastScrollAtRef = useRef(0);
   const products = [
     {
-      id: 'sticker-pack',
-      title: 'Sticker Pack',
-      price: '$5',
-      image: '/elements/heart.png',
-      description: 'Holographic heart stickers. Bright, durable, and vibey.'
+      id: 'pin',
+      title: 'PIN',
+      image: '/store/pin.png',
+      url: 'https://buy.stripe.com/cNi00kfxDeVD3oZ5ST4gg0B',
+      price: '$5.00 USD',
+      description: 'A symbol that you belong here with the people who feel deeply, dream big, and find beauty in being different.'
     },
     {
-      id: 'tee-classic',
-      title: 'CHXNDLER Tee',
-      price: '$28',
-      image: '/card/chxndler.png',
-      description: 'Soft black tee with CHXNDLER logo. Unisex fit, super comfy.'
+      id: 'patch',
+      title: 'PATCH',
+      image: '/store/patch.jpeg',
+      url: 'https://buy.stripe.com/00w5kEgBHdRz1gRgxx4gg0C',
+      price: '$5.00 USD',
+      description: 'A mark of belonging, something you can carry wherever you go. It’s a reminder that this isn’t just music, it’s a community.'
     },
     {
-      id: 'poster-a3',
-      title: 'A3 Poster',
-      price: '$15',
-      image: '/cover/chxndler.png',
-      description: 'High-quality print. Perfect for studios and bedrooms.'
+      id: 'necklace',
+      title: 'NECKLACE',
+      image: '/store/necklace.png',
+      url: 'https://buy.stripe.com/6oU3cw3OVfZH3oZ9554gg0D',
+      price: '$10.00 USD',
+      description: 'A symbol of love, connection, and everything this world stands for. It’s a keepsake for the people who found home here.'
+    },
+    {
+      id: 'beanie',
+      title: 'BEANIE',
+      image: '/store/beanie.jpg',
+      url: 'https://buy.stripe.com/3cI3cw3OV8xf0cN2GH4gg0E',
+      price: '$25.00 USD',
+      description: 'For the ones who wear their hearts out loud and aren’t afraid to stand out.'
+    },
+    {
+      id: 'sticker',
+      title: 'STICKER',
+      image: '/store/sticker.png',
+      url: 'https://buy.stripe.com/8x24gA99f9Bj1gR6WX4gg0F',
+      price: '$5.00 USD',
+      description: 'A simple reminder that you’re part of something bigger. Remember you’re not alone in this story.'
+    },
+    {
+      id: 'hat',
+      title: 'HAT',
+      image: '/store/hat.png',
+      url: 'https://buy.stripe.com/6oU28s717aFn1gR1CD4gg0I',
+      price: '$25.00 USD',
+      description: 'A classic you’ll wear everywhere. It’s lowkey, but it says everything it needs to.'
+    },
+    {
+      id: 'keychain',
+      title: 'KEYCHAIN',
+      image: '/store/keychain.png',
+      url: 'https://buy.stripe.com/8x214o99faFn0cN5ST4gg0H',
+      price: '$5.00 USD',
+      description: 'A small piece of the HEARTVERSE to carry everywhere. A quiet reminder that you’re connected, always.'
+    },
+    {
+      id: 'house-party-poster',
+      title: 'HOUSE PARTY POSTER',
+      image: '/store/house-party-poster.png',
+      url: 'https://buy.stripe.com/dRmfZi0CJ4gZ3oZ2GH4gg0G',
+      description: 'This poster captures the night the HEARTVERSE came alive. Hang it up and remember when you joined the story.'
     }
   ];
 
@@ -320,6 +366,14 @@ export default function HUDPanel({
     };
   }, [showBrandPopover]);
 
+  // Close YouTube popover on Escape
+  useEffect(() => {
+    if (!showYouTubePopover) return;
+    const onKey = (e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowYouTubePopover(false); } };
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('keydown', onKey); };
+  }, [showYouTubePopover]);
+
   // Open Store (Gem) popover anchored to the gem button
   const openStorePopover = async () => {
     try { sfx.play('click', 0.4); } catch {}
@@ -339,6 +393,11 @@ export default function HUDPanel({
       } else if (r) {
         setStorePopoverPos({ left: r.left + r.width/2, top: r.bottom + 8 });
       }
+    } catch {}
+    // Ensure NECKLACE is the first item shown when opening the store
+    try {
+      const idx = products.findIndex(p => String(p.id) === 'necklace');
+      setStoreIndex(idx >= 0 ? idx : 0);
     } catch {}
     setShowStorePopover(true);
   };
@@ -409,7 +468,9 @@ export default function HUDPanel({
       } catch {}
     };
     window.addEventListener('resize', recalc);
-    return () => window.removeEventListener('resize', recalc);
+    return () => {
+      window.removeEventListener('resize', recalc);
+    };
   }, [showBrandPopover]);
 
   // Play subtle scroll SFX while scrolling brand popover (rate-limited)
@@ -1284,6 +1345,51 @@ export default function HUDPanel({
                       data-slug={currentSong.id}
                       data-id="yt"
                       onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                      onClick={(e) => {
+                        try { e.preventDefault(); } catch {}
+                        try { sfx.play('click', 0.4); } catch {}
+                        // Pause site audio while video plays
+                        try {
+                          const a = document.querySelector('audio[data-audio-player="1"]');
+                          if (a && a.pause) a.pause();
+                        } catch {}
+                        // Build embeddable URL
+                        const toEmbed = (url) => {
+                          try {
+                            const u = new URL(url);
+                            const host = u.hostname.replace(/^www\./, '');
+                            if (host === 'youtu.be') {
+                              const id = u.pathname.slice(1);
+                              if (id) return `https://www.youtube.com/embed/${id}`;
+                            }
+                            if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtube-nocookie.com' || host === 'music.youtube.com') {
+                              if (u.pathname === '/watch') {
+                                const id = u.searchParams.get('v');
+                                if (id) return `https://www.youtube.com/embed/${id}`;
+                              }
+                              if (u.pathname.startsWith('/shorts/')) {
+                                const id = u.pathname.split('/')[2];
+                                if (id) return `https://www.youtube.com/embed/${id}`;
+                              }
+                              if (u.pathname.startsWith('/embed/')) {
+                                return `https://${host}/embed/${u.pathname.split('/')[2]}`;
+                              }
+                              if (u.pathname.startsWith('/live/')) {
+                                const id = u.pathname.split('/')[2];
+                                if (id) return `https://www.youtube.com/embed/${id}`;
+                              }
+                            }
+                          } catch {}
+                          return null;
+                        };
+                        const embed = toEmbed(currentSong.youtube);
+                        if (embed) {
+                          setYtEmbedUrl(`${embed}?autoplay=1&rel=0`);
+                          setShowYouTubePopover(true);
+                        } else {
+                          try { window.open(currentSong.youtube, '_blank', 'noopener,noreferrer'); } catch {}
+                        }
+                      }}
                     >
                       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
                         <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.6" />
@@ -1424,25 +1530,33 @@ export default function HUDPanel({
                         className="gem-btn-waveform-hud"
                         style={{ marginTop: 1 }}
                         title="Open Store"
+                        data-id="store"
+                        data-song={currentSong?.title || ''}
                         aria-haspopup="dialog"
                         aria-expanded={showStorePopover}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                         onClick={() => {
+                          // Track store button click within Music analytics with song context
+                          try {
+                            const songSlug = slug || active || 'unknown';
+                            const songTitle = currentSong?.title || track?.title || 'Unknown';
+                            trackAnalytics('store_button_clicked', { song_slug: String(songSlug || ''), payload: { song_title: songTitle, location: 'hud_store_button' } });
+                          } catch {}
                           if (showStorePopover) { try { sfx.play('close', 0.4); } catch {}; setShowStorePopover(false); return; }
                           openStorePopover();
                         }}
                       >
-                        <svg
-                          viewBox="0 0 24 24"
+                        <img
+                          src="/elements/store.png"
+                          alt="Store"
                           width="16"
                           height="16"
-                          fill="currentColor"
-                          role="img"
-                          aria-label="Gem"
-                        >
-                          <path d="M12 2 L19 8 L12 22 L5 8 Z"/>
-                          <path d="M12 22 L12 8 M5 8 L19 8 M7.2 8 L12 2 L16.8 8" stroke="currentColor" strokeWidth="1.4" fill="none"/>
-                        </svg>
+                          style={{
+                            display: 'block',
+                            objectFit: 'contain',
+                            filter: 'drop-shadow(0 0 4px #FF3EA5) drop-shadow(0 0 10px #FF3EA5) drop-shadow(0 0 16px #FF3EA5)'
+                          }}
+                        />
                       </button>
                     </>
                   );
@@ -1510,6 +1624,74 @@ export default function HUDPanel({
                   document.body
                 ) : null}
 
+                {typeof document !== 'undefined' && showYouTubePopover && ytEmbedUrl ? require('react-dom').createPortal(
+                  <div
+                    role="dialog"
+                    aria-label="YouTube Player"
+                    className="yt-overlay"
+                    onClick={() => setShowYouTubePopover(false)}
+                    style={{
+                      position: 'fixed',
+                      inset: 0,
+                      background: 'rgba(0,0,0,0.6)',
+                      backdropFilter: 'blur(2px)',
+                      zIndex: 2147483647,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <div
+                      className="yt-popover"
+                      onClick={(e) => { e.stopPropagation(); }}
+                      style={{
+                        position: 'relative',
+                        width: 'min(92vw, 980px)',
+                        aspectRatio: '16 / 9',
+                        background: 'rgba(3,10,20,0.92)',
+                        border: '1px solid rgba(25,227,255,0.6)',
+                        boxShadow: '0 18px 46px rgba(0,0,0,0.55), 0 0 32px rgba(25,227,255,0.45)',
+                        borderRadius: 14,
+                        overflow: 'hidden'
+                      }}
+                    >
+                      <button
+                        aria-label="Close"
+                        title="Close"
+                        onClick={() => setShowYouTubePopover(false)}
+                        style={{
+                          position: 'absolute',
+                          top: 8,
+                          right: 8,
+                          width: 32,
+                          height: 32,
+                          borderRadius: 999,
+                          background: 'rgba(0,0,0,0.5)',
+                          color: '#19E3FF',
+                          border: '1px solid rgba(25,227,255,0.6)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          boxShadow: '0 0 16px rgba(25,227,255,0.35)'
+                        }}
+                      >
+                        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                          <path fill="currentColor" d="M18.3 5.71L12 12l6.3 6.29-1.41 1.41L10.59 13.41 4.29 19.7 2.88 18.29 9.17 12 2.88 5.71 4.29 4.3 10.59 10.59 16.89 4.3z" />
+                        </svg>
+                      </button>
+                      <iframe
+                        src={ytEmbedUrl}
+                        title="YouTube player"
+                        allow="autoplay; encrypted-media; picture-in-picture"
+                        allowFullScreen
+                        loading="eager"
+                        style={{ border: 'none', width: '100%', height: '100%', display: 'block' }}
+                      />
+                    </div>
+                  </div>,
+                  document.body
+                ) : null}
+
                 {typeof document !== 'undefined' && showStorePopover && storePopoverPos ? require('react-dom').createPortal(
                   <div
                     role="dialog"
@@ -1536,8 +1718,8 @@ export default function HUDPanel({
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowStorePopover(false); }
-                      if (e.key === 'ArrowRight') { setStoreIndex((i) => (i + 1) % products.length); try { sfx.play('hover', 0.3); } catch {} }
-                      if (e.key === 'ArrowLeft') { setStoreIndex((i) => (i - 1 + products.length) % products.length); try { sfx.play('hover', 0.3); } catch {} }
+                      if (e.key === 'ArrowRight') { setStoreIndex((i) => (i + 1) % products.length); try { sfx.play('close', 0.45); } catch {} }
+                      if (e.key === 'ArrowLeft') { setStoreIndex((i) => (i - 1 + products.length) % products.length); try { sfx.play('close', 0.45); } catch {} }
                     }}
                   >
                     {(() => {
@@ -1546,7 +1728,7 @@ export default function HUDPanel({
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                             <div style={{ fontWeight: 800, letterSpacing: '0.04em', color: '#FFC1E6', textShadow: '0 0 12px rgba(252,84,175,0.9), 0 0 24px rgba(252,84,175,0.55)' }}>
-                              Store
+                              The HEARTVERSE Collection
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               <button
@@ -1591,27 +1773,42 @@ export default function HUDPanel({
                           </div>
                           <div style={{ display: 'grid', gridTemplateColumns: '96px 1fr', gap: 12, alignItems: 'center' }}>
                             <div>
-                              <img src={item.image} alt={item.title} style={{ display: 'block', width: 96, height: 96, objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(252,84,175,0.35)', boxShadow: '0 6px 18px rgba(0,0,0,0.35)' }} />
+                              <img src={item.image || '/card/chxndler.png'} alt={item.title} style={{ display: 'block', width: 96, height: 96, objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(252,84,175,0.35)', boxShadow: '0 6px 18px rgba(0,0,0,0.35)' }} onError={(e)=>{ try { e.currentTarget.src = '/card/chxndler.png'; } catch {} }} />
                             </div>
                             <div>
                               <div style={{ fontSize: 16, fontWeight: 800, color: '#FFD9EF', textShadow: '0 0 10px rgba(252,84,175,0.9)' }}>{item.title}</div>
                               <div style={{ fontSize: 14, opacity: 0.9, marginTop: 4 }}>{item.description}</div>
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-                                <div style={{ fontSize: 15, fontWeight: 700, color: '#FFB9E1' }}>{item.price}</div>
-                                <button
-                                  onClick={() => { try { sfx.play('join', 0.75); } catch {} }}
-                                  style={{
-                                    padding: '6px 10px', borderRadius: 999,
-                                    background: 'linear-gradient(135deg,#ff3ea5,#ff76c8)',
-                                    border: '1px solid rgba(255,255,255,0.6)', color: '#fff', fontWeight: 700,
-                                    boxShadow: '0 6px 18px rgba(255, 62, 165, 0.45)'
-                                  }}
-                                >
-                                  Add to Cart
-                                </button>
-                              </div>
-                            </div>
-                          </div>
+                                <div style={{ fontSize: 15, fontWeight: 700, color: '#FFB9E1' }}>{item.price || ''}</div>
+                                {item.url ? (
+                                  <a
+                                    href={item.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    data-id="store-item"
+                                    data-item-id={item.id}
+                                    onClick={() => {
+                                      try { sfx.play('join', 0.75); } catch {}
+                                      // Track merch item click with song context
+                                      try {
+                                        const songSlug = (typeof slug !== 'undefined' && slug) ? slug : (active || 'unknown');
+                                        const songTitle = currentSong?.title || track?.title || 'Unknown';
+                                        trackAnalytics('store_item_clicked', { song_slug: String(songSlug || ''), payload: { song_title: songTitle, item_id: item.id, item_title: item.title, location: 'hud_store_item' } });
+                                      } catch {}
+                                    }}
+                                    style={{
+                                      padding: '6px 10px', borderRadius: 999,
+                                      background: 'linear-gradient(135deg,#ff3ea5,#ff76c8)',
+                                      border: '1px solid rgba(255,255,255,0.6)', color: '#fff', fontWeight: 700,
+                                      boxShadow: '0 6px 18px rgba(255, 62, 165, 0.45)', textDecoration: 'none'
+                                    }}
+                                  >
+                                    Add to Collection
+                                  </a>
+                                ) : null}
+                               </div>
+                             </div>
+                           </div>
                           {/* Removed helper hint per request */}
                         </div>
                       );
@@ -1661,7 +1858,6 @@ export default function HUDPanel({
                     role="dialog"
                     aria-label="CHXNDLER"
                     className="lyrics-popover-hud holo-scrollbar-yellow"
-                    ref={brandScrollRef}
                     style={{
                       position: 'fixed',
                       left: (brandPopoverPos && brandPopoverPos.left) || 0,
@@ -1677,10 +1873,12 @@ export default function HUDPanel({
                       zIndex: 2147483647,
                       width: (brandPopoverPos && brandPopoverPos.width) ? brandPopoverPos.width : 'min(92vw, 520px)',
                       maxHeight: '75vh',
-                      overflowY: 'auto',
-                      WebkitOverflowScrolling: 'touch',
-                      overscrollBehavior: 'contain'
+                      display: 'flex',
+                      flexDirection: 'column',
+                      // Allow inner child to be the scroll container
+                      minHeight: 0
                     }}
+                    tabIndex={0}
                     onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowBrandPopover(false); } }}
                   >
                     {/* Removed top CHXNDLER logo per request */}
@@ -1691,7 +1889,9 @@ export default function HUDPanel({
                         alt="CHXNDLER"
                         style={{
                           display: 'block',
-                          width: '100%',
+                          // Slightly smaller than full width and centered
+                          width: '92%',
+                          margin: '0 auto',
                           height: 'auto',
                           borderRadius: 10,
                           boxShadow: '0 6px 18px rgba(0,0,0,0.35)',
@@ -1699,13 +1899,28 @@ export default function HUDPanel({
                         }}
                       />
                     </div>
-                    {brandLoading ? (
-                      <div style={{ fontSize: 16, opacity: .99, color: '#F2EF1D', textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>Loading…</div>
-                    ) : brandError ? (
-                      <div style={{ fontSize: 16, color: '#ff7b7b' }}>{brandError}</div>
-                    ) : (
-                      <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: 16, color: '#F2EF1D', textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>{brandContent || ''}</div>
-                    )}
+                    {/* Scrollable content area */}
+                    <div
+                      className="holo-scrollbar-yellow"
+                      ref={brandScrollRef}
+                      style={{
+                        flex: 1,
+                        minHeight: 0,
+                        overflowY: 'auto',
+                        WebkitOverflowScrolling: 'touch',
+                        overscrollBehavior: 'contain',
+                        touchAction: 'pan-y'
+                      }}
+                      tabIndex={0}
+                    >
+                      {brandLoading ? (
+                        <div style={{ fontSize: 16, opacity: .99, color: '#F2EF1D', textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>Loading…</div>
+                      ) : brandError ? (
+                        <div style={{ fontSize: 16, color: '#ff7b7b' }}>{brandError}</div>
+                      ) : (
+                        <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: 16, color: '#F2EF1D', textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>{brandContent || ''}</div>
+                      )}
+                    </div>
                   </div>,
                   document.body
                 ) : null}

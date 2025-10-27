@@ -91,6 +91,17 @@ function identifyElement(element: HTMLElement): string {
     }
   }
 
+  // Store (The HEARTVERSE Collection) button in HUD/waveform
+  if (className.includes('gem-btn-waveform-hud') || dataId === 'store' || title.includes('store')) {
+    return '🛍️ Store Button';
+  }
+  // Store items within the popover
+  if (dataId === 'store-item') {
+    const itemId = element.getAttribute('data-item-id') || '';
+    const itemTitle = (element.textContent || '').trim() || element.getAttribute('aria-label') || '';
+    return itemId ? `🛍️ Store Item: ${itemId}` : (itemTitle ? `🛍️ Store Item: ${itemTitle}` : '🛍️ Store Item');
+  }
+
   // Social Media Buttons (enhanced with data-id detection)
   if (text.includes('instagram') || href.includes('instagram') || className.includes('instagram') || title.includes('instagram') || dataId === 'ig') {
     return '📱 Instagram';

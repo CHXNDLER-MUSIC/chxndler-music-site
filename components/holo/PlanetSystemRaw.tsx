@@ -2355,7 +2355,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
       // Single bright central heart planet when using raw system (only when showing all planets)
       if (effectiveShowAll) {
         try {
-          const heartGeo = createHeartGeometry(2.0);
+          const heartGeo = createHeartGeometry(2.0, 96, { heartness: 5.0, thicknessMultiplier: 0.6 });
 
           // Textured glowing shader for the heart planet (raw three.js)
           const heartUniforms = {
@@ -2433,23 +2433,11 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
           const heartMesh = new THREE.Mesh(heartGeo, heartMat);
           heartMesh.position.set(0, 0, 0);
           heartMesh.rotation.z = Math.PI; // Ensure heart point faces downward
-          heartMesh.scale.set(0.9, 0.9, 0.9);
+          heartMesh.scale.set(1.1, 1.0, 0.85);
           heartMesh.visible = true;
           sys.add(heartMesh);
 
-          // Atmosphere corona
-          const atmUniforms = { uTime: { value: 0 }, uColor: { value: new THREE.Color('#FC54AF') }, uStrength: { value: 28.0 } };
-          const atmVS = `varying vec3 vN; varying vec3 vP; void main(){ vN=normalize(normalMatrix*normal); vec4 wp=modelMatrix*vec4(position,1.0); vP=wp.xyz; gl_Position=projectionMatrix*viewMatrix*wp; }`;
-          const atmFS = `uniform float uTime; uniform vec3 uColor; uniform float uStrength; varying vec3 vN; varying vec3 vP; void main(){ vec3 V=normalize(cameraPosition - vP); float fres=1.0-abs(dot(normalize(vN),V)); fres=pow(fres,2.0); float pulse=sin(uTime*2.0)*0.45+1.25; float heartPulse=sin(uTime*3.0)*0.35+1.15; float rim=pow(fres,1.25); vec3 color=uColor*520.0*rim*pulse*heartPulse*uStrength; float a=rim; gl_FragColor=vec4(color,a);} `;
-          const atmMat = new THREE.ShaderMaterial({ uniforms: atmUniforms as any, vertexShader: atmVS, fragmentShader: atmFS, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: true, side: THREE.BackSide });
-          const atmMesh = new THREE.Mesh(heartGeo, atmMat);
-          atmMesh.scale.set(1.8, 1.8, 1.8);
-          heartMesh.add(atmMesh);
-
-          // Outer soft glow
-          const outerGlow = new THREE.Mesh(heartGeo, new THREE.MeshBasicMaterial({ color: '#FC54AF', transparent: true, opacity: 0.4, depthWrite: false, depthTest: true, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
-          outerGlow.scale.set(2.4, 2.4, 2.4);
-          heartMesh.add(outerGlow);
+          // Removed pink atmosphere and outer glow to eliminate aura
 
           centralPlanetRef.current = { id: 'heart', mesh: heartMesh, originalSat: null };
         } catch {}

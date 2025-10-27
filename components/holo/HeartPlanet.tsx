@@ -12,11 +12,11 @@ export default function HeartPlanet() {
 
   // Create heart geometry
   const heartGeometry = useMemo(() => {
-    return createHeartGeometry(planetRadius * 2, 64, {
-      // Exaggerate heart silhouette more strongly
-      heartness: 4.2,
+    return createHeartGeometry(planetRadius * 2, 96, {
+      // Stronger heart silhouette for a clearer heart read
+      heartness: 5.0,
       // Slimmer along Z to accent the heart profile
-      thicknessMultiplier: 0.75,
+      thicknessMultiplier: 0.6,
     });
   }, [planetRadius]);
 
@@ -208,7 +208,7 @@ export default function HeartPlanet() {
   });
 
   return (
-    <group position={[0, 0, 0]} scale={[1.4, 1.7, 1.0]}>
+    <group position={[0, 0, 0]} scale={[1.55, 1.45, 0.9]}>
       {/* Core heart with realistic shading */}
       <mesh ref={meshRef} position={[0, 0, 0]} renderOrder={1}>
         <primitive object={heartGeometry} />

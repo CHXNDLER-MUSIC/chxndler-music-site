@@ -482,6 +482,24 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
           }}
           onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowElementsPopover(false); } }}
         >
+          {/* Header image at the top of the Elements popout */}
+          <div style={{ marginBottom: 12 }}>
+            <img
+              src="/elements/elementals.png"
+              alt="Elementals"
+              style={{
+                display: 'block',
+                width: '50%',
+                maxWidth: 280,
+                margin: '0 auto',
+                height: 'auto',
+                borderRadius: 0,
+                boxShadow: 'none',
+                background: 'transparent'
+              }}
+            />
+          </div>
+
           {elementsLoading ? (
             <div style={{ fontSize: 16 }}>Loading…</div>
           ) : elementsError ? (

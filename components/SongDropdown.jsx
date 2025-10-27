@@ -35,7 +35,7 @@ function ElementIcon({ name }) {
   
   return (
     <span className="holo-icon" style={glowStyle}>
-      <OptimizedElementIcon name={iconKey} alt={name} className="w-5 h-5 object-contain" width={20} height={20} />
+      <OptimizedElementIcon name={iconKey} alt={name} className="w-6 h-6 object-contain" width={24} height={24} />
     </span>
   );
 }

@@ -70,6 +70,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const waveVolBtnRef = useRef<HTMLButtonElement|null>(null);
   const [mainPopoverPos, setMainPopoverPos] = useState<{left:number; top:number} | null>(null);
   const [wavePopoverPos, setWavePopoverPos] = useState<{left:number; top:number} | null>(null);
+  // YouTube popout state
+  const [showYouTubePopover, setShowYouTubePopover] = useState(false);
+  const [ytEmbedUrl, setYtEmbedUrl] = useState<string | null>(null);
+  const ytBtnRef = useRef<HTMLAnchorElement|null>(null);
   // Lyrics state
   const [lyricsOpen, setLyricsOpen] = useState(false);
   const [lyricsLoading, setLyricsLoading] = useState(false);
@@ -192,6 +196,16 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       return () => clearTimeout(timeoutId);
     }
   }, []); // Run once on mount
+
+  // Close YouTube popout on Escape
+  useEffect(() => {
+    if (!showYouTubePopover) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowYouTubePopover(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => { try { window.removeEventListener('keydown', onKey); } catch {} };
+  }, [showYouTubePopover]);
 
   // Subscribe to state machine changes
   useEffect(() => {
@@ -1174,6 +1188,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
 
             {cur.youtube ? (
               <a
+                ref={ytBtnRef}
                 href={cur.youtube}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -1183,13 +1198,56 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 data-song={cur.title}
                 data-slug={cur.slug}
                 data-id="yt"
-                onClick={() => {
+                onClick={(e) => {
+                  // Intercept default navigation to open inline popout player
+                  try { e.preventDefault(); } catch {}
+                  try { uiClick(); } catch {}
+                  // Pause site audio while video plays
+                  try { const a = audioRef.current; if (a) { a.pause(); setPlaying(false); } } catch {}
+                  // Track analytics
                   try {
                     gaTrack('youtube_clicked', {
                       song_slug: cur.slug,
                       payload: { song_title: cur.title, location: 'waveform_player', href: cur.youtube }
                     });
                   } catch {}
+                  // Build embeddable URL
+                  const toEmbed = (url: string): string | null => {
+                    try {
+                      const u = new URL(url);
+                      const host = u.hostname.replace(/^www\./, '');
+                      if (host === 'youtu.be') {
+                        const id = u.pathname.slice(1);
+                        if (id) return `https://www.youtube.com/embed/${id}`;
+                      }
+                      if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtube-nocookie.com' || host === 'music.youtube.com') {
+                        if (u.pathname === '/watch') {
+                          const id = u.searchParams.get('v');
+                          if (id) return `https://www.youtube.com/embed/${id}`;
+                        }
+                        if (u.pathname.startsWith('/shorts/')) {
+                          const id = u.pathname.split('/')[2];
+                          if (id) return `https://www.youtube.com/embed/${id}`;
+                        }
+                        if (u.pathname.startsWith('/embed/')) {
+                          return `https://${host}/embed/${u.pathname.split('/')[2]}`;
+                        }
+                        if (u.pathname.startsWith('/live/')) {
+                          const id = u.pathname.split('/')[2];
+                          if (id) return `https://www.youtube.com/embed/${id}`;
+                        }
+                      }
+                    } catch {}
+                    return null;
+                  };
+                  const embed = toEmbed(cur.youtube);
+                  if (embed) {
+                    setYtEmbedUrl(`${embed}?autoplay=1&rel=0`);
+                    setShowYouTubePopover(true);
+                  } else {
+                    // Fallback to opening a new tab if we cannot parse embed URL
+                    try { window.open(cur.youtube, '_blank', 'noopener,noreferrer'); } catch {}
+                  }
                 }}
                 onMouseEnter={playHover}
               >
@@ -1748,6 +1806,39 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           }}
           style={{ position:'fixed', width:0, height:0, opacity:0, pointerEvents:'none', left:0, top:0 }}
         />,
+        document.body
+      ) : null}
+
+      {/* YouTube Popout */}
+      {typeof document !== 'undefined' && showYouTubePopover && ytEmbedUrl ? createPortal(
+        <div
+          className="yt-overlay"
+          role="dialog"
+          aria-label={`Play ${cur.title} on YouTube`}
+          onClick={() => setShowYouTubePopover(false)}
+        >
+          <div className="yt-popover" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="yt-close"
+              aria-label="Close YouTube player"
+              title="Close"
+              onClick={() => setShowYouTubePopover(false)}
+            >
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+                <path fill="currentColor" d="M18.3 5.71L12 12l6.3 6.29-1.41 1.41L10.59 13.41 4.29 19.7 2.88 18.29 9.17 12 2.88 5.71 4.29 4.3 10.59 10.59 16.89 4.3z" />
+              </svg>
+            </button>
+            <div className="yt-embed-wrap">
+              <iframe
+                src={ytEmbedUrl}
+                title={`${cur.title} — YouTube`}
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+                loading="eager"
+              />
+            </div>
+          </div>
+        </div>,
         document.body
       ) : null}
 
@@ -2399,6 +2490,53 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         }
         .volume-button-wrap { position: relative; display: inline-flex; }
         
+        /* YouTube popout overlay */
+        .yt-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.6);
+          backdrop-filter: blur(2px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 2147483647;
+          animation: ytFadeIn 150ms ease-out;
+        }
+        .yt-popover {
+          position: relative;
+          width: min(92vw, 860px);
+          aspect-ratio: 16 / 9;
+          background: #000;
+          border-radius: 16px;
+          border: 1px solid rgba(255,255,255,0.25);
+          box-shadow: 0 10px 40px rgba(0,0,0,0.5), 0 0 30px rgba(255,255,255,0.08);
+          overflow: hidden;
+          animation: ytZoomIn 160ms ease-out;
+        }
+        .yt-embed-wrap { position: absolute; inset: 0; }
+        .yt-embed-wrap iframe { width: 100%; height: 100%; border: 0; }
+        .yt-close {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          border: 1px solid rgba(255,255,255,0.4);
+          background: rgba(0,0,0,0.45);
+          color: #fff;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: transform 0.15s ease, background 0.15s ease;
+        }
+        .yt-close:hover { transform: scale(1.06); background: rgba(0,0,0,0.6); }
+        .yt-close:active { transform: scale(0.95); }
+
+        @keyframes ytFadeIn { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes ytZoomIn { from { transform: scale(0.96); opacity: 0.8 } to { transform: scale(1); opacity: 1 } }
+
         @keyframes pulse {
           0%, 100% { opacity: 0.6; transform: scale(1); }
           50% { opacity: 1; transform: scale(1.1); }
