@@ -305,7 +305,7 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
           border-radius: 14px; overflow: hidden;
           box-shadow: 0 18px 46px rgba(0,0,0,0.55), 0 0 32px rgba(29,185,84,0.35);
           /* Lower on screen than before */
-          margin-top: -60px;
+          margin-top: -30px;
         }
         .sp-close { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%;
           border: 1px solid rgba(255,255,255,0.4); background: rgba(0,0,0,0.45); color: #fff; display: inline-flex;
@@ -324,7 +324,7 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
           border: 1px solid rgba(255,59,48,0.6);
           border-radius: 14px; overflow: hidden;
           box-shadow: 0 0 32px rgba(255,59,48,0.35); /* remove heavy dark drop shadow */
-          margin-top: -300px;
+          margin-top: -340px;
         }
         .am-close { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%;
           border: 1px solid rgba(255,255,255,0.4); background: rgba(0,0,0,0.45); color: #fff; display: inline-flex;
@@ -333,8 +333,8 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
         .am-close:hover { transform: scale(1.1); background: rgba(0,0,0,0.6); box-shadow: 0 0 24px rgba(255,255,255,0.55); }
         .am-close:active { transform: scale(0.95); }
         @media (max-width: 768px) {
-          .sp-popover { margin-top: -20px; }
-          .am-popover { margin-top: -180px; }
+          .sp-popover { margin-top: -10px; }
+          .am-popover { margin-top: -200px; }
         }
       `}</style>
     </>

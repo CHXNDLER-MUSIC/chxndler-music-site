@@ -44,13 +44,12 @@ export function createHeartGeometry(
       const heartX = scale * (16 * Math.sin(t) ** 3) * 0.085;
       const heartY = scale * -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t)) * 0.085;
       
-      // Create solid planet-like body by scaling heart shape based on distance from center
-      // Use spherical interpolation and roundness blending to make it more planet-like
+      // Extruded heart: keep the 2D profile consistent across depth with minimal rounding
       const distanceFromCenter = Math.abs(layerDepth);
-      const sphericalFactor = Math.cos(distanceFromCenter * Math.PI); // creates rounded profile
-      const heartScale = 0.7 + 0.3 * sphericalFactor; // scale heart shape for solid appearance
+      const sphericalFactor = 1.0; // disable sphere-like rounding across depth
+      const heartScale = 1.0; // maintain consistent outline on all slices
 
-      // Blend the 2D heart outline toward a circular outline for a rounder planet-like silhouette
+      // Optionally blend the 2D heart outline toward a circle. For strong heart shapes, reduce to near-zero.
       const dir = new Vector2(heartX, heartY);
       const len = dir.length();
       if (len < 1e-6) dir.set(1, 0); // avoid NaN
@@ -59,10 +58,9 @@ export function createHeartGeometry(
       const targetCircleRadius = scale * 0.9 * heartScale;
       const circleX = dir.x * targetCircleRadius;
       const circleY = dir.y * targetCircleRadius;
-      // roundness factor — more circular near the center slices
-      // Reduce circular blend significantly as heartness increases for a clearer heart read
-      const baseRound = (0.55 + 0.25 * sphericalFactor) * 0.6;
-      const roundness = Math.min(0.85, baseRound * Math.pow(1.0 - hNorm, 1.25));
+      // roundness factor — aggressively drop as heartness increases
+      const baseRound = 0.35;
+      const roundness = Math.max(0, Math.min(0.6, baseRound * Math.pow(1.0 - hNorm, 2.5)));
       const baseX = heartX * heartScale;
       let baseY = heartY * heartScale;
       // Feature-aware adjustments to emphasize heart shape
@@ -73,13 +71,13 @@ export function createHeartGeometry(
       const yUpperNorm = Math.min(1, yUpper / maxR);
       const centerNorm = 1.0 - Math.min(1, Math.abs(baseX) / maxR);
       // Stronger lobe inflation as heartness increases
-      const lobeInflate = (0.10 + 0.22 * hNorm) * yUpperNorm * centerNorm; // stronger outward push near upper cleft
+      const lobeInflate = (0.16 + 0.36 * hNorm) * yUpperNorm * centerNorm; // stronger outward push near upper cleft
       const bottomFactor = Math.max(0, -baseY) / maxR; // how far into bottom half
       // Stronger narrowing toward the tip as heartness increases
-      const pointNarrow = Math.min(0.35, (0.12 + 0.24 * hNorm) * bottomFactor); // narrow X near tip
+      const pointNarrow = Math.min(0.60, (0.20 + 0.40 * hNorm) * bottomFactor); // narrow X near tip
       // Deepen the cleft by pulling down near the top-center (where |x| is small and y is high)
       const cleftCenter = 1.0 - Math.min(1, Math.abs(baseX) / (maxR * 0.6));
-      const cleftDepth = (0.05 + 0.22 * hNorm) * yUpperNorm * cleftCenter;
+      const cleftDepth = (0.08 + 0.38 * hNorm) * yUpperNorm * cleftCenter;
       baseY -= cleftDepth * scale * 0.50;
       let adjBaseX = baseX + Math.sign(baseX || 1) * lobeInflate * scale;
       adjBaseX *= (1.0 - pointNarrow);
@@ -95,7 +93,7 @@ export function createHeartGeometry(
       const heartNormal = new Vector3(adjBaseX, baseY, 0).normalize();
       const sphericalNormal = new Vector3(x, y, z).normalize();
       // Allow even less spherical blending when heartness is high to preserve silhouette
-      const lerpToSphere = Math.max(0.10, Math.min(0.9, 0.75 * (1.0 - 0.85 * hNorm)));
+      const lerpToSphere = Math.max(0.04, Math.min(0.9, 0.65 * (1.0 - 0.9 * hNorm)));
       const normal = heartNormal.lerp(sphericalNormal, lerpToSphere).normalize();
       normals.push(normal.x, normal.y, normal.z);
 

@@ -2711,10 +2711,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           /* Remove dark shadow to avoid any perceived dimming */
           box-shadow: 0 0 20px rgba(29,185,84,0.28);
           overflow: hidden;
-          /* Move further down from center */
-          margin-top: 420px;
+          /* Slightly higher on the screen */
+          margin-top: 200px;
         }
-        @media (max-width: 768px) { .sp-popover { margin-top: 300px; } }
+        @media (max-width: 768px) { .sp-popover { margin-top: 140px; } }
 
         /* Apple Music popout overlay */
         .am-overlay {
@@ -2736,10 +2736,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           border: 1px solid rgba(255,59,48,0.55);
           box-shadow: 0 0 30px rgba(255,59,48,0.25); /* remove heavy dark drop shadow */
           overflow: hidden;
-          /* Slightly below previous position */
-          margin-top: -300px;
+          /* Slightly higher on the screen */
+          margin-top: -320px;
         }
-        @media (max-width: 768px) { .am-popover { margin-top: -180px; } }
+        @media (max-width: 768px) { .am-popover { margin-top: -200px; } }
         .am-close {
           position: absolute;
           top: 8px;

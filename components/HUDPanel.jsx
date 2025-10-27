@@ -1780,8 +1780,8 @@ export default function HUDPanel({
                         boxShadow: '0 0 32px rgba(255,59,48,0.35)', // remove heavy dark drop shadow
                         borderRadius: 14,
                         overflow: 'hidden',
-                        // Slightly below previous position
-                        marginTop: -180
+                        // Slightly higher on the screen
+                        marginTop: -210
                       }}
                     >
                       <button
@@ -1872,7 +1872,8 @@ export default function HUDPanel({
                         boxShadow: '0 18px 46px rgba(0,0,0,0.55), 0 0 32px rgba(29,185,84,0.35)',
                         borderRadius: 14,
                         overflow: 'hidden',
-                        marginTop: -300
+                        // Slightly higher on the screen
+                        marginTop: -160
                       }}
                     >
                       <button
@@ -1997,7 +1998,7 @@ export default function HUDPanel({
                       top: (storePopoverPos && storePopoverPos.top) || 0,
                       transform: (storePopoverPos && storePopoverPos.width) ? 'scale(1.04)' : 'translateX(-50%) scale(1.04)',
                       transformOrigin: 'top center',
-                      padding: '10px 14px 18px 14px', borderRadius: 14,
+                      padding: '12px 14px 22px 14px', borderRadius: 14,
                       background: 'rgba(20,3,14,0.9)',
                       border: '1px solid rgba(252,84,175,0.55)',
                       boxShadow: '0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(252,84,175,0.45)',
@@ -2005,7 +2006,7 @@ export default function HUDPanel({
                       color: '#FFD9EF',
                       zIndex: 2147483647,
                       width: (storePopoverPos && storePopoverPos.width) ? storePopoverPos.width : 'min(92vw, 560px)',
-                      maxHeight: '82vh',
+                      maxHeight: '83vh',
                       overflowY: 'auto',
                       WebkitOverflowScrolling: 'touch',
                       overscrollBehavior: 'contain'
@@ -2396,11 +2397,11 @@ export default function HUDPanel({
                       tabIndex={0}
                     >
                       {brandLoading ? (
-                        <div style={{ fontSize: 16, opacity: .99, color: '#F2EF1D', textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>Loading…</div>
+                        <div style={{ fontSize: 16, opacity: .99, color: '#F2EF1D', textShadow: '0 0 4px rgba(242,239,29,0.8), 0 0 8px rgba(242,239,29,0.4)' }}>Loading…</div>
                       ) : brandError ? (
                         <div style={{ fontSize: 16, color: '#ff7b7b' }}>{brandError}</div>
                       ) : (
-                        <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: 16, color: '#F2EF1D', textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>{brandContent || ''}</div>
+                        <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: 16, color: '#F2EF1D', textShadow: '0 0 3px rgba(242,239,29,0.85), 0 0 6px rgba(242,239,29,0.35)' }}>{brandContent || ''}</div>
                       )}
                     </div>
                   </div>,

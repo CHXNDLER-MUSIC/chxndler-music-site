@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useMemo } from "react";
-import { Mesh, ShaderMaterial, Color, Group } from "three";
+import { Mesh, ShaderMaterial, Color, Group, Matrix4, Vector3 } from "three";
 import { createHeartGeometry } from "../../lib/heartGeometry";
 import { useFrame } from "@react-three/fiber";
 
@@ -13,11 +13,11 @@ export default function HeartPlanet() {
 
   // Create heart geometry
   const heartGeometry = useMemo(() => {
-    return createHeartGeometry(planetRadius * 2, 96, {
+    return createHeartGeometry(planetRadius * 2, 180, {
       // Stronger heart silhouette for a clearer heart read
       heartness: 5.0,
       // Slimmer along Z to accent the heart profile for a stronger silhouette
-      thicknessMultiplier: 0.28,
+      thicknessMultiplier: 0.12,
     });
   }, [planetRadius]);
 
@@ -32,11 +32,11 @@ export default function HeartPlanet() {
         uColorHot:  { value: new Color('#FF9EDC') },   // soft pink highlight
         uColorCore: { value: new Color('#FFE6F5') },   // near-white rose core
         // Detail controls
-        uScale: { value: 1.45 },
-        uDetail: { value: 3.3 },
-        uGranularity: { value: 7.0 },
-        uEmissiveBoost: { value: 1.6 },
-        uRimBoost: { value: 0.85 },
+        uScale: { value: 1.35 },
+        uDetail: { value: 3.0 },
+        uGranularity: { value: 6.0 },
+        uEmissiveBoost: { value: 1.0 },
+        uRimBoost: { value: 1.2 },
         // Bump detail strength
         uNormalStrength: { value: 0.55 },
       },
@@ -155,9 +155,9 @@ export default function HeartPlanet() {
           vec3 col = ramp(field);
           col += vec3(1.0) * flares * 0.45;
 
-          // No specular for a star; apply limb darkening for a sun-like read
+          // Reduce the spherical look: slightly brighten the edge instead of center
           float mu = clamp(dot(Np, V), 0.0, 1.0);
-          float limb = 0.7 + 0.3 * pow(mu, 0.5); // brighter center, darker rim
+          float limb = 0.95 - 0.25 * pow(mu, 0.7); // slight edge emphasis
           // Subtle day/night to keep form readable
           float dif = max(dot(Np, L), 0.0);
           float night = smoothstep(0.0, 0.55, dif);
@@ -187,7 +187,7 @@ export default function HeartPlanet() {
   // High-altitude cloud shell material (separate rotating layer for parallax)
 
   // Animation loop
-  useFrame((state, delta) => {
+  useFrame((state) => {
     const time = state.clock.elapsedTime;
     
     // Update shader uniforms
@@ -197,18 +197,18 @@ export default function HeartPlanet() {
     // no inner glow
     // no billboard uniforms
     
-    if (meshRef.current) {
-      // Slow rotation
-      meshRef.current.rotation.y += delta * 0.12;
+    // Keep the heart facing the camera for a clear silhouette
+    if (groupRef.current) {
+      groupRef.current.lookAt(state.camera.position);
     }
     // Subtle heartbeat scale on X/Y to sell heart silhouette
     if (groupRef.current) {
       const beat = 0.06 * Math.max(0, Math.sin(time * 2.2)) + 0.015 * Math.sin(time * 4.4);
       const sx = 1.0 + beat;
       const sy = 1.0 + beat * 0.9;
-      const sz = 1.0 - beat * 0.35;
-      // Slightly wider, slightly shorter, slightly thinner to sell heart shape
-      groupRef.current.scale.set(2.0 * sx, 1.55 * sy, 0.68 * sz);
+      const sz = 1.0 - beat * 0.45;
+      // Wider, shorter, thinner to sell heart proportions strongly
+      groupRef.current.scale.set(2.5 * sx, 2.0 * sy, 0.35 * sz);
     }
     
     
@@ -218,7 +218,7 @@ export default function HeartPlanet() {
   });
 
   return (
-    <group ref={groupRef} position={[0, 0.05, 0]} scale={[2.0, 1.55, 0.68]}>
+    <group ref={groupRef} position={[0, 0.05, 0]} scale={[2.5, 2.0, 0.35]}>
       {/* Core heart with realistic shading */}
       <mesh ref={meshRef} position={[0, 0, 0]} renderOrder={1}>
         <primitive attach="geometry" object={heartGeometry} />
