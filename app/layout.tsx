@@ -7,10 +7,37 @@ import AnalyticsWidget from "@/components/AnalyticsWidget";
 import PageViewTracker from "@/components/PageViewTracker";
 import { Suspense } from "react";
 import { AudioProvider } from "@/app/providers/AudioProvider";
+import LazyLoadEnhancer from "@/components/LazyLoadEnhancer";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://chxndler-music.com"),
   title: "CHXNDLER — SPACESHIP",
   description: "Pilot the cockpit, switch channels, and drift through space.",
+  openGraph: {
+    title: "CHXNDLER — SPACESHIP",
+    description: "Pilot the cockpit, switch channels, and drift through space.",
+    url: "https://chxndler-music.com",
+    siteName: "CHXNDLER",
+    type: "website",
+    images: [
+      {
+        url: "/logo/CHXNDLER_Logo.png",
+        width: 458,
+        height: 596,
+        alt: "CHXNDLER Logo",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: "CHXNDLER — SPACESHIP",
+    description: "Pilot the cockpit, switch channels, and drift through space.",
+    images: ["/logo/CHXNDLER_Logo.png"],
+    creator: "@chxndler",
+  },
+  icons: {
+    icon: "/logo/CHXNDLER_Logo.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -66,6 +93,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </Suspense>
           <ClickTracker />
           <AnalyticsWidget />
+          <LazyLoadEnhancer />
           {children}
         </AudioProvider>
         {mpId ? (

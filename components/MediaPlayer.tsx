@@ -2714,10 +2714,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           border: 1px solid rgba(255,59,48,0.55);
           box-shadow: 0 0 30px rgba(255,59,48,0.25); /* remove heavy dark drop shadow */
           overflow: hidden;
-          /* Slightly higher on the screen */
-          margin-top: -320px;
+          /* Lower on the screen */
+          margin-top: 220px;
         }
-        @media (max-width: 768px) { .am-popover { margin-top: -200px; } }
+        @media (max-width: 768px) { .am-popover { margin-top: 120px; } }
         .am-close {
           position: absolute;
           top: 8px;
