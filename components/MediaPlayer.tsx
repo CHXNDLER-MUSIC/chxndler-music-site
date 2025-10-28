@@ -2640,10 +2640,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           box-shadow: 0 10px 40px rgba(0,0,0,0.5), 0 0 30px rgba(255,255,255,0.08);
           overflow: hidden;
           animation: ytZoomIn 160ms ease-out;
-          /* Lower on the screen */
-          margin-top: -60px;
+          /* Lower on the screen (moved down slightly) */
+          margin-top: -44px;
         }
-        @media (max-width: 768px) { .yt-popover { margin-top: -30px; } }
+        @media (max-width: 768px) { .yt-popover { margin-top: -18px; } }
         .yt-embed-wrap { position: absolute; inset: 0; }
         .yt-embed-wrap iframe { width: 100%; height: 100%; border: 0; }
         .yt-close {

@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { track, storeClickData, generateClickId } from "@/lib/analytics";
 import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sfx";
+import InlineBrowserModal from "@/components/InlineBrowserModal";
 
 type HubItem = {
   id: string;
@@ -46,6 +47,8 @@ export default function HoloHubMenu({
   suspend?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [inlineUrl, setInlineUrl] = useState<string | null>(null);
+  const [inlineTitle, setInlineTitle] = useState<string>("");
   const rootRef = useRef<HTMLDivElement | null>(null);
   const hubRef = useRef<HTMLButtonElement | null>(null);
   const firstItemRef = useRef<HTMLButtonElement | null>(null);
@@ -198,7 +201,20 @@ export default function HoloHubMenu({
       } catch {}
     } catch {}
     // Then perform the actual action
-    try { if (typeof it.onClick === "function") it.onClick(); else if (it.href) window.open(it.href, "_blank", "noopener,noreferrer"); } catch {}
+    try {
+      if (typeof it.onClick === "function") {
+        it.onClick();
+      } else if (it.href) {
+        // Open Instagram inline instead of a new tab
+        const idLower = (it.id || '').toLowerCase();
+        if (idLower === 'ig' || (it.href || '').toLowerCase().includes('instagram.')) {
+          setInlineTitle(it.label || 'Instagram');
+          setInlineUrl(it.href);
+        } else {
+          window.open(it.href, "_blank", "noopener,noreferrer");
+        }
+      }
+    } catch {}
     // Keep the yellow panel open after clicking social links.
     // Do not call setOpen(false) here so the display stays visible.
     // Also avoid notifying onToggle to prevent unintended beam/color changes.
@@ -440,6 +456,10 @@ export default function HoloHubMenu({
           </div>
         ),
         document.body
+      ) : null}
+
+      {inlineUrl ? (
+        <InlineBrowserModal url={inlineUrl} title={inlineTitle || 'Instagram'} onClose={()=> setInlineUrl(null)} />
       ) : null}
 
       <style jsx>{`

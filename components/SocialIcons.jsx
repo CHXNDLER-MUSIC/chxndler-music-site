@@ -2,6 +2,7 @@
 import React, { useRef, useCallback, useEffect, useState } from "react";
 import { sfx } from "@/lib/sfx";
 import IconButtonShell from "@/components/IconButtonShell";
+import InlineBrowserModal from "@/components/InlineBrowserModal";
 
 const Icon = {
   Instagram: ({ size="18px" }) => (
@@ -36,6 +37,8 @@ const Icon = {
 
 export default function SocialIcons({ LINKS, POS, trackLinks }) {
   const s = POS.console;
+  const [inlineUrl, setInlineUrl] = useState<string | null>(null);
+  const [inlineTitle, setInlineTitle] = useState<string>("");
   
   // Get responsive size based on screen width
   const getResponsiveSize = () => {
@@ -131,7 +134,21 @@ export default function SocialIcons({ LINKS, POS, trackLinks }) {
           <div key={it.key} data-key={it.key} className="ck-icon-wrap" style={{ left: leftCSS, top, width:size, height:size, transform: transformCSS }}>
             <span className="deck" aria-hidden />
             <span className="socket" aria-hidden />
-            <IconButtonShell title={it.title} href={it.href} color={it.color} onClickFX={playClick} onHoverFX={playHover} dataId={it.key === 'instagram' ? 'ig' : it.key === 'tiktok' ? 'tt' : it.key === 'youtube' ? 'yt' : undefined}>
+            <IconButtonShell
+              title={it.title}
+              href={it.href}
+              color={it.color}
+              onClickFX={playClick}
+              onHoverFX={playHover}
+              dataId={it.key === 'instagram' ? 'ig' : it.key === 'tiktok' ? 'tt' : it.key === 'youtube' ? 'yt' : undefined}
+              onClick={(e)=>{
+                // Open Instagram inline instead of a new tab
+                if (it.key === 'instagram') {
+                  setInlineTitle(it.title);
+                  setInlineUrl(it.href);
+                }
+              }}
+            >
               {it.icon}
             </IconButtonShell>
           </div>
@@ -156,6 +173,9 @@ export default function SocialIcons({ LINKS, POS, trackLinks }) {
         <source src="/audio/hover.mp3" type="audio/mpeg" />
         <source src="/audio/song-select.mp3" type="audio/mpeg" />
       </audio>
+      {inlineUrl ? (
+        <InlineBrowserModal url={inlineUrl} title={inlineTitle || 'Instagram'} onClose={()=>{ setInlineUrl(null); }} />
+      ) : null}
     </>
   );
 }

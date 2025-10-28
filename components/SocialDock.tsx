@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import * as SocialsMod from "../config/socials";
+import InlineBrowserModal from "@/components/InlineBrowserModal";
 
 type SocialItem = { id: string; href: string };
 
@@ -57,6 +58,8 @@ const IconFor = ({ id }: { id: string }) => {
 export default function SocialDock() {
   const SOCIALS = (SocialsMod as any).SOCIALS ?? (SocialsMod as any).default ?? [];
   const items: SocialItem[] = Array.isArray(SOCIALS) ? SOCIALS : Object.values(SOCIALS || {});
+  const [inlineUrl, setInlineUrl] = useState<string | null>(null);
+  const [inlineTitle, setInlineTitle] = useState<string>("");
 
   return (
     <div className="absolute inset-0 z-30 pointer-events-none">
@@ -112,12 +115,23 @@ export default function SocialDock() {
             }}
             onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.96)")}
             onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1.04)")}
+            onClick={(e) => {
+              // Open Instagram inline instead of a new tab
+              if (s.id.toLowerCase().includes('insta')) {
+                e.preventDefault();
+                setInlineTitle('Instagram');
+                setInlineUrl(s.href);
+              }
+            }}
           >
             <IconFor id={s.id} />
           </a>
         );
       })}
       </div>
+      {inlineUrl ? (
+        <InlineBrowserModal url={inlineUrl} title={inlineTitle || 'Instagram'} onClose={()=> setInlineUrl(null)} />
+      ) : null}
     </div>
   );
 }

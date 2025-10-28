@@ -137,7 +137,8 @@ export default function HUDPanel({
   const playerRef = useRef(null);
   const [planetBottom, setPlanetBottom] = useState(56);
   // Vertical offset to raise/lower the Store (Gem) popover relative to its anchor
-  const STORE_POPOVER_Y_OFFSET = -188; // raise top a bit more; bottom unchanged
+  // Move it slightly lower (less negative) per request
+  const STORE_POPOVER_Y_OFFSET = -172; // was -188
   // Dynamic spacing for song selector so it doesn't overlap the cover
   const coverRef = useRef(null);
   const [oneLinerRight, setOneLinerRight] = useState(inConsole ? 108 : 140);
@@ -1944,7 +1945,8 @@ export default function HUDPanel({
                         boxShadow: '0 18px 46px rgba(0,0,0,0.55), 0 0 32px rgba(25,227,255,0.45)',
                         borderRadius: 14,
                         overflow: 'hidden',
-                        marginTop: -184
+                        // Move a bit lower on screen
+                        marginTop: -168
                       }}
                     >
                       <button
