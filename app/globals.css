@@ -79,7 +79,8 @@
   
   /* Mobile-specific display sizing */
   /* Increase minimum width so blue display stays wider on small screens */
-  --display-width: max(360px, min(420px, calc((100vw - 16px) * 0.8)));
+  /* Slightly widen the minimum blue display width on small screens */
+  --display-width: max(380px, min(420px, calc((100vw - 16px) * 0.8)));
   --display-border-radius: 12px;
 }
 
@@ -93,7 +94,8 @@
     --touch-zone-height: 48px;
     
     /* Tablet-specific display sizing */
-    --display-width: max(360px, min(480px, calc((100vw - 24px) * 0.8)));
+    /* Slightly widen the minimum blue display width on tablets */
+    --display-width: max(380px, min(480px, calc((100vw - 24px) * 0.8)));
     --display-border-radius: 14px;
     
     /* Enhanced beam visual properties for tablets */
@@ -112,7 +114,8 @@
     --touch-zone-height: 40px; /* Smaller for precise mouse clicks */
     
     /* Desktop-specific display sizing */
-    --display-width: max(400px, min(580px, calc((100vw - 32px) * 0.8)));
+    /* Slightly widen the minimum blue display width on desktops */
+    --display-width: max(420px, min(580px, calc((100vw - 32px) * 0.8)));
     --display-border-radius: 16px;
     
     /* Enhanced beam visual properties for desktop */
@@ -131,7 +134,8 @@
     --panel-gap: 20px;
     
     /* Large desktop display sizing */
-    --display-width: max(450px, min(650px, calc((100vw - 48px) * 0.8)));
+    /* Slightly widen the minimum blue display width on large desktops */
+    --display-width: max(470px, min(650px, calc((100vw - 48px) * 0.8)));
     --display-border-radius: 18px;
     
     /* Enhanced visual effects for large screens */
@@ -149,7 +153,8 @@
     --panel-gap: 24px;
     
     /* Ultra-wide display sizing */
-    --display-width: max(500px, min(720px, calc((100vw - 64px) * 0.8)));
+    /* Slightly widen the minimum blue display width on ultra-wide displays */
+    --display-width: max(520px, min(720px, calc((100vw - 64px) * 0.8)));
     --display-border-radius: 20px;
   }
 }

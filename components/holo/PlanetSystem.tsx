@@ -110,6 +110,8 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
   // Do not force-enable visibility based on showAll; honor store state.
   // Homepage code ensures planetsVisible is true when appropriate.
   const effectivePlanetsVisible = planetsVisible;
+  // Basic mobile detection for rendering tweaks to reduce flicker
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
   
   // Debug planet visibility state
   
@@ -126,7 +128,11 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         // Homepage (showAll=true) always shows planets regardless of other state
         // CRITICAL FIX: Force opacity=1 when showAll=true (homepage)
         opacity: isHomeOverview ? 1 : (actualShouldHide || (!effectivePlanetsVisible && !isHomeOverview)) ? 0 : 1,
-        transition: 'opacity 400ms ease-in-out'
+        transition: isMobile ? 'none' : 'opacity 400ms ease-in-out',
+        willChange: 'opacity',
+        transform: 'translateZ(0)',
+        WebkitTransform: 'translateZ(0)',
+        backfaceVisibility: 'hidden' as any,
       }}
     >
       <Canvas
@@ -144,8 +150,16 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         // Elevated viewpoint: camera positioned above to look down at the planet system
         // Zoom out more when showing all planets for better overview
         camera={{ position: [0.2, 18, actualShouldShowAll ? 180 : 95], fov: actualShouldShowAll ? 120 : 75 }}
-        // Prefer low-power context on small devices; disable MSAA which is expensive on mobile GPUs
-        gl={{ antialias: false, alpha: true, powerPreference: 'low-power' }}
+        // Prefer safer GL settings on mobile to avoid flicker when layers repaint
+        gl={{
+          antialias: false,
+          alpha: true,
+          powerPreference: isMobile ? 'high-performance' : 'low-power',
+          preserveDrawingBuffer: true,
+          stencil: false,
+          depth: true,
+          failIfMajorPerformanceCaveat: false,
+        }}
         onCreated={({ gl }) => {
           // Lift exposure so emissive and additive layers pop without bloom
           // @ts-ignore three typings vary by version

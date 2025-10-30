@@ -963,7 +963,7 @@ export default function HoloHubMenu({
         }
         .item[data-id="tt"]:hover::before{ filter: blur(12px) brightness(1.18); }
 
-        /* YouTube: red glow behind button; grow and glow on hover */
+        /* YouTube: red glow confined within the circular button (no spill) */
         .item[data-id="yt"]{
           --yt-red: #FF0000; /* YouTube brand red */
           --tint: var(--yt-red);
@@ -971,27 +971,26 @@ export default function HoloHubMenu({
             radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
             color-mix(in srgb, var(--yt-red) 46%, transparent);
           border: 1px solid rgba(255,255,255,.18);
+          /* Clip internal effects to the button circle */
+          overflow: hidden;
           box-shadow:
             0 16px 34px rgba(0,0,0,.6),
-            0 0 32px rgba(255,0,0,.95),
-            0 0 80px rgba(255,0,0,.65),
             inset 0 1px 0 rgba(255,255,255,.24), inset 0 -6px 16px rgba(0,0,0,.6);
         }
         .item[data-id="yt"]::before{
-          content:""; position:absolute; inset:-8px; border-radius:50%; pointer-events:none; mix-blend-mode:screen;
-          background: radial-gradient(closest-side, rgba(255,0,0,.95), rgba(255,0,0,0) 60%);
-          filter: blur(12px);
+          /* Internal red halo clipped to the circle */
+          content:""; position:absolute; inset:0; border-radius:50%; pointer-events:none; mix-blend-mode:screen;
+          background: radial-gradient(closest-side, rgba(255,0,0,.85), rgba(255,0,0,0) 68%);
+          filter: blur(10px);
         }
         .item[data-id="yt"]:hover{
           transform: translate(var(--tx,0), var(--ty,0)) translate(-50%, -50%) scale(1.14) !important;
           box-shadow:
             0 22px 44px rgba(0,0,0,.7),
-            0 0 80px rgba(255,0,0,1),
-            0 0 160px rgba(255,0,0,1),
             inset 0 1px 0 rgba(255,255,255,.28), inset 0 -6px 18px rgba(0,0,0,.62) !important;
           filter: brightness(1.22) saturate(1.24) !important;
         }
-        .item[data-id="yt"]:hover::before{ filter: blur(16px) brightness(1.28); }
+        .item[data-id="yt"]:hover::before{ filter: blur(12px) brightness(1.24); }
 
         @media (max-width: 480px) { .hub{ left:-32px; top:-32px; width:64px; height:64px; } .hub-icon{ width: 38px; height: 38px; } }
       `}</style>

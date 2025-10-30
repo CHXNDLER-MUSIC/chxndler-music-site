@@ -1377,90 +1377,26 @@ export default function DashboardApp({ initialSlug } = {}) {
         suspendUI={warpActive}
         hideStartButton={false}
         onLaunch={() => {
-          // Start button flow - unlock UI and prepare homepage warp
-          console.log('🚀 DashboardApp: Start button clicked!');
-          
-          // Enable SFX immediately within the user gesture
-          try { 
-            sfx.setEnabled(true); 
-            (window).__CHX_UI_UNLOCKED = true; 
-            (window).__CHX_SHOW_DIMMING_OVERLAY = false;
-          } catch {}
-          
-          // Prime ambient silently within this user gesture to satisfy autoplay policies
+          // Minimal immediate work for snappy tap
+          try { sfx.setEnabled(true); (window).__CHX_UI_UNLOCKED = true; (window).__CHX_SHOW_DIMMING_OVERLAY = false; } catch {}
           try { window.dispatchEvent(new CustomEvent('ambient:prime')); } catch {}
-          
-          // Ignore current playing state: Start always triggers warp to homepage
-          // Any currently playing main track will be stopped below before warp
-          
-          // CRITICAL: Show all planets immediately when Start is pressed
-          console.log('🌍 DashboardApp: Setting all planets mode for homepage');
-          try { 
-            playerStore.getState().setPlanetDisplayMode('all'); 
-            playerStore.getState().setPlanetsVisible(true); // CRITICAL: Force planets visible
-            console.log('🌍 DashboardApp: setPlanetDisplayMode(all) and setPlanetsVisible(true) called');
-          } catch {}
-          try { 
-            playerStore.setState({ mainId: null }); 
-            console.log('🌍 DashboardApp: mainId set to null');
-          } catch {}
-          try { 
-            setHidePlanetsForSelection(false); 
-            console.log('🌍 DashboardApp: hidePlanetsForSelection set to false');
-          } catch {}
-          
-          // Homepage Start flow (warp to home reveal)
-          // Only enable welcome VO on FIRST Start button press per session
-          if (!firstStartDone) {
-            welcomeOnStartRef.current = true;
-            setHomeIntroEnabled(true);
-            console.log('🎵 DashboardApp: Start button - First time, enabling welcome VO');
-            // Reset welcome VO state only on first start
-            setWelcomeHasPlayed(false);
-          } else {
-            welcomeOnStartRef.current = false;
-            setHomeIntroEnabled(false);
-            console.log('🎵 DashboardApp: Start button - Subsequent press, skipping welcome VO');
-            // Ensure first-load flag is off after second Start
-            try { setIsFirstLoad(false); } catch {}
-          }
-          setPendingOverlayReveal(true);
-          setUiUnlocked(true);
-          setShowDimmingOverlay(false);
-          setLandingRevealReady(true);
-          
-          // Prepare warp to homepage
-          setUserSelected(false);
-          setHomeMode(false);
-          startButtonWarpRef.current = true;
-          
-          // Stop any playing main track audio and clear track state
-          try {
-            const a = document.querySelector('audio[data-audio-player="1"]');
-            if (a) { a.pause(); try { a.currentTime = 0; } catch {}; try { a.muted = true; } catch {}; try { a.removeAttribute('src'); } catch {}; try { a.load(); } catch {} }
-          } catch {}
-          setIsPlaying(false);
-          
-          // Clear current track to ensure homepage state
-          setCurTrack(null);
-          setChannelIdx(0);
-          setPendingTrackPlay(false); // Ensure no track play is pending
-          setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
-          
-          // Set up UI states for homepage warp
-          setShowHUD(false);
-          setShowOverlayUI(false);
-          setBeamEnabled(false);
-          setPendingHomePower(true);
-          setAllowWarp(true);
-          setSky(SPACE_SKY);
-          setNextSky(null);
-          
-          // Keep ambient suspended until warp SFX fully ends
-          setAmbientSuspended(true);
-          
-          // Start warp sequence
-          setFlySignal((n) => n + 1);
+          try { playerStore.getState().setPlanetDisplayMode('all'); playerStore.getState().setPlanetsVisible(true); } catch {}
+          try { playerStore.setState({ mainId: null }); } catch {}
+          try { setHidePlanetsForSelection(false); } catch {}
+          // Defer heavier state churn to next frame to reduce jank
+          const kickoff = () => {
+            if (!firstStartDone) { welcomeOnStartRef.current = true; setHomeIntroEnabled(true); setWelcomeHasPlayed(false); }
+            else { welcomeOnStartRef.current = false; setHomeIntroEnabled(false); try { setIsFirstLoad(false); } catch {} }
+            setPendingOverlayReveal(true); setUiUnlocked(true); setShowDimmingOverlay(false); setLandingRevealReady(true);
+            setUserSelected(false); setHomeMode(false); startButtonWarpRef.current = true;
+            try { const a = document.querySelector('audio[data-audio-player="1"]'); if (a) { a.pause(); try { a.currentTime = 0; } catch {}; try { a.muted = true; } catch {}; try { a.removeAttribute('src'); } catch {}; try { a.load(); } catch {} } } catch {}
+            setIsPlaying(false);
+            setCurTrack(null); setChannelIdx(0); setPendingTrackPlay(false); setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
+            setShowHUD(false); setShowOverlayUI(false); setBeamEnabled(false); setPendingHomePower(true);
+            setAllowWarp(true); setSky(SPACE_SKY); setNextSky(null); setAmbientSuspended(true);
+            setFlySignal((n) => n + 1);
+          };
+          if (typeof window !== 'undefined' && 'requestAnimationFrame' in window) window.requestAnimationFrame(kickoff); else setTimeout(kickoff, 0);
         }}
         onPowerToggle={() => { 
           // Manual power toggle should not start new welcome audio, but don't interrupt if it's already playing

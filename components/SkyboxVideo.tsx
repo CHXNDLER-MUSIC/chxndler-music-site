@@ -239,28 +239,33 @@ export default function SkyboxVideo({
           {srcWebm ? <source src={srcWebm} type="video/webm" /> : null}
         </video>
 
-        {/* Lightspeed transition overlay (plays once on song change) */}
-        {showLightspeed ? (
-          <video
-            ref={lsRef}
-            autoPlay
-            loop={holdLightspeed && !readyToReveal}
-            muted
-            playsInline
-            preload="auto"
-            controls={false}
-            controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
-            disablePictureInPicture
-            // @ts-ignore
-            disableRemotePlayback
-            tabIndex={-1}
-            onEnded={() => { setShowLightspeed(false); if (!flyEndCalledRef.current && onFlyEndRef.current) { try { onFlyEndRef.current(); } catch {} } flyEndCalledRef.current = true; }}
-            className="absolute inset-0 h-full w-full object-cover"
-            style={{ filter: `brightness(${Math.max(0.9, brightness)})`, mixBlendMode: 'screen' as any }}
-          >
-            <source src="/skies/lightspeed.mp4" type="video/mp4" />
-          </video>
-        ) : null}
+        {/* Lightspeed transition overlay (pre-mounted for instant playback; opacity toggled) */}
+        <video
+          ref={lsRef}
+          autoPlay={false}
+          loop={showLightspeed && (holdLightspeed && !readyToReveal)}
+          muted
+          playsInline
+          preload="auto"
+          controls={false}
+          controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
+          disablePictureInPicture
+          // @ts-ignore
+          disableRemotePlayback
+          tabIndex={-1}
+          onEnded={() => { setShowLightspeed(false); if (!flyEndCalledRef.current && onFlyEndRef.current) { try { onFlyEndRef.current(); } catch {} } flyEndCalledRef.current = true; }}
+          className="absolute inset-0 h-full w-full object-cover"
+          style={{ 
+            filter: `brightness(${Math.max(0.9, brightness)})`, 
+            mixBlendMode: 'screen' as any,
+            opacity: showLightspeed ? 1 : 0,
+            transition: 'opacity 220ms ease',
+            pointerEvents: 'none'
+          }}
+          onLoadedData={() => setHasStartedLoading(true)}
+        >
+          <source src="/skies/lightspeed.mp4" type="video/mp4" />
+        </video>
       </div>
     </div>
   );

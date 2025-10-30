@@ -210,6 +210,17 @@ export default function SteeringWheelOverlay({
   const buttonOffsetPx = 100; // Fixed horizontal offset
   const buttonsBottomPercent = 31; // Fixed vertical position
 
+  // Mobile-specific fine tuning: align yellow hub perfectly with blue/pink on phones
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const onResize = () => {
+      try { setIsMobile(window.innerWidth <= 640); } catch {}
+    };
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   // Sync key CSS variables to :root so portal-rendered elements can align to the blue button
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -377,13 +388,14 @@ export default function SteeringWheelOverlay({
         })()}
       </div>
 
-      {/* Comms Button - yellow hub positioned slightly to the right of center */}
+      {/* Comms Button - yellow hub positioned slightly to the left of center (mobile nudge) */}
       <div
         style={{
           position: "absolute",
           bottom: `${buttonsBottomPercent}%`, // Same vertical level as blue button
-          left: `calc(50% - ${buttonOffsetPx}px - 10px)`, // Nudge slightly further left
-          transform: 'translate(-50%, 8px)',
+          // Slightly adjust on small screens so it aligns horizontally with blue/pink
+          left: `calc(50% - ${buttonOffsetPx}px - ${isMobile ? 6 : 10}px)`,
+          transform: `translate(-50%, ${isMobile ? 12 : 8}px)`,
           zIndex: 92,
           pointerEvents: showUI && !isDimmingOverlayActive && isUIUnlocked ? 'auto' : 'none',
           opacity: showUI ? 1 : 0,

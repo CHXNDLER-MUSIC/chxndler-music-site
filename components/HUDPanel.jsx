@@ -1091,6 +1091,8 @@ export default function HUDPanel({
             className="absolute inset-x-0"
             // Position 3D display higher within blue HUD area; allow only top bleed on homepage
             style={{ 
+              // Fade only the 3D layer when beam-only mode is active
+              opacity: contentOpacity,
               // Move the 3D planet system higher
               top: `calc(${inConsole ? 44 : 64}px + var(--hud-y, 0px)${!currentId ? ' - 18px' : ''})`, 
               bottom: planetBottom,
@@ -1130,12 +1132,15 @@ export default function HUDPanel({
           <div
               className={`relative ${inConsole ? 'p-2' : 'p-4'}`}
               style={{ 
-                opacity: contentOpacity, 
+                // Keep this wrapper always visible so cover art never flashes with 3D
+                opacity: 1, 
                 transition: 'opacity 240ms ease', 
-                pointerEvents: contentOpacity > 0.01 ? 'auto' : 'none', 
+                pointerEvents: 'auto', 
                 minHeight: inConsole ? 380 : 480,
                 width: '100%',
-                height: '100%'
+                height: '100%',
+                // Contain children like cover art fully inside the blue display
+                overflow: 'hidden'
               }}
               ref={innerRef}
             >
@@ -1143,17 +1148,24 @@ export default function HUDPanel({
 
           
           {/* Cover section at bottom right corner - using CoverHologram for pop-out functionality */}
-          <div ref={coverRef} className="absolute" style={{ 
-            // Nudge slightly higher and align to the right edge
-            bottom: inConsole ? -6 : -18, 
-            right: inConsole ? 0 : 0, 
+          <div ref={coverRef} className="absolute hud-cover-pos" style={{ 
+            // Align flush to the right and sit at the bottom edge
+            bottom: 0, 
+            right: 0, 
             width: 'auto', 
             display: 'flex', 
             flexDirection: 'column',
             alignItems: 'flex-end',
             // Slightly larger gap so the button isn't attached to the cover
             gap: 4,
-            justifyContent: 'flex-end' 
+            justifyContent: 'flex-end',
+            // Stabilize rendering on iOS Safari to prevent flicker when repainting
+            WebkitBackfaceVisibility: 'hidden',
+            backfaceVisibility: 'hidden',
+            willChange: 'transform',
+            contain: 'paint',
+            transform: 'translateZ(0)',
+            zIndex: 2
           }}>
             {/* Brand button above the cover art */}
             <button
@@ -1247,7 +1259,9 @@ export default function HUDPanel({
                 <div
                   onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {}; try { const a = hoverCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
                   style={{
-                    pointerEvents: joinAlienOpen ? 'none' : 'auto'
+                    pointerEvents: joinAlienOpen ? 'none' : 'auto',
+                    // Prevent any descendant overflow from causing visual bleed on iOS
+                    overflow: 'hidden'
                   }}
                 >
                   <CoverHologram 
