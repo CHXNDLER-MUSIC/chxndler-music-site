@@ -2,7 +2,7 @@
 import React, { useRef, useCallback, useEffect, useState } from "react";
 import { sfx } from "@/lib/sfx";
 import IconButtonShell from "@/components/IconButtonShell";
-import InlineBrowserModal from "@/components/InlineBrowserModal";
+// Removed inline/embed modals for socials; open in new tab instead
 
 const Icon = {
   Instagram: ({ size="18px" }) => (
@@ -37,8 +37,7 @@ const Icon = {
 
 export default function SocialIcons({ LINKS, POS, trackLinks }) {
   const s = POS.console;
-  const [inlineUrl, setInlineUrl] = useState<string | null>(null);
-  const [inlineTitle, setInlineTitle] = useState<string>("");
+  // No modal state needed; links open directly in a new tab
   
   // Get responsive size based on screen width
   const getResponsiveSize = () => {
@@ -141,13 +140,8 @@ export default function SocialIcons({ LINKS, POS, trackLinks }) {
               onClickFX={playClick}
               onHoverFX={playHover}
               dataId={it.key === 'instagram' ? 'ig' : it.key === 'tiktok' ? 'tt' : it.key === 'youtube' ? 'yt' : undefined}
-              onClick={(e)=>{
-                // Open Instagram inline instead of a new tab
-                if (it.key === 'instagram') {
-                  setInlineTitle(it.title);
-                  setInlineUrl(it.href);
-                }
-              }}
+              // No special handler; let anchor open new tab
+              onClick={undefined}
             >
               {it.icon}
             </IconButtonShell>
@@ -173,9 +167,7 @@ export default function SocialIcons({ LINKS, POS, trackLinks }) {
         <source src="/audio/hover.mp3" type="audio/mpeg" />
         <source src="/audio/song-select.mp3" type="audio/mpeg" />
       </audio>
-      {inlineUrl ? (
-        <InlineBrowserModal url={inlineUrl} title={inlineTitle || 'Instagram'} onClose={()=>{ setInlineUrl(null); }} />
-      ) : null}
+      {/* No inline browser or link-out modal for socials */}
     </>
   );
 }

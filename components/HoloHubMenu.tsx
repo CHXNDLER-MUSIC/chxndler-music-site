@@ -3,7 +3,12 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { track, storeClickData, generateClickId } from "@/lib/analytics";
 import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sfx";
+import { appleEmbedHeight } from "@/lib/apple";
 import InlineBrowserModal from "@/components/InlineBrowserModal";
+import LinkOutModal from "@/components/LinkOutModal";
+import { toAppleEmbed } from "@/lib/apple";
+import { toSpotifyEmbed, spotifyEmbedHeight } from "@/lib/spotify";
+import { toYouTubeEmbed, youTubeEmbedHeight } from "@/lib/youtube";
 
 type HubItem = {
   id: string;
@@ -49,6 +54,10 @@ export default function HoloHubMenu({
   const [open, setOpen] = useState(false);
   const [inlineUrl, setInlineUrl] = useState<string | null>(null);
   const [inlineTitle, setInlineTitle] = useState<string>("");
+  const [inlineCompact, setInlineCompact] = useState<boolean>(false);
+  const [inlineHeightPx, setInlineHeightPx] = useState<number | undefined>(undefined);
+  const [inlineIframeHeightPx, setInlineIframeHeightPx] = useState<number | undefined>(undefined);
+  const [linkOut, setLinkOut] = useState<{ href: string; title: string; accent?: string; iconSrc?: string; message?: string } | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const hubRef = useRef<HTMLButtonElement | null>(null);
   const firstItemRef = useRef<HTMLButtonElement | null>(null);
@@ -205,12 +214,109 @@ export default function HoloHubMenu({
       if (typeof it.onClick === "function") {
         it.onClick();
       } else if (it.href) {
-        // Open Instagram inline instead of a new tab
         const idLower = (it.id || '').toLowerCase();
-        if (idLower === 'ig' || (it.href || '').toLowerCase().includes('instagram.')) {
-          setInlineTitle(it.label || 'Instagram');
-          setInlineUrl(it.href);
-        } else {
+        const hrefLower = (it.href || '').toLowerCase();
+        // Instagram/TikTok: open directly in a new tab (no embed/modal)
+        if (idLower === 'ig' || hrefLower.includes('instagram.')) {
+          try { window.open(it.href!, '_blank', 'noopener,noreferrer'); } catch {}
+        }
+        else if (idLower === 'tt' || hrefLower.includes('tiktok.')) {
+          try { window.open(it.href!, '_blank', 'noopener,noreferrer'); } catch {}
+        }
+        // YouTube: prefer embedded player in inline modal (pop-out)
+        else if (
+          idLower === 'yt' ||
+          hrefLower.includes('youtube.') ||
+          hrefLower.includes('youtu.be') ||
+          hrefLower.includes('youtube-nocookie.') ||
+          hrefLower.includes('music.youtube.')
+        ) {
+          try {
+            const embed = toYouTubeEmbed(it.href);
+            if (embed) {
+              setInlineTitle(it.label || 'YouTube');
+              setInlineUrl(`${embed}?autoplay=1&rel=0`);
+              // Use compact framing similar to Spotify for consistency
+              setInlineCompact(true);
+              // Compact 16:9 embed height + header
+              const bodyH = Math.max(160, youTubeEmbedHeight());
+              setInlineHeightPx(Math.min(420, Math.max(220, bodyH + 48))); // include header
+              setInlineIframeHeightPx(bodyH);
+            } else {
+              // If not a direct video URL (e.g., channel handle), show a friendly link-out flow
+              setLinkOut({
+                href: it.href!,
+                title: it.label || 'YouTube',
+                accent: '#FF0000',
+                iconSrc: '/elements/youtube.png',
+                message: "This YouTube page can’t be embedded. Open it in a new tab to continue.",
+              });
+            }
+          } catch {
+            try { window.open(it.href, '_blank', 'noopener,noreferrer'); } catch {}
+          }
+        }
+        // Spotify: prefer embedded player
+        else if (idLower === 'sp' || hrefLower.includes('open.spotify.com')) {
+          try {
+            const embed = toSpotifyEmbed(it.href);
+            if (embed) {
+              setInlineTitle(it.label || 'Spotify');
+              setInlineUrl(embed);
+              setInlineCompact(true);
+              try {
+                const natural = spotifyEmbedHeight(embed);
+                // Scale down slightly to reduce overall height without cropping
+                const scale = 0.9;
+                const bodyH = Math.max(120, Math.round(natural * scale));
+                setInlineHeightPx(Math.min(340, Math.max(170, bodyH + 48))); // include header
+                setInlineIframeHeightPx(natural); // unscaled iframe height (we scale via CSS)
+              } catch {
+                setInlineHeightPx(240);
+                setInlineIframeHeightPx(undefined);
+              }
+            } else {
+              window.open(it.href, '_blank', 'noopener,noreferrer');
+            }
+          } catch {
+            try { window.open(it.href, '_blank', 'noopener,noreferrer'); } catch {}
+          }
+        }
+        // Apple Music: prefer embedded player in inline modal
+        else if (
+          idLower === 'am' ||
+          hrefLower.includes('music.apple') ||
+          hrefLower.includes('itunes.')
+        ) {
+          try {
+            const embed = toAppleEmbed(it.href);
+            if (embed) {
+              setInlineTitle(it.label || 'Apple Music');
+              setInlineUrl(embed);
+              setInlineCompact(true);
+              // Tune Apple height to avoid black gap on single tracks, but keep albums reasonable
+              try {
+                const natural = appleEmbedHeight(embed); // typical: track ~175, album/playlist ~450
+                if (natural <= 220) {
+                  // Likely a single track; match exact height + header so no bottom gap
+                  setInlineHeightPx(natural + 48);
+                } else {
+                  // Album/playlist/artist: cap total shell height to ~300px to stay compact
+                  setInlineHeightPx(300);
+                }
+              } catch {
+                setInlineHeightPx(240);
+              }
+              setInlineIframeHeightPx(undefined);
+            } else {
+              window.open(it.href, '_blank', 'noopener,noreferrer');
+            }
+          } catch {
+            try { window.open(it.href, '_blank', 'noopener,noreferrer'); } catch {}
+          }
+        }
+        // Fallback: open in a new tab
+        else {
           window.open(it.href, "_blank", "noopener,noreferrer");
         }
       }
@@ -459,7 +565,25 @@ export default function HoloHubMenu({
       ) : null}
 
       {inlineUrl ? (
-        <InlineBrowserModal url={inlineUrl} title={inlineTitle || 'Instagram'} onClose={()=> setInlineUrl(null)} />
+        <InlineBrowserModal
+          url={inlineUrl}
+          title={inlineTitle || 'Instagram'}
+          compact={inlineCompact}
+          heightPx={inlineHeightPx}
+          iframeHeightPx={inlineIframeHeightPx}
+          onClose={()=> { setInlineUrl(null); setInlineCompact(false); setInlineHeightPx(undefined); setInlineIframeHeightPx(undefined); }}
+        />
+      ) : null}
+
+      {linkOut ? (
+        <LinkOutModal
+          title={linkOut.title}
+          href={linkOut.href}
+          accent={linkOut.accent}
+          iconSrc={linkOut.iconSrc}
+          message={linkOut.message}
+          onClose={() => setLinkOut(null)}
+        />
       ) : null}
 
       <style jsx>{`
@@ -633,7 +757,7 @@ export default function HoloHubMenu({
           /* Lighter, glassy base with subtle tint */
           background:
             radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
-            rgba(25,227,255,0.45);
+            color-mix(in srgb, var(--tint, #38B6FF) 45%, transparent);
           border: 1px solid rgba(255,255,255,.14);
           box-shadow:
             0 12px 26px rgba(0,0,0,.55),
@@ -648,6 +772,12 @@ export default function HoloHubMenu({
         .item::before{ /* tighter rim, no gap */
           content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none;
           box-shadow: 0 0 0 2px rgba(255,255,255,.18) inset, 0 0 16px var(--tint, #38B6FF)30 inset;
+        }
+        /* Fallback: ensure Spotify specifically has a green inner glow background if color-mix is unsupported */
+        .item[data-id="sp"]{
+          background:
+            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
+            rgba(29,185,84,0.45);
         }
         .item::after{ /* sheen + scanline shimmer */
           content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none; mix-blend-mode:screen; opacity:.6;

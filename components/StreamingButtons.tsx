@@ -272,7 +272,7 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
 
       <style jsx global>{`
         .sp-overlay {
-          position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px);
+          position: fixed; inset: 0; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none;
           display: flex; align-items: center; justify-content: center; z-index: 2147483647;
         }
         .sp-popover {

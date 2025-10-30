@@ -1855,8 +1855,8 @@ export default function HUDPanel({
                     style={{
                       position: 'fixed',
                       inset: 0,
-                      background: 'rgba(0,0,0,0.6)',
-                      backdropFilter: 'blur(2px)',
+                      background: 'transparent',
+                      backdropFilter: 'none',
                       zIndex: 2147483647,
                       display: 'flex',
                       alignItems: 'center',

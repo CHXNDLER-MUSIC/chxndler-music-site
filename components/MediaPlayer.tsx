@@ -2618,12 +2618,13 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         }
         .volume-button-wrap { position: relative; display: inline-flex; }
         
-        /* YouTube popout overlay */
+        /* YouTube popout overlay (no background blur/dim) */
         .yt-overlay {
           position: fixed;
           inset: 0;
-          background: rgba(0,0,0,0.6);
-          backdrop-filter: blur(2px);
+          background: transparent;
+          backdrop-filter: none;
+          -webkit-backdrop-filter: none;
           display: flex;
           align-items: center;
           justify-content: center;

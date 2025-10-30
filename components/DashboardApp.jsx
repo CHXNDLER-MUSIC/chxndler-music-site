@@ -1007,28 +1007,7 @@ export default function DashboardApp({ initialSlug } = {}) {
         <PrewarmThree />
         <AmbientSpace 
           ambientSrc="/audio/space-music.mp3" 
-          introSrc={(() => {
-            const playedFlag = (typeof window !== 'undefined' && (window).__CHX_WELCOME_PLAYED === true);
-            const shouldPlayWelcome = homeMode && homeIntroEnabled && isFirstLoad && !playedFlag;
-            const introSrc = shouldPlayWelcome ? "/audio/welcome-to-the-heartverse.mp3" : undefined;
-            console.log('🎵 DashboardApp: AmbientSpace introSrc decision:', { 
-              homeMode, 
-              homeIntroEnabled, 
-              isFirstLoad,
-              shouldPlayWelcome, 
-              introSrc,
-              welcomeHasPlayed,
-              welcomePlayedFlag: playedFlag,
-              uiUnlocked,
-              showOverlayUI,
-              pendingOverlayReveal,
-              firstStartDone,
-              warpActive,
-              ambientSuspended,
-              welcomeOnStart: welcomeOnStartRef.current
-            });
-            return introSrc;
-          })()} 
+          introSrc={undefined} 
           playingMusic={isPlaying} 
           suspend={ambientSuspended} 
           userSelectedSong={userSelected} 

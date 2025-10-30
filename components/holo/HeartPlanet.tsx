@@ -13,8 +13,8 @@ export default function HeartPlanet() {
 
   // Create heart geometry
   const heartGeometry = useMemo(() => {
-    // True extruded 2D heart in XY, thin depth on Z
-    return createHeartExtrudedGeometry(planetRadius * 1.6, planetRadius * 0.12);
+    // True extruded 2D heart in XY, thinner depth on Z for less spherical read
+    return createHeartExtrudedGeometry(planetRadius * 1.6, planetRadius * 0.09);
   }, [planetRadius]);
 
   // Sun-like emissive shader with animated plasma granulation
@@ -202,9 +202,9 @@ export default function HeartPlanet() {
       const beat = 0.06 * Math.max(0, Math.sin(time * 2.2)) + 0.015 * Math.sin(time * 4.4);
       const sx = 1.0 + beat;
       const sy = 1.0 + beat * 0.9;
-      const sz = 1.0 - beat * 0.45;
-      // Wider, shorter, thinner to sell heart proportions strongly
-      groupRef.current.scale.set(2.6 * sx, 2.1 * sy, 0.30 * sz);
+      const sz = 1.0 - beat * 0.50;
+      // Wider, slightly shorter, and thinner for a clearer heart silhouette
+      groupRef.current.scale.set(3.0 * sx, 1.95 * sy, 0.18 * sz);
     }
     
     
@@ -214,7 +214,7 @@ export default function HeartPlanet() {
   });
 
   return (
-    <group ref={groupRef} position={[0, 0.05, 0]} scale={[2.6, 2.1, 0.30]}>
+    <group ref={groupRef} position={[0, 0.05, 0]} scale={[3.0, 1.95, 0.18]}>
       {/* Core heart with realistic shading */}
       <mesh ref={meshRef} position={[0, 0, 0]} renderOrder={1}>
         <primitive attach="geometry" object={heartGeometry} />
@@ -226,12 +226,12 @@ export default function HeartPlanet() {
         <meshBasicMaterial
           color={"#FFB8E6"}
           transparent
-          opacity={0.18}
+          opacity={0.16}
           depthWrite={false}
           depthTest={false}
           blending={AdditiveBlending}
         />
-        <scale args={[1.03, 1.03, 1.03]} />
+        <scale args={[1.05, 1.05, 1.05]} />
       </mesh>
       {/* No external glow layers */}
       
