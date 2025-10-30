@@ -53,25 +53,25 @@ export function createHeartExtrudedGeometry(size: number = 1, depth: number = 0.
     // 1) Deepen cleft near the top center: pull down and thin Z locally
     const cleftMask = yTopNorm * (xCenterNorm * xCenterNorm);
     if (cleftMask > 0.0) {
-      const cleftDown = 0.10 * s * cleftMask; // deepen more
+      const cleftDown = 0.14 * s * cleftMask; // deepen even more
       y -= cleftDown;
       // Thin Z near the cleft to create a subtle inner cut
-      const zThinFactor = 1.0 - 0.30 * cleftMask; // up to 30% thinner at cleft
+      const zThinFactor = 1.0 - 0.40 * cleftMask; // up to 40% thinner at cleft
       z = Math.sign(z) * Math.min(Math.abs(z) * zThinFactor, halfDepth);
     }
 
     // 2) Push lobes outward on the upper half
     const lobeMask = yTopNorm * xLobeNorm;
     if (lobeMask > 0.0 && xAbs > 1e-6) {
-      const push = 0.12 * s * lobeMask; // stronger outward push
+      const push = 0.18 * s * lobeMask; // stronger outward push
       x += Math.sign(x) * push;
     }
 
     // 3) Sharpen the bottom tip: narrow X and pull tip slightly downward
     if (y < 0) {
-      const narrow = 1.0 - 0.18 * Math.pow(yBotNorm, 1.6);
+      const narrow = 1.0 - 0.22 * Math.pow(yBotNorm, 1.6);
       x *= narrow;
-      y -= 0.04 * s * Math.pow(yBotNorm, 2.0);
+      y -= 0.06 * s * Math.pow(yBotNorm, 2.0);
     }
 
     pos.setXYZ(i, x, y, z);

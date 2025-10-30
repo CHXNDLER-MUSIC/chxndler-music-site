@@ -78,8 +78,8 @@
   --display-touch-bottom: var(--beam-bottom);
   
   /* Mobile-specific display sizing */
-  /* Fixed minimum width to prevent shrinking, with responsive scaling */
-  --display-width: max(320px, min(420px, calc((100vw - 16px) * 0.8)));
+  /* Increase minimum width so blue display stays wider on small screens */
+  --display-width: max(360px, min(420px, calc((100vw - 16px) * 0.8)));
   --display-border-radius: 12px;
 }
 

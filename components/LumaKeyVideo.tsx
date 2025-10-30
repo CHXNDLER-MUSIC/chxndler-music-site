@@ -30,6 +30,16 @@ export default function LumaKeyVideo({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [ready, setReady] = useState(false);
   const rafRef = useRef<number | null>(null);
+  const [isSafari, setIsSafari] = useState(false);
+
+  // Detect Safari (exclude Chrome on iOS/Android)
+  useEffect(() => {
+    try {
+      const ua = navigator.userAgent;
+      const isSafariUA = /safari/i.test(ua) && !/chrome|crios|android/i.test(ua);
+      setIsSafari(isSafariUA);
+    } catch {}
+  }, []);
 
   useEffect(() => {
     const video = document.createElement("video");
@@ -86,15 +96,20 @@ export default function LumaKeyVideo({
       let dy = Math.floor((CH - vh * scale) / 2);
       // Apply caller-provided content offset to reveal more bottom/top area
       dy += Math.round(offsetYPx + offsetYRatio * CH);
-      ctx.filter = `saturate(${saturation}) contrast(${contrast})`;
+      // Safari can crush near-black; increase contrast slightly on Safari to avoid black bleed
+      const effContrast = isSafari ? Math.max(contrast, 1.18) : contrast;
+      ctx.filter = `saturate(${saturation}) contrast(${effContrast})`;
       ctx.drawImage(video, 0, 0, vw, vh, dx, dy, Math.ceil(vw * scale), Math.ceil(vh * scale));
       ctx.filter = "none";
 
       try {
         const img = ctx.getImageData(0, 0, CW, CH);
         const data = img.data;
-        const t0 = threshold * 255;
-        const t1 = (threshold + softness) * 255;
+        // Safari: raise floor and widen feather to prevent black fringing
+        const floor = isSafari ? Math.max(threshold, 0.045) : threshold;
+        const feather = isSafari ? Math.max(softness, 0.060) : softness;
+        const t0 = floor * 255;
+        const t1 = (floor + feather) * 255;
         for (let i = 0; i < data.length; i += 4) {
           const r = data[i], g = data[i + 1], b = data[i + 2];
           // luminance (Rec. 709)
@@ -115,7 +130,16 @@ export default function LumaKeyVideo({
     };
     rafRef.current = requestAnimationFrame(draw);
     return () => { running = false; if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, [ready, threshold, softness, saturation, contrast]);
+  }, [ready, threshold, softness, saturation, contrast, isSafari]);
 
-  return <canvas ref={canvasRef} className={className} style={style} />;
+  // Apply CSS blend trick only on Safari to neutralize any remaining black pixels visually
+  const canvasStyle: React.CSSProperties = {
+    ...(style || {}),
+    background: 'transparent',
+    // Isolate blending to avoid affecting siblings
+    // Only apply screen blend on Safari
+    ...(isSafari ? { mixBlendMode: 'screen' as const } : {}),
+  };
+
+  return <canvas ref={canvasRef} className={className} style={canvasStyle} />;
 }

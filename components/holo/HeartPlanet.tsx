@@ -13,8 +13,8 @@ export default function HeartPlanet() {
 
   // Create heart geometry
   const heartGeometry = useMemo(() => {
-    // True extruded 2D heart in XY, thinner depth on Z for less spherical read
-    return createHeartExtrudedGeometry(planetRadius * 1.6, planetRadius * 0.09);
+    // True extruded 2D heart in XY, even thinner depth on Z so it never reads spherical
+    return createHeartExtrudedGeometry(planetRadius * 1.6, planetRadius * 0.06);
   }, [planetRadius]);
 
   // Sun-like emissive shader with animated plasma granulation
@@ -31,8 +31,8 @@ export default function HeartPlanet() {
         uScale: { value: 1.35 },
         uDetail: { value: 3.0 },
         uGranularity: { value: 6.0 },
-        uEmissiveBoost: { value: 1.0 },
-        uRimBoost: { value: 1.2 },
+        uEmissiveBoost: { value: 0.9 },
+        uRimBoost: { value: 1.6 },
         // Bump detail strength
         uNormalStrength: { value: 0.55 },
       },
@@ -153,7 +153,8 @@ export default function HeartPlanet() {
 
           // Reduce the spherical look: slightly brighten the edge instead of center
           float mu = clamp(dot(Np, V), 0.0, 1.0);
-          float limb = 0.95 - 0.25 * pow(mu, 0.7); // slight edge emphasis
+          // Lower central brightness and push energy toward the rim for a flatter, non-spherical read
+          float limb = 0.90 - 0.35 * pow(mu, 0.6);
           // Subtle day/night to keep form readable
           float dif = max(dot(Np, L), 0.0);
           float night = smoothstep(0.0, 0.55, dif);
@@ -204,7 +205,7 @@ export default function HeartPlanet() {
       const sy = 1.0 + beat * 0.9;
       const sz = 1.0 - beat * 0.50;
       // Wider, slightly shorter, and thinner for a clearer heart silhouette
-      groupRef.current.scale.set(3.0 * sx, 1.95 * sy, 0.18 * sz);
+      groupRef.current.scale.set(3.6 * sx, 2.4 * sy, 0.16 * sz);
     }
     
     
@@ -214,24 +215,37 @@ export default function HeartPlanet() {
   });
 
   return (
-    <group ref={groupRef} position={[0, 0.05, 0]} scale={[3.0, 1.95, 0.18]}>
+    <group ref={groupRef} position={[0, 0.05, 0]} scale={[3.6, 2.4, 0.16]}>
       {/* Core heart with realistic shading */}
       <mesh ref={meshRef} position={[0, 0, 0]} renderOrder={1}>
         <primitive attach="geometry" object={heartGeometry} />
         <primitive attach="material" object={planetMaterial} />
       </mesh>
-      {/* Thin outline glow for unmistakable silhouette */}
+      {/* Outline glows for unmistakable heart silhouette */}
       <mesh position={[0, 0, 0]} renderOrder={0}>
         <primitive attach="geometry" object={heartGeometry} />
         <meshBasicMaterial
           color={"#FFB8E6"}
           transparent
-          opacity={0.16}
+          opacity={0.22}
           depthWrite={false}
           depthTest={false}
           blending={AdditiveBlending}
         />
-        <scale args={[1.05, 1.05, 1.05]} />
+        <scale args={[1.10, 1.10, 1.08]} />
+      </mesh>
+      {/* Softer, larger secondary bloom to emphasize the shape outline */}
+      <mesh position={[0, 0, 0]} renderOrder={-1}>
+        <primitive attach="geometry" object={heartGeometry} />
+        <meshBasicMaterial
+          color={"#FF7AC8"}
+          transparent
+          opacity={0.12}
+          depthWrite={false}
+          depthTest={false}
+          blending={AdditiveBlending}
+        />
+        <scale args={[1.18, 1.18, 1.14]} />
       </mesh>
       {/* No external glow layers */}
       
