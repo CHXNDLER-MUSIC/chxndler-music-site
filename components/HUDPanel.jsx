@@ -108,6 +108,20 @@ export default function HUDPanel({
   beamEnabled = undefined, // optional external control for beam fade (true/false)
   joinAlienOpen = false, // disable cover art interaction when pink display is open
 }) {
+  // Temporary kill-switch to disable 3D planets for performance testing
+  // Set to false to re-enable. You can also override at runtime by setting
+  // localStorage.DISABLE_3D_PLANETS = '0' and refreshing.
+  const DISABLE_3D_PLANETS_DEFAULT = true;
+  const disable3DPlanets = (() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const ls = window.localStorage.getItem('DISABLE_3D_PLANETS');
+        if (ls === '0') return false;
+        if (ls === '1') return true;
+      }
+    } catch {}
+    return DISABLE_3D_PLANETS_DEFAULT;
+  })();
   console.log('🌍 HUDPanel: Component rendering with props:', { 
     currentId, 
     showAll: !currentId, 
@@ -1086,6 +1100,7 @@ export default function HUDPanel({
             aria-hidden
           />
           {/* 3D planets — align to full blue display width (outside inner padding) */}
+          {!disable3DPlanets && (
           <div
             ref={planetRef}
             className="absolute inset-x-0"
@@ -1125,6 +1140,7 @@ export default function HUDPanel({
                 </ErrorBoundary>
               </div>
           </div>
+          )}
           {/* Background removed for transparent HUD */}
           {/* Cover art moved into right column above the song list */}
           {/* Holographic beam overlays removed */}
