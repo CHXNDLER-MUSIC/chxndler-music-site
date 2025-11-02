@@ -452,6 +452,21 @@ img[src$="/elements/music.png"] {
 .hud-cover { transition: box-shadow 200ms ease, transform 150ms ease; box-shadow: 0 0 0 rgba(0,0,0,0); }
 .hud-cover:hover { box-shadow: 0 0 42px rgba(25,227,255,0.6), 0 0 70px rgba(25,227,255,0.35); transform: translateZ(0) scale(1.04); }
 
+/* Mobile Safari compositing + flicker fixes for cover */
+.cover-hologram-container{
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: transform;
+  contain: paint;
+}
+/* On devices without hover, avoid transform animations that can flicker */
+@media (hover: none) {
+  .cover-hologram-container{ transition: none !important; transform: none !important; }
+  .cover-hologram-container:hover{ box-shadow: none; }
+}
+
 /* Cockpit HUD cover hover glow */
 .ck-cover { transition: box-shadow 200ms ease, transform 150ms ease; }
 .ck-cover:hover {

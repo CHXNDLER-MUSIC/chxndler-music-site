@@ -285,31 +285,54 @@ export default function SteeringWheelOverlay({
         }}
       >
         {/* Wheel video with luma key: remove black background; no circle crop, allow hands to extend. */}
-        <LumaKeyVideo
-          srcMp4="/cockpit/wheel.mp4"
-          srcAlt="/wheel.mp4"
-          threshold={(vconf as any)?.threshold ?? 0.001}
-          softness={(vconf as any)?.softness ?? 0.01}
-          saturation={(vconf as any)?.saturation ?? 1.0}
-          contrast={(vconf as any)?.contrast ?? 1.2}
-          offsetYRatio={0}
-          className="block"
-          style={{
-            display: 'block',
-            width: vs,
-            height: vs,
-            pointerEvents: 'none',
-            background: 'transparent',
-            // Render at 1:1 scale to preserve intended size
-            transform: 'scale(1.0)',
-            transformOrigin: 'bottom center',
-            // Dim the wheel on the opening screen without affecting the Start button
-            filter: isDimmingOverlayActive ? 'brightness(0.65) saturate(1.0)' : undefined,
-            opacity: isDimmingOverlayActive ? 0.95 : 1,
-            // When dimming is removed (after Start), snap to full brightness immediately
-            transition: isDimmingOverlayActive ? 'filter 250ms ease, opacity 250ms ease' : 'none',
-          }}
-        />
+        {(() => {
+          // Kill-switch controlled via localStorage to diagnose performance issues
+          let disable = false;
+          try {
+            if (typeof window !== 'undefined') {
+              const v = window.localStorage.getItem('DISABLE_WHEEL_VIDEO');
+              disable = v === '1' || v === 'true';
+            }
+          } catch {}
+          if (disable) {
+            // Lightweight placeholder to keep layout stable when disabled
+            return (
+              <div
+                aria-label="wheel-video-disabled"
+                style={{ width: vs, height: vs, background: 'transparent' }}
+              />
+            );
+          }
+          const paused = !!(isDimmingOverlayActive || !showUI || suspendUI);
+          return (
+            <LumaKeyVideo
+              srcMp4="/cockpit/wheel.mp4"
+              srcAlt="/wheel.mp4"
+              threshold={(vconf as any)?.threshold ?? 0.001}
+              softness={(vconf as any)?.softness ?? 0.01}
+              saturation={(vconf as any)?.saturation ?? 1.0}
+              contrast={(vconf as any)?.contrast ?? 1.2}
+              offsetYRatio={0}
+              paused={paused}
+              className="block"
+              style={{
+                display: 'block',
+                width: vs,
+                height: vs,
+                pointerEvents: 'none',
+                background: 'transparent',
+                // Render at 1:1 scale to preserve intended size
+                transform: 'scale(1.0)',
+                transformOrigin: 'bottom center',
+                // Dim the wheel on the opening screen without affecting the Start button
+                filter: isDimmingOverlayActive ? 'brightness(0.65) saturate(1.0)' : undefined,
+                opacity: isDimmingOverlayActive ? 0.95 : 1,
+                // When dimming is removed (after Start), snap to full brightness immediately
+                transition: isDimmingOverlayActive ? 'filter 250ms ease, opacity 250ms ease' : 'none',
+              }}
+            />
+          );
+        })()}
       </div>
       {/* Power Button - centered */}
       <div

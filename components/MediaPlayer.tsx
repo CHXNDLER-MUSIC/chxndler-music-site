@@ -2079,8 +2079,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           border: 1px solid ${currentElementColor}40;
           backdrop-filter: blur(8px);
           overflow: visible;
-          /* Add a slight interior buffer so the waveform track doesn't touch bottom border */
-          padding-bottom: 4px;
+          /* Avoid bottom clipping of the blue waveform stroke by not reducing the content height */
+          /* If interior spacing is needed later, prefer symmetric padding and scale the svg accordingly */
         }
         
         /* Spotify button - positioned next to play/pause in controls */

@@ -1156,7 +1156,11 @@ export default function HUDPanel({
                 width: '100%',
                 height: '100%',
                 // Contain children like cover art fully inside the blue display
-                overflow: 'hidden'
+                overflow: 'hidden',
+                // Create an isolated stacking context to prevent compositing flicker on iOS
+                isolation: 'isolate',
+                WebkitTransform: 'translateZ(0)',
+                transform: 'translateZ(0)'
               }}
               ref={innerRef}
             >
@@ -1178,10 +1182,15 @@ export default function HUDPanel({
             // Stabilize rendering on iOS Safari to prevent flicker when repainting
             WebkitBackfaceVisibility: 'hidden',
             backfaceVisibility: 'hidden',
-            willChange: 'transform',
-            contain: 'paint',
+            willChange: 'auto',
+            // Keep layout containment without clipping painted children
+            contain: 'layout',
+            // Allow the brand button to render outside its normal box (no cutoffs)
+            overflow: 'visible',
+            WebkitTransform: 'translateZ(0)',
             transform: 'translateZ(0)',
-            zIndex: 2
+            // Ensure this sits above the 3D planet layer
+            zIndex: 5
           }}>
             {/* Brand button above the cover art */}
             <button
@@ -1299,9 +1308,8 @@ export default function HUDPanel({
             // Adjust height to allow internal bottom buffer
             height: '60px',
             // Keep player snug to the blue display; slightly lower
-            bottom: 'var(--hud-player-bottom-offset, 0px)',
-            // Nudge the entire container down a bit more
-            transform: 'translateY(6px)'
+            // Move the visual nudge into the bottom offset so it stays inside the overflow-hidden blue display
+            bottom: 'calc(var(--hud-player-bottom-offset, 0px) + 6px)'
           }}>
             <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '10px', paddingBottom: 6 }}>
               <div className="flex flex-wrap items-start gap-3 pt-0 pr-2 pl-2 pb-0">
