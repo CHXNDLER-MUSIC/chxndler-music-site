@@ -1211,8 +1211,8 @@ export default function HUDPanel({
                 boxSizing: 'border-box',
                 // Tighter horizontal padding to reduce width
                 padding: '0 3px 0 3px',
-                // Pull the button up a touch so the top border moves slightly higher
-                marginTop: -7,
+                // Adjust vertical alignment to match the Music dropdown height
+                marginTop: -3,
                 // Add a small space below the button so it doesn't attach to the cover
                 marginBottom: 0,
                 marginRight: 2,
