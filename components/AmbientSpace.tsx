@@ -472,7 +472,9 @@ export default function AmbientSpace({
         try { amb.muted = false; amb.removeAttribute('muted'); } catch {}
         toPlay.push(amb.play());
       }
-      if (intro && introSrc && introPendingRef.current) {
+      // Only allow the intro VO to begin when ambient is allowed to start
+      // (ensures the VO plays together with space-music rather than earlier while suspended)
+      if (!suspend && intro && introSrc && introPendingRef.current) {
         try { intro.currentTime = 0; } catch {}
         try { intro.volume = 0.9; } catch {}
         toPlay.push(intro.play().catch(()=>{}));

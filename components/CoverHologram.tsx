@@ -210,9 +210,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
       }}
       initial={{ opacity: 0, y: 20, rotateX: -8 }}
       animate={{ opacity: inline ? 1 : cockpit.cover.hologramOpacity, y: 0, rotateX: inline ? 0 : -cockpit.cover.tilt }}
-      whileHover={{ 
-        scale: 1.04
-      }}
+      // Let CSS control hover grow speed (snappy like dropdown)
       transition={{ type: "spring", stiffness: 100, damping: 18 }}
       onClick={handleClick}
       onMouseEnter={() => { setHovered(true); try { sfx.play('hover', 0.35); } catch {} }}
@@ -236,7 +234,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
           alt={`${title} cover`}
           width={size}
           height={size}
-          className="cover-hologram-image rounded-2xl object-cover select-none w-full h-auto transition-all duration-300"
+          className="cover-hologram-image rounded-2xl object-cover select-none w-full h-auto transition-all duration-150"
           // Mirror attributes onto the image for robust targeting
           data-song={title}
           data-slug={(slug && slug.toLowerCase()) || title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}
@@ -550,12 +548,16 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
       <style jsx>{`
         /* Cover Hologram Hover Effects */
         .cover-hologram-container {
-          transition: transform 0.3s ease !important;
+          /* Match the song dropdown's quick grow */
+          transition: transform .15s ease, box-shadow .2s ease !important;
           will-change: transform;
           box-shadow: none;
+          /* Grow from center like the song dropdown */
+          transform-origin: 50% 50% !important;
         }
         .cover-hologram-container:hover,
         .cover-hologram-container.hovered {
+          transform: translateZ(0) scale(1.04);
           box-shadow:
             0 0 52px rgba(25,227,255,.9),
             0 0 90px rgba(25,227,255,.7),
@@ -566,6 +568,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
         
         .cover-hologram-image {
           filter: brightness(1.1) contrast(1.05) saturate(1.1);
+          transition: filter .15s ease;
         }
         .cover-hologram-container:hover .cover-hologram-image,
         .cover-hologram-container.hovered .cover-hologram-image {

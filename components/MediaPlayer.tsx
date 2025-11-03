@@ -1272,7 +1272,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 onMouseEnter={playHover}
               >
                 <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                  <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.6" />
                   <path d="M10 8l6 4-6 4z" fill="currentColor" />
                 </svg>
               </a>
@@ -1283,7 +1282,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 aria-hidden
               >
                 <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                  <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.6" opacity="0.55" />
                   <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
                 </svg>
               </div>
@@ -2220,7 +2218,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           width: 28px;
           height: 28px;
           border-radius: 50%;
-          border: 3px solid rgba(255, 255, 255, 0.5);
+          border: 2px solid rgba(255, 255, 255, 0.5);
           background: radial-gradient(circle at 30% 30%, #FFF76A, #F2EF1D);
           color: #000;
           display: inline-flex;
@@ -2243,7 +2241,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           width: 28px;
           height: 28px;
           border-radius: 50%;
-          border: 3px solid rgba(255,255,255,0.5);
+          border: 2px solid rgba(255,255,255,0.5);
           background: radial-gradient(circle at 30% 30%, #FF6B6B, #FF0000);
           color: #FFFFFF;
           display: inline-flex;
@@ -2263,7 +2261,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           width: 28px;
           height: 28px;
           border-radius: 50%;
-          border: 3px solid rgba(255,255,255,0.35);
+          border: 2px solid rgba(255,255,255,0.35);
           background: rgba(128,128,128,0.35);
           color: rgba(255,255,255,0.85);
           display: inline-flex;
@@ -2297,7 +2295,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           width: 28px;
           height: 28px;
           border-radius: 50%;
-          border: 3px solid rgba(255, 255, 255, 0.4);
+          border: 2px solid rgba(255, 255, 255, 0.4);
           background: radial-gradient(circle at 30% 30%, #19E3FF, #0EA8D0);
           color: white;
           display: flex;
@@ -2307,24 +2305,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           transition: all 0.25s ease;
           box-shadow: 0 4px 16px rgba(25,227,255,0.6);
         }
-        /* White outer rim around volume button */
-        .waveform-volume-btn::before {
-          content: "";
-          position: absolute;
-          inset: -3px; /* extend slightly outside to form an outer rim */
-          border-radius: 50%;
-          box-shadow:
-            0 0 0 2px rgba(255,255,255,0.95), /* crisp white rim */
-            0 0 10px rgba(255,255,255,0.65), /* soft halo */
-            0 0 22px rgba(255,255,255,0.45); /* wider bloom */
-          pointer-events: none;
-        }
-        .waveform-volume-btn:hover::before {
-          box-shadow:
-            0 0 0 2px rgba(255,255,255,1),
-            0 0 12px rgba(255,255,255,0.85),
-            0 0 28px rgba(255,255,255,0.6);
-        }
+        /* Removed outer rim on waveform volume button to match Spotify */
         .waveform-volume-btn:hover { transform: scale(1.05); box-shadow: 0 6px 22px rgba(25,227,255,0.75); }
         .waveform-volume-btn:hover .btn-glow { opacity: 1; animation: pulse 2s ease-in-out infinite; }
         .waveform-volume-btn:active { transform: scale(0.95); }

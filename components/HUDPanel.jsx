@@ -1487,7 +1487,6 @@ export default function HUDPanel({
                     return (
                       <div className="youtube-btn-unavailable-hud" title="YouTube not available on homepage" style={{ marginTop: 1 }}>
                         <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                          <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.6" opacity="0.55" />
                           <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
                         </svg>
                       </div>
@@ -1555,14 +1554,12 @@ export default function HUDPanel({
                       }}
                     >
                       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                        <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.6" />
                         <path d="M10 8l6 4-6 4z" fill="currentColor" />
                       </svg>
                     </a>
                   ) : (
                     <div className="youtube-btn-unavailable-hud" title={`No YouTube link available for ${currentSong?.title || 'current track'}`} style={{ marginTop: 1 }}>
                       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                        <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.6" opacity="0.55" />
                         <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
                       </svg>
                     </div>
@@ -2218,14 +2215,14 @@ export default function HUDPanel({
                                   onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                                   onClick={() => { setStoreIndex((i) => (i - 1 + products.length) % products.length); try { sfx.play('click', 0.35); } catch {} }}
                                   style={{
-                                    width: 28, height: 28, borderRadius: 999,
+                                    width: 36, height: 36, borderRadius: 999,
                                     background: 'linear-gradient(135deg,#ff76c8,#ff3ea5)',
                                     border: '1px solid rgba(255,255,255,0.5)', color: '#fff',
                                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                                     boxShadow: '0 4px 16px rgba(255, 62, 165, 0.45)'
                                   }}
                                 >
-                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M15 6l-6 6 6 6"/></svg>
+                                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M15 6l-6 6 6 6"/></svg>
                                 </button>
                                 <button
                                   aria-label="Next item"
@@ -2233,14 +2230,14 @@ export default function HUDPanel({
                                   onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                                   onClick={() => { setStoreIndex((i) => (i + 1) % products.length); try { sfx.play('click', 0.35); } catch {} }}
                                   style={{
-                                    width: 28, height: 28, borderRadius: 999,
+                                    width: 36, height: 36, borderRadius: 999,
                                     background: 'linear-gradient(135deg,#ff76c8,#ff3ea5)',
                                     border: '1px solid rgba(255,255,255,0.5)', color: '#fff',
                                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                                     boxShadow: '0 4px 16px rgba(255, 62, 165, 0.45)'
                                   }}
                                 >
-                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 6l6 6-6 6"/></svg>
+                                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M9 6l6 6-6 6"/></svg>
                                 </button>
                               </div>
                             </div>

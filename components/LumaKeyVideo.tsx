@@ -62,6 +62,12 @@ export default function LumaKeyVideo({
     video.muted = true;
     video.loop = true;
     video.playsInline = true as any;
+    // Extra inline/autoplay hints for Safari/iOS
+    try {
+      (video as any).webkitPlaysInline = true;
+      video.setAttribute('playsinline', '');
+      video.setAttribute('muted', '');
+    } catch {}
     video.preload = "auto";
     video.crossOrigin = "anonymous";
     const s1 = document.createElement("source");
@@ -69,20 +75,52 @@ export default function LumaKeyVideo({
     if (srcAlt) {
       const s2 = document.createElement("source"); s2.src = srcAlt; s2.type = "video/mp4"; video.appendChild(s2);
     }
-    const onCanPlay = () => { setReady(true); video.play().catch(()=>{}); };
+    try { video.load(); } catch {}
+    const onCanPlay = () => { setReady(true); try { video.play().catch(()=>{}); } catch {} };
+    const onLoadedMeta = () => { setReady(true); try { video.play().catch(()=>{}); } catch {} };
+    const onEnded = () => { try { video.currentTime = 0; video.play().catch(()=>{}); } catch {} };
+    const onPause = () => { if (!paused) { try { video.play().catch(()=>{}); } catch {} } };
     video.addEventListener("canplay", onCanPlay);
     video.addEventListener("loadeddata", onCanPlay);
+    video.addEventListener("loadedmetadata", onLoadedMeta);
+    video.addEventListener("ended", onEnded);
+    video.addEventListener("pause", onPause);
+
+    // Retry autoplay a few times on mount to bypass flaky policies
+    const playRetries: number[] = [];
+    const scheduleRetry = (ms: number) => {
+      const id = window.setTimeout(() => { try { video.play().catch(()=>{}); } catch {} }, ms);
+      playRetries.push(id);
+    };
+    scheduleRetry(100);
+    scheduleRetry(400);
+    scheduleRetry(1000);
+
     return () => {
       video.pause();
       video.removeEventListener("canplay", onCanPlay);
       video.removeEventListener("loadeddata", onCanPlay);
+      video.removeEventListener("loadedmetadata", onLoadedMeta);
+      video.removeEventListener("ended", onEnded);
+      video.removeEventListener("pause", onPause);
+      playRetries.forEach(id => { try { window.clearTimeout(id); } catch {} });
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, [srcMp4, srcAlt]);
 
+  // If we get un-paused externally (e.g., warp end), ensure the underlying
+  // <video> resumes playback to avoid getting stuck on a frame
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (!paused) {
+      try { v.play().catch(() => {}); } catch {}
+    }
+  }, [paused]);
+
   // Main processing loop
   useEffect(() => {
-    if (!ready || disabled) return;
+    if (disabled) return;
     const video = videoRef.current!;
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
@@ -96,7 +134,12 @@ export default function LumaKeyVideo({
     const work: HTMLCanvasElement | null = fastMode ? document.createElement('canvas') : null;
     const wctx = work ? work.getContext('2d', { willReadFrequently: true }) : null;
 
-    const onVisibility = () => { visible = document.visibilityState === 'visible'; };
+    const onVisibility = () => {
+      visible = document.visibilityState === 'visible';
+      if (visible && !paused) {
+        try { video.play().catch(() => {}); } catch {}
+      }
+    };
     document.addEventListener('visibilitychange', onVisibility);
 
     const draw = () => {

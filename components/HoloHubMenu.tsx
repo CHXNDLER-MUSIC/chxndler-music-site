@@ -872,11 +872,14 @@ export default function HoloHubMenu({
           transform: none !important; padding: 0 !important; margin: 0 !important;
           box-sizing: border-box !important;
         }
-        /* Make Apple, Instagram, and YouTube icons fill more of the button */
+        /* Make Apple and Instagram icons fill more; leave YouTube smaller to reveal inner rim */
         .item[data-id="am"] .icon img,
-        .item[data-id="ig"] .icon img,
-        .item[data-id="yt"] .icon img{
+        .item[data-id="ig"] .icon img{
           transform: scale(1.12) !important;
+        }
+        /* YouTube: reduce icon scale so the inner red rim is visible, like Spotify */
+        .item[data-id="yt"] .icon img{
+          transform: scale(0.90) !important;
         }
         /* Regular icon wrapper for non-brand buttons */
         .item .icon{
@@ -932,6 +935,11 @@ export default function HoloHubMenu({
             inset 0 1px 0 rgba(255,255,255,.28) !important,
             inset 0 -6px 18px rgba(0,0,0,.6) !important;
           filter: brightness(1.12) saturate(1.25) !important;
+        }
+        /* Prevent distant focus outline creating an "outer rim" for Instagram */
+        .item[data-id="ig"]:focus, .item[data-id="ig"]:focus-visible{
+          outline: none !important;
+          outline-offset: 0 !important;
         }
 
         /* TikTok: Spotify-style rim with WHITE glow */

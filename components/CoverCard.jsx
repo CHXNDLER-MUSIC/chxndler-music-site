@@ -47,11 +47,11 @@ export default function CoverCard({ src = "/cover/ocean-girl.png", label, size =
         <img
           src={src}
           alt={label || "Cover art"}
-          className="w-full h-full object-cover transition-all duration-300"
+          className="w-full h-full object-cover"
           onError={(e)=>{ e.currentTarget.src = "/logo/CHXNDLER_Logo.png"; }}
         />
         {/* Blue fill overlay: only on hover like dropdown */}
-        <div className="blue-fill-overlay pointer-events-none absolute inset-0 transition-all duration-300" style={{ backdropFilter: 'blur(8px)' }} />
+        <div className="blue-fill-overlay pointer-events-none absolute inset-0" style={{ backdropFilter: 'blur(8px)' }} />
         {/* inner neon rim */}
         <div className="pointer-events-none absolute inset-0 rounded-[12px]" style={{ border: `1px solid ${hexToRgba(elementColor, 0.4)}` }} />
         {/* scanlines */}
@@ -66,6 +66,10 @@ export default function CoverCard({ src = "/cover/ocean-girl.png", label, size =
           outline:1px solid ${hexToRgba(elementColor, 0.4)};
           box-shadow: 0 0 28px ${hexToRgba(elementColor, 0.15)};
           transition: transform .15s ease, box-shadow .2s ease, outline-color .2s ease, filter .2s ease;
+        }
+        /* Match dropdown snappy feel for inner image + overlay */
+        .cover-art-container img{
+          transition: filter .15s ease;
         }
         .cover-art-container:hover{
           transform: translateZ(0) scale(1.04);
@@ -83,6 +87,7 @@ export default function CoverCard({ src = "/cover/ocean-girl.png", label, size =
         }
         /* Apply a light blue background to match waveform container styling */
         .blue-fill-overlay{
+          transition: background-color .15s ease;
           background-color: rgba(6, 182, 212, 0.08);
         }
       `}</style>
