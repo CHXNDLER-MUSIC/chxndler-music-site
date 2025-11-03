@@ -152,7 +152,7 @@ export default function HUDPanel({
   const [planetBottom, setPlanetBottom] = useState(56);
   // Vertical offset to raise/lower the Store (Gem) popover relative to its anchor
   // Move it slightly lower (less negative) per request
-  const STORE_POPOVER_Y_OFFSET = -172; // was -188
+  const STORE_POPOVER_Y_OFFSET = -180; // was -172 (up slightly)
   // Dynamic spacing for song selector so it doesn't overlap the cover
   const coverRef = useRef(null);
   const [oneLinerRight, setOneLinerRight] = useState(inConsole ? 108 : 140);
@@ -277,7 +277,7 @@ export default function HUDPanel({
       title: 'HOUSE PARTY POSTER',
       image: '/store/house-party-poster.png',
       url: 'https://buy.stripe.com/dRmfZi0CJ4gZ3oZ2GH4gg0G',
-      price: '$20.00 USD',
+      price: '$25.00 USD',
       description: 'This poster captures the night the HEARTVERSE came alive. Hang it up and remember when you joined the story.'
     }
   ];
@@ -747,15 +747,19 @@ export default function HUDPanel({
       // Store ref for live cursor position calculations
       liveAudioRef.current = a;
       
-      // Load saved volume and apply to audio element
+      // Load saved volume only for the main player (not ambient on homepage)
+      // Avoid overwriting ambient space-music volume with a previously saved main-player value (often 0)
       try {
-        const saved = (typeof window !== 'undefined') ? localStorage.getItem(VOLUME_STORAGE_KEY) : null;
-        if (saved != null) {
-          const v = parseFloat(saved);
-          if (!isNaN(v) && v >= 0 && v <= 1) {
-            a.volume = v;
-            setVolume(v);
-            if (v > 0) lastNonZeroVolumeRef.current = v;
+        const isAmbient = a && a.getAttribute('data-ambient') === '1';
+        if (!isAmbient) {
+          const saved = (typeof window !== 'undefined') ? localStorage.getItem(VOLUME_STORAGE_KEY) : null;
+          if (saved != null) {
+            const v = parseFloat(saved);
+            if (!isNaN(v) && v >= 0 && v <= 1) {
+              a.volume = v;
+              setVolume(v);
+              if (v > 0) lastNonZeroVolumeRef.current = v;
+            }
           }
         }
       } catch {}
@@ -2043,7 +2047,7 @@ export default function HUDPanel({
                       top: (storePopoverPos && storePopoverPos.top) || 0,
                       transform: (storePopoverPos && storePopoverPos.width) ? 'scale(1.04)' : 'translateX(-50%) scale(1.04)',
                       transformOrigin: 'top center',
-                      padding: '12px 14px 22px 14px', borderRadius: 14,
+                      padding: '12px 14px 16px 14px', borderRadius: 14,
                       background: 'rgba(20,3,14,0.9)',
                       border: '1px solid rgba(252,84,175,0.55)',
                       boxShadow: '0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(252,84,175,0.45)',
@@ -2051,7 +2055,7 @@ export default function HUDPanel({
                       color: '#FFD9EF',
                       zIndex: 2147483647,
                       width: (storePopoverPos && storePopoverPos.width) ? storePopoverPos.width : 'min(92vw, 560px)',
-                      maxHeight: '83vh',
+                      maxHeight: '74vh',
                       overflowY: 'auto',
                       WebkitOverflowScrolling: 'touch',
                       overscrollBehavior: 'contain'
@@ -2208,98 +2212,99 @@ export default function HUDPanel({
                               ) : (
                                 <img src={item.image || '/card/chxndler.png'} alt={item.title} style={{ display: 'block', width: 104, height: 104, objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(252,84,175,0.35)', boxShadow: '0 6px 18px rgba(0,0,0,0.35)' }} onError={(e)=>{ try { e.currentTarget.src = '/card/chxndler.png'; } catch {} }} />
                               )}
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                                <button
-                                  aria-label="Previous item"
-                                  className="store-arrow-btn"
-                                  onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                                  onClick={() => { setStoreIndex((i) => (i - 1 + products.length) % products.length); try { sfx.play('click', 0.35); } catch {} }}
-                                  style={{
-                                    width: 36, height: 36, borderRadius: 999,
-                                    background: 'linear-gradient(135deg,#ff76c8,#ff3ea5)',
-                                    border: '1px solid rgba(255,255,255,0.5)', color: '#fff',
-                                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                    boxShadow: '0 4px 16px rgba(255, 62, 165, 0.45)'
-                                  }}
-                                >
-                                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M15 6l-6 6 6 6"/></svg>
-                                </button>
-                                <button
-                                  aria-label="Next item"
-                                  className="store-arrow-btn"
-                                  onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                                  onClick={() => { setStoreIndex((i) => (i + 1) % products.length); try { sfx.play('click', 0.35); } catch {} }}
-                                  style={{
-                                    width: 36, height: 36, borderRadius: 999,
-                                    background: 'linear-gradient(135deg,#ff76c8,#ff3ea5)',
-                                    border: '1px solid rgba(255,255,255,0.5)', color: '#fff',
-                                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                    boxShadow: '0 4px 16px rgba(255, 62, 165, 0.45)'
-                                  }}
-                                >
-                                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M9 6l6 6-6 6"/></svg>
-                                </button>
-                              </div>
+                              {/* Price directly under the image */}
+                              <div style={{ fontSize: 15, fontWeight: 700, color: '#FFB9E1' }}>{item.price || ''}</div>
                             </div>
                             <div>
                               <div style={{ fontSize: 16, fontWeight: 800, color: '#FFD9EF', textShadow: '0 0 10px rgba(252,84,175,0.9)' }}>{item.title}</div>
                               <div style={{ fontSize: 14, opacity: 0.9, marginTop: 4 }}>{item.description}</div>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-                                <div style={{ fontSize: 15, fontWeight: 700, color: '#FFB9E1' }}>{item.price || ''}</div>
-                                {item.url ? (
-                                  <a
-                                    className="store-add-btn"
-                                    href={item.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    data-id="store-item"
-                                    data-item-id={item.id}
-                                    onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                                    onClick={() => {
-                                      try { sfx.play('join', 0.75); } catch {}
-                                      // Track merch item click with song context
-                                      try {
-                                        const songSlug = (typeof slug !== 'undefined' && slug) ? slug : (active || 'unknown');
-                                        const songTitle = currentSong?.title || track?.title || 'Unknown';
-                                        trackAnalytics('store_item_clicked', { song_slug: String(songSlug || ''), payload: { song_title: songTitle, item_id: item.id, item_title: item.title, location: 'hud_store_item' } });
-                                      } catch {}
-                                      // Store local click for analytics UI fallback
-                                      try {
-                                        const id = generateClickId();
-                                        const ts = Date.now();
-                                        storeClickData({
-                                          id,
-                                          timestamp: ts,
-                                          element: {
-                                            tagName: 'a',
-                                            className: 'store-add-btn',
-                                            id: '',
-                                            textContent: 'Add to Collection',
-                                            role: 'link',
-                                            ariaLabel: `Add ${item.title} to collection`,
-                                            dataId: 'store-item',
-                                          },
-                                          position: { x: 0, y: 0, screenX: 0, screenY: 0 },
-                                          viewport: { width: (typeof window!== 'undefined'? window.innerWidth:0), height: (typeof window!== 'undefined'? window.innerHeight:0) },
-                                          page: { url: (typeof window!== 'undefined'? window.location.href:''), title: (typeof document!== 'undefined'? document.title:'') },
-                                          userAgent: (typeof navigator!== 'undefined'? navigator.userAgent:'unknown'),
-                                          enhancedLabel: `🛍️ Store: ${item.title}`,
-                                        });
-                                      } catch {}
-                                    }}
-                                    style={{
-                                      padding: '6px 10px', borderRadius: 999,
-                                      background: 'linear-gradient(135deg,#ff3ea5,#ff76c8)',
-                                      border: '1px solid rgba(255,255,255,0.6)', color: '#fff', fontWeight: 700,
-                                      boxShadow: '0 6px 18px rgba(255, 62, 165, 0.45)', textDecoration: 'none'
-                                    }}
-                                  >
-                                    Add to Collection
-                                  </a>
-                                ) : null}
-                               </div>
-                             </div>
-                           </div>
+                              {/* Details only; actions moved to bottom bar */}
+                            </div>
+                          </div>
+                          {/* Bottom controls: arrows with Add to Collection centered */}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 6 }}>
+                            <button
+                              aria-label="Previous item"
+                              className="store-arrow-btn"
+                              onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                              onClick={() => { setStoreIndex((i) => (i - 1 + products.length) % products.length); try { sfx.play('click', 0.35); } catch {} }}
+                              style={{
+                                width: 36, height: 36, borderRadius: 999,
+                                background: 'linear-gradient(135deg,#ff76c8,#ff3ea5)',
+                                border: '1px solid rgba(255,255,255,0.5)', color: '#fff',
+                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                boxShadow: '0 4px 16px rgba(255, 62, 165, 0.45)'
+                              }}
+                            >
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M15 6l-6 6 6 6"/></svg>
+                            </button>
+                            {item.url ? (
+                              <a
+                                className="store-add-btn"
+                                href={item.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                data-id="store-item"
+                                data-item-id={item.id}
+                                onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                                onClick={() => {
+                                  try { sfx.play('join', 0.75); } catch {}
+                                  // Track merch item click with song context
+                                  try {
+                                    const songSlug = (typeof slug !== 'undefined' && slug) ? slug : (active || 'unknown');
+                                    const songTitle = currentSong?.title || track?.title || 'Unknown';
+                                    trackAnalytics('store_item_clicked', { song_slug: String(songSlug || ''), payload: { song_title: songTitle, item_id: item.id, item_title: item.title, location: 'hud_store_item' } });
+                                  } catch {}
+                                  // Store local click for analytics UI fallback
+                                  try {
+                                    const id = generateClickId();
+                                    const ts = Date.now();
+                                    storeClickData({
+                                      id,
+                                      timestamp: ts,
+                                      element: {
+                                        tagName: 'a',
+                                        className: 'store-add-btn',
+                                        id: '',
+                                        textContent: 'Add to Collection',
+                                        role: 'link',
+                                        ariaLabel: `Add ${item.title} to collection`,
+                                        dataId: 'store-item',
+                                      },
+                                      position: { x: 0, y: 0, screenX: 0, screenY: 0 },
+                                      viewport: { width: (typeof window!== 'undefined'? window.innerWidth:0), height: (typeof window!== 'undefined'? window.innerHeight:0) },
+                                      page: { url: (typeof window!== 'undefined'? window.location.href:''), title: (typeof document!== 'undefined'? document.title:'') },
+                                      userAgent: (typeof navigator!== 'undefined'? navigator.userAgent:'unknown'),
+                                      enhancedLabel: `🛍️ Store: ${item.title}`,
+                                    });
+                                  } catch {}
+                                }}
+                                style={{
+                                  padding: '6px 10px', borderRadius: 999,
+                                  background: 'linear-gradient(135deg,#ff3ea5,#ff76c8)',
+                                  border: '1px solid rgba(255,255,255,0.6)', color: '#fff', fontWeight: 700,
+                                  boxShadow: '0 6px 18px rgba(255, 62, 165, 0.45)', textDecoration: 'none'
+                                }}
+                              >
+                                Add to Collection
+                              </a>
+                            ) : null}
+                            <button
+                              aria-label="Next item"
+                              className="store-arrow-btn"
+                              onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                              onClick={() => { setStoreIndex((i) => (i + 1) % products.length); try { sfx.play('click', 0.35); } catch {} }}
+                              style={{
+                                width: 36, height: 36, borderRadius: 999,
+                                background: 'linear-gradient(135deg,#ff76c8,#ff3ea5)',
+                                border: '1px solid rgba(255,255,255,0.5)', color: '#fff',
+                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                boxShadow: '0 4px 16px rgba(255, 62, 165, 0.45)'
+                              }}
+                            >
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M9 6l6 6-6 6"/></svg>
+                            </button>
+                          </div>
                           {/* Removed helper hint per request */}
                         </div>
                       );

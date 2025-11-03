@@ -69,7 +69,7 @@
   --pink-bottom-nudge: 16px;
   /* HUD waveform player bottom offset (raises player inside blue display) */
   /* Nudge down very slightly for spacing */
-  --hud-player-bottom-offset: 34px;
+  --hud-player-bottom-offset: 30px;
   /* Fine-tune the vertical alignment of the light beam base PNG */
   /* Negative moves the PNG up; positive moves it down */
   /* Move the lightbeam base up very slightly */
@@ -441,8 +441,14 @@ img[src$="/elements/music.png"] {
 }
 
 /* Ensure cover card hover glow shows even if Tailwind arbitrary class isn't picked up */
-.cover-art-container { box-shadow: none; }
+.cover-art-container {
+  box-shadow: none;
+  /* Match song dropdown hover timing and feel */
+  transition: box-shadow 200ms ease, transform 150ms ease;
+  will-change: transform;
+}
 .cover-art-container:hover {
+  transform: translateZ(0) scale(1.04);
   box-shadow: 0 0 40px rgba(25,227,255,0.8), 0 0 60px rgba(25,227,255,0.6), 0 0 80px rgba(25,227,255,0.4);
 }
 
