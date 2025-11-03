@@ -1155,8 +1155,10 @@ export default function HUDPanel({
                 minHeight: inConsole ? 380 : 480,
                 width: '100%',
                 height: '100%',
-                // Contain children like cover art fully inside the blue display
-                overflow: 'hidden',
+                // Allow hover-scaled UI (e.g., CHXNDLER button) to extend visually
+                // beyond this wrapper without being clipped. Individual children
+                // like the cover art still manage their own overflow.
+                overflow: 'visible',
                 // Create an isolated stacking context to prevent compositing flicker on iOS
                 isolation: 'isolate',
                 WebkitTransform: 'translateZ(0)',
@@ -1285,8 +1287,8 @@ export default function HUDPanel({
                   onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {}; try { const a = hoverCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
                   style={{
                     pointerEvents: joinAlienOpen ? 'none' : 'auto',
-                    // Prevent any descendant overflow from causing visual bleed on iOS
-                    overflow: 'hidden'
+                    // Allow the cover to scale on hover without clipping
+                    overflow: 'visible'
                   }}
                 >
                   <CoverHologram 
@@ -1671,17 +1673,20 @@ export default function HUDPanel({
                               openStorePopover();
                             }}
                           >
-                            <img
-                              src="/elements/store.png"
-                              alt="Store"
-                              width="16"
-                              height="16"
+                            {/* White heart icon for Store (replaces gem) */}
+                            <svg
+                              viewBox="0 0 24 24"
+                              width="20"
+                              height="20"
+                              fill="currentColor"
+                              aria-hidden
                               style={{
                                 display: 'block',
-                                objectFit: 'contain',
-                                filter: 'drop-shadow(0 0 4px #FF3EA5) drop-shadow(0 0 10px #FF3EA5) drop-shadow(0 0 16px #FF3EA5)'
+                                filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.85)) drop-shadow(0 0 16px rgba(255,255,255,0.55))'
                               }}
-                            />
+                            >
+                              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 4 4 6.5 4c1.74 0 3.41 1.01 4.22 2.61C11.09 5.01 12.76 4 14.5 4 17 4 19 6 19 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                            </svg>
                           </button>
                         </>
                       );
@@ -1738,17 +1743,20 @@ export default function HUDPanel({
                           openStorePopover();
                         }}
                       >
-                        <img
-                          src="/elements/store.png"
-                          alt="Store"
-                          width="16"
-                          height="16"
+                        {/* White heart icon for Store (replaces gem) */}
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="20"
+                          height="20"
+                          fill="currentColor"
+                          aria-hidden
                           style={{
                             display: 'block',
-                            objectFit: 'contain',
-                            filter: 'drop-shadow(0 0 4px #FF3EA5) drop-shadow(0 0 10px #FF3EA5) drop-shadow(0 0 16px #FF3EA5)'
+                            filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.85)) drop-shadow(0 0 16px rgba(255,255,255,0.55))'
                           }}
-                        />
+                        >
+                          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 4 4 6.5 4c1.74 0 3.41 1.01 4.22 2.61C11.09 5.01 12.76 4 14.5 4 17 4 19 6 19 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                        </svg>
                       </button>
                     </>
                   );

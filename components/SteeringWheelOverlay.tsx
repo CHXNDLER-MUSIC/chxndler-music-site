@@ -48,6 +48,8 @@ export default function SteeringWheelOverlay({
   const [mounted, setMounted] = useState(false);
   const [startSpotlight, setStartSpotlight] = useState(false);
   const startTrackedRef = useRef(false);
+  // Start button pulsing: enabled by default, turns off after first click
+  const [startPulseOn, setStartPulseOn] = useState(true);
   // When transitioning from pink → yellow, temporarily suspend yellow panel until sequencing finishes
   const [suspendYellowPanel, setSuspendYellowPanel] = useState(false);
   const yellowFromPinkTimeoutA = useRef<number | null>(null);
@@ -114,6 +116,8 @@ export default function SteeringWheelOverlay({
     } catch {}
     // Trigger toggle action first so downstream can open streaming links within a user gesture
     try { onLaunch(); } catch {}
+    // After first click, stop pulsing the Start button until refresh
+    if (startPulseOn) setStartPulseOn(false);
     // After first click, permanently disable the start spotlight
     if (startSpotlight) setStartSpotlight(false);
     // Do not play pause sound on Start; Start always triggers launch/warp.
@@ -303,7 +307,9 @@ export default function SteeringWheelOverlay({
               />
             );
           }
-          const paused = !!(isDimmingOverlayActive || !showUI || suspendUI);
+          // Keep the wheel rendering even when UI is hidden or dimming overlay is active
+          // so it is visible on initial page load. Only pause during suspend/warp.
+          const paused = !!(suspendUI);
           return (
             <LumaKeyVideo
               srcMp4="/cockpit/wheel.mp4"
@@ -561,7 +567,8 @@ export default function SteeringWheelOverlay({
             {/* Join form panel */}
             <div
               style={{
-                width: 'calc(var(--display-width) - 120px)', // Very narrow pink display, brought in dramatically on both sides
+                // Fixed width so the pink display stays the same size across viewports
+                width: 'var(--pink-display-width)',
                 borderRadius: 'var(--display-border-radius)',
                 padding: '12px',
                 color: '#fff',
@@ -596,7 +603,7 @@ export default function SteeringWheelOverlay({
       {!hideStartButton && <button
         onClick={handleLaunch}
         data-no-track
-        className={`pointer-events-auto wheel-play${isStart ? ' chx' : ''} no-spotlight`}
+        className={`pointer-events-auto wheel-play${isStart ? ' chx' : ''} no-spotlight${isStart && startPulseOn ? ' start-pulse' : ''}`}
         style={{
           position: "absolute",
           // Position directly on top of the wheel surface
@@ -689,6 +696,10 @@ export default function SteeringWheelOverlay({
             drop-shadow(0 0 12px rgba(25,227,255,0.4));
           animation: none;
           transition: transform 0.2s ease, filter 0.2s ease;
+        }
+        /* Start button pulsing (default). Turns off after first click */
+        .wheel-play.chx.start-pulse .chx-icon{
+          animation: startPulse 1.9s ease-in-out infinite;
         }
         .wheel-play.chx:hover .chx-icon{ 
           animation: none; 

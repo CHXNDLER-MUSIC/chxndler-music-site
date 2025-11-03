@@ -81,6 +81,8 @@
   /* Increase minimum width so blue display stays wider on small screens */
   /* Slightly widen the minimum blue display width on small screens */
   --display-width: max(380px, min(420px, calc((100vw - 16px) * 0.8)));
+  /* Fixed width for the pink display so it remains constant across breakpoints */
+  --pink-display-width: 360px;
   --display-border-radius: 12px;
 }
 
@@ -459,7 +461,12 @@ img[src$="/elements/music.png"] {
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
   will-change: transform;
-  contain: paint;
+  /* Avoid clipping hover scale; keep layout containment only */
+  contain: layout;
+}
+/* In the HUD bottom-right corner, grow inward from the anchor */
+.hud-cover-pos .cover-hologram-container{
+  transform-origin: 100% 100%; /* bottom right */
 }
 /* On devices without hover, avoid transform animations that can flicker */
 @media (hover: none) {
@@ -796,6 +803,7 @@ img[src$="/elements/music.png"] {
   display: flex;
   align-items: center;
   justify-content: center;
+  line-height: 0; /* ensures perfect centering for inline SVG */
   text-decoration: none;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -809,6 +817,13 @@ img[src$="/elements/music.png"] {
   height: 26px;
   display: block;
   object-fit: contain;
+}
+/* Center and size inline SVG hearts used as the store icon */
+.gem-btn-waveform-hud svg{
+  width: 22px !important;  /* slightly smaller heart */
+  height: 22px !important;
+  display: block;
+  margin-left: 2px; /* nudge a hair further right */
 }
 .gem-btn-waveform-hud:hover{
   background: linear-gradient(135deg, #ff76c8, #ffa0db);

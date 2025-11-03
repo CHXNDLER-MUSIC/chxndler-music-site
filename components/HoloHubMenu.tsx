@@ -825,30 +825,40 @@ export default function HoloHubMenu({
         }
         .item[data-id="yt"]:hover::before{ filter: blur(16px) brightness(1.15); }
 
-        /* Apple Music: pink glow base + hover growth similar to Spotify */
+        /* Apple Music: Spotify-style rim with PINK glow */
         .item[data-id="am"]{
+          --tint: #FC54AF; /* Apple Music pink */
+          background:
+            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
+            rgba(252,84,175,0.45);
+          /* Pink outer border to mirror Spotify rim */
+          border-color: rgba(252,84,175,0.38);
+          overflow: hidden; /* keep glow inside the circle */
           box-shadow:
-            0 14px 28px rgba(0,0,0,.55) !important,
-            0 0 36px rgba(252,84,175,0.75) !important, /* #FC54AF */
-            0 0 90px rgba(252,84,175,0.45) !important;
-          filter: saturate(1.06) brightness(1.05) !important;
+            0 14px 30px rgba(0,0,0,.58),
+            inset 0 1px 0 rgba(255,255,255,.24),
+            inset 0 -6px 16px rgba(0,0,0,.6);
+          filter: saturate(1.06) brightness(1.05);
         }
         .item[data-id="am"]::before{
-          content: "" !important;
-          display: block !important;
-          position: absolute; left: -10px; right: -10px; top: -10px; bottom: -10px; border-radius: 9999px; pointer-events: none;
-          background: radial-gradient(closest-side, rgba(252,84,175,0.60), rgba(252,84,175,0.0) 70%);
-          mix-blend-mode: screen; filter: blur(14px);
+          /* Inset rim and inner pink bloom (no external spill) */
+          content: ""; position: absolute; inset: 0; border-radius: 9999px; pointer-events: none;
+          box-shadow:
+            0 0 0 2px rgba(255,255,255,.26) inset,
+            0 0 22px rgba(252,84,175,.65) inset,
+            0 0 60px rgba(252,84,175,.35) inset !important;
         }
         .item[data-id="am"]:hover{
           transform: translate(var(--tx,0), var(--ty,0)) translate(-50%, -50%) scale(1.14) !important;
+          border-color: rgba(252,84,175,0.48) !important;
           box-shadow:
             0 20px 40px rgba(0,0,0,.68) !important,
-            0 0 70px rgba(252,84,175,1) !important,
-            0 0 160px rgba(252,84,175,0.85) !important;
+            inset 0 0 28px rgba(252,84,175,0.95) !important,
+            inset 0 0 90px rgba(252,84,175,0.58) !important,
+            inset 0 1px 0 rgba(255,255,255,.28) !important,
+            inset 0 -6px 18px rgba(0,0,0,.6) !important;
           filter: brightness(1.12) saturate(1.25) !important;
         }
-        .item[data-id="am"]:hover::before{ filter: blur(16px) brightness(1.15); }
         /* Brand button icons - fill entire button area completely */
         .item[data-id="ig"] .icon, .item[data-id="yt"] .icon, .item[data-id="sp"] .icon, .item[data-id="am"] .icon, .item[data-id="tt"] .icon{
           position: absolute; inset: 0; width: 100%; height: 100%; 
@@ -891,106 +901,105 @@ export default function HoloHubMenu({
         .item:focus{ outline: 2px solid var(--tint, #38B6FF); outline-offset: 2px; }
         .item .dot{ width: 10px; height:10px; border-radius:9999px; background:#9EEBFF; }
 
-        /* Instagram: dual-color glow, fully contained within circle */
+        /* Instagram: Spotify-style rim with ORANGE glow */
         .item[data-id="ig"]{
-          /* Keep some glass base but tint toward purple */
-          --ig-purple: #833AB4; /* Instagram purple */
-          --ig-orange: #FF7A00; /* Instagram orange */
-          --tint: var(--ig-purple);
+          --tint: #FF7A00; /* Instagram orange */
           background:
             radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
-            color-mix(in srgb, var(--ig-purple) 38%, transparent);
-          /* Remove outer stroke to avoid double rim and clip all blooms inside */
-          border: none;
-          overflow: hidden; /* confine glow to the outer circle */
-          /* Only inset depth — remove outer color glows */
+            rgba(255,122,0,0.45);
+          border-color: rgba(255,122,0,0.38);
+          overflow: hidden; /* clip glow inside circle */
           box-shadow:
             0 14px 30px rgba(0,0,0,.58),
             inset 0 1px 0 rgba(255,255,255,.24),
             inset 0 -6px 16px rgba(0,0,0,.6);
         }
-        /* Top purple bloom (clipped inside circle) */
         .item[data-id="ig"]::before{
-          content:""; position:absolute; left:0; right:0; top:0; height:60%; border-radius:50%; pointer-events:none; mix-blend-mode:screen;
-          background: radial-gradient(120% 100% at 50% 0%, rgba(131,58,180,.85), rgba(131,58,180,0) 70%);
-          filter: blur(12px);
+          /* Inset white rim + inner orange bloom */
+          content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none;
+          box-shadow:
+            0 0 0 2px rgba(255,255,255,.26) inset,
+            0 0 22px rgba(255,122,0,.65) inset,
+            0 0 60px rgba(255,122,0,.35) inset !important;
         }
-        /* Bottom orange bloom (clipped inside circle) */
-        .item[data-id="ig"]::after{
-          content:""; position:absolute; left:0; right:0; bottom:0; height:60%; border-radius:50%; pointer-events:none; mix-blend-mode:screen;
-          background: radial-gradient(120% 100% at 50% 100%, rgba(255,122,0,.85), rgba(255,122,0,0) 70%);
-          filter: blur(12px);
-        }
-        /* Instagram hover: stronger INTERNAL glow, no external spill */
         .item[data-id="ig"]:hover{
           transform: translate(var(--tx,0), var(--ty,0)) translate(-50%, -50%) scale(1.14) !important;
+          border-color: rgba(255,122,0,0.48) !important;
           box-shadow:
-            0 20px 40px rgba(0,0,0,.68),
-            inset 0 1px 0 rgba(255,255,255,.28),
+            0 20px 40px rgba(0,0,0,.68) !important,
+            inset 0 0 28px rgba(255,122,0,0.95) !important,
+            inset 0 0 90px rgba(255,122,0,0.58) !important,
+            inset 0 1px 0 rgba(255,255,255,.28) !important,
             inset 0 -6px 18px rgba(0,0,0,.6) !important;
           filter: brightness(1.12) saturate(1.25) !important;
         }
-        .item[data-id="ig"]:hover::before{ filter: blur(14px) brightness(1.2); }
-        .item[data-id="ig"]:hover::after{ filter: blur(14px) brightness(1.2); }
 
-        /* TikTok: keep glow fully inside the outer rim (no external bloom) */
+        /* TikTok: Spotify-style rim with WHITE glow */
         .item[data-id="tt"]{
           --tint: #FFFFFF;
           background:
-            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.08), rgba(255,255,255,0) 42%),
-            color-mix(in srgb, #FFFFFF 48%, transparent);
-          border: 1px solid rgba(255,255,255,.2);
-          /* Confine visuals to the circular mask */
+            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
+            rgba(255,255,255,0.42);
+          border-color: rgba(255,255,255,.32);
           overflow: hidden;
-          /* Remove outer bloom; use only inset depth/shimmer */
           box-shadow:
+            0 14px 30px rgba(0,0,0,.58),
             inset 0 1px 0 rgba(255,255,255,.26),
             inset 0 -6px 16px rgba(0,0,0,.6);
         }
         .item[data-id="tt"]::before{
-          /* Internal white halo clipped by the circle */
-          content:""; position:absolute; inset:0; border-radius:50%; pointer-events:none; mix-blend-mode:screen;
-          background: radial-gradient(closest-side, rgba(255,255,255,.85), rgba(255,255,255,0) 70%);
-          filter: blur(10px);
+          /* Inset white rim + inner white bloom */
+          content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none;
+          box-shadow:
+            0 0 0 2px rgba(255,255,255,.32) inset,
+            0 0 22px rgba(255,255,255,.58) inset,
+            0 0 60px rgba(255,255,255,.30) inset !important;
         }
         .item[data-id="tt"]:hover{
           transform: translate(var(--tx,0), var(--ty,0)) translate(-50%, -50%) scale(1.14) !important;
-          /* Keep all effects internal on hover as well */
+          border-color: rgba(255,255,255,.42) !important;
           box-shadow:
-            inset 0 1px 0 rgba(255,255,255,.30),
+            0 20px 40px rgba(0,0,0,.68) !important,
+            inset 0 1px 0 rgba(255,255,255,.30) !important,
             inset 0 -6px 18px rgba(0,0,0,.62) !important;
           filter: brightness(1.18) saturate(1.18) !important;
         }
-        .item[data-id="tt"]:hover::before{ filter: blur(12px) brightness(1.18); }
+        .item[data-id="tt"]:hover::before{ filter: brightness(1.02); }
 
-        /* YouTube: red glow confined within the circular button (no spill) */
+        /* YouTube: Spotify-style rim with RED glow */
         .item[data-id="yt"]{
-          --yt-red: #FF0000; /* YouTube brand red */
-          --tint: var(--yt-red);
+          --tint: #FF0000;
           background:
             radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
-            color-mix(in srgb, var(--yt-red) 46%, transparent);
-          border: 1px solid rgba(255,255,255,.18);
-          /* Clip internal effects to the button circle */
+            rgba(255,0,0,0.45);
+          /* Match Spotify: neutral (white) border, color comes from inner bloom */
+          border-color: rgba(255,255,255,.18);
           overflow: hidden;
           box-shadow:
-            0 16px 34px rgba(0,0,0,.6),
-            inset 0 1px 0 rgba(255,255,255,.24), inset 0 -6px 16px rgba(0,0,0,.6);
+            0 14px 30px rgba(0,0,0,.58),
+            inset 0 1px 0 rgba(255,255,255,.24),
+            inset 0 -6px 16px rgba(0,0,0,.6);
+          filter: saturate(1.06) brightness(1.05);
         }
         .item[data-id="yt"]::before{
-          /* Internal red halo clipped to the circle */
-          content:""; position:absolute; inset:0; border-radius:50%; pointer-events:none; mix-blend-mode:screen;
-          background: radial-gradient(closest-side, rgba(255,0,0,.85), rgba(255,0,0,0) 68%);
-          filter: blur(10px);
+          /* Inset white rim + inner red bloom; clear any earlier gradient */
+          content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none;
+          background: none !important;
+          box-shadow:
+            0 0 0 2px rgba(255,255,255,.26) inset,
+            0 0 22px rgba(255,0,0,.55) inset,
+            0 0 60px rgba(255,0,0,.28) inset !important;
         }
         .item[data-id="yt"]:hover{
           transform: translate(var(--tx,0), var(--ty,0)) translate(-50%, -50%) scale(1.14) !important;
           box-shadow:
-            0 22px 44px rgba(0,0,0,.7),
-            inset 0 1px 0 rgba(255,255,255,.28), inset 0 -6px 18px rgba(0,0,0,.62) !important;
-          filter: brightness(1.22) saturate(1.24) !important;
+            0 20px 40px rgba(0,0,0,.68) !important,
+            inset 0 0 28px rgba(255,0,0,0.85) !important,
+            inset 0 0 90px rgba(255,0,0,0.55) !important,
+            inset 0 1px 0 rgba(255,255,255,.28) !important,
+            inset 0 -6px 18px rgba(0,0,0,.6) !important;
+          filter: brightness(1.12) saturate(1.25) !important;
         }
-        .item[data-id="yt"]:hover::before{ filter: blur(12px) brightness(1.24); }
 
         @media (max-width: 480px) { .hub{ left:-32px; top:-32px; width:64px; height:64px; } .hub-icon{ width: 38px; height: 38px; } }
       `}</style>
