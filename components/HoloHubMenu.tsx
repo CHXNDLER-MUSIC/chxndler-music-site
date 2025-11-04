@@ -729,7 +729,7 @@ export default function HoloHubMenu({
         /* old .items rule replaced by centered .items inside panel-wrap */
         /* Radial items: circular hologram chrome around each icon */
         .item{
-          position:absolute; border-radius:9999px; width: 44px; height: 44px;
+          position:absolute; border-radius:9999px; width: 48px; height: 48px;
           display:grid; place-items:center; color:#fff; cursor:pointer;
           /* Lighter, glassy base with subtle tint */
           background:

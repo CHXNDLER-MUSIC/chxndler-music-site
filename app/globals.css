@@ -453,11 +453,8 @@ img[src$="/elements/music.png"] {
 }
 
 /* Ensure hover glow for all cover variants (hologram + HUD) */
-.cover-hologram-container { transition: box-shadow 200ms ease; }
-.cover-hologram-container:hover { box-shadow: 0 0 52px rgba(25,227,255,0.9), 0 0 90px rgba(25,227,255,0.7), 0 0 140px rgba(25,227,255,0.5); }
-/* Scale the inner wrapper to avoid clobbering container transforms from positioning */
-.cover-hologram-container .cover-hologram-inner { transition: transform 150ms ease; will-change: transform; transform-origin: 50% 50%; }
-.cover-hologram-container:hover .cover-hologram-inner { transform: translateZ(0) scale(1.08); }
+.cover-hologram-container { transition: scale 150ms ease, box-shadow 200ms ease; will-change: transform; transform-origin: 50% 50%; scale: 1; }
+.cover-hologram-container:hover { box-shadow: 0 0 52px rgba(25,227,255,0.9), 0 0 90px rgba(25,227,255,0.7), 0 0 140px rgba(25,227,255,0.5); scale: 1.08; }
 .hud-cover { transition: box-shadow 200ms ease, transform 150ms ease; box-shadow: 0 0 0 rgba(0,0,0,0); }
 .hud-cover:hover { box-shadow: 0 0 42px rgba(25,227,255,0.6), 0 0 70px rgba(25,227,255,0.35); transform: translateZ(0) scale(1.08); }
 
@@ -473,14 +470,12 @@ img[src$="/elements/music.png"] {
 }
 /* In the HUD bottom-right corner, grow inward from the anchor */
 .hud-cover-pos .cover-hologram-container{ transform-origin: 100% 100%; /* bottom right */ }
-/* Make the cover grow when hovering over the whole cover area (incl. brand button) */
-.hud-cover-pos:hover .cover-hologram-container{ box-shadow: 0 0 52px rgba(25,227,255,0.9), 0 0 90px rgba(25,227,255,0.7), 0 0 140px rgba(25,227,255,0.5); }
-.hud-cover-pos:hover .cover-hologram-container .cover-hologram-inner{ transform: translateZ(0) scale(1.08); }
+/* Only grow the cover when the cover itself is hovered (not when hovering the CHXNDLER button) */
+/* Note: container-level hover effects removed to prevent cross-hover bleed */
 /* On devices without hover, avoid transform animations that can flicker */
 @media (hover: none) {
-  .cover-hologram-container{ transition: none !important; }
-  .cover-hologram-container:hover{ box-shadow: none; }
-  .cover-hologram-container .cover-hologram-inner{ transition: none !important; transform: none !important; }
+  .cover-hologram-container{ transition: none !important; transform: none !important; scale: 1 !important; }
+  .cover-hologram-container:hover{ box-shadow: none; transform: none !important; scale: 1 !important; }
 }
 
 /* Cockpit HUD cover hover glow */
@@ -560,8 +555,8 @@ img[src$="/elements/music.png"] {
 }
 
 .hud-play-btn-enhanced{
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: rgba(25,227,255,.8);
   border: 1px solid rgba(255,255,255,.4);
@@ -590,8 +585,8 @@ img[src$="/elements/music.png"] {
 
 /* Lyrics (speech bubble) button in HUD — match play button hover feel */
 .hud-lyrics-btn{
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: radial-gradient(circle at 30% 30%, #FFF76A, #F2EF1D);
   border: 1px solid rgba(255,255,255,.5);
@@ -612,8 +607,8 @@ img[src$="/elements/music.png"] {
 
 /* Volume button hover behavior to match lyrics button */
 .hud-volume-btn{
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: radial-gradient(circle at 30% 30%, #19E3FF, #0EA8D0);
   border: 1px solid rgba(255,255,255,0.4);
@@ -723,8 +718,8 @@ img[src$="/elements/music.png"] {
 
 /* Spotify button in HUD waveform player */
 .spotify-btn-waveform-hud{
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: linear-gradient(135deg, #1DB954, #1ed760);
   border: 1px solid rgba(255,255,255,.4);
@@ -747,8 +742,8 @@ img[src$="/elements/music.png"] {
 .spotify-btn-waveform-hud:active{ transform: scale(0.95); }
 
 .spotify-btn-unavailable-hud{
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: rgba(128, 128, 128, 0.3);
   border: 1px solid rgba(128, 128, 128, 0.5);
@@ -763,8 +758,8 @@ img[src$="/elements/music.png"] {
 
 /* Apple Music button in HUD waveform player */
 .apple-btn-waveform-hud{
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: linear-gradient(135deg, #FF3B30, #FF2D55);
   border: 1px solid rgba(255,255,255,.4);
@@ -787,8 +782,8 @@ img[src$="/elements/music.png"] {
 .apple-btn-waveform-hud:active{ transform: scale(0.95); }
 
 .apple-btn-unavailable-hud{
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: rgba(128, 128, 128, 0.3);
   border: 1px solid rgba(128, 128, 128, 0.5);
@@ -803,8 +798,8 @@ img[src$="/elements/music.png"] {
 
 /* Pink Gem button in HUD waveform player */
 .gem-btn-waveform-hud{
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: linear-gradient(135deg, #ff3ea5, #ff76c8);
   border: 1px solid rgba(255,255,255,.45);
@@ -822,15 +817,15 @@ img[src$="/elements/music.png"] {
 /* Ensure the icon fills more of the gem button */
 .gem-btn-waveform-hud img{
   /* Fill more of the circular button */
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   display: block;
   object-fit: contain;
 }
 /* Center and size inline SVG hearts used as the store icon */
 .gem-btn-waveform-hud svg{
-  width: 22px !important;  /* slightly smaller heart */
-  height: 22px !important;
+  width: 24px !important;  /* slightly larger heart */
+  height: 24px !important;
   display: block;
   margin-left: 2px; /* nudge a hair further right */
 }
@@ -843,8 +838,8 @@ img[src$="/elements/music.png"] {
 .gem-btn-waveform-hud:active{ transform: scale(0.95); }
 
 .gem-btn-unavailable-hud{
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: rgba(128, 128, 128, 0.28);
   border: 1px solid rgba(128, 128, 128, 0.5);
@@ -867,8 +862,8 @@ img[src$="/elements/music.png"] {
 
 /* YouTube button in HUD waveform player */
 .youtube-btn-waveform-hud{
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: radial-gradient(circle at 30% 30%, #FF6B6B, #FF0000);
   border: 3px solid rgba(255,255,255,0.5);
@@ -884,8 +879,8 @@ img[src$="/elements/music.png"] {
 }
 /* Make the YouTube icon fill more of the circle */
 .youtube-btn-waveform-hud svg{
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   display: block;
 }
 .youtube-btn-waveform-hud:hover{
@@ -896,8 +891,8 @@ img[src$="/elements/music.png"] {
 .youtube-btn-waveform-hud:active{ transform: scale(0.95); }
 
 .youtube-btn-unavailable-hud{
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   border: 3px solid rgba(255,255,255,0.35);
   background: rgba(128,128,128,0.35);
@@ -911,14 +906,14 @@ img[src$="/elements/music.png"] {
 }
 /* Match icon size for disabled variant */
 .youtube-btn-unavailable-hud svg{
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   display: block;
 }
 
 .apple-btn-unavailable-hud{
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: rgba(128, 128, 128, 0.3);
   border: 1px solid rgba(128, 128, 128, 0.5);
@@ -947,3 +942,5 @@ img[src$="/elements/music.png"] {
   border-color: rgba(255,255,255,0.75) !important;
   filter: saturate(1.06) brightness(1.04);
 }
+/* Bring HUD controls slightly closer together */
+.controls-row{ gap: 10px; }

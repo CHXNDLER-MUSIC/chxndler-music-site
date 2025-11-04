@@ -51,9 +51,9 @@ export default function HoloHUD({
           aria-label={playing ? "Pause" : "Play"}
         >
           {playing ? 
-            (<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>)
+            (<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>)
             :
-            (<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden><path d="M6 4l14 8-14 8z"/></svg>)}
+            (<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden><path d="M6 4l14 8-14 8z"/></svg>)}
         </button>
       )}
 
@@ -80,7 +80,7 @@ export default function HoloHUD({
           position:absolute;
           left: calc(${POS.wheel.logo.leftVw}vw - 6vw);
           top: calc(${POS.wheel.logo.topVh}vh - 0vh);
-          width:56px; height:56px; border-radius:9999px; border:1px solid rgba(255,255,255,.22);
+          width:60px; height:60px; border-radius:9999px; border:1px solid rgba(255,255,255,.22);
           background: radial-gradient(80% 80% at 50% 50%, rgba(0,0,0,.35), rgba(0,0,0,.2));
           color:#fff; display:grid; place-items:center; box-shadow: 0 0 24px rgba(56,182,255,.35);
           pointer-events:auto;

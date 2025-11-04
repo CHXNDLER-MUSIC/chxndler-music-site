@@ -54,6 +54,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const uiClickRef = useRef<HTMLAudioElement|null>(null);
   const detentRef = useRef<HTMLAudioElement|null>(null);
   const volumeSfxLastRef = useRef<number>(0);
+  // Suppress responding to programmatic volume changes during priming/autoplay fallbacks
+  const suppressVolumeRef = useRef(false);
   const warpPlayTimerRef = useRef<number|undefined>(undefined);
   const isInitialMountRef = useRef(true);
   const intentionalPlayRef = useRef(false); // Track when play is intentionally triggered
@@ -122,6 +124,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   // Persist volume changes
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    // Avoid persisting transient 0 volume set during autoplay fallback/priming
+    if (suppressVolumeRef.current) return;
     try { localStorage.setItem(VOLUME_STORAGE_KEY, String(Math.max(0, Math.min(1, volume)))); } catch {}
   }, [volume]);
 
@@ -468,6 +472,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       console.log('🎵 MediaPlayer: Attempting to play audio for', cur?.title, 'src:', cur?.src);
       console.log('🎵 MediaPlayer: Audio ready state:', a.readyState, 'duration:', a.duration, 'current time:', a.currentTime);
       intentionalPlayRef.current = true; // Mark as intentional play
+      // Suppress volumechange handling during autoplay fallback mute/unmute cycle
+      suppressVolumeRef.current = true;
       playWithAutoplayFallback(a, {
         maxRetries: 3,
         onRetry: (attempt, error) => {
@@ -481,11 +487,15 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           if (DEBUG_MEDIA) dlog('playSignal: play successful', { muted });
           stateMachine.current.send({ type: 'PLAY' });
           gaTrack("play", { slug: cur.slug });
+          // Re-enable volume updates and sync UI with current element volume
+          suppressVolumeRef.current = false;
+          try { setVolume(Math.max(0, Math.min(1, a.volume))); } catch {}
         })
         .catch((error) => {
           console.error('🔴 MediaPlayer: Play failed for', cur?.title, error?.name, error?.message);
           if (DEBUG_MEDIA) dwarn('playSignal: all retries failed', error?.name, error?.message);
           stateMachine.current.send({ type: 'ERROR', payload: { error } });
+          suppressVolumeRef.current = false;
         });
       return;
     }
@@ -681,6 +691,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         .catch((error) => {
           console.log('🎵 Toggle: Simple play failed, trying with retry logic', error?.name);
           // Fallback to retry logic only if simple play fails
+          // Suppress volumechange handling while fallback may set volume to 0
+          suppressVolumeRef.current = true;
           playWithAutoplayFallback(a, {
             maxRetries: 2,
             onRetry: (attempt, error) => {
@@ -693,11 +705,14 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               stateMachine.current.send({ type: 'PLAY' });
               gaTrack("play", { slug: cur.slug });
               try { sfx.play('click', 0.5); } catch {}
+              suppressVolumeRef.current = false;
+              try { setVolume(Math.max(0, Math.min(1, a.volume))); } catch {}
             })
             .catch((retryError) => {
               console.error('🔴 Toggle: All play attempts failed', retryError);
               if (DEBUG_MEDIA) dwarn('toggle play failed after retries', retryError);
               stateMachine.current.send({ type: 'ERROR', payload: { error: retryError } });
+              suppressVolumeRef.current = false;
             });
         });
     }
@@ -810,6 +825,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     const onWaiting = () => { if (DEBUG_MEDIA) dlog('audio event: waiting'); };
     const onStalled = () => { if (DEBUG_MEDIA) dlog('audio event: stalled'); };
     const onVolumeChange = () => { 
+      if (suppressVolumeRef.current) return; // ignore programmatic mutes/unmutes
       const vol = Math.max(0, Math.min(1, a.volume)); 
       setVolume(vol);
       if (vol > 0) lastNonZeroVolumeRef.current = vol;
@@ -890,6 +906,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       } catch {}
       
       try {
+        // Suppress volumechange reactions while briefly muting to prime
+        suppressVolumeRef.current = true;
         a.muted = true;
         a.volume = 0; // Extra safety
         a.play()
@@ -908,6 +926,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 try {
                   const restore = Math.max(0, Math.min(1, lastNonZeroVolumeRef.current || volume || 1));
                   a.volume = restore;
+                  suppressVolumeRef.current = false; // allow next change to propagate
+                  setVolume(restore);
                 } catch {}
               } catch {}
             }, 100);
@@ -922,6 +942,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               try {
                 const restore = Math.max(0, Math.min(1, lastNonZeroVolumeRef.current || volume || 1));
                 a.volume = restore;
+                suppressVolumeRef.current = false;
+                setVolume(restore);
               } catch {}
             } catch {}
           });
@@ -1312,15 +1334,15 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 <div className="btn-glow"></div>
                 <span className="btn-icon">
                   {volume === 0 ? (
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
                       <path d="M16.5 12l3.5 3.5-1.5 1.5L15 13.5 11.5 17H8l-4-4V11l4-4h3.5l3.5 3.5 3.5-3.5 1.5 1.5L16.5 12zM10 8.5L7.5 11H6v2h1.5L10 15.5V8.5z"/>
                     </svg>
                   ) : volume < 0.5 ? (
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
                       <path d="M3 10v4h4l5 5V5L7 10H3zm10.5 2c0-1.77-.77-3.29-2-4.3v8.6c1.23-1.01 2-2.53 2-4.3z"/>
                     </svg>
                   ) : (
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
                       <path d="M3 10v4h4l5 5V5L7 10H3zm8 2c0 2.21-1.79 4-4 4v-2c1.1 0 2-.9 2-2s-.9-2-2-2V8c2.21 0 4 1.79 4 4zm4.5 0c0-3.04-1.72-5.64-4.25-6.92l-.75 1.86C12.6 8.2 14 9.96 14 12s-1.4 3.8-3.5 4.06l.75 1.86C18.28 17.64 19.5 15.04 19.5 12z"/>
                     </svg>
                   )}
@@ -1779,6 +1801,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                         .catch((error) => {
                           console.log('🎵 Picker: Simple play failed, trying with retry logic', error?.name);
                           // Fallback to retry logic only if simple play fails
+                          // Suppress volumechange handling while fallback may set volume to 0
+                          suppressVolumeRef.current = true;
                           playWithAutoplayFallback(a, {
                             maxRetries: 2,
                             onRetry: (attempt, error) => {
@@ -1789,10 +1813,13 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                               console.log('🎵 Picker: Retry play successful for', selectedTrack.title);
                               stateMachine.current.send({ type: 'PLAY' });
                               gaTrack("play", { slug: selectedTrack.slug });
+                              suppressVolumeRef.current = false;
+                              try { setVolume(Math.max(0, Math.min(1, a.volume))); } catch {}
                             })
                             .catch((retryError) => {
                               console.error('🔴 Picker: All play attempts failed for', selectedTrack.title, retryError);
                               stateMachine.current.send({ type: 'ERROR', payload: { error: retryError } });
+                              suppressVolumeRef.current = false;
                             });
                         });
                     }, 100); // Short delay to allow index change to settle
@@ -2127,10 +2154,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         .spotify-btn-waveform {
           position: absolute;
           top: 50%;
-          left: 42%;
+          left: 45%;
           transform: translate(-50%, -50%);
-          width: 40px;
-          height: 40px;
+          width: 44px;
+          height: 44px;
           border-radius: 50%;
           background: linear-gradient(135deg, #1DB954, #1ed760);
           color: white;
@@ -2158,10 +2185,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         .spotify-btn-unavailable-waveform {
           position: absolute;
           top: 50%;
-          left: 42%;
+          left: 45%;
           transform: translate(-50%, -50%);
-          width: 40px;
-          height: 40px;
+          width: 44px;
+          height: 44px;
           border-radius: 50%;
           background: rgba(128, 128, 128, 0.3);
           color: #888;
@@ -2179,10 +2206,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         .apple-btn-waveform {
           position: absolute;
           top: 50%;
-          left: 58%;
+          left: 55%;
           transform: translate(-50%, -50%);
-          width: 24px;
-          height: 24px;
+          width: 28px;
+          height: 28px;
           color: #FFFFFF;
           display: flex;
           align-items: center;
@@ -2198,10 +2225,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         .apple-btn-unavailable-waveform {
           position: absolute;
           top: 50%;
-          left: 58%;
+          left: 55%;
           transform: translate(-50%, -50%);
-          width: 24px;
-          height: 24px;
+          width: 28px;
+          height: 28px;
           color: rgba(255,255,255,0.5);
           display: flex;
           align-items: center;
@@ -2215,8 +2242,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
 
         /* Lyrics link next to volume control */
         .lyrics-link-waveform {
-          width: 28px;
-          height: 28px;
+          width: 32px;
+          height: 32px;
           border-radius: 50%;
           border: 1px solid rgba(255, 255, 255, 0.5);
           background: radial-gradient(circle at 30% 30%, #FFF76A, #F2EF1D);
@@ -2238,30 +2265,37 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
 
         /* YouTube link (to the right of Lyrics) */
         .youtube-link-waveform {
-          width: 28px;
-          height: 28px;
+          width: 32px;
+          height: 32px;
           border-radius: 50%;
-          border: 1px solid rgba(255,255,255,0.5);
+          /* Match Store button rim */
+          border: 1px solid rgba(255,255,255,0.45);
           background: radial-gradient(circle at 30% 30%, #FF6B6B, #FF0000);
           color: #FFFFFF;
           display: inline-flex;
           align-items: center;
           justify-content: center;
+          line-height: 0;
           text-decoration: none;
           transition: all 0.25s ease;
-          box-shadow: 0 4px 16px rgba(255,0,0,0.5);
+          /* Softer, Apple-like red glow */
+          box-shadow: 0 2px 8px rgba(255,59,48,0.35);
           position: relative;
           z-index: 600; /* sit above waveform/svg and streaming buttons */
         }
-        .youtube-link-waveform:hover { transform: scale(1.1); box-shadow: 0 6px 22px rgba(255,0,0,0.85); }
+        .youtube-link-waveform:hover { 
+          transform: scale(1.1); 
+          box-shadow: 0 3px 12px rgba(255,59,48,0.55);
+          border-color: rgba(255,255,255,0.65);
+        }
         .youtube-link-waveform:active { transform: scale(0.95); }
-        /* Make the YouTube icon fill the entire button */
-        .waveform-volume .youtube-link-waveform svg { width: 100%; height: 100%; }
+        /* Size icon similar to Store button for inner padding */
+        .youtube-link-waveform svg { width: 22px; height: 22px; }
         .youtube-link-unavailable-waveform {
-          width: 28px;
-          height: 28px;
+          width: 32px;
+          height: 32px;
           border-radius: 50%;
-          border: 1px solid rgba(255,255,255,0.35);
+          border: 1px solid rgba(128,128,128,0.5);
           background: rgba(128,128,128,0.35);
           color: rgba(255,255,255,0.85);
           display: inline-flex;
@@ -2271,7 +2305,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           z-index: 200;
           cursor: not-allowed;
         }
-        .waveform-volume .youtube-link-unavailable-waveform svg { width: 100%; height: 100%; }
+        .youtube-link-unavailable-waveform svg { width: 22px; height: 22px; }
         
         /* Inline controls (lyrics/youtube/volume) now sit in the controls row */
         .waveform-volume {
@@ -2281,7 +2315,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           align-items: center;
           justify-content: flex-start;
           white-space: nowrap;
-          gap: 10px;
+          gap: 8px;
           padding: 0;
           border-radius: 10px;
           border: none;
@@ -2292,8 +2326,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         }
         .waveform-volume-btn {
           position: relative;
-          width: 28px;
-          height: 28px;
+          width: 32px;
+          height: 32px;
           border-radius: 50%;
           border: 1px solid rgba(255, 255, 255, 0.4);
           background: radial-gradient(circle at 30% 30%, #19E3FF, #0EA8D0);
@@ -2479,7 +2513,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         
         .track-controls {
           display: flex;
-          gap: 6px;
+          gap: 4px;
         }
         
         .track-btn {
@@ -2536,7 +2570,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         .volume-control {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 6px;
           min-width: 80px;
         }
         
