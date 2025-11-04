@@ -2456,8 +2456,8 @@ export default function HUDPanel({
                         alt="CHXNDLER"
                         style={{
                           display: 'block',
-                          // Slightly smaller than full width and centered
-                          width: '92%',
+                          // Make the brand image smaller and centered
+                          width: '72%',
                           margin: '0 auto',
                           height: 'auto',
                           borderRadius: 10,

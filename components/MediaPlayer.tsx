@@ -2278,14 +2278,15 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           line-height: 0;
           text-decoration: none;
           transition: all 0.25s ease;
-          /* Softer, Apple-like red glow */
-          box-shadow: 0 2px 8px rgba(255,59,48,0.35);
+          /* Match Store button outer rim glow (red variant) */
+          box-shadow: 0 0 12px rgba(255,59,48,0.45);
           position: relative;
           z-index: 600; /* sit above waveform/svg and streaming buttons */
         }
         .youtube-link-waveform:hover { 
           transform: scale(1.1); 
-          box-shadow: 0 3px 12px rgba(255,59,48,0.55);
+          /* Two-layer glow like Store button */
+          box-shadow: 0 0 18px rgba(255,59,48,0.65), 0 0 36px rgba(255,118,200,0.35);
           border-color: rgba(255,255,255,0.65);
         }
         .youtube-link-waveform:active { transform: scale(0.95); }
