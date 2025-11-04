@@ -548,23 +548,29 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
       <style jsx>{`
         /* Cover Hologram Hover Effects */
         .cover-hologram-container {
-          /* Match the song dropdown's quick grow */
-          transition: transform .15s ease, box-shadow .2s ease !important;
-          will-change: transform;
+          /* Match the song dropdown's quick grow; shadow lives on the container */
+          transition: box-shadow .2s ease !important;
           box-shadow: none;
-          /* Grow from center like the song dropdown */
-          transform-origin: 50% 50% !important;
+        }
+        /* Scale only the inner wrapper so we don't override existing transforms 
+           from positioning/Framer Motion on the container (e.g., translate/rotate). */
+        .cover-hologram-inner {
+          transition: transform .15s ease;
+          will-change: transform;
+          transform-origin: 50% 50%;
+        }
+        .cover-hologram-container:hover .cover-hologram-inner,
+        .cover-hologram-container.hovered .cover-hologram-inner {
+          transform: translateZ(0) scale(1.08);
         }
         .cover-hologram-container:hover,
         .cover-hologram-container.hovered {
-          transform: translateZ(0) scale(1.04);
           box-shadow:
             0 0 52px rgba(25,227,255,.9),
             0 0 90px rgba(25,227,255,.7),
             0 0 140px rgba(25,227,255,0.5),
             0 0 200px rgba(25,227,255,0.3) !important;
         }
-        
         
         .cover-hologram-image {
           filter: brightness(1.1) contrast(1.05) saturate(1.1);

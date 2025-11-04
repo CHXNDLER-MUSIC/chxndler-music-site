@@ -58,8 +58,10 @@ export default function LumaKeyVideo({
   useEffect(() => {
     const video = document.createElement("video");
     videoRef.current = video;
+    // Strong autoplay hints for all browsers
     video.autoplay = true;
     video.muted = true;
+    (video as any).defaultMuted = true;
     video.loop = true;
     video.playsInline = true as any;
     // Extra inline/autoplay hints for Safari/iOS
@@ -67,34 +69,85 @@ export default function LumaKeyVideo({
       (video as any).webkitPlaysInline = true;
       video.setAttribute('playsinline', '');
       video.setAttribute('muted', '');
+      video.setAttribute('autoplay', '');
+      video.setAttribute('loop', '');
+      // Prevent remote playback UIs from hijacking inline playback on some devices
+      (video as any).disableRemotePlayback = true;
     } catch {}
     video.preload = "auto";
     video.crossOrigin = "anonymous";
-    const s1 = document.createElement("source");
-    if (srcMp4) { s1.src = srcMp4; s1.type = "video/mp4"; video.appendChild(s1); }
-    if (srcAlt) {
-      const s2 = document.createElement("source"); s2.src = srcAlt; s2.type = "video/mp4"; video.appendChild(s2);
+    
+    // Use direct src assignment first (more reliable on iOS Safari for autoplay)
+    // Fallback to <source> elements if needed
+    let usedDirectSrc = false;
+    try {
+      if (srcMp4) {
+        (video as HTMLVideoElement).src = srcMp4;
+        usedDirectSrc = true;
+      } else if (srcAlt) {
+        (video as HTMLVideoElement).src = srcAlt;
+        usedDirectSrc = true;
+      }
+    } catch {}
+    if (!usedDirectSrc) {
+      const s1 = document.createElement("source");
+      if (srcMp4) { s1.src = srcMp4; s1.type = "video/mp4"; video.appendChild(s1); }
+      if (srcAlt) {
+        const s2 = document.createElement("source"); s2.src = srcAlt; s2.type = "video/mp4"; video.appendChild(s2);
+      }
     }
     try { video.load(); } catch {}
-    const onCanPlay = () => { setReady(true); try { video.play().catch(()=>{}); } catch {} };
-    const onLoadedMeta = () => { setReady(true); try { video.play().catch(()=>{}); } catch {} };
+
+    // Attach offscreen to DOM to ensure playback advances on Safari/iOS
+    try {
+      video.style.position = 'fixed';
+      video.style.left = '-99999px';
+      video.style.top = '0px';
+      video.style.width = '1px';
+      video.style.height = '1px';
+      video.style.opacity = '0';
+      video.style.pointerEvents = 'none';
+      document.body.appendChild(video);
+    } catch {}
+    const tryPlay = () => { try { video.play().catch(()=>{}); } catch {} };
+    const onCanPlay = () => { setReady(true); tryPlay(); };
+    const onLoadedMeta = () => { setReady(true); tryPlay(); };
     const onEnded = () => { try { video.currentTime = 0; video.play().catch(()=>{}); } catch {} };
-    const onPause = () => { if (!paused) { try { video.play().catch(()=>{}); } catch {} } };
+    const onPause = () => { if (!paused) { tryPlay(); } };
     video.addEventListener("canplay", onCanPlay);
     video.addEventListener("loadeddata", onCanPlay);
     video.addEventListener("loadedmetadata", onLoadedMeta);
     video.addEventListener("ended", onEnded);
     video.addEventListener("pause", onPause);
 
-    // Retry autoplay a few times on mount to bypass flaky policies
+    // As a final fallback for strict autoplay policies, try once on first user gesture
+    const unlock = () => { tryPlay(); };
+    try {
+      window.addEventListener('pointerdown', unlock, { once: true } as any);
+      window.addEventListener('keydown', unlock, { once: true } as any);
+      window.addEventListener('touchstart', unlock, { once: true } as any);
+      // If the user just moves the mouse, that should be good enough too
+      window.addEventListener('mousemove', unlock, { once: true } as any);
+    } catch {}
+
+    // Retry autoplay several times on mount to bypass flaky policies
     const playRetries: number[] = [];
     const scheduleRetry = (ms: number) => {
-      const id = window.setTimeout(() => { try { video.play().catch(()=>{}); } catch {} }, ms);
+      const id = window.setTimeout(() => { tryPlay(); }, ms);
       playRetries.push(id);
     };
-    scheduleRetry(100);
-    scheduleRetry(400);
-    scheduleRetry(1000);
+    [100, 300, 700, 1500, 3000].forEach(scheduleRetry);
+    // Short-lived interval to keep nudging play until it sticks
+    let nudgeCount = 0;
+    const nudge = window.setInterval(() => {
+      if (!video.paused || nudgeCount++ > 15) { try { window.clearInterval(nudge); } catch {}; return; }
+      tryPlay();
+    }, 200);
+    playRetries.push(nudge);
+
+    // Also attempt when page becomes visible
+    const onVisibility = () => { if (document.visibilityState === 'visible') tryPlay(); };
+    document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
       video.pause();
@@ -105,6 +158,15 @@ export default function LumaKeyVideo({
       video.removeEventListener("pause", onPause);
       playRetries.forEach(id => { try { window.clearTimeout(id); } catch {} });
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      try {
+        window.removeEventListener('pointerdown', unlock as any, { capture: false } as any);
+        window.removeEventListener('keydown', unlock as any, { capture: false } as any);
+        window.removeEventListener('touchstart', unlock as any, { capture: false } as any);
+        window.removeEventListener('mousemove', unlock as any, { capture: false } as any);
+      } catch {}
+      try { document.removeEventListener('visibilitychange', onVisibility); } catch {}
+      // Detach hidden video from DOM
+      try { if (video.parentNode) video.parentNode.removeChild(video); } catch {}
     };
   }, [srcMp4, srcAlt]);
 

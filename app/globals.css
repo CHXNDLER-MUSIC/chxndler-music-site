@@ -69,7 +69,7 @@
   --pink-bottom-nudge: 16px;
   /* HUD waveform player bottom offset (raises player inside blue display) */
   /* Nudge down very slightly for spacing */
-  --hud-player-bottom-offset: 30px;
+  --hud-player-bottom-offset: 26px;
   /* Fine-tune the vertical alignment of the light beam base PNG */
   /* Negative moves the PNG up; positive moves it down */
   /* Move the lightbeam base up very slightly */
@@ -448,17 +448,18 @@ img[src$="/elements/music.png"] {
   will-change: transform;
 }
 .cover-art-container:hover {
-  transform: translateZ(0) scale(1.04);
+  transform: translateZ(0) scale(1.08);
   box-shadow: 0 0 40px rgba(25,227,255,0.8), 0 0 60px rgba(25,227,255,0.6), 0 0 80px rgba(25,227,255,0.4);
 }
 
 /* Ensure hover glow for all cover variants (hologram + HUD) */
-.cover-hologram-container { transition: box-shadow 200ms ease, transform 150ms ease; }
-.cover-hologram-container:hover {
-  box-shadow: 0 0 52px rgba(25,227,255,0.9), 0 0 90px rgba(25,227,255,0.7), 0 0 140px rgba(25,227,255,0.5);
-}
+.cover-hologram-container { transition: box-shadow 200ms ease; }
+.cover-hologram-container:hover { box-shadow: 0 0 52px rgba(25,227,255,0.9), 0 0 90px rgba(25,227,255,0.7), 0 0 140px rgba(25,227,255,0.5); }
+/* Scale the inner wrapper to avoid clobbering container transforms from positioning */
+.cover-hologram-container .cover-hologram-inner { transition: transform 150ms ease; will-change: transform; transform-origin: 50% 50%; }
+.cover-hologram-container:hover .cover-hologram-inner { transform: translateZ(0) scale(1.08); }
 .hud-cover { transition: box-shadow 200ms ease, transform 150ms ease; box-shadow: 0 0 0 rgba(0,0,0,0); }
-.hud-cover:hover { box-shadow: 0 0 42px rgba(25,227,255,0.6), 0 0 70px rgba(25,227,255,0.35); transform: translateZ(0) scale(1.04); }
+.hud-cover:hover { box-shadow: 0 0 42px rgba(25,227,255,0.6), 0 0 70px rgba(25,227,255,0.35); transform: translateZ(0) scale(1.08); }
 
 /* Mobile Safari compositing + flicker fixes for cover */
 .cover-hologram-container{
@@ -471,19 +472,21 @@ img[src$="/elements/music.png"] {
   contain: layout;
 }
 /* In the HUD bottom-right corner, grow inward from the anchor */
-.hud-cover-pos .cover-hologram-container{
-  transform-origin: 100% 100%; /* bottom right */
-}
+.hud-cover-pos .cover-hologram-container{ transform-origin: 100% 100%; /* bottom right */ }
+/* Make the cover grow when hovering over the whole cover area (incl. brand button) */
+.hud-cover-pos:hover .cover-hologram-container{ box-shadow: 0 0 52px rgba(25,227,255,0.9), 0 0 90px rgba(25,227,255,0.7), 0 0 140px rgba(25,227,255,0.5); }
+.hud-cover-pos:hover .cover-hologram-container .cover-hologram-inner{ transform: translateZ(0) scale(1.08); }
 /* On devices without hover, avoid transform animations that can flicker */
 @media (hover: none) {
-  .cover-hologram-container{ transition: none !important; transform: none !important; }
+  .cover-hologram-container{ transition: none !important; }
   .cover-hologram-container:hover{ box-shadow: none; }
+  .cover-hologram-container .cover-hologram-inner{ transition: none !important; transform: none !important; }
 }
 
 /* Cockpit HUD cover hover glow */
 .ck-cover { transition: box-shadow 200ms ease, transform 150ms ease; }
 .ck-cover:hover {
-  transform: translateZ(0) scale(1.04);
+  transform: translateZ(0) scale(1.08);
   box-shadow: 0 0 40px rgba(25,227,255,0.8), 0 0 60px rgba(25,227,255,0.6), 0 0 80px rgba(25,227,255,0.4);
 }
 
@@ -516,7 +519,7 @@ img[src$="/elements/music.png"] {
   transition: transform .15s ease, box-shadow .2s ease, outline-color .2s ease;
 }
 .cover-link:hover{
-  transform: scale(1.04);
+  transform: scale(1.08);
   outline-color: rgba(25,227,255,.50);
   box-shadow: 0 0 52px rgba(25,227,255,.40), 0 0 90px rgba(25,227,255,.25);
 }
@@ -591,7 +594,7 @@ img[src$="/elements/music.png"] {
   height: 28px;
   border-radius: 50%;
   background: radial-gradient(circle at 30% 30%, #FFF76A, #F2EF1D);
-  border: 3px solid rgba(255,255,255,.5);
+  border: 1px solid rgba(255,255,255,.5);
   color: #000; /* icon color */
   display: inline-flex;
   align-items: center;
@@ -613,7 +616,7 @@ img[src$="/elements/music.png"] {
   height: 28px;
   border-radius: 50%;
   background: radial-gradient(circle at 30% 30%, #19E3FF, #0EA8D0);
-  border: 3px solid rgba(255,255,255,0.4);
+  border: 1px solid rgba(255,255,255,0.4);
   color: white;
   display: inline-flex;
   align-items: center;

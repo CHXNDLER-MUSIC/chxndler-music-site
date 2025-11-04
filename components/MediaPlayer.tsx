@@ -2094,7 +2094,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           text-decoration: none;
           transition: all 0.2s ease;
           box-shadow: 0 2px 8px rgba(29, 185, 84, 0.5);
-          border: 2px solid rgba(255, 255, 255, 0.2);
+          border: 1px solid rgba(255, 255, 255, 0.3);
           flex-shrink: 0;
         }
         
@@ -2140,7 +2140,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           text-decoration: none;
           transition: all 0.3s ease;
           box-shadow: 0 4px 16px rgba(29, 185, 84, 0.6);
-          border: 3px solid rgba(255, 255, 255, 0.4);
+          border: 1px solid rgba(255, 255, 255, 0.4);
           z-index: 100;
           backdrop-filter: blur(8px);
         }
@@ -2169,7 +2169,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           align-items: center;
           justify-content: center;
           text-decoration: none;
-          border: 3px solid rgba(128, 128, 128, 0.5);
+          border: 1px solid rgba(128, 128, 128, 0.5);
           z-index: 90;
           backdrop-filter: blur(8px);
           cursor: not-allowed;
@@ -2218,7 +2218,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           width: 28px;
           height: 28px;
           border-radius: 50%;
-          border: 2px solid rgba(255, 255, 255, 0.5);
+          border: 1px solid rgba(255, 255, 255, 0.5);
           background: radial-gradient(circle at 30% 30%, #FFF76A, #F2EF1D);
           color: #000;
           display: inline-flex;
@@ -2241,7 +2241,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           width: 28px;
           height: 28px;
           border-radius: 50%;
-          border: 2px solid rgba(255,255,255,0.5);
+          border: 1px solid rgba(255,255,255,0.5);
           background: radial-gradient(circle at 30% 30%, #FF6B6B, #FF0000);
           color: #FFFFFF;
           display: inline-flex;
@@ -2261,7 +2261,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           width: 28px;
           height: 28px;
           border-radius: 50%;
-          border: 2px solid rgba(255,255,255,0.35);
+          border: 1px solid rgba(255,255,255,0.35);
           background: rgba(128,128,128,0.35);
           color: rgba(255,255,255,0.85);
           display: inline-flex;
@@ -2295,7 +2295,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           width: 28px;
           height: 28px;
           border-radius: 50%;
-          border: 2px solid rgba(255, 255, 255, 0.4);
+          border: 1px solid rgba(255, 255, 255, 0.4);
           background: radial-gradient(circle at 30% 30%, #19E3FF, #0EA8D0);
           color: white;
           display: flex;
@@ -2505,7 +2505,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         .volume-btn {
           position: relative;
           border-radius: 50%;
-          border: 3px solid rgba(255, 255, 255, 0.4);
+          border: 1px solid rgba(255, 255, 255, 0.4);
           background: radial-gradient(circle at 30% 30%, #19E3FF, #0EA8D0);
           color: white;
           box-shadow: 0 4px 16px rgba(25,227,255,0.6);

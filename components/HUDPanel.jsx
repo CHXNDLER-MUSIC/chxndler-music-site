@@ -109,9 +109,9 @@ export default function HUDPanel({
   joinAlienOpen = false, // disable cover art interaction when pink display is open
 }) {
   // Temporary kill-switch to disable 3D planets for performance testing
-  // Set to false to re-enable. You can also override at runtime by setting
+  // Set to true to disable. You can also override at runtime by setting
   // localStorage.DISABLE_3D_PLANETS = '0' and refreshing.
-  const DISABLE_3D_PLANETS_DEFAULT = true;
+  const DISABLE_3D_PLANETS_DEFAULT = false;
   const disable3DPlanets = (() => {
     try {
       if (typeof window !== 'undefined') {
@@ -152,7 +152,7 @@ export default function HUDPanel({
   const [planetBottom, setPlanetBottom] = useState(56);
   // Vertical offset to raise/lower the Store (Gem) popover relative to its anchor
   // Move it slightly lower (less negative) per request
-  const STORE_POPOVER_Y_OFFSET = -180; // was -172 (up slightly)
+  const STORE_POPOVER_Y_OFFSET = -190; // move popover down slightly
   // Dynamic spacing for song selector so it doesn't overlap the cover
   const coverRef = useRef(null);
   const [oneLinerRight, setOneLinerRight] = useState(inConsole ? 108 : 140);
@@ -213,7 +213,7 @@ export default function HUDPanel({
       title: 'PIN',
       image: '/store/pin.png',
       url: 'https://buy.stripe.com/cNi00kfxDeVD3oZ5ST4gg0B',
-      price: '$5.00 USD',
+      price: '$5',
       description: 'A symbol that you belong here with the people who feel deeply, dream big, and find beauty in being different.'
     },
     {
@@ -221,7 +221,7 @@ export default function HUDPanel({
       title: 'PATCH',
       image: '/store/patch.png',
       url: 'https://buy.stripe.com/00w5kEgBHdRz1gRgxx4gg0C',
-      price: '$5.00 USD',
+      price: '$5',
       description: 'Stitch this into your world as a quiet reminder that this isn’t just music, it’s a community.'
     },
     {
@@ -229,7 +229,7 @@ export default function HUDPanel({
       title: 'NECKLACE',
       image: '/store/necklace.png',
       url: 'https://buy.stripe.com/6oU3cw3OVfZH3oZ9554gg0D',
-      price: '$15.00 USD',
+      price: '$15',
       description: 'A symbol of love, connection, and everything this world stands for. It’s a keepsake for the people who found home here.'
     },
     {
@@ -237,7 +237,7 @@ export default function HUDPanel({
       title: 'BEANIE',
       image: '/store/beanie-front.png',
       url: 'https://buy.stripe.com/3cI3cw3OV8xf0cN2GH4gg0E',
-      price: '$30.00 USD',
+      price: '$30',
       description: 'For the ones who wear their hearts out loud and aren’t afraid to stand out.'
     },
     {
@@ -245,7 +245,7 @@ export default function HUDPanel({
       title: 'STICKER',
       image: '/store/sticker.png',
       url: 'https://buy.stripe.com/8x24gA99f9Bj1gR6WX4gg0F',
-      price: '$5.00 USD',
+      price: '$5',
       description: 'A simple reminder that you’re part of something bigger. Remember you’re not alone in this story.'
     },
     {
@@ -253,7 +253,7 @@ export default function HUDPanel({
       title: 'HAT',
       image: '/store/hat.png',
       url: 'https://buy.stripe.com/6oU28s717aFn1gR1CD4gg0I',
-      price: '$25.00 USD',
+      price: '$25',
       description: 'A classic you’ll wear everywhere. It’s lowkey, but it says everything it needs to.'
     },
     {
@@ -261,7 +261,7 @@ export default function HUDPanel({
       title: 'BUTTON',
       image: '/store/button.png',
       url: 'https://buy.stripe.com/6oU14oclr8xfbVvbdd4gg0J',
-      price: '$5.00 USD',
+      price: '$5',
       description: 'A symbol of unity, curiosity, and courage for those who feel deeply and dream beyond the ordinary.'
     },
     {
@@ -269,7 +269,7 @@ export default function HUDPanel({
       title: 'KEYCHAIN',
       image: '/store/keychain.png',
       url: 'https://buy.stripe.com/8x214o99faFn0cN5ST4gg0H',
-      price: '$5.00 USD',
+      price: '$5',
       description: 'A small piece of the HEARTVERSE to carry everywhere. A quiet reminder that you’re connected, always.'
     },
     {
@@ -277,7 +277,7 @@ export default function HUDPanel({
       title: 'HOUSE PARTY POSTER',
       image: '/store/house-party-poster.png',
       url: 'https://buy.stripe.com/dRmfZi0CJ4gZ3oZ2GH4gg0G',
-      price: '$25.00 USD',
+      price: '$25',
       description: 'This poster captures the night the HEARTVERSE came alive. Hang it up and remember when you joined the story.'
     }
   ];
@@ -834,9 +834,20 @@ export default function HUDPanel({
     }
   }, [mounted, currentId]); // Re-run when currentId changes to switch between ambient and main player
 
-  // Persist volume to localStorage when it changes
+  // Persist volume to localStorage when it changes, but ONLY for the main player.
+  // Avoid saving ambient (space-music.mp3) fades to 0 which would mute the main player later.
   useEffect(() => {
-    try { if (typeof window !== 'undefined') localStorage.setItem(VOLUME_STORAGE_KEY, String(Math.max(0, Math.min(1, volume)))); } catch {}
+    try {
+      if (typeof window === 'undefined') return;
+      const a = liveAudioRef.current;
+      const isAmbient = !!(a && a.getAttribute && a.getAttribute('data-ambient') === '1');
+      if (!isAmbient) {
+        localStorage.setItem(
+          VOLUME_STORAGE_KEY,
+          String(Math.max(0, Math.min(1, volume)))
+        );
+      }
+    } catch {}
   }, [volume]);
 
   // Close HUD volume popover on outside click / Escape
@@ -2047,7 +2058,7 @@ export default function HUDPanel({
                       top: (storePopoverPos && storePopoverPos.top) || 0,
                       transform: (storePopoverPos && storePopoverPos.width) ? 'scale(1.04)' : 'translateX(-50%) scale(1.04)',
                       transformOrigin: 'top center',
-                      padding: '12px 14px 16px 14px', borderRadius: 14,
+                      padding: '12px 14px 14px 14px', borderRadius: 14,
                       background: 'rgba(20,3,14,0.9)',
                       border: '1px solid rgba(252,84,175,0.55)',
                       boxShadow: '0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(252,84,175,0.45)',
@@ -2055,7 +2066,7 @@ export default function HUDPanel({
                       color: '#FFD9EF',
                       zIndex: 2147483647,
                       width: (storePopoverPos && storePopoverPos.width) ? storePopoverPos.width : 'min(92vw, 560px)',
-                      maxHeight: '74vh',
+                      maxHeight: '72vh',
                       overflowY: 'auto',
                       WebkitOverflowScrolling: 'touch',
                       overscrollBehavior: 'contain'
@@ -2213,7 +2224,7 @@ export default function HUDPanel({
                                 <img src={item.image || '/card/chxndler.png'} alt={item.title} style={{ display: 'block', width: 104, height: 104, objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(252,84,175,0.35)', boxShadow: '0 6px 18px rgba(0,0,0,0.35)' }} onError={(e)=>{ try { e.currentTarget.src = '/card/chxndler.png'; } catch {} }} />
                               )}
                               {/* Price directly under the image */}
-                              <div style={{ fontSize: 15, fontWeight: 700, color: '#FFB9E1' }}>{item.price || ''}</div>
+                              <div style={{ fontSize: 18, fontWeight: 700, color: '#FFB9E1' }}>{item.price || ''}</div>
                             </div>
                             <div>
                               <div style={{ fontSize: 16, fontWeight: 800, color: '#FFD9EF', textShadow: '0 0 10px rgba(252,84,175,0.9)' }}>{item.title}</div>
@@ -2222,7 +2233,7 @@ export default function HUDPanel({
                             </div>
                           </div>
                           {/* Bottom controls: arrows with Add to Collection centered */}
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 6 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 4 }}>
                             <button
                               aria-label="Previous item"
                               className="store-arrow-btn"

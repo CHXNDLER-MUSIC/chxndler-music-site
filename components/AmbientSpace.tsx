@@ -31,6 +31,8 @@ export default function AmbientSpace({
   const stuckSinceRef = useRef<number|undefined>(undefined);
   const fadeDownTimerRef = useRef<number|undefined>(undefined);
   const userPausedRef = useRef<boolean>(false); // Track if user manually paused
+  // If we receive an ambient:play while suspended/blocked, queue it to run once clear
+  const queuedStartRef = useRef<boolean>(false);
   const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
   function cancelFade() {
@@ -129,6 +131,8 @@ export default function AmbientSpace({
       // Respect suspension and active music: do not start ambient while suspended,
       // during music playback, or when a user-selected track is active.
       if (suspend || playingMusic || userSelectedSong) {
+        // Queue a start so we kick off as soon as suspension/blocks clear
+        queuedStartRef.current = true;
         setNeedEnable(true);
         return;
       }
@@ -235,7 +239,7 @@ export default function AmbientSpace({
       console.log('AmbientSpace: neither playingMusic nor suspend, checking if should resume ambient');
       // If a welcome VO is pending, hold ambient until an explicit ambient:play signal
       // This ensures space-music.mp3 starts together with the welcome VO after button.mp3 finishes
-      if (introPendingRef.current) {
+      if (introPendingRef.current && !queuedStartRef.current) {
         console.log('AmbientSpace: intro pending; deferring ambient resume until ambient:play');
         return cancelFade();
       }
@@ -254,6 +258,37 @@ export default function AmbientSpace({
         clearTimeout(fadeDownTimerRef.current); 
         fadeDownTimerRef.current = undefined; 
       }
+      // If there is a queued start (from an earlier ambient:play while suspended), honor it now.
+      if (queuedStartRef.current) {
+        queuedStartRef.current = false;
+        try { amb.pause(); } catch {}
+        try { amb.currentTime = 0; } catch {}
+        try { amb.muted = false; amb.removeAttribute('muted'); } catch {}
+        const setAmbient = () => { amb.volume = clamp01(volume); };
+        setAmbient();
+        if (intro && introSrc && introPendingRef.current && !introPlayingRef.current) {
+          try { intro.currentTime = 0; } catch {}
+          try { intro.volume = 0.9; } catch {}
+          const handleIntroPlay = () => {
+            introPlayingRef.current = true;
+            setAmbient();
+          };
+          const handleIntroEnded = () => {
+            introPlayingRef.current = false;
+            try { intro.removeEventListener('play', handleIntroPlay); } catch {}
+          };
+          try { intro.addEventListener('play', handleIntroPlay); } catch {}
+          try { intro.addEventListener('ended', handleIntroEnded, { once: true } as any); } catch {}
+          const p1 = amb.play().catch(()=>{});
+          const p2 = intro.play().then(() => { introPendingRef.current = false; introConsumedRef.current = true; }).catch(() => { introPendingRef.current = false; introConsumedRef.current = true; });
+          void p1; void p2;
+          return cancelFade();
+        }
+        // No intro pending; just start ambient
+        amb.play().catch(()=>{});
+        return cancelFade();
+      }
+
       // Resume ambient then fade in when not suspended and not playing music
       if (!amb.paused) {
         // If already playing, just fade volume up to configured level
@@ -345,6 +380,8 @@ export default function AmbientSpace({
       // Do NOT block looping solely because an intro VO is pending — this avoids a 6s cutoff stall.
       if (!playingMusic && !suspend && !userSelectedSong) {
         console.log('🎵 AmbientSpace: Auto-looping space-music.mp3');
+        // Ensure audible volume on loop to avoid cases where a primed 0 volume persists
+        try { amb.muted = false; amb.removeAttribute('muted'); amb.volume = clamp01(volume); } catch {}
         tryResume(); 
       } else {
         console.log('🎵 AmbientSpace: Not looping - conditions prevent it');
@@ -501,7 +538,6 @@ export default function AmbientSpace({
         src={`${ambientSrc}#t=0,`}
         preload="auto"
         playsInline
-        loop
         data-ambient="1"
       />
       {introSrc ? <audio ref={introRef} src={introSrc} preload="auto" playsInline data-intro="1" /> : null}

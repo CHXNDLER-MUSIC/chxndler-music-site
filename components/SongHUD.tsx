@@ -50,7 +50,7 @@ export default function SongHUD({ title, coverSrc, element }: { title: string; c
     transition: transform .15s ease, box-shadow .2s ease, outline-color .2s ease;
   }
   .hud-cover:hover{
-    transform: translateZ(0) scale(1.04);
+    transform: translateZ(0) scale(1.08);
     outline-color: rgba(25,227,255,.8);
     box-shadow: 0 0 42px rgba(25,227,255,.6), 0 0 70px rgba(25,227,255,.35);
   }

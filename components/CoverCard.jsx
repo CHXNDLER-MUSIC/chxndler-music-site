@@ -72,7 +72,7 @@ export default function CoverCard({ src = "/cover/ocean-girl.png", label, size =
           transition: filter .15s ease;
         }
         .cover-art-container:hover{
-          transform: translateZ(0) scale(1.04);
+          transform: translateZ(0) scale(1.08);
           outline-color: ${hexToRgba(elementColor, 0.8)};
           box-shadow:
             0 0 52px ${hexToRgba(elementColor, 0.7)},
