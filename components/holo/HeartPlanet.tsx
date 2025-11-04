@@ -14,7 +14,8 @@ export default function HeartPlanet() {
   // Create heart geometry
   const heartGeometry = useMemo(() => {
     // True extruded 2D heart in XY, even thinner depth on Z so it never reads spherical
-    return createHeartExtrudedGeometry(planetRadius * 1.6, planetRadius * 0.06);
+    // Slightly reduce depth to flatten the silhouette further.
+    return createHeartExtrudedGeometry(planetRadius * 1.6, planetRadius * 0.04);
   }, [planetRadius]);
 
   // Sun-like emissive shader with animated plasma granulation
@@ -204,8 +205,8 @@ export default function HeartPlanet() {
       const sx = 1.0 + beat;
       const sy = 1.0 + beat * 0.9;
       const sz = 1.0 - beat * 0.50;
-      // Wider, slightly shorter, and thinner for a clearer heart silhouette
-      groupRef.current.scale.set(3.6 * sx, 2.4 * sy, 0.16 * sz);
+      // Slightly taller than wide, and thinner in Z for a clearer heart read
+      groupRef.current.scale.set(3.2 * sx, 3.6 * sy, 0.12 * sz);
     }
     
     
@@ -215,7 +216,7 @@ export default function HeartPlanet() {
   });
 
   return (
-    <group ref={groupRef} position={[0, 0.05, 0]} scale={[3.6, 2.4, 0.16]}>
+    <group ref={groupRef} position={[0, 0.05, 0]} scale={[3.2, 3.6, 0.12]}>
       {/* Core heart with realistic shading */}
       <mesh ref={meshRef} position={[0, 0, 0]} renderOrder={1}>
         <primitive attach="geometry" object={heartGeometry} />

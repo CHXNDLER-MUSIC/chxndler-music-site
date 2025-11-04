@@ -286,6 +286,9 @@ export default function SteeringWheelOverlay({
           background: vconf.debug ? "rgba(25,227,255,0.08)" : "transparent",
           // Allow hiding via config if needed, default to visible
           display: (vconf as any)?.hidden ? 'none' as const : undefined,
+          // Paint containment to keep canvas work localized
+          contain: 'layout paint',
+          willChange: 'opacity, transform',
         }}
       >
         {/* Wheel video with luma key: remove black background; no circle crop, allow hands to extend. */}
