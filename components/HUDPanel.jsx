@@ -111,7 +111,7 @@ export default function HUDPanel({
   // Temporary kill-switch to disable 3D planets for performance testing
   // Set to true to disable. You can also override at runtime by setting
   // localStorage.DISABLE_3D_PLANETS = '0' and refreshing.
-  const DISABLE_3D_PLANETS_DEFAULT = false;
+  const DISABLE_3D_PLANETS_DEFAULT = true;
   const disable3DPlanets = (() => {
     try {
       if (typeof window !== 'undefined') {
