@@ -19,6 +19,7 @@ export default function SkyboxVideo({
   minDurationMs = 1200,
   onWarpSfxEnd,
   youtubeUrl,
+  lightspeedYoutubeUrl,
 }:{
   brightness?: number;
   srcWebm?: string;
@@ -35,6 +36,7 @@ export default function SkyboxVideo({
   minDurationMs?: number;   // minimum duration the lightspeed overlay should remain visible
   onWarpSfxEnd?: () => void; // callback after warp SFX finishes
   youtubeUrl?: string;      // optional YouTube URL to use as background instead of MP4
+  lightspeedYoutubeUrl?: string; // optional YouTube URL for lightspeed overlay instead of local MP4
 }) {
   // Default to visible to avoid missing sky if loadeddata doesn't fire
   const [ready, setReady] = useState(true);
@@ -66,6 +68,18 @@ export default function SkyboxVideo({
     } catch { return { ytEmbedUrl: null, ytThumbUrl: null }; }
   }, [youtubeUrl]);
   const [ytReady, setYtReady] = React.useState(false);
+  // Lightspeed YouTube embed (optional)
+  const { lsYtEmbedUrl, lsYtThumbUrl } = React.useMemo(() => {
+    try {
+      if (!lightspeedYoutubeUrl) return { lsYtEmbedUrl: null as string | null, lsYtThumbUrl: null as string | null };
+      const { toAutoplayingYouTubeEmbed, parseYouTubeId } = require("@/lib/youtube");
+      const embed = toAutoplayingYouTubeEmbed(String(lightspeedYoutubeUrl));
+      const id = parseYouTubeId(String(lightspeedYoutubeUrl));
+      const thumb = id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : null;
+      return { lsYtEmbedUrl: embed, lsYtThumbUrl: thumb };
+    } catch { return { lsYtEmbedUrl: null, lsYtThumbUrl: null }; }
+  }, [lightspeedYoutubeUrl]);
+  const [lsYtReady, setLsYtReady] = React.useState(false);
   
   // Reduce video preloading on constrained devices (mobile/save-data/slow link)
   const lightMode = React.useMemo(() => {
@@ -131,8 +145,11 @@ export default function SkyboxVideo({
     try {
       setShowLightspeed(true);
       lsStartRef.current = Date.now();
-      const v = lsRef.current;
-      if (v) { try { v.currentTime = 0; } catch {} void v.play().catch(()=>{}); }
+      // Start lightspeed overlay video only when using local MP4 overlay
+      if (!lsYtEmbedUrl) {
+        const v = lsRef.current;
+        if (v) { try { v.currentTime = 0; } catch {} void v.play().catch(()=>{}); }
+      }
       // Delay warp SFX slightly to sync with lightspeed video, and notify when it ends
       setTimeout(() => {
         try {
@@ -152,7 +169,7 @@ export default function SkyboxVideo({
       }
     } catch {}
     return () => { if (lsTimerRef.current !== undefined) { window.clearTimeout(lsTimerRef.current); lsTimerRef.current = undefined; } };
-  }, [allowWarp, holdLightspeed, minDurationMs]);
+  }, [allowWarp, holdLightspeed, minDurationMs, lsYtEmbedUrl]);
 
   // When holding overlay, hide it as soon as readyToReveal is true
   React.useEffect(() => {
@@ -306,32 +323,56 @@ export default function SkyboxVideo({
         )}
 
         {/* Lightspeed transition overlay (pre-mounted for instant playback; opacity toggled) */}
-        <video
-          ref={lsRef}
-          autoPlay={false}
-          loop={showLightspeed && (holdLightspeed && !readyToReveal)}
-          muted
-          playsInline
-          preload="auto"
-          controls={false}
-          controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
-          disablePictureInPicture
-          // @ts-ignore
-          disableRemotePlayback
-          tabIndex={-1}
-          onEnded={() => { setShowLightspeed(false); if (!flyEndCalledRef.current && onFlyEndRef.current) { try { onFlyEndRef.current(); } catch {} } flyEndCalledRef.current = true; }}
-          className="absolute inset-0 h-full w-full object-cover"
-          style={{ 
-            filter: `brightness(${Math.max(0.9, brightness)})`, 
-            mixBlendMode: 'screen' as any,
-            opacity: showLightspeed ? 1 : 0,
-            transition: 'opacity 220ms ease',
-            pointerEvents: 'none'
-          }}
-          onLoadedData={() => setHasStartedLoading(true)}
-        >
-          <source src="/skies/lightspeed.mp4" type="video/mp4" />
-        </video>
+        {/* Lightspeed overlay: YouTube iframe if provided, else local MP4 */}
+        {lsYtEmbedUrl ? (
+          <div className="absolute inset-0" style={{ pointerEvents: 'none', opacity: showLightspeed ? 1 : 0, transition: 'opacity 220ms ease' }}>
+            {/* Poster until iframe ready */}
+            {lsYtThumbUrl && !lsYtReady ? (
+              <div aria-hidden style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '177.78vh', height: '100vh', minWidth: '100vw', minHeight: '56.25vw' }}>
+                <img src={lsYtThumbUrl} alt="" style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover', filter: `brightness(${Math.max(0.9, brightness)})` }} />
+              </div>
+            ) : null}
+            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '177.78vh', height: '100vh', minWidth: '100vw', minHeight: '56.25vw' }}>
+              <iframe
+                src={lsYtEmbedUrl}
+                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                title="Lightspeed"
+                loading="eager"
+                referrerPolicy="origin"
+                fetchPriority="high"
+                style={{ display: 'block', border: 0, width: '100%', height: '100%', filter: `brightness(${Math.max(0.9, brightness)})` }}
+                onLoad={() => setLsYtReady(true)}
+              />
+            </div>
+          </div>
+        ) : (
+          <video
+            ref={lsRef}
+            autoPlay={false}
+            loop={showLightspeed && (holdLightspeed && !readyToReveal)}
+            muted
+            playsInline
+            preload="auto"
+            controls={false}
+            controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
+            disablePictureInPicture
+            // @ts-ignore
+            disableRemotePlayback
+            tabIndex={-1}
+            onEnded={() => { setShowLightspeed(false); if (!flyEndCalledRef.current && onFlyEndRef.current) { try { onFlyEndRef.current(); } catch {} } flyEndCalledRef.current = true; }}
+            className="absolute inset-0 h-full w-full object-cover"
+            style={{ 
+              filter: `brightness(${Math.max(0.9, brightness)})`, 
+              mixBlendMode: 'screen' as any,
+              opacity: showLightspeed ? 1 : 0,
+              transition: 'opacity 220ms ease',
+              pointerEvents: 'none'
+            }}
+            onLoadedData={() => setHasStartedLoading(true)}
+          >
+            <source src="/skies/lightspeed.mp4" type="video/mp4" />
+          </video>
+        )}
       </div>
     </div>
   );

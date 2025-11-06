@@ -1110,9 +1110,11 @@ export default function HUDPanel({
               bottom: 0,
               // Raise the top edge further for a taller dashboard (bottom unchanged)
               top: `calc(var(--hud-y, 0px) + ${inConsole ? 92 : 112}px)`,
-              background: 'rgba(25,227,255,0.25)',
-              boxShadow: '0 0 50px rgba(25,227,255,0.20), 0 0 70px rgba(25,227,255,0.35), 0 0 24px rgba(25,227,255,0.50)',
-              border: '1px solid rgba(25,227,255,0.60)'
+              // Keep the overlay subtle but with a touch more blue
+              background: 'linear-gradient(180deg, rgba(25,227,255,0.08), rgba(25,227,255,0.04))',
+              // Constrain glow inside the blue display bounds and keep it soft
+              boxShadow: 'inset 0 0 40px rgba(25,227,255,0.16), inset 0 0 80px rgba(25,227,255,0.10)',
+              border: '1px solid rgba(25,227,255,0.45)'
             }}
             aria-hidden
           />
