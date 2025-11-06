@@ -18,6 +18,7 @@ export default function SkyboxVideo({
   readyToReveal = false,
   minDurationMs = 1200,
   onWarpSfxEnd,
+  youtubeUrl,
 }:{
   brightness?: number;
   srcWebm?: string;
@@ -33,6 +34,7 @@ export default function SkyboxVideo({
   readyToReveal?: boolean;  // when holdLightspeed, hide overlay when this becomes true
   minDurationMs?: number;   // minimum duration the lightspeed overlay should remain visible
   onWarpSfxEnd?: () => void; // callback after warp SFX finishes
+  youtubeUrl?: string;      // optional YouTube URL to use as background instead of MP4
 }) {
   // Default to visible to avoid missing sky if loadeddata doesn't fire
   const [ready, setReady] = useState(true);
@@ -52,6 +54,18 @@ export default function SkyboxVideo({
   const onBasePlayingRef = useRef(onBasePlaying);
   React.useEffect(() => { onFlyEndRef.current = onFlyEnd; }, [onFlyEnd]);
   React.useEffect(() => { onBasePlayingRef.current = onBasePlaying; }, [onBasePlaying]);
+  // Compute YouTube autoplay embed if provided
+  const { ytEmbedUrl, ytThumbUrl } = React.useMemo(() => {
+    try {
+      if (!youtubeUrl) return { ytEmbedUrl: null as string | null, ytThumbUrl: null as string | null };
+      const { toAutoplayingYouTubeEmbed, parseYouTubeId } = require("@/lib/youtube");
+      const embed = toAutoplayingYouTubeEmbed(String(youtubeUrl));
+      const id = parseYouTubeId(String(youtubeUrl));
+      const thumb = id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : null;
+      return { ytEmbedUrl: embed, ytThumbUrl: thumb };
+    } catch { return { ytEmbedUrl: null, ytThumbUrl: null }; }
+  }, [youtubeUrl]);
+  const [ytReady, setYtReady] = React.useState(false);
   
   // Reduce video preloading on constrained devices (mobile/save-data/slow link)
   const lightMode = React.useMemo(() => {
@@ -207,37 +221,89 @@ export default function SkyboxVideo({
     /* z-10 so it's above any page bg image; HUD slots are z>=30 */
     <div className="fixed inset-0 z-10 pointer-events-none flex items-center justify-center">
       <div className="h-full w-full">
-        {/* Sky video (base) */}
-        <video
-          ref={baseRef}
-          key={videoKey}
-          autoPlay muted loop playsInline preload={lightMode ? 'metadata' : 'auto'} controls={false}
-          // Prevent any default interactions that could open the video URL
-          // on some mobile browsers when tapping during/after warp
-          controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
-          disablePictureInPicture
-          // @ts-ignore: Safari-specific remote playback disable
-          disableRemotePlayback
-          tabIndex={-1}
-          // Removed manual loop handling - let native loop attribute handle seamless looping
-          onLoadStart={() => setHasStartedLoading(true)}
-          onLoadedData={() => setReady(true)}
-          onCanPlay={() => setReady(true)}
-          onCanPlayThrough={() => setReady(true)}
-          onPlaying={() => setReady(true)} // Ensure video stays visible during playback
-          className="h-full w-full object-cover"
-          style={{
-            opacity: (ready && !showLightspeed) ? 1 : 0,
-            transition: showLightspeed ? 'opacity 300ms ease, transform 650ms ease, filter 650ms ease' : 'transform 650ms ease, filter 650ms ease', // Only transition opacity during warp
-            filter: `brightness(${brightness})${flying ? ' saturate(1.1) blur(1.2px)' : ''}`,
-            transform: `translateY(${translateY}) scale(${flying ? 1.12 : 1})`,
-            pointerEvents: 'none'
-          }}
-        >
-          {/* Prefer MP4 first to avoid 404s if WebM is missing */}
-          {srcMp4 ? <source src={srcMp4} type="video/mp4" /> : null}
-          {srcWebm ? <source src={srcWebm} type="video/webm" /> : null}
-        </video>
+        {/* Base background: YouTube iframe (if provided) else MP4/webm */}
+        {ytEmbedUrl ? (
+          <div className="absolute inset-0" style={{ pointerEvents: 'none' }}>
+            {/* Poster image for instant paint while iframe initializes */}
+            {ytThumbUrl && !ytReady ? (
+              <div
+                aria-hidden
+                style={{
+                  position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                  width: '177.78vh', height: '100vh', minWidth: '100vw', minHeight: '56.25vw',
+                  filter: `brightness(${brightness})${flying ? ' saturate(1.1) blur(1.2px)' : ''}`,
+                }}
+              >
+                <img src={ytThumbUrl}
+                     alt=""
+                     style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+            ) : null}
+            {/* 16:9 cover sizing */}
+            <div
+              style={{
+                position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                width: '177.78vh', height: '100vh', minWidth: '100vw', minHeight: '56.25vw',
+                opacity: showLightspeed ? 0.95 : 1,
+                filter: `brightness(${brightness})${flying ? ' saturate(1.1) blur(1.2px)' : ''}`,
+                transition: 'transform 650ms ease, filter 650ms ease',
+              }}
+            >
+              <iframe
+                key={`yt-${videoKey || 'home'}`}
+                src={ytEmbedUrl}
+                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                title="Background video"
+                loading="eager"
+                referrerPolicy="origin"
+                fetchPriority="high"
+                style={{ display: 'block', border: 0, width: '100%', height: '100%' }}
+                // Treat iframe load as base playing for sequencing when used as background
+                onLoad={() => {
+                  setYtReady(true);
+                  try {
+                    const key = String(videoKey || 'yt');
+                    if (basePlayNotified.current !== key) {
+                      basePlayNotified.current = key;
+                      onBasePlayingRef.current && onBasePlayingRef.current();
+                    }
+                  } catch {}
+                }}
+              />
+            </div>
+          </div>
+        ) : (
+          <video
+            ref={baseRef}
+            key={videoKey}
+            autoPlay muted loop playsInline preload={lightMode ? 'metadata' : 'auto'} controls={false}
+            // Prevent any default interactions that could open the video URL
+            // on some mobile browsers when tapping during/after warp
+            controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
+            disablePictureInPicture
+            // @ts-ignore: Safari-specific remote playback disable
+            disableRemotePlayback
+            tabIndex={-1}
+            // Removed manual loop handling - let native loop attribute handle seamless looping
+            onLoadStart={() => setHasStartedLoading(true)}
+            onLoadedData={() => setReady(true)}
+            onCanPlay={() => setReady(true)}
+            onCanPlayThrough={() => setReady(true)}
+            onPlaying={() => setReady(true)} // Ensure video stays visible during playback
+            className="h-full w-full object-cover"
+            style={{
+              opacity: (ready && !showLightspeed) ? 1 : 0,
+              transition: showLightspeed ? 'opacity 300ms ease, transform 650ms ease, filter 650ms ease' : 'transform 650ms ease, filter 650ms ease', // Only transition opacity during warp
+              filter: `brightness(${brightness})${flying ? ' saturate(1.1) blur(1.2px)' : ''}`,
+              transform: `translateY(${translateY}) scale(${flying ? 1.12 : 1})`,
+              pointerEvents: 'none'
+            }}
+          >
+            {/* Prefer MP4 first to avoid 404s if WebM is missing */}
+            {srcMp4 ? <source src={srcMp4} type="video/mp4" /> : null}
+            {srcWebm ? <source src={srcWebm} type="video/webm" /> : null}
+          </video>
+        )}
 
         {/* Lightspeed transition overlay (pre-mounted for instant playback; opacity toggled) */}
         <video

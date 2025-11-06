@@ -1024,6 +1024,8 @@ export default function DashboardApp({ initialSlug } = {}) {
         readyToReveal={uiUnlocked && showOverlayUI}
         minDurationMs={3000}
         offsetY="-1vh"
+        // Use YouTube background when on the CHXNDLER homepage (homeMode)
+        youtubeUrl={homeMode ? 'https://www.youtube.com/watch?v=gHDxkhQ4FbY' : undefined}
         onWarpSfxEnd={() => {
           // After a song is selected, reveal ONLY the selected planet post-warp
           if (userSelected || pendingTrackPlay) {

@@ -498,8 +498,8 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
           style={{
             position: 'fixed',
             left: '50%',
-            // Nudge popover upward slightly for better placement
-            top: (elementsPopoverPos.top - 28),
+            // Nudge popover further upward
+            top: (elementsPopoverPos.top - 36),
             transform: 'translateX(-50%)',
             padding: '14px 16px',
             borderRadius: 12,
@@ -512,7 +512,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
             // Slightly wider popover
             width: 'min(92vw, 420px)',
             maxWidth: 'min(92vw, 420px)',
-            maxHeight: '36vh',
+            maxHeight: '44vh',
             overflowY: 'auto'
           } as any}
           onClick={(e) => e.stopPropagation()}

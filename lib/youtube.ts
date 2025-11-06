@@ -41,3 +41,57 @@ export function youTubeEmbedHeight(): number {
   return 220; // keep small to match compact feel; modal can scroll if needed
 }
 
+// Extract a YouTube video ID from common URL forms
+export function parseYouTubeId(url: string): string | null {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./, '');
+    if (host === 'youtu.be') {
+      const id = u.pathname.slice(1);
+      return id || null;
+    }
+    if (
+      host === 'youtube.com' ||
+      host === 'm.youtube.com' ||
+      host === 'youtube-nocookie.com' ||
+      host === 'music.youtube.com'
+    ) {
+      if (u.pathname === '/watch') {
+        const id = u.searchParams.get('v');
+        return id || null;
+      }
+      if (u.pathname.startsWith('/shorts/') || u.pathname.startsWith('/embed/') || u.pathname.startsWith('/live/')) {
+        const seg = u.pathname.split('/')[2];
+        return seg || null;
+      }
+    }
+    // If already an embed URL
+    if (host === 'youtube.com' && url.includes('/embed/')) {
+      const id = url.split('/embed/')[1]?.split(/[?&]/)[0];
+      return id || null;
+    }
+  } catch {}
+  return null;
+}
+
+// Build an autoplay, muted, inline, loopable embed URL for background playback
+export function toAutoplayingYouTubeEmbed(url: string): string | null {
+  const embed = toYouTubeEmbed(url);
+  if (!embed) return null;
+  const id = parseYouTubeId(url) || embed.split('/embed/')[1]?.split(/[?&]/)[0] || '';
+  const params = new URLSearchParams({
+    autoplay: '1',
+    mute: '1',
+    controls: '0',
+    playsinline: '1',
+    modestbranding: '1',
+    rel: '0',
+    showinfo: '0',
+    iv_load_policy: '3',
+    loop: '1',
+    // Loop requires playlist to be set to the same video id
+    playlist: id,
+  });
+  return `${embed}?${params.toString()}`;
+}
+
