@@ -1091,15 +1091,17 @@ export default function HUDPanel({
             // Remove hover glow/scale for the entire HUD display per request
             transition={{ type: "spring", stiffness: 200, damping: 20 }}
             style={inConsole
-              ? { width: '100%', transform: 'perspective(1200px) rotateX(6deg)', transformOrigin: 'center', marginTop: 0 }
-              : { transform: 'perspective(1200px) rotateX(6deg)', marginTop: 0 }
+              ? { width: '100%', transform: 'perspective(1200px) rotateX(6deg)', transformOrigin: 'center', marginTop: 0, willChange: 'opacity, transform', contain: 'layout paint', backfaceVisibility: 'hidden' }
+              : { transform: 'perspective(1200px) rotateX(6deg)', marginTop: 0, willChange: 'opacity, transform', contain: 'layout paint', backfaceVisibility: 'hidden' }
             }
           >
           {/* Background removed: keep HUD box transparent */}
         {/* Single blue outline wrapping the HUD content (amped glow) */}
         <div className={`relative rounded-2xl ${inConsole ? 'p-2' : 'p-4'}`} style={{
           background: 'transparent',
-          boxShadow: 'none'
+          boxShadow: 'none',
+          willChange: 'opacity, transform',
+          contain: 'layout paint'
         }}>
           {/* Overlay frame to visually lower the blue panel top to match song listing */}
           <div

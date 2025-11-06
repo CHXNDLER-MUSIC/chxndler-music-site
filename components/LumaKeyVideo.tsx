@@ -36,10 +36,20 @@ export default function LumaKeyVideo({
   const [isSafari, setIsSafari] = useState(false);
   const [fastMode, setFastMode] = useState(true);
   const [disabled, setDisabled] = useState(false);
+  // Pause rendering when offscreen for smoother page performance
+  const [inViewport, setInViewport] = useState(true);
+  const ioRef = useRef<IntersectionObserver | null>(null);
   // Hold the last processed frame briefly when the video loops
   // to avoid any one-frame seam while the decoder seeks back to 0.
   const loopCooldownRef = useRef(0);
   const lastTimeRef = useRef<number | null>(null);
+  // Detect stalls where currentTime stops advancing even though the video isn't paused
+  const lastAdvanceAtRef = useRef<number>(Date.now());
+  const stallCountRef = useRef<number>(0);
+  // Adaptive throttling
+  const frameSkipRef = useRef<number>(2); // process every Nth frame in fast mode; start at ~30fps on 60Hz
+  const lastDrawAtRef = useRef<number>(0);
+  const rVFCIdRef = useRef<any>(null);
 
   // Detect Safari (exclude Chrome on iOS/Android)
   useEffect(() => {
@@ -52,6 +62,13 @@ export default function LumaKeyVideo({
       if (fastLS === '0') setFastMode(false);
       const disLS = (typeof window !== 'undefined') ? window.localStorage.getItem('LUMA_DISABLE') : null;
       if (disLS === '1' || disLS === 'true') setDisabled(true);
+      // Heuristic: lower-end CPUs start with more aggressive frame skipping
+      try {
+        const hc = (navigator as any)?.hardwareConcurrency;
+        if (typeof hc === 'number' && hc > 0 && hc <= 4) {
+          frameSkipRef.current = 3; // ~20fps processing on 60Hz
+        }
+      } catch {}
     } catch {}
   }, []);
 
@@ -114,11 +131,19 @@ export default function LumaKeyVideo({
     const onLoadedMeta = () => { setReady(true); tryPlay(); };
     const onEnded = () => { try { video.currentTime = 0; video.play().catch(()=>{}); } catch {} };
     const onPause = () => { if (!paused) { tryPlay(); } };
+    const onStalled = () => { tryPlay(); };
+    const onWaiting = () => { tryPlay(); };
+    const onSuspend = () => { tryPlay(); };
+    const onEmptied = () => { try { video.load(); } catch {}; tryPlay(); };
     video.addEventListener("canplay", onCanPlay);
     video.addEventListener("loadeddata", onCanPlay);
     video.addEventListener("loadedmetadata", onLoadedMeta);
     video.addEventListener("ended", onEnded);
     video.addEventListener("pause", onPause);
+    video.addEventListener("stalled", onStalled);
+    video.addEventListener("waiting", onWaiting);
+    video.addEventListener("suspend", onSuspend);
+    video.addEventListener("emptied", onEmptied);
 
     // As a final fallback for strict autoplay policies, try once on first user gesture
     const unlock = () => { tryPlay(); };
@@ -156,6 +181,10 @@ export default function LumaKeyVideo({
       video.removeEventListener("loadedmetadata", onLoadedMeta);
       video.removeEventListener("ended", onEnded);
       video.removeEventListener("pause", onPause);
+      video.removeEventListener("stalled", onStalled);
+      video.removeEventListener("waiting", onWaiting);
+      video.removeEventListener("suspend", onSuspend);
+      video.removeEventListener("emptied", onEmptied);
       playRetries.forEach(id => { try { window.clearTimeout(id); } catch {} });
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       try {
@@ -169,6 +198,24 @@ export default function LumaKeyVideo({
       try { if (video.parentNode) video.parentNode.removeChild(video); } catch {}
     };
   }, [srcMp4, srcAlt]);
+
+  // Observe visibility in viewport to pause processing when not visible
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    try {
+      const io = new IntersectionObserver((entries) => {
+        for (const e of entries) {
+          if (e.target === canvas) {
+            setInViewport(e.isIntersecting);
+          }
+        }
+      }, { threshold: 0.01 });
+      io.observe(canvas);
+      ioRef.current = io;
+      return () => { try { io.disconnect(); } catch {} };
+    } catch {}
+  }, []);
 
   // If we get un-paused externally (e.g., warp end), ensure the underlying
   // <video> resumes playback to avoid getting stuck on a frame
@@ -185,7 +232,8 @@ export default function LumaKeyVideo({
     if (disabled) return;
     const video = videoRef.current!;
     const canvas = canvasRef.current!;
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    // Prefer desynchronized context to reduce blocking on main thread
+    const ctx = canvas.getContext("2d", { willReadFrequently: true, desynchronized: true as any });
     if (!ctx) return;
 
     let running = true;
@@ -204,12 +252,23 @@ export default function LumaKeyVideo({
     };
     document.addEventListener('visibilitychange', onVisibility);
 
+    // Helper: schedule next tick using requestVideoFrameCallback when available
+    const scheduleNext = () => {
+      const el: any = video;
+      if (el && typeof el.requestVideoFrameCallback === 'function') {
+        rVFCIdRef.current = el.requestVideoFrameCallback(() => { draw(); });
+      } else {
+        rafRef.current = requestAnimationFrame(draw);
+      }
+    };
+
     const draw = () => {
       if (!running) return;
-      if (paused || !visible) { rafRef.current = requestAnimationFrame(draw); return; }
+      // Pause loop when hidden or offscreen
+      if (paused || !visible || !inViewport) { scheduleNext(); return; }
       const w = canvas.clientWidth || 0;
       const h = canvas.clientHeight || 0;
-      if (w === 0 || h === 0) { rafRef.current = requestAnimationFrame(draw); return; }
+      if (w === 0 || h === 0) { scheduleNext(); return; }
       // DPR clamp (force 1x in fast mode)
       const dpr = fastMode ? 1 : Math.min(2, window.devicePixelRatio || 1);
       const CW = Math.max(1, Math.floor(w * dpr));
@@ -223,21 +282,50 @@ export default function LumaKeyVideo({
       // Compute cover fit
       const vw = video.videoWidth || 0;
       const vh = video.videoHeight || 0;
-      if (!vw || !vh) { rafRef.current = requestAnimationFrame(draw); return; }
+      if (!vw || !vh) { scheduleNext(); return; }
       // Detect loop wrap-around and hold last processed frame for a couple frames
       const t = video.currentTime || 0;
       if (lastTimeRef.current != null && t + 0.005 < lastTimeRef.current) {
         // currentTime decreased -> looped
         loopCooldownRef.current = 2; // hold 2 frames (~1 frame at 60Hz in fast mode)
       }
+      // Stall watchdog: record when time advances; if it hasn't advanced in a while, nudge playback
+      if (lastTimeRef.current == null || t > lastTimeRef.current + 0.0005) {
+        lastAdvanceAtRef.current = Date.now();
+        stallCountRef.current = 0;
+      } else {
+        const since = Date.now() - lastAdvanceAtRef.current;
+        if (since > 600) {
+          // Nudge play; if it keeps stalling, force a tiny seek or reload occasionally
+          try { video.play().catch(() => {}); } catch {}
+          stallCountRef.current++;
+          lastAdvanceAtRef.current = Date.now();
+          if (stallCountRef.current % 3 === 0) {
+            try { video.currentTime = Math.max(0, t - 0.0001); } catch {}
+          }
+          if (stallCountRef.current >= 9) {
+            try { video.load(); } catch {}
+            try { video.play().catch(() => {}); } catch {}
+            stallCountRef.current = 0;
+          }
+        }
+      }
       lastTimeRef.current = t;
 
-      const processThisFrame = (loopCooldownRef.current === 0) && (!fastMode || (frameCount % 2 === 0));
+      // Adaptive frame skip: increase skipping if draw took too long
+      const now = performance.now();
+      const sinceLast = now - (lastDrawAtRef.current || 0);
+      if (sinceLast && sinceLast > 45 && frameSkipRef.current < 3) {
+        frameSkipRef.current = 3; // ~20fps
+      } else if (sinceLast && sinceLast < 35 && frameSkipRef.current > 2) {
+        frameSkipRef.current = 2; // ~30fps
+      }
+      const processThisFrame = (loopCooldownRef.current === 0) && (!fastMode || (frameCount % frameSkipRef.current === 0));
       if (loopCooldownRef.current > 0) loopCooldownRef.current--;
       const effContrast = isSafari ? Math.max(contrast, 1.18) : contrast;
 
       if (fastMode && work && wctx) {
-        const SCALE = 0.66; // downscale processing resolution
+        const SCALE = 0.55; // stronger downscale for processing resolution
         const Ww = Math.max(1, Math.floor(CW * SCALE));
         const Hw = Math.max(1, Math.floor(CH * SCALE));
         if (work.width !== Ww || work.height !== Hw) { work.width = Ww; work.height = Hw; wctx.imageSmoothingEnabled = true; wctx.imageSmoothingQuality = 'medium' as any; }
@@ -312,15 +400,17 @@ export default function LumaKeyVideo({
       }
 
       frameCount++;
-      rafRef.current = requestAnimationFrame(draw);
+      lastDrawAtRef.current = performance.now();
+      scheduleNext();
     };
-    rafRef.current = requestAnimationFrame(draw);
+    scheduleNext();
     return () => {
       running = false;
       document.removeEventListener('visibilitychange', onVisibility);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      try { if (rVFCIdRef.current && (video as any).cancelVideoFrameCallback) { (video as any).cancelVideoFrameCallback(rVFCIdRef.current); } } catch {}
     };
-  }, [ready, threshold, softness, saturation, contrast, isSafari, fastMode, paused, disabled, offsetYPx, offsetYRatio]);
+  }, [ready, threshold, softness, saturation, contrast, isSafari, fastMode, paused, disabled, offsetYPx, offsetYRatio, inViewport]);
 
   // Apply CSS blend trick only on Safari to neutralize any remaining black pixels visually
   const canvasStyle: React.CSSProperties = {
@@ -329,6 +419,9 @@ export default function LumaKeyVideo({
     // Isolate blending to avoid affecting siblings
     // Only apply screen blend on Safari
     ...(isSafari ? { mixBlendMode: 'screen' as const } : {}),
+    // Hint the browser we animate opacity/transforms around this element
+    willChange: 'opacity, transform',
+    contain: 'layout paint',
   };
 
   if (disabled) {
