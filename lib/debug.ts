@@ -3,7 +3,7 @@ export const DEBUG_MEDIA = process.env.NEXT_PUBLIC_MEDIA_DEBUG === '1';
 
 export function dlog(...args: any[]) {
   if (!DEBUG_MEDIA || typeof window === 'undefined') return;
-  try { console.log('[media]', ...args); } catch {}
+  try { console.debug('[media]', ...args); } catch {}
 }
 
 export function dwarn(...args: any[]) {
@@ -14,7 +14,7 @@ export function dwarn(...args: any[]) {
 export function dumpAudio(el: HTMLMediaElement | null | undefined, label = 'audio') {
   if (!DEBUG_MEDIA || typeof window === 'undefined') return;
   try {
-    if (!el) { console.log('[media]', label, 'el=null'); return; }
+    if (!el) { console.debug('[media]', label, 'el=null'); return; }
     const o = {
       srcAttr: el.getAttribute('src'),
       currentSrc: el.currentSrc,
@@ -26,7 +26,6 @@ export function dumpAudio(el: HTMLMediaElement | null | undefined, label = 'audi
       currentTime: el.currentTime,
       error: (el.error && (el.error as any).message) || (el.error && (el.error as any).code) || null,
     };
-    console.log('[media]', `${label}:`, o);
+    console.debug('[media]', `${label}:`, o);
   } catch {}
 }
-

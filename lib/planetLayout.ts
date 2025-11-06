@@ -25,8 +25,6 @@ export function computePlanetLayout(
     minScale?: number; maxScale?: number;
   } = {}
 ): Record<string, LayoutOut> {
-  console.log('🌍 PlanetLayout: computePlanetLayout called with', songs.length, 'songs');
-  console.log('🌍 PlanetLayout: Song IDs:', songs.map(s => s.id));
   const {
     // Push satellites even farther from the center heart planet with increased spacing
     ringGap = 25.0,
@@ -54,8 +52,7 @@ export function computePlanetLayout(
       if (!byRing.has(r)) byRing.set(r, []);
       byRing.get(r)!.push(songs[i]);
     }
-    console.log('🌍 PlanetLayout: Distributing', songs.length, 'songs across', ringCount, 'rings');
-    console.log('🌍 PlanetLayout: Ring distribution:', Array.from(byRing.entries()).map(([ring, songs]) => `Ring ${ring}: ${songs.length} songs`));
+    
   }
   // Balance last ring if very uneven
   const finalRingCount = Math.max(1, Math.ceil(songs.length / 5));
@@ -123,8 +120,6 @@ export function computePlanetLayout(
     }
   }
 
-  console.log('🌍 PlanetLayout: Returning layout for', Object.keys(out).length, 'planets');
-  console.log('🌍 PlanetLayout: Layout keys:', Object.keys(out));
   return out;
 }
 
@@ -132,8 +127,6 @@ export function usePlanetLayout(songId: string): LayoutOut | undefined {
   // Local subscription to the store
   const [songs, setSongs] = useState(() => playerStore.getState().songs as any);
   useEffect(() => playerStore.subscribe(() => setSongs(playerStore.getState().songs as any)), []);
-  
-  console.log('🌍 usePlanetLayout: Called for songId:', songId, 'songs count:', songs.length);
   
   // Responsive opts: tighten on small screens
   const { innerWidth: w } = typeof window !== 'undefined' ? window : { innerWidth: 1280 } as any;
@@ -149,9 +142,6 @@ export function usePlanetLayout(songId: string): LayoutOut | undefined {
   }), [narrow]);
   const layout = useMemo(() => computePlanetLayout(songs as any, opts), [songs, opts]);
   const result = layout[songId];
-  
-  console.log('🌍 usePlanetLayout: Result for', songId, ':', result);
-  
   return result;
 }
 

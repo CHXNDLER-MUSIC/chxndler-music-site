@@ -296,10 +296,7 @@ export function useClickTracking() {
       // Enhanced element identification
       const enhancedLabel = identifyElement(target);
       
-      // Debug logging to help troubleshoot tracking
-      if (enhancedLabel.includes('📱') || enhancedLabel.includes('🎵')) {
-        console.log('Social/Music button clicked:', enhancedLabel, target);
-      }
+      // Debug logging removed
       
       // Normalize href from nearest anchor and infer common data-ids when missing
       const anchor = (target.tagName.toLowerCase() === 'a' ? (target as HTMLAnchorElement) : (target.closest && target.closest('a'))) as HTMLAnchorElement | null;

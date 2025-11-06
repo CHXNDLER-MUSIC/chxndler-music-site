@@ -34,10 +34,7 @@ export const testAudioFile = async (src: string): Promise<{
     };
     
     const onLoadedMetadata = () => {
-      console.log(`🎵 Loaded metadata for ${src}:`, {
-        duration: audio.duration,
-        readyState: audio.readyState
-      });
+      // metadata loaded
     };
     
     audio.addEventListener('canplaythrough', onCanPlayThrough, { once: true });
@@ -60,7 +57,6 @@ export const testAudioFile = async (src: string): Promise<{
 };
 
 export const testAllAudioFiles = async (): Promise<void> => {
-  console.log('🎵 Testing all audio files...');
   
   const audioFiles = [
     '/tracks/ocean-girl.mp3',
@@ -83,18 +79,16 @@ export const testAllAudioFiles = async (): Promise<void> => {
   const results = [];
   
   for (const file of audioFiles) {
-    console.log(`🎵 Testing: ${file}`);
     const result = await testAudioFile(file);
     results.push({ file, ...result });
     
     if (result.success) {
-      console.log(`✅ ${file} - Duration: ${result.duration?.toFixed(2)}s`);
+      // success
     } else {
       console.error(`❌ ${file} - Error: ${result.error}`);
     }
   }
   
-  console.log('🎵 Audio test results:', results);
   return results;
 };
 

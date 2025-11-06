@@ -1024,9 +1024,7 @@ function inferMotifsFromDescriptor(slug: string): { name: PlanetMotifName; color
 }
 
 export function buildPlanetSongs(): { hudSongs: HudSong[]; holoSongs: HoloSong[] } {
-  console.log('🚨 buildPlanetSongs: Starting build process');
-  console.log('🚨 buildPlanetSongs: tracks.length =', tracks.length);
-  console.log('🚨 buildPlanetSongs: tracks sample =', tracks.slice(0, 3));
+  // build process start
   // Deterministic numeric seed from slug (stable across reloads)
   const seedFromSlug = (slug: string) => {
     let h = 2166136261; // FNV-1a base
@@ -1205,10 +1203,7 @@ export function buildPlanetSongs(): { hudSongs: HudSong[]; holoSongs: HoloSong[]
     });
   });
 
-  console.log('🚨 buildPlanetSongs: RESULT hudSongs.length =', hudSongs.length);
-  console.log('🚨 buildPlanetSongs: RESULT holoSongs.length =', holoSongs.length);
-  console.log('🚨 buildPlanetSongs: First few hudSongs =', hudSongs.slice(0, 3));
-  console.log('🚨 buildPlanetSongs: First few holoSongs =', holoSongs.slice(0, 3));
+  
   
   return { hudSongs, holoSongs };
 }

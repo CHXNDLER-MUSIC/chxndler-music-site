@@ -1025,10 +1025,10 @@ export default function DashboardApp({ initialSlug } = {}) {
         minDurationMs={3000}
         offsetY="-1vh"
         // Use YouTube background when on the CHXNDLER homepage (homeMode)
-        // Updated to show Lightspeed video on opening page
-        youtubeUrl={homeMode ? 'https://youtu.be/KFssNa5WvKc' : undefined}
-        // Use YouTube for lightspeed overlay
-        lightspeedYoutubeUrl={'https://youtu.be/KFssNa5WvKc'}
+        // Updated: Play this specific YouTube video after Start unlocks the UI
+        youtubeUrl={homeMode && uiUnlocked ? 'https://youtu.be/gHDxkhQ4FbY' : undefined}
+        // Use the same YouTube clip for lightspeed overlay when available
+        lightspeedYoutubeUrl={homeMode && uiUnlocked ? 'https://youtu.be/gHDxkhQ4FbY' : undefined}
         onWarpSfxEnd={() => {
           // After a song is selected, reveal ONLY the selected planet post-warp
           if (userSelected || pendingTrackPlay) {

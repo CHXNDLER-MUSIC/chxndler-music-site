@@ -10,8 +10,6 @@ class AudioCoordinator {
   setActiveSource(source: AudioSource | null) {
     if (this.currentSource === source) return;
     
-    console.log(`🎵 AudioCoordinator: Switching from ${this.currentSource} to ${source}`);
-    
     // Stop all other audio sources when switching
     if (source !== 'main') {
       this.stopMainAudio();
@@ -51,7 +49,6 @@ class AudioCoordinator {
       if (mainAudio) {
         mainAudio.pause();
         // Don't reset currentTime for main audio to preserve position
-        console.log('🎵 AudioCoordinator: Stopped main audio');
       }
     } catch (e) {
       console.warn('🎵 AudioCoordinator: Error stopping main audio:', e);
@@ -74,7 +71,6 @@ class AudioCoordinator {
           }
         };
         fadeOut();
-        console.log('🎵 AudioCoordinator: Gently fading out ambient audio (space-music.mp3) for source:', this.currentSource);
       }
     } catch (e) {
       console.warn('🎵 AudioCoordinator: Error stopping ambient audio:', e);
@@ -88,7 +84,6 @@ class AudioCoordinator {
         introAudio.pause();
         introAudio.currentTime = 0;
         introAudio.volume = 0;
-        console.log('🎵 AudioCoordinator: Stopped intro audio (welcome VO)');
       }
     } catch (e) {
       console.warn('🎵 AudioCoordinator: Error stopping intro audio:', e);
@@ -102,7 +97,6 @@ class AudioCoordinator {
         ambientAudio.pause();
         ambientAudio.currentTime = 0;
         ambientAudio.volume = 0;
-        console.log('🎵 AudioCoordinator: Force stopped and reset ambient audio (space-music.mp3)');
       }
     } catch (e) {
       console.warn('🎵 AudioCoordinator: Error force stopping ambient audio:', e);
@@ -111,7 +105,6 @@ class AudioCoordinator {
 
   // Force stop all audio
   stopAll() {
-    console.log('🎵 AudioCoordinator: Stopping ALL audio sources');
     this.stopMainAudio();
     this.forceStopAmbientAudio();
     this.stopIntroAudio();

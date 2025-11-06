@@ -2481,7 +2481,7 @@ export default function HUDPanel({
                     {/* Brand photo near the top; reduce top margin to move higher */}
                     <div style={{ margin: '0 0 8px 0' }}>
                       <img
-                        src="/chxndler-picture.png"
+                        src="/cockpit/chxndler-picture.png"
                         alt="CHXNDLER"
                         style={{
                           display: 'block',

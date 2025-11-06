@@ -27,9 +27,7 @@ export function skyFor(slug?: string) {
   try {
     // Try dynamic discovery first
     const discoveredSky = findSkyVideoForTrack(slug);
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🎬 skyFor("${slug}"):`, discoveredSky ? `Found ${discoveredSky.mp4}` : 'Not found');
-    }
+    // dev logging removed
     if (discoveredSky && discoveredSky.mp4) {
       return {
         key: discoveredSky.key,
@@ -112,26 +110,24 @@ export function verifyAllTrackSkies(tracks: Array<{ slug: string; title: string 
   // Log results for development with enhanced discovery info
   if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
     console.group('🎬 Sky Video Verification (Dynamic Discovery)');
-    console.log(`Total tracks: ${summary.total}`);
-    console.log(`Tracks with custom sky: ${summary.withCustomSky} (${coverage.coverage.toFixed(1)}% coverage)`);
-    console.log(`Tracks using default sky: ${summary.usingDefault}`);
+    // console output removed
     
     // Show discovered mappings
     const discoveredMappings = getAllDiscoveredSkyMappings();
     console.group(`🗺️  Discovered ${Object.keys(discoveredMappings).length} sky mappings:`);
     Object.entries(discoveredMappings).forEach(([key, mapping]) => {
-      console.log(`  ${key} → ${mapping.mp4}${mapping.variant ? ` (${mapping.variant})` : ''}`);
+      // console output removed
     });
     console.groupEnd();
     
     if (summary.missingSkies.length > 0) {
       console.group('❌ Missing sky videos:');
       summary.missingSkies.forEach(missing => {
-        console.log(`• "${missing.title}" (${missing.slug}) - Expected: ${missing.expectedPath}`);
+        // console output removed
       });
       console.groupEnd();
     } else {
-      console.log('✅ All tracks have custom sky videos!');
+      // console output removed
     }
     
     console.groupEnd();

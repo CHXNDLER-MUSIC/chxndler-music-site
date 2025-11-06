@@ -14,25 +14,25 @@ import {
 } from './sky-discovery';
 
 export function runSkyVerification() {
-  console.log('🎬 Running dynamic sky verification for all tracks...\n');
+  // console output removed
   
   // Test dynamic discovery functions
   console.group('🔍 Dynamic Discovery Tests:');
   
   // Test parsing
   const testFilenames = ['pokemon.mp4', 'were-just-friends-acoustic.mp4', 'ocean-girl-remix.mp4'];
-  console.log('Filename parsing:');
+  // console output removed
   testFilenames.forEach(filename => {
     const parsed = parseSkySpoiler(filename);
-    console.log(`  ${filename} → slug: "${parsed.slug}", variant: ${parsed.variant || 'none'}`);
+    // console output removed
   });
   
   // Test individual track discovery
-  console.log('\nIndividual track discovery:');
+  // console output removed
   ['pokemon', 'ocean-girl', 'were-just-friends', 'nonexistent-track'].forEach(slug => {
     const skyMapping = findSkyVideoForTrack(slug);
     const hasVideo = hasAvailableSkyVideo(slug);
-    console.log(`  ${slug}: ${hasVideo ? '✅' : '❌'} ${skyMapping ? skyMapping.mp4 : 'No video found'}`);
+    // console output removed
   });
   
   console.groupEnd();
@@ -47,7 +47,7 @@ export function runSkyVerification() {
   
   // Overall coverage analysis
   const coverage = getSkyVideoCoverage(tracks.map(t => t.slug));
-  console.log(`\n📊 Coverage: ${coverage.covered}/${coverage.total} tracks (${coverage.coverage.toFixed(1)}%)`);
+  // console output removed
   
   // Verify all tracks (this will also show detailed console output)
   const summary = verifyAllTrackSkies(tracks);
@@ -64,17 +64,17 @@ export function testSkyDiscoveryEdgeCases() {
   console.group('🧪 Sky Discovery Edge Case Tests:');
   
   // Test variant preferences
-  console.log('Testing variant preferences:');
+  // console output removed
   const friendsSky = findSkyVideoForTrack('were-just-friends', 'acoustic');
-  console.log(`  were-just-friends (prefer acoustic): ${friendsSky?.mp4} (variant: ${friendsSky?.variant})`);
+  // console output removed
   
   const friendsDefault = findSkyVideoForTrack('were-just-friends');
-  console.log(`  were-just-friends (default): ${friendsDefault?.mp4} (variant: ${friendsDefault?.variant || 'none'})`);
+  // console output removed
   
   // Test partial matches
-  console.log('\nTesting partial matches:');
+  // console output removed
   const houseSky = findSkyVideoForTrack('house-party');
-  console.log(`  house-party: ${houseSky?.mp4}`);
+  // console output removed
   
   console.groupEnd();
 }

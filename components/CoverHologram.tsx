@@ -649,9 +649,15 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
         
         
         .card-modal{
-          max-width: min(45vw, 280px);
+          /* Slightly smaller than previous tweak */
+          width: min(88vw, 340px);
+          max-width: 88vw;
           background: rgba(25,227,255,0.45);
           box-shadow: 0 0 60px rgba(25,227,255,0.45), inset 0 0 0 1px rgba(25,227,255,0.35);
+        }
+        @media (max-width: 380px) {
+          /* Nudge down more on very narrow devices */
+          .card-modal{ width: min(90vw, 320px); }
         }
         .tilt-wrap{ perspective: 1200px; transform-style: preserve-3d; }
         .card-frame{
