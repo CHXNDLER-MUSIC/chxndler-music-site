@@ -68,6 +68,52 @@ const getPurchaseUrl = (title: string) => {
 };
 
 export default function CoverHologram({ src, title, slug, inline = false, size = 180, onCardOpen }: { src: string; title: string; slug?: string; inline?: boolean; size?: number; onCardOpen?: () => void }) {
+  // Explicit external card image URLs by slug
+  const CARD_URLS: Record<string, string> = {
+    // Special/back + brand
+    'back': 'https://ik.imagekit.io/CHXNDLER/card/back.png?updatedAt=1762388351170',
+    'chxndler': 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',
+    'chxndler_home': 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',
+
+    // Cards by song
+    'baby': 'https://ik.imagekit.io/CHXNDLER/card/baby.png?updatedAt=1762388345192',
+    'feeling-this': 'https://ik.imagekit.io/CHXNDLER/card/feeling-this.png?updatedAt=1762388347289',
+    'colors-of-our-home': 'https://ik.imagekit.io/CHXNDLER/card/colors-of-our-home.png?updatedAt=1762388341855',
+    'tienes-un-amigo': 'https://ik.imagekit.io/CHXNDLER/card/tienes-un-amigo.png?updatedAt=1762388343639',
+    'alone': 'https://ik.imagekit.io/CHXNDLER/card/alone.png?updatedAt=1762388342410',
+    'always-on-my-mind': 'https://ik.imagekit.io/CHXNDLER/card/always-on-my-mind.png?updatedAt=1762388345883',
+    'always-on-my-mind-remix': 'https://ik.imagekit.io/CHXNDLER/card/always-on-my-mind-remix.png?updatedAt=1762388342107',
+    'be-my-bee': 'https://ik.imagekit.io/CHXNDLER/card/be-my-bee.png?updatedAt=1762388342848',
+    'be-my-bee-acoustic': 'https://ik.imagekit.io/CHXNDLER/card/be-my-bee-acoustic.png?updatedAt=1762388342912',
+    'blue': 'https://ik.imagekit.io/CHXNDLER/card/blue.png?updatedAt=1762388346777',
+    'brain-freeze': 'https://ik.imagekit.io/CHXNDLER/card/brain-freeze.png?updatedAt=1762388347224',
+    'cheerleader': 'https://ik.imagekit.io/CHXNDLER/card/cheerleader.png?updatedAt=1762388346177',
+    'colors-of-our-home-bluma': 'https://ik.imagekit.io/CHXNDLER/card/colors-of-our-home-bluma.png?updatedAt=1762388344204',
+    'game-boy-heart': 'https://ik.imagekit.io/CHXNDLER/card/game-boy-heart.png?updatedAt=1762388346348',
+    'home': 'https://ik.imagekit.io/CHXNDLER/card/home.png?updatedAt=1762388345590',
+    'home-acoustic': 'https://ik.imagekit.io/CHXNDLER/card/home-acoustic.png?updatedAt=1762388344295',
+    'letting-go': 'https://ik.imagekit.io/CHXNDLER/card/letting-go.png?updatedAt=1762388344472',
+    'house-party': 'https://ik.imagekit.io/CHXNDLER/card/house-party.png?updatedAt=1762388343549',
+    'i-might-fall-in-love-with-you': 'https://ik.imagekit.io/CHXNDLER/card/i-might-fall-in-love-with-you.png?updatedAt=1762388340663',
+    'little-black-heart': 'https://ik.imagekit.io/CHXNDLER/card/little-black-heart.png?updatedAt=1762388346814',
+    'kid-forever': 'https://ik.imagekit.io/CHXNDLER/card/kid-forever.png?updatedAt=1762388339589',
+    'love-me': 'https://ik.imagekit.io/CHXNDLER/card/love-me.png?updatedAt=1762388339563',
+    'love-me-acoustic': 'https://ik.imagekit.io/CHXNDLER/card/love-me-acoustic.png?updatedAt=1762388330787',
+    'house-party-acoustic': 'https://ik.imagekit.io/CHXNDLER/card/house-party-acoustic.png?updatedAt=1762388343028',
+    'ocean-girl-remix': 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl-remix.png?updatedAt=1762388346301',
+    'ocean-girl': 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl.png?updatedAt=1762388343942',
+    'ocean-girl-acoustic': 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl-acoustic.png?updatedAt=1762388344386',
+    'pink-moon': 'https://ik.imagekit.io/CHXNDLER/card/pink-moon.png?updatedAt=1762388347173',
+    'somebody-to-love': 'https://ik.imagekit.io/CHXNDLER/card/somebody-to-love.png?updatedAt=1762388347148',
+    'we-re-just-friends-dmvrco-remix': "https://ik.imagekit.io/CHXNDLER/card/we're-just-friends-dmvrco-remix.png?updatedAt=1762388345669",
+    'we-re-just-friends-acoustic': "https://ik.imagekit.io/CHXNDLER/card/we're-just-friends-acoustic.png?updatedAt=1762388340285",
+    'we-re-just-friends-mickey-jas-remix': "https://ik.imagekit.io/CHXNDLER/card/we're-just-friends-mickey-jas-remix.png?updatedAt=1762388346859",
+    'we-re-just-friends': "https://ik.imagekit.io/CHXNDLER/card/we're-just-friends.png?updatedAt=1762388347233",
+    'collide': 'https://ik.imagekit.io/CHXNDLER/card/collide.png?updatedAt=1762388347054',
+    'mr-brightside': 'https://ik.imagekit.io/CHXNDLER/card/mr.brightside.png?updatedAt=1762388346700',
+    'paris': 'https://ik.imagekit.io/CHXNDLER/card/paris.png?updatedAt=1762388344978',
+    'pokemon': 'https://ik.imagekit.io/CHXNDLER/card/pokemon.png?updatedAt=1762388341960',
+  };
   const [showCard, setShowCard] = useState(false);
   const [cardFlipped, setCardFlipped] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -89,8 +135,8 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
   const scrollAudioRef = useRef<HTMLAudioElement | null>(null);
   const lastScrollSoundRef = useRef<number>(0);
 
-  // Compute a preferred card image path based on slugified title/slug.
-  const computedCardSrc = (() => {
+  // Compute effective slug and preferred card image path (overridden by CARD_URLS when available)
+  const effectiveSlug = (() => {
     // Prefer explicit slug when provided; else derive a diacritic-safe slug from title
     const safeFromTitle = title
       .toLowerCase()
@@ -101,23 +147,24 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
       .replace(/[()]/g, ' ')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
-    const s = (slug && slug.toLowerCase()) || safeFromTitle;
-    return `/card/${s}.png`;
+    return (slug && slug.toLowerCase()) || safeFromTitle;
   })();
+  const computedCardSrc = `/card/${effectiveSlug}.png`;
+  const explicitCardSrc = CARD_URLS[effectiveSlug];
 
   useEffect(() => {
     setMounted(true);
-    // Check if a real card exists by trying to load the computed card image
+    // If an explicit external card URL is defined, trust it
+    if (explicitCardSrc) { setHasRealCard(true); return; }
+    // Otherwise probe local fallbacks as before
     const img = new window.Image();
     img.onload = () => setHasRealCard(true);
     img.onerror = () => {
-      // Fallback: try the simple cover->card replacement as a backup
       const fallback = src.replace('/cover/', '/card/');
       if (fallback !== src) {
         const img2 = new window.Image();
         img2.onload = () => setHasRealCard(true);
         img2.onerror = () => {
-          // Final fallback: try a diacritic-safe title-based path (e.g., POKÉMON -> /card/pokemon.png)
           const asciiFromTitle = title
             .toLowerCase()
             .normalize('NFD')
@@ -138,7 +185,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
       }
     };
     img.src = computedCardSrc;
-  }, [src, slug, title]);
+  }, [src, slug, title, explicitCardSrc, computedCardSrc]);
   
   const handleClick = () => {
     // Play card ding when opening the card (do not play flip)
@@ -295,7 +342,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                     {/* Front side */}
                     <div style={{ backfaceVisibility: 'hidden', transform: 'rotateY(0deg)' }}>
                       <img
-                        src={computedCardSrc}
+                        src={explicitCardSrc || computedCardSrc}
                         alt={title}
                         className="tilt-img"
                         onError={(e)=>{
@@ -323,7 +370,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                       }}
                     >
                       <img
-                        src="/card/back.png"
+                        src={CARD_URLS['back'] || '/card/back.png'}
                         alt="Card back"
                         className="tilt-img"
                       />
@@ -451,7 +498,8 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
           style={{
             position: 'fixed',
             left: '50%',
-            top: (elementsPopoverPos.top - 16),
+            // Nudge popover upward slightly for better placement
+            top: (elementsPopoverPos.top - 28),
             transform: 'translateX(-50%)',
             padding: '14px 16px',
             borderRadius: 12,
@@ -461,9 +509,10 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
             backdropFilter: 'blur(8px)',
             color: '#F2EF1D',
             zIndex: 2147483647,
-            width: 'min(92vw, 560px)',
-            maxWidth: 'min(92vw, 560px)',
-            maxHeight: '72vh',
+            // Slightly wider popover
+            width: 'min(92vw, 420px)',
+            maxWidth: 'min(92vw, 420px)',
+            maxHeight: '36vh',
             overflowY: 'auto'
           } as any}
           onClick={(e) => e.stopPropagation()}
@@ -533,11 +582,11 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
           </div>
 
           {elementsLoading ? (
-            <div style={{ fontSize: 16 }}>Loading…</div>
+            <div style={{ fontSize: 15 }}>Loading…</div>
           ) : elementsError ? (
-            <div style={{ fontSize: 16, color: '#ff7b7b' }}>{elementsError}</div>
+            <div style={{ fontSize: 15, color: '#ff7b7b' }}>{elementsError}</div>
           ) : (
-            <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: 16, textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>
+            <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: 15, textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>
               {elementsContent || 'No elements content available.'}
             </div>
           )}

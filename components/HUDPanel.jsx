@@ -38,9 +38,9 @@ import { sfx } from "@/lib/sfx";
 // Use system font stack to avoid network font fetches during build
 
 // Constants to prevent recreating URLs on every render
-const DEFAULT_COVER = '/cover/chxndler.png';
-const DEFAULT_CARD = '/card/chxndler.png';
-const FALLBACK_COVER = '/cover/chxndler.png';
+const DEFAULT_COVER = 'https://ik.imagekit.io/CHXNDLER/cover/chxndler.png?updatedAt=1762361376662';
+const DEFAULT_CARD = 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910';
+const FALLBACK_COVER = 'https://ik.imagekit.io/CHXNDLER/cover/chxndler.png?updatedAt=1762361376662';
 
 function ElementIcon({ name, size = 18, glow = true }) {
   if (!name) return null;
@@ -1291,30 +1291,35 @@ export default function HUDPanel({
               CHXNDLER
             </button>
             {(() => {
-              const src = (!currentId ? DEFAULT_COVER : (track?.cover || DEFAULT_COVER));
-              const title = (!currentId ? 'CHXNDLER' : (track?.title || 'Unknown'));
-              const trackingSong = (!currentId ? 'chxndler_home' : (track?.slug || active || 'unknown'));
-              const trackingTitle = (!currentId ? 'CHXNDLER Home' : (track?.title || 'Unknown'));
-              
-              
-              return (
-                <div
-                  onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {}; try { const a = hoverCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
-                  style={{
-                    pointerEvents: joinAlienOpen ? 'none' : 'auto',
-                    // Allow the cover to scale on hover without clipping
-                    overflow: 'visible'
-                  }}
-                >
-                  <CoverHologram 
-                    src={src} 
-                    title={title} 
-                    slug={trackingSong}
-                    inline={true} 
-                    size={92}
-                  />
-                </div>
-              );
+              // On homepage (no currentId), always show the CHXNDLER brand cover
+              if (!currentId) {
+                const src = DEFAULT_COVER;
+                const title = 'CHXNDLER';
+                const trackingSong = 'chxndler_home';
+                return (
+                  <div
+                    onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {}; try { const a = hoverCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
+                    style={{ pointerEvents: joinAlienOpen ? 'none' : 'auto', overflow: 'visible' }}
+                  >
+                    <CoverHologram src={src} title={title} slug={trackingSong} inline={true} size={92} />
+                  </div>
+                );
+              }
+              // When a track is selected, show only if it has an explicit cover
+              if (track && track.cover) {
+                const src = track.cover;
+                const title = track?.title || 'Unknown';
+                const trackingSong = (track?.slug || active || 'unknown');
+                return (
+                  <div
+                    onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {}; try { const a = hoverCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
+                    style={{ pointerEvents: joinAlienOpen ? 'none' : 'auto', overflow: 'visible' }}
+                  >
+                    <CoverHologram src={src} title={title} slug={trackingSong} inline={true} size={92} />
+                  </div>
+                );
+              }
+              return null;
             })()}
           </div>
 
@@ -1705,33 +1710,53 @@ export default function HUDPanel({
                   }
                   const slug = currentSong?.id;
                   if (!slug) return null;
+                  const hasLyrics = currentSong && (currentSong.hasLyrics !== false);
                   return (
                     <>
-                      <button
-                        ref={lyricsBtnRef}
-                        type="button"
-                        className="hud-lyrics-btn"
-                        style={{ marginTop: 1 }}
-                        title={`Lyrics for ${currentSong?.title || 'current track'}`}
-                        aria-label={`View lyrics for ${currentSong?.title || 'current track'}`}
-                        data-id="lyrics"
-                        data-song={currentSong?.title || ''}
-                        aria-haspopup="dialog"
-                        aria-expanded={showLyricsPopover}
-                        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                        onClick={() => {
-                          if (showLyricsPopover) { try { sfx.play('close', 0.4); } catch {}; setShowLyricsPopover(false); return; }
-                          openLyricsPopover(slug);
-                        }}
-                      >
-                        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                          <rect x="5" y="5" width="14" height="10" rx="4" ry="4" fill="none" stroke="currentColor" strokeWidth="1.6" />
-                          <circle cx="8" cy="16" r="1.2" fill="currentColor" />
-                          <circle cx="6.2" cy="18" r="1.1" fill="currentColor" />
-                          <rect x="10" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
-                          <rect x="13.6" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
-                        </svg>
-                      </button>
+                      {hasLyrics ? (
+                        <button
+                          ref={lyricsBtnRef}
+                          type="button"
+                          className="hud-lyrics-btn"
+                          style={{ marginTop: 1 }}
+                          title={`Lyrics for ${currentSong?.title || 'current track'}`}
+                          aria-label={`View lyrics for ${currentSong?.title || 'current track'}`}
+                          data-id="lyrics"
+                          data-song={currentSong?.title || ''}
+                          aria-haspopup="dialog"
+                          aria-expanded={showLyricsPopover}
+                          onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                          onClick={() => {
+                            if (showLyricsPopover) { try { sfx.play('close', 0.4); } catch {}; setShowLyricsPopover(false); return; }
+                            openLyricsPopover(slug);
+                          }}
+                        >
+                          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                            <rect x="5" y="5" width="14" height="10" rx="4" ry="4" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                            <circle cx="8" cy="16" r="1.2" fill="currentColor" />
+                            <circle cx="6.2" cy="18" r="1.1" fill="currentColor" />
+                            <rect x="10" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+                            <rect x="13.6" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+                          </svg>
+                        </button>
+                      ) : (
+                        <div
+                          className="lyrics-btn-unavailable-hud"
+                          style={{ marginTop: 1 }}
+                          title={`Lyrics not available for ${currentSong?.title || 'current track'}`}
+                          aria-disabled="true"
+                          data-id="lyrics"
+                          data-song={currentSong?.title || ''}
+                        >
+                          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                            <rect x="5" y="5" width="14" height="10" rx="4" ry="4" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                            <circle cx="8" cy="16" r="1.2" fill="currentColor" />
+                            <circle cx="6.2" cy="18" r="1.1" fill="currentColor" />
+                            <rect x="10" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+                            <rect x="13.6" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+                          </svg>
+                        </div>
+                      )}
                       {/* Gem (store) button moved to YouTube's original position */}
                       <button
                         type="button"
@@ -2155,7 +2180,7 @@ export default function HUDPanel({
                                         src={'/store/patch.png'}
                                         alt={item.title}
                                         style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }}
-                                        onError={(e)=>{ try { e.currentTarget.src = '/card/chxndler.png'; } catch {} }}
+                                        onError={(e)=>{ try { e.currentTarget.src = 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910'; } catch {} }}
                                       />
                                     </div>
                                     {/* Back */}
@@ -2164,7 +2189,7 @@ export default function HUDPanel({
                                         src={'/store/patch-inverse.png'}
                                         alt={`${item.title} back`}
                                         style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }}
-                                        onError={(e)=>{ try { e.currentTarget.src = '/card/chxndler.png'; } catch {} }}
+                                        onError={(e)=>{ try { e.currentTarget.src = 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910'; } catch {} }}
                                       />
                                     </div>
                                   </div>
@@ -2206,7 +2231,7 @@ export default function HUDPanel({
                                         src={'/store/beanie-front.png'}
                                         alt={item.title}
                                         style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }}
-                                        onError={(e)=>{ try { e.currentTarget.src = '/card/chxndler.png'; } catch {} }}
+                                        onError={(e)=>{ try { e.currentTarget.src = 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910'; } catch {} }}
                                       />
                                     </div>
                                     {/* Back */}
@@ -2215,13 +2240,13 @@ export default function HUDPanel({
                                         src={'/store/beanie-back.png'}
                                         alt={`${item.title} back`}
                                         style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }}
-                                        onError={(e)=>{ try { e.currentTarget.src = '/card/chxndler.png'; } catch {} }}
+                                        onError={(e)=>{ try { e.currentTarget.src = 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910'; } catch {} }}
                                       />
                                     </div>
                                   </div>
                                 </div>
                               ) : (
-                                <img src={item.image || '/card/chxndler.png'} alt={item.title} style={{ display: 'block', width: 104, height: 104, objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(252,84,175,0.35)', boxShadow: '0 6px 18px rgba(0,0,0,0.35)' }} onError={(e)=>{ try { e.currentTarget.src = '/card/chxndler.png'; } catch {} }} />
+                                <img src={item.image || 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910'} alt={item.title} style={{ display: 'block', width: 104, height: 104, objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(252,84,175,0.35)', boxShadow: '0 6px 18px rgba(0,0,0,0.35)' }} onError={(e)=>{ try { e.currentTarget.src = 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910'; } catch {} }} />
                               )}
                               {/* Price directly under the image */}
                               <div style={{ fontSize: 18, fontWeight: 700, color: '#FFB9E1' }}>{item.price || ''}</div>

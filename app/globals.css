@@ -911,6 +911,22 @@ img[src$="/elements/music.png"] {
   display: block;
 }
 
+/* Disabled Lyrics button in HUD (greyed out, not clickable) */
+.lyrics-btn-unavailable-hud{
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(128, 128, 128, 0.3);
+  border: 1px solid rgba(128, 128, 128, 0.5);
+  color: rgba(255,255,255,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: not-allowed;
+  backdrop-filter: blur(4px);
+  flex-shrink: 0;
+}
+
 .apple-btn-unavailable-hud{
   width: 32px;
   height: 32px;

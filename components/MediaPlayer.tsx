@@ -1209,24 +1209,43 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
 
           {/* Lyrics + YouTube + Inline volume moved into controls so waveform sits below */}
           <div className="waveform-volume" role="group" aria-label="Lyrics, YouTube, and Volume" ref={waveVolRef}>
-            <Link
-              href={`/lyrics/${cur.slug}`}
-              className="lyrics-link-waveform"
-              title={`Lyrics for ${cur.title}`}
-              aria-label={`View lyrics for ${cur.title}`}
-              data-song={cur.title}
-              data-slug={cur.slug}
-              data-id="lyrics"
-              onMouseEnter={playHover}
-            >
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                <rect x="5" y="5" width="14" height="10" rx="4" ry="4" fill="none" stroke="currentColor" strokeWidth="1.6" />
-                <circle cx="8" cy="16" r="1.2" fill="currentColor" />
-                <circle cx="6.2" cy="18" r="1.1" fill="currentColor" />
-                <rect x="10" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
-                <rect x="13.6" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
-              </svg>
-            </Link>
+            {((cur as any)?.hasLyrics !== false) ? (
+              <Link
+                href={`/lyrics/${cur.slug}`}
+                className="lyrics-link-waveform"
+                title={`Lyrics for ${cur.title}`}
+                aria-label={`View lyrics for ${cur.title}`}
+                data-song={cur.title}
+                data-slug={cur.slug}
+                data-id="lyrics"
+                onMouseEnter={playHover}
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                  <rect x="5" y="5" width="14" height="10" rx="4" ry="4" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                  <circle cx="8" cy="16" r="1.2" fill="currentColor" />
+                  <circle cx="6.2" cy="18" r="1.1" fill="currentColor" />
+                  <rect x="10" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+                  <rect x="13.6" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+                </svg>
+              </Link>
+            ) : (
+              <div
+                className="lyrics-link-unavailable-waveform"
+                title={`Lyrics not available for ${cur.title}`}
+                aria-disabled="true"
+                data-song={cur.title}
+                data-slug={cur.slug}
+                data-id="lyrics"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                  <rect x="5" y="5" width="14" height="10" rx="4" ry="4" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                  <circle cx="8" cy="16" r="1.2" fill="currentColor" />
+                  <circle cx="6.2" cy="18" r="1.1" fill="currentColor" />
+                  <rect x="10" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+                  <rect x="13.6" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+                </svg>
+              </div>
+            )}
 
             {cur.youtube ? (
               <a
@@ -2262,6 +2281,22 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         }
         .lyrics-link-waveform:hover { transform: scale(1.1); box-shadow: 0 6px 22px rgba(242,239,29,0.9); }
         .lyrics-link-waveform:active { transform: scale(0.95); }
+
+        .lyrics-link-unavailable-waveform {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          border: 1px solid rgba(128,128,128,0.5);
+          background: rgba(128,128,128,0.35);
+          color: rgba(255,255,255,0.85);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          z-index: 200;
+          cursor: not-allowed;
+          box-shadow: none;
+        }
 
         /* YouTube link (to the right of Lyrics) */
         .youtube-link-waveform {
