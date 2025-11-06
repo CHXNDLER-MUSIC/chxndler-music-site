@@ -1025,7 +1025,8 @@ export default function DashboardApp({ initialSlug } = {}) {
         minDurationMs={3000}
         offsetY="-1vh"
         // Use YouTube background when on the CHXNDLER homepage (homeMode)
-        youtubeUrl={homeMode ? 'https://www.youtube.com/watch?v=gHDxkhQ4FbY' : undefined}
+        // Updated to show Lightspeed video on opening page
+        youtubeUrl={homeMode ? 'https://youtu.be/KFssNa5WvKc' : undefined}
         // Use YouTube for lightspeed overlay
         lightspeedYoutubeUrl={'https://youtu.be/KFssNa5WvKc'}
         onWarpSfxEnd={() => {

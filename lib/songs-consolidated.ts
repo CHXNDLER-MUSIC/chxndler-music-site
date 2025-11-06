@@ -216,7 +216,7 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme">
     { time: 118.6, label: "Drop 2", kind: "chorus" },
     { time: 151.3, label: "Final Drop", kind: "chorus" }
   ] },
-  { title: "BABY", spotify:"https://open.spotify.com/track/3UEVjChARWDbY4ruOIbIl3", apple:"https://music.apple.com/us/album/baby/1823220422?i=1823220423", youtube:"https://youtu.be/oG56sqMfShw", cover: "https://ik.imagekit.io/CHXNDLER/cover/baby.png?updatedAt=1762361386070", src: "/tracks/baby.mp3", sections: [
+  { title: "BABY", spotify:"https://open.spotify.com/track/3UEVjChARWDbY4ruOIbIl3", apple:"https://music.apple.com/us/album/baby/1823220422?i=1823220423", youtube:"https://youtu.be/oG56sqMfShw", cover: "https://ik.imagekit.io/CHXNDLER/cover/baby.png?updatedAt=1762361386070", src: "https://ik.imagekit.io/CHXNDLER/tracks/baby.mp3?updatedAt=1762391904175", sections: [
     { time: 15.8, label: "Verse 1", kind: "verse" },
     { time: 47.4, label: "Chorus 1", kind: "chorus" },
     { time: 79.0, label: "Verse 2", kind: "verse" },
