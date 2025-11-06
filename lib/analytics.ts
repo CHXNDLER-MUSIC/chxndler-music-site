@@ -1,4 +1,20 @@
 const KEY = 'chx_session_id';
+
+// Global kill switch for analytics (build-time and runtime)
+export function isAnalyticsDisabled(): boolean {
+  const env = (process.env.NEXT_PUBLIC_DISABLE_ANALYTICS || '').toLowerCase();
+  const envOff = env === '1' || env === 'true' || env === 'yes';
+  if (typeof window === 'undefined') return envOff;
+  try {
+    // Runtime toggle via global or localStorage
+    const g = (window as any).__CHX_DISABLE_ANALYTICS === true;
+    const ls = (localStorage.getItem('chx_disable_analytics') || '').toLowerCase();
+    const lsOff = ls === '1' || ls === 'true' || ls === 'yes';
+    return envOff || g || lsOff;
+  } catch {
+    return envOff;
+  }
+}
 let inMemorySessionId: string | null = null;
 
 function generateUuid(): string {
@@ -40,6 +56,7 @@ export function track(
   event_type: string,
   data: { page?: string; referrer?: string; song_slug?: string; payload?: any } = {}
 ) {
+  if (isAnalyticsDisabled()) return;
   if (typeof window === 'undefined') return;
 
   // Lightweight de-duplication for noisy events
@@ -140,6 +157,7 @@ export function track(
 }
 
 export function trackPageView() {
+  if (isAnalyticsDisabled()) return;
   console.log('trackPageView: called for current page:', typeof window !== 'undefined' ? window.location.pathname + window.location.search : 'server');
   track('page_view');
 }
@@ -223,6 +241,7 @@ export function trackClickLegacy(element: HTMLElement, clickId: string) {
 
 // New trackClick function that accepts ClickData
 export function trackClick(clickData: ClickData) {
+  if (isAnalyticsDisabled()) return;
   track('click', {
     payload: {
       element_tag: clickData.element.tagName,
@@ -244,6 +263,7 @@ const MAX_CLICKS = 1000;
 
 // Client-side click analytics functions for dashboard
 export function getClickAnalyticsLocal(): ClickData[] {
+  if (isAnalyticsDisabled()) return [];
   if (typeof window === 'undefined') return [];
   try {
     const stored = localStorage.getItem(CLICKS_STORAGE_KEY);
@@ -255,6 +275,7 @@ export function getClickAnalyticsLocal(): ClickData[] {
 }
 
 export function storeClickData(clickData: ClickData) {
+  if (isAnalyticsDisabled()) return;
   if (typeof window === 'undefined') return;
   try {
     const existing = getClickAnalyticsLocal();
@@ -272,6 +293,7 @@ export function storeClickData(clickData: ClickData) {
 }
 
 export function clearClickAnalyticsLocal() {
+  if (isAnalyticsDisabled()) return;
   if (typeof window === 'undefined') return;
   try {
     localStorage.removeItem(CLICKS_STORAGE_KEY);
@@ -281,6 +303,7 @@ export function clearClickAnalyticsLocal() {
 }
 
 export function clearAnalyticsCache() {
+  if (isAnalyticsDisabled()) return;
   if (typeof window === 'undefined') return;
   try {
     // Clear the deduplication cache that prevents repeated events

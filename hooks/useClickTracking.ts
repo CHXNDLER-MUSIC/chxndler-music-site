@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { trackClick, generateClickId, storeClickData, type ClickData } from "../lib/analytics";
+import { trackClick, generateClickId, storeClickData, isAnalyticsDisabled, type ClickData } from "../lib/analytics";
 
 // Enhanced element identification function
 function identifyElement(element: HTMLElement): string {
@@ -282,6 +282,7 @@ function identifyElement(element: HTMLElement): string {
 
 export function useClickTracking() {
   useEffect(() => {
+    if (isAnalyticsDisabled()) return; // do not attach listeners when disabled
     function handleClick(event: MouseEvent) {
       const raw = event.target as HTMLElement;
       if (!raw || !raw.tagName || typeof raw.tagName !== 'string') return;
