@@ -1006,8 +1006,8 @@ export default function DashboardApp({ initialSlug } = {}) {
       >
         <PrewarmThree />
         <AmbientSpace 
-          ambientSrc="/audio/space-music.mp3" 
-          introSrc={homeMode && homeIntroEnabled && !welcomeHasPlayed ? "/audio/welcome-to-the-heartverse.mp3" : undefined} 
+          ambientSrc="https://ik.imagekit.io/CHXNDLER/tracks/space-music.mp3?updatedAt=1762392378623" 
+          introSrc={homeMode && homeIntroEnabled && !welcomeHasPlayed ? "https://ik.imagekit.io/CHXNDLER/tracks/welcome-to-the-heartverse.mp3?updatedAt=1762392390137" : undefined} 
           playingMusic={isPlaying} 
           suspend={ambientSuspended} 
           userSelectedSong={userSelected} 
