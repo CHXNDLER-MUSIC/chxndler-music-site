@@ -50,8 +50,8 @@ export default function CoverCard({ src = "https://ik.imagekit.io/CHXNDLER/cover
           className="w-full h-full object-cover"
           onError={(e)=>{ e.currentTarget.src = "/logo/CHXNDLER_Logo.png"; }}
         />
-        {/* Blue fill overlay: only on hover like dropdown */}
-        <div className="blue-fill-overlay pointer-events-none absolute inset-0" style={{ backdropFilter: 'blur(8px)' }} />
+        {/* Blue fill overlay: desktop blur only; mobile has no backdrop blur to avoid flicker */}
+        <div className="blue-fill-overlay pointer-events-none absolute inset-0" />
         {/* inner neon rim */}
         <div className="pointer-events-none absolute inset-0 rounded-[12px]" style={{ border: `1px solid ${hexToRgba(elementColor, 0.4)}` }} />
         {/* scanlines */}
@@ -86,9 +86,10 @@ export default function CoverCard({ src = "https://ik.imagekit.io/CHXNDLER/cover
           background-color: ${hexToRgba(elementColor, 0.3)};
         }
         /* Apply a light blue background to match waveform container styling */
-        .blue-fill-overlay{
-          transition: background-color .15s ease;
-          background-color: rgba(6, 182, 212, 0.08);
+        .blue-fill-overlay{ transition: background-color .15s ease; background-color: rgba(6, 182, 212, 0.08); }
+        /* Enable backdrop blur on desktop only to prevent iOS flicker */
+        @media (hover: hover) and (pointer: fine) {
+          .blue-fill-overlay{ backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
         }
       `}</style>
     </div>

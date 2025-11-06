@@ -292,7 +292,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
       
       {showCard && mounted ? createPortal(
         <div
-          className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-[9999] bg-black/60"
           style={{ padding: 0 }}
           onClick={() => {
             try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}

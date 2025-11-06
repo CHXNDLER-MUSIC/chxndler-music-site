@@ -448,6 +448,10 @@ img[src$="/elements/music.png"] {
   /* Match song dropdown hover timing and feel */
   transition: box-shadow 200ms ease, transform 150ms ease;
   will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 .cover-art-container:hover {
   transform: translateZ(0) scale(1.08);
@@ -459,6 +463,13 @@ img[src$="/elements/music.png"] {
 .cover-hologram-container:hover { box-shadow: 0 0 52px rgba(25,227,255,0.9), 0 0 90px rgba(25,227,255,0.7), 0 0 140px rgba(25,227,255,0.5); scale: 1.08; }
 .hud-cover { transition: box-shadow 200ms ease, transform 150ms ease; box-shadow: 0 0 0 rgba(0,0,0,0); }
 .hud-cover:hover { box-shadow: 0 0 42px rgba(25,227,255,0.6), 0 0 70px rgba(25,227,255,0.35); transform: translateZ(0) scale(1.08); }
+
+/* Mobile: disable hover scale for cover elements to avoid flicker */
+@media (hover: none) and (pointer: coarse) {
+  .cover-art-container, .cover-hologram-container, .hud-cover { transition: none !important; transform: none !important; scale: 1 !important; }
+  .cover-art-container:hover, .cover-hologram-container:hover, .hud-cover:hover { box-shadow: none !important; transform: none !important; scale: 1 !important; }
+  .cover-art-container:active, .hud-cover:active { transform: scale(1.02) translateZ(0) !important; }
+}
 
 /* Mobile Safari compositing + flicker fixes for cover */
 .cover-hologram-container{
@@ -544,6 +555,10 @@ img[src$="/elements/music.png"] {
   backface-visibility: hidden;
   will-change: transform, opacity;
   contain: layout style;
+}
+/* Mobile: avoid heavy blur to prevent flicker/jank */
+@media (hover: none) and (pointer: coarse) {
+  .hud-waveform-player{ backdrop-filter: none; -webkit-backdrop-filter: none; }
 }
 
 .waveform-container{
