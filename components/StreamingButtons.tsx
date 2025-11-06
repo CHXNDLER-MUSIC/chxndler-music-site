@@ -55,7 +55,7 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
       window.removeEventListener('touchstart', prime as any);
     };
     window.addEventListener('pointerdown', prime, { once: true } as any);
-    window.addEventListener('touchstart', prime, { once: true } as any);
+    window.addEventListener('touchstart', prime, { once: true, passive: true } as any);
     return () => {
       window.removeEventListener('pointerdown', prime as any);
       window.removeEventListener('touchstart', prime as any);

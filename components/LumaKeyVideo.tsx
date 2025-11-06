@@ -150,7 +150,7 @@ export default function LumaKeyVideo({
     try {
       window.addEventListener('pointerdown', unlock, { once: true } as any);
       window.addEventListener('keydown', unlock, { once: true } as any);
-      window.addEventListener('touchstart', unlock, { once: true } as any);
+      window.addEventListener('touchstart', unlock, { once: true, passive: true } as any);
       // If the user just moves the mouse, that should be good enough too
       window.addEventListener('mousemove', unlock, { once: true } as any);
     } catch {}

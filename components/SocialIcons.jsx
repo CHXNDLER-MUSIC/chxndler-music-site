@@ -87,7 +87,7 @@ export default function SocialIcons({ LINKS, POS, trackLinks }) {
       window.removeEventListener('touchstart', prime);
     };
     window.addEventListener('pointerdown', prime, { once: true });
-    window.addEventListener('touchstart', prime, { once: true });
+    window.addEventListener('touchstart', prime, { once: true, passive: true });
     return () => {
       window.removeEventListener('pointerdown', prime);
       window.removeEventListener('touchstart', prime);

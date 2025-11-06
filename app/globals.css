@@ -234,6 +234,8 @@ main {
   transition: opacity 0.3s ease;
 }
 * { -webkit-tap-highlight-color: transparent; }
+/* Hint to browsers: taps are intended to activate elements, not scroll/zoom */
+.ck-icon-btn, .hud-btn, .btn-stream, button, a[href] { touch-action: manipulation; }
 
 .font-sans { font-family: InterLocal, OrbitronLocal, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
 

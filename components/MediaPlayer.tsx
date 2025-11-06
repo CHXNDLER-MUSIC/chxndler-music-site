@@ -274,11 +274,11 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       if (e.key === 'Escape') { setShowMainVolumePopover(false); setShowWaveformVolumePopover(false); }
     };
     document.addEventListener('mousedown', onDocDown);
-    document.addEventListener('touchstart', onDocDown);
+    document.addEventListener('touchstart', onDocDown as any, { passive: true } as any);
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('mousedown', onDocDown);
-      document.removeEventListener('touchstart', onDocDown);
+      document.removeEventListener('touchstart', onDocDown as any);
       document.removeEventListener('keydown', onKey);
     };
   }, []);
@@ -296,10 +296,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       }
     };
     window.addEventListener('resize', updatePositions);
-    window.addEventListener('scroll', updatePositions, true);
+    window.addEventListener('scroll', updatePositions as any, { capture: true, passive: true } as any);
     return () => {
       window.removeEventListener('resize', updatePositions);
-      window.removeEventListener('scroll', updatePositions, true);
+      window.removeEventListener('scroll', updatePositions as any, true);
     };
   }, [showMainVolumePopover, showWaveformVolumePopover]);
 
@@ -950,7 +950,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       } catch {}
     };
     window.addEventListener('pointerdown', unlock, { once: true } as any);
-    window.addEventListener('touchstart', unlock, { once: true } as any);
+    window.addEventListener('touchstart', unlock, { once: true, passive: true } as any);
     return () => {
       window.removeEventListener('pointerdown', unlock as any);
       window.removeEventListener('touchstart', unlock as any);

@@ -35,7 +35,7 @@ export default function NeonCockpitRim() {
         window.removeEventListener('keydown', unlock as any);
       };
       window.addEventListener('pointerdown', unlock, { once: true } as any);
-      window.addEventListener('touchstart', unlock, { once: true } as any);
+      window.addEventListener('touchstart', unlock, { once: true, passive: true } as any);
       window.addEventListener('keydown', unlock as any, { once: true } as any);
       // Defer node wiring until context is running to avoid silencing output on Safari
       return;

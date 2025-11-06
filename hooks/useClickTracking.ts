@@ -323,6 +323,7 @@ export function useClickTracking() {
         return '';
       })();
 
+      // Snapshot minimal fields synchronously, then defer heavy work so UI click handlers run first
       const clickData: ClickData = {
         id: generateClickId(),
         timestamp: Date.now(),
@@ -354,18 +355,19 @@ export function useClickTracking() {
         enhancedLabel,
       };
 
-      // Store locally for dashboard
-      storeClickData(clickData);
-      // Send to server for analytics
-      trackClick(clickData);
+      // Defer storage + network to avoid blocking the main thread during tap
+      setTimeout(() => {
+        try { storeClickData(clickData); } catch {}
+        try { trackClick(clickData); } catch {}
+      }, 0);
     }
 
-    // Add global click listener
-    document.addEventListener('click', handleClick, { capture: true });
+    // Add global click listener (bubble phase). Capture=true can delay other handlers.
+    document.addEventListener('click', handleClick);
 
     // Cleanup
     return () => {
-      document.removeEventListener('click', handleClick, { capture: true });
+      document.removeEventListener('click', handleClick);
     };
   }, []);
 }

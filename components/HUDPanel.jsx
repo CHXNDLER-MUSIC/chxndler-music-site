@@ -419,7 +419,7 @@ export default function HUDPanel({
     };
     const onKey = (e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowBrandPopover(false); } };
     document.addEventListener('mousedown', onDocDown);
-    document.addEventListener('touchstart', onDocDown);
+    document.addEventListener('touchstart', onDocDown, { passive: true });
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('mousedown', onDocDown);
@@ -495,7 +495,7 @@ export default function HUDPanel({
     };
     const onKey = (e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowStorePopover(false); } };
     document.addEventListener('mousedown', onDocDown);
-    document.addEventListener('touchstart', onDocDown);
+    document.addEventListener('touchstart', onDocDown, { passive: true });
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('mousedown', onDocDown);
@@ -648,7 +648,7 @@ export default function HUDPanel({
     };
     const onKey = (e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowLyricsPopover(false); } };
     document.addEventListener('mousedown', onDocDown);
-    document.addEventListener('touchstart', onDocDown);
+    document.addEventListener('touchstart', onDocDown, { passive: true });
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('mousedown', onDocDown);
@@ -861,7 +861,7 @@ export default function HUDPanel({
     };
     const onKey = (e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowHudVolumePopover(false); } };
     document.addEventListener('mousedown', onDocDown);
-    document.addEventListener('touchstart', onDocDown);
+    document.addEventListener('touchstart', onDocDown, { passive: true });
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('mousedown', onDocDown);

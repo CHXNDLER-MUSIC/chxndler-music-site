@@ -81,7 +81,7 @@ class SFXBus {
       this.primed = true;
     };
     window.addEventListener("pointerdown", unlock, { once: true } as any);
-    window.addEventListener("touchstart", unlock, { once: true } as any);
+    window.addEventListener("touchstart", unlock, { once: true, passive: true } as any);
     window.addEventListener("keydown", unlock as any, { once: true } as any);
   }
 

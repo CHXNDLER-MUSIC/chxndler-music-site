@@ -149,7 +149,7 @@ export default function CockpitWindowRim({ currentTrack, isPlaying, mounted }: P
     if (ctx.state !== 'running') {
       const unlock = () => { try { ctx!.resume().catch(()=>{}); } catch {}; window.removeEventListener('pointerdown', unlock as any); window.removeEventListener('touchstart', unlock as any); window.removeEventListener('keydown', unlock as any); };
       window.addEventListener('pointerdown', unlock, { once: true } as any);
-      window.addEventListener('touchstart', unlock, { once: true } as any);
+      window.addEventListener('touchstart', unlock, { once: true, passive: true } as any);
       window.addEventListener('keydown', unlock as any, { once: true } as any);
     }
 
