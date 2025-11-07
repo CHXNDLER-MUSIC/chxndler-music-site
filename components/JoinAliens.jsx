@@ -67,12 +67,7 @@ export default function JoinAliens({ visible = true } = {}) {
         spellCheck={false}
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        onFocus={() => console.log("Email input focused!")}
-        onClick={() => console.log("Email input clicked!")}
-        onMouseDown={(e) => {
-          console.log("Email input mouse down!", e);
-          e.stopPropagation();
-        }}
+        
         placeholder="Email"
         disabled={status === "loading" || status === "ok"}
         aria-disabled={status === "loading" || status === "ok"}
@@ -104,12 +99,7 @@ export default function JoinAliens({ visible = true } = {}) {
         spellCheck={false}
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
-        onFocus={() => console.log("Phone input focused!")}
-        onClick={() => console.log("Phone input clicked!")}
-        onMouseDown={(e) => {
-          console.log("Phone input mouse down!", e);
-          e.stopPropagation();
-        }}
+        
         placeholder="Phone"
         disabled={status === "loading" || status === "ok"}
         aria-disabled={status === "loading" || status === "ok"}

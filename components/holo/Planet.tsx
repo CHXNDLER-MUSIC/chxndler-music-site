@@ -170,7 +170,7 @@ export default function Planet({
   if (isMain) {
     if (process.env.NODE_ENV !== 'production') {
       // eslint-disable-next-line no-console
-      console.log(`🪐 MAIN PLANET: "${song.title}" -> Type: ${planetType}, Shape: ${planetShape}, Size: ${sizeVar.toFixed(2)}, Element: ${element}, Color: ${color}`);
+      
     }
   }
   

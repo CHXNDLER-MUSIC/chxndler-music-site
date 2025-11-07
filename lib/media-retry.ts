@@ -132,19 +132,16 @@ export const ensureAudioLoaded = async (
   
   // First ensure the source is set correctly
   if (element.src !== src) {
-    console.log('🎵 Setting audio src:', src);
     element.src = src;
   }
   
   // Check if already loaded
   if (element.readyState >= 3) { // HAVE_FUTURE_DATA or HAVE_ENOUGH_DATA
-    console.log('🎵 Audio already loaded, readyState:', element.readyState);
     return;
   }
   
   for (let attempt = 0; attempt < opts.maxRetries; attempt++) {
     try {
-      console.log(`🎵 Loading attempt ${attempt + 1} for:`, src);
       
       // Trigger load
       element.load();
@@ -157,7 +154,6 @@ export const ensureAudioLoaded = async (
         }, 10000); // 10 second timeout
         
         const onCanPlay = () => {
-          console.log('🎵 Audio canplay event, readyState:', element.readyState);
           cleanup();
           resolve();
         };
@@ -184,8 +180,6 @@ export const ensureAudioLoaded = async (
         element.addEventListener('canplay', onCanPlay, { once: true });
         element.addEventListener('error', onError, { once: true });
       });
-      
-      console.log('🎵 Audio loaded successfully, readyState:', element.readyState);
       return;
     } catch (error) {
       const isLastAttempt = attempt === opts.maxRetries - 1;
@@ -201,8 +195,6 @@ export const ensureAudioLoaded = async (
         opts.initialDelay * Math.pow(opts.backoffFactor, attempt),
         opts.maxDelay
       );
-      
-      console.log(`🎵 Retrying audio load in ${delay}ms...`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
@@ -226,18 +218,11 @@ export const playWithAutoplayFallback = async (
   }
   
   try {
-    console.log('🎵 Attempting normal play...', {
-      src: element.src,
-      readyState: element.readyState,
-      paused: element.paused
-    });
-    
     // Try normal play first
     await retryMediaPlay(element, options);
-    console.log('🎵 Normal play successful');
     return { muted: false };
   } catch (error) {
-    console.log('🎵 Normal play failed, trying muted fallback:', error?.name, error?.message);
+    
     
     // Fallback to muted play for autoplay restrictions
     const originalMuted = element.muted;
@@ -248,14 +233,12 @@ export const playWithAutoplayFallback = async (
       element.volume = 0;
       await retryMediaPlay(element, options);
       
-      console.log('🎵 Muted play successful, will unmute shortly');
       
       // Gradually unmute after successful muted play
       setTimeout(() => {
         try {
           element.muted = originalMuted;
           element.volume = originalVolume;
-          console.log('🎵 Audio unmuted successfully');
         } catch {
           console.warn('🔴 Failed to unmute audio');
         }

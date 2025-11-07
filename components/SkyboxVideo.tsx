@@ -43,7 +43,9 @@ export default function SkyboxVideo({
   const [hasStartedLoading, setHasStartedLoading] = useState(false);
   const translateY = typeof offsetY === "number" ? `${offsetY}px` : offsetY;
   const [flying, setFlying] = useState(false);
-  const [showLightspeed, setShowLightspeed] = useState(false);
+  // Ensure warp overlay is visible on first paint when allowed,
+  // preventing a brief flash of the base video (e.g., BABY YouTube) before warp starts
+  const [showLightspeed, setShowLightspeed] = useState(!!allowWarp);
   const baseRef = useRef<HTMLVideoElement|null>(null);
   const lsRef = useRef<HTMLVideoElement|null>(null);
   const basePlayNotified = React.useRef<string | null>(null);

@@ -310,13 +310,12 @@ export default function SteeringWheelOverlay({
               />
             );
           }
-          // Keep the wheel rendering even when UI is hidden or dimming overlay is active
-          // so it is visible on initial page load. Only pause during suspend/warp.
-          const paused = !!(suspendUI);
+          // Keep the wheel rendering under all conditions (always playing)
+          // Ignore suspend/warp to ensure continuous playback
+          const paused = false;
           return (
             <LumaKeyVideo
               srcMp4="/cockpit/wheel.mp4"
-              srcAlt="/wheel.mp4"
               threshold={(vconf as any)?.threshold ?? 0.001}
               softness={(vconf as any)?.softness ?? 0.01}
               saturation={(vconf as any)?.saturation ?? 1.0}

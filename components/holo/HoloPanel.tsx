@@ -21,7 +21,7 @@ export default function HoloPanel() {
   // Initialize songs once on mount
   useEffect(() => {
     const { holoSongs } = buildPlanetSongs();
-    console.log('🎵 HoloPanel: Initializing songs', { count: holoSongs.length, holoSongs });
+    
     playerStore.getState().initSongs(holoSongs);
   }, []);
 

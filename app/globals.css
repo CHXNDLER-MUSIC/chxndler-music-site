@@ -454,21 +454,21 @@ img[src$="/elements/music.png"] {
   transform: translateZ(0);
 }
 .cover-art-container:hover {
-  transform: translateZ(0) scale(1.08);
-  box-shadow: 0 0 40px rgba(25,227,255,0.8), 0 0 60px rgba(25,227,255,0.6), 0 0 80px rgba(25,227,255,0.4);
+  transform: translateZ(0) scale(1.02);
+  box-shadow: 0 0 28px rgba(25,227,255,0.6), 0 0 44px rgba(25,227,255,0.4), 0 0 60px rgba(25,227,255,0.25);
 }
 
 /* Ensure hover glow for all cover variants (hologram + HUD) */
 .cover-hologram-container { transition: scale 150ms ease, box-shadow 200ms ease; will-change: transform; transform-origin: 50% 50%; scale: 1; }
-.cover-hologram-container:hover { box-shadow: 0 0 52px rgba(25,227,255,0.9), 0 0 90px rgba(25,227,255,0.7), 0 0 140px rgba(25,227,255,0.5); scale: 1.08; }
+.cover-hologram-container:hover { box-shadow: 0 0 36px rgba(25,227,255,0.6), 0 0 64px rgba(25,227,255,0.4), 0 0 96px rgba(25,227,255,0.3); scale: 1.02; }
 .hud-cover { transition: box-shadow 200ms ease, transform 150ms ease; box-shadow: 0 0 0 rgba(0,0,0,0); }
-.hud-cover:hover { box-shadow: 0 0 42px rgba(25,227,255,0.6), 0 0 70px rgba(25,227,255,0.35); transform: translateZ(0) scale(1.08); }
+.hud-cover:hover { box-shadow: 0 0 30px rgba(25,227,255,0.5), 0 0 50px rgba(25,227,255,0.3); transform: translateZ(0) scale(1.02); }
 
 /* Mobile: disable hover scale for cover elements to avoid flicker */
 @media (hover: none) and (pointer: coarse) {
   .cover-art-container, .cover-hologram-container, .hud-cover { transition: none !important; transform: none !important; scale: 1 !important; }
   .cover-art-container:hover, .cover-hologram-container:hover, .hud-cover:hover { box-shadow: none !important; transform: none !important; scale: 1 !important; }
-  .cover-art-container:active, .hud-cover:active { transform: scale(1.02) translateZ(0) !important; }
+  .cover-art-container:active, .hud-cover:active { transform: scale(1.01) translateZ(0) !important; }
 }
 
 /* Mobile Safari compositing + flicker fixes for cover */
@@ -494,7 +494,7 @@ img[src$="/elements/music.png"] {
 /* Cockpit HUD cover hover glow */
 .ck-cover { transition: box-shadow 200ms ease, transform 150ms ease; }
 .ck-cover:hover {
-  transform: translateZ(0) scale(1.08);
+  transform: translateZ(0) scale(1.05);
   box-shadow: 0 0 40px rgba(25,227,255,0.8), 0 0 60px rgba(25,227,255,0.6), 0 0 80px rgba(25,227,255,0.4);
 }
 

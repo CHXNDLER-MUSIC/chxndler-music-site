@@ -5,7 +5,7 @@ export function toYouTubeEmbed(url: string): string | null {
     // Short links: https://youtu.be/VIDEOID
     if (host === 'youtu.be') {
       const id = u.pathname.slice(1);
-      if (id) return `https://www.youtube.com/embed/${id}`;
+      if (id) return `https://www.youtube-nocookie.com/embed/${id}`;
     }
     // Standard and variants
     if (
@@ -16,15 +16,15 @@ export function toYouTubeEmbed(url: string): string | null {
     ) {
       if (u.pathname === '/watch') {
         const id = u.searchParams.get('v');
-        if (id) return `https://www.youtube.com/embed/${id}`;
+        if (id) return `https://www.youtube-nocookie.com/embed/${id}`;
       }
       if (u.pathname.startsWith('/shorts/')) {
         const id = u.pathname.split('/')[2];
-        if (id) return `https://www.youtube.com/embed/${id}`;
+        if (id) return `https://www.youtube-nocookie.com/embed/${id}`;
       }
       if (u.pathname.startsWith('/embed/')) {
         const id = u.pathname.split('/')[2];
-        if (id) return `https://www.youtube.com/embed/${id}`;
+        if (id) return `https://www.youtube-nocookie.com/embed/${id}`;
       }
       if (u.pathname.startsWith('/live/')) {
         const id = u.pathname.split('/')[2];
@@ -66,7 +66,7 @@ export function parseYouTubeId(url: string): string | null {
       }
     }
     // If already an embed URL
-    if (host === 'youtube.com' && url.includes('/embed/')) {
+    if ((host === 'youtube.com' || host === 'youtube-nocookie.com') && url.includes('/embed/')) {
       const id = url.split('/embed/')[1]?.split(/[?&]/)[0];
       return id || null;
     }
@@ -94,4 +94,3 @@ export function toAutoplayingYouTubeEmbed(url: string): string | null {
   });
   return `${embed}?${params.toString()}`;
 }
-

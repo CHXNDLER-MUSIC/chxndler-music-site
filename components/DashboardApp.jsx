@@ -25,6 +25,7 @@ import { track } from "@/lib/analytics";
 import PreloadMedia from "@/components/PreloadMedia";
 import { slugify } from "@/lib/slug";
 import { audioCoordinator } from "@/lib/audio-coordinator";
+import { debugLog } from "@/lib/debug";
 
 export default function DashboardApp({ initialSlug } = {}) {
   const [channelIdx, setChannelIdx] = useState(0);
@@ -47,13 +48,15 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [uiCloseSignal, setUiCloseSignal] = useState(0); // increment to force-close buttons/menus during warp
   // Gate overlay + HUD power-up until Start is pressed (or deep link)
   const [uiUnlocked, setUiUnlocked] = useState(false);
-  const [allowWarp, setAllowWarp] = useState(false); // show initial lightspeed overlay
+  const [allowWarp, setAllowWarp] = useState(!initialSlug); // show lightspeed on opening homepage
   const [landingMode, setLandingMode] = useState(true); // initial screen state
   const [landingRevealReady, setLandingRevealReady] = useState(false); // when true, allow initial overlay to hide
   const [homeMode, setHomeMode] = useState(!initialSlug); // true when on homepage (no initial slug)
   const [homeIntroEnabled, setHomeIntroEnabled] = useState(false);
   const [pendingHomePower, setPendingHomePower] = useState(false);
   const [pendingTrackPlay, setPendingTrackPlay] = useState(false);
+  // Track if BABY sky YouTube has started (keep looping even if song pauses)
+  const [babySkyStarted, setBabySkyStarted] = useState(false);
   // Hide 3D planets during warp when a song is selected; reveal on warp SFX end
   const [hidePlanetsForSelection, setHidePlanetsForSelection] = useState(false);
   const [pendingOverlayReveal, setPendingOverlayReveal] = useState(false); // wait to show overlay until warp SFX ends
@@ -168,7 +171,6 @@ export default function DashboardApp({ initialSlug } = {}) {
   // it only plays once per in-tab session (resets on full refresh).
   useEffect(() => {
     const onIntroPlay = () => {
-      console.log('🎵 DashboardApp: Welcome audio started');
       // Mark as played immediately to ensure it never replays this session
       try { (window).__CHX_WELCOME_PLAYED = true; } catch {}
       // Also flip local state and stop offering intro on subsequent renders
@@ -176,7 +178,6 @@ export default function DashboardApp({ initialSlug } = {}) {
       try { setHomeIntroEnabled(false); } catch {}
     };
     const onIntroEnded = () => {
-      console.log('🎵 DashboardApp: Welcome audio ended, confirming as played for this session');
       try { (window).__CHX_WELCOME_PLAYED = true; } catch {}
       setWelcomeHasPlayed(true);
       // After playing once, mark that the first load flow is complete
@@ -213,11 +214,11 @@ export default function DashboardApp({ initialSlug } = {}) {
   useEffect(() => {
     // Only run this for homepage (no initialSlug)
     if (!initialSlug) {
-      console.log('🌍 DashboardApp: Homepage load - ensuring planets are visible');
+      
       try {
         // CRITICAL: Always show all planets on homepage load - use new planetDisplayMode system
         const currentState = playerStore.getState();
-        console.log('🌍 DashboardApp: Current planetDisplayMode state:', currentState.planetDisplayMode);
+        
         
         playerStore.getState().setPlanetDisplayMode('all');
         playerStore.getState().setPlanetsVisible(true); // CRITICAL: Ensure planets are visible
@@ -225,24 +226,22 @@ export default function DashboardApp({ initialSlug } = {}) {
         
         // Verify the state was set
         const newState = playerStore.getState();
-        console.log('🌍 DashboardApp: After setting - planetDisplayMode:', newState.planetDisplayMode);
+        
         
         // CRITICAL: Ensure songs are initialized for planet rendering
         const currentSongs = playerStore.getState().songs;
-        console.log('🌍 DashboardApp: Current songs in store:', currentSongs.length);
-        console.log('🌍 DashboardApp: Songs in store:', currentSongs.map(s => s.id));
+        
         
         if (currentSongs.length === 0) {
-          console.log('🌍 DashboardApp: NO SONGS IN STORE - This is likely the problem!');
+          
           try {
             const { buildPlanetSongs } = require('@/lib/planets');
             const { holoSongs } = buildPlanetSongs();
-            console.log('🌍 DashboardApp: Built', holoSongs.length, 'songs for planets');
-            console.log('🌍 DashboardApp: Sample songs:', holoSongs.slice(0, 3).map(s => ({ id: s.id, title: s.title })));
+            
             
             playerStore.getState().initSongs(holoSongs);
             const finalCount = playerStore.getState().songs.length;
-            console.log('🌍 DashboardApp: Songs initialized, new count:', finalCount);
+            
             
             if (finalCount === 0) {
               console.error('🌍 DashboardApp: CRITICAL ERROR - Songs still 0 after initialization!');
@@ -251,19 +250,19 @@ export default function DashboardApp({ initialSlug } = {}) {
             console.error('🌍 DashboardApp: Error loading songs:', error);
           }
         } else {
-          console.log('🌍 DashboardApp: Songs already loaded, count:', currentSongs.length);
+          
         }
         
         // Verification: check final state
         const finalState = playerStore.getState();
-        console.log('🌍 DashboardApp: Homepage planets initialized - planetsVisible=', finalState.planetsVisible, 'mainId=', finalState.mainId, 'songs=', finalState.songs.length);
+        
         
         // Force a re-render to ensure planets appear
         setTimeout(() => {
           const verifyState = playerStore.getState();
-          console.log('🌍 DashboardApp: Verification - planetsVisible=', verifyState.planetsVisible, 'songs=', verifyState.songs.length);
+          
           if (!verifyState.planetsVisible && verifyState.songs.length > 0) {
-            console.log('🌍 DashboardApp: Force-setting planets visible after delay');
+            
             playerStore.getState().setPlanetsVisible(true);
           }
         }, 100);
@@ -339,7 +338,7 @@ export default function DashboardApp({ initialSlug } = {}) {
     
 
     // Focus the selected planet immediately and bring camera closer
-    console.log('🌍 DashboardApp: onSongChange - Focusing selected planet');
+    
     try {
       playerStore.getState().setMain(slug, true);
       playerStore.getState().setPlanetDisplayMode('single');
@@ -347,7 +346,7 @@ export default function DashboardApp({ initialSlug } = {}) {
     } catch {}
 
     // STEP 2: Stop all music immediately when song is selected
-    console.log('DashboardApp: Stopping all music for song change');
+    
     
     // Stop main music player audio
     try {
@@ -366,7 +365,7 @@ export default function DashboardApp({ initialSlug } = {}) {
       if (ambientEl) {
         ambientEl.pause();
         ambientEl.currentTime = 0;
-        console.log('DashboardApp: Ambient space music stopped immediately');
+        
       }
     } catch (e) {
       console.warn('DashboardApp: Error stopping ambient audio:', e);
@@ -377,7 +376,7 @@ export default function DashboardApp({ initialSlug } = {}) {
       if (introEl) {
         introEl.pause();
         introEl.currentTime = 0;
-        console.log('DashboardApp: Intro VO stopped immediately');
+        
       }
     } catch (e) {
       console.warn('DashboardApp: Error stopping intro VO:', e);
@@ -527,7 +526,7 @@ export default function DashboardApp({ initialSlug } = {}) {
     const t = tracks.find((x) => x.slug === initialSlug);
     if (!t) return;
     // Ensure planets are hidden when arriving on a song route
-    console.log('🌍 DashboardApp: initialSlug effect - Hiding planets for route song');
+    
     try { playerStore.getState().setPlanetsVisible(false); } catch {}
     // Ensure focused planet is this route's song
     try { playerStore.getState().setMain(t.slug || ''); } catch {}
@@ -814,8 +813,8 @@ export default function DashboardApp({ initialSlug } = {}) {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       window.debugWelcomeVO = () => {
-        console.log('🎵 ==> WELCOME VO DEBUG <==');
-        console.log('🎵 State Values:', {
+        // Log current relevant state
+        debugLog('WelcomeVO state:', {
           homeMode,
           homeIntroEnabled,
           welcomeHasPlayed,
@@ -827,18 +826,20 @@ export default function DashboardApp({ initialSlug } = {}) {
           warpActive,
           welcomeOnStart: welcomeOnStartRef.current
         });
-        
+
+        // Inspect intro audio element
         const intro = document.querySelector('audio[data-intro="1"]');
-        console.log('🎵 Welcome VO Element:', intro ? {
+        debugLog('Intro audio:', intro ? {
           src: intro.src,
           paused: intro.paused,
           volume: intro.volume,
           currentTime: intro.currentTime,
           readyState: intro.readyState
         } : 'Not found');
-        
+
+        // Inspect ambient audio element
         const ambient = document.querySelector('audio[data-ambient="1"]');
-        console.log('🎵 Ambient Element:', ambient ? {
+        debugLog('Ambient audio:', ambient ? {
           src: ambient.src,
           paused: ambient.paused,
           volume: ambient.volume,
@@ -849,13 +850,13 @@ export default function DashboardApp({ initialSlug } = {}) {
       
       // Force welcome VO to play for debugging
       window.forceWelcomeVO = () => {
-        console.log('🎵 ==> FORCING WELCOME VO <==');
+        
         try { delete (window).__CHX_WELCOME_PLAYED; } catch {}
         setHomeMode(true);
         setHomeIntroEnabled(true);
         setWelcomeHasPlayed(false);
         setAmbientSuspended(false);
-        console.log('🎵 Force: Set homeMode=true, homeIntroEnabled=true, welcomeHasPlayed=false');
+        
       };
     }
     return () => {
@@ -1024,11 +1025,12 @@ export default function DashboardApp({ initialSlug } = {}) {
         readyToReveal={uiUnlocked && showOverlayUI}
         minDurationMs={3000}
         offsetY="-1vh"
-        // Use YouTube background when on the CHXNDLER homepage (homeMode)
-        // Updated: Play this specific YouTube video after Start unlocks the UI
-        youtubeUrl={homeMode && uiUnlocked ? 'https://youtu.be/gHDxkhQ4FbY' : undefined}
-        // Use the same YouTube clip for lightspeed overlay when available
-        lightspeedYoutubeUrl={homeMode && uiUnlocked ? 'https://youtu.be/gHDxkhQ4FbY' : undefined}
+        // Use BABY's YouTube sky once it has started; keep looping even if audio pauses
+        youtubeUrl={(curTrack && curTrack.slug === 'baby' && babySkyStarted)
+          ? 'https://youtu.be/d45RXW32C2o'
+          : (homeMode && uiUnlocked ? 'https://youtu.be/gHDxkhQ4FbY' : undefined)}
+        // Use provided YouTube clip for lightspeed overlay on opening and Start
+        lightspeedYoutubeUrl={'https://youtu.be/KFssNa5WvKc'}
         onWarpSfxEnd={() => {
           // After a song is selected, reveal ONLY the selected planet post-warp
           if (userSelected || pendingTrackPlay) {
@@ -1045,7 +1047,7 @@ export default function DashboardApp({ initialSlug } = {}) {
             try { setHomeMode(false); } catch {}
           } else {
             // Start button warp back to CHXNDLER (homepage): show ALL planets
-            console.log('🌍 DashboardApp: onWarpSfxEnd - START button warp, keeping all planets visible');
+            
             try {
               playerStore.getState().setPlanetDisplayMode('all');
               playerStore.getState().setPlanetsVisible(true);
@@ -1076,7 +1078,7 @@ export default function DashboardApp({ initialSlug } = {}) {
               let settled = false;
               const startAudioFromBeginning = () => {
                 if (settled) return; settled = true;
-                console.log('🎵 DashboardApp: Starting ambient from beginning (VO delayed until after first loop)');
+                
                 
                 // Reset ambient to beginning and trigger ambient playback.
                 try {
@@ -1085,7 +1087,7 @@ export default function DashboardApp({ initialSlug } = {}) {
                   // Reset to beginning
                   if (ambientEl) {
                     ambientEl.currentTime = 0;
-                    console.log('🎵 DashboardApp: Reset space-music.mp3 to beginning');
+                    
                   }
                   
                   // Trigger ambient start via coordinator event; AmbientSpace will
@@ -1119,7 +1121,7 @@ export default function DashboardApp({ initialSlug } = {}) {
             try { setPowerBusy(false); } catch {}
             try { setLandingRevealReady(true); } catch {}
             // Ensure homepage shows all planets after warp
-            console.log('🌍 DashboardApp: onWarpSfxEnd - Setting planets visible for homepage');
+            
             try { 
               playerStore.getState().setPlanetDisplayMode('all');
               playerStore.getState().setPlanetsVisible(true); 
@@ -1189,9 +1191,9 @@ export default function DashboardApp({ initialSlug } = {}) {
             try {
               if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); }
               trackPlayTimerRef.current = window.setTimeout(() => {
-                console.log('DashboardApp: fallback timer fired', { pendingTrackPlay });
+                
                 if (pendingTrackPlay) {
-                  console.log('DashboardApp: fallback timer starting song');
+                  
                   setPlaySignal((n) => n + 1);
                   setPendingTrackPlay(false);
                 }
@@ -1211,7 +1213,7 @@ export default function DashboardApp({ initialSlug } = {}) {
           }
         }}
         onBasePlaying={() => {
-          console.log('DashboardApp: onBasePlaying called', { pendingTrackPlay, warpActive, pendingHomePower, userSelected, homeMode });
+          
           if (pendingHomePower) {
             // Start path: ensure main track audio stays stopped on landing
             try {
@@ -1223,7 +1225,7 @@ export default function DashboardApp({ initialSlug } = {}) {
             // Now that space.mp4 is playing
             setHomeMode(true);
             // Make sure all planets are visible on the homepage after Start
-            console.log('🌍 DashboardApp: onBasePlaying - Setting planets to all mode for homepage');
+            
             try { 
               playerStore.getState().setPlanetDisplayMode('all'); 
               playerStore.getState().setPlanetsVisible(true);
@@ -1292,26 +1294,24 @@ export default function DashboardApp({ initialSlug } = {}) {
               }
             }, 3000);
             const startSong = () => { 
-              console.log('🎵 DashboardApp: startSong called, incrementing playSignal from', playSignal, 'to', playSignal + 1);
-              console.log('🎵 DashboardApp: Current track:', curTrack?.title, 'src:', curTrack?.src);
-              console.log('🎵 DashboardApp: channelIdx:', channelIdx, 'userSelected:', userSelected, 'pendingTrackPlay:', pendingTrackPlay);
+              
               clearTimeout(failsafeTimer); // Clear the failsafe timer
               // Small delay to ensure MediaPlayer has set up the audio element properly
               setTimeout(() => {
-                console.log('🎵 DashboardApp: About to increment playSignal...');
+                
                 setPlaySignal((n) => {
-                  console.log('🎵 DashboardApp: playSignal updated from', n, 'to', n + 1);
+                  
                   return n + 1;
                 }); 
                 setPendingTrackPlay(false); 
                 buttonSfxWaitRef.current = null;
-                console.log('🎵 DashboardApp: Song start sequence completed');
+                
               }, 100); // 100ms delay to allow MediaPlayer to set up
             };
             // For song selection (userSelected), start immediately when video plays
             // For Start button flow, wait for button SFX
             if (userSelected || initialSlug) {
-              console.log('DashboardApp: Song selection - starting immediately with video');
+              
               startSong();
             } else {
               // Start button flow - handle SFX timing
@@ -1447,11 +1447,11 @@ export default function DashboardApp({ initialSlug } = {}) {
           if (!firstStartDone) {
             welcomeOnStartRef.current = true;
             setHomeIntroEnabled(true);
-            console.log('🎵 DashboardApp: Start button - First time, enabling welcome VO');
+            
           } else {
             welcomeOnStartRef.current = false;
             setHomeIntroEnabled(false);
-            console.log('🎵 DashboardApp: Start button - Subsequent press, skipping welcome VO');
+            
             // Ensure first-load flag is off after second Start
             try { setIsFirstLoad(false); } catch {}
           }
@@ -1514,8 +1514,8 @@ export default function DashboardApp({ initialSlug } = {}) {
                   const normalCondition = uiUnlocked && showOverlayUI && showHUD && !warpActive && !showDimmingOverlay;
                   // First page should NOT show the blue display until Start unlocks UI
                   const shouldShow = normalCondition;
-                  
-                  console.log('🌍 DashboardApp: Visibility debug:', {
+                  // Debug visibility conditions (optional)
+                  debugLog({
                     homeMode,
                     warpActive,
                     uiUnlocked,
@@ -1540,7 +1540,8 @@ export default function DashboardApp({ initialSlug } = {}) {
                 {(() => {
                   const currentIdValue = (homeMode && !userSelected && !pendingTrackPlay) ? undefined : curTrack?.slug;
                   const showAllValue = !currentIdValue;
-                  console.log('🌍 DashboardApp: HUDPanel props debug:', {
+                  // Debug HUD visibility inputs (optional)
+                  debugLog({
                     homeMode,
                     userSelected,
                     pendingTrackPlay,
@@ -1601,18 +1602,25 @@ export default function DashboardApp({ initialSlug } = {}) {
                 onSkyChange={(webm, mp4, key) => setNextSky({ webm, mp4, key })}
                 onPlayingChange={(p) => { 
                   setIsPlaying(p);
+                  // When BABY starts playing for the first time, arm its YouTube sky
+                  try {
+                    const slug = (curTrack && curTrack.slug) ? curTrack.slug : (tracks[channelIdx]?.slug || null);
+                    if (p && slug === 'baby') {
+                      setBabySkyStarted(true);
+                    }
+                  } catch {}
                   if (p) {
                     try {
                       const slug = (curTrack && curTrack.slug) ? curTrack.slug : (tracks[channelIdx]?.slug || null);
                       const isHomePlayback = homeMode && !userSelected && !pendingTrackPlay;
                       if (slug) {
                         if (isHomePlayback) {
-                          console.log('🌍 DashboardApp: Song playing in home mode — keep ALL planets visible');
+                          
                           // Home/ambient case: keep all planets
                           try { playerStore.getState().setMain(slug, true); } catch {}
                           try { playerStore.getState().setPlanetDisplayMode('all'); playerStore.getState().setPlanetsVisible(true); } catch {}
                         } else {
-                          console.log('🌍 DashboardApp: Song playing after selection — show SINGLE planet');
+                          
                           try { playerStore.getState().setMain(slug); } catch {}
                           try { playerStore.getState().setPlanetDisplayMode('single'); playerStore.getState().setPlanetsVisible(true); } catch {}
                           try { setHomeMode(false); } catch {}
@@ -1648,6 +1656,8 @@ export default function DashboardApp({ initialSlug } = {}) {
 
                   setCurTrack(t); 
                   if (userSelected) { setLinks({ spotify: t.spotify || LINKS.spotify, apple: t.apple || LINKS.apple }); } else { setLinks({ spotify: LINKS.spotify, apple: LINKS.apple }); } 
+                  // Reset BABY sky state when leaving BABY track
+                  try { if ((t?.slug || '') !== 'baby') setBabySkyStarted(false); } catch {}
                   // Update planet system focus only when not on homepage flow
                   try {
                     if (userSelected || pendingTrackPlay || !homeMode) {

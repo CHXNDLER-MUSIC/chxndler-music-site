@@ -13,23 +13,22 @@ export default function HoloAudioBridge() {
 
   // Find the current track from player store songs and map to tracks array
   useEffect(() => {
-    console.log('🎵 HoloAudioBridge: mainId changed', { mainId, songsLength: songs.length });
+    
     if (!mainId || !songs.length) return;
     
     // Find the holo song from player store
     const holoSong = songs.find(s => s.id === mainId);
-    console.log('🎵 HoloAudioBridge: Found holo song', holoSong);
+    
     if (!holoSong) {
-      console.log('🎵 HoloAudioBridge: Available song IDs:', songs.map(s => s.id));
+      
       return;
     }
 
     // Map back to the original track using the title
     const track = tracks.find(t => t.title === holoSong.title);
-    console.log('🎵 HoloAudioBridge: Found matching track', track);
+    
     if (!track) {
-      console.log('🎵 HoloAudioBridge: Available track titles:', tracks.map(t => t.title));
-      console.log('🎵 HoloAudioBridge: Looking for title:', holoSong.title);
+      
     }
     if (track) {
       setCurrentTrack(track);
@@ -38,7 +37,7 @@ export default function HoloAudioBridge() {
 
   // Load+play on track change (when source exists) with warp delay
   useEffect(() => {
-    console.log('🎵 HoloAudioBridge: currentTrack changed', currentTrack);
+    
     const a = audioRef.current; if (!a) return;
     if (!currentTrack) return;
     
@@ -71,7 +70,7 @@ export default function HoloAudioBridge() {
     a.load();
     
     if (currentTrack.src) {
-      console.log('🎵 HoloAudioBridge: Starting warp delay for', currentTrack.title);
+      
       
       // Visual feedback that warp is happening
       document.body.style.backgroundColor = '#FF0000';
@@ -85,14 +84,14 @@ export default function HoloAudioBridge() {
         warpAudio.currentTime = 0;
         warpAudio.volume = 0.7;
         warpAudio.play().catch((err) => {
-          console.log('🎵 HoloAudioBridge: Warp sound failed', err);
+          
         });
       }
       
       // Implement warp delay like MediaPlayer
       const WARP_MS = 1800;
       const warpTimeout = setTimeout(() => {
-        console.log('🎵 HoloAudioBridge: Warp delay complete, attempting to play', currentTrack.title);
+        
 
         // After warp, only reveal the focused planet once playback actually starts
         const onPlaying = () => {

@@ -64,7 +64,7 @@ export default function CoverCard({ src = "https://ik.imagekit.io/CHXNDLER/cover
       <style jsx>{`
         .cover-art-container{ 
           outline:1px solid ${hexToRgba(elementColor, 0.4)};
-          box-shadow: 0 0 28px ${hexToRgba(elementColor, 0.15)};
+          box-shadow: 0 0 20px ${hexToRgba(elementColor, 0.12)};
           transition: transform .15s ease, box-shadow .2s ease, outline-color .2s ease, filter .2s ease;
         }
         /* Match dropdown snappy feel for inner image + overlay */
@@ -72,18 +72,18 @@ export default function CoverCard({ src = "https://ik.imagekit.io/CHXNDLER/cover
           transition: filter .15s ease;
         }
         .cover-art-container:hover{
-          transform: translateZ(0) scale(1.08);
+          transform: translateZ(0) scale(1.02);
           outline-color: ${hexToRgba(elementColor, 0.8)};
           box-shadow:
-            0 0 52px ${hexToRgba(elementColor, 0.7)},
-            0 0 90px ${hexToRgba(elementColor, 0.45)},
-            inset 0 0 15px ${hexToRgba(elementColor, 0.2)};
+            0 0 36px ${hexToRgba(elementColor, 0.55)},
+            0 0 64px ${hexToRgba(elementColor, 0.35)},
+            inset 0 0 10px ${hexToRgba(elementColor, 0.18)};
         }
         .cover-art-container:hover img{ 
-          filter: brightness(1.5) contrast(1.25) saturate(1.35);
+          filter: brightness(1.25) contrast(1.15) saturate(1.2);
         }
         .cover-art-container:hover .blue-fill-overlay{ 
-          background-color: ${hexToRgba(elementColor, 0.3)};
+          background-color: ${hexToRgba(elementColor, 0.18)};
         }
         /* Apply a light blue background to match waveform container styling */
         .blue-fill-overlay{ transition: background-color .15s ease; background-color: rgba(6, 182, 212, 0.08); }

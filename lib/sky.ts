@@ -56,7 +56,8 @@ export function skyFor(slug?: string) {
 }
 
 // Use the lightspeed warp as the initial looping sky
-export const introSky = { key: "lightspeed", webm: "", mp4: "/skies/lightspeed.mp4" };
+// Use YouTube-based lightspeed overlay by default; avoid 404 for missing local mp4
+export const introSky = { key: "lightspeed", webm: "", mp4: "" };
 
 /**
  * Verifies if a track has a corresponding sky video
@@ -107,8 +108,9 @@ export function verifyAllTrackSkies(tracks: Array<{ slug: string; title: string 
     missingSkies
   };
   
-  // Log results for development with enhanced discovery info
-  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  // Log results in development only when debug is enabled
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development' &&
+      (typeof (window as any).__CHX_DEBUG !== 'undefined' ? !!(window as any).__CHX_DEBUG : (process.env.NEXT_PUBLIC_MEDIA_DEBUG === '1'))) {
     console.group('🎬 Sky Video Verification (Dynamic Discovery)');
     // console output removed
     

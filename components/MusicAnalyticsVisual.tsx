@@ -348,7 +348,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                   // Reload server + local metrics
                   await loadServerMetrics();
                   loadMusicAnalytics();
-                  try { const json = await res.json(); console.log('reset results:', json); } catch {}
+                  try { const json = await res.json(); void json; } catch {}
                   if (typeof window !== 'undefined') alert('Analytics reset complete.');
                 } catch (e) {
                   console.warn('reset analytics failed:', e);

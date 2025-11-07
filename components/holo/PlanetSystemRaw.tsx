@@ -1970,7 +1970,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
         const shouldHide = !effectiveShowAll && mainId && !isFocused;
         
         // Debug planet visibility logic
-        console.log(`🌍 Planet ${s.id} visibility:`, { 
+        /* debug removed */ ({ 
           planetsVisible, 
           showAll: effectiveShowAll, 
           mainId, 
@@ -1984,7 +1984,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
         const finalVisible = effectiveShowAll ? true : (planetsVisible && effectiveMode !== 'hidden' && !shouldHide);
         s.mesh.visible = finalVisible;
 
-        console.log(`🌍 Planet ${s.id} FINAL visibility decision:`, {
+        /* debug removed */ ({
           showAll: effectiveShowAll,
           planetsVisible,
           shouldHide,
@@ -2565,12 +2565,12 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
 
   // When the selected song changes, create central planet and update orbital system
   useEffect(() => {
-    console.log("🌍 Central planet effect triggered, mainId:", mainId);
+    
     const sys = groupRef.current; if (!sys) return;
-    const id = mainId; if (!id) { console.log("❌ No mainId, skipping central planet"); return; }
+    const id = mainId; if (!id) { return; }
     const sat = satsRef.current.find(s => s.id === id);
-    if (!sat) { console.log("❌ No satellite found for id:", id, "Available satellites:", satsRef.current.map(s => s.id)); return; }
-    console.log("✅ Creating central planet for:", id);
+    if (!sat) { return; }
+    
     
     // Create central planet from the selected satellite
     const centralPlanet = centralPlanetRef.current;
@@ -2702,7 +2702,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
     centralMesh.scale.set(1.6, 1.6, 1.6); // Start even larger
     centralMesh.visible = true; // Ensure central planet is visible
     sys.add(centralMesh);
-    console.log("🎯 Central planet created and added to scene:", id, "Position:", centralMesh.position, "Visible:", centralMesh.visible);
+    
     
     // Update central planet reference
     centralPlanetRef.current = {

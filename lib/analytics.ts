@@ -105,7 +105,6 @@ export function track(
     if (dedupeKey && cooldownMs > 0) {
       const last = lastMap.get(dedupeKey) || 0;
       if (now - last < cooldownMs) {
-        console.log(`track: suppressing duplicate ${event_type} (${dedupeKey}), cooldown: ${cooldownMs}ms, time since last: ${now - last}ms`);
         return; // suppress duplicate
       }
       lastMap.set(dedupeKey, now);
@@ -126,13 +125,11 @@ export function track(
   const payload = explicitPayload ?? (rest && Object.keys(rest).length ? rest : null);
 
   const body = { session_id, event_type, page, referrer, song_slug, payload } as any;
-  console.log(`track: sending ${event_type} event:`, body);
   try {
     if (navigator.sendBeacon) {
       const blob = new Blob([JSON.stringify(body)], { type: 'application/json' });
       const ok = navigator.sendBeacon('/api/track', blob);
       if (ok) {
-        console.log(`track: successfully sent ${event_type} via sendBeacon`);
         return;
       }
     }
@@ -144,7 +141,7 @@ export function track(
       keepalive: true,
       body: JSON.stringify(body),
     }).then(response => {
-      console.log(`track: fetch response for ${event_type}:`, response.status, response.statusText);
+      // response received
     }).catch((error) => {
       console.error(`track: fetch error for ${event_type}:`, error);
     });
@@ -158,7 +155,6 @@ export function track(
 
 export function trackPageView() {
   if (isAnalyticsDisabled()) return;
-  console.log('trackPageView: called for current page:', typeof window !== 'undefined' ? window.location.pathname + window.location.search : 'server');
   track('page_view');
 }
 
@@ -310,7 +306,6 @@ export function clearAnalyticsCache() {
     if ('__chx_analytics_last' in window) {
       (window as any).__chx_analytics_last = new Map<string, number>();
     }
-    console.log('Analytics deduplication cache cleared');
   } catch (error) {
     console.warn('Failed to clear analytics cache:', error);
   }

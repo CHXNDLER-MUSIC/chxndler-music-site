@@ -42,7 +42,7 @@ export default function AmbientSpace({
 
   function fadeVolume(to: number, ms = 300, then?: () => void) {
     const amb = ambRef.current; if (!amb) return;
-    console.log(`AmbientSpace: fadeVolume from ${amb.volume.toFixed(2)} to ${to.toFixed(2)} over ${ms}ms`);
+    
     cancelFade();
     const from = amb.volume;
     if (ms <= 0) { amb.volume = clamp01(to); if (then) then(); return; }
@@ -208,7 +208,7 @@ export default function AmbientSpace({
     if (!amb) return;
     if (playingMusic) {
       // Immediately silence ambient while a main song plays
-      console.log('AmbientSpace: playingMusic became true, pausing ambient immediately');
+      
       if (fadeDownTimerRef.current !== undefined) { clearTimeout(fadeDownTimerRef.current); fadeDownTimerRef.current = undefined; }
       
       // ENHANCED: Ensure complete audio stop and reset
@@ -216,7 +216,7 @@ export default function AmbientSpace({
         amb.pause(); 
         amb.currentTime = 0;
         amb.volume = 0;
-        console.log('AmbientSpace: space-music.mp3 completely stopped');
+        
       } catch {}
       
       if (intro) {
@@ -224,28 +224,28 @@ export default function AmbientSpace({
           if (!intro.paused) intro.pause(); 
           intro.currentTime = 0;
           intro.volume = 0;
-          console.log('AmbientSpace: welcome VO completely stopped');
+          
         } catch {}
         introPlayingRef.current = false;
         introPendingRef.current = false; // don't replay VO during music
       }
     } else if (suspend) {
       // UI/warp suspend: fade ambient down but do NOT pause (prevents cut‑offs)
-      console.log('AmbientSpace: suspend became true, fading ambient down');
+      
       if (fadeDownTimerRef.current !== undefined) cancelAnimationFrame(fadeDownTimerRef.current as any);
       fadeVolume(0, 150);
       // Leave intro playing if it already started; if not started yet, let normal flow handle it
   } else {
-      console.log('AmbientSpace: neither playingMusic nor suspend, checking if should resume ambient');
+      
       // If a welcome VO is pending, hold ambient until an explicit ambient:play signal
       // This ensures space-music.mp3 starts together with the welcome VO after button.mp3 finishes
       if (introPendingRef.current && !queuedStartRef.current) {
-        console.log('AmbientSpace: intro pending; deferring ambient resume until ambient:play');
+        
         return cancelFade();
       }
       // Don't resume ambient if user has selected a specific song
       if (userSelectedSong) {
-        console.log('AmbientSpace: user selected song, keeping ambient paused');
+        
         if (fadeDownTimerRef.current !== undefined) { 
           clearTimeout(fadeDownTimerRef.current); 
           fadeDownTimerRef.current = undefined; 
@@ -253,7 +253,7 @@ export default function AmbientSpace({
         try { amb.pause(); } catch {}
         return;
       }
-      console.log('AmbientSpace: no user song selection, resuming ambient');
+      
       if (fadeDownTimerRef.current !== undefined) { 
         clearTimeout(fadeDownTimerRef.current); 
         fadeDownTimerRef.current = undefined; 
@@ -302,7 +302,7 @@ export default function AmbientSpace({
           try { amb.muted = false; amb.removeAttribute('muted'); } catch {}
           fadeVolume(clamp01(volume), 200);
         }).catch(() => {
-          console.log('Failed to resume ambient audio');
+          
         });
       }
     }
@@ -336,14 +336,12 @@ export default function AmbientSpace({
       amb.play().catch(()=>{});
     };
     const onPause = () => { 
-      console.log('🎵 AmbientSpace: Audio paused unexpectedly, will try resume in 2 seconds', {
-        playingMusic, suspend, userPausedRef: userPausedRef.current, userSelectedSong, introPending: introPendingRef.current
-      });
+      
       // Increased delay to 2 seconds to avoid rapid pause/resume cycles that could cause cutting out
       setTimeout(tryResume, 2000); 
     };
     const onEnded = () => { 
-      console.log('🎵 AmbientSpace: Audio ended, will try resume immediately');
+      
       setTimeout(tryResume, 0); 
     };
     amb.addEventListener('pause', onPause);
@@ -352,7 +350,7 @@ export default function AmbientSpace({
     const id = window.setInterval(() => {
       // Only try resume if audio appears to be stopped/paused unexpectedly
       if (amb && amb.paused && !playingMusic && !suspend && !userPausedRef.current && !userSelectedSong && !introPendingRef.current) {
-        console.log('Periodic check: audio unexpectedly paused, attempting resume');
+        
         tryResume();
       }
     }, 300000); // increased frequency to every 5 minutes to minimize interference
@@ -373,18 +371,18 @@ export default function AmbientSpace({
     };
 
     const onEnded = () => { 
-      console.log('🎵 AmbientSpace: space-music.mp3 ended, checking if should loop');
+      
       try { amb.currentTime = 0; } catch {}; 
       
       // Auto-resume/loop whenever we're not playing music and not suspended.
       // Do NOT block looping solely because an intro VO is pending — this avoids a 6s cutoff stall.
       if (!playingMusic && !suspend && !userSelectedSong) {
-        console.log('🎵 AmbientSpace: Auto-looping space-music.mp3');
+        
         // Ensure audible volume on loop to avoid cases where a primed 0 volume persists
         try { amb.muted = false; amb.removeAttribute('muted'); amb.volume = clamp01(volume); } catch {}
         tryResume(); 
       } else {
-        console.log('🎵 AmbientSpace: Not looping - conditions prevent it');
+        
       }
     };
     const onStallish = () => { tryResume(); };
@@ -415,7 +413,7 @@ export default function AmbientSpace({
         const stuckMs = now - (stuckSinceRef.current || now);
         if (stuckMs > 120000) { // increased threshold to 120 seconds (2 minutes) to avoid false positives
           // Instead of nudging playhead, just try to resume playback
-          console.log('Audio stall detected after 2 minutes, attempting resume');
+          
           tryResume();
           stuckSinceRef.current = undefined;
         }

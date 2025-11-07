@@ -74,9 +74,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Preload cockpit frame and light beam base so they render instantly */}
         <link rel="preload" as="image" href="/cockpit/cockpit.png?v=2" />
         <link rel="preload" as="image" href="/cockpit/lightbeam-base.png?v=2" />
-        {/* Preload critical sky videos to minimize first transition latency */}
-        <link rel="preload" as="video" href="/skies/space.mp4" type="video/mp4" />
-        <link rel="preload" as="video" href="/skies/space.webm" type="video/webm" />
+        {/* Preload the steering wheel video; use as=fetch for broad browser support */}
+        <link rel="preload" as="fetch" href="/cockpit/wheel.mp4" type="video/mp4" />
+        {/* Remove sky video preloads (assets may not exist; dynamic sky handles loading) */}
         {gaId && !analyticsOff ? (
           <>
             {/* eslint-disable-next-line @next/next/no-sync-scripts */}

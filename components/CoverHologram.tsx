@@ -13,7 +13,7 @@ const getPurchaseUrl = (title: string) => {
   const slug = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
   
   // Debug: log the generated slug to see what's happening
-  console.log(`🎵 Getting purchase URL for title: "${title}" -> slug: "${slug}"`);
+  
   
   // Map of song slugs to their Stripe purchase URLs
   const purchaseUrls: Record<string, string> = {
@@ -649,15 +649,15 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
         
         
         .card-modal{
-          /* Slightly smaller than previous tweak */
-          width: min(88vw, 340px);
-          max-width: 88vw;
+          /* Smaller pop container */
+          width: min(82vw, 300px);
+          max-width: 82vw;
           background: rgba(25,227,255,0.45);
           box-shadow: 0 0 60px rgba(25,227,255,0.45), inset 0 0 0 1px rgba(25,227,255,0.35);
         }
         @media (max-width: 380px) {
           /* Nudge down more on very narrow devices */
-          .card-modal{ width: min(90vw, 320px); }
+          .card-modal{ width: min(84vw, 280px); }
         }
         .tilt-wrap{ perspective: 1200px; transform-style: preserve-3d; }
         .card-frame{

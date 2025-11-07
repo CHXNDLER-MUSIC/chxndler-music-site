@@ -124,7 +124,7 @@ export default function CockpitWindowRim({ currentTrack, isPlaying, mounted }: P
   const copyPoly = () => {
     const s = polygonCss;
     try { navigator.clipboard.writeText(s); } catch {}
-    try { if (process.env.NODE_ENV !== 'production') { /* eslint-disable-next-line no-console */ console.log('RIM polygon:', s); } } catch {}
+    try { if (process.env.NODE_ENV !== 'production') { /* eslint-disable-next-line no-console */ /* debug removed */ } } catch {}
   };
 
   useEffect(() => {

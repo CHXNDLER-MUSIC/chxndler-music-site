@@ -23,7 +23,6 @@ export default function DebugPage() {
       
       <h2>Store Methods Test</h2>
       <button onClick={() => {
-        console.log('Current store state:', playerStore.getState());
         setStoreState(playerStore.getState());
       }}>
         Refresh State

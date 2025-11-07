@@ -234,7 +234,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   // Subscribe to state machine changes
   useEffect(() => {
     const unsubscribe = stateMachine.current.onStateChange((state, context) => {
-      console.log('🎵 State machine changed:', { state, context, isPlaying: context.isPlaying });
+      
       setMediaState(state);
       // Reflect actual audio element state to keep UI icon accurate
       try {
@@ -439,8 +439,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   // External play signal: play current track if it has audio; otherwise jump to first with local audio
   useEffect(() => {
     if (playSignal === 0) return; // Don't run on initial mount
-    console.log('🎵 MediaPlayer: playSignal effect triggered with signal:', playSignal, 'current track:', cur?.title, 'src:', cur?.src);
-    console.log('🎵 MediaPlayer: Audio element exists:', !!audioRef.current, 'Index:', index);
+    
     const a = audioRef.current; 
     if (!a) {
       console.error('🎵 MediaPlayer: No audio element found!');
@@ -451,9 +450,9 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       try {
         const want = String(cur.src || "");
         const current = a.getAttribute("src") || a.src;
-        console.log('🎵 MediaPlayer: playSignal - want src:', want, 'current src:', current);
+        
         if (want && current !== want) {
-          console.log('🎵 MediaPlayer: Setting new audio src:', want);
+          
           a.setAttribute("src", want);
           // If we swapped the src, load the new one to be safe
           try { a.load(); } catch {}
@@ -465,25 +464,23 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       try {
         a.muted = false;
         // Do not override user volume here
-        console.log('MediaPlayer: Unmuted audio element for', cur?.title);
+        
       } catch {}
       
       // Use improved retry logic with autoplay fallback
-      console.log('🎵 MediaPlayer: Attempting to play audio for', cur?.title, 'src:', cur?.src);
-      console.log('🎵 MediaPlayer: Audio ready state:', a.readyState, 'duration:', a.duration, 'current time:', a.currentTime);
+      
       intentionalPlayRef.current = true; // Mark as intentional play
       // Suppress volumechange handling during autoplay fallback mute/unmute cycle
       suppressVolumeRef.current = true;
       playWithAutoplayFallback(a, {
         maxRetries: 3,
         onRetry: (attempt, error) => {
-          console.log(`MediaPlayer: playSignal retry attempt ${attempt}`, error?.name, error?.message);
+          
           if (DEBUG_MEDIA) dwarn(`playSignal: retry attempt ${attempt}`, error?.name, error?.message);
         }
       })
         .then(({ muted }) => {
-          console.log('🎵 MediaPlayer: Play successful for', cur?.title, { muted });
-          console.log('🎵 MediaPlayer: Audio element state - paused:', a.paused, 'volume:', a.volume, 'muted:', a.muted);
+          
           if (DEBUG_MEDIA) dlog('playSignal: play successful', { muted });
           stateMachine.current.send({ type: 'PLAY' });
           gaTrack("play", { slug: cur.slug });
@@ -527,7 +524,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         console.error('No audio element found');
         return;
       }
-      console.log('🔍 Current audio element test:', {
+      /* debug removed */ ({
         src: a.src,
         paused: a.paused,
         volume: a.volume,
@@ -538,11 +535,11 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         networkState: a.networkState,
         error: a.error
       });
-      console.log('🔍 Attempting manual play...');
+      
       a.play().then(() => {
-        console.log('✅ Manual play successful');
+        
       }).catch(err => {
-        console.error('❌ Manual play failed:', err);
+        dwarn('Manual play failed:', err);
       });
     };
     
@@ -552,22 +549,21 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         console.error('No audio element or src found');
         return;
       }
-      console.log('🎵 Testing current audio file:', a.src);
+      
       const result = await testAudioFile(a.src);
-      console.log('🎵 Test result:', result);
+      
     };
     
     (window as any).testAllAudioFiles = testAllAudioFiles;
     
     (window as any).debugAudioConflicts = () => {
-      console.log('🎵 ==> AUDIO CONFLICT DEBUG <==');
-      console.log('🎵 Audio Coordinator Status:', audioCoordinator.getAudioStatus());
+      
       
       const main = document.querySelector('audio[data-audio-player="1"]') as HTMLAudioElement;
       const ambient = document.querySelector('audio[data-ambient="1"]') as HTMLAudioElement;
       const intro = document.querySelector('audio[data-intro="1"]') as HTMLAudioElement;
       
-      console.log('🎵 Main Track:', main ? {
+      dlog('Main audio:', main ? {
         src: main.src,
         paused: main.paused,
         volume: main.volume,
@@ -575,7 +571,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         readyState: main.readyState
       } : 'Not found');
       
-      console.log('🎵 Ambient/Space Music:', ambient ? {
+      dlog('Ambient audio:', ambient ? {
         src: ambient.src,
         paused: ambient.paused,
         volume: ambient.volume,
@@ -583,7 +579,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         readyState: ambient.readyState
       } : 'Not found');
       
-      console.log('🎵 Intro/Welcome VO:', intro ? {
+      dlog('Intro audio:', intro ? {
         src: intro.src,
         paused: intro.paused,
         volume: intro.volume,
@@ -650,7 +646,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   }
   
   function toggle() {
-    console.log('🎵 Toggle button clicked - current state:', { playing, paused: audioRef.current?.paused, src: cur.src });
+    
     // Cancel any pending auto-play timer from warp sequence to respect user intent
     if (warpPlayTimerRef.current !== undefined) {
       clearTimeout(warpPlayTimerRef.current);
@@ -662,7 +658,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       return;
     }
     if (!cur.src) {
-      console.log('🎵 No src for current track, finding track with audio');
+      
       // No local audio: jump to the first track with local audio and play
       const withAudio = tracks.findIndex(t => !!t.src);
       if (withAudio >= 0) {
@@ -672,7 +668,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       return;
     }
     if (a.paused) { 
-      console.log('🎵 Audio is paused, attempting to play');
+      
       intentionalPlayRef.current = true; // Mark as intentional play
       
       // Ensure audio is unmuted and has proper volume
@@ -682,26 +678,26 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       // Simple play attempt first, fallback to retry logic if needed
       a.play()
         .then(() => {
-          console.log('🎵 Toggle: Play successful');
+          
           stateMachine.current.send({ type: 'PLAY' });
           gaTrack("play", { slug: cur.slug });
           // Play click SFX via WebAudio after successful start (won't steal gesture)
           try { sfx.play('click', 0.5); } catch {}
         })
         .catch((error) => {
-          console.log('🎵 Toggle: Simple play failed, trying with retry logic', error?.name);
+          
           // Fallback to retry logic only if simple play fails
           // Suppress volumechange handling while fallback may set volume to 0
           suppressVolumeRef.current = true;
           playWithAutoplayFallback(a, {
             maxRetries: 2,
             onRetry: (attempt, error) => {
-              console.log(`🎵 Toggle play retry ${attempt}`, error?.name, error?.message);
+              
               if (DEBUG_MEDIA) dwarn(`toggle play retry ${attempt}`, error?.name, error?.message);
             }
           })
             .then(() => {
-              console.log('🎵 Toggle: Retry play successful');
+              
               stateMachine.current.send({ type: 'PLAY' });
               gaTrack("play", { slug: cur.slug });
               try { sfx.play('click', 0.5); } catch {}
@@ -717,7 +713,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         });
     }
     else { 
-      console.log('🎵 Audio is playing, pausing');
+      
       // Also cancel any pending auto-starts when the user explicitly pauses
       if (warpPlayTimerRef.current !== undefined) {
         clearTimeout(warpPlayTimerRef.current);
@@ -727,7 +723,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       setPlaying(false); // Ensure immediate UI update
       stateMachine.current.send({ type: 'PAUSE' });
       gaTrack("pause", { slug: cur.slug }); 
-      console.log('🎵 Pause completed');
+      
       // Safe to play UI click on pause (no conflict with main play)
       try { uiClick(); } catch {}
     }
@@ -794,7 +790,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       
       if (mutedOrSilent) return;
       
-      console.log('🎵 Audio play event - setting playing to true');
+      
       
       // Use audio coordinator to manage audio conflicts
       audioCoordinator.setActiveSource('main');
@@ -802,7 +798,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       setPlaying(true);
     };
     const onPause = () => { 
-      console.log('🎵 Audio pause event - setting playing to false');
+      
       if (DEBUG_MEDIA) dlog('audio event: pause for', cur?.title);
       
       // Clear main audio as active source when paused
@@ -1070,7 +1066,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           {showHUDPlay && (
             <button 
               onClick={(e) => {
-                console.log('🎵 Play/pause button clicked', { playing, event: e });
+                
                 toggle();
               }} 
               className={`play-pause-btn ${playing ? 'playing' : ''}`} 
@@ -1808,28 +1804,28 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                       a.muted = false;
                       // Preserve user-selected volume
                       
-                      console.log('🎵 Picker: Attempting to play', selectedTrack.title, selectedTrack.src);
+                      
                       
                       // Simple play attempt first, fallback to retry logic if needed
                       a.play()
                         .then(() => {
-                          console.log('🎵 Picker: Play successful for', selectedTrack.title);
+                          
                           stateMachine.current.send({ type: 'PLAY' });
                           gaTrack("play", { slug: selectedTrack.slug });
                         })
                         .catch((error) => {
-                          console.log('🎵 Picker: Simple play failed, trying with retry logic', error?.name);
+                          
                           // Fallback to retry logic only if simple play fails
                           // Suppress volumechange handling while fallback may set volume to 0
                           suppressVolumeRef.current = true;
                           playWithAutoplayFallback(a, {
                             maxRetries: 2,
                             onRetry: (attempt, error) => {
-                              console.log(`Picker selection play retry ${attempt}`, error?.name, error?.message);
+                              
                             }
                           })
                             .then(() => {
-                              console.log('🎵 Picker: Retry play successful for', selectedTrack.title);
+                              
                               stateMachine.current.send({ type: 'PLAY' });
                               gaTrack("play", { slug: selectedTrack.slug });
                               suppressVolumeRef.current = false;
@@ -1889,13 +1885,13 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             setPlaying(false);
           }}
           onLoadStart={() => {
-            console.log('🎵 Audio loadstart for:', cur.src);
+            
           }}
           onCanPlay={() => {
-            console.log('🎵 Audio canplay for:', cur.src);
+            
           }}
           onCanPlayThrough={() => {
-            console.log('🎵 Audio canplaythrough for:', cur.src);
+            
           }}
           style={{ position:'fixed', width:0, height:0, opacity:0, pointerEvents:'none', left:0, top:0 }}
         />,

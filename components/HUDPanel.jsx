@@ -122,7 +122,7 @@ export default function HUDPanel({
     } catch {}
     return DISABLE_3D_PLANETS_DEFAULT;
   })();
-  console.log('🌍 HUDPanel: Component rendering with props:', { 
+  /* debug removed */ ({ 
     currentId, 
     showAll: !currentId, 
     songsLength: songs?.length, 
@@ -2839,7 +2839,7 @@ export default function HUDPanel({
                   playerStore.getState().setMain(id, true);
                   playerStore.getState().setPlanetDisplayMode('single');
                   playerStore.getState().setPlanetsVisible(true);
-                  console.log('🎵 HUDPanel: Focused main planet', id);
+                  
                 } catch (error) {
                   console.error('Failed to focus planet:', error);
                 }

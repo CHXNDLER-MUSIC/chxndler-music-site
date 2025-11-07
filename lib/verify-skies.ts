@@ -41,7 +41,7 @@ export function runSkyVerification() {
   console.group('🎯 skyFor() Function Tests:');
   ['pokemon', 'ocean-girl', 'were-just-friends', 'alien-house-party', 'house-party', 'unknown-song'].forEach(slug => {
     const sky = skyFor(slug);
-    console.log(`  ${slug} → ${sky.key} (${sky.mp4})`);
+    // console output removed
   });
   console.groupEnd();
   

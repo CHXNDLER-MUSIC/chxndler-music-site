@@ -29,3 +29,25 @@ export function dumpAudio(el: HTMLMediaElement | null | undefined, label = 'audi
     console.debug('[media]', `${label}:`, o);
   } catch {}
 }
+
+// Generic debug gate to keep console clean by default.
+// Enable with URL `?debug=1` or by setting `window.__CHX_DEBUG = true`.
+export function isDebug(): boolean {
+  try {
+    if (typeof window === 'undefined') return false;
+    const w = window as any;
+    if (typeof w.__CHX_DEBUG !== 'undefined') return !!w.__CHX_DEBUG;
+    const params = new URLSearchParams(window.location.search);
+    const val = (params.get('debug') || '').toLowerCase();
+    const enabled = val === '1' || val === 'true' || val === 'yes';
+    w.__CHX_DEBUG = enabled;
+    return enabled;
+  } catch {
+    return false;
+  }
+}
+
+export function debugLog(...args: any[]) {
+  if (!isDebug()) return;
+  try { console.log(...args); } catch {}
+}

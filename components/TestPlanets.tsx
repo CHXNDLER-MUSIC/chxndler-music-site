@@ -4,7 +4,6 @@ import React from "react";
 import PlanetSystem from "@/components/holo/PlanetSystem";
 
 export default function TestPlanets() {
-  console.log("🚨🚨🚨 TestPlanets component rendering!");
   
   return (
     <div style={{ 

@@ -15,7 +15,7 @@ export default function PageViewTracker() {
     const params = searchParams?.toString() || '';
     const url = pathname + (params ? `?${params}` : '');
     const timer = setTimeout(() => {
-      console.log('PageViewTracker: tracking page view for', url);
+      
       trackPageView();
     }, 120); // small debounce
     return () => clearTimeout(timer);
