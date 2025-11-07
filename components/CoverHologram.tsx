@@ -498,8 +498,8 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
           style={{
             position: 'fixed',
             left: '50%',
-            // Nudge popover further upward
-            top: (elementsPopoverPos.top - 36),
+            // Nudge popover further upward (slightly more)
+            top: (elementsPopoverPos.top - 48),
             transform: 'translateX(-50%)',
             padding: '14px 16px',
             borderRadius: 12,
@@ -650,14 +650,14 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
         
         .card-modal{
           /* Smaller pop container */
-          width: min(82vw, 300px);
-          max-width: 82vw;
+          width: min(78vw, 260px);
+          max-width: 78vw;
           background: rgba(25,227,255,0.45);
           box-shadow: 0 0 60px rgba(25,227,255,0.45), inset 0 0 0 1px rgba(25,227,255,0.35);
         }
         @media (max-width: 380px) {
           /* Nudge down more on very narrow devices */
-          .card-modal{ width: min(84vw, 280px); }
+          .card-modal{ width: min(82vw, 240px); }
         }
         .tilt-wrap{ perspective: 1200px; transform-style: preserve-3d; }
         .card-frame{
@@ -770,7 +770,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
           transform: scale(1.08); /* slightly overfill so art sits on top of circular border */
         }
         .btn-element:hover{
-          transform: scale(1.05);
+          transform: scale(1.12);
           box-shadow:
             0 0 36px rgba(25,227,255,.95),
             0 0 80px rgba(25,227,255,.55),

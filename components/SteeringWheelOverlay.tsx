@@ -255,7 +255,8 @@ export default function SteeringWheelOverlay({
   return (
     <div
       className="absolute inset-0 pointer-events-none"
-      aria-hidden
+      // Wrapper contains interactive controls; do NOT hide from assistive tech
+      // Decorative sub-elements are marked aria-hidden individually instead
       suppressHydrationWarning
       style={{
         position: 'absolute', inset: 0, zIndex: 100, pointerEvents: 'none',
@@ -281,7 +282,8 @@ export default function SteeringWheelOverlay({
           // Do not mask/clamp — allow hands to extend beyond the wheel
           borderRadius: undefined,
           overflow: "visible",
-          zIndex: 60,
+          // Ensure wheel renders above the initial dimming overlay (z-89) but below lightbeam base (z-100)
+          zIndex: 95,
           outline: vconf.debug ? "1px dashed rgba(25,227,255,0.6)" : undefined,
           background: vconf.debug ? "rgba(25,227,255,0.08)" : "transparent",
           // Allow hiding via config if needed, default to visible
@@ -293,6 +295,34 @@ export default function SteeringWheelOverlay({
       >
         {/* Wheel video with luma key: remove black background; no circle crop, allow hands to extend. */}
         {(() => {
+          // Allow a quick debug toggle to show a plain <video> instead of luma-keyed canvas
+          const [plainWheel, setPlainWheel] = (function usePlainWheel() {
+            const [v, setV] = React.useState<boolean>(() => {
+              try { return window.localStorage.getItem('PLAIN_WHEEL') === '1'; } catch { return false; }
+            });
+            React.useEffect(() => {
+              const onKey = (e: KeyboardEvent) => {
+                if ((e.key === 'W' || e.key === 'w') && (e.metaKey || e.ctrlKey || e.shiftKey)) {
+                  e.preventDefault();
+                  setV(prev => {
+                    const next = !prev; try { window.localStorage.setItem('PLAIN_WHEEL', next ? '1' : '0'); } catch {}
+                    // eslint-disable-next-line no-console
+                    try { console.log(`Wheel video mode: ${next ? 'PLAIN' : 'LUMA'}`); } catch {}
+                    return next;
+                  });
+                }
+              };
+              window.addEventListener('keydown', onKey);
+              // expose manual toggle for convenience
+              (window as any).__toggleWheelVideo = () => setV(prev => {
+                const next = !prev; try { window.localStorage.setItem('PLAIN_WHEEL', next ? '1' : '0'); } catch {}
+                try { console.log(`Wheel video mode: ${next ? 'PLAIN' : 'LUMA'}`); } catch {}
+                return next;
+              });
+              return () => { window.removeEventListener('keydown', onKey); try { delete (window as any).__toggleWheelVideo; } catch {} };
+            }, []);
+            return [v, setV] as const;
+          })();
           // Kill-switch controlled via localStorage to diagnose performance issues
           let disable = false;
           try {
@@ -313,6 +343,31 @@ export default function SteeringWheelOverlay({
           // Keep the wheel rendering under all conditions (always playing)
           // Ignore suspend/warp to ensure continuous playback
           const paused = false;
+          if (plainWheel) {
+            return (
+              <video
+                src={"/cockpit/wheel.mp4"}
+                autoPlay
+                muted
+                loop
+                playsInline
+                aria-label="wheel-video-plain"
+                style={{
+                  display: 'block',
+                  width: vs,
+                  height: vs,
+                  objectFit: 'cover',
+                  pointerEvents: 'none',
+                  background: 'transparent',
+                  transform: 'scale(1.0)',
+                  transformOrigin: 'bottom center',
+                  filter: isDimmingOverlayActive ? 'brightness(0.65) saturate(1.0)' : undefined,
+                  opacity: isDimmingOverlayActive ? 0.95 : 1,
+                  transition: isDimmingOverlayActive ? 'filter 250ms ease, opacity 250ms ease' : 'none',
+                }}
+              />
+            );
+          }
           return (
             <LumaKeyVideo
               srcMp4="/cockpit/wheel.mp4"
@@ -329,13 +384,10 @@ export default function SteeringWheelOverlay({
                 height: vs,
                 pointerEvents: 'none',
                 background: 'transparent',
-                // Render at 1:1 scale to preserve intended size
                 transform: 'scale(1.0)',
                 transformOrigin: 'bottom center',
-                // Dim the wheel on the opening screen without affecting the Start button
                 filter: isDimmingOverlayActive ? 'brightness(0.65) saturate(1.0)' : undefined,
                 opacity: isDimmingOverlayActive ? 0.95 : 1,
-                // When dimming is removed (after Start), snap to full brightness immediately
                 transition: isDimmingOverlayActive ? 'filter 250ms ease, opacity 250ms ease' : 'none',
               }}
             />

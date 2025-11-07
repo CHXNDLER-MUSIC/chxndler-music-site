@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import SkyboxVideo from "@/components/SkyboxVideo";
+import LumaKeyVideo from "@/components/LumaKeyVideo";
 import AmbientSpace from "@/components/AmbientSpace";
 import SteeringWheelOverlay from "@/components/SteeringWheelOverlay";
 import StationDialOverlay from "@/components/StationDialOverlay";
@@ -14,6 +15,7 @@ const HUDPanel = dynamic(() => import("@/components/HUDPanel"), { ssr: false });
 const PlanetSystem = dynamic(() => import("@/components/holo/PlanetSystem"), { ssr: false });
 const HoloHUD = dynamic(() => import("@/components/HoloHUD"), { ssr: false });
 import { skyFor, introSky } from "@/lib/sky";
+import { youtubeSkyFor, HOME_YOUTUBE_SKY } from "@/lib/sky-youtube";
 const MediaPlayer = dynamic(() => import("@/components/MediaPlayer"), { ssr: false });
 import { sfx } from "@/lib/sfx";
 import { LINKS, POS } from "@/config/cockpit";
@@ -28,6 +30,24 @@ import { audioCoordinator } from "@/lib/audio-coordinator";
 import { debugLog } from "@/lib/debug";
 
 export default function DashboardApp({ initialSlug } = {}) {
+  // Global wheel render mode (LUMA vs PLAIN). Must be top-level to obey Hooks rules.
+  const [wheelPlain, setWheelPlain] = useState(() => {
+    try { return typeof window !== 'undefined' && window.localStorage.getItem('PLAIN_WHEEL') === '1'; } catch { return false; }
+  });
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.key === 'W' || e.key === 'w') && (e.metaKey || e.ctrlKey || e.shiftKey)) {
+        e.preventDefault();
+        setWheelPlain(prev => {
+          const next = !prev;
+          try { if (typeof window !== 'undefined') window.localStorage.setItem('PLAIN_WHEEL', next ? '1' : '0'); } catch {}
+          return next;
+        });
+      }
+    };
+    try { window.addEventListener('keydown', onKey); } catch {}
+    return () => { try { window.removeEventListener('keydown', onKey); } catch {} };
+  }, []);
   const [channelIdx, setChannelIdx] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [sky, setSky] = useState(introSky);
@@ -55,8 +75,8 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [homeIntroEnabled, setHomeIntroEnabled] = useState(false);
   const [pendingHomePower, setPendingHomePower] = useState(false);
   const [pendingTrackPlay, setPendingTrackPlay] = useState(false);
-  // Track if BABY sky YouTube has started (keep looping even if song pauses)
-  const [babySkyStarted, setBabySkyStarted] = useState(false);
+  // Track which YouTube sky has been armed by playback (keep looping even if audio pauses)
+  const [ytSkyStartedSlug, setYtSkyStartedSlug] = useState(null);
   // Hide 3D planets during warp when a song is selected; reveal on warp SFX end
   const [hidePlanetsForSelection, setHidePlanetsForSelection] = useState(false);
   const [pendingOverlayReveal, setPendingOverlayReveal] = useState(false); // wait to show overlay until warp SFX ends
@@ -985,6 +1005,47 @@ export default function DashboardApp({ initialSlug } = {}) {
           className="fixed inset-0 z-20 pointer-events-none cockpit-bg"
           aria-hidden="true" 
         />
+        {/* Render the steering wheel video immediately on opening screen */}
+        <div
+          style={{
+            position: 'fixed',
+            // Slight upward nudge to align with cockpit wheel area
+            bottom: '-3vh',
+            left: '50vw',
+            transform: 'translateX(-50%)',
+            width: 'calc(clamp(460px, 80vmin, 980px) * 0.8)',
+            height: 'calc(clamp(460px, 80vmin, 980px) * 0.8)',
+            // Above dimming overlay (z-89), below lightbeam base (z-[100])
+            zIndex: 95,
+            pointerEvents: 'none',
+            contain: 'layout paint',
+            willChange: 'opacity, transform',
+          }}
+        >
+          {wheelPlain ? (
+            <video
+              src="/cockpit/wheel.mp4"
+              autoPlay
+              muted
+              loop
+              playsInline
+              aria-label="wheel-video-plain"
+              style={{ width: '100%', height: '100%', objectFit: 'cover', background: 'transparent' }}
+            />
+          ) : (
+            <LumaKeyVideo
+              srcMp4="/cockpit/wheel.mp4"
+              threshold={0.001}
+              softness={0.01}
+              saturation={1.0}
+              contrast={1.2}
+              offsetYRatio={0}
+              paused={false}
+              className="block"
+              style={{ width: '100%', height: '100%', background: 'transparent' }}
+            />
+          )}
+        </div>
         {/* Show light beam base on initial page too */}
         <div 
           className="fixed inset-0 z-[100] pointer-events-none lightbeam-base-bg"
@@ -1025,10 +1086,21 @@ export default function DashboardApp({ initialSlug } = {}) {
         readyToReveal={uiUnlocked && showOverlayUI}
         minDurationMs={3000}
         offsetY="-1vh"
-        // Use BABY's YouTube sky once it has started; keep looping even if audio pauses
-        youtubeUrl={(curTrack && curTrack.slug === 'baby' && babySkyStarted)
-          ? 'https://youtu.be/d45RXW32C2o'
-          : (homeMode && uiUnlocked ? 'https://youtu.be/gHDxkhQ4FbY' : undefined)}
+        // Use the current track's YouTube sky as soon as a selection is in progress
+        // or playback has started; keep looping even if audio pauses.
+        youtubeUrl={(() => {
+          const slug = curTrack?.slug;
+          const mapped = slug ? youtubeSkyFor(slug) : undefined;
+          // On the homepage, always prefer the space video; do not show a track's video
+          if (homeMode) return uiUnlocked ? HOME_YOUTUBE_SKY : undefined;
+          // Off-home (song view): show the mapped YouTube sky as soon as a selection is happening
+          // or after playback has started (ytSkyStartedSlug guard), so users see it right after clicking.
+          if (slug && mapped) {
+            if (pendingTrackPlay || userSelected) return mapped;
+            if (ytSkyStartedSlug && slug === ytSkyStartedSlug) return mapped;
+          }
+          return undefined;
+        })()}
         // Use provided YouTube clip for lightspeed overlay on opening and Start
         lightspeedYoutubeUrl={'https://youtu.be/KFssNa5WvKc'}
         onWarpSfxEnd={() => {
@@ -1602,11 +1674,11 @@ export default function DashboardApp({ initialSlug } = {}) {
                 onSkyChange={(webm, mp4, key) => setNextSky({ webm, mp4, key })}
                 onPlayingChange={(p) => { 
                   setIsPlaying(p);
-                  // When BABY starts playing for the first time, arm its YouTube sky
+                  // When a mapped track starts playing, arm its YouTube sky
                   try {
                     const slug = (curTrack && curTrack.slug) ? curTrack.slug : (tracks[channelIdx]?.slug || null);
-                    if (p && slug === 'baby') {
-                      setBabySkyStarted(true);
+                    if (p && slug && youtubeSkyFor(slug)) {
+                      setYtSkyStartedSlug(slug);
                     }
                   } catch {}
                   if (p) {
@@ -1656,8 +1728,11 @@ export default function DashboardApp({ initialSlug } = {}) {
 
                   setCurTrack(t); 
                   if (userSelected) { setLinks({ spotify: t.spotify || LINKS.spotify, apple: t.apple || LINKS.apple }); } else { setLinks({ spotify: LINKS.spotify, apple: LINKS.apple }); } 
-                  // Reset BABY sky state when leaving BABY track
-                  try { if ((t?.slug || '') !== 'baby') setBabySkyStarted(false); } catch {}
+                  // Reset YouTube sky state when switching away from the armed track
+                  try {
+                    const nextSlug = t?.slug || '';
+                    if (ytSkyStartedSlug && nextSlug !== ytSkyStartedSlug) setYtSkyStartedSlug(null);
+                  } catch {}
                   // Update planet system focus only when not on homepage flow
                   try {
                     if (userSelected || pendingTrackPlay || !homeMode) {
@@ -1681,11 +1756,11 @@ export default function DashboardApp({ initialSlug } = {}) {
         document.body
       ) : null}
 
-      {/* Light Beam - keep mounted to avoid animation resets/flicker; control via opacity */}
+      {/* Light Beam - keep mounted; hide with display:none until UI unlock to avoid flicker and hook churn */}
       {SHOW_CENTER_BEAM && mounted ? (
         <div 
           className="fixed pointer-events-none z-[95] light-beam"
-          style={lightBeamStyle}
+          style={{ ...lightBeamStyle, display: uiUnlocked ? 'block' : 'none' }}
         >
           {/* Single main beam */}
           <div 
