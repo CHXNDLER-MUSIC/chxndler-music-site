@@ -72,7 +72,7 @@ export default function CoverCard({ src = "https://ik.imagekit.io/CHXNDLER/cover
           transition: filter .15s ease;
         }
         .cover-art-container:hover{
-          transform: translateZ(0) scale(1.02);
+          transform: translateZ(0) scale(1.04);
           outline-color: ${hexToRgba(elementColor, 0.8)};
           box-shadow:
             0 0 36px ${hexToRgba(elementColor, 0.55)},

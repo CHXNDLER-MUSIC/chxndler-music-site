@@ -2188,7 +2188,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         }
         
         .spotify-btn-waveform:hover {
-          transform: translate(-50%, -50%) scale(1.15);
+          transform: translate(-50%, -50%) scale(1.22);
           box-shadow: 0 6px 20px rgba(29, 185, 84, 0.8);
           background: linear-gradient(135deg, #1ed760, #22e55c);
         }
@@ -2235,7 +2235,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           background: transparent;
           border: none;
         }
-        .apple-btn-waveform:hover { transform: translate(-50%, -50%) scale(1.08); opacity: 0.95; }
+        .apple-btn-waveform:hover { transform: translate(-50%, -50%) scale(1.14); opacity: 0.95; }
         .apple-btn-waveform:active { transform: translate(-50%, -50%) scale(0.96); }
         .apple-btn-unavailable-waveform {
           position: absolute;
@@ -2275,7 +2275,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         .waveform-volume .youtube-link-unavailable-waveform {
           flex: 0 0 auto; /* prevent shrinking to zero if space is tight */
         }
-        .lyrics-link-waveform:hover { transform: scale(1.1); box-shadow: 0 6px 22px rgba(242,239,29,0.9); }
+        .lyrics-link-waveform:hover { transform: scale(1.16); box-shadow: 0 6px 22px rgba(242,239,29,0.9); }
         .lyrics-link-waveform:active { transform: scale(0.95); }
 
         .lyrics-link-unavailable-waveform {
@@ -2299,8 +2299,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           width: 32px;
           height: 32px;
           border-radius: 50%;
-          /* Match Store button rim */
-          border: 1px solid rgba(255,255,255,0.45);
+          /* Thinner, Apple-like hairline rim */
+          border: 0.5px solid rgba(255,255,255,0.35);
           background: radial-gradient(circle at 30% 30%, #FF6B6B, #FF0000);
           color: #FFFFFF;
           display: inline-flex;
@@ -2315,9 +2315,9 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           z-index: 600; /* sit above waveform/svg and streaming buttons */
         }
         .youtube-link-waveform:hover { 
-          transform: scale(1.1); 
+          transform: scale(1.16); 
           box-shadow: 0 3px 12px rgba(255,59,48,0.55);
-          border-color: rgba(255,255,255,0.65);
+          border-color: rgba(255,255,255,0.5);
         }
         .youtube-link-waveform:active { transform: scale(0.95); }
         /* Size icon similar to Store button for inner padding */
@@ -2326,7 +2326,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           width: 32px;
           height: 32px;
           border-radius: 50%;
-          border: 1px solid rgba(128,128,128,0.5);
+          border: 0.5px solid rgba(128,128,128,0.45);
           background: rgba(128,128,128,0.35);
           color: rgba(255,255,255,0.85);
           display: inline-flex;
@@ -2371,7 +2371,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           box-shadow: 0 4px 16px rgba(25,227,255,0.6);
         }
         /* Removed outer rim on waveform volume button to match Spotify */
-        .waveform-volume-btn:hover { transform: scale(1.05); box-shadow: 0 6px 22px rgba(25,227,255,0.75); }
+        .waveform-volume-btn:hover { transform: scale(1.12); box-shadow: 0 6px 22px rgba(25,227,255,0.75); }
         .waveform-volume-btn:hover .btn-glow { opacity: 1; animation: pulse 2s ease-in-out infinite; }
         .waveform-volume-btn:active { transform: scale(0.95); }
         /* Removed legacy horizontal waveform volume bar styles */
@@ -2575,7 +2575,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           color: white;
           box-shadow: 0 4px 16px rgba(25,227,255,0.6);
         }
-        .volume-btn:hover { transform: translateY(-1px) scale(1.08); box-shadow: 0 6px 20px rgba(25,227,255,0.8); }
+        .volume-btn:hover { transform: translateY(-1px) scale(1.12); box-shadow: 0 6px 20px rgba(25,227,255,0.8); }
         .volume-btn:hover .btn-glow { opacity: 1; animation: pulse 2s ease-in-out infinite; }
         .volume-btn:active { transform: scale(0.95); }
         

@@ -32,7 +32,15 @@ import { debugLog } from "@/lib/debug";
 export default function DashboardApp({ initialSlug } = {}) {
   // Global wheel render mode (LUMA vs PLAIN). Must be top-level to obey Hooks rules.
   const [wheelPlain, setWheelPlain] = useState(() => {
-    try { return typeof window !== 'undefined' && window.localStorage.getItem('PLAIN_WHEEL') === '1'; } catch { return false; }
+    try {
+      if (typeof window === 'undefined') return false;
+      if (window.localStorage.getItem('WHEEL_FORCE_LUMA') === '1') return false;
+      const ls = window.localStorage.getItem('PLAIN_WHEEL');
+      if (ls === '1') return true;
+      if (ls === '0') return false;
+      window.localStorage.setItem('PLAIN_WHEEL', '0');
+      return false; // default to LUMA (keyed) for transparent background
+    } catch { return false; }
   });
   useEffect(() => {
     const onKey = (e) => {
@@ -90,8 +98,10 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [welcomeHasPlayed, setWelcomeHasPlayed] = useState(false); // tracks if welcome has been played (resets on page refresh)
   const welcomeOnStartRef = React.useRef(false); // signals that welcome VO should play now
   const startButtonWarpRef = React.useRef(false); // prevents double warp when start button is clicked
-  // Ensure song MP3 starts only after button SFX finishes; start SFX at warp end
+  // Ensure song MP3 starts only after join-alien SFX finishes (played at warp end)
   const buttonSfxWaitRef = React.useRef(null);
+  // Join-alien SFX promise used to gate song start after warp
+  const joinSfxWaitRef = React.useRef(null);
   const [cardModalOpen, setCardModalOpen] = useState(false); // track card modal state for beam dimming
   const [joinAlienOpen, setJoinAlienOpen] = useState(false); // track join alien button state for pink beam
   const [beamColor, setBeamColor] = useState('blue'); // track active beam color
@@ -1015,11 +1025,12 @@ export default function DashboardApp({ initialSlug } = {}) {
             transform: 'translateX(-50%)',
             width: 'calc(clamp(460px, 80vmin, 980px) * 0.8)',
             height: 'calc(clamp(460px, 80vmin, 980px) * 0.8)',
-            // Above dimming overlay (z-89), below lightbeam base (z-[100])
-            zIndex: 95,
+            // Above dimming overlay (z-[89]) and lightbeam base (z-[100]) to ensure visibility
+            zIndex: 101,
             pointerEvents: 'none',
             contain: 'layout paint',
             willChange: 'opacity, transform',
+            outline: (typeof window !== 'undefined' && window.localStorage.getItem('WHEEL_DEBUG') === '1') ? '2px dashed rgba(255,0,0,0.5)' : undefined,
           }}
         >
           {wheelPlain ? (
@@ -1035,12 +1046,14 @@ export default function DashboardApp({ initialSlug } = {}) {
           ) : (
             <LumaKeyVideo
               srcMp4="/cockpit/wheel.mp4"
-              threshold={0.001}
-              softness={0.01}
+              threshold={0.02}
+              softness={0.04}
               saturation={1.0}
-              contrast={1.2}
+              contrast={1.15}
               offsetYRatio={0}
               paused={false}
+              forceEnabled
+              highQuality
               className="block"
               style={{ width: '100%', height: '100%', background: 'transparent' }}
             />
@@ -1246,7 +1259,7 @@ export default function DashboardApp({ initialSlug } = {}) {
             } catch {}
           }
           // If a track play is pending, begin UI fade-in immediately at warp end
-          // and start the button SFX right away so it completes before music starts
+          // and play join-alien SFX right away; the song will wait for it to finish
           if (pendingTrackPlay) {
             try {
               // Cancel any fallback that might race with our sequencing
@@ -1257,20 +1270,27 @@ export default function DashboardApp({ initialSlug } = {}) {
             setBeamEnabled(true);
             setBeamOnly(false);
             setShowOverlayUI(true);
-            // Kick off button SFX now (right after warp)
-            try { buttonSfxWaitRef.current = sfx.playAndWait('button', 0.9); } catch { buttonSfxWaitRef.current = null; }
+            // Kick off join-alien SFX now (right after warp). Song waits for this to complete.
+            try { joinSfxWaitRef.current = sfx.playAndWait('join', 0.9); } catch { joinSfxWaitRef.current = null; }
             // Safety: if base video readiness callback is delayed, start music after a grace period
             try {
               if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); }
               trackPlayTimerRef.current = window.setTimeout(() => {
                 
-                if (pendingTrackPlay) {
-                  
-                  setPlaySignal((n) => n + 1);
-                  setPendingTrackPlay(false);
-                }
+                const proceed = () => {
+                  if (pendingTrackPlay) {
+                    setPlaySignal((n) => n + 1);
+                    setPendingTrackPlay(false);
+                  }
+                };
+                // Respect join SFX completion if present even on fallback
+                try {
+                  const p = joinSfxWaitRef.current;
+                  if (p && typeof p.then === 'function') { p.then(proceed).catch(proceed); }
+                  else { proceed(); }
+                } catch { proceed(); }
                 trackPlayTimerRef.current = undefined;
-              }, 2000);
+              }, 5000);
             } catch {}
           }
           // Conditional warp destination:
@@ -1319,7 +1339,8 @@ export default function DashboardApp({ initialSlug } = {}) {
           // Allow playback even if warpActive is still true to handle race conditions with onFlyEnd
           // SAFETY: Only auto-play if user has explicitly selected a song or there was an initialSlug
           // Also ensure UI is unlocked (user has interacted) to prevent auto-play on page load
-          if (pendingTrackPlay && (userSelected || initialSlug) && uiUnlocked) {
+          // Only start audio after warp has fully ended
+          if (pendingTrackPlay && (userSelected || initialSlug) && uiUnlocked && !warpActive) {
             // Ensure ambient and intro are fully stopped just before starting the song
             try {
               const amb = document.querySelector('audio[data-ambient="1"]');
@@ -1354,7 +1375,7 @@ export default function DashboardApp({ initialSlug } = {}) {
             // Clear any pending fallback timers now that we'll start playback here
             if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
             // UI has already been revealed at warp end. Now, only start the song MP3
-            // after the button SFX has finished.
+            // after the join-alien SFX has finished.
             if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
             
             // Add a final failsafe timer - if song doesn't start within 3 seconds, force it
@@ -1380,43 +1401,19 @@ export default function DashboardApp({ initialSlug } = {}) {
                 
               }, 100); // 100ms delay to allow MediaPlayer to set up
             };
-            // For song selection (userSelected), start immediately when video plays
-            // For Start button flow, wait for button SFX
-            if (userSelected || initialSlug) {
-              
-              startSong();
-            } else {
-              // Start button flow - handle SFX timing
-              try {
-                const p = buttonSfxWaitRef.current;
-                if (p && typeof p.then === 'function') {
-                  // Wait for button SFX to complete, but with a timeout
-                  Promise.race([
-                    p,
-                    new Promise(resolve => setTimeout(resolve, 1200)) // Max 1.2s wait for SFX
-                  ]).then(startSong).catch(() => {
-                    console.warn('DashboardApp: button SFX failed, starting song anyway');
-                    startSong();
-                  });
-                } else {
-                  // If SFX wasn't started, play it briefly and then start song
-                  try {
-                    sfx.playAndWait('button', 0.9).then(() => {
-                      setTimeout(startSong, 100); // Small delay after SFX
-                    }).catch(() => {
-                      console.warn('DashboardApp: button SFX playAndWait failed, starting song immediately');
-                      startSong();
-                    });
-                  } catch {
-                    // If SFX completely fails, start song immediately
-                    startSong();
-                  }
-                }
-              } catch {
-                // Fallback: if anything fails, start the song
-                console.warn('DashboardApp: SFX handling failed, starting song immediately');
+            // Always wait for join-alien SFX to complete (with a safety cap) before starting
+            try {
+              const p = joinSfxWaitRef.current;
+              if (p && typeof p.then === 'function') {
+                Promise.race([
+                  p,
+                  new Promise(resolve => setTimeout(resolve, 2500)), // cap wait
+                ]).then(startSong).catch(() => startSong());
+              } else {
                 startSong();
               }
+            } catch {
+              startSong();
             }
           }
         }}

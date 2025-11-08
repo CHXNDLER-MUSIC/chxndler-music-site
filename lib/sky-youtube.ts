@@ -8,7 +8,7 @@ export const YOUTUBE_SKIES: Record<string, string> = {
   'always-on-my-mind': 'https://youtu.be/OuBRUhgOUmU',
   'always-on-my-mind-remix': 'https://youtu.be/lWuHXFPi4mA',
   baby: 'https://youtu.be/d45RXW32C2o',
-  'be-my-bee': 'https://youtu.be/d45RXW32C2o',
+  'be-my-bee': 'https://youtu.be/RD7TUOeeUhk',
   'be-my-bee-acoustic': 'https://youtu.be/gUPRdW0sOkU',
   'brain-freeze': 'https://youtu.be/eDsXZxWB66Y',
   collide: 'https://youtu.be/8qtq8DlS8ws',

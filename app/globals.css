@@ -454,15 +454,15 @@ img[src$="/elements/music.png"] {
   transform: translateZ(0);
 }
 .cover-art-container:hover {
-  transform: translateZ(0) scale(1.02);
+  transform: translateZ(0) scale(1.04);
   box-shadow: 0 0 28px rgba(25,227,255,0.6), 0 0 44px rgba(25,227,255,0.4), 0 0 60px rgba(25,227,255,0.25);
 }
 
 /* Ensure hover glow for all cover variants (hologram + HUD) */
 .cover-hologram-container { transition: scale 150ms ease, box-shadow 200ms ease; will-change: transform; transform-origin: 50% 50%; scale: 1; }
-.cover-hologram-container:hover { box-shadow: 0 0 36px rgba(25,227,255,0.6), 0 0 64px rgba(25,227,255,0.4), 0 0 96px rgba(25,227,255,0.3); scale: 1.02; }
+.cover-hologram-container:hover { box-shadow: 0 0 36px rgba(25,227,255,0.6), 0 0 64px rgba(25,227,255,0.4), 0 0 96px rgba(25,227,255,0.3); scale: 1.04; }
 .hud-cover { transition: box-shadow 200ms ease, transform 150ms ease; box-shadow: 0 0 0 rgba(0,0,0,0); }
-.hud-cover:hover { box-shadow: 0 0 30px rgba(25,227,255,0.5), 0 0 50px rgba(25,227,255,0.3); transform: translateZ(0) scale(1.02); }
+.hud-cover:hover { box-shadow: 0 0 30px rgba(25,227,255,0.5), 0 0 50px rgba(25,227,255,0.3); transform: translateZ(0) scale(1.04); }
 
 /* Mobile: disable hover scale for cover elements to avoid flicker */
 @media (hover: none) and (pointer: coarse) {
@@ -752,7 +752,7 @@ img[src$="/elements/music.png"] {
 }
 .spotify-btn-waveform-hud:hover{
   background: linear-gradient(135deg, #1ed760, #22e55c);
-  transform: scale(1.08);
+  transform: scale(1.14);
   box-shadow: 0 0 18px rgba(29, 185, 84, 0.6);
   border-color: rgba(255,255,255,.6);
 }
@@ -792,7 +792,7 @@ img[src$="/elements/music.png"] {
 }
 .apple-btn-waveform-hud:hover{
   background: linear-gradient(135deg, #FF2D55, #FF1744);
-  transform: scale(1.08);
+  transform: scale(1.14);
   box-shadow: 0 0 18px rgba(255, 59, 48, 0.6);
   border-color: rgba(255,255,255,.6);
 }
@@ -848,7 +848,7 @@ img[src$="/elements/music.png"] {
 }
 .gem-btn-waveform-hud:hover{
   background: linear-gradient(135deg, #ff76c8, #ffa0db);
-  transform: scale(1.08);
+  transform: scale(1.14);
   box-shadow: 0 0 18px rgba(255, 62, 165, 0.65), 0 0 36px rgba(255, 118, 200, 0.35);
   border-color: rgba(255,255,255,.65);
 }
@@ -871,7 +871,7 @@ img[src$="/elements/music.png"] {
 }
 /* Even when unavailable, add a subtle pink glow and grow on hover */
 .gem-btn-unavailable-hud:hover{
-  transform: scale(1.06);
+  transform: scale(1.1);
   box-shadow: 0 0 16px rgba(255, 62, 165, 0.45), 0 0 28px rgba(255, 118, 200, 0.25);
   border-color: rgba(255,255,255,.55);
   filter: brightness(1.05) saturate(1.05);
@@ -901,7 +901,7 @@ img[src$="/elements/music.png"] {
   display: block;
 }
 .youtube-btn-waveform-hud:hover{
-  transform: scale(1.08);
+  transform: scale(1.14);
   box-shadow: 0 6px 22px rgba(255,0,0,0.85);
   border-color: rgba(255,255,255,.7);
 }

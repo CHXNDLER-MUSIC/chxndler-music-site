@@ -83,6 +83,17 @@ export default function SkyboxVideo({
   }, [lightspeedYoutubeUrl]);
   const [lsYtReady, setLsYtReady] = React.useState(false);
   
+  // When using YouTube for the base sky, only signal base-playing after the warp overlay hides
+  React.useEffect(() => {
+    if (!ytEmbedUrl) return;
+    if (!ytReady) return;
+    if (showLightspeed) return;
+    const key = String(videoKey || 'yt');
+    if (basePlayNotified.current === key) return;
+    basePlayNotified.current = key;
+    try { onBasePlayingRef.current && onBasePlayingRef.current(); } catch {}
+  }, [ytEmbedUrl, ytReady, showLightspeed, videoKey]);
+  
   // Reduce video preloading on constrained devices (mobile/save-data/slow link)
   const lightMode = React.useMemo(() => {
     try {
@@ -277,17 +288,7 @@ export default function SkyboxVideo({
                 referrerPolicy="origin"
                 fetchPriority="high"
                 style={{ display: 'block', border: 0, width: '100%', height: '100%' }}
-                // Treat iframe load as base playing for sequencing when used as background
-                onLoad={() => {
-                  setYtReady(true);
-                  try {
-                    const key = String(videoKey || 'yt');
-                    if (basePlayNotified.current !== key) {
-                      basePlayNotified.current = key;
-                      onBasePlayingRef.current && onBasePlayingRef.current();
-                    }
-                  } catch {}
-                }}
+                onLoad={() => { setYtReady(true); }}
               />
             </div>
           </div>
@@ -375,6 +376,13 @@ export default function SkyboxVideo({
             <source src="/skies/lightspeed.mp4" type="video/mp4" />
           </video>
         )}
+
+        {/* When using a YouTube base, notify base-playing only after warp overlay hides */}
+        {ytEmbedUrl ? (
+          <>
+            {(() => { /* inline effect equivalent in JSX scope not possible; handled via hook below */ })()}
+          </>
+        ) : null}
       </div>
     </div>
   );

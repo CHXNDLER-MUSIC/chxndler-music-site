@@ -383,7 +383,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
             {hasRealCard && (
               <>
                 {/* Elements button in top-left within the blue border area */}
-                <div className="absolute top-1 left-2 z-10">
+                <div className="absolute top-0.5 left-0.5 z-10">
                   <button
                     ref={elementBtnRef}
                     type="button"
@@ -420,7 +420,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                       src="/elements/elementals.png?v=20241027"
                       alt=""
                       fill
-                      sizes="34px"
+                      sizes="36px"
                       className="btn-element-icon"
                       aria-hidden
                       style={{ objectFit: 'cover' }}
@@ -497,9 +497,10 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
           className="elements-popover holo-scrollbar-yellow"
           style={{
             position: 'fixed',
-            left: '50%',
-            // Nudge popover further upward (slightly more)
-            top: (elementsPopoverPos.top - 48),
+            // Shift slightly left from exact center
+            left: 'calc(50% - 6px)',
+            // Nudge popover further upward (very slight)
+            top: (elementsPopoverPos.top - 54),
             transform: 'translateX(-50%)',
             padding: '14px 16px',
             borderRadius: 12,
@@ -750,7 +751,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
         /* ELEMENT button icon styles */
         .btn-element{
           position: relative; display:inline-grid; place-items:center;
-          width: 34px; height: 34px; border-radius: 50%; font-weight:800; letter-spacing:.06em; font-size: 15px; line-height: 1.1;
+          width: 36px; height: 36px; border-radius: 50%; font-weight:800; letter-spacing:.06em; font-size: 15px; line-height: 1.1;
           color:#001014; text-transform:none; font-family: InterLocal, system-ui, sans-serif;
           background: transparent; /* fill entirely with elementals.png */
           border: 1px solid rgba(255,255,255,.24);

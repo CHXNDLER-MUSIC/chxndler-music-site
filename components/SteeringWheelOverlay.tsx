@@ -282,9 +282,9 @@ export default function SteeringWheelOverlay({
           // Do not mask/clamp — allow hands to extend beyond the wheel
           borderRadius: undefined,
           overflow: "visible",
-          // Ensure wheel renders above the initial dimming overlay (z-89) but below lightbeam base (z-100)
-          zIndex: 95,
-          outline: vconf.debug ? "1px dashed rgba(25,227,255,0.6)" : undefined,
+          // Ensure wheel renders above dimming overlay (z-[89]) and lightbeam base (z-[100])
+          zIndex: 101,
+          outline: vconf.debug ? "1px dashed rgba(25,227,255,0.6)" : (typeof window !== 'undefined' && window.localStorage.getItem('WHEEL_DEBUG') === '1' ? '2px dashed rgba(255,0,0,0.5)' : undefined),
           background: vconf.debug ? "rgba(25,227,255,0.08)" : "transparent",
           // Allow hiding via config if needed, default to visible
           display: (vconf as any)?.hidden ? 'none' as const : undefined,
@@ -298,7 +298,18 @@ export default function SteeringWheelOverlay({
           // Allow a quick debug toggle to show a plain <video> instead of luma-keyed canvas
           const [plainWheel, setPlainWheel] = (function usePlainWheel() {
             const [v, setV] = React.useState<boolean>(() => {
-              try { return window.localStorage.getItem('PLAIN_WHEEL') === '1'; } catch { return false; }
+              try {
+                const force = window.localStorage.getItem('WHEEL_FORCE_LUMA') === '1';
+                if (force) return false;
+                const ls = window.localStorage.getItem('PLAIN_WHEEL');
+                if (ls === '1') return true;
+                if (ls === '0') return false;
+                // Default to LUMA on first load so black box is keyed out
+                window.localStorage.setItem('PLAIN_WHEEL', '0');
+                return false;
+              } catch {
+                return false;
+              }
             });
             React.useEffect(() => {
               const onKey = (e: KeyboardEvent) => {
@@ -343,6 +354,7 @@ export default function SteeringWheelOverlay({
           // Keep the wheel rendering under all conditions (always playing)
           // Ignore suspend/warp to ensure continuous playback
           const paused = false;
+          // Allow quick fallback to plain video for visibility debugging
           if (plainWheel) {
             return (
               <video
@@ -371,12 +383,14 @@ export default function SteeringWheelOverlay({
           return (
             <LumaKeyVideo
               srcMp4="/cockpit/wheel.mp4"
-              threshold={(vconf as any)?.threshold ?? 0.001}
-              softness={(vconf as any)?.softness ?? 0.01}
+              threshold={(vconf as any)?.threshold ?? 0.02}
+              softness={(vconf as any)?.softness ?? 0.04}
               saturation={(vconf as any)?.saturation ?? 1.0}
-              contrast={(vconf as any)?.contrast ?? 1.2}
+              contrast={(vconf as any)?.contrast ?? 1.15}
               offsetYRatio={0}
               paused={paused}
+              forceEnabled
+              highQuality
               className="block"
               style={{
                 display: 'block',

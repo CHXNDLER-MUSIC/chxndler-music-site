@@ -14,6 +14,12 @@ type Props = {
   style?: React.CSSProperties;
   // Pause the processing loop (saves CPU/GPU when dimmed or offscreen)
   paused?: boolean;
+  // Force-enable processing even if localStorage flags request disable
+  forceEnabled?: boolean;
+  // Prefer higher-quality processing (less downscaling/frame-skipping)
+  highQuality?: boolean;
+  // Apply screen blend to visually erase residual dark pixels
+  blendScreen?: boolean;
 };
 
 export default function LumaKeyVideo({
@@ -28,13 +34,16 @@ export default function LumaKeyVideo({
   className,
   style,
   paused = false,
+  forceEnabled = false,
+  highQuality = false,
+  blendScreen = false,
 }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [ready, setReady] = useState(false);
   const rafRef = useRef<number | null>(null);
   const [isSafari, setIsSafari] = useState(false);
-  const [fastMode, setFastMode] = useState(true);
+  const [fastMode, setFastMode] = useState(!highQuality);
   const [disabled, setDisabled] = useState(false);
   // Pause rendering when offscreen for smoother page performance
   const [inViewport, setInViewport] = useState(true);
@@ -59,9 +68,9 @@ export default function LumaKeyVideo({
       setIsSafari(isSafariUA);
       // Performance controls via localStorage
       const fastLS = (typeof window !== 'undefined') ? window.localStorage.getItem('LUMA_FAST') : null;
-      if (fastLS === '0') setFastMode(false);
+      if (highQuality) setFastMode(false); else if (fastLS === '0') setFastMode(false);
       const disLS = (typeof window !== 'undefined') ? window.localStorage.getItem('LUMA_DISABLE') : null;
-      if (disLS === '1' || disLS === 'true') setDisabled(true);
+      if (!forceEnabled && (disLS === '1' || disLS === 'true')) setDisabled(true);
       // Heuristic: lower-end CPUs start with more aggressive frame skipping
       try {
         const hc = (navigator as any)?.hardwareConcurrency;
@@ -416,9 +425,8 @@ export default function LumaKeyVideo({
   const canvasStyle: React.CSSProperties = {
     ...(style || {}),
     background: 'transparent',
-    // Isolate blending to avoid affecting siblings
-    // Only apply screen blend on Safari
-    ...(isSafari ? { mixBlendMode: 'screen' as const } : {}),
+    // Only apply screen blend on Safari or when explicitly requested
+    ...((isSafari || blendScreen) ? { mixBlendMode: 'screen' as const } : {}),
     // Hint the browser we animate opacity/transforms around this element
     willChange: 'opacity, transform',
     contain: 'layout paint',
