@@ -126,11 +126,14 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
   const [elementsLoading, setElementsLoading] = useState(false);
   const [elementsError, setElementsError] = useState<string | null>(null);
   const [elementsContent, setElementsContent] = useState('');
+  // Selected element to display within Elements popover; null shows only intro
+  type ElementKey = 'water' | 'heart' | 'lightning' | 'darkness';
+  const [selectedElement, setSelectedElement] = useState<ElementKey | null>(null);
   // Render ELEMENTS.md into structured headings with ids for quadrant scrolling
   const renderElementsContent = (content: string) => {
     if (!content) return null;
     const lines = content.split(/\r?\n/);
-    type Key = 'water' | 'heart' | 'lightning' | 'darkness';
+    type Key = ElementKey;
     const keyFromHeading = (s: string): Key | null => {
       const t = s.trim().toLowerCase();
       if (t.startsWith('💧 water')) return 'water';
@@ -162,9 +165,27 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
     }
     if (buffer.length) blocks.push({ type: 'p', key: currentKey, text: buffer.join('\n').trim() });
 
+    // Split into intro (heading + preface) and element sections
+    const firstH3 = blocks.findIndex(b => b.type === 'h3');
+    const introBlocks = firstH3 === -1 ? blocks : blocks.slice(0, firstH3);
+
+    // If no selection, show only intro (title + couple sentences)
+    const toRender: typeof blocks = [...introBlocks];
+
+    if (selectedElement) {
+      const startIdx = blocks.findIndex(b => b.type === 'h3' && b.key === selectedElement);
+      if (startIdx !== -1) {
+        let endIdx = blocks.length;
+        for (let i = startIdx + 1; i < blocks.length; i++) {
+          if (blocks[i].type === 'h3') { endIdx = i; break; }
+        }
+        toRender.push(...blocks.slice(startIdx, endIdx));
+      }
+    }
+
     return (
       <div style={{ lineHeight: 1.6, fontSize: 15, textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>
-        {blocks.map((b, idx) => {
+        {toRender.map((b, idx) => {
           if (b.type === 'h2') {
             return (
               <div key={`h2-${idx}`} style={{ fontSize: 16, fontWeight: 800, margin: '6px 0 10px' }}>
@@ -191,18 +212,10 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
   };
 
   // Smoothly scroll the open Elements popover(s) to a section id
-  const scrollElementsTo = (key: 'water' | 'heart' | 'lightning' | 'darkness') => {
+  const scrollElementsTo = (key: ElementKey) => {
     try {
-      const containers = Array.from(document.querySelectorAll('[aria-label="Elements"]')) as HTMLElement[];
-      const id = `elt-${key}`;
-      containers.forEach((container) => {
-        const target = container.querySelector(`#${id}`) as HTMLElement | null;
-        if (!target) return;
-        const cRect = container.getBoundingClientRect();
-        const tRect = target.getBoundingClientRect();
-        const top = container.scrollTop + (tRect.top - cRect.top) - 8;
-        container.scrollTo({ top, behavior: 'smooth' });
-      });
+      // Select the element section to reveal; keep intro visible
+      setSelectedElement(key);
       try { sfx.play('click', 0.5); } catch {}
       try { track('elements_quadrant_click', { quadrant: key }); } catch {}
     } catch {}
@@ -486,6 +499,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                       setElementsLoading(true);
                       setElementsError(null);
                       setElementsContent('');
+                      setSelectedElement(null); // Show only intro until a quadrant is clicked
                       try {
                         const res = await fetch('/api/elements');
                         const data = await res.json();
@@ -653,13 +667,15 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
               <img
                 src="/elements/elementals.png?v=20241027"
                 alt="Elementals"
+                className="elt-img"
                 style={{ display: 'block', width: '100%', height: 'auto', background: 'transparent' }}
               />
               {/* Quadrant overlay buttons */}
-              <button aria-label="Water" title="Water" onClick={() => scrollElementsTo('water')} className="elt-q elt-q-tl" />
+              {/* Mapping per request: TL=darkness, TR=heart, BL=water, BR=lightning */}
+              <button aria-label="Darkness" title="Darkness" onClick={() => scrollElementsTo('darkness')} className="elt-q elt-q-tl" />
               <button aria-label="Heart" title="Heart" onClick={() => scrollElementsTo('heart')} className="elt-q elt-q-tr" />
-              <button aria-label="Lightning" title="Lightning" onClick={() => scrollElementsTo('lightning')} className="elt-q elt-q-bl" />
-              <button aria-label="Darkness" title="Darkness" onClick={() => scrollElementsTo('darkness')} className="elt-q elt-q-br" />
+              <button aria-label="Water" title="Water" onClick={() => scrollElementsTo('water')} className="elt-q elt-q-bl" />
+              <button aria-label="Lightning" title="Lightning" onClick={() => scrollElementsTo('lightning')} className="elt-q elt-q-br" />
             </div>
           </div>
 
@@ -828,9 +844,10 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
             inset 0 0 10px rgba(255,255,255,0.22);
         }
         /* Clickable quadrants overlay for elementals image */
-        .elt-q{ position:absolute; top:0; left:0; width:100%; height:100%; background: transparent; border:0; padding:0; cursor:pointer; z-index:2; }
+        .elt-img{ position: relative; z-index: 1; }
+        .elt-q{ position:absolute; top:0; left:0; width:100%; height:100%; background: transparent; border:0; padding:0; cursor:pointer; z-index:3; }
         .elt-q:focus-visible{ outline: 2px solid rgba(25,227,255,0.85); outline-offset: 2px; }
-        .elt-q::after{ content:''; position:absolute; inset:0; clip-path: inherit; box-shadow: none; transition: box-shadow .15s ease; pointer-events: none; }
+        .elt-q::after{ content:''; position:absolute; inset:0; clip-path: inherit; box-shadow: none; transition: box-shadow .15s ease; pointer-events: none; z-index:4; }
         .elt-q:hover::after{ box-shadow: inset 0 0 0 2px rgba(242,239,29,0.9), 0 0 14px rgba(242,239,29,0.7); }
         /* Quarter-circle clip shapes matching the image quadrants */
         .elt-q-tl{ clip-path: polygon(50% 50%, 50% 0%, 43% 2%, 35% 6%, 27% 12%, 19% 19%, 12% 27%, 6% 35%, 2% 43%, 0% 50%, 50% 50%); }

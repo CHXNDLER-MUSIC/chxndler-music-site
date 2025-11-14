@@ -28,6 +28,20 @@ type Props = {
   keyColor?: [number, number, number]; // RGB 0..255 (e.g., [0,0,0] for black)
   keyTolerance?: number; // 0..1 distance where fully transparent begins
   keySoftness?: number;  // 0..1 feather width beyond tolerance
+  // Keying mode: 'auto' (use chroma if provided else luma), 'chroma', 'luma', or 'both'
+  keyMode?: 'auto' | 'chroma' | 'luma' | 'both';
+  // Optional circular mask to softly crop edges (safety net when keying can't remove corners)
+  maskCircle?: boolean;
+  maskRadiusPct?: number;   // 0..100, soft edge starts before this
+  maskFeatherPct?: number;  // 0..100, feather width
+  maskCenterX?: string;     // e.g., '50%'
+  maskCenterY?: string;     // e.g., '55%'
+  // Geometry-aware preservation to keep the wheel area from being keyed out
+  protectCircle?: boolean;
+  protectCenterXRatio?: number; // 0..1 relative to canvas width
+  protectCenterYRatio?: number; // 0..1 relative to canvas height
+  protectRadiusRatio?: number;  // 0..1 relative to min(canvasW, canvasH)
+  protectFeatherRatio?: number; // 0..1 feather width around radius
 };
 
 export default function LumaKeyVideo({
@@ -50,6 +64,17 @@ export default function LumaKeyVideo({
   keyColor,
   keyTolerance = 0.0,
   keySoftness = 0.0,
+  keyMode = 'auto',
+  maskCircle = false,
+  maskRadiusPct = 48,
+  maskFeatherPct = 8,
+  maskCenterX = '50%',
+  maskCenterY = '55%',
+  protectCircle = false,
+  protectCenterXRatio = 0.5,
+  protectCenterYRatio = 0.58,
+  protectRadiusRatio = 0.47,
+  protectFeatherRatio = 0.06,
 }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -387,29 +412,43 @@ export default function LumaKeyVideo({
             const img = wctx.getImageData(0, 0, Ww, Hw);
             const data = img.data;
             let opaqueCount = 0;
-            if (keyColor) {
-              // Color distance based key (chroma)
-              const Kr = keyColor[0], Kg = keyColor[1], Kb = keyColor[2];
+            const useChroma = !!keyColor && (keyMode === 'auto' || keyMode === 'chroma' || keyMode === 'both');
+            const useLuma = (keyMode === 'auto' && !keyColor) || keyMode === 'luma' || keyMode === 'both' || (!!keyColor && keyMode === 'both');
+            const CWN = CW, CHN = CH; const Rmin = Math.min(CWN, CHN);
+            const cx = protectCenterXRatio * CWN; const cy = protectCenterYRatio * CHN;
+            const r0 = protectRadiusRatio * Rmin; const r1 = (protectRadiusRatio + protectFeatherRatio) * Rmin;
+            const WwN = Ww || 1; const HwN = Hw || 1; const RminW = Math.min(WwN, HwN);
+            const cxW = protectCenterXRatio * WwN; const cyW = protectCenterYRatio * HwN;
+            const r0W = protectRadiusRatio * RminW; const r1W = (protectRadiusRatio + protectFeatherRatio) * RminW;
+            if (useChroma && !useLuma) {
+              // Chroma key only
+              const Kr = keyColor![0], Kg = keyColor![1], Kb = keyColor![2];
               const tol0 = Math.max(0, Math.min(1, keyTolerance));
               const soft = Math.max(0, Math.min(1, keySoftness));
-              const d0 = tol0 * 441.67295593; // sqrt(255^2*3)
+              const d0 = tol0 * 441.67295593;
               const d1 = (tol0 + soft) * 441.67295593;
               for (let i = 0; i < data.length; i += 4) {
                 const r = data[i], g = data[i + 1], b = data[i + 2];
                 const dr = r - Kr, dg = g - Kg, db = b - Kb;
                 const d = Math.sqrt(dr*dr + dg*dg + db*db);
                 let a = data[i + 3];
-                if (d <= d0) {
-                  a = 0;
-                } else if (d < d1) {
-                  const t = (d - d0) / (d1 - d0);
-                  a = Math.round(a * t);
+                if (d <= d0) a = 0; else if (d < d1) a = Math.round(a * ((d - d0) / (d1 - d0)));
+                if (protectCircle) {
+                  const idx = (i >> 2); const px = idx % WwN; const py = (idx / WwN) | 0;
+                  const dx = px - cxW, dy = py - cyW; const dist = Math.hypot(dx, dy);
+                  if (dist <= r0W) {
+                    a = data[i + 3];
+                  } else if (dist < r1W) {
+                    const t = (dist - r0W) / (r1W - r0W);
+                    const baseA = data[i + 3];
+                    a = Math.max(a, Math.round(baseA * (1 - t)));
+                  }
                 }
                 data[i + 3] = a;
                 if (a > 8) opaqueCount++;
               }
-            } else {
-              // Luminance-based key (luma)
+            } else if (!useChroma && useLuma) {
+              // Luma key only
               const floor = Math.max(0, threshold);
               const feather = Math.max(0, softness);
               const t0 = floor * 255;
@@ -418,11 +457,52 @@ export default function LumaKeyVideo({
                 const r = data[i], g = data[i + 1], b = data[i + 2];
                 const y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
                 let a = data[i + 3];
-                if (y <= t0) {
-                  a = 0;
-                } else if (y < t1) {
-                  const t = (y - t0) / (t1 - t0);
-                  a = Math.round(a * t);
+                if (y <= t0) a = 0; else if (y < t1) a = Math.round(a * ((y - t0) / (t1 - t0)));
+                if (protectCircle) {
+                  const idx = (i >> 2); const px = idx % WwN; const py = (idx / WwN) | 0;
+                  const dx = px - cxW, dy = py - cyW; const dist = Math.hypot(dx, dy);
+                  if (dist <= r0W) {
+                    a = data[i + 3];
+                  } else if (dist < r1W) {
+                    const t = (dist - r0W) / (r1W - r0W);
+                    const baseA = data[i + 3];
+                    a = Math.max(a, Math.round(baseA * (1 - t)));
+                  }
+                }
+                data[i + 3] = a;
+                if (a > 8) opaqueCount++;
+              }
+            } else if (useChroma && useLuma) {
+              // Combine: min of chroma and luma factors
+              const Kr = keyColor ? keyColor[0] : 0, Kg = keyColor ? keyColor[1] : 0, Kb = keyColor ? keyColor[2] : 0;
+              const tol0 = Math.max(0, Math.min(1, keyTolerance));
+              const soft = Math.max(0, Math.min(1, keySoftness));
+              const d0 = tol0 * 441.67295593;
+              const d1 = (tol0 + soft) * 441.67295593;
+              const floor = Math.max(0, threshold);
+              const feather = Math.max(0, softness);
+              const t0 = floor * 255;
+              const t1 = (floor + feather) * 255;
+              for (let i = 0; i < data.length; i += 4) {
+                const r = data[i], g = data[i + 1], b = data[i + 2];
+                const y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                const dr = r - Kr, dg = g - Kg, db = b - Kb;
+                const d = Math.sqrt(dr*dr + dg*dg + db*db);
+                let a = data[i + 3];
+                let fL = 1; if (y <= t0) fL = 0; else if (y < t1) fL = (y - t0) / (t1 - t0);
+                let fC = 1; if (d <= d0) fC = 0; else if (d < d1) fC = (d - d0) / (d1 - d0);
+                const f = Math.min(fL, fC);
+                a = Math.round(a * f);
+                if (protectCircle) {
+                  const idx = (i >> 2); const px = idx % WwN; const py = (idx / WwN) | 0;
+                  const dx = px - cxW, dy = py - cyW; const dist = Math.hypot(dx, dy);
+                  if (dist <= r0W) {
+                    a = data[i + 3];
+                  } else if (dist < r1W) {
+                    const t = (dist - r0W) / (r1W - r0W);
+                    const baseA = data[i + 3];
+                    a = Math.max(a, Math.round(baseA * (1 - t)));
+                  }
                 }
                 data[i + 3] = a;
                 if (a > 8) opaqueCount++;
@@ -455,7 +535,9 @@ export default function LumaKeyVideo({
             const img = ctx.getImageData(0, 0, CW, CH);
             const data = img.data;
             let opaqueCount = 0;
-            if (keyColor) {
+            const useChroma = !!keyColor && (keyMode === 'auto' || keyMode === 'chroma' || keyMode === 'both');
+            const useLuma = (keyMode === 'auto' && !keyColor) || keyMode === 'luma' || keyMode === 'both' || (!!keyColor && keyMode === 'both');
+            if (useChroma && !useLuma) {
               const Kr = keyColor[0], Kg = keyColor[1], Kb = keyColor[2];
               const tol0 = Math.max(0, Math.min(1, keyTolerance));
               const soft = Math.max(0, Math.min(1, keySoftness));
@@ -466,16 +548,24 @@ export default function LumaKeyVideo({
                 const dr = r - Kr, dg = g - Kg, db = b - Kb;
                 const d = Math.sqrt(dr*dr + dg*dg + db*db);
                 let a = data[i + 3];
-                if (d <= d0) {
-                  a = 0;
-                } else if (d < d1) {
-                  const t = (d - d0) / (d1 - d0);
-                  a = Math.round(a * t);
+                if (d <= d0) a = 0; else if (d < d1) a = Math.round(a * ((d - d0) / (d1 - d0)));
+                if (protectCircle) {
+                  const idx = (i >> 2);
+                  const px = idx % CWN;
+                  const py = (idx / CWN) | 0;
+                  const dx = px - cx, dy = py - cy; const dist = Math.hypot(dx, dy);
+                  if (dist <= r0) {
+                    a = data[i + 3];
+                  } else if (dist < r1) {
+                    const t = (dist - r0) / (r1 - r0);
+                    const baseA = data[i + 3];
+                    a = Math.max(a, Math.round(baseA * (1 - t)));
+                  }
                 }
                 data[i + 3] = a;
                 if (a > 8) opaqueCount++;
               }
-            } else {
+            } else if (!useChroma && useLuma) {
               // Luma key
               const floor = Math.max(0, threshold);
               const feather = Math.max(0, softness);
@@ -485,11 +575,56 @@ export default function LumaKeyVideo({
                 const r = data[i], g = data[i + 1], b = data[i + 2];
                 const y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
                 let a = data[i + 3];
-                if (y <= t0) {
-                  a = 0;
-                } else if (y < t1) {
-                  const t = (y - t0) / (t1 - t0);
-                  a = Math.round(a * t);
+                if (y <= t0) a = 0; else if (y < t1) a = Math.round(a * ((y - t0) / (t1 - t0)));
+                if (protectCircle) {
+                  const idx = (i >> 2);
+                  const px = idx % CWN;
+                  const py = (idx / CWN) | 0;
+                  const dx = px - cx, dy = py - cy; const dist = Math.hypot(dx, dy);
+                  if (dist <= r0) {
+                    a = data[i + 3];
+                  } else if (dist < r1) {
+                    const t = (dist - r0) / (r1 - r0);
+                    const baseA = data[i + 3];
+                    a = Math.max(a, Math.round(baseA * (1 - t)));
+                  }
+                }
+                data[i + 3] = a;
+                if (a > 8) opaqueCount++;
+              }
+            } else if (useChroma && useLuma) {
+              // Combine
+              const Kr = keyColor ? keyColor[0] : 0, Kg = keyColor ? keyColor[1] : 0, Kb = keyColor ? keyColor[2] : 0;
+              const tol0 = Math.max(0, Math.min(1, keyTolerance));
+              const soft = Math.max(0, Math.min(1, keySoftness));
+              const d0 = tol0 * 441.67295593;
+              const d1 = (tol0 + soft) * 441.67295593;
+              const floor = Math.max(0, threshold);
+              const feather = Math.max(0, softness);
+              const t0 = floor * 255;
+              const t1 = (floor + feather) * 255;
+              for (let i = 0; i < data.length; i += 4) {
+                const r = data[i], g = data[i + 1], b = data[i + 2];
+                const y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                const dr = r - Kr, dg = g - Kg, db = b - Kb;
+                const d = Math.sqrt(dr*dr + dg*dg + db*db);
+                let a = data[i + 3];
+                let fL = 1; if (y <= t0) fL = 0; else if (y < t1) fL = (y - t0) / (t1 - t0);
+                let fC = 1; if (d <= d0) fC = 0; else if (d < d1) fC = (d - d0) / (d1 - d0);
+                const f = Math.min(fL, fC);
+                a = Math.round(a * f);
+                if (protectCircle) {
+                  const idx = (i >> 2);
+                  const px = idx % CWN;
+                  const py = (idx / CWN) | 0;
+                  const dx = px - cx, dy = py - cy; const dist = Math.hypot(dx, dy);
+                  if (dist <= r0) {
+                    a = data[i + 3];
+                  } else if (dist < r1) {
+                    const t = (dist - r0) / (r1 - r0);
+                    const baseA = data[i + 3];
+                    a = Math.max(a, Math.round(baseA * (1 - t)));
+                  }
                 }
                 data[i + 3] = a;
                 if (a > 8) opaqueCount++;
@@ -519,10 +654,18 @@ export default function LumaKeyVideo({
   }, [ready, threshold, softness, saturation, contrast, isSafari, fastMode, paused, disabled, offsetYPx, offsetYRatio, inViewport]);
 
   // Apply CSS blend trick only on Safari to neutralize any remaining black pixels visually
+  // Optional radial mask CSS string
+  const maskCss = maskCircle
+    ? `radial-gradient(circle at ${maskCenterX} ${maskCenterY}, rgba(0,0,0,1) ${Math.max(0, Math.min(100, maskRadiusPct))}%, rgba(0,0,0,0) ${Math.max(0, Math.min(100, maskRadiusPct + maskFeatherPct))}%)`
+    : undefined;
+
   const canvasStyle: React.CSSProperties = {
     background: 'transparent',
-    // Only apply screen blend on Safari or when explicitly requested
-    ...((isSafari || blendScreen) ? { mixBlendMode: 'screen' as const } : {}),
+    // Blend to remove dark backgrounds visually; 'lighten' is stronger at removing near-black
+    ...((isSafari || blendScreen) ? { mixBlendMode: 'lighten' as const } : {}),
+    // Do not intercept pointer/scroll events; keep overlay non-interactive
+    pointerEvents: 'none',
+    ...(maskCss ? ({ maskImage: maskCss, WebkitMaskImage: maskCss } as any) : {}),
     // Hint the browser we animate opacity/transforms around this element
     willChange: 'opacity, transform',
     contain: 'layout paint',
@@ -577,8 +720,9 @@ export default function LumaKeyVideo({
             transition: 'opacity 180ms ease',
             pointerEvents: 'none',
             background: 'transparent',
-            // Apply same screen blend so black pixels don't darken the background
-            ...((isSafari || blendScreen) ? { mixBlendMode: 'screen' as const } : {}),
+            // Apply same blend so black pixels don't darken the background
+            ...((isSafari || blendScreen) ? { mixBlendMode: 'lighten' as const } : {}),
+            ...(maskCss ? ({ maskImage: maskCss, WebkitMaskImage: maskCss } as any) : {}),
           }}
         />
       ) : null}

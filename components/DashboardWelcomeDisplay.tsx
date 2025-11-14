@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import Link from 'next/link';
+import JoinUsButton from '@/components/JoinUsButton';
 
 type Profile = {
   id: string;
@@ -25,9 +26,9 @@ export default async function DashboardWelcomeDisplay() {
         <div className="relative">
           <h2 className="text-4xl sm:text-5xl font-extrabold tracking-[0.15em] text-white drop-shadow mb-2">WELCOME HOME</h2>
           <p className="text-white/80 mb-6">You’re invited into the Heartverse.</p>
-          <Link href="/login" className="inline-flex items-center justify-center rounded-xl px-5 py-3 font-semibold text-black bg-[#38B6FF] hover:brightness-110 transition shadow-[0_0_24px_rgba(56,182,255,0.45)]">
+          <JoinUsButton className="inline-flex items-center justify-center rounded-xl px-5 py-3 font-semibold text-black bg-[#38B6FF] hover:brightness-110 transition shadow-[0_0_24px_rgba(56,182,255,0.45)]">
             JOIN US
-          </Link>
+          </JoinUsButton>
         </div>
       </div>
     );
@@ -74,4 +75,3 @@ export default async function DashboardWelcomeDisplay() {
     </div>
   );
 }
-

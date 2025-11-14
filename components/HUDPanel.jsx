@@ -4,6 +4,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import LoginModal from "@/components/LoginModal";
 // 2D fallback hologram
 // 2D HUD removed per request; 3D only
 // 3D planet system (requires three/r3f/drei installed)
@@ -133,6 +134,7 @@ export default function HUDPanel({
   const clickCoverRef = useRef(null);
   const closeCoverRef = useRef(null);
   const [active, setActive] = useState((songs && songs[0]?.id) || undefined);
+  const [loginOpen, setLoginOpen] = useState(false);
   const containerRef = useRef(null);
   const baseW = 320; // design width for console-fit (reduced from 380)
   const baseH = 340; // design height for console-fit
@@ -201,8 +203,53 @@ export default function HUDPanel({
   const [heartPopoverPos, setHeartPopoverPos] = useState(null);
   // Selected HEART tier details view (null shows tier cards)
   const [heartTierDetails, setHeartTierDetails] = useState(null);
+  // Wanderer flip state within HEART popover (circular button flip like store items)
+  const [wandererFlipped, setWandererFlipped] = useState(false);
+  const [wandererHovered, setWandererHovered] = useState(false);
+  // Dreamer/Lover flip + hover state to match Wanderer behavior
+  const [dreamerFlipped, setDreamerFlipped] = useState(false);
+  const [dreamerHovered, setDreamerHovered] = useState(false);
+  const [loverFlipped, setLoverFlipped] = useState(false);
+  const [loverHovered, setLoverHovered] = useState(false);
   // Position heart popover similar to lyrics popover
   const HEART_POPOVER_Y_OFFSET = -40;
+
+  // SOFIA element badge (left of SOFIA in HEART popover header)
+  const [sofiaElement, setSofiaElement] = useState('water');
+  const [sofiaPickerOpen, setSofiaPickerOpen] = useState(false);
+  const sofiaGroupRef = useRef(null);
+  const SOFIA_ELEMENT_LS_KEY = 'sofia:element';
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = window.localStorage.getItem(SOFIA_ELEMENT_LS_KEY);
+        if (saved) setSofiaElement(saved);
+      }
+    } catch {}
+  }, []);
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(SOFIA_ELEMENT_LS_KEY, String(sofiaElement));
+      }
+    } catch {}
+  }, [sofiaElement]);
+  useEffect(() => {
+    if (!sofiaPickerOpen) return;
+    const onDocClick = (e) => {
+      try {
+        if (!sofiaGroupRef.current) return;
+        if (!sofiaGroupRef.current.contains(e.target)) setSofiaPickerOpen(false);
+      } catch {}
+    };
+    const onKey = (e) => { if (e.key === 'Escape') setSofiaPickerOpen(false); };
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [sofiaPickerOpen]);
 
   const openHeartPopover = () => {
     try { sfx.play('click', 0.4); } catch {}
@@ -557,6 +604,14 @@ export default function HUDPanel({
       document.removeEventListener('touchstart', onDocDown);
       document.removeEventListener('keydown', onKey);
     };
+  }, [showHeartPopover]);
+
+  // Reset HEART popover UI state when closing
+  useEffect(() => {
+    if (!showHeartPopover) {
+      try { setHeartTierDetails(null); } catch {}
+      try { setWandererFlipped(false); setWandererHovered(false); } catch {}
+    }
   }, [showHeartPopover]);
 
   // Open Store (Gem) popover anchored to the gem button
@@ -1794,6 +1849,7 @@ export default function HUDPanel({
                         e.currentTarget.style.setProperty('--hover-position', `${hoverPercentage}%`);
                       }}
                       style={{
+                        position: 'relative',
                         border: `1px solid ${(() => {
                           const currentSong = resolvedSongs.find(s => s.id === active);
                           const elementColor = currentSong?.color || '#19E3FF';
@@ -1803,7 +1859,7 @@ export default function HUDPanel({
                           return `rgba(${r}, ${g}, ${b}, 0.25)`;
                         })()}`,
                         width: 200,
-                        height: 32,
+                        height: 18,
                         borderRadius: 8,
                         background: 'rgba(0,0,0,0.3)'
                       }}
@@ -1827,7 +1883,7 @@ export default function HUDPanel({
                         e.currentTarget.style.boxShadow = 'none';
                       }}
                     >
-                      <svg className="w-full h-full" viewBox="0 0 400 32" preserveAspectRatio="none" style={{ background: 'transparent' }}>
+                      <svg className="w-full h-full" viewBox="0 0 400 18" preserveAspectRatio="none" style={{ background: 'transparent' }}>
                         <defs>
                           {(() => {
                             const currentSong = resolvedSongs.find(s => s.id === active);
@@ -1855,60 +1911,36 @@ export default function HUDPanel({
                           })()}
                         </defs>
                         {(() => {
-                          const seed = (active || 'default').split('').reduce((a, b) => a + b.charCodeAt(0), 0);
-                          const waveformData = Array.from({ length: 200 }, (_, i) => {
-                            const bassLine = Math.sin((i + seed) * 0.02) * 0.4;
-                            const melody = Math.sin((i + seed) * 0.08 + 2) * 0.3;
-                            const percussion = Math.sin((i + seed) * 0.2 + 4) * 0.25;
-                            const vocals = Math.sin((i + seed) * 0.12 + 1) * 0.35;
-                            const harmonics = Math.sin((i + seed) * 0.4 + 5) * 0.15;
-                            const fadeIn = Math.min(1, i / 15);
-                            const fadeOut = Math.min(1, (200 - i) / 25);
-                            const envelope = Math.min(fadeIn, fadeOut);
-                            const dynamics = Math.sin((i / 200) * Math.PI * 2.5) * 0.4 + 0.6;
-                            const amplitude = Math.abs(bassLine + melody + percussion + vocals + harmonics) * envelope * dynamics;
-                            return Math.max(0.05, Math.min(0.9, amplitude));
-                          });
+                          const currentSong = resolvedSongs.find(s => s.id === active);
+                          const elementColor = currentSong?.color || '#19E3FF';
                           const a = liveAudioRef.current;
                           const liveDur = (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
                           const liveTime = (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
                           const progressRatio = liveDur > 0 ? (liveTime / liveDur) : 0;
                           const progressX = progressRatio * 400;
+                          const centerY = 9; // half of 18
                           return (
                             <>
-                              <path
-                                d={`M 0 16 ${waveformData.map((amp, i) => {
-                                  const x = (i / (waveformData.length - 1)) * 400;
-                                  const y1 = 16 - (amp * 12);
-                                  const y2 = 16 + (amp * 12);
-                                  return `L ${x} ${y1} L ${x} ${y2}`;
-                                }).join(' ')} L 400 16`}
-                                fill="none"
-                                stroke="url(#miniUnplayed)"
-                                strokeWidth="1.5"
-                                opacity="0.7"
-                              />
-                              <clipPath id="miniPlayedClip">
-                                <rect x="0" y="0" width={progressX} height="32" />
-                              </clipPath>
-                              <g clipPath="url(#miniPlayedClip)">
-                                <path
-                                  d={`M 0 16 ${waveformData.map((amp, i) => {
-                                    const x = (i / (waveformData.length - 1)) * 400;
-                                    const y1 = 16 - (amp * 12);
-                                    const y2 = 16 + (amp * 12);
-                                    return `L ${x} ${y1} L ${x} ${y2}`;
-                                  }).join(' ')} L 400 16`}
-                                  fill="none"
-                                  stroke="url(#miniPlayed)"
-                                  strokeWidth="2"
-                                  opacity="1"
-                                />
-                              </g>
+                              {/* Background track as a single faint line */}
+                              <line x1="0" y1={centerY} x2="400" y2={centerY} stroke={elementColor} strokeWidth="1.2" opacity="0.45" />
+                              {/* Played portion: multi-layer glow for brightness */}
+                              <line x1="0" y1={centerY} x2={progressX} y2={centerY} stroke={elementColor} strokeWidth="10" opacity="0.16" strokeLinecap="round" />
+                              <line x1="0" y1={centerY} x2={progressX} y2={centerY} stroke={elementColor} strokeWidth="6" opacity="0.28" strokeLinecap="round" />
+                              <line x1="0" y1={centerY} x2={progressX} y2={centerY} stroke={elementColor} strokeWidth="2" opacity="0.98" strokeLinecap="round" />
                             </>
                           );
                         })()}
                       </svg>
+                      {/* JOIN US button inside waveform container, neon pink, bottom-center */}
+                      <button
+                        type="button"
+                        className="join-us-waveform-hud"
+                        title="Join Us"
+                        onClick={(e) => { e.stopPropagation(); try { sfx.play('click', 0.45); } catch {}; try { trackAnalytics('join_us_clicked', { location: 'hud_waveform' }); } catch {}; setLoginOpen(true); }}
+                        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                      >
+                        JOIN US
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -2069,17 +2101,94 @@ export default function HUDPanel({
                           borderBottom: '1px solid rgba(252,84,175,0.25)'
                         }}
                       >
-                        {/* Left: SOFIA */}
+                        {/* Left: Element badge + SOFIA (with picker) */}
                         <div
+                          ref={sofiaGroupRef}
                           style={{
-                            fontSize: 18,
-                            fontWeight: 900,
-                            letterSpacing: '.02em',
-                            color: '#FC54AF',
-                            textShadow: '0 0 12px rgba(252,84,175,0.35)'
+                            position: 'relative',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            marginLeft: 6
                           }}
                         >
-                          SOFIA
+                          {/* Clickable badge */}
+                          <button
+                            type="button"
+                            aria-label="Change element"
+                            onClick={() => { try { sfx.play('click', 0.4); } catch {}; setSofiaPickerOpen(v => !v); }}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: 28,
+                              height: 28,
+                              borderRadius: 9999,
+                              background: 'radial-gradient(72% 72% at 30% 30%, rgba(25,227,255,0.28) 0%, rgba(25,227,255,0.08) 60%, rgba(25,227,255,0.04) 100%)',
+                              border: '1px solid rgba(25,227,255,0.5)',
+                              boxShadow: '0 0 12px rgba(25,227,255,0.5)',
+                              backdropFilter: 'blur(2px)',
+                              cursor: 'pointer',
+                              transition: 'transform 120ms ease',
+                            }}
+                            onMouseDown={(e) => e.preventDefault()}
+                          >
+                            <ElementIcon name={sofiaElement} size={18} glow={true} />
+                          </button>
+                          {/* SOFIA label */}
+                          <div
+                            style={{
+                              fontSize: 18,
+                              fontWeight: 900,
+                              letterSpacing: '.02em',
+                              color: '#FC54AF',
+                              textShadow: '0 0 12px rgba(252,84,175,0.35)'
+                            }}
+                          >
+                            SOFIA
+                          </div>
+                          {/* Small element picker popover */}
+                          {sofiaPickerOpen ? (
+                            <div
+                              role="menu"
+                              style={{
+                                position: 'absolute',
+                                top: 36,
+                                left: 0,
+                                display: 'inline-flex',
+                                gap: 8,
+                                padding: '6px 8px',
+                                borderRadius: 10,
+                                background: 'rgba(5,10,18,0.7)',
+                                border: '1px solid rgba(25,227,255,0.25)',
+                                boxShadow: '0 8px 28px rgba(0,0,0,0.45), 0 0 18px rgba(25,227,255,0.25)',
+                                zIndex: 20,
+                              }}
+                            >
+                              {['water','lightning','darkness','heart'].map((el) => (
+                                <button
+                                  key={el}
+                                  role="menuitem"
+                                  onClick={() => { try { sfx.play('click', 0.4); } catch {}; setSofiaElement(el); setSofiaPickerOpen(false); }}
+                                  title={el}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: 28,
+                                    height: 28,
+                                    borderRadius: 9999,
+                                    border: `1px solid ${sofiaElement === el ? 'rgba(252,84,175,0.8)' : 'rgba(25,227,255,0.35)'}`,
+                                    background: 'radial-gradient(72% 72% at 30% 30%, rgba(25,227,255,0.18) 0%, rgba(25,227,255,0.06) 60%, rgba(25,227,255,0.03) 100%)',
+                                    boxShadow: sofiaElement === el ? '0 0 12px rgba(252,84,175,0.6)' : '0 0 8px rgba(25,227,255,0.3)',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  <ElementIcon name={el} size={16} glow={true} />
+                                </button>
+                              ))}
+                            </div>
+                          ) : null}
                         </div>
                         {/* Center: THE DREAMER */}
                         <div
@@ -2131,12 +2240,18 @@ export default function HUDPanel({
                             <span>Back to tiers</span>
                           </button>
                           <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            <div style={{ fontSize: 16, fontWeight: 900, letterSpacing: '.02em' }}>
+                            <div
+                              style={{ fontSize: 16, fontWeight: 900, letterSpacing: '.02em' }}
+                              className={heartTierDetails === 'wanderer' ? 'neon-blue' : heartTierDetails === 'dreamer' ? 'neon-yellow' : 'neon-pink'}
+                            >
                               {heartTierDetails === 'wanderer' && 'The Wanderer (0–4 HEARTS)'}
                               {heartTierDetails === 'dreamer' && 'The Dreamer (5–24 HEARTS)'}
                               {heartTierDetails === 'lover' && 'The Lover (25+ HEARTS)'}
                             </div>
-                            <div style={{ fontSize: 12, opacity: 0.9 }}>
+                            <div
+                              style={{ fontSize: 12, opacity: 0.95 }}
+                              className={heartTierDetails === 'wanderer' ? 'neon-blue' : heartTierDetails === 'dreamer' ? 'neon-yellow' : 'neon-pink'}
+                            >
                               {heartTierDetails === 'wanderer' && 'You’ve just arrived in the Heartverse — drawn here by the signal.'}
                               {heartTierDetails === 'dreamer' && 'You’re part of the crew now — traveling through sound and starlight.'}
                               {heartTierDetails === 'lover' && 'You’ve reached the center — the pulse that powers it all.'}
@@ -2176,143 +2291,191 @@ export default function HUDPanel({
                             gap: 16
                           }}
                         >
-                          {/* Wanderer */}
+                          {/* Wanderer - circular flip button (keeps shape, store-like animation) */}
                           <div
                             role="button"
                             tabIndex={0}
-                            onClick={(e) => {
-                              try { sfx.play('click', 0.4); } catch {}
-                              try { e.currentTarget.classList.add('holo-phase'); } catch {}
-                              setTimeout(() => { setHeartTierDetails('wanderer'); try { trackAnalytics('heart_tier_clicked', { tier: 'wanderer' }); } catch {} }, 320);
-                              setTimeout(() => { try { e.currentTarget.classList.remove('holo-phase'); } catch {} }, 600);
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                try { sfx.play('click', 0.4); } catch {}
-                                try { e.currentTarget.classList.add('holo-phase'); } catch {}
-                                setTimeout(() => { setHeartTierDetails('wanderer'); try { trackAnalytics('heart_tier_clicked', { tier: 'wanderer' }); } catch {} }, 320);
-                                setTimeout(() => { try { e.currentTarget.classList.remove('holo-phase'); } catch {} }, 600);
-                              }
-                            }}
+                            aria-label="The Wanderer (0–4 HEARTS)"
+                            onMouseEnter={() => { try { sfx.play('hover', 0.25); } catch {}; setWandererHovered(true); }}
+                            onMouseLeave={() => { setWandererHovered(false); }}
+                            onClick={() => { try { sfx.play('flip', 0.45); } catch {}; setWandererFlipped(v => !v); try { trackAnalytics('heart_tier_clicked', { tier: 'wanderer', style: 'flip' }); } catch {} }}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('flip', 0.45); } catch {}; setWandererFlipped(v => !v); try { trackAnalytics('heart_tier_clicked', { tier: 'wanderer', style: 'flip' }); } catch {} } }}
                             style={{
-                              width: 110,
-                              height: 170,
-                              display: 'inline-flex',
-                              flexDirection: 'column',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: 8,
-                              borderRadius: 16,
-                              background: 'linear-gradient(180deg, rgba(0,180,255,0.12), rgba(0,180,255,0.04))',
+                              width: 128,
+                              height: 128,
+                              position: 'relative',
+                              borderRadius: '50%',
+                              background: 'radial-gradient(120% 140% at 50% 28%, rgba(0,180,255,0.34), rgba(0,180,255,0.16) 46%, rgba(0,60,90,0.35) 100%)',
                               border: '2px solid rgba(0,180,255,0.85)',
-                              boxShadow: '0 0 10px rgba(0,180,255,0.65), 0 0 26px rgba(0,180,255,0.45), inset 0 0 12px rgba(0,180,255,0.25)',
-                              color: '#023047',
-                              textAlign: 'center',
-                              cursor: 'pointer'
+                              boxShadow: wandererHovered ? '0 0 18px rgba(0,180,255,0.85), 0 0 36px rgba(0,180,255,0.55), inset 0 0 18px rgba(0,180,255,0.35)' : '0 0 10px rgba(0,180,255,0.65), 0 0 26px rgba(0,180,255,0.45), inset 0 0 12px rgba(0,180,255,0.25)',
+                              overflow: 'hidden',
+                              cursor: 'pointer',
+                              perspective: 700,
+                              transition: 'transform .12s ease, box-shadow .18s ease',
+                              transform: wandererHovered ? 'translateZ(0) scale(1.05)' : 'none'
                             }}
-                            onMouseEnter={(e) => { if (!e.currentTarget.classList.contains('holo-phase')) { e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)'; } e.currentTarget.style.boxShadow = '0 0 14px rgba(0,180,255,0.85), 0 0 34px rgba(0,180,255,0.55), inset 0 0 18px rgba(0,180,255,0.35)'; try { sfx.play('hover', 0.25); } catch {} }}
-                            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(0,180,255,0.65), 0 0 26px rgba(0,180,255,0.45), inset 0 0 12px rgba(0,180,255,0.25)'; }}
                           >
-                            <div aria-hidden style={{ fontSize: 46 }} className="holo-emoji holo-blue">🚀</div>
-                            <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: '.02em', color: '#015073' }}>The Wanderer</div>
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#19E3FF' }}>
-                              <img src="/elements/heart-coin.png" alt="HEART" width={14} height={14} style={{ display: 'block', width: 14, height: 14, objectFit: 'contain' }} />
-                              <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '.02em' }}>0–4</span>
+                            <div
+                              style={{
+                                position: 'absolute',
+                                inset: 0,
+                                transition: 'transform 0.7s ease-in-out',
+                                transformStyle: 'preserve-3d',
+                                transform: wandererFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                              }}
+                            >
+                              {/* Front */}
+                              <div style={{ position: 'absolute', inset: 0, backfaceVisibility: 'hidden', transform: 'rotateY(0deg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                                {/* Wanderer icon (PNG) */}
+                                <img
+                                  src="/elements/the-wanderer.png"
+                                  alt="The Wanderer"
+                                  width={56}
+                                  height={56}
+                                  style={{ display: 'block', width: 56, height: 56, objectFit: 'contain', filter: 'drop-shadow(0 0 14px rgba(25,227,255,0.9)) drop-shadow(0 0 28px rgba(25,227,255,0.55))' }}
+                                />
+                                <div className="neon-blue" style={{ fontSize: 13, fontWeight: 800, letterSpacing: '.02em', color: '#19E3FF' }}>The Wanderer</div>
+                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#19E3FF' }}>
+                                  <img src="/elements/heart-coin.png" alt="HEART" width={26} height={26} className="heart-tier-icon heart-coin-glow" style={{ display: 'block', width: 26, height: 26, objectFit: 'contain', transform: 'translateY(0.5px) scale(1.08)' }} />
+                                  <span className="neon-blue heart-tier-range" style={{ fontSize: 13, fontWeight: 900, letterSpacing: '.02em' }}>0–4</span>
+                                </div>
+                              </div>
+                              {/* Back */}
+                              <div style={{ position: 'absolute', inset: 0, backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 10 }}>
+                                <div style={{ textAlign: 'center', color: '#19E3FF' }}>
+                                  <div style={{ fontSize: 10, lineHeight: 1.2, opacity: 0.95, marginTop: 4 }} className="neon-blue">You’ve just arrived — drawn by the signal.</div>
+                                  <ul style={{ listStyle: 'disc', paddingLeft: 14, textAlign: 'left', margin: '6px auto 0', width: '90%', fontSize: 10, lineHeight: 1.3 }}>
+                                    <li>Public songs</li>
+                                    <li>Stories</li>
+                                    <li>Your Heartverse profile</li>
+                                  </ul>
+                                </div>
+                              </div>
                             </div>
-                            <div style={{ fontSize: 11, lineHeight: 1.2, opacity: 0.85, maxWidth: 90 }}>You’ve just arrived — drawn by the signal.</div>
                           </div>
-                          {/* Dreamer */}
+                          {/* Dreamer - circular flip button (mirrors Wanderer behavior) */}
                           <div
                             role="button"
                             tabIndex={0}
-                            onClick={(e) => {
-                              try { sfx.play('click', 0.4); } catch {}
-                              try { e.currentTarget.classList.add('holo-phase'); } catch {}
-                              setTimeout(() => { setHeartTierDetails('dreamer'); try { trackAnalytics('heart_tier_clicked', { tier: 'dreamer' }); } catch {} }, 320);
-                              setTimeout(() => { try { e.currentTarget.classList.remove('holo-phase'); } catch {} }, 600);
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                try { sfx.play('click', 0.4); } catch {}
-                                try { e.currentTarget.classList.add('holo-phase'); } catch {}
-                                setTimeout(() => { setHeartTierDetails('dreamer'); try { trackAnalytics('heart_tier_clicked', { tier: 'dreamer' }); } catch {} }, 320);
-                                setTimeout(() => { try { e.currentTarget.classList.remove('holo-phase'); } catch {} }, 600);
-                              }
-                            }}
+                            aria-label="The Dreamer (5–24 HEARTS)"
+                            onMouseEnter={() => { try { sfx.play('hover', 0.25); } catch {}; setDreamerHovered(true); }}
+                            onMouseLeave={() => { setDreamerHovered(false); }}
+                            onClick={() => { try { sfx.play('flip', 0.45); } catch {}; setDreamerFlipped(v => !v); try { trackAnalytics('heart_tier_clicked', { tier: 'dreamer', style: 'flip' }); } catch {} }}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('flip', 0.45); } catch {}; setDreamerFlipped(v => !v); try { trackAnalytics('heart_tier_clicked', { tier: 'dreamer', style: 'flip' }); } catch {} } }}
                             style={{
-                              width: 110,
-                              height: 170,
-                              display: 'inline-flex',
-                              flexDirection: 'column',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: 8,
-                              borderRadius: 16,
-                              background: 'linear-gradient(180deg, rgba(255,212,0,0.12), rgba(255,212,0,0.04))',
-                              border: '2px solid rgba(255,212,0,0.9)',
-                              boxShadow: '0 0 10px rgba(255,212,0,0.70), 0 0 26px rgba(255,212,0,0.45), inset 0 0 12px rgba(255,212,0,0.25)',
-                              color: '#5f4b00',
-                              textAlign: 'center',
-                              cursor: 'pointer'
+                              width: 128,
+                              height: 128,
+                              position: 'relative',
+                              borderRadius: '50%',
+                              background: 'radial-gradient(120% 140% at 50% 28%, rgba(255,212,0,0.36), rgba(255,212,0,0.18) 46%, rgba(90,80,0,0.32) 100%)',
+                              border: '2px solid rgba(255,212,0,0.95)',
+                              boxShadow: dreamerHovered ? '0 0 18px rgba(255,212,0,0.95), 0 0 36px rgba(255,212,0,0.60), inset 0 0 18px rgba(255,212,0,0.35)' : '0 0 10px rgba(255,212,0,0.70), 0 0 26px rgba(255,212,0,0.45), inset 0 0 12px rgba(255,212,0,0.25)',
+                              overflow: 'hidden',
+                              cursor: 'pointer',
+                              perspective: 700,
+                              transition: 'transform .12s ease, box-shadow .18s ease',
+                              transform: dreamerHovered ? 'translateZ(0) scale(1.05)' : 'none'
                             }}
-                            onMouseEnter={(e) => { if (!e.currentTarget.classList.contains('holo-phase')) { e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)'; } e.currentTarget.style.boxShadow = '0 0 14px rgba(255,212,0,0.95), 0 0 34px rgba(255,212,0,0.55), inset 0 0 18px rgba(255,212,0,0.35)'; try { sfx.play('hover', 0.25); } catch {} }}
-                            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(255,212,0,0.70), 0 0 26px rgba(255,212,0,0.45), inset 0 0 12px rgba(255,212,0,0.25)'; }}
                           >
-                            <div aria-hidden style={{ fontSize: 46 }} className="holo-emoji holo-yellow">🌙</div>
-                            <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: '.02em', color: '#6f5c00' }}>The Dreamer</div>
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#FFD400' }}>
-                              <img src="/elements/heart-coin.png" alt="HEART" width={14} height={14} style={{ display: 'block', width: 14, height: 14, objectFit: 'contain' }} />
-                              <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '.02em' }}>5–24</span>
+                            <div
+                              style={{
+                                position: 'absolute',
+                                inset: 0,
+                                transition: 'transform 0.7s ease-in-out',
+                                transformStyle: 'preserve-3d',
+                                transform: dreamerFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                              }}
+                            >
+                              {/* Front */}
+                              <div style={{ position: 'absolute', inset: 0, backfaceVisibility: 'hidden', transform: 'rotateY(0deg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                                <img
+                                  src="/elements/the-dreamer.png"
+                                  alt="The Dreamer"
+                                  width={56}
+                                  height={56}
+                                  style={{ display: 'block', width: 56, height: 56, objectFit: 'contain', filter: 'drop-shadow(0 0 14px rgba(255,212,0,0.9)) drop-shadow(0 0 28px rgba(255,212,0,0.55))' }}
+                                />
+                                <div className="neon-yellow" style={{ fontSize: 13, fontWeight: 800, letterSpacing: '.02em', color: '#FFD400' }}>The Dreamer</div>
+                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#FFD400' }}>
+                                  <img src="/elements/heart-coin.png" alt="HEART" width={26} height={26} className="heart-tier-icon heart-coin-glow" style={{ display: 'block', width: 26, height: 26, objectFit: 'contain', transform: 'translateY(0.5px) scale(1.08)' }} />
+                                  <span className="neon-yellow heart-tier-range" style={{ fontSize: 13, fontWeight: 900, letterSpacing: '.02em' }}>5–24</span>
+                                </div>
+                              </div>
+                              {/* Back */}
+                              <div style={{ position: 'absolute', inset: 0, backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 10 }}>
+                                <div style={{ textAlign: 'center', color: '#FFD400' }}>
+                                  <div style={{ fontSize: 10, lineHeight: 1.2, opacity: 0.95, marginTop: 4 }} className="neon-yellow">Traveling through sound and starlight.</div>
+                                  <ul style={{ listStyle: 'disc', paddingLeft: 14, textAlign: 'left', margin: '6px auto 0', width: '90%', fontSize: 10, lineHeight: 1.3 }}>
+                                    <li>Hidden songs</li>
+                                    <li>Early demos</li>
+                                    <li>Private livestreams</li>
+                                    <li>Exclusive CHXNDLER cards</li>
+                                  </ul>
+                                </div>
+                              </div>
                             </div>
-                            <div style={{ fontSize: 11, lineHeight: 1.2, opacity: 0.9, maxWidth: 90 }}>Traveling through sound and starlight.</div>
                           </div>
-                          {/* Lover */}
+                          {/* Lover - circular flip button (mirrors Wanderer behavior) */}
                           <div
                             role="button"
                             tabIndex={0}
-                            onClick={(e) => {
-                              try { sfx.play('click', 0.4); } catch {}
-                              try { e.currentTarget.classList.add('holo-phase'); } catch {}
-                              setTimeout(() => { setHeartTierDetails('lover'); try { trackAnalytics('heart_tier_clicked', { tier: 'lover' }); } catch {} }, 320);
-                              setTimeout(() => { try { e.currentTarget.classList.remove('holo-phase'); } catch {} }, 600);
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                try { sfx.play('click', 0.4); } catch {}
-                                try { e.currentTarget.classList.add('holo-phase'); } catch {}
-                                setTimeout(() => { setHeartTierDetails('lover'); try { trackAnalytics('heart_tier_clicked', { tier: 'lover' }); } catch {} }, 320);
-                                setTimeout(() => { try { e.currentTarget.classList.remove('holo-phase'); } catch {} }, 600);
-                              }
-                            }}
+                            aria-label="The Lover (25+ HEARTS)"
+                            onMouseEnter={() => { try { sfx.play('hover', 0.28); } catch {}; setLoverHovered(true); }}
+                            onMouseLeave={() => { setLoverHovered(false); }}
+                            onClick={() => { try { sfx.play('flip', 0.45); } catch {}; setLoverFlipped(v => !v); try { trackAnalytics('heart_tier_clicked', { tier: 'lover', style: 'flip' }); } catch {} }}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('flip', 0.45); } catch {}; setLoverFlipped(v => !v); try { trackAnalytics('heart_tier_clicked', { tier: 'lover', style: 'flip' }); } catch {} } }}
                             style={{
-                              width: 110,
-                              height: 170,
-                              display: 'inline-flex',
-                              flexDirection: 'column',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: 8,
-                              borderRadius: 16,
-                              background: 'linear-gradient(180deg, rgba(255,79,216,0.12), rgba(255,79,216,0.04))',
-                              border: '2px solid rgba(255,79,216,0.90)',
-                              boxShadow: '0 0 10px rgba(255,79,216,0.65), 0 0 28px rgba(255,79,216,0.50), inset 0 0 12px rgba(255,79,216,0.28)',
-                              color: '#82004f',
-                              textAlign: 'center',
-                              cursor: 'pointer'
+                              width: 128,
+                              height: 128,
+                              position: 'relative',
+                              borderRadius: '50%',
+                              background: 'radial-gradient(120% 140% at 50% 28%, rgba(255,79,216,0.38), rgba(255,79,216,0.18) 46%, rgba(90,0,60,0.32) 100%)',
+                              border: '2px solid rgba(255,79,216,0.95)',
+                              boxShadow: loverHovered ? '0 0 18px rgba(255,79,216,0.95), 0 0 36px rgba(255,79,216,0.60), inset 0 0 18px rgba(255,79,216,0.35)' : '0 0 10px rgba(255,79,216,0.65), 0 0 28px rgba(255,79,216,0.50), inset 0 0 12px rgba(255,79,216,0.28)',
+                              overflow: 'hidden',
+                              cursor: 'pointer',
+                              perspective: 700,
+                              transition: 'transform .12s ease, box-shadow .18s ease',
+                              transform: loverHovered ? 'translateZ(0) scale(1.05)' : 'none'
                             }}
-                            onMouseEnter={(e) => { if (!e.currentTarget.classList.contains('holo-phase')) { e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)'; } e.currentTarget.style.boxShadow = '0 0 14px rgba(255,79,216,0.90), 0 0 36px rgba(255,79,216,0.60), inset 0 0 18px rgba(255,79,216,0.35)'; try { sfx.play('hover', 0.28); } catch {} }}
-                            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(255,79,216,0.65), 0 0 28px rgba(255,79,216,0.50), inset 0 0 12px rgba(255,79,216,0.28)'; }}
                           >
-                            <div aria-hidden style={{ fontSize: 46 }} className="holo-emoji holo-pink">❤️</div>
-                            <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: '.02em', color: '#980060' }}>The Lover</div>
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#FC54AF' }}>
-                              <img src="/elements/heart-coin.png" alt="HEART" width={14} height={14} style={{ display: 'block', width: 14, height: 14, objectFit: 'contain' }} />
-                              <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '.02em' }}>25+</span>
+                            <div
+                              style={{
+                                position: 'absolute',
+                                inset: 0,
+                                transition: 'transform 0.7s ease-in-out',
+                                transformStyle: 'preserve-3d',
+                                transform: loverFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                              }}
+                            >
+                              {/* Front */}
+                              <div style={{ position: 'absolute', inset: 0, backfaceVisibility: 'hidden', transform: 'rotateY(0deg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                                <img
+                                  src="/elements/the-lover.png"
+                                  alt="The Lover"
+                                  width={56}
+                                  height={56}
+                                  style={{ display: 'block', width: 56, height: 56, objectFit: 'contain', filter: 'drop-shadow(0 0 14px rgba(252,84,175,0.95)) drop-shadow(0 0 28px rgba(252,84,175,0.55))' }}
+                                />
+                                <div className="neon-pink" style={{ fontSize: 13, fontWeight: 800, letterSpacing: '.02em', color: '#FF4FD8' }}>The Lover</div>
+                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#FC54AF' }}>
+                                  <img src="/elements/heart-coin.png" alt="HEART" width={26} height={26} className="heart-tier-icon heart-coin-glow" style={{ display: 'block', width: 26, height: 26, objectFit: 'contain', transform: 'translateY(0.5px) scale(1.08)' }} />
+                                  <span className="neon-pink heart-tier-range" style={{ fontSize: 13, fontWeight: 900, letterSpacing: '.02em' }}>25+</span>
+                                </div>
+                              </div>
+                              {/* Back */}
+                              <div style={{ position: 'absolute', inset: 0, backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 10 }}>
+                                <div style={{ textAlign: 'center', color: '#FF4FD8' }}>
+                                  <div style={{ fontSize: 10, lineHeight: 1.2, opacity: 0.95, marginTop: 4 }} className="neon-pink">At the center — the pulse that powers it all.</div>
+                                  <ul style={{ listStyle: 'disc', paddingLeft: 14, textAlign: 'left', margin: '6px auto 0', width: '90%', fontSize: 10, lineHeight: 1.3 }}>
+                                    <li>The Vault</li>
+                                    <li>Unreleased music</li>
+                                    <li>Early merch drops</li>
+                                    <li>Rare CHXNDLER cards</li>
+                                  </ul>
+                                </div>
+                              </div>
                             </div>
-                            <div style={{ fontSize: 11, lineHeight: 1.2, opacity: 0.9, maxWidth: 90 }}>At the center — the pulse that powers it all.</div>
                           </div>
                         </div>
                       )}
@@ -3099,6 +3262,7 @@ export default function HUDPanel({
       </motion.div>
       </div>
 
+      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     </motion.section>
   );
 }

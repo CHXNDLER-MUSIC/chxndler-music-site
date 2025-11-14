@@ -12,9 +12,7 @@ export const YOUTUBE_SKIES: Record<string, string> = {
   'be-my-bee-acoustic': 'https://youtu.be/gUPRdW0sOkU',
   'brain-freeze': 'https://youtu.be/eDsXZxWB66Y',
   collide: 'https://youtu.be/8qtq8DlS8ws',
-  'colors-of-our-home': 'https://youtu.be/_pycyld2Goc',
-  'colors-of-our-home-acoustic': 'https://youtu.be/_pycyld2Goc',
-  'colors-of-our-home-bluma-game-soundtrack': 'https://youtu.be/_pycyld2Goc',
+  // Colors Of Our Home: temporarily disable YouTube sky
   // Feeling This (cover) — map both common slugs
   'feeling-this': 'https://youtu.be/vQo8TaVJuec',
   'feeling-this-blink-182-cover': 'https://youtu.be/vQo8TaVJuec',

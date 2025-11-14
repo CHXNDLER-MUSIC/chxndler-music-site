@@ -155,11 +155,14 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
       {songs.map((s) => {
         const isMain = s.id === mainId;
         const isHover = s.id === hoverId;
+        const locked = s.id === 'colors-of-our-home-acoustic';
         return (
           <button
             key={s.id}
             role="option"
             aria-selected={isMain}
+            aria-disabled={locked}
+            disabled={locked}
             data-id={s.id}
             ref={setItemRef(s.id)}
             onMouseEnter={() => setHover(s.id)}
@@ -170,6 +173,7 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
             onFocus={() => setHover(s.id)}
             onBlur={() => setHover(null)}
             onClick={(e) => {
+              if (locked) return;
               // Focus the clicked planet immediately and zoom camera in
               playerStore.getState().setMain(s.id, true);
               try { playerStore.getState().setPlanetDisplayMode('single'); } catch {}
@@ -179,10 +183,10 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
               if (onSongChange) onSongChange(s.id);
             }}
             style={{ 
-              cursor: 'pointer',
+              cursor: locked ? 'not-allowed' : 'pointer',
               pointerEvents: 'auto'
             }}
-            className="w-full text-left px-4 py-4 mb-3 rounded-lg"
+            className={`w-full text-left px-4 py-4 mb-3 rounded-lg ${locked ? 'opacity-50' : ''}`}
           >
             <div className="flex items-center gap-3">
               <span
@@ -193,6 +197,7 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
                 }}
               />
               <span className="font-semibold break-words text-lg">{s.title}</span>
+              {locked ? <span className="ml-2" aria-hidden>🔒</span> : null}
             </div>
             <div className="text-cyan-200/80 text-sm break-words mt-1">{s.oneLiner}</div>
           </button>

@@ -54,6 +54,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
   const hoverRef = useRef(null);
   const clickRef = useRef(null);
   const hoverBtnRef = useRef(null);
+  const [elementFilter, setElementFilter] = useState(null);
 
   const current = useMemo(() => items.find(i => i.id === activeId) || items[0], [items, activeId]);
 
@@ -62,9 +63,18 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
     setMounted(true);
   }, []);
 
+  // Filtered/visible list based on selected element
+  const displayItems = useMemo(() => {
+    if (!elementFilter) return items;
+    const f = String(elementFilter).toLowerCase();
+    return items.filter((i) => String(i.icon || '').toLowerCase() === f);
+  }, [items, elementFilter]);
+
+  // Keep highlight in sync with the visible list
   useEffect(() => {
-    setHighlight(Math.max(0, items.findIndex(i => i.id === activeId)));
-  }, [activeId, items]);
+    const idx = displayItems.findIndex(i => i.id === activeId);
+    setHighlight(Math.max(0, idx === -1 ? 0 : idx));
+  }, [activeId, displayItems]);
 
   // Update trigger button position when opening dropdown
   useEffect(() => {
@@ -127,19 +137,20 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
 
   function onListKeyDown(e) {
     if (!open) return;
+    if (!displayItems.length) { if (e.key === 'Escape') { e.preventDefault(); setOpen(false); } return; }
     if (e.key === "Escape") { e.preventDefault(); setOpen(false); return; }
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      const nh = (highlight + 1) % items.length;
+      const nh = (highlight + 1) % displayItems.length;
       setHighlight(nh);
-      const id = items[nh]?.id;
+      const id = displayItems[nh]?.id;
       if (id) { 
         setActiveId(id); 
         onChange?.(id); 
         // Track keyboard navigation
         track("song_hovered", {
           song_id: id,
-          song_title: items[nh]?.title || 'Unknown',
+          song_title: displayItems[nh]?.title || 'Unknown',
           hover_method: 'keyboard_down'
         });
       }
@@ -148,16 +159,16 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
     }
     if (e.key === "ArrowUp") {
       e.preventDefault();
-      const nh = (highlight - 1 + items.length) % items.length;
+      const nh = (highlight - 1 + displayItems.length) % displayItems.length;
       setHighlight(nh);
-      const id = items[nh]?.id;
+      const id = displayItems[nh]?.id;
       if (id) { 
         setActiveId(id); 
         onChange?.(id); 
         // Track keyboard navigation
         track("song_hovered", {
           song_id: id,
-          song_title: items[nh]?.title || 'Unknown',
+          song_title: displayItems[nh]?.title || 'Unknown',
           hover_method: 'keyboard_up'
         });
       }
@@ -167,23 +178,23 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
     if (e.key === "Home") {
       e.preventDefault();
       setHighlight(0);
-      const id = items[0]?.id;
+      const id = displayItems[0]?.id;
       if (id) { setActiveId(id); onChange?.(id); }
       try { setTimeout(() => playerStore.getState().setHover(id || null), 0); } catch {}
       return;
     }
     if (e.key === "End") {
       e.preventDefault();
-      const nh = items.length - 1;
+      const nh = displayItems.length - 1;
       setHighlight(nh);
-      const id = items[nh]?.id;
+      const id = displayItems[nh]?.id;
       if (id) { setActiveId(id); onChange?.(id); }
       try { setTimeout(() => playerStore.getState().setHover(id || null), 0); } catch {}
       return;
     }
     if (e.key === "Enter") {
       e.preventDefault();
-      const id = items[highlight]?.id;
+      const id = displayItems[highlight]?.id;
       if (id) { 
         setActiveId(id);
         // Defer planet visibility changes to the warp sequence
@@ -208,7 +219,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
         aria-controls="song-dropdown-list"
         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {}; try { const a = hoverBtnRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
         onClick={() => { 
-      try { sfx.play('join', 0.75); } catch {}; try { const a = clickRef.current; if (a) { a.currentTime = 0; a.volume = 0.75; a.play().catch(()=>{}); } } catch {}; setOpen((v) => { const nv = !v; try { setTimeout(() => playerStore.getState().setHover(nv ? (items[highlight]?.id || null) : null), 0); } catch {}; return nv; }); 
+      try { sfx.play('join', 0.75); } catch {}; try { const a = clickRef.current; if (a) { a.currentTime = 0; a.volume = 0.75; a.play().catch(()=>{}); } } catch {}; setOpen((v) => { const nv = !v; try { setTimeout(() => playerStore.getState().setHover(nv ? (displayItems[highlight]?.id || null) : null), 0); } catch {}; return nv; }); 
         }}
         onKeyDown={onTriggerKeyDown}
         className="songs-trigger w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-[10px] border-2 border-[#19E3FF]/80 bg-cyan-400/10 backdrop-blur-xl shadow-[0_0_18px_rgba(25,227,255,0.35)] focus:outline-none focus:ring-2 focus:ring-cyan-400"
@@ -268,7 +279,34 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
             zIndex: 100000
           }}
         >
-          {items.map((s, i) => {
+          {/* Element filter row */}
+          <div className="px-2 pt-2 pb-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              {['lightning','darkness','water','heart'].map((el) => {
+                const active = elementFilter === el;
+                return (
+                  <button
+                    key={el}
+                    type="button"
+                    onClick={() => {
+                      const next = active ? null : el;
+                      setElementFilter(next);
+                      setHighlight(0);
+                      try { sfx.play('hover', 0.35); } catch {}
+                      track('element_filter_selected', { element: (el || '').toUpperCase(), active: !!next });
+                    }}
+                    className={`filter-pill inline-flex items-center gap-2 px-2.5 py-1 rounded-md border text-xs font-semibold tracking-wide ${active ? 'border-cyan-300 text-white bg-cyan-400/20' : 'border-[#19E3FF]/40 text-[#CFF7FF] hover:bg-cyan-400/10'}`}
+                    aria-pressed={active}
+                  >
+                    <OptimizedElementIcon name={el} alt={el} className="w-4 h-4 object-contain" width={16} height={16} />
+                    <span>{String(el).toUpperCase()}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          {/* Songs list */}
+          {displayItems.map((s, i) => {
             const isActive = s.id === activeId;
             const isHighlight = i === highlight;
             return (
@@ -480,6 +518,15 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
         }
         .holo-scrollbar::-webkit-scrollbar-corner {
           background: rgba(8, 26, 32, 0.8);
+        }
+        .filter-pill { 
+          border:1px solid rgba(25,227,255,0.35); 
+          background: rgba(25,227,255,0.05);
+          transition: all .2s ease;
+        }
+        .filter-pill:hover {
+          outline: none;
+          box-shadow: 0 0 18px rgba(25,227,255,0.35);
         }
       `}</style>
     </div>

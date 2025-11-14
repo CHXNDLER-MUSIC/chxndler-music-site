@@ -1,12 +1,8 @@
 import DashboardApp from "@/components/DashboardApp";
-import DashboardWelcomeDisplay from "@/components/DashboardWelcomeDisplay";
 
 export default function Page() {
   return (
     <>
-      <div className="pt-6 px-4">
-        <DashboardWelcomeDisplay />
-      </div>
       <DashboardApp />
     </>
   );

@@ -292,8 +292,19 @@ export default function SteeringWheelOverlay({
           // Paint containment to keep canvas work localized
           contain: 'layout paint',
           willChange: 'opacity, transform',
+          // Prevent browser from scrolling/overscrolling when interacting in this region
+          overscrollBehavior: 'none',
         }}
       >
+        {/* Prevent page scrolling when the pointer is over the wheel area */}
+        <div
+          aria-hidden
+          style={{ position: 'absolute', inset: 0, pointerEvents: 'auto', background: 'transparent', zIndex: 200, touchAction: 'none' as any }}
+          onWheelCapture={(e) => { try { e.preventDefault(); e.stopPropagation(); } catch {} }}
+          onWheel={(e) => { try { e.preventDefault(); e.stopPropagation(); } catch {} }}
+          onTouchMoveCapture={(e) => { try { e.preventDefault(); e.stopPropagation(); } catch {} }}
+          onTouchMove={(e) => { try { e.preventDefault(); e.stopPropagation(); } catch {} }}
+        />
         {/* Wheel video with luma key: remove black background; no circle crop, allow hands to extend. */}
         {(() => {
           // Allow a quick debug toggle to show a plain <video> instead of luma-keyed canvas
@@ -400,20 +411,24 @@ export default function SteeringWheelOverlay({
           return (
             <LumaKeyVideo
               srcMp4="/cockpit/wheel.mp4"
-              // Prefer chroma keying near-black for hard removal of background
-              keyColor={[0, 0, 0]}
-              keyTolerance={0.12}
-              keySoftness={0.08}
-              // Keep luma params as a fallback if keyColor is unset via config
-              threshold={(vconf as any)?.threshold ?? 0.03}
-              softness={(vconf as any)?.softness ?? 0.06}
-              saturation={(vconf as any)?.saturation ?? 1.0}
-              contrast={(vconf as any)?.contrast ?? 1.15}
+              // Safer chroma key with blended fallback so it never disappears
+              keyColor={(vconf as any)?.keyColor ?? [0, 0, 0]}
+              keyTolerance={(vconf as any)?.keyTolerance ?? 0.12}
+              keySoftness={(vconf as any)?.keySoftness ?? 0.07}
+              keyMode={'chroma'}
+              // Enable blend so fallback never shows black
               blendScreen
-              // Keep a screen-blended fallback to avoid empty wheel while video loads
+              // Keep minimal fallback to prevent vanishing on dark frames
               fallbackEnabled={true}
-              // Very small minimum to avoid unnecessary fallback
-              minCoverageRatio={0.0002}
+              minCoverageRatio={0.0008}
+              // Preserve wheel region while keying outside background
+              protectCircle
+              protectCenterXRatio={0.5}
+              protectCenterYRatio={0.58}
+              protectRadiusRatio={0.47}
+              protectFeatherRatio={0.08}
+              saturation={(vconf as any)?.saturation ?? 1.0}
+              contrast={(vconf as any)?.contrast ?? 1.05}
               offsetYRatio={0}
               paused={paused}
               forceEnabled

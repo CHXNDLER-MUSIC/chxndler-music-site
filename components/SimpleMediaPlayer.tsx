@@ -136,35 +136,42 @@ export default function MediaPlayer({
               </defs>
               <rect width="100%" height="100%" fill="url(#grid)" />
               
-              {/* Generate waveform path */}
+              {/* Background waveform (faint) */}
               <path
                 d={`M 0 50 ${waveformData.map((amp, i) => {
-                  const x = (i / (waveformData.length - 1)) * 800;
-                  const y1 = 50 - (amp * 35); // Top of wave
-                  const y2 = 50 + (amp * 35); // Bottom of wave
-                  return `L ${x} ${y1} L ${x} ${y2}`;
-                }).join(' ')} L 800 50`}
-                fill="none"
-                stroke="rgba(255,255,255,0.15)"
-                strokeWidth="1"
-                opacity="0.8"
-              />
-              
-              {/* Played portion of waveform */}
-              <path
-                d={`M 0 50 ${waveformData.slice(0, Math.floor(progress * waveformData.length)).map((amp, i) => {
                   const x = (i / (waveformData.length - 1)) * 800;
                   const y1 = 50 - (amp * 35);
                   const y2 = 50 + (amp * 35);
                   return `L ${x} ${y1} L ${x} ${y2}`;
-                }).join(' ')} L ${progress * 800} 50`}
+                }).join(' ')} L 800 50`}
                 fill="none"
+                stroke="rgba(255,255,255,0.12)"
+                strokeWidth="0.8"
+                opacity="0.8"
+              />
+              
+              {/* Played portion as a thin glowing light beam */}
+              {/* Outer glow */}
+              <line
+                x1="0"
+                y1="50"
+                x2={`${progress * 800}`}
+                y2="50"
                 stroke={elementColor}
-                strokeWidth="2"
-                opacity="1"
-                style={{
-                  filter: `drop-shadow(0 0 3px ${elementColor}66)`,
-                }}
+                strokeWidth="7"
+                opacity="0.22"
+                strokeLinecap="round"
+              />
+              {/* Core beam */}
+              <line
+                x1="0"
+                y1="50"
+                x2={`${progress * 800}`}
+                y2="50"
+                stroke={elementColor}
+                strokeWidth="1.6"
+                opacity="0.95"
+                strokeLinecap="round"
               />
               
               {/* Animated indicator removed: element icon now serves as the playhead */}

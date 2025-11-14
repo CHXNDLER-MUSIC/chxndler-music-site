@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { tracks } from "@/lib/songs-consolidated";
 import { playerStore } from "@/store/usePlayerStore";
+import { playWithAutoplayFallback } from "@/lib/media-retry";
 
 export default function HoloAudioBridge() {
   const [storeSnap, setStoreSnap] = React.useState(() => playerStore.getState());
@@ -123,7 +124,8 @@ export default function HoloAudioBridge() {
           await playAndWait(joinAudioRef.current, 900);
           if (cancelled) return;
 
-          // After SFX sequence, only reveal the focused planet once playback actually starts
+          // After SFX sequence, start the song with autoplay fallbacks and only
+          // reveal the focused planet once playback actually starts
           const onPlaying = () => {
             try { playerStore.getState().setPlanetsVisible(true); } catch {}
             try { playerStore.getState().setPlanetDisplayMode('single'); } catch {}
@@ -131,11 +133,13 @@ export default function HoloAudioBridge() {
           };
           try { a.addEventListener('playing', onPlaying, { once: true } as any); } catch {}
 
-          a.play().catch((err) => {
-            console.error('🎵 HoloAudioBridge: Play failed', err);
-            // If play fails (autoplay restrictions), do not reveal planets yet
+          try {
+            await playWithAutoplayFallback(a, { maxRetries: 3, initialDelay: 500 });
+          } catch (err) {
+            console.error('🎵 HoloAudioBridge: Play failed after retries', err);
+            // If play ultimately fails (autoplay restrictions), do not reveal planets yet
             try { a.removeEventListener('playing', onPlaying); } catch {}
-          });
+          }
         } finally {
           clearFlash();
         }

@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import LoginModal from "@/components/LoginModal";
 import { createPortal } from "react-dom";
 import { tracks as ALL, type Track } from "@/lib/songs-consolidated";
 import { skyFor, verifyAllTrackSkies } from "@/lib/sky";
@@ -35,6 +36,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   // Tuned conservatively to avoid overshoot on slower devices/browsers
   const CURSOR_LEAD_SEC = 0.12;
   const [internalIdx, setInternalIdx] = useState(startIndex);
+  const [loginOpen, setLoginOpen] = useState(false);
   const idx = (typeof index === 'number') ? index : internalIdx;
   const setIdx = (val: number | ((p:number)=>number)) => {
     const next = typeof val === 'function' ? (val as (p:number)=>number)(idx) : val;
@@ -776,14 +778,15 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       })();
       if (DEBUG_MEDIA) dlog('audio event: play', { muted: a.muted, volume: a.volume, ignored: mutedOrSilent });
 
-      // Hard gate: if planets are hidden (warp in progress), do not allow music yet
+      // If play fires while planets are hidden (warp state), end the warp and reveal
+      // so playback can proceed without getting stuck waiting for another signal.
       try {
         const { playerStore } = require("@/store/usePlayerStore");
         const st = playerStore.getState();
         if (st && st.planetDisplayMode === 'hidden') {
-          if (DEBUG_MEDIA) dwarn('Play attempted during warp (planetDisplayMode=hidden). Pausing until post-warp.');
-          a.pause();
-          return;
+          if (DEBUG_MEDIA) dwarn('Play fired during warp; revealing planets to avoid deadlock.');
+          try { st.setPlanetDisplayMode('single'); } catch {}
+          try { if (!st.planetsVisible) st.setPlanetsVisible(true); } catch {}
         }
       } catch {}
 
@@ -1255,86 +1258,89 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               </div>
             )}
 
-            {cur.youtube ? (
-              <a
-                ref={ytBtnRef}
-                href={cur.youtube}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="youtube-link-waveform"
-                title={`Open ${cur.title} on YouTube`}
-                aria-label={`Open ${cur.title} on YouTube`}
-                data-song={cur.title}
-                data-slug={cur.slug}
-                data-id="yt"
-                onClick={(e) => {
-                  // Intercept default navigation to open inline popout player
-                  try { e.preventDefault(); } catch {}
-                  try { uiClick(); } catch {}
-                  // Pause site audio while video plays
-                  try { const a = audioRef.current; if (a) { a.pause(); setPlaying(false); } } catch {}
-                  // Track analytics
-                  try {
-                    gaTrack('youtube_clicked', {
-                      song_slug: cur.slug,
-                      payload: { song_title: cur.title, location: 'waveform_player', href: cur.youtube }
-                    });
-                  } catch {}
-                  // Build embeddable URL
-                  const toEmbed = (url: string): string | null => {
+            <div className="yt-with-join">
+              {cur.youtube ? (
+                <a
+                  ref={ytBtnRef}
+                  href={cur.youtube}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="youtube-link-waveform"
+                  title={`Open ${cur.title} on YouTube`}
+                  aria-label={`Open ${cur.title} on YouTube`}
+                  data-song={cur.title}
+                  data-slug={cur.slug}
+                  data-id="yt"
+                  onClick={(e) => {
+                    // Intercept default navigation to open inline popout player
+                    try { e.preventDefault(); } catch {}
+                    try { uiClick(); } catch {}
+                    // Pause site audio while video plays
+                    try { const a = audioRef.current; if (a) { a.pause(); setPlaying(false); } } catch {}
+                    // Track analytics
                     try {
-                      const u = new URL(url);
-                      const host = u.hostname.replace(/^www\./, '');
-                      if (host === 'youtu.be') {
-                        const id = u.pathname.slice(1);
-                        if (id) return `https://www.youtube.com/embed/${id}`;
-                      }
-                      if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtube-nocookie.com' || host === 'music.youtube.com') {
-                        if (u.pathname === '/watch') {
-                          const id = u.searchParams.get('v');
-                          if (id) return `https://www.youtube.com/embed/${id}`;
-                        }
-                        if (u.pathname.startsWith('/shorts/')) {
-                          const id = u.pathname.split('/')[2];
-                          if (id) return `https://www.youtube.com/embed/${id}`;
-                        }
-                        if (u.pathname.startsWith('/embed/')) {
-                          return `https://${host}/embed/${u.pathname.split('/')[2]}`;
-                        }
-                        if (u.pathname.startsWith('/live/')) {
-                          const id = u.pathname.split('/')[2];
-                          if (id) return `https://www.youtube.com/embed/${id}`;
-                        }
-                      }
+                      gaTrack('youtube_clicked', {
+                        song_slug: cur.slug,
+                        payload: { song_title: cur.title, location: 'waveform_player', href: cur.youtube }
+                      });
                     } catch {}
-                    return null;
-                  };
-                  const embed = toEmbed(cur.youtube);
-                  if (embed) {
-                    setYtEmbedUrl(`${embed}?autoplay=1&rel=0`);
-                    setShowYouTubePopover(true);
-                  } else {
-                    // Fallback to opening a new tab if we cannot parse embed URL
-                    try { window.open(cur.youtube, '_blank', 'noopener,noreferrer'); } catch {}
-                  }
-                }}
-                onMouseEnter={playHover}
-              >
-                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                  <path d="M10 8l6 4-6 4z" fill="currentColor" />
-                </svg>
-              </a>
-            ) : (
-              <div 
-                className="youtube-link-unavailable-waveform"
-                title={`No YouTube link available for ${cur.title}`}
-                aria-hidden
-              >
-                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                  <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
-                </svg>
-              </div>
-            )}
+                    // Build embeddable URL
+                    const toEmbed = (url: string): string | null => {
+                      try {
+                        const u = new URL(url);
+                        const host = u.hostname.replace(/^www\./, '');
+                        if (host === 'youtu.be') {
+                          const id = u.pathname.slice(1);
+                          if (id) return `https://www.youtube.com/embed/${id}`;
+                        }
+                        if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtube-nocookie.com' || host === 'music.youtube.com') {
+                          if (u.pathname === '/watch') {
+                            const id = u.searchParams.get('v');
+                            if (id) return `https://www.youtube.com/embed/${id}`;
+                          }
+                          if (u.pathname.startsWith('/shorts/')) {
+                            const id = u.pathname.split('/')[2];
+                            if (id) return `https://www.youtube.com/embed/${id}`;
+                          }
+                          if (u.pathname.startsWith('/embed/')) {
+                            return `https://${host}/embed/${u.pathname.split('/')[2]}`;
+                          }
+                          if (u.pathname.startsWith('/live/')) {
+                            const id = u.pathname.split('/')[2];
+                            if (id) return `https://www.youtube.com/embed/${id}`;
+                          }
+                        }
+                      } catch {}
+                      return null;
+                    };
+                    const embed = toEmbed(cur.youtube);
+                    if (embed) {
+                      setYtEmbedUrl(`${embed}?autoplay=1&rel=0`);
+                      setShowYouTubePopover(true);
+                    } else {
+                      // Fallback to opening a new tab if we cannot parse embed URL
+                      try { window.open(cur.youtube, '_blank', 'noopener,noreferrer'); } catch {}
+                    }
+                  }}
+                  onMouseEnter={playHover}
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                    <path d="M10 8l6 4-6 4z" fill="currentColor" />
+                  </svg>
+                </a>
+              ) : (
+                <div 
+                  className="youtube-link-unavailable-waveform"
+                  title={`No YouTube link available for ${cur.title}`}
+                  aria-hidden
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                    <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
+                  </svg>
+                </div>
+              )}
+              {null}
+            </div>
 
             <div className="volume-button-wrap">
               <button
@@ -1491,37 +1497,20 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 
                 return (
                   <>
-                    {/* Full waveform path */}
-                    <path
-                      d={`M 0 50 ${waveformData.map((amp, i) => {
-                        const x = (i / (waveformData.length - 1)) * 800;
-                        const y1 = 50 - (amp * 35); // Top of wave
-                        const y2 = 50 + (amp * 35); // Bottom of wave
-                        return `L ${x} ${y1} L ${x} ${y2}`;
-                      }).join(' ')} L 800 50`}
-                      fill="none"
-                      stroke="rgba(255,255,255,0.15)"
-                      strokeWidth="1"
-                      opacity="0.8"
-                    />
-                    
-                    {/* Played portion of waveform */}
-                    <path
-                      d={`M 0 50 ${waveformData.slice(0, Math.floor(progress * waveformData.length)).map((amp, i) => {
-                        const x = (i / (waveformData.length - 1)) * 800;
-                        const y1 = 50 - (amp * 35);
-                        const y2 = 50 + (amp * 35);
-                        return `L ${x} ${y1} L ${x} ${y2}`;
-                      }).join(' ')} L ${progress * 800} 50`}
-                      fill="none"
+                    {/* Background track as a single faint line */}
+                    <line
+                      x1="0"
+                      y1="50"
+                      x2="800"
+                      y2="50"
                       stroke={currentElementColor}
-                      strokeWidth="2"
-                      opacity="1"
-                      style={{
-                        filter: `drop-shadow(0 0 3px ${currentElementColor}66)`,
-                      }}
+                      strokeWidth="1.2"
+                      opacity="0.45"
                     />
-                    
+                    {/* Played portion: multi-layer glow for brightness */}
+                    <line x1="0" y1="50" x2={`${progress * 800}`} y2="50" stroke={currentElementColor} strokeWidth="14" opacity="0.16" strokeLinecap="round" />
+                    <line x1="0" y1="50" x2={`${progress * 800}`} y2="50" stroke={currentElementColor} strokeWidth="8" opacity="0.28" strokeLinecap="round" />
+                    <line x1="0" y1="50" x2={`${progress * 800}`} y2="50" stroke={currentElementColor} strokeWidth="2" opacity="0.98" strokeLinecap="round" />
                   </>
                 );
               })()}
@@ -1759,6 +1748,18 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 </div>
               ) : null}
             </div>
+
+            {/* JOIN US: position inside the waveform container, right-center */}
+            <button
+              type="button"
+              className="join-us-waveform"
+              title="Join Us"
+              data-id="join-us-cta"
+              onMouseEnter={playHover}
+              onClick={(e) => { e.preventDefault(); setLoginOpen(true); }}
+            >
+              JOIN US
+            </button>
           </div>
           
         </div>
@@ -1767,6 +1768,9 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
 
 
       {/* Controls moved above waveform; block removed from here */}
+
+      {/* Login modal */}
+      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
 
       {pickerOpen ? (
         <div className="picker hud-card mt-3" role="dialog" aria-label="Select a song">
@@ -2353,6 +2357,64 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           cursor: not-allowed;
         }
         .youtube-link-unavailable-waveform svg { width: 24px; height: 24px; }
+        
+        /* Wrap YouTube button with stacked JOIN US link */
+        .yt-with-join {
+          display: inline-flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: flex-start;
+        }
+        .join-us-neon {
+          margin-top: 4px;
+          font-size: 10px;
+          letter-spacing: 0.12em;
+          font-weight: 800;
+          text-transform: uppercase;
+          color: #38B6FF; /* neon cyan */
+          text-decoration: none;
+          filter: drop-shadow(0 0 6px rgba(56,182,255,0.85)) drop-shadow(0 0 14px rgba(56,182,255,0.55));
+          text-shadow: 0 0 8px rgba(56,182,255,0.85), 0 0 18px rgba(56,182,255,0.55);
+          transition: transform 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
+          opacity: 0.95;
+        }
+        .join-us-neon:hover {
+          transform: translateY(-1px);
+          filter: drop-shadow(0 0 10px rgba(56,182,255,0.95)) drop-shadow(0 0 22px rgba(56,182,255,0.7));
+          text-shadow: 0 0 10px rgba(56,182,255,0.95), 0 0 26px rgba(56,182,255,0.7);
+          opacity: 1;
+        }
+        .join-us-neon:active { transform: translateY(0); }
+        
+        /* JOIN US inside waveform container (right of waveform) */
+        .join-us-waveform {
+          position: absolute;
+          right: 6px;
+          top: 50%;
+          transform: translateY(-50%);
+          padding: 4px 8px;
+          border-radius: 999px;
+          font-size: 10px;
+          letter-spacing: 0.12em;
+          font-weight: 800;
+          text-transform: uppercase;
+          color: #FF4FD8; /* neon pink */
+          text-decoration: none;
+          background: rgba(0,0,0,0.35);
+          border: 1px solid rgba(255,79,216,0.55);
+          filter: drop-shadow(0 0 8px rgba(255,79,216,0.85)) drop-shadow(0 0 20px rgba(255,79,216,0.55));
+          text-shadow: 0 0 10px rgba(255,79,216,0.95), 0 0 22px rgba(255,79,216,0.6);
+          transition: transform 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
+          opacity: 0.98;
+          z-index: 120; /* above spotify/apple (100) and svg */
+        }
+        .join-us-waveform:hover { 
+          transform: translateY(calc(-50% - 1px));
+          filter: drop-shadow(0 0 12px rgba(255,79,216,0.95)) drop-shadow(0 0 28px rgba(255,79,216,0.75));
+          text-shadow: 0 0 12px rgba(255,79,216,0.95), 0 0 28px rgba(255,79,216,0.75);
+          opacity: 1;
+        }
+        .join-us-waveform:active { transform: translateY(-50%); }
         
         /* Inline controls (lyrics/youtube/volume) now sit in the controls row */
         .waveform-volume {
