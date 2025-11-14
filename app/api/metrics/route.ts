@@ -112,6 +112,15 @@ export async function GET(_req: NextRequest) {
       console.error('[metrics] store button click query failed:', storeBtnErr);
     }
 
+    // HEART coin button clicks (HUD heart coin)
+    const { count: heartCoinCount, error: heartErr } = await supabase
+      .from('events')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_type', 'heart_coin_clicked');
+    if (heartErr) {
+      console.error('[metrics] heart coin click query failed:', heartErr);
+    }
+
     // Aggregate Spotify/Apple clicks from click_events.element_label
     const socials = { instagram: 0, tiktok: 0, youtube: 0, spotify: 0, apple: 0 } as Record<string, number>;
 
@@ -240,6 +249,7 @@ export async function GET(_req: NextRequest) {
       joinPinkClicks: joinPinkClickCount || 0,
       brandClicks: brandClickCount || 0,
       storeButtonClicks: storeButtonCount || 0,
+      heartCoinClicks: heartCoinCount || 0,
       joinSubmitClicks: joinSubmitCount || 0,
       songPlays: {},
       coverClicks: {},

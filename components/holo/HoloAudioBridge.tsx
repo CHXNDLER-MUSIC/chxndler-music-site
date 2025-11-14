@@ -39,11 +39,16 @@ export default function HoloAudioBridge() {
   // Helper: play an <audio> element and resolve when it ends (with safe timeout fallback)
   function playAndWait(el: HTMLAudioElement | null, fallbackMs: number): Promise<void> {
     return new Promise<void>((resolve) => {
-      if (!el) { setTimeout(resolve, Math.max(200, fallbackMs)); return; }
+      const wait = Math.max(200, fallbackMs);
+      if (!el) { setTimeout(resolve, wait); return; }
       try { el.currentTime = 0; } catch {}
       let settled = false;
-      const onEnded = () => { if (!settled) { settled = true; cleanup(); resolve(); } };
-      const onError = () => { if (!settled) { settled = true; cleanup(); resolve(); } };
+      const finish = () => { if (!settled) { settled = true; cleanup(); resolve(); } };
+      const onEnded = () => finish();
+      const onError = () => {
+        // On error, still wait the fallback duration to preserve timing
+        setTimeout(finish, wait);
+      };
       const cleanup = () => {
         try { el.removeEventListener('ended', onEnded); } catch {}
         try { el.removeEventListener('error', onError); } catch {}
@@ -53,10 +58,10 @@ export default function HoloAudioBridge() {
       try {
         void el.play().catch(() => {
           // Autoplay block or other failure: fall back to timeout
-          setTimeout(() => { if (!settled) { settled = true; cleanup(); resolve(); } }, Math.max(200, fallbackMs));
+          setTimeout(finish, wait);
         });
       } catch {
-        setTimeout(() => { if (!settled) { settled = true; cleanup(); resolve(); } }, Math.max(200, fallbackMs));
+        setTimeout(finish, wait);
       }
     });
   }

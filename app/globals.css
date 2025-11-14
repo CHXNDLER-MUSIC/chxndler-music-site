@@ -586,7 +586,8 @@ img[src$="/elements/music.png"] {
   border-radius: 6px;
   background: rgba(0,0,0,0.3);
   overflow: hidden;
-  transition: all 0.2s ease;
+  /* Avoid animating layout properties to prevent jitter on reflows */
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
 }
 
 .hud-play-btn-enhanced{
@@ -903,7 +904,8 @@ img[src$="/elements/music.png"] {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: transparent; /* edge-to-edge image, no rim */
+  /* Bright blue background behind the coin */
+  background: radial-gradient(circle at 50% 45%, #38B6FF 0%, #1AA3FF 55%, #0A84D0 100%);
   border: none;
   color: white;
   display: flex;
@@ -915,7 +917,8 @@ img[src$="/elements/music.png"] {
   transition: all 0.2s ease;
   /* Blue glow behind the coin button */
   box-shadow: 0 0 12px rgba(56, 182, 255, 0.75), 0 0 22px rgba(56, 182, 255, 0.55);
-  border: 1px solid rgba(255,255,255,0.4);
+  /* Blue-tinted rim to avoid silver appearance */
+  border: 1px solid rgba(56,182,255,0.45);
   position: relative;
   flex-shrink: 0;
   overflow: hidden; /* clip the image to the circular mask */
@@ -924,15 +927,24 @@ img[src$="/elements/music.png"] {
   content: '';
   position: absolute;
   inset: 0;
+  z-index: 2; /* keep sheen above the coin image */
   pointer-events: none;
-  /* Stronger metallic sheen and radial edge shine */
+  /* Blue sheen and radial edge shine (replace silver/white with #38B6FF tones) */
   background:
-    /* Chrome-like streaks */
-    conic-gradient(from 25deg, rgba(255,255,255,0.35) 0deg, rgba(180,180,180,0.15) 60deg, rgba(255,255,255,0.35) 120deg, rgba(180,180,180,0.15) 180deg, rgba(255,255,255,0.35) 240deg, rgba(180,180,180,0.15) 300deg, rgba(255,255,255,0.35) 360deg),
+    /* Cyan streaks */
+    conic-gradient(from 25deg,
+      rgba(56,182,255,0.35) 0deg,
+      rgba(56,182,255,0.12) 60deg,
+      rgba(56,182,255,0.35) 120deg,
+      rgba(56,182,255,0.12) 180deg,
+      rgba(56,182,255,0.35) 240deg,
+      rgba(56,182,255,0.12) 300deg,
+      rgba(56,182,255,0.35) 360deg
+    ),
     /* Top highlight */
-    radial-gradient(85% 85% at 32% 18%, rgba(255,255,255,0.55), rgba(255,255,255,0.08) 42%, transparent 62%),
+    radial-gradient(85% 85% at 32% 18%, rgba(56,182,255,0.45), rgba(56,182,255,0.08) 42%, transparent 62%),
     /* Bottom rim glow */
-    radial-gradient(120% 100% at 50% 120%, rgba(200,200,200,0.28), rgba(0,0,0,0) 60%);
+    radial-gradient(120% 100% at 50% 120%, rgba(56,182,255,0.25), rgba(0,0,0,0) 60%);
   mix-blend-mode: screen;
 }
 .heart-coin-btn-waveform-hud::after{
@@ -940,9 +952,13 @@ img[src$="/elements/music.png"] {
   position: absolute;
   inset: 0;
   border-radius: 999px;
+  z-index: 1; /* inner rim above bg, below sheen */
   pointer-events: none;
-  /* Inner rim and vignette for depth */
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35), inset 0 0 14px rgba(230,230,230,0.35), inset 0 0 28px rgba(160,160,160,0.25);
+  /* Inner rim and vignette for depth (blue instead of silver) */
+  box-shadow:
+    inset 0 0 0 1px rgba(56,182,255,0.35),
+    inset 0 0 14px rgba(56,182,255,0.28),
+    inset 0 0 28px rgba(56,182,255,0.18);
 }
 .heart-coin-btn-waveform-hud:hover{
   transform: scale(1.14);
@@ -962,6 +978,8 @@ img[src$="/elements/music.png"] {
   transform-origin: center;
   transition: transform 0.2s ease;
   margin: 0;
+  position: relative;
+  z-index: 1; /* ensure the image sits above the blue background */
 }
 
 /*
@@ -970,7 +988,7 @@ img[src$="/elements/music.png"] {
 */
 :root{
   /* Default to the HUD button blue; change as desired */
-  --heart-coin-glow-color: rgba(56, 182, 255, 0.85);
+  --heart-coin-glow-color: rgba(56, 182, 255, 0.85); /* #38B6FF */
 }
 
 /* Apply the glow to any explicit class or any <img> using heart-coin.png */

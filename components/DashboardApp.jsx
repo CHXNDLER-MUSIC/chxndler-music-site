@@ -489,15 +489,24 @@ export default function DashboardApp({ initialSlug } = {}) {
     setMounted(true);
     // Explicitly disable SFX on mount until Start is pressed
     try { sfx.setEnabled(false); } catch {}
-    
-    // Safari-specific: Force refresh of portal content when state changes
+
+    // Safari-specific: previously used a 5s interval to force portal refreshes,
+    // which caused periodic layout jitter. Replace with event-driven bumps only.
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     if (isSafari) {
-      const safariRefreshInterval = setInterval(() => {
-        setSafariRefreshKey(prev => prev + 1);
-      }, 5000); // Refresh every 5 seconds to ensure updates on Safari
-      
-      return () => clearInterval(safariRefreshInterval);
+      const bump = () => setSafariRefreshKey(prev => prev + 1);
+      // Bump once shortly after mount to ensure initial render settles
+      const mountTimer = setTimeout(bump, 50);
+      window.addEventListener('resize', bump);
+      window.addEventListener('orientationchange', bump);
+      const onVis = () => { if (document.visibilityState === 'visible') bump(); };
+      document.addEventListener('visibilitychange', onVis);
+      return () => {
+        clearTimeout(mountTimer);
+        window.removeEventListener('resize', bump);
+        window.removeEventListener('orientationchange', bump);
+        document.removeEventListener('visibilitychange', onVis);
+      };
     }
   }, []);
 

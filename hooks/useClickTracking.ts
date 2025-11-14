@@ -95,6 +95,10 @@ function identifyElement(element: HTMLElement): string {
   if (className.includes('gem-btn-waveform-hud') || dataId === 'store' || title.includes('store')) {
     return '🛍️ Store Button';
   }
+  // HEART Coin button in HUD/waveform
+  if (className.includes('heart-coin-btn-waveform-hud') || dataId === 'heart-coin' || title.includes('heart coin')) {
+    return '💙 HEART Coin';
+  }
   // Store items within the popover
   if (dataId === 'store-item') {
     const itemId = element.getAttribute('data-item-id') || '';

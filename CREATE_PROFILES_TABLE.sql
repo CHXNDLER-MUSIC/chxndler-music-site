@@ -8,9 +8,13 @@ create table if not exists public.profiles (
   id uuid primary key default auth.uid(),
   display_name text,
   avatar_url text,
+  hearts integer not null default 0,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+
+-- Backfill: older deployments may not have the hearts column yet
+alter table public.profiles add column if not exists hearts integer not null default 0;
 
 -- Enable Row Level Security
 alter table public.profiles enable row level security;

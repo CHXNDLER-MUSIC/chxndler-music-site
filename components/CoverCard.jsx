@@ -41,7 +41,7 @@ export default function CoverCard({ src = "https://ik.imagekit.io/CHXNDLER/cover
     <div className="flex flex-col items-start">
       <div
         className={`cover-art-container group relative rounded-[12px] overflow-hidden cursor-pointer ${responsiveClasses}`}
-        style={responsive ? {} : { width: size - 10, height: size - 10 }}
+        style={responsive ? { WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden', WebkitTransform: 'translateZ(0)', transform: 'translateZ(0)' } : { width: size - 10, height: size - 10, WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden', WebkitTransform: 'translateZ(0)', transform: 'translateZ(0)' }}
         onClick={handleClick}
       >
         <img

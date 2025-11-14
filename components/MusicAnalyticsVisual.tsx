@@ -45,6 +45,7 @@ type Metrics = {
   lyricsSongClicks?: Record<string, { count: number; title?: string }>;
   storeButtonClicks?: number;
   storeItemClicks?: Record<string, { id: string; title: string; count: number }>;
+  heartCoinClicks?: number;
 };
 
 export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualProps) {
@@ -495,6 +496,19 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                       <div className="w-full px-6 py-4 flex items-center justify-between">
                         <span className="text-white font-medium">chxndler</span>
                         <span className="text-cyan-200 font-bold">{(() => { const fallback = stats?.controlButtons.find(b=>b.button==='CHXNDLER')?.count || 0; return (metrics?.brandClicks ?? fallback); })()}</span>
+                      </div>
+                      <div className="w-full px-6 py-4 flex items-center justify-between">
+                        <span className="text-white font-medium">HEART Coin</span>
+                        <span className="text-cyan-200 font-bold">
+                          {(() => {
+                            // Prefer server metric; fallback to local click analytics label match
+                            if (typeof metrics?.heartCoinClicks === 'number') return metrics.heartCoinClicks;
+                            try {
+                              const clicks = getClickAnalyticsLocal();
+                              return clicks.filter(c => (c.enhancedLabel || '').includes('HEART Coin')).length;
+                            } catch { return 0; }
+                          })()}
+                        </span>
                       </div>
                     </div>
                     {/* Spotify per-song (from waveform/HUD) */}

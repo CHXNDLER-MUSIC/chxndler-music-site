@@ -148,6 +148,26 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     a.addEventListener('playing', onPlaying);
     return () => { try { a.removeEventListener('playing', onPlaying); } catch {} };
   }, []);
+
+  // If planets are hidden (warp sequence), force-pause any main audio to avoid early starts
+  useEffect(() => {
+    try {
+      const { playerStore } = require("@/store/usePlayerStore");
+      const stopIfWarping = () => {
+        try {
+          const st = playerStore.getState();
+          if (st && st.planetDisplayMode === 'hidden') {
+            const a = audioRef.current; if (!a) return;
+            if (!a.paused) a.pause();
+          }
+        } catch {}
+      };
+      // Run once in case we're already in hidden mode
+      stopIfWarping();
+      const unsub = playerStore.subscribe(stopIfWarping);
+      return () => { try { unsub && unsub(); } catch {} };
+    } catch {}
+  }, []);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [animationTime, setAnimationTime] = useState(0);
@@ -773,7 +793,18 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         try { return a.muted || a.volume <= 0.0001; } catch { return false; }
       })();
       if (DEBUG_MEDIA) dlog('audio event: play', { muted: a.muted, volume: a.volume, ignored: mutedOrSilent });
-      
+
+      // Hard gate: if planets are hidden (warp in progress), do not allow music yet
+      try {
+        const { playerStore } = require("@/store/usePlayerStore");
+        const st = playerStore.getState();
+        if (st && st.planetDisplayMode === 'hidden') {
+          if (DEBUG_MEDIA) dwarn('Play attempted during warp (planetDisplayMode=hidden). Pausing until post-warp.');
+          a.pause();
+          return;
+        }
+      } catch {}
+
       // SAFETY: If this is an unwanted auto-play (no signals triggered AND autoPlayOnIndex is disabled AND not intentionally started), pause immediately
       if (!mutedOrSilent && startSignal === 0 && playSignal === 0 && toggleSignal === 0 && !autoPlayOnIndex && !intentionalPlayRef.current) {
         if (DEBUG_MEDIA) dwarn('Unexpected auto-play detected, pausing audio');
@@ -1796,35 +1827,36 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                         }
                       } catch {}
                       
-                      // Play immediately without waiting for warp delay
+                // Play immediately without waiting for warp delay
+                      // If warp is in progress (planets hidden), defer to external sequence (warp->join->song)
+                      try {
+                        const { playerStore } = require("@/store/usePlayerStore");
+                        const st = playerStore.getState();
+                        if (st && st.planetDisplayMode === 'hidden') {
+                          if (DEBUG_MEDIA) dwarn('Picker play suppressed during warp; external flow will start after join.');
+                          return; // do not start now
+                        }
+                      } catch {}
+
                       intentionalPlayRef.current = true;
-                      
                       // Ensure audio is unmuted and has proper volume
                       a.muted = false;
-                      // Preserve user-selected volume
-                      
-                      
-                      
                       // Simple play attempt first, fallback to retry logic if needed
                       a.play()
                         .then(() => {
-                          
                           stateMachine.current.send({ type: 'PLAY' });
                           gaTrack("play", { slug: selectedTrack.slug });
                         })
                         .catch((error) => {
-                          
                           // Fallback to retry logic only if simple play fails
-                          // Suppress volumechange handling while fallback may set volume to 0
                           suppressVolumeRef.current = true;
                           playWithAutoplayFallback(a, {
                             maxRetries: 2,
                             onRetry: (attempt, error) => {
-                              
+                              /* no-op */
                             }
                           })
                             .then(() => {
-                              
                               stateMachine.current.send({ type: 'PLAY' });
                               gaTrack("play", { slug: selectedTrack.slug });
                               suppressVolumeRef.current = false;
@@ -2140,7 +2172,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         }
         
         .spotify-btn:hover {
-          transform: translateY(-1px);
           box-shadow: 0 4px 12px rgba(29, 185, 84, 0.6);
           background: linear-gradient(135deg, #1ed760, #22e55c);
         }
@@ -2187,13 +2218,13 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         }
         
         .spotify-btn-waveform:hover {
-          transform: translate(-50%, -50%) scale(1.22);
+          transform: translate(-50%, -50%);
           box-shadow: 0 6px 20px rgba(29, 185, 84, 0.8);
           background: linear-gradient(135deg, #1ed760, #22e55c);
         }
         
         .spotify-btn-waveform:active {
-          transform: translate(-50%, -50%) scale(0.95);
+          transform: translate(-50%, -50%);
         }
         
         .spotify-btn-unavailable-waveform {
@@ -2234,8 +2265,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           background: transparent;
           border: none;
         }
-        .apple-btn-waveform:hover { transform: translate(-50%, -50%) scale(1.14); opacity: 0.95; }
-        .apple-btn-waveform:active { transform: translate(-50%, -50%) scale(0.96); }
+        .apple-btn-waveform:hover { transform: translate(-50%, -50%); opacity: 0.95; }
+        .apple-btn-waveform:active { transform: translate(-50%, -50%); }
         .apple-btn-unavailable-waveform {
           position: absolute;
           top: 50%;
@@ -2274,8 +2305,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         .waveform-volume .youtube-link-unavailable-waveform {
           flex: 0 0 auto; /* prevent shrinking to zero if space is tight */
         }
-        .lyrics-link-waveform:hover { transform: scale(1.16); box-shadow: 0 6px 22px rgba(242,239,29,0.9); }
-        .lyrics-link-waveform:active { transform: scale(0.95); }
+        .lyrics-link-waveform:hover { box-shadow: 0 6px 22px rgba(242,239,29,0.9); }
+        .lyrics-link-waveform:active { }
 
         .lyrics-link-unavailable-waveform {
           width: 32px;
@@ -2298,8 +2329,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           width: 32px;
           height: 32px;
           border-radius: 50%;
-          /* Match Apple button: no visible rim */
-          border: none;
+          /* Thin rim to match Apple/Store */
+          border: 1px solid rgba(255, 255, 255, 0.4);
           background: radial-gradient(circle at 30% 30%, #FF6B6B, #FF0000);
           color: #FFFFFF;
           display: inline-flex;
@@ -2308,23 +2339,22 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           line-height: 0;
           text-decoration: none;
           transition: all 0.25s ease;
-          /* Softer red glow */
-          box-shadow: 0 2px 8px rgba(255,59,48,0.35);
+          /* Match glow strength with other rimmed buttons */
+          box-shadow: 0 4px 16px rgba(255,59,48,0.45);
           position: relative;
           z-index: 600; /* sit above waveform/svg and streaming buttons */
         }
         .youtube-link-waveform:hover { 
-          transform: scale(1.16); 
-          box-shadow: 0 3px 12px rgba(255,59,48,0.55);
+          box-shadow: 0 6px 20px rgba(255,59,48,0.6);
         }
-        .youtube-link-waveform:active { transform: scale(0.95); }
-        /* Size icon similar to Store button for inner padding */
-        .youtube-link-waveform svg { width: 22px; height: 22px; }
+        .youtube-link-waveform:active { }
+        /* Increase icon size so the outer rim appears thinner */
+        .youtube-link-waveform svg { width: 24px; height: 24px; }
         .youtube-link-unavailable-waveform {
           width: 32px;
           height: 32px;
           border-radius: 50%;
-          border: none;
+          border: 1px solid rgba(255,255,255,0.25);
           background: rgba(128,128,128,0.35);
           color: rgba(255,255,255,0.85);
           display: inline-flex;
@@ -2334,7 +2364,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           z-index: 200;
           cursor: not-allowed;
         }
-        .youtube-link-unavailable-waveform svg { width: 22px; height: 22px; }
+        .youtube-link-unavailable-waveform svg { width: 24px; height: 24px; }
         
         /* Inline controls (lyrics/youtube/volume) now sit in the controls row */
         .waveform-volume {
@@ -2369,9 +2399,9 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           box-shadow: 0 4px 16px rgba(25,227,255,0.6);
         }
         /* Removed outer rim on waveform volume button to match Spotify */
-        .waveform-volume-btn:hover { transform: scale(1.12); box-shadow: 0 6px 22px rgba(25,227,255,0.75); }
+        .waveform-volume-btn:hover { box-shadow: 0 6px 22px rgba(25,227,255,0.75); }
         .waveform-volume-btn:hover .btn-glow { opacity: 1; animation: pulse 2s ease-in-out infinite; }
-        .waveform-volume-btn:active { transform: scale(0.95); }
+        .waveform-volume-btn:active { }
         /* Removed legacy horizontal waveform volume bar styles */
         
         /* FULLSCREEN SPOTIFY BUTTON - CENTER OF ENTIRE SCREEN */
@@ -2450,7 +2480,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           cursor: pointer;
           pointer-events: auto;
         }
-        .section-marker:hover { opacity: 1; transform: translateY(-1px); }
+        .section-marker:hover { opacity: 1; }
         .section-marker.chorus{ background: linear-gradient(180deg, #FC54AF, #19E3FF); box-shadow: 0 0 8px #FC54AFCC, 0 0 16px #19E3FF88; }
         .section-marker.verse{ background: linear-gradient(180deg, #19E3FF, #38B6FF); box-shadow: 0 0 8px #19E3FF99, 0 0 16px #38B6FF66; }
         .section-marker.bridge{ background: linear-gradient(180deg, #F2EF1D, #FFC800); box-shadow: 0 0 8px #F2EF1DB3, 0 0 16px #FFC8007A; }
@@ -2509,14 +2539,13 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          transition: all 0.3s ease;
+          transition: box-shadow 0.3s ease, background 0.3s ease;
           box-shadow: 
             0 4px 16px rgba(25,227,255,0.3),
             inset 0 1px 0 rgba(255,255,255,0.2);
         }
         
         .play-pause-btn:hover {
-          transform: scale(1.05);
           box-shadow: 
             0 6px 20px rgba(25,227,255,0.4),
             inset 0 1px 0 rgba(255,255,255,0.3);
@@ -2556,12 +2585,11 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: background 0.2s ease, box-shadow 0.2s ease;
         }
         
         .track-btn:hover {
           background: rgba(25,227,255,0.2);
-          transform: translateY(-1px);
         }
 
         /* Glowing volume button (main controls) similar to Spotify button */
@@ -2573,9 +2601,9 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           color: white;
           box-shadow: 0 4px 16px rgba(25,227,255,0.6);
         }
-        .volume-btn:hover { transform: translateY(-1px) scale(1.12); box-shadow: 0 6px 20px rgba(25,227,255,0.8); }
+        .volume-btn:hover { box-shadow: 0 6px 20px rgba(25,227,255,0.8); }
         .volume-btn:hover .btn-glow { opacity: 1; animation: pulse 2s ease-in-out infinite; }
-        .volume-btn:active { transform: scale(0.95); }
+        .volume-btn:active { }
         
         .selector-btn {
           display: flex;
@@ -2588,12 +2616,11 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           color: #FC54AF;
           font-size: 12px;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: background 0.2s ease, box-shadow 0.2s ease;
         }
         
         .selector-btn:hover {
           background: rgba(252,84,175,0.2);
-          transform: translateY(-1px);
         }
         
         .volume-control {
@@ -2706,10 +2733,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           justify-content: center;
           cursor: pointer;
           box-shadow: 0 0 16px rgba(255,255,255,0.25);
-          transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+          transition: background 0.15s ease, box-shadow 0.15s ease;
         }
-        .yt-close:hover { transform: scale(1.1); background: rgba(0,0,0,0.6); box-shadow: 0 0 24px rgba(255,255,255,0.55); }
-        .yt-close:active { transform: scale(0.95); }
+        .yt-close:hover { background: rgba(0,0,0,0.6); box-shadow: 0 0 24px rgba(255,255,255,0.55); }
+        .yt-close:active { }
 
         /* Spotify popout overlay */
         .sp-overlay {
@@ -2778,10 +2805,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           justify-content: center;
           cursor: pointer;
           box-shadow: 0 0 16px rgba(255,255,255,0.25);
-          transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+          transition: background 0.15s ease, box-shadow 0.15s ease;
         }
-        .am-close:hover { transform: scale(1.1); background: rgba(0,0,0,0.6); box-shadow: 0 0 24px rgba(255,255,255,0.55); }
-        .am-close:active { transform: scale(0.95); }
+        .am-close:hover { background: rgba(0,0,0,0.6); box-shadow: 0 0 24px rgba(255,255,255,0.55); }
+        .am-close:active { }
 
         @keyframes ytFadeIn { from { opacity: 0 } to { opacity: 1 } }
         @keyframes ytZoomIn { from { transform: scale(0.96); opacity: 0.8 } to { transform: scale(1); opacity: 1 } }

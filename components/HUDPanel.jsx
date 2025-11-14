@@ -2068,13 +2068,15 @@ export default function HUDPanel({
                           <div style={{ fontSize: 13, opacity: 0.8 }}>Choose your path. Earn HEARTS. Unlock deeper access.</div>
                         </div>
                       </div>
-                      {/* Tier grid */}
+                      {/* Tier buttons: horizontal, tall, neon */}
                       <div
                         style={{
                           marginTop: 8,
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-                          gap: 12
+                          display: 'flex',
+                          flexDirection: 'row',
+                          justifyContent: 'center',
+                          alignItems: 'stretch',
+                          gap: 16
                         }}
                       >
                         {/* Wanderer */}
@@ -2084,26 +2086,26 @@ export default function HUDPanel({
                           onClick={() => { try { sfx.play('click', 0.4); } catch {}; try { trackAnalytics('heart_tier_clicked', { tier: 'wanderer' }); } catch {} }}
                           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('click', 0.4); } catch {}; try { trackAnalytics('heart_tier_clicked', { tier: 'wanderer' }); } catch {} } }}
                           style={{
-                            display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-                            padding: '14px 14px', borderRadius: 14,
-                            background: 'linear-gradient(180deg, rgba(255,255,255,0.88), rgba(255,255,255,0.72))',
-                            border: '1px solid rgba(0,0,0,0.12)',
-                            boxShadow: '0 8px 22px rgba(0,0,0,0.10)'
+                            width: 110,
+                            height: 200,
+                            display: 'inline-flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 8,
+                            borderRadius: 16,
+                            background: 'linear-gradient(180deg, rgba(0,180,255,0.12), rgba(0,180,255,0.04))',
+                            border: '2px solid rgba(0,180,255,0.85)',
+                            boxShadow: '0 0 10px rgba(0,180,255,0.65), 0 0 26px rgba(0,180,255,0.45), inset 0 0 12px rgba(0,180,255,0.25)',
+                            color: '#023047',
+                            textAlign: 'center',
+                            cursor: 'pointer'
                           }}
-                          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 28px rgba(0,0,0,0.16)'; try { sfx.play('hover', 0.25); } catch {} }}
-                          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 22px rgba(0,0,0,0.10)'; }}
+                          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)'; e.currentTarget.style.boxShadow = '0 0 14px rgba(0,180,255,0.85), 0 0 34px rgba(0,180,255,0.55), inset 0 0 18px rgba(0,180,255,0.35)'; try { sfx.play('hover', 0.25); } catch {} }}
+                          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(0,180,255,0.65), 0 0 26px rgba(0,180,255,0.45), inset 0 0 12px rgba(0,180,255,0.25)'; }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                            <div style={{ fontSize: 15, fontWeight: 800 }}>The Wanderer</div>
-                            <div style={{ fontSize: 12, fontWeight: 700, padding: '4px 8px', borderRadius: 999, background: 'rgba(0,0,0,0.06)' }}>0–4 HEARTS</div>
-                          </div>
-                          <div style={{ fontSize: 14, lineHeight: 1.4 }}>
-                            <div>You’ve just arrived in the Heartverse — drawn here by the signal.</div>
-                            <div style={{ marginTop: 6 }}>Access: public songs, stories, and your own Heartverse profile.</div>
-                          </div>
-                          <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
-                            <span style={{ fontSize: 12, opacity: 0.7 }}>Start collecting HEARTS</span>
-                          </div>
+                          <div aria-hidden style={{ fontSize: 46, filter: 'drop-shadow(0 0 8px rgba(0,180,255,0.8))' }}>🧭</div>
+                          <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: '.02em', color: '#015073' }}>The Wanderer</div>
                         </div>
                         {/* Dreamer */}
                         <div
@@ -2112,26 +2114,26 @@ export default function HUDPanel({
                           onClick={() => { try { sfx.play('click', 0.4); } catch {}; try { trackAnalytics('heart_tier_clicked', { tier: 'dreamer' }); } catch {} }}
                           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('click', 0.4); } catch {}; try { trackAnalytics('heart_tier_clicked', { tier: 'dreamer' }); } catch {} } }}
                           style={{
-                            display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-                            padding: '14px 14px', borderRadius: 14,
-                            background: 'linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.78))',
-                            border: '1px solid rgba(252,84,175,0.35)',
-                            boxShadow: '0 8px 24px rgba(252,84,175,0.20), 0 0 24px rgba(252,84,175,0.18)'
+                            width: 110,
+                            height: 200,
+                            display: 'inline-flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 8,
+                            borderRadius: 16,
+                            background: 'linear-gradient(180deg, rgba(255,212,0,0.12), rgba(255,212,0,0.04))',
+                            border: '2px solid rgba(255,212,0,0.9)',
+                            boxShadow: '0 0 10px rgba(255,212,0,0.70), 0 0 26px rgba(255,212,0,0.45), inset 0 0 12px rgba(255,212,0,0.25)',
+                            color: '#5f4b00',
+                            textAlign: 'center',
+                            cursor: 'pointer'
                           }}
-                          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 14px 30px rgba(252,84,175,0.28), 0 0 28px rgba(252,84,175,0.22)'; try { sfx.play('hover', 0.25); } catch {} }}
-                          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(252,84,175,0.20), 0 0 24px rgba(252,84,175,0.18)'; }}
+                          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)'; e.currentTarget.style.boxShadow = '0 0 14px rgba(255,212,0,0.95), 0 0 34px rgba(255,212,0,0.55), inset 0 0 18px rgba(255,212,0,0.35)'; try { sfx.play('hover', 0.25); } catch {} }}
+                          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(255,212,0,0.70), 0 0 26px rgba(255,212,0,0.45), inset 0 0 12px rgba(255,212,0,0.25)'; }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                            <div style={{ fontSize: 15, fontWeight: 800 }}>The Dreamer</div>
-                            <div style={{ fontSize: 12, fontWeight: 700, padding: '4px 8px', borderRadius: 999, background: 'rgba(252,84,175,0.10)', color: '#A00B5F' }}>5–24 HEARTS</div>
-                          </div>
-                          <div style={{ fontSize: 14, lineHeight: 1.4 }}>
-                            <div>You’re part of the crew now — traveling through sound and starlight.</div>
-                            <div style={{ marginTop: 6 }}>Access: hidden songs, early demos, private livestreams, and exclusive CHXNDLER cards.</div>
-                          </div>
-                          <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
-                            <span style={{ fontSize: 12, opacity: 0.7 }}>Unlock deeper access</span>
-                          </div>
+                          <div aria-hidden style={{ fontSize: 46, filter: 'drop-shadow(0 0 8px rgba(255,212,0,0.85))' }}>🌙</div>
+                          <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: '.02em', color: '#6f5c00' }}>The Dreamer</div>
                         </div>
                         {/* Lover */}
                         <div
@@ -2140,26 +2142,26 @@ export default function HUDPanel({
                           onClick={() => { try { sfx.play('click', 0.4); } catch {}; try { trackAnalytics('heart_tier_clicked', { tier: 'lover' }); } catch {} }}
                           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('click', 0.4); } catch {}; try { trackAnalytics('heart_tier_clicked', { tier: 'lover' }); } catch {} } }}
                           style={{
-                            display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-                            padding: '14px 14px', borderRadius: 14,
-                            background: 'linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.82))',
-                            border: '1px solid rgba(255,182,229,0.55)',
-                            boxShadow: '0 10px 28px rgba(255,58,165,0.18), 0 0 36px rgba(255,58,165,0.18)'
+                            width: 110,
+                            height: 200,
+                            display: 'inline-flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 8,
+                            borderRadius: 16,
+                            background: 'linear-gradient(180deg, rgba(255,79,216,0.12), rgba(255,79,216,0.04))',
+                            border: '2px solid rgba(255,79,216,0.90)',
+                            boxShadow: '0 0 10px rgba(255,79,216,0.65), 0 0 28px rgba(255,79,216,0.50), inset 0 0 12px rgba(255,79,216,0.28)',
+                            color: '#82004f',
+                            textAlign: 'center',
+                            cursor: 'pointer'
                           }}
-                          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 16px 34px rgba(255,58,165,0.26), 0 0 42px rgba(255,58,165,0.22)'; try { sfx.play('hover', 0.28); } catch {} }}
-                          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 10px 28px rgba(255,58,165,0.18), 0 0 36px rgba(255,58,165,0.18)'; }}
+                          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)'; e.currentTarget.style.boxShadow = '0 0 14px rgba(255,79,216,0.90), 0 0 36px rgba(255,79,216,0.60), inset 0 0 18px rgba(255,79,216,0.35)'; try { sfx.play('hover', 0.28); } catch {} }}
+                          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(255,79,216,0.65), 0 0 28px rgba(255,79,216,0.50), inset 0 0 12px rgba(255,79,216,0.28)'; }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                            <div style={{ fontSize: 15, fontWeight: 800 }}>The Lover</div>
-                            <div style={{ fontSize: 12, fontWeight: 700, padding: '4px 8px', borderRadius: 999, background: 'rgba(255,58,165,0.10)', color: '#B10661' }}>25+ HEARTS</div>
-                          </div>
-                          <div style={{ fontSize: 14, lineHeight: 1.4 }}>
-                            <div>You’ve reached the center — the pulse that powers it all.</div>
-                            <div style={{ marginTop: 6 }}>Access: The Vault, unreleased music, early merch drops, and rare CHXNDLER cards.</div>
-                          </div>
-                          <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
-                            <span style={{ fontSize: 12, opacity: 0.7 }}>Shape the future</span>
-                          </div>
+                          <div aria-hidden style={{ fontSize: 46, filter: 'drop-shadow(0 0 8px rgba(255,79,216,0.85))' }}>❤️</div>
+                          <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: '.02em', color: '#980060' }}>The Lover</div>
                         </div>
                       </div>
                     </div>
@@ -2902,15 +2904,8 @@ export default function HUDPanel({
               onChange={(id) => {
                 setActive(id);
 
-                // Focus the selected planet immediately in the HUD
-                try {
-                  playerStore.getState().setMain(id, true);
-                  playerStore.getState().setPlanetDisplayMode('single');
-                  playerStore.getState().setPlanetsVisible(true);
-                  
-                } catch (error) {
-                  console.error('Failed to focus planet:', error);
-                }
+                // Defer planet visibility changes to the warp sequence
+                try { playerStore.getState().setMain(id); } catch {}
 
                 // Stop ambient space music when switching songs
                 try {

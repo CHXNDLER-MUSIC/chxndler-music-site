@@ -336,10 +336,10 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
         transform: "translateX(-50%)",
         width: "360px"
       }}
-      initial={{ opacity: 0, y: 20, rotateX: -8 }}
-      animate={{ opacity: inline ? 1 : cockpit.cover.hologramOpacity, y: 0, rotateX: inline ? 0 : -cockpit.cover.tilt }}
-      // Let CSS control hover grow speed (snappy like dropdown)
-      transition={{ type: "spring", stiffness: 100, damping: 18 }}
+      // Disable slide/tilt-in; render in-place without motion
+      initial={{ opacity: 1, y: 0, rotateX: 0 }}
+      animate={{ opacity: inline ? 1 : cockpit.cover.hologramOpacity, y: 0, rotateX: 0 }}
+      transition={{ duration: 0 }}
       onClick={handleClick}
       onMouseEnter={() => { setHovered(true); try { sfx.play('hover', 0.35); } catch {} }}
       onMouseLeave={() => setHovered(false)}
@@ -647,7 +647,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
 
           {/* Header image with clickable quadrants */}
           <div style={{ marginBottom: 12, display: 'grid', placeItems: 'center' }}>
-            <div style={{ position: 'relative', width: '36%', maxWidth: 200 }}>
+            <div style={{ position: 'relative', width: '58%', maxWidth: 280 }}>
               <img
                 src="/elements/elementals.png?v=20241027"
                 alt="Elementals"
@@ -826,14 +826,15 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
             inset 0 0 10px rgba(255,255,255,0.22);
         }
         /* Clickable quadrants overlay for elementals image */
-        .elt-q{ position:absolute; width:50%; height:50%; background: transparent; border:0; padding:0; cursor:pointer; z-index:2; }
-        .elt-q:focus-visible{ outline: 2px solid rgba(25,227,255,0.85); border-radius: 8px; }
-        .elt-q::after{ content:''; position:absolute; inset:8%; border-radius: 50%; box-shadow: none; transition: box-shadow .15s ease; pointer-events: none; }
+        .elt-q{ position:absolute; top:0; left:0; width:100%; height:100%; background: transparent; border:0; padding:0; cursor:pointer; z-index:2; }
+        .elt-q:focus-visible{ outline: 2px solid rgba(25,227,255,0.85); outline-offset: 2px; }
+        .elt-q::after{ content:''; position:absolute; inset:0; clip-path: inherit; box-shadow: none; transition: box-shadow .15s ease; pointer-events: none; }
         .elt-q:hover::after{ box-shadow: inset 0 0 0 2px rgba(242,239,29,0.9), 0 0 14px rgba(242,239,29,0.7); }
-        .elt-q-tl{ top:0; left:0; }
-        .elt-q-tr{ top:0; left:50%; }
-        .elt-q-bl{ top:50%; left:0; }
-        .elt-q-br{ top:50%; left:50%; }
+        /* Quarter-circle clip shapes matching the image quadrants */
+        .elt-q-tl{ clip-path: polygon(50% 50%, 50% 0%, 43% 2%, 35% 6%, 27% 12%, 19% 19%, 12% 27%, 6% 35%, 2% 43%, 0% 50%, 50% 50%); }
+        .elt-q-tr{ clip-path: polygon(50% 50%, 50% 0%, 57% 2%, 65% 6%, 73% 12%, 81% 19%, 88% 27%, 94% 35%, 98% 43%, 100% 50%, 50% 50%); }
+        .elt-q-bl{ clip-path: polygon(50% 50%, 0% 50%, 2% 57%, 6% 65%, 12% 73%, 19% 81%, 27% 88%, 35% 94%, 43% 98%, 50% 100%, 50% 50%); }
+        .elt-q-br{ clip-path: polygon(50% 50%, 100% 50%, 98% 57%, 94% 65%, 88% 73%, 81% 81%, 73% 88%, 65% 94%, 57% 98%, 50% 100%, 50% 50%); }
         /* ELEMENT button icon styles */
         .btn-element{
           position: relative; display:inline-grid; place-items:center;

@@ -186,10 +186,8 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
       const id = items[highlight]?.id;
       if (id) { 
         setActiveId(id);
-        // Focus the selected planet and reveal it immediately
-        try { playerStore.getState().setMain(id, true); } catch {}
-        try { playerStore.getState().setPlanetDisplayMode('single'); } catch {}
-        try { playerStore.getState().setPlanetsVisible(true); } catch {}
+        // Defer planet visibility changes to the warp sequence
+        try { playerStore.getState().setMain(id); } catch {}
         onChange?.(id);
       }
       setOpen(false);
@@ -297,9 +295,8 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                 // Keep last hover active to avoid rapid hide/show flicker while moving
                 onMouseLeave={() => { /* intentionally noop; clear on close */ }}
                 onPointerDown={(e) => {
-                  // Play warp sound
+                  // Play warp sound now; defer join-alien until post-warp sequence
                   try { sfx.play('warp', 0.9); } catch {}
-                  try { const c = clickRef.current; if (c) { c.currentTime = 0; c.volume = 0.9; c.play().catch(()=>{}); } } catch {}
                   
                   // Track song selection (normalized: include slug + details)
                   track("song_selected", {
@@ -317,9 +314,8 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                   
                   // Focus the clicked planet: set as main, switch to single planet view, and show planets
                   setActiveId(s.id);
-                  try { playerStore.getState().setMain(s.id, true); } catch {}
-                  try { playerStore.getState().setPlanetDisplayMode('single'); } catch {}
-                  try { playerStore.getState().setPlanetsVisible(true); } catch {}
+                  // Defer planet visibility changes to the warp sequence
+                  try { playerStore.getState().setMain(s.id); } catch {}
                   if (onChange) {
                     onChange(s.id);
                   }
@@ -367,7 +363,8 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
         /* Glow behavior similar to cover art */
         .songs-trigger{ outline:1px solid rgba(25,227,255,.35); transition: transform .15s ease, box-shadow .2s ease, outline-color .2s ease; }
         .songs-trigger:hover{
-          transform: scale(1.04);
+          /* Remove scale to prevent visual size change */
+          transform: none;
           outline-color: rgba(25,227,255,.8);
           box-shadow: 0 0 52px rgba(25,227,255,.7), 0 0 90px rgba(25,227,255,.45);
         }
@@ -390,7 +387,8 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
             0 0 20px rgba(25,227,255,.4), 
             0 0 40px rgba(25,227,255,.2),
             inset 0 0 15px rgba(25,227,255,.2); 
-          transform: translateZ(0) scale(1.02);
+          /* Remove scale to prevent option height jitter */
+          transform: none;
           color: rgba(255, 255, 255, 1) !important;
         }
         .holo-icon{ display:inline-flex; will-change: transform; }

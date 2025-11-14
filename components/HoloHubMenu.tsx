@@ -794,11 +794,42 @@ export default function HoloHubMenu({
             inset 0 -6px 18px rgba(0,0,0,.6) !important;
           filter: brightness(1.12) saturate(1.25) !important;
         }
-        /* YouTube: match Spotify growth on hover for consistency */
+        /* YouTube: Spotify/Apple-style rim with RED inner glow (no outer spill) */
+        .item[data-id="yt"]{
+          --tint: #FF0000; /* YouTube red */
+          background:
+            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
+            rgba(255,0,0,0.45);
+          /* Red-tinted outer border to mirror other brand rims */
+          border-color: rgba(255,0,0,0.38);
+          /* Constrain red glow within the circle to avoid off-looking outer ring */
+          overflow: hidden;
+          /* Remove outer color glows and keep inner depth similar to others */
+          box-shadow:
+            0 14px 30px rgba(0,0,0,.58),
+            inset 0 1px 0 rgba(255,255,255,.24),
+            inset 0 -6px 16px rgba(0,0,0,.6);
+          filter: saturate(1.06) brightness(1.05);
+        }
+        .item[data-id="yt"]::before{
+          /* Inset white rim + inner red bloom (kept inside the button) */
+          box-shadow:
+            0 0 0 2px rgba(255,255,255,.26) inset,
+            0 0 22px rgba(255,0,0,.65) inset,
+            0 0 60px rgba(255,0,0,.35) inset !important;
+        }
+        /* YouTube: match Spotify/Apple hover growth and keep glow inset */
         .item[data-id="yt"]:hover{
           transform: translate(var(--tx,0), var(--ty,0)) translate(-50%, -50%) scale(1.14) !important;
+          border-color: rgba(255,0,0,0.48) !important;
+          box-shadow:
+            0 20px 40px rgba(0,0,0,.68) !important,
+            inset 0 0 28px rgba(255,0,0,0.95) !important,
+            inset 0 0 90px rgba(255,0,0,0.58) !important,
+            inset 0 1px 0 rgba(255,255,255,.28) !important,
+            inset 0 -6px 18px rgba(0,0,0,.6) !important;
+          filter: brightness(1.12) saturate(1.25) !important;
         }
-        /* YouTube: use shared item tint/glow (red) */
 
         /* Apple Music: Spotify-style rim with PINK glow */
         .item[data-id="am"]{
