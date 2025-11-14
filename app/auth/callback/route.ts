@@ -7,13 +7,13 @@ export async function GET(req: Request) {
   const code = url.searchParams.get('code');
 
   if (!code) {
-    return NextResponse.redirect(new URL('/signin', req.url));
+    return NextResponse.redirect(new URL('/login', req.url));
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
   if (!supabaseUrl || !anonKey) {
-    return NextResponse.redirect(new URL('/signin?error=missing-env', req.url));
+    return NextResponse.redirect(new URL('/login?error=missing-env', req.url));
   }
 
   const supabase = createClient(supabaseUrl, anonKey, {
@@ -22,14 +22,14 @@ export async function GET(req: Request) {
 
   const { data, error } = await supabase.auth.exchangeCodeForSession({ authCode: code });
   if (error || !data.session || !data.user) {
-    return NextResponse.redirect(new URL('/signin?error=exchange_failed', req.url));
+    return NextResponse.redirect(new URL('/login?error=exchange_failed', req.url));
   }
 
   const accessToken = data.session.access_token;
   const refreshToken = data.session.refresh_token;
 
   // Set auth cookies so our API routes can read them
-  const res = NextResponse.redirect(new URL('/profile', req.url));
+  const res = NextResponse.redirect(new URL('/dashboard', req.url));
   // Mirror cookie names expected by our API route
   const secure = process.env.NODE_ENV === 'production';
   res.cookies.set('sb-access-token', accessToken, {

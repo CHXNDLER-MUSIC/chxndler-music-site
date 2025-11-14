@@ -340,7 +340,9 @@ export default function SteeringWheelOverlay({
           try {
             if (typeof window !== 'undefined') {
               const v = window.localStorage.getItem('DISABLE_WHEEL_VIDEO');
-              disable = v === '1' || v === 'true';
+              const force = window.localStorage.getItem('WHEEL_FORCE_LUMA') === '1';
+              // Respect force-luma override to ensure we don't render the plain black-box video
+              disable = !force && (v === '1' || v === 'true');
             }
           } catch {}
           if (disable) {
@@ -398,10 +400,20 @@ export default function SteeringWheelOverlay({
           return (
             <LumaKeyVideo
               srcMp4="/cockpit/wheel.mp4"
-              threshold={(vconf as any)?.threshold ?? 0.02}
-              softness={(vconf as any)?.softness ?? 0.04}
+              // Prefer chroma keying near-black for hard removal of background
+              keyColor={[0, 0, 0]}
+              keyTolerance={0.12}
+              keySoftness={0.08}
+              // Keep luma params as a fallback if keyColor is unset via config
+              threshold={(vconf as any)?.threshold ?? 0.03}
+              softness={(vconf as any)?.softness ?? 0.06}
               saturation={(vconf as any)?.saturation ?? 1.0}
               contrast={(vconf as any)?.contrast ?? 1.15}
+              blendScreen
+              // Keep a screen-blended fallback to avoid empty wheel while video loads
+              fallbackEnabled={true}
+              // Very small minimum to avoid unnecessary fallback
+              minCoverageRatio={0.0002}
               offsetYRatio={0}
               paused={paused}
               forceEnabled

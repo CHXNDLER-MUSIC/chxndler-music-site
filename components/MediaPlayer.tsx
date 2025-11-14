@@ -1772,13 +1772,18 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         <div className="picker hud-card mt-3" role="dialog" aria-label="Select a song">
           <div className="text-xs opacity-70 mb-2">Choose a track</div>
           <div className="picker-list" role="listbox">
-            {tracks.map((t, i) => (
+            {tracks.map((t, i) => {
+              const locked = String(t.slug) === 'colors-of-our-home-acoustic';
+              return (
               <button
                 key={t.slug}
                 role="option"
                 aria-selected={i === idx}
-                className={`picker-item ${i===idx ? 'active' : ''}`}
+                aria-disabled={locked}
+                disabled={locked}
+                className={`picker-item ${i===idx ? 'active' : ''} ${locked ? 'locked' : ''}`}
                 onClick={()=>{ 
+                  if (locked) return; // Prevent selecting locked track
                   const wasChanged = i !== idx;
                   const selectedTrack = tracks[i];
                   setIdx(i); 
@@ -1853,12 +1858,13 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                     }, 100); // Short delay to allow index change to settle
                   }
                 }}
-                title={t.title}
+                title={locked ? `${t.title} (Locked)` : t.title}
               >
                 <span className="truncate">{t.title}</span>
+                {locked ? <span className="ml-2 opacity-80" aria-hidden>🔒</span> : null}
                 {i===idx ? <span className="ml-2 opacity-70">•</span> : null}
               </button>
-            ))}
+            );})}
           </div>
         </div>
       ) : null}
@@ -2482,6 +2488,12 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           display:flex; align-items:center; justify-content:space-between;
           width:100%; text-align:left; padding:8px 10px; border-radius:12px;
           background: rgba(255,255,255,.06);
+          cursor: pointer;
+        }
+        .picker-item.locked{
+          opacity: .5;
+          cursor: not-allowed;
+          filter: grayscale(.35);
         }
         .picker-item.active{ outline:1px solid rgba(25,227,255,.4); background: rgba(25,227,255,.1); }
         

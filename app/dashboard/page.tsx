@@ -1,7 +1,7 @@
 import DashboardApp from "@/components/DashboardApp";
 import DashboardWelcomeDisplay from "@/components/DashboardWelcomeDisplay";
 
-export default function Page() {
+export default function DashboardPage() {
   return (
     <>
       <div className="pt-6 px-4">
@@ -11,3 +11,4 @@ export default function Page() {
     </>
   );
 }
+

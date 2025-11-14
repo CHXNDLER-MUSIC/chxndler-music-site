@@ -20,6 +20,14 @@ type Props = {
   highQuality?: boolean;
   // Apply screen blend to visually erase residual dark pixels
   blendScreen?: boolean;
+  // Control whether to show the plain-video fallback underlay at all
+  fallbackEnabled?: boolean;
+  // Minimum keyed coverage (0..1) before hiding fallback; lower to avoid black box
+  minCoverageRatio?: number;
+  // Optional chroma key (color-based) — if provided, overrides luminance key
+  keyColor?: [number, number, number]; // RGB 0..255 (e.g., [0,0,0] for black)
+  keyTolerance?: number; // 0..1 distance where fully transparent begins
+  keySoftness?: number;  // 0..1 feather width beyond tolerance
 };
 
 export default function LumaKeyVideo({
@@ -37,9 +45,15 @@ export default function LumaKeyVideo({
   forceEnabled = false,
   highQuality = false,
   blendScreen = false,
+  fallbackEnabled = true,
+  minCoverageRatio = 0.0005,
+  keyColor,
+  keyTolerance = 0.0,
+  keySoftness = 0.0,
 }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const fallbackRef = useRef<HTMLVideoElement | null>(null);
   const [ready, setReady] = useState(false);
   const rafRef = useRef<number | null>(null);
   const [isSafari, setIsSafari] = useState(false);
@@ -59,6 +73,13 @@ export default function LumaKeyVideo({
   const frameSkipRef = useRef<number>(2); // process every Nth frame in fast mode; start at ~30fps on 60Hz
   const lastDrawAtRef = useRef<number>(0);
   const rVFCIdRef = useRef<any>(null);
+  // Fallback visibility when keyed output is effectively empty
+  const [showFallback, setShowFallback] = useState(true);
+  const sampleEveryRef = useRef<number>(12);
+  const sampleCounterRef = useRef<number>(0);
+  const minCoverageRef = useRef<number>(minCoverageRatio);
+
+  useEffect(() => { minCoverageRef.current = minCoverageRatio; }, [minCoverageRatio]);
 
   // Detect Safari (exclude Chrome on iOS/Android)
   useEffect(() => {
@@ -208,6 +229,19 @@ export default function LumaKeyVideo({
     };
   }, [srcMp4, srcAlt]);
 
+  // Play/pause fallback video based on visibility
+  useEffect(() => {
+    const fv = fallbackRef.current;
+    if (!fv) return;
+    try {
+      if (showFallback && fallbackEnabled) {
+        fv.play().catch(() => {});
+      } else {
+        fv.pause();
+      }
+    } catch {}
+  }, [showFallback, fallbackEnabled]);
+
   // Observe visibility in viewport to pause processing when not visible
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -352,24 +386,56 @@ export default function LumaKeyVideo({
           try {
             const img = wctx.getImageData(0, 0, Ww, Hw);
             const data = img.data;
-            // Relax Safari floor/feather minimums: respect provided values to avoid over-keying
-            const floor = Math.max(0, threshold);
-            const feather = Math.max(0, softness);
-            const t0 = floor * 255;
-            const t1 = (floor + feather) * 255;
-            for (let i = 0; i < data.length; i += 4) {
-              const r = data[i], g = data[i + 1], b = data[i + 2];
-              const y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-              let a = data[i + 3];
-              if (y <= t0) {
-                a = 0;
-              } else if (y < t1) {
-                const t = (y - t0) / (t1 - t0);
-                a = Math.round(a * t);
+            let opaqueCount = 0;
+            if (keyColor) {
+              // Color distance based key (chroma)
+              const Kr = keyColor[0], Kg = keyColor[1], Kb = keyColor[2];
+              const tol0 = Math.max(0, Math.min(1, keyTolerance));
+              const soft = Math.max(0, Math.min(1, keySoftness));
+              const d0 = tol0 * 441.67295593; // sqrt(255^2*3)
+              const d1 = (tol0 + soft) * 441.67295593;
+              for (let i = 0; i < data.length; i += 4) {
+                const r = data[i], g = data[i + 1], b = data[i + 2];
+                const dr = r - Kr, dg = g - Kg, db = b - Kb;
+                const d = Math.sqrt(dr*dr + dg*dg + db*db);
+                let a = data[i + 3];
+                if (d <= d0) {
+                  a = 0;
+                } else if (d < d1) {
+                  const t = (d - d0) / (d1 - d0);
+                  a = Math.round(a * t);
+                }
+                data[i + 3] = a;
+                if (a > 8) opaqueCount++;
               }
-              data[i + 3] = a;
+            } else {
+              // Luminance-based key (luma)
+              const floor = Math.max(0, threshold);
+              const feather = Math.max(0, softness);
+              const t0 = floor * 255;
+              const t1 = (floor + feather) * 255;
+              for (let i = 0; i < data.length; i += 4) {
+                const r = data[i], g = data[i + 1], b = data[i + 2];
+                const y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                let a = data[i + 3];
+                if (y <= t0) {
+                  a = 0;
+                } else if (y < t1) {
+                  const t = (y - t0) / (t1 - t0);
+                  a = Math.round(a * t);
+                }
+                data[i + 3] = a;
+                if (a > 8) opaqueCount++;
+              }
             }
             wctx.putImageData(img, 0, 0);
+            // Sample coverage occasionally to decide if we need fallback
+            if (fallbackEnabled && ++sampleCounterRef.current % sampleEveryRef.current === 0) {
+              const total = (Ww * Hw);
+              const ratio = total ? (opaqueCount / total) : 0;
+              // If almost nothing is visible, enable fallback video
+              setShowFallback(ratio < minCoverageRef.current);
+            }
           } catch {}
         }
         // Scale processed work canvas up to the main canvas
@@ -388,24 +454,53 @@ export default function LumaKeyVideo({
           try {
             const img = ctx.getImageData(0, 0, CW, CH);
             const data = img.data;
-            // Relax Safari floor/feather minimums: respect provided values to avoid over-keying
-            const floor = Math.max(0, threshold);
-            const feather = Math.max(0, softness);
-            const t0 = floor * 255;
-            const t1 = (floor + feather) * 255;
-            for (let i = 0; i < data.length; i += 4) {
-              const r = data[i], g = data[i + 1], b = data[i + 2];
-              const y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-              let a = data[i + 3];
-              if (y <= t0) {
-                a = 0;
-              } else if (y < t1) {
-                const t = (y - t0) / (t1 - t0);
-                a = Math.round(a * t);
+            let opaqueCount = 0;
+            if (keyColor) {
+              const Kr = keyColor[0], Kg = keyColor[1], Kb = keyColor[2];
+              const tol0 = Math.max(0, Math.min(1, keyTolerance));
+              const soft = Math.max(0, Math.min(1, keySoftness));
+              const d0 = tol0 * 441.67295593;
+              const d1 = (tol0 + soft) * 441.67295593;
+              for (let i = 0; i < data.length; i += 4) {
+                const r = data[i], g = data[i + 1], b = data[i + 2];
+                const dr = r - Kr, dg = g - Kg, db = b - Kb;
+                const d = Math.sqrt(dr*dr + dg*dg + db*db);
+                let a = data[i + 3];
+                if (d <= d0) {
+                  a = 0;
+                } else if (d < d1) {
+                  const t = (d - d0) / (d1 - d0);
+                  a = Math.round(a * t);
+                }
+                data[i + 3] = a;
+                if (a > 8) opaqueCount++;
               }
-              data[i + 3] = a;
+            } else {
+              // Luma key
+              const floor = Math.max(0, threshold);
+              const feather = Math.max(0, softness);
+              const t0 = floor * 255;
+              const t1 = (floor + feather) * 255;
+              for (let i = 0; i < data.length; i += 4) {
+                const r = data[i], g = data[i + 1], b = data[i + 2];
+                const y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                let a = data[i + 3];
+                if (y <= t0) {
+                  a = 0;
+                } else if (y < t1) {
+                  const t = (y - t0) / (t1 - t0);
+                  a = Math.round(a * t);
+                }
+                data[i + 3] = a;
+                if (a > 8) opaqueCount++;
+              }
             }
             ctx.putImageData(img, 0, 0);
+            if (fallbackEnabled && ++sampleCounterRef.current % sampleEveryRef.current === 0) {
+              const total = (CW * CH);
+              const ratio = total ? (opaqueCount / total) : 0;
+              setShowFallback(ratio < minCoverageRef.current);
+            }
           } catch {}
         }
       }
@@ -425,13 +520,16 @@ export default function LumaKeyVideo({
 
   // Apply CSS blend trick only on Safari to neutralize any remaining black pixels visually
   const canvasStyle: React.CSSProperties = {
-    ...(style || {}),
     background: 'transparent',
     // Only apply screen blend on Safari or when explicitly requested
     ...((isSafari || blendScreen) ? { mixBlendMode: 'screen' as const } : {}),
     // Hint the browser we animate opacity/transforms around this element
     willChange: 'opacity, transform',
     contain: 'layout paint',
+    position: 'absolute',
+    inset: 0,
+    width: '100%',
+    height: '100%',
   };
 
   // If luma processing is disabled, render a plain <video> fallback
@@ -458,5 +556,33 @@ export default function LumaKeyVideo({
       />
     );
   }
-  return <canvas ref={canvasRef} className={className} style={canvasStyle} />;
+  const src = srcMp4 || srcAlt || '';
+  return (
+    <div className={className} style={{ ...(style || {}), position: 'relative' }}>
+      {/* Fallback underlay to ensure visibility if keyed output is empty */}
+      {fallbackEnabled ? (
+        <video
+          ref={fallbackRef}
+          src={src}
+          autoPlay
+          muted
+          loop
+          playsInline
+          aria-label="luma-fallback-underlay"
+          style={{
+            position: 'absolute', inset: 0,
+            width: '100%', height: '100%',
+            objectFit: 'cover',
+            opacity: showFallback ? 1 : 0,
+            transition: 'opacity 180ms ease',
+            pointerEvents: 'none',
+            background: 'transparent',
+            // Apply same screen blend so black pixels don't darken the background
+            ...((isSafari || blendScreen) ? { mixBlendMode: 'screen' as const } : {}),
+          }}
+        />
+      ) : null}
+      <canvas ref={canvasRef} style={canvasStyle} />
+    </div>
+  );
 }

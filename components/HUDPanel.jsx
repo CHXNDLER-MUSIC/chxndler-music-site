@@ -2015,15 +2015,16 @@ export default function HUDPanel({
                       transform: (heartPopoverPos && heartPopoverPos.width) ? 'none' : 'translateX(-50%)',
                       padding: '14px 16px 16px 16px',
                       borderRadius: 14,
-                      background: 'linear-gradient(135deg, rgba(255,255,255,0.92), rgba(255,245,250,0.86))',
-                      border: '1px solid rgba(252,84,175,0.35)',
-                      boxShadow: '0 18px 46px rgba(0,0,0,0.35), 0 0 26px rgba(252,84,175,0.35)',
-                      backdropFilter: 'blur(6px) saturate(1.1)',
-                      color: '#111',
+                      background: 'radial-gradient(140% 160% at 50% 0%, rgba(25,227,255,0.28), rgba(14,168,208,0.22) 35%, rgba(6,40,55,0.35) 100%)',
+                      border: '1px solid rgba(25,227,255,0.45)',
+                      boxShadow: '0 18px 46px rgba(0,0,0,0.35), 0 0 26px rgba(25,227,255,0.35)',
+                      backdropFilter: 'blur(8px) saturate(1.15)',
+                      color: '#fff',
                       zIndex: 2147483647,
                       width: (heartPopoverPos && heartPopoverPos.width) ? heartPopoverPos.width : 'min(98vw, 1400px)',
                       height: (heartPopoverPos && heartPopoverPos.height) ? heartPopoverPos.height : '42vh',
-                      overflow: 'auto'
+                      overflowY: 'hidden',
+                      overflowX: 'hidden'
                     }}
                     onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowHeartPopover(false); } }}
                   >
@@ -2109,34 +2110,11 @@ export default function HUDPanel({
                       </div>
                       {/* Header / Hero */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 2px 8px 2px' }}>
-                        <img
-                          src="/elements/heart-coin.png"
-                          alt="HEART Coin"
-                          width={40}
-                          height={40}
-                          className="heart-coin-glow"
-                          style={{ display: 'block', width: 40, height: 40, objectFit: 'contain' }}
-                        />
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <div style={{ fontSize: 18, fontWeight: 900, letterSpacing: '.02em' }}>HEARTVERSE TIERS</div>
                           <div style={{ fontSize: 13, opacity: 0.8 }}>Choose your path. Earn HEARTS. Unlock deeper access.</div>
                         </div>
                       </div>
-                      {/* Tier ranges summary */}
-                      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, padding: '2px 2px 6px 2px', fontSize: 12, lineHeight: 1.25 }}>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, opacity: 0.95 }}>
-                          <img src="/elements/heart-coin.png" alt="HEART" width={14} height={14} style={{ display: 'block', width: 14, height: 14, objectFit: 'contain' }} />
-                          <span><strong>0–4</strong> HEARTS — The Wanderer</span>
-                        </div>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, opacity: 0.95 }}>
-                          <img src="/elements/heart-coin.png" alt="HEART" width={14} height={14} style={{ display: 'block', width: 14, height: 14, objectFit: 'contain' }} />
-                          <span><strong>5–24</strong> HEARTS — The Dreamer</span>
-                        </div>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, opacity: 0.95 }}>
-                          <img src="/elements/heart-coin.png" alt="HEART" width={14} height={14} style={{ display: 'block', width: 14, height: 14, objectFit: 'contain' }} />
-                          <span><strong>25+</strong> HEARTS — The Lover</span>
-                        </div>
-                      </div>
+                      
                       {/* Tiers: interactive cards or details view */}
                       {heartTierDetails ? (
                         <div style={{ marginTop: 8 }}>
@@ -2166,7 +2144,9 @@ export default function HUDPanel({
                             <ul style={{ marginTop: 4, paddingLeft: 16, fontSize: 12, lineHeight: 1.45 }}>
                               {heartTierDetails === 'wanderer' && (
                                 <>
-                                  <li><span style={{ fontWeight: 800 }}>Access:</span> public songs, stories, and your own Heartverse profile.</li>
+                                  <li>Public songs</li>
+                                  <li>Stories</li>
+                                  <li>Your own Heartverse profile</li>
                                   <li><span style={{ fontWeight: 800 }}>Goal:</span> start collecting HEARTS and begin your journey.</li>
                                 </>
                               )}
@@ -2200,8 +2180,21 @@ export default function HUDPanel({
                           <div
                             role="button"
                             tabIndex={0}
-                            onClick={() => { try { sfx.play('click', 0.4); } catch {}; setHeartTierDetails('wanderer'); try { trackAnalytics('heart_tier_clicked', { tier: 'wanderer' }); } catch {} }}
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('click', 0.4); } catch {}; setHeartTierDetails('wanderer'); try { trackAnalytics('heart_tier_clicked', { tier: 'wanderer' }); } catch {} } }}
+                            onClick={(e) => {
+                              try { sfx.play('click', 0.4); } catch {}
+                              try { e.currentTarget.classList.add('holo-phase'); } catch {}
+                              setTimeout(() => { setHeartTierDetails('wanderer'); try { trackAnalytics('heart_tier_clicked', { tier: 'wanderer' }); } catch {} }, 320);
+                              setTimeout(() => { try { e.currentTarget.classList.remove('holo-phase'); } catch {} }, 600);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                try { sfx.play('click', 0.4); } catch {}
+                                try { e.currentTarget.classList.add('holo-phase'); } catch {}
+                                setTimeout(() => { setHeartTierDetails('wanderer'); try { trackAnalytics('heart_tier_clicked', { tier: 'wanderer' }); } catch {} }, 320);
+                                setTimeout(() => { try { e.currentTarget.classList.remove('holo-phase'); } catch {} }, 600);
+                              }
+                            }}
                             style={{
                               width: 110,
                               height: 170,
@@ -2218,19 +2211,36 @@ export default function HUDPanel({
                               textAlign: 'center',
                               cursor: 'pointer'
                             }}
-                            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)'; e.currentTarget.style.boxShadow = '0 0 14px rgba(0,180,255,0.85), 0 0 34px rgba(0,180,255,0.55), inset 0 0 18px rgba(0,180,255,0.35)'; try { sfx.play('hover', 0.25); } catch {} }}
+                            onMouseEnter={(e) => { if (!e.currentTarget.classList.contains('holo-phase')) { e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)'; } e.currentTarget.style.boxShadow = '0 0 14px rgba(0,180,255,0.85), 0 0 34px rgba(0,180,255,0.55), inset 0 0 18px rgba(0,180,255,0.35)'; try { sfx.play('hover', 0.25); } catch {} }}
                             onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(0,180,255,0.65), 0 0 26px rgba(0,180,255,0.45), inset 0 0 12px rgba(0,180,255,0.25)'; }}
                           >
-                            <div aria-hidden style={{ fontSize: 46 }} className="neon-icon neon-blue">🧭</div>
+                            <div aria-hidden style={{ fontSize: 46 }} className="holo-emoji holo-blue">🚀</div>
                             <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: '.02em', color: '#015073' }}>The Wanderer</div>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#19E3FF' }}>
+                              <img src="/elements/heart-coin.png" alt="HEART" width={14} height={14} style={{ display: 'block', width: 14, height: 14, objectFit: 'contain' }} />
+                              <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '.02em' }}>0–4</span>
+                            </div>
                             <div style={{ fontSize: 11, lineHeight: 1.2, opacity: 0.85, maxWidth: 90 }}>You’ve just arrived — drawn by the signal.</div>
                           </div>
                           {/* Dreamer */}
                           <div
                             role="button"
                             tabIndex={0}
-                            onClick={() => { try { sfx.play('click', 0.4); } catch {}; setHeartTierDetails('dreamer'); try { trackAnalytics('heart_tier_clicked', { tier: 'dreamer' }); } catch {} }}
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('click', 0.4); } catch {}; setHeartTierDetails('dreamer'); try { trackAnalytics('heart_tier_clicked', { tier: 'dreamer' }); } catch {} } }}
+                            onClick={(e) => {
+                              try { sfx.play('click', 0.4); } catch {}
+                              try { e.currentTarget.classList.add('holo-phase'); } catch {}
+                              setTimeout(() => { setHeartTierDetails('dreamer'); try { trackAnalytics('heart_tier_clicked', { tier: 'dreamer' }); } catch {} }, 320);
+                              setTimeout(() => { try { e.currentTarget.classList.remove('holo-phase'); } catch {} }, 600);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                try { sfx.play('click', 0.4); } catch {}
+                                try { e.currentTarget.classList.add('holo-phase'); } catch {}
+                                setTimeout(() => { setHeartTierDetails('dreamer'); try { trackAnalytics('heart_tier_clicked', { tier: 'dreamer' }); } catch {} }, 320);
+                                setTimeout(() => { try { e.currentTarget.classList.remove('holo-phase'); } catch {} }, 600);
+                              }
+                            }}
                             style={{
                               width: 110,
                               height: 170,
@@ -2247,19 +2257,36 @@ export default function HUDPanel({
                               textAlign: 'center',
                               cursor: 'pointer'
                             }}
-                            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)'; e.currentTarget.style.boxShadow = '0 0 14px rgba(255,212,0,0.95), 0 0 34px rgba(255,212,0,0.55), inset 0 0 18px rgba(255,212,0,0.35)'; try { sfx.play('hover', 0.25); } catch {} }}
+                            onMouseEnter={(e) => { if (!e.currentTarget.classList.contains('holo-phase')) { e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)'; } e.currentTarget.style.boxShadow = '0 0 14px rgba(255,212,0,0.95), 0 0 34px rgba(255,212,0,0.55), inset 0 0 18px rgba(255,212,0,0.35)'; try { sfx.play('hover', 0.25); } catch {} }}
                             onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(255,212,0,0.70), 0 0 26px rgba(255,212,0,0.45), inset 0 0 12px rgba(255,212,0,0.25)'; }}
                           >
-                            <div aria-hidden style={{ fontSize: 46 }} className="neon-icon neon-yellow">🌙</div>
+                            <div aria-hidden style={{ fontSize: 46 }} className="holo-emoji holo-yellow">🌙</div>
                             <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: '.02em', color: '#6f5c00' }}>The Dreamer</div>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#FFD400' }}>
+                              <img src="/elements/heart-coin.png" alt="HEART" width={14} height={14} style={{ display: 'block', width: 14, height: 14, objectFit: 'contain' }} />
+                              <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '.02em' }}>5–24</span>
+                            </div>
                             <div style={{ fontSize: 11, lineHeight: 1.2, opacity: 0.9, maxWidth: 90 }}>Traveling through sound and starlight.</div>
                           </div>
                           {/* Lover */}
                           <div
                             role="button"
                             tabIndex={0}
-                            onClick={() => { try { sfx.play('click', 0.4); } catch {}; setHeartTierDetails('lover'); try { trackAnalytics('heart_tier_clicked', { tier: 'lover' }); } catch {} }}
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('click', 0.4); } catch {}; setHeartTierDetails('lover'); try { trackAnalytics('heart_tier_clicked', { tier: 'lover' }); } catch {} } }}
+                            onClick={(e) => {
+                              try { sfx.play('click', 0.4); } catch {}
+                              try { e.currentTarget.classList.add('holo-phase'); } catch {}
+                              setTimeout(() => { setHeartTierDetails('lover'); try { trackAnalytics('heart_tier_clicked', { tier: 'lover' }); } catch {} }, 320);
+                              setTimeout(() => { try { e.currentTarget.classList.remove('holo-phase'); } catch {} }, 600);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                try { sfx.play('click', 0.4); } catch {}
+                                try { e.currentTarget.classList.add('holo-phase'); } catch {}
+                                setTimeout(() => { setHeartTierDetails('lover'); try { trackAnalytics('heart_tier_clicked', { tier: 'lover' }); } catch {} }, 320);
+                                setTimeout(() => { try { e.currentTarget.classList.remove('holo-phase'); } catch {} }, 600);
+                              }
+                            }}
                             style={{
                               width: 110,
                               height: 170,
@@ -2276,11 +2303,15 @@ export default function HUDPanel({
                               textAlign: 'center',
                               cursor: 'pointer'
                             }}
-                            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)'; e.currentTarget.style.boxShadow = '0 0 14px rgba(255,79,216,0.90), 0 0 36px rgba(255,79,216,0.60), inset 0 0 18px rgba(255,79,216,0.35)'; try { sfx.play('hover', 0.28); } catch {} }}
+                            onMouseEnter={(e) => { if (!e.currentTarget.classList.contains('holo-phase')) { e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)'; } e.currentTarget.style.boxShadow = '0 0 14px rgba(255,79,216,0.90), 0 0 36px rgba(255,79,216,0.60), inset 0 0 18px rgba(255,79,216,0.35)'; try { sfx.play('hover', 0.28); } catch {} }}
                             onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(255,79,216,0.65), 0 0 28px rgba(255,79,216,0.50), inset 0 0 12px rgba(255,79,216,0.28)'; }}
                           >
-                            <div aria-hidden style={{ fontSize: 46 }} className="neon-icon neon-pink">❤️</div>
+                            <div aria-hidden style={{ fontSize: 46 }} className="holo-emoji holo-pink">❤️</div>
                             <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: '.02em', color: '#980060' }}>The Lover</div>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#FC54AF' }}>
+                              <img src="/elements/heart-coin.png" alt="HEART" width={14} height={14} style={{ display: 'block', width: 14, height: 14, objectFit: 'contain' }} />
+                              <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '.02em' }}>25+</span>
+                            </div>
                             <div style={{ fontSize: 11, lineHeight: 1.2, opacity: 0.9, maxWidth: 90 }}>At the center — the pulse that powers it all.</div>
                           </div>
                         </div>

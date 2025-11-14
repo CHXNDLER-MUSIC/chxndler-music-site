@@ -1013,6 +1013,19 @@ button:hover > .heart-coin-glow,
   display: inline-block;
   line-height: 1;
 }
+
+/* Hologram phase animation for tier buttons */
+.holo-phase{
+  animation: holo-phase 360ms ease-in-out;
+  will-change: transform, box-shadow, filter, opacity;
+}
+@keyframes holo-phase{
+  0% { transform: scale(1); opacity: 1; filter: none; box-shadow: none; }
+  20% { transform: scale(1.01); opacity: 0.92; filter: saturate(1.1) hue-rotate(4deg) blur(0.2px); box-shadow: 0 0 12px rgba(25,227,255,0.55), 0 0 18px rgba(252,84,175,0.35); }
+  50% { transform: scale(1.025); opacity: 0.96; filter: saturate(1.2) hue-rotate(-4deg) blur(0.4px); box-shadow: 0 0 18px rgba(25,227,255,0.75), 0 0 28px rgba(252,84,175,0.45); }
+  80% { transform: scale(1.01); opacity: 1; filter: saturate(1.05) blur(0.15px); box-shadow: 0 0 12px rgba(25,227,255,0.45), 0 0 18px rgba(252,84,175,0.30); }
+  100% { transform: scale(1); opacity: 1; filter: none; box-shadow: none; }
+}
 .neon-blue{ /* Wanderer */
   text-shadow:
     0 0 4px rgba(0,180,255,0.85),
@@ -1033,6 +1046,48 @@ button:hover > .heart-coin-glow,
     0 0 10px rgba(255,79,216,0.80),
     0 0 18px rgba(255,79,216,0.60),
     0 0 28px rgba(255,79,216,0.50);
+}
+
+/* Hologram emoji/icon styling with scanlines and glow */
+.holo-emoji{
+  position: relative;
+  display: inline-block;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.holo-emoji::after{
+  content: '';
+  position: absolute;
+  inset: -4px -6px;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 1px, transparent 2px, transparent 4px),
+    radial-gradient(120px 30px at 50% 0%, rgba(255,255,255,0.35), transparent 70%),
+    radial-gradient(120px 40px at 50% 100%, rgba(25,227,255,0.20), transparent 70%);
+  mix-blend-mode: screen;
+  opacity: .5;
+}
+.holo-blue{ /* Wanderer */
+  text-shadow:
+    0 0 6px rgba(25,227,255,0.85),
+    0 0 14px rgba(25,227,255,0.65),
+    0 0 24px rgba(14,168,208,0.55);
+  filter: drop-shadow(0 0 10px rgba(25,227,255,0.5));
+}
+.holo-yellow{ /* Dreamer */
+  text-shadow:
+    0 0 6px rgba(255,212,0,0.95),
+    0 0 14px rgba(255,212,0,0.70),
+    0 0 24px rgba(255,180,0,0.55);
+  filter: drop-shadow(0 0 10px rgba(255,212,0,0.45));
+}
+.holo-pink{ /* Lover */
+  text-shadow:
+    0 0 6px rgba(252,84,175,0.95),
+    0 0 14px rgba(252,84,175,0.70),
+    0 0 24px rgba(255,79,216,0.55);
+  filter: drop-shadow(0 0 10px rgba(252,84,175,0.5));
 }
 
 
