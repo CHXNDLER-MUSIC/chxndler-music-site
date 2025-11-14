@@ -364,11 +364,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     // Clear any pending delayed plays from prior index changes
     if (warpPlayTimerRef.current !== undefined) { clearTimeout(warpPlayTimerRef.current); warpPlayTimerRef.current = undefined; }
     
-    // Stop current song before starting warp sequence
-    // But only if this isn't part of an intended playback sequence
+    // Always stop current song before swapping source to avoid immediate autoplay of new src
+    // Do not reset currentTime here; setting a new src will reset it as needed
     try {
-      if (!a.paused && autoPlayOnIndex) {
-        // Don't reset currentTime to 0 when changing songs - let it transition smoothly
+      if (!a.paused) {
         a.pause();
       }
     } catch (e) {
@@ -2299,8 +2298,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           width: 32px;
           height: 32px;
           border-radius: 50%;
-          /* Thinner, Apple-like hairline rim */
-          border: 0.5px solid rgba(255,255,255,0.35);
+          /* Match Apple button: no visible rim */
+          border: none;
           background: radial-gradient(circle at 30% 30%, #FF6B6B, #FF0000);
           color: #FFFFFF;
           display: inline-flex;
@@ -2309,7 +2308,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           line-height: 0;
           text-decoration: none;
           transition: all 0.25s ease;
-          /* Softer, Apple-like red glow */
+          /* Softer red glow */
           box-shadow: 0 2px 8px rgba(255,59,48,0.35);
           position: relative;
           z-index: 600; /* sit above waveform/svg and streaming buttons */
@@ -2317,7 +2316,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         .youtube-link-waveform:hover { 
           transform: scale(1.16); 
           box-shadow: 0 3px 12px rgba(255,59,48,0.55);
-          border-color: rgba(255,255,255,0.5);
         }
         .youtube-link-waveform:active { transform: scale(0.95); }
         /* Size icon similar to Store button for inner padding */
@@ -2326,7 +2324,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           width: 32px;
           height: 32px;
           border-radius: 50%;
-          border: 0.5px solid rgba(128,128,128,0.45);
+          border: none;
           background: rgba(128,128,128,0.35);
           color: rgba(255,255,255,0.85);
           display: inline-flex;

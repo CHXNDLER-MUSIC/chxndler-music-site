@@ -9,6 +9,7 @@ export default function HoloAudioBridge() {
   const { mainId, songs } = storeSnap as any;
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const warpAudioRef = useRef<HTMLAudioElement | null>(null);
+  const joinAudioRef = useRef<HTMLAudioElement | null>(null);
   const [currentTrack, setCurrentTrack] = useState(null);
 
   // Find the current track from player store songs and map to tracks array
@@ -35,7 +36,32 @@ export default function HoloAudioBridge() {
     }
   }, [mainId, songs]);
 
-  // Load+play on track change (when source exists) with warp delay
+  // Helper: play an <audio> element and resolve when it ends (with safe timeout fallback)
+  function playAndWait(el: HTMLAudioElement | null, fallbackMs: number): Promise<void> {
+    return new Promise<void>((resolve) => {
+      if (!el) { setTimeout(resolve, Math.max(200, fallbackMs)); return; }
+      try { el.currentTime = 0; } catch {}
+      let settled = false;
+      const onEnded = () => { if (!settled) { settled = true; cleanup(); resolve(); } };
+      const onError = () => { if (!settled) { settled = true; cleanup(); resolve(); } };
+      const cleanup = () => {
+        try { el.removeEventListener('ended', onEnded); } catch {}
+        try { el.removeEventListener('error', onError); } catch {}
+      };
+      try { el.addEventListener('ended', onEnded, { once: true } as any); } catch {}
+      try { el.addEventListener('error', onError, { once: true } as any); } catch {}
+      try {
+        void el.play().catch(() => {
+          // Autoplay block or other failure: fall back to timeout
+          setTimeout(() => { if (!settled) { settled = true; cleanup(); resolve(); } }, Math.max(200, fallbackMs));
+        });
+      } catch {
+        setTimeout(() => { if (!settled) { settled = true; cleanup(); resolve(); } }, Math.max(200, fallbackMs));
+      }
+    });
+  }
+
+  // Load+play on track change (when source exists) with warp -> join -> song sequence
   useEffect(() => {
     
     const a = audioRef.current; if (!a) return;
@@ -68,48 +94,52 @@ export default function HoloAudioBridge() {
     
     a.src = currentTrack.src || "";
     a.load();
-    
+
     if (currentTrack.src) {
-      
-      
       // Visual feedback that warp is happening
       document.body.style.backgroundColor = '#FF0000';
-      setTimeout(() => {
-        document.body.style.backgroundColor = '';
-      }, 500);
-      
-      // Play warp sound immediately
-      const warpAudio = warpAudioRef.current;
-      if (warpAudio) {
-        warpAudio.currentTime = 0;
-        warpAudio.volume = 0.7;
-        warpAudio.play().catch((err) => {
-          
-        });
-      }
-      
-      // Implement warp delay like MediaPlayer
-      const WARP_MS = 1800;
-      const warpTimeout = setTimeout(() => {
-        
+      const clearFlash = () => { document.body.style.backgroundColor = ''; };
+      setTimeout(clearFlash, 500);
 
-        // After warp, only reveal the focused planet once playback actually starts
-        const onPlaying = () => {
-          try { playerStore.getState().setPlanetsVisible(true); } catch {}
-          try { playerStore.getState().setPlanetDisplayMode('single'); } catch {}
-          a.removeEventListener('playing', onPlaying);
-        };
-        a.addEventListener('playing', onPlaying, { once: true } as any);
+      // Sequence guard to cancel if track changes again
+      let cancelled = false;
+      const cancel = () => { cancelled = true; };
 
-        a.play().catch((err) => {
-          console.error('🎵 HoloAudioBridge: Play failed', err);
-          // If play fails (autoplay restrictions), do not reveal planets yet
-          a.removeEventListener('playing', onPlaying);
-        });
-      }, WARP_MS);
-      
-      // Return cleanup function to clear timeout if component unmounts or track changes again
-      return () => clearTimeout(warpTimeout);
+      // Chain: warp sfx -> join-alien sfx -> song
+      const run = async () => {
+        try {
+          // Play warp SFX and wait (fallback ~1.6s if needed)
+          const warpEl = warpAudioRef.current; if (warpEl) warpEl.volume = 0.7;
+          await playAndWait(warpAudioRef.current, 1600);
+          if (cancelled) return;
+
+          // Play join-alien SFX and wait (fallback ~0.9s)
+          const joinEl = joinAudioRef.current; if (joinEl) joinEl.volume = 0.9;
+          await playAndWait(joinAudioRef.current, 900);
+          if (cancelled) return;
+
+          // After SFX sequence, only reveal the focused planet once playback actually starts
+          const onPlaying = () => {
+            try { playerStore.getState().setPlanetsVisible(true); } catch {}
+            try { playerStore.getState().setPlanetDisplayMode('single'); } catch {}
+            try { a.removeEventListener('playing', onPlaying); } catch {}
+          };
+          try { a.addEventListener('playing', onPlaying, { once: true } as any); } catch {}
+
+          a.play().catch((err) => {
+            console.error('🎵 HoloAudioBridge: Play failed', err);
+            // If play fails (autoplay restrictions), do not reveal planets yet
+            try { a.removeEventListener('playing', onPlaying); } catch {}
+          });
+        } finally {
+          clearFlash();
+        }
+      };
+
+      void run();
+
+      // Cleanup cancels the sequence if track changes
+      return cancel;
     }
   }, [currentTrack]);
 
@@ -147,6 +177,7 @@ export default function HoloAudioBridge() {
     <>
       <audio ref={audioRef} data-holo-audio="1" preload="auto" />
       <audio ref={warpAudioRef} src="/audio/warp.mp3" preload="auto" style={{ display: 'none' }} />
+      <audio ref={joinAudioRef} src="/audio/join-alien.mp3" preload="auto" style={{ display: 'none' }} />
     </>
   );
 }

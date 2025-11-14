@@ -9,6 +9,7 @@ import { isAnalyticsDisabled } from "@/lib/analytics";
 import { Suspense } from "react";
 import { AudioProvider } from "@/app/providers/AudioProvider";
 import LazyLoadEnhancer from "@/components/LazyLoadEnhancer";
+import SignOutButton from "@/components/SignOutButton";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://chxndler-music.com"),
@@ -98,6 +99,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="font-sans">
         <AudioProvider>
+          {/* Global header actions (non-intrusive, top-right) */}
+          <div className="fixed right-3 top-3 z-50">
+            <SignOutButton />
+          </div>
           {!analyticsOff && (
             <Suspense fallback={null}>
               <PageViewTracker />

@@ -14,10 +14,10 @@ export default function SongHUD({ title, coverSrc, element }: { title: string; c
            boxShadow: '0 10px 24px rgba(0,0,0,.4)'
          }}>
       <div style={{ display:'flex', alignItems:'center', gap:12, minWidth: 320 }}>
-        <span className="hud-cover relative overflow-hidden" style={{ display: 'inline-block', borderRadius: 10, width: 52, height: 52 }}>
+        <span className="hud-cover relative overflow-hidden" style={{ display: 'inline-block', borderRadius: 10, width: 52, height: 52, WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden', WebkitTransform: 'translateZ(0)', transform: 'translateZ(0)' }}>
           <Image src={coverSrc} alt={title} width={52} height={52} priority className="rounded object-cover w-full h-full" />
-          {/* Subtle blue interior to match waveform styling */}
-          <span className="hud-blue-fill-overlay pointer-events-none absolute inset-0 mix-blend-overlay" />
+          {/* Subtle blue interior to match waveform styling; avoid blend modes to prevent flicker */}
+          <span className="hud-blue-fill-overlay pointer-events-none absolute inset-0" />
           {/* Inner neon rim */}
           <span className="pointer-events-none absolute inset-0 rounded-[10px] ring-1 ring-[#19E3FF]/40" />
           {/* Scanlines for texture */}

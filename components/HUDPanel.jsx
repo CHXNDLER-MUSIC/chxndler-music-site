@@ -195,6 +195,46 @@ export default function HUDPanel({
   const [showApplePopover, setShowApplePopover] = useState(false);
   const [amEmbedUrl, setAmEmbedUrl] = useState(null);
 
+  // HEART coin tiers popout
+  const [showHeartPopover, setShowHeartPopover] = useState(false);
+  const heartBtnRef = useRef(null);
+  const [heartPopoverPos, setHeartPopoverPos] = useState(null);
+  // Position heart popover similar to lyrics popover
+  const HEART_POPOVER_Y_OFFSET = -40;
+
+  const openHeartPopover = () => {
+    try { sfx.play('click', 0.4); } catch {}
+    try {
+      const r = heartBtnRef.current?.getBoundingClientRect?.();
+      const wrapper = innerRef.current?.parentElement || null; // outer HUD blue display wrapper (padding box)
+      if (wrapper && typeof window !== 'undefined') {
+        const rect = wrapper.getBoundingClientRect();
+        const cs = window.getComputedStyle(wrapper);
+        const pl = parseFloat(cs.paddingLeft || '0') || 0;
+        const pr = parseFloat(cs.paddingRight || '0') || 0;
+        let leftEdge = rect.left + pl;
+        let rightEdge = rect.right - pr;
+        // Very slightly wider than the blue display on both sides (match lyrics)
+        const HORIZONTAL_EXPAND = 12;
+        leftEdge = Math.max(8, leftEdge - HORIZONTAL_EXPAND);
+        rightEdge = Math.min((typeof window !== 'undefined' ? window.innerWidth : rightEdge), rightEdge + HORIZONTAL_EXPAND) - 8 + 8;
+        const width = Math.max(0, rightEdge - leftEdge);
+        // Match lyrics: bring top down to shorten popover height
+        const TOP_INSET = 136;
+        let top = rect.top + TOP_INSET;
+        top = Math.max(8, top);
+        const height = Math.max(100, rect.height - TOP_INSET);
+        setHeartPopoverPos({ left: leftEdge, top, width, height });
+      } else if (r) {
+        let top = r.bottom + 8 + HEART_POPOVER_Y_OFFSET;
+        top = Math.max(8, top);
+        let height = Math.max(240, Math.min(560, (typeof window !== 'undefined' ? window.innerHeight * 0.46 : 340)));
+        setHeartPopoverPos({ left: r.left + r.width/2, top, height });
+      }
+    } catch {}
+    setShowHeartPopover(true);
+  };
+
   // Storefront (Gem) popover state
   const [showStorePopover, setShowStorePopover] = useState(false);
   const storeBtnRef = useRef(null);
@@ -228,7 +268,7 @@ export default function HUDPanel({
       id: 'necklace',
       title: 'NECKLACE',
       image: '/store/necklace.png',
-      url: 'https://buy.stripe.com/6oU3cw3OVfZH3oZ9554gg0D',
+      url: 'https://buy.stripe.com/bJe3cw99f28R5x7epp4gg0K',
       price: '$15',
       description: 'A symbol of love, connection, and everything this world stands for. It’s a keepsake for the people who found home here.'
     },
@@ -236,7 +276,7 @@ export default function HUDPanel({
       id: 'beanie',
       title: 'BEANIE',
       image: '/store/beanie-front.png',
-      url: 'https://buy.stripe.com/3cI3cw3OV8xf0cN2GH4gg0E',
+      url: 'https://buy.stripe.com/dRm8wQetz14N5x71CD4gg0L',
       price: '$30',
       description: 'For the ones who wear their hearts out loud and aren’t afraid to stand out.'
     },
@@ -273,10 +313,26 @@ export default function HUDPanel({
       description: 'A small piece of the HEARTVERSE to carry everywhere. A quiet reminder that you’re connected, always.'
     },
     {
+      id: 'pick',
+      title: 'PICK',
+      image: '/store/pick.png',
+      url: 'https://buy.stripe.com/4gM9AUadj9Bj2kVgxx4gg0O',
+      price: '5',
+      description: 'A glow in the dark pick made for the dreamers and late night creators who carry music like a heartbeat through the dark.'
+    },
+    {
+      id: 'bracelet',
+      title: 'BRACELET',
+      image: '/store/bracelet.png',
+      url: 'https://buy.stripe.com/aFa8wQ2KR8xf6Bbftt4gg0N',
+      price: '10',
+      description: 'A HEARTVERSE charm that connects you to the Aliens who feel deeply and walk the world with open hearts.'
+    },
+    {
       id: 'house-party-poster',
       title: 'HOUSE PARTY POSTER',
       image: '/store/house-party-poster.png',
-      url: 'https://buy.stripe.com/dRmfZi0CJ4gZ3oZ2GH4gg0G',
+      url: 'https://buy.stripe.com/dRm8wQetz14N5x71CD4gg0L',
       price: '$25',
       description: 'This poster captures the night the HEARTVERSE came alive. Hang it up and remember when you joined the story.'
     }
@@ -449,6 +505,56 @@ export default function HUDPanel({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [showApplePopover]);
+
+  // Recalculate HEART coin popover alignment on resize while open
+  useEffect(() => {
+    if (!showHeartPopover) return;
+    const recalc = () => {
+      try {
+        const wrapper = innerRef.current?.parentElement || null;
+        if (wrapper && typeof window !== 'undefined') {
+          const rect = wrapper.getBoundingClientRect();
+          const cs = window.getComputedStyle(wrapper);
+          const pl = parseFloat(cs.paddingLeft || '0') || 0;
+          const pr = parseFloat(cs.paddingRight || '0') || 0;
+          let leftEdge = rect.left + pl;
+          let rightEdge = rect.right - pr;
+          const HORIZONTAL_EXPAND = 12;
+          leftEdge = Math.max(8, leftEdge - HORIZONTAL_EXPAND);
+          rightEdge = Math.min((typeof window !== 'undefined' ? window.innerWidth : rightEdge), rightEdge + HORIZONTAL_EXPAND) - 8 + 8;
+          const width = Math.max(0, rightEdge - leftEdge);
+          const TOP_INSET = 136;
+          let top = rect.top + TOP_INSET;
+          top = Math.max(8, top);
+          const height = Math.max(100, rect.height - TOP_INSET);
+          setHeartPopoverPos({ left: leftEdge, top, width, height });
+        }
+      } catch {}
+    };
+    window.addEventListener('resize', recalc);
+    return () => window.removeEventListener('resize', recalc);
+  }, [showHeartPopover]);
+
+  // Close HEART coin popover on outside click / Escape
+  useEffect(() => {
+    if (!showHeartPopover) return;
+    const onDocDown = (e) => {
+      const t = e.target;
+      const withinBtn = heartBtnRef.current && t && heartBtnRef.current.contains(t);
+      const dialog = document.querySelector('[aria-label="HEARTVERSE TIERS"]');
+      const withinDialog = dialog && t && dialog.contains(t);
+      if (!withinBtn && !withinDialog) { try { sfx.play('close', 0.4); } catch {}; setShowHeartPopover(false); }
+    };
+    const onKey = (e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowHeartPopover(false); } };
+    document.addEventListener('mousedown', onDocDown);
+    document.addEventListener('touchstart', onDocDown, { passive: true });
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocDown);
+      document.removeEventListener('touchstart', onDocDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [showHeartPopover]);
 
   // Open Store (Gem) popover anchored to the gem button
   const openStorePopover = async () => {
@@ -1339,394 +1445,46 @@ export default function HUDPanel({
           }}>
             <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '10px', paddingBottom: 6 }}>
               <div className="flex flex-wrap items-start gap-3 pt-0 pr-2 pl-2 pb-0">
-                <div className="controls-row flex items-center gap-4 w-full" style={{ paddingTop: 4 }}>
-                <button 
-                  onClick={handlePlayPause}
-                  className="hud-play-btn-enhanced"
-                  aria-label={playing ? "Pause" : "Play"}
-                  onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                  style={{ marginTop: 1 }}
-                >
-                  {playing ? (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                      <rect x="6" y="4" width="4" height="16" rx="1"/>
-                      <rect x="14" y="4" width="4" height="16" rx="1"/>
-                    </svg>
-                  ) : (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M7 4v16l12-8z"/>
-                    </svg>
-                  )}
-                </button>
-                
-                {/* Spotify button positioned directly next to play/pause */}
-                {(() => {
-                  const currentSong = resolvedSongs.find(s => s.id === active);
-                  const spotifyUrl = currentSong?.spotify;
-                  
-                  // Only show clickable Spotify button when a song is selected (currentId exists)
-                  // On homepage (!currentId), always show disabled button
-                  if (currentId && spotifyUrl) {
-                    return (
-                      <a
-                        href={spotifyUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="spotify-btn-waveform-hud"
-                        style={{ marginTop: 1 }}
-                        title="Open on Spotify"
-                        aria-label={`Open ${currentSong?.title || 'current track'} on Spotify`}
-                        data-song={currentSong?.title || ''}
-                        data-slug={currentSong?.id || ''}
-                        data-id="sp"
-                        onClick={(e) => {
-                          try { e.preventDefault(); } catch {}
-                          try { sfx.play('join-aliens', 0.9); } catch {}
-                          try {
-                            const { toSpotifyEmbed } = require('@/lib/spotify');
-                            const embed = toSpotifyEmbed(spotifyUrl);
-                            if (embed) { setSpEmbedUrl(embed); setShowSpotifyPopover(true); }
-                            else { window.open(spotifyUrl, '_blank', 'noopener,noreferrer'); }
-                          } catch {
-                            try { window.open(spotifyUrl, '_blank', 'noopener,noreferrer'); } catch {}
-                          }
-                        }}
-                        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                      >
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                          <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
-                        </svg>
-                      </a>
-                    );
-                  } else {
-                    // Show disabled button on homepage or when no Spotify link available
-                    const isHomepage = !currentId;
-                    const titleText = isHomepage 
-                      ? 'Spotify not available on homepage' 
-                      : `No Spotify link available for ${currentSong?.title || 'current track'}`;
-                    
-                    return (
-                      <div 
-                        className="spotify-btn-unavailable-hud"
-                        style={{ marginTop: 1 }}
-                        title={titleText}
-                      >
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" opacity="0.5">
-                          <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
-                        </svg>
-                      </div>
-                    );
-                  }
-                })()}
-
-                {/* Apple Music button positioned directly next to Spotify */}
-                {(() => {
-                  const currentSong = resolvedSongs.find(s => s.id === active);
-                  const appleUrl = currentSong?.apple;
-
-                  // Only show clickable Apple button when a song is selected (currentId exists)
-                  // On homepage (!currentId), always show disabled button
-                  if (currentId && appleUrl) {
-                    return (
-                      <a
-                        href={appleUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="apple-btn-waveform-hud"
-                        style={{ marginTop: 1 }}
-                        title="Open on Apple Music"
-                        aria-label={`Open ${currentSong?.title || 'current track'} on Apple Music`}
-                        data-song={currentSong?.title || ''}
-                        data-slug={currentSong?.id || ''}
-                        data-id="am"
-                        onClick={(e) => {
-                          try { e.preventDefault(); } catch {}
-                          try { sfx.play('join-aliens', 0.9); } catch {}
-                          try {
-                            const { toAppleEmbed } = require('@/lib/apple');
-                            const embed = toAppleEmbed(appleUrl);
-                            if (embed) { setAmEmbedUrl(embed); setShowApplePopover(true); }
-                            else { window.open(appleUrl, '_blank', 'noopener,noreferrer'); }
-                          } catch {
-                            try { window.open(appleUrl, '_blank', 'noopener,noreferrer'); } catch {}
-                          }
-                        }}
-                        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                      >
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="22"
-                          height="22"
-                          fill="currentColor"
-                          role="img"
-                          aria-label="Music notes"
-                          style={{ display: 'block' }}
-                        >
-                          <ellipse cx="7.5" cy="18.2" rx="3.2" ry="3.4" />
-                          <ellipse cx="16.5" cy="16" rx="3.2" ry="3.4" />
-                          <rect x="9" y="6" width="2" height="11" rx="1" />
-                          <rect x="18" y="4" width="2" height="11" rx="1" />
-                          <path d="M11 6 L20 4 L20 6.5 L11 8.5 Z" />
-                        </svg>
-                      </a>
-                    );
-                  } else {
-                    // Show disabled button on homepage or when no Apple link available
-                    const isHomepage = !currentId;
-                    const titleText = isHomepage 
-                      ? 'Apple Music not available on homepage' 
-                      : `No Apple Music link available for ${currentSong?.title || 'current track'}`;
-
-                    return (
-                      <div 
-                        className="apple-btn-unavailable-hud"
-                        style={{ marginTop: 1 }}
-                        title={titleText}
-                      >
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="22"
-                          height="22"
-                          fill="currentColor"
-                          role="img"
-                          aria-label="Music notes"
-                          style={{ display: 'block' }}
-                        >
-                          <ellipse cx="7.5" cy="18.2" rx="3.2" ry="3.4" />
-                          <ellipse cx="16.5" cy="16" rx="3.2" ry="3.4" />
-                          <rect x="9" y="6" width="2" height="11" rx="1" />
-                          <rect x="18" y="4" width="2" height="11" rx="1" />
-                          <path d="M11 6 L20 4 L20 6.5 L11 8.5 Z" />
-                        </svg>
-                      </div>
-                    );
-                  }
-                })()}
-
-                {/* YouTube button moved to Gem's original position */}
+                <div className="controls-row flex items-start justify-start gap-4 w-full" style={{ paddingTop: 4 }}>
+                <div className="hud-main-stack" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
+                {/* Top controls: Play/Pause with Lyrics immediately to the right */}
                 {(() => {
                   const isHome = !currentId;
                   const currentSong = resolvedSongs.find(s => s.id === active);
-                  if (isHome) {
-                    return (
-                      <div className="youtube-btn-unavailable-hud" title="YouTube not available on homepage" style={{ marginTop: 1 }}>
-                        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                          <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
-                        </svg>
-                      </div>
-                    );
-                  }
-                  const slug = currentSong?.id;
-                  if (!slug) return null;
-                  return currentSong?.youtube ? (
-                    <a
-                      href={currentSong.youtube}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="youtube-btn-waveform-hud"
-                      style={{ marginTop: 1 }}
-                      title={`Open ${currentSong.title} on YouTube`}
-                      aria-label={`Open ${currentSong.title} on YouTube`}
-                      data-song={currentSong.title}
-                      data-slug={currentSong.id}
-                      data-id="yt"
-                      onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                      onClick={(e) => {
-                        try { e.preventDefault(); } catch {}
-                        try { sfx.play('click', 0.4); } catch {}
-                        // Pause site audio while video plays
-                        try {
-                          const a = document.querySelector('audio[data-audio-player="1"]');
-                          if (a && a.pause) a.pause();
-                        } catch {}
-                        // Build embeddable URL
-                        const toEmbed = (url) => {
-                          try {
-                            const u = new URL(url);
-                            const host = u.hostname.replace(/^www\./, '');
-                            if (host === 'youtu.be') {
-                              const id = u.pathname.slice(1);
-                              if (id) return `https://www.youtube.com/embed/${id}`;
-                            }
-                            if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtube-nocookie.com' || host === 'music.youtube.com') {
-                              if (u.pathname === '/watch') {
-                                const id = u.searchParams.get('v');
-                                if (id) return `https://www.youtube.com/embed/${id}`;
-                              }
-                              if (u.pathname.startsWith('/shorts/')) {
-                                const id = u.pathname.split('/')[2];
-                                if (id) return `https://www.youtube.com/embed/${id}`;
-                              }
-                              if (u.pathname.startsWith('/embed/')) {
-                                return `https://${host}/embed/${u.pathname.split('/')[2]}`;
-                              }
-                              if (u.pathname.startsWith('/live/')) {
-                                const id = u.pathname.split('/')[2];
-                                if (id) return `https://www.youtube.com/embed/${id}`;
-                              }
-                            }
-                          } catch {}
-                          return null;
-                        };
-                        const embed = toEmbed(currentSong.youtube);
-                        if (embed) {
-                          setYtEmbedUrl(`${embed}?autoplay=1&rel=0`);
-                          setShowYouTubePopover(true);
-                        } else {
-                          try { window.open(currentSong.youtube, '_blank', 'noopener,noreferrer'); } catch {}
-                        }
-                      }}
-                    >
-                      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                        <path d="M10 8l6 4-6 4z" fill="currentColor" />
-                      </svg>
-                    </a>
-                  ) : (
-                    <div className="youtube-btn-unavailable-hud" title={`No YouTube link available for ${currentSong?.title || 'current track'}`} style={{ marginTop: 1 }}>
-                      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                        <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
-                      </svg>
-                    </div>
-                  );
-                })()}
-
-                {/* Volume control next to Spotify icon */}
-                <div 
-                  className="hud-volume"
-                  role="group" 
-                  aria-label="Volume"
-                  ref={hudVolRef}
-                  style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative', marginTop: 1 }}
-                >
-                  <button
-                    className="hud-volume-btn"
-                    onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                    onClick={() => {
-                      try { sfx.play('click', 0.4); } catch {}
-                      // Only open/close dropdown; do not change volume on click
-                      setShowHudVolumePopover(v => {
-                        const next = !v;
-                        if (next && hudVolBtnRef.current) {
-                          const r = hudVolBtnRef.current.getBoundingClientRect();
-                          setHudPopoverPos({ left: r.left + r.width/2, top: r.bottom + 8 });
-                        }
-                        if (!next) { try { sfx.play('close', 0.4); } catch {} }
-                        return next;
-                      });
-                    }}
-                    aria-label="Volume"
-                    title="Volume"
-                    ref={hudVolBtnRef}
-                  >
-                    {volume === 0 ? (
-                      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
-                        {/* Speaker base */}
-                        <polygon points="4,10 8,10 13,6 13,18 8,14 4,14" fill="currentColor" />
-                        {/* Mute X overlay */}
-                        <line x1="15" y1="9" x2="21" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                        <line x1="21" y1="9" x2="15" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                      </svg>
-                    ) : volume < 0.5 ? (
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden>
-                        <path d="M3 9v6h4l5 5V4L7 9H3zm10.5 3c0-1.77-.77-3.29-2-4.3v8.6c1.23-1.01 2-2.53 2-4.3z"/>
-                      </svg>
-                    ) : (
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden>
-                        <path d="M3 9v6h4l5 5V4L7 9H3zm10.5 3c0-1.77-.77-3.29-2-4.3v8.6c1.23-1.01 2-2.53 2-4.3zM19 12c0-3.04-1.72-5.64-4.25-6.92l-.75 1.86C16 8.2 17.5 9.96 17.5 12s-1.5 3.8-3.5 4.06l.75 1.86C17.28 17.64 19 15.04 19 12z"/>
-                      </svg>
-                    )}
-                  </button>
-                  {null}
-                {(() => {
-                  const isHome = !currentId;
-                  const currentSong = resolvedSongs.find(s => s.id === active);
-                  if (isHome) {
-                      // Homepage: lyrics popover for CHXNDLER + YouTube disabled
-                      // Also show the Store (gem) button as ACTIVE on homepage
-                      return (
-                        <>
-                          <button
-                            ref={lyricsBtnRef}
-                            type="button"
-                            className="hud-lyrics-btn"
-                            style={{ marginTop: 1 }}
-                            title="Lyrics for CHXNDLER"
-                            aria-label="View lyrics for CHXNDLER"
-                            data-id="lyrics"
-                            data-song="CHXNDLER"
-                            aria-haspopup="dialog"
-                            aria-expanded={showLyricsPopover}
-                            onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                            onClick={() => {
-                              if (showLyricsPopover) { try { sfx.play('close', 0.4); } catch {}; setShowLyricsPopover(false); return; }
-                              openLyricsPopover('homepage');
-                            }}
-                          >
-                            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                              <rect x="5" y="5" width="14" height="10" rx="4" ry="4" fill="none" stroke="currentColor" strokeWidth="1.6" />
-                              <circle cx="8" cy="16" r="1.2" fill="currentColor" />
-                              <circle cx="6.2" cy="18" r="1.1" fill="currentColor" />
-                              <rect x="10" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
-                              <rect x="13.6" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
-                            </svg>
-                          </button>
-                          {/* YouTube is already rendered in the main controls row; don't duplicate here on homepage */}
-                          {/* Gem (store) button should be active on homepage too */}
-                          <button
-                            type="button"
-                            ref={storeBtnRef}
-                            className="gem-btn-waveform-hud"
-                            style={{ marginTop: 1 }}
-                            title="Open Store"
-                            data-id="store"
-                            data-song="CHXNDLER"
-                            aria-haspopup="dialog"
-                            aria-expanded={showStorePopover}
-                            onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                            onClick={() => {
-                              // Track store button click on homepage
-                              try {
-                                const songSlug = 'homepage';
-                                const songTitle = 'CHXNDLER';
-                                trackAnalytics('store_button_clicked', { song_slug: String(songSlug || ''), payload: { song_title: songTitle, location: 'hud_store_button_home' } });
-                              } catch {}
-                              if (showStorePopover) { try { sfx.play('close', 0.4); } catch {}; setShowStorePopover(false); return; }
-                              openStorePopover();
-                            }}
-                          >
-                            {/* White heart icon for Store (replaces gem) */}
-                            <svg
-                              viewBox="0 0 24 24"
-                              width="20"
-                              height="20"
-                              fill="currentColor"
-                              aria-hidden
-                              style={{
-                                display: 'block',
-                                filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.85)) drop-shadow(0 0 16px rgba(255,255,255,0.55))'
-                              }}
-                            >
-                              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 4 4 6.5 4c1.74 0 3.41 1.01 4.22 2.61C11.09 5.01 12.76 4 14.5 4 17 4 19 6 19 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                            </svg>
-                          </button>
-                        </>
-                      );
-                  }
-                  const slug = currentSong?.id;
-                  if (!slug) return null;
-                  const hasLyrics = currentSong && (currentSong.hasLyrics !== false);
+                  const slug = isHome ? 'homepage' : (currentSong?.id || '');
+                  const hasLyrics = isHome ? true : !!(currentSong && (currentSong.hasLyrics !== false));
+                  const lyricsTitle = isHome ? 'Lyrics for CHXNDLER' : `Lyrics for ${currentSong?.title || 'current track'}`;
+                  const lyricsAria = isHome ? 'View lyrics for CHXNDLER' : `View lyrics for ${currentSong?.title || 'current track'}`;
                   return (
-                    <>
+                    <div className="hud-top-controls" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <button 
+                        onClick={handlePlayPause}
+                        className="hud-play-btn-enhanced"
+                        aria-label={playing ? "Pause" : "Play"}
+                        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                        style={{ marginTop: 1 }}
+                      >
+                        {playing ? (
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <rect x="6" y="4" width="4" height="16" rx="1"/>
+                            <rect x="14" y="4" width="4" height="16" rx="1"/>
+                          </svg>
+                        ) : (
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M7 4v16l12-8z"/>
+                          </svg>
+                      )}
+                      </button>
                       {hasLyrics ? (
                         <button
                           ref={lyricsBtnRef}
                           type="button"
                           className="hud-lyrics-btn"
                           style={{ marginTop: 1 }}
-                          title={`Lyrics for ${currentSong?.title || 'current track'}`}
-                          aria-label={`View lyrics for ${currentSong?.title || 'current track'}`}
+                          title={lyricsTitle}
+                          aria-label={lyricsAria}
                           data-id="lyrics"
-                          data-song={currentSong?.title || ''}
+                          data-song={isHome ? 'CHXNDLER' : (currentSong?.title || '')}
                           aria-haspopup="dialog"
                           aria-expanded={showLyricsPopover}
                           onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
@@ -1761,7 +1519,7 @@ export default function HUDPanel({
                           </svg>
                         </div>
                       )}
-                      {/* Gem (store) button moved to YouTube's original position */}
+                      {/* Store (gem) button placed to the right of Lyrics */}
                       <button
                         type="button"
                         ref={storeBtnRef}
@@ -1769,22 +1527,20 @@ export default function HUDPanel({
                         style={{ marginTop: 1 }}
                         title="Open Store"
                         data-id="store"
-                        data-song={currentSong?.title || ''}
+                        data-song={isHome ? 'CHXNDLER' : (currentSong?.title || '')}
                         aria-haspopup="dialog"
                         aria-expanded={showStorePopover}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                         onClick={() => {
-                          // Track store button click within Music analytics with song context
                           try {
-                            const songSlug = slug || active || 'unknown';
-                            const songTitle = currentSong?.title || track?.title || 'Unknown';
-                            trackAnalytics('store_button_clicked', { song_slug: String(songSlug || ''), payload: { song_title: songTitle, location: 'hud_store_button' } });
+                            const songSlug = isHome ? 'homepage' : (slug || active || 'unknown');
+                            const songTitle = isHome ? 'CHXNDLER' : (currentSong?.title || track?.title || 'Unknown');
+                            trackAnalytics('store_button_clicked', { song_slug: String(songSlug || ''), payload: { song_title: songTitle, location: isHome ? 'hud_store_button_home' : 'hud_store_button' } });
                           } catch {}
                           if (showStorePopover) { try { sfx.play('close', 0.4); } catch {}; setShowStorePopover(false); return; }
                           openStorePopover();
                         }}
                       >
-                        {/* White heart icon for Store (replaces gem) */}
                         <svg
                           viewBox="0 0 24 24"
                           width="20"
@@ -1799,10 +1555,389 @@ export default function HUDPanel({
                           <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 4 4 6.5 4c1.74 0 3.41 1.01 4.22 2.61C11.09 5.01 12.76 4 14.5 4 17 4 19 6 19 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                         </svg>
                       </button>
+                      {/* HEART coin button to the right of Store */}
+                      <button
+                        type="button"
+                        ref={heartBtnRef}
+                        className="heart-coin-btn-waveform-hud"
+                        style={{ marginTop: 1 }}
+                        title="HEART Coin"
+                        aria-label="HEART Coin"
+                        data-id="heart-coin"
+                        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                        onClick={() => {
+                          try { sfx.play('click', 0.4); } catch {}
+                          try {
+                            const songSlug = isHome ? 'homepage' : (slug || active || 'unknown');
+                            const songTitle = isHome ? 'CHXNDLER' : (currentSong?.title || track?.title || 'Unknown');
+                            trackAnalytics('heart_coin_clicked', { song_slug: String(songSlug || ''), payload: { song_title: songTitle, location: isHome ? 'hud_heart_coin_home' : 'hud_heart_coin' } });
+                          } catch {}
+                          if (showHeartPopover) { setShowHeartPopover(false); return; }
+                          openHeartPopover();
+                        }}
+                      >
+                        <img src="/elements/heart-coin.png" alt="HEART Coin" />
+                      </button>
+
+                      {/* Streaming: Spotify, Apple, YouTube moved left into top controls */}
+                      {(() => {
+                        const spotifyUrl = currentSong?.spotify;
+                        if (currentId && spotifyUrl) {
+                          return (
+                            <a
+                              href={spotifyUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="spotify-btn-waveform-hud"
+                              style={{ marginTop: 1 }}
+                              title="Open on Spotify"
+                              aria-label={`Open ${currentSong?.title || 'current track'} on Spotify`}
+                              data-song={currentSong?.title || ''}
+                              data-slug={currentSong?.id || ''}
+                              data-id="sp"
+                              onClick={(e) => {
+                                try { e.preventDefault(); } catch {}
+                                try { sfx.play('join-aliens', 0.9); } catch {}
+                                try {
+                                  const { toSpotifyEmbed } = require('@/lib/spotify');
+                                  const embed = toSpotifyEmbed(spotifyUrl);
+                                  if (embed) { setSpEmbedUrl(embed); setShowSpotifyPopover(true); }
+                                  else { window.open(spotifyUrl, '_blank', 'noopener,noreferrer'); }
+                                } catch {
+                                  try { window.open(spotifyUrl, '_blank', 'noopener,noreferrer'); } catch {}
+                                }
+                              }}
+                              onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                            >
+                              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
+                              </svg>
+                            </a>
+                          );
+                        }
+                        return (
+                          <div className="spotify-btn-unavailable-hud" style={{ marginTop: 1 }} title={(!currentId) ? 'Spotify not available on homepage' : `No Spotify link available for ${currentSong?.title || 'current track'}`}>
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" opacity="0.5">
+                              <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
+                            </svg>
+                          </div>
+                        );
+                      })()}
+
+                      {(() => {
+                        const appleUrl = currentSong?.apple;
+                        if (currentId && appleUrl) {
+                          return (
+                            <a
+                              href={appleUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="apple-btn-waveform-hud"
+                              style={{ marginTop: 1 }}
+                              title="Open on Apple Music"
+                              aria-label={`Open ${currentSong?.title || 'current track'} on Apple Music`}
+                              data-song={currentSong?.title || ''}
+                              data-slug={currentSong?.id || ''}
+                              data-id="am"
+                              onClick={(e) => {
+                                try { e.preventDefault(); } catch {}
+                                try { sfx.play('join-aliens', 0.9); } catch {}
+                                try {
+                                  const { toAppleEmbed } = require('@/lib/apple');
+                                  const embed = toAppleEmbed(appleUrl);
+                                  if (embed) { setAmEmbedUrl(embed); setShowApplePopover(true); }
+                                  else { window.open(appleUrl, '_blank', 'noopener,noreferrer'); }
+                                } catch {
+                                  try { window.open(appleUrl, '_blank', 'noopener,noreferrer'); } catch {}
+                                }
+                              }}
+                              onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                            >
+                              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" role="img" aria-label="Music notes" style={{ display: 'block' }}>
+                                <ellipse cx="7.5" cy="18.2" rx="3.2" ry="3.4" />
+                                <ellipse cx="16.5" cy="16" rx="3.2" ry="3.4" />
+                                <rect x="9" y="6" width="2" height="11" rx="1" />
+                                <rect x="18" y="4" width="2" height="11" rx="1" />
+                                <path d="M11 6 L20 4 L20 6.5 L11 8.5 Z" />
+                              </svg>
+                            </a>
+                          );
+                        }
+                        return (
+                          <div className="apple-btn-unavailable-hud" style={{ marginTop: 1 }} title={(!currentId) ? 'Apple Music not available on homepage' : `No Apple Music link available for ${currentSong?.title || 'current track'}`}>
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" role="img" aria-label="Music notes" style={{ display: 'block' }}>
+                              <ellipse cx="7.5" cy="18.2" rx="3.2" ry="3.4" />
+                              <ellipse cx="16.5" cy="16" rx="3.2" ry="3.4" />
+                              <rect x="9" y="6" width="2" height="11" rx="1" />
+                              <rect x="18" y="4" width="2" height="11" rx="1" />
+                              <path d="M11 6 L20 4 L20 6.5 L11 8.5 Z" />
+                            </svg>
+                          </div>
+                        );
+                      })()}
+
+                      {(() => {
+                        if (!currentId) {
+                          return (
+                            <div className="youtube-btn-unavailable-hud" title="YouTube not available on homepage" style={{ marginTop: 1 }}>
+                              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                                <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
+                              </svg>
+                            </div>
+                          );
+                        }
+                        if (!currentSong?.youtube) {
+                          return (
+                            <div className="youtube-btn-unavailable-hud" title={`No YouTube link available for ${currentSong?.title || 'current track'}`} style={{ marginTop: 1 }}>
+                              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                                <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
+                              </svg>
+                            </div>
+                          );
+                        }
+                        return (
+                          <a
+                            href={currentSong.youtube}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="youtube-btn-waveform-hud"
+                            style={{ marginTop: 1 }}
+                            title={`Open ${currentSong.title} on YouTube`}
+                            aria-label={`Open ${currentSong.title} on YouTube`}
+                            data-song={currentSong.title}
+                            data-slug={currentSong.id}
+                            data-id="yt"
+                            onClick={(e) => {
+                              try { e.preventDefault(); } catch {}
+                              try { sfx.play('join-aliens', 0.9); } catch {}
+                              try {
+                                const { toYouTubeEmbed } = require('@/lib/youtube');
+                                const embed = toYouTubeEmbed(currentSong.youtube);
+                                if (embed) { setYtEmbedUrl(embed); setShowYouTubePopover(true); }
+                                else { window.open(currentSong.youtube, '_blank', 'noopener,noreferrer'); }
+                              } catch {
+                                try { window.open(currentSong.youtube, '_blank', 'noopener,noreferrer'); } catch {}
+                              }
+                            }}
+                            onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                          >
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                              <path d="M10 8l6 4-6 4z" />
+                            </svg>
+                          </a>
+                        );
+                      })()}
+                      {/* Removed duplicate HEART coin button placed after YouTube */}
+                    </div>
+                  );
+                })()}
+                {/* Volume + Waveform row directly under Play/Pause */}
+                <div className="hud-volume-row" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div 
+                    className="hud-volume"
+                    role="group" 
+                    aria-label="Volume"
+                    ref={hudVolRef}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}
+                  >
+                    <button
+                      className="hud-volume-btn"
+                      onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                      onClick={() => {
+                        try { sfx.play('click', 0.4); } catch {}
+                        // Only open/close dropdown; do not change volume on click
+                        setShowHudVolumePopover(v => {
+                          const next = !v;
+                          if (next && hudVolBtnRef.current) {
+                            const r = hudVolBtnRef.current.getBoundingClientRect();
+                            setHudPopoverPos({ left: r.left + r.width/2, top: r.bottom + 8 });
+                          }
+                          if (!next) { try { sfx.play('close', 0.4); } catch {} }
+                          return next;
+                        });
+                      }}
+                      aria-label="Volume"
+                      title="Volume"
+                      ref={hudVolBtnRef}
+                    >
+                      {volume === 0 ? (
+                        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+                          {/* Speaker base */}
+                          <polygon points="4,10 8,10 13,6 13,18 8,14 4,14" fill="currentColor" />
+                          {/* Mute X overlay */}
+                          <line x1="15" y1="9" x2="21" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                          <line x1="21" y1="9" x2="15" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                      ) : volume < 0.5 ? (
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden>
+                          <path d="M3 9v6h4l5 5V4L7 9H3zm10.5 3c0-1.77-.77-3.29-2-4.3v8.6c1.23-1.01 2-2.53 2-4.3z"/>
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden>
+                          <path d="M3 9v6h4l5 5V4L7 9H3zm10.5 3c0-1.77-.77-3.29-2-4.3v8.6c1.23-1.01 2-2.53 2-4.3zM19 12c0-3.04-1.72-5.64-4.25-6.92l-.75 1.86C16 8.2 17.5 9.96 17.5 12s-1.5 3.8-3.5 4.06l.75 1.86C17.28 17.64 19 15.04 19 12z"/>
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  {/* Compact waveform placed directly to the right of Volume */}
+                  <div className="hud-mini-wave flex items-center" style={{ marginTop: 2 }}>
+                    <div 
+                      className="waveform-container"
+                      onClick={handleProgressClick}
+                      onMouseMove={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const hoverX = e.clientX - rect.left;
+                        const hoverPercentage = (hoverX / rect.width) * 100;
+                        e.currentTarget.style.setProperty('--hover-position', `${hoverPercentage}%`);
+                      }}
+                      style={{
+                        border: `1px solid ${(() => {
+                          const currentSong = resolvedSongs.find(s => s.id === active);
+                          const elementColor = currentSong?.color || '#19E3FF';
+                          const r = parseInt(elementColor.slice(1, 3), 16);
+                          const g = parseInt(elementColor.slice(3, 5), 16);
+                          const b = parseInt(elementColor.slice(5, 7), 16);
+                          return `rgba(${r}, ${g}, ${b}, 0.25)`;
+                        })()}`,
+                        width: 200,
+                        height: 32,
+                        borderRadius: 8,
+                        background: 'rgba(0,0,0,0.3)'
+                      }}
+                      onMouseEnter={(e) => {
+                        try { sfx.play('hover', 0.3); } catch {}
+                        const currentSong = resolvedSongs.find(s => s.id === active);
+                        const elementColor = currentSong?.color || '#19E3FF';
+                        const r = parseInt(elementColor.slice(1, 3), 16);
+                        const g = parseInt(elementColor.slice(3, 5), 16);
+                        const b = parseInt(elementColor.slice(5, 7), 16);
+                        e.currentTarget.style.borderColor = `rgba(${r}, ${g}, ${b}, 0.45)`;
+                        e.currentTarget.style.boxShadow = `0 0 10px rgba(${r}, ${g}, ${b}, 0.25)`;
+                      }}
+                      onMouseLeave={(e) => {
+                        const currentSong = resolvedSongs.find(s => s.id === active);
+                        const elementColor = currentSong?.color || '#19E3FF';
+                        const r = parseInt(elementColor.slice(1, 3), 16);
+                        const g = parseInt(elementColor.slice(3, 5), 16);
+                        const b = parseInt(elementColor.slice(5, 7), 16);
+                        e.currentTarget.style.borderColor = `rgba(${r}, ${g}, ${b}, 0.25)`;
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    >
+                      <svg className="w-full h-full" viewBox="0 0 400 32" preserveAspectRatio="none" style={{ background: 'transparent' }}>
+                        <defs>
+                          {(() => {
+                            const currentSong = resolvedSongs.find(s => s.id === active);
+                            const elementColor = currentSong?.color || '#19E3FF';
+                            const hexToRgba = (hex, alpha) => {
+                              const r = parseInt(hex.slice(1, 3), 16);
+                              const g = parseInt(hex.slice(3, 5), 16);
+                              const b = parseInt(hex.slice(5, 7), 16);
+                              return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+                            };
+                            return (
+                              <>
+                                <linearGradient id="miniUnplayed" x1="0%" y1="0%" x2="0%" y2="100%">
+                                  <stop offset="0%" stopColor={hexToRgba(elementColor, 0.25)} />
+                                  <stop offset="50%" stopColor={hexToRgba(elementColor, 0.35)} />
+                                  <stop offset="100%" stopColor={hexToRgba(elementColor, 0.25)} />
+                                </linearGradient>
+                                <linearGradient id="miniPlayed" x1="0%" y1="0%" x2="0%" y2="100%">
+                                  <stop offset="0%" stopColor={hexToRgba(elementColor, 0.8)} />
+                                  <stop offset="50%" stopColor={hexToRgba(elementColor, 1)} />
+                                  <stop offset="100%" stopColor={hexToRgba(elementColor, 0.8)} />
+                                </linearGradient>
+                              </>
+                            );
+                          })()}
+                        </defs>
+                        {(() => {
+                          const seed = (active || 'default').split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+                          const waveformData = Array.from({ length: 200 }, (_, i) => {
+                            const bassLine = Math.sin((i + seed) * 0.02) * 0.4;
+                            const melody = Math.sin((i + seed) * 0.08 + 2) * 0.3;
+                            const percussion = Math.sin((i + seed) * 0.2 + 4) * 0.25;
+                            const vocals = Math.sin((i + seed) * 0.12 + 1) * 0.35;
+                            const harmonics = Math.sin((i + seed) * 0.4 + 5) * 0.15;
+                            const fadeIn = Math.min(1, i / 15);
+                            const fadeOut = Math.min(1, (200 - i) / 25);
+                            const envelope = Math.min(fadeIn, fadeOut);
+                            const dynamics = Math.sin((i / 200) * Math.PI * 2.5) * 0.4 + 0.6;
+                            const amplitude = Math.abs(bassLine + melody + percussion + vocals + harmonics) * envelope * dynamics;
+                            return Math.max(0.05, Math.min(0.9, amplitude));
+                          });
+                          const a = liveAudioRef.current;
+                          const liveDur = (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
+                          const liveTime = (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
+                          const progressRatio = liveDur > 0 ? (liveTime / liveDur) : 0;
+                          const progressX = progressRatio * 400;
+                          return (
+                            <>
+                              <path
+                                d={`M 0 16 ${waveformData.map((amp, i) => {
+                                  const x = (i / (waveformData.length - 1)) * 400;
+                                  const y1 = 16 - (amp * 12);
+                                  const y2 = 16 + (amp * 12);
+                                  return `L ${x} ${y1} L ${x} ${y2}`;
+                                }).join(' ')} L 400 16`}
+                                fill="none"
+                                stroke="url(#miniUnplayed)"
+                                strokeWidth="1.5"
+                                opacity="0.7"
+                              />
+                              <clipPath id="miniPlayedClip">
+                                <rect x="0" y="0" width={progressX} height="32" />
+                              </clipPath>
+                              <g clipPath="url(#miniPlayedClip)">
+                                <path
+                                  d={`M 0 16 ${waveformData.map((amp, i) => {
+                                    const x = (i / (waveformData.length - 1)) * 400;
+                                    const y1 = 16 - (amp * 12);
+                                    const y2 = 16 + (amp * 12);
+                                    return `L ${x} ${y1} L ${x} ${y2}`;
+                                  }).join(' ')} L 400 16`}
+                                  fill="none"
+                                  stroke="url(#miniPlayed)"
+                                  strokeWidth="2"
+                                  opacity="1"
+                                />
+                              </g>
+                            </>
+                          );
+                        })()}
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                </div>
+
+                {/* Slide Lyrics, Store, and HEART coin to the left (before streaming icons) */}
+                {(() => {
+                  const isHome = !currentId;
+                  const currentSong = resolvedSongs.find(s => s.id === active);
+                  if (isHome) {
+                      // Homepage: lyrics popover for CHXNDLER + YouTube disabled
+                      // Also show the Store (gem) button as ACTIVE on homepage
+                      return (
+                        <>
+                          {/* Lyrics button moved next to Play/Pause in hud-top-controls */}
+                          {/* Store button moved next to Lyrics in hud-top-controls */}
+                          {/* HEART coin button moved next to Store in hud-top-controls */}
+                        </>
+                      );
+                  }
+                  const slug = currentSong?.id;
+                  if (!slug) return null;
+                  const hasLyrics = currentSong && (currentSong.hasLyrics !== false);
+                  return (
+                    <>
+                      {/* Lyrics button moved next to Play/Pause in hud-top-controls */}
+                      {/* Store button moved next to Lyrics in hud-top-controls */}
+                      {/* HEART coin button moved next to Store in hud-top-controls */}
                     </>
                   );
                 })()}
-                </div>
+                {/* Streaming controls render in hud-top-controls above */}
 
                 {typeof document !== 'undefined' && showHudVolumePopover && hudPopoverPos ? require('react-dom').createPortal(
                   <div
@@ -1861,6 +1996,173 @@ export default function HUDPanel({
                       <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: `${Math.round(volume*100)}%`, background: 'linear-gradient(180deg, #9FEAFF 0%, #19E3FF 100%)', borderRadius: '0 0 12px 12px', boxShadow: '0 0 60px rgba(25,227,255,1), 0 0 120px rgba(25,227,255,1), 0 0 180px rgba(25,227,255,0.95)' }} />
                     </div>
                     <div style={{ fontSize: 12, color: '#19E3FF', textShadow: '0 0 10px rgba(25,227,255,0.7)' }}>{Math.round(volume * 100)}%</div>
+                  </div>,
+                  document.body
+                ) : null}
+
+                {typeof document !== 'undefined' && showHeartPopover && heartPopoverPos ? require('react-dom').createPortal(
+                  <div
+                    role="dialog"
+                    aria-label="HEARTVERSE TIERS"
+                    style={{
+                      position: 'fixed',
+                      left: (heartPopoverPos && heartPopoverPos.left) || 0,
+                      top: (heartPopoverPos && heartPopoverPos.top) || 0,
+                      transform: (heartPopoverPos && heartPopoverPos.width) ? 'none' : 'translateX(-50%)',
+                      padding: '14px 16px 16px 16px',
+                      borderRadius: 14,
+                      background: 'linear-gradient(135deg, rgba(255,255,255,0.92), rgba(255,245,250,0.86))',
+                      border: '1px solid rgba(252,84,175,0.35)',
+                      boxShadow: '0 18px 46px rgba(0,0,0,0.35), 0 0 26px rgba(252,84,175,0.35)',
+                      backdropFilter: 'blur(6px) saturate(1.1)',
+                      color: '#111',
+                      zIndex: 2147483647,
+                      width: (heartPopoverPos && heartPopoverPos.width) ? heartPopoverPos.width : 'min(98vw, 1400px)',
+                      height: (heartPopoverPos && heartPopoverPos.height) ? heartPopoverPos.height : '42vh',
+                      overflow: 'auto'
+                    }}
+                    onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowHeartPopover(false); } }}
+                  >
+                    {/* Close button in the top-right corner (pink accent) */}
+                    <button
+                      aria-label="Close"
+                      title="Close"
+                      onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 18px rgba(0,0,0,0.35)'; } catch {} }}
+                      onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1.0)'; e.currentTarget.style.boxShadow = 'none'; } catch {} }}
+                      onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowHeartPopover(false); }}
+                      style={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        width: 32,
+                        height: 32,
+                        borderRadius: 9999,
+                        background: 'rgba(0,0,0,0.5)',
+                        border: '1px solid rgba(255,255,255,0.6)',
+                        color: '#fff',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: 'none',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+                        <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                        <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                    <div style={{ paddingRight: 6, paddingTop: 2 }}>
+                      {/* Header / Hero */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 2px 8px 2px' }}>
+                        <img
+                          src="/elements/heart-coin.png"
+                          alt="HEART Coin"
+                          width={40}
+                          height={40}
+                          className="heart-coin-glow"
+                          style={{ display: 'block', width: 40, height: 40, objectFit: 'contain' }}
+                        />
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <div style={{ fontSize: 18, fontWeight: 900, letterSpacing: '.02em' }}>HEARTVERSE TIERS</div>
+                          <div style={{ fontSize: 13, opacity: 0.8 }}>Choose your path. Earn HEARTS. Unlock deeper access.</div>
+                        </div>
+                      </div>
+                      {/* Tier grid */}
+                      <div
+                        style={{
+                          marginTop: 8,
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                          gap: 12
+                        }}
+                      >
+                        {/* Wanderer */}
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => { try { sfx.play('click', 0.4); } catch {}; try { trackAnalytics('heart_tier_clicked', { tier: 'wanderer' }); } catch {} }}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('click', 0.4); } catch {}; try { trackAnalytics('heart_tier_clicked', { tier: 'wanderer' }); } catch {} } }}
+                          style={{
+                            display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                            padding: '14px 14px', borderRadius: 14,
+                            background: 'linear-gradient(180deg, rgba(255,255,255,0.88), rgba(255,255,255,0.72))',
+                            border: '1px solid rgba(0,0,0,0.12)',
+                            boxShadow: '0 8px 22px rgba(0,0,0,0.10)'
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 28px rgba(0,0,0,0.16)'; try { sfx.play('hover', 0.25); } catch {} }}
+                          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 22px rgba(0,0,0,0.10)'; }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                            <div style={{ fontSize: 15, fontWeight: 800 }}>The Wanderer</div>
+                            <div style={{ fontSize: 12, fontWeight: 700, padding: '4px 8px', borderRadius: 999, background: 'rgba(0,0,0,0.06)' }}>0–4 HEARTS</div>
+                          </div>
+                          <div style={{ fontSize: 14, lineHeight: 1.4 }}>
+                            <div>You’ve just arrived in the Heartverse — drawn here by the signal.</div>
+                            <div style={{ marginTop: 6 }}>Access: public songs, stories, and your own Heartverse profile.</div>
+                          </div>
+                          <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
+                            <span style={{ fontSize: 12, opacity: 0.7 }}>Start collecting HEARTS</span>
+                          </div>
+                        </div>
+                        {/* Dreamer */}
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => { try { sfx.play('click', 0.4); } catch {}; try { trackAnalytics('heart_tier_clicked', { tier: 'dreamer' }); } catch {} }}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('click', 0.4); } catch {}; try { trackAnalytics('heart_tier_clicked', { tier: 'dreamer' }); } catch {} } }}
+                          style={{
+                            display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                            padding: '14px 14px', borderRadius: 14,
+                            background: 'linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.78))',
+                            border: '1px solid rgba(252,84,175,0.35)',
+                            boxShadow: '0 8px 24px rgba(252,84,175,0.20), 0 0 24px rgba(252,84,175,0.18)'
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 14px 30px rgba(252,84,175,0.28), 0 0 28px rgba(252,84,175,0.22)'; try { sfx.play('hover', 0.25); } catch {} }}
+                          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(252,84,175,0.20), 0 0 24px rgba(252,84,175,0.18)'; }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                            <div style={{ fontSize: 15, fontWeight: 800 }}>The Dreamer</div>
+                            <div style={{ fontSize: 12, fontWeight: 700, padding: '4px 8px', borderRadius: 999, background: 'rgba(252,84,175,0.10)', color: '#A00B5F' }}>5–24 HEARTS</div>
+                          </div>
+                          <div style={{ fontSize: 14, lineHeight: 1.4 }}>
+                            <div>You’re part of the crew now — traveling through sound and starlight.</div>
+                            <div style={{ marginTop: 6 }}>Access: hidden songs, early demos, private livestreams, and exclusive CHXNDLER cards.</div>
+                          </div>
+                          <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
+                            <span style={{ fontSize: 12, opacity: 0.7 }}>Unlock deeper access</span>
+                          </div>
+                        </div>
+                        {/* Lover */}
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => { try { sfx.play('click', 0.4); } catch {}; try { trackAnalytics('heart_tier_clicked', { tier: 'lover' }); } catch {} }}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('click', 0.4); } catch {}; try { trackAnalytics('heart_tier_clicked', { tier: 'lover' }); } catch {} } }}
+                          style={{
+                            display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                            padding: '14px 14px', borderRadius: 14,
+                            background: 'linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.82))',
+                            border: '1px solid rgba(255,182,229,0.55)',
+                            boxShadow: '0 10px 28px rgba(255,58,165,0.18), 0 0 36px rgba(255,58,165,0.18)'
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 16px 34px rgba(255,58,165,0.26), 0 0 42px rgba(255,58,165,0.22)'; try { sfx.play('hover', 0.28); } catch {} }}
+                          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 10px 28px rgba(255,58,165,0.18), 0 0 36px rgba(255,58,165,0.18)'; }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                            <div style={{ fontSize: 15, fontWeight: 800 }}>The Lover</div>
+                            <div style={{ fontSize: 12, fontWeight: 700, padding: '4px 8px', borderRadius: 999, background: 'rgba(255,58,165,0.10)', color: '#B10661' }}>25+ HEARTS</div>
+                          </div>
+                          <div style={{ fontSize: 14, lineHeight: 1.4 }}>
+                            <div>You’ve reached the center — the pulse that powers it all.</div>
+                            <div style={{ marginTop: 6 }}>Access: The Vault, unreleased music, early merch drops, and rare CHXNDLER cards.</div>
+                          </div>
+                          <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
+                            <span style={{ fontSize: 12, opacity: 0.7 }}>Shape the future</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>,
                   document.body
                 ) : null}
@@ -2106,6 +2408,29 @@ export default function HUDPanel({
                       if (e.key === 'ArrowLeft') { setStoreIndex((i) => (i - 1 + products.length) % products.length); try { sfx.play('close', 0.45); } catch {} }
                     }}
                   >
+                    {/* HEART coin indicator in top-right (click to open HEART popout) */}
+                    <button
+                      aria-label="HEART Coin tiers"
+                      title="HEART Coin tiers"
+                      onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                      onClick={() => { 
+                        try { sfx.play('click', 0.4); } catch {}; 
+                        try { trackAnalytics('heart_coin_clicked', { song_slug: String(active || currentId || 'store'), payload: { song_title: track?.title || 'Unknown', location: 'store_header_icon' } }); } catch {}
+                        if (showHeartPopover) { setShowHeartPopover(false); return; }
+                        openHeartPopover();
+                      }}
+                      style={{
+                        position: 'absolute', top: 8, right: 52, width: 38, height: 38,
+                        border: 'none', background: 'transparent', padding: 0, cursor: 'pointer'
+                      }}
+                    >
+                      <img
+                        src="/elements/heart-coin.png"
+                        alt=""
+                        className="heart-coin-glow"
+                        style={{ display: 'block', width: '100%', height: '100%', objectFit: 'contain' }}
+                      />
+                    </button>
                     {/* Pink close button in the top-right corner */}
                     <button
                       aria-label="Close store"
@@ -2252,8 +2577,38 @@ export default function HUDPanel({
                               ) : (
                                 <img src={item.image || 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910'} alt={item.title} style={{ display: 'block', width: 104, height: 104, objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(252,84,175,0.35)', boxShadow: '0 6px 18px rgba(0,0,0,0.35)' }} onError={(e)=>{ try { e.currentTarget.src = 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910'; } catch {} }} />
                               )}
-                              {/* Price directly under the image */}
-                              <div style={{ fontSize: 18, fontWeight: 700, color: '#FFB9E1' }}>{item.price || ''}</div>
+                              {/* Price directly under the image (show HEART coin icon when applicable) */}
+                              <div style={{ fontSize: 18, fontWeight: 700, color: '#FFB9E1' }}>
+                                {item.price ? (
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                    {((item && (item.id === 'pick' || item.id === 'bracelet')) || String(item.price).toUpperCase().includes('HEART')) ? (
+                                      <button
+                                        type="button"
+                                        aria-label="HEART Coin tiers"
+                                        title="HEART Coin tiers"
+                                        onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                                        onClick={() => {
+                                          try { sfx.play('click', 0.35); } catch {};
+                                          try { trackAnalytics('heart_coin_clicked', { song_slug: String(active || currentId || 'store'), payload: { song_title: track?.title || 'Unknown', location: 'store_price_icon' } }); } catch {}
+                                          if (showHeartPopover) { setShowHeartPopover(false); return; }
+                                          openHeartPopover();
+                                        }}
+                                        style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer', lineHeight: 0 }}
+                                      >
+                                        <img
+                                          src="/elements/heart-coin.png"
+                                          alt="HEART Coin"
+                                          width={28}
+                                          height={28}
+                                          className="heart-coin-glow"
+                                          style={{ display: 'inline-block', width: 28, height: 28, objectFit: 'contain' }}
+                                        />
+                                      </button>
+                                    ) : null}
+                                    <span>{item.price}</span>
+                                  </span>
+                                ) : null}
+                              </div>
                             </div>
                             <div>
                               <div style={{ fontSize: 16, fontWeight: 800, color: '#FFD9EF', textShadow: '0 0 10px rgba(252,84,175,0.9)' }}>{item.title}</div>
@@ -2486,7 +2841,7 @@ export default function HUDPanel({
                         style={{
                           display: 'block',
                           // Slightly smaller than full width and centered
-                          width: '92%',
+                          width: '78%',
                           margin: '0 auto',
                           height: 'auto',
                           borderRadius: 10,
@@ -2521,294 +2876,7 @@ export default function HUDPanel({
                   document.body
                 ) : null}
                 </div>
-                {/* Waveform visualization (moved below controls and aligned left) */}
-                <div className="basis-full flex justify-start" style={{ marginTop: -2 }}>
-                  <div 
-                    className="waveform-container"
-                    onClick={handleProgressClick}
-                    onMouseMove={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const hoverX = e.clientX - rect.left;
-                      const hoverPercentage = (hoverX / rect.width) * 100;
-                      e.currentTarget.style.setProperty('--hover-position', `${hoverPercentage}%`);
-                    }}
-                    style={{
-                      // Get current song's element color for border styling
-                      border: `1px solid ${(() => {
-                        const currentSong = resolvedSongs.find(s => s.id === active);
-                        const elementColor = currentSong?.color || '#19E3FF';
-                        const r = parseInt(elementColor.slice(1, 3), 16);
-                        const g = parseInt(elementColor.slice(3, 5), 16);
-                        const b = parseInt(elementColor.slice(5, 7), 16);
-                        return `rgba(${r}, ${g}, ${b}, 0.2)`;
-                      })()}`,
-                      width: '100%',
-                      maxWidth: 420,
-                      minWidth: 240,
-                      // Create internal gap below waveform within blue player by using margin
-                      marginBottom: 6,
-                    }}
-                    onMouseEnter={(e) => {
-                      try { sfx.play('hover', 0.35); } catch {}
-                      const currentSong = resolvedSongs.find(s => s.id === active);
-                      const elementColor = currentSong?.color || '#19E3FF';
-                      const r = parseInt(elementColor.slice(1, 3), 16);
-                      const g = parseInt(elementColor.slice(3, 5), 16);
-                      const b = parseInt(elementColor.slice(5, 7), 16);
-                      e.currentTarget.style.background = 'rgba(0,0,0,0.4)';
-                      e.currentTarget.style.borderColor = `rgba(${r}, ${g}, ${b}, 0.4)`;
-                      e.currentTarget.style.boxShadow = `0 0 12px rgba(${r}, ${g}, ${b}, 0.2)`;
-                    }}
-                    onMouseLeave={(e) => {
-                      const currentSong = resolvedSongs.find(s => s.id === active);
-                      const elementColor = currentSong?.color || '#19E3FF';
-                      const r = parseInt(elementColor.slice(1, 3), 16);
-                      const g = parseInt(elementColor.slice(3, 5), 16);
-                      const b = parseInt(elementColor.slice(5, 7), 16);
-                      e.currentTarget.style.background = 'rgba(0,0,0,0.3)';
-                      e.currentTarget.style.borderColor = `rgba(${r}, ${g}, ${b}, 0.2)`;
-                      e.currentTarget.style.boxShadow = 'none';
-                    }}
-                  >
-                    {/* SVG Waveform using smooth curves */}
-                    <svg 
-                      className="w-full h-full" 
-                      viewBox="0 0 400 32" 
-                      preserveAspectRatio="none"
-                      style={{ background: 'transparent' }}
-                    >
-                      {/* Background grid for audio visualization */}
-                      <defs>
-                        {(() => {
-                          // Get current song's element color
-                          const currentSong = resolvedSongs.find(s => s.id === active);
-                          const elementColor = currentSong?.color || '#19E3FF'; // fallback to default cyan
-                          
-                          // Convert hex to rgba for gradients
-                          const hexToRgba = (hex, alpha) => {
-                            const r = parseInt(hex.slice(1, 3), 16);
-                            const g = parseInt(hex.slice(3, 5), 16);
-                            const b = parseInt(hex.slice(5, 7), 16);
-                            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-                          };
-                          
-                          return (
-                            <>
-                              <pattern id="audio-grid" width="10" height="5" patternUnits="userSpaceOnUse">
-                                <path d="M 10 0 L 0 0 0 5" fill="none" stroke={hexToRgba(elementColor, 0.08)} strokeWidth="0.3"/>
-                              </pattern>
-                              <linearGradient id="waveGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                <stop offset="0%" stopColor={hexToRgba(elementColor, 0.8)}/>
-                                <stop offset="50%" stopColor={hexToRgba(elementColor, 1)}/>
-                                <stop offset="100%" stopColor={hexToRgba(elementColor, 0.8)}/>
-                              </linearGradient>
-                              <linearGradient id="unplayedGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                <stop offset="0%" stopColor={hexToRgba(elementColor, 0.25)}/>
-                                <stop offset="50%" stopColor={hexToRgba(elementColor, 0.35)}/>
-                                <stop offset="100%" stopColor={hexToRgba(elementColor, 0.25)}/>
-                              </linearGradient>
-                            </>
-                          );
-                        })()}
-                      </defs>
-                      <rect width="100%" height="100%" fill="url(#audio-grid)" />
-                      
-                      {/* Generate realistic sound wave data */}
-                      {(() => {
-                        // Create consistent waveform based on current song
-                        const seed = (active || 'default').split('').reduce((a, b) => a + b.charCodeAt(0), 0);
-                        const waveformData = Array.from({ length: 200 }, (_, i) => {
-                          // Create realistic audio frequency components
-                          const bassLine = Math.sin((i + seed) * 0.02) * 0.4;           // Bass frequencies
-                          const melody = Math.sin((i + seed) * 0.08 + 2) * 0.3;         // Mid frequencies  
-                          const percussion = Math.sin((i + seed) * 0.2 + 4) * 0.25;     // High frequencies
-                          const vocals = Math.sin((i + seed) * 0.12 + 1) * 0.35;        // Vocal range
-                          const harmonics = Math.sin((i + seed) * 0.4 + 5) * 0.15;      // Harmonics
-                          
-                          // Create natural audio envelope (songs typically start/end quieter)
-                          const fadeIn = Math.min(1, i / 15);
-                          const fadeOut = Math.min(1, (200 - i) / 25);
-                          const envelope = Math.min(fadeIn, fadeOut);
-                          
-                          // Add musical dynamics
-                          const dynamics = Math.sin((i / 200) * Math.PI * 2.5) * 0.4 + 0.6;
-                          
-                          // Combine all elements for realistic audio appearance
-                          const amplitude = Math.abs(bassLine + melody + percussion + vocals + harmonics) * envelope * dynamics;
-                          
-                          return Math.max(0.05, Math.min(0.9, amplitude));
-                        });
-                        
-                        // Use live audio values for perfect sync with cursor overlay
-                        const a = liveAudioRef.current;
-                        const liveDur = (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
-                        const liveTime = (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
-                        const progressRatio = liveDur > 0 ? (liveTime / liveDur) : 0;
-                        const progressX = progressRatio * 400;
-                        
-                        return (
-                          <>
-                            {/* Unplayed waveform */}
-                            <path
-                              d={`M 0 16 ${waveformData.map((amp, i) => {
-                                const x = (i / (waveformData.length - 1)) * 400;
-                                const y1 = 16 - (amp * 12); // Top of wave
-                                const y2 = 16 + (amp * 12); // Bottom of wave
-                                return `L ${x} ${y1} L ${x} ${y2}`;
-                              }).join(' ')} L 400 16`}
-                              fill="none"
-                              stroke="url(#unplayedGradient)"
-                              strokeWidth="1.5"
-                              opacity="0.7"
-                            />
-                            
-                            {/* Played portion of waveform with enhanced glow */}
-                            <clipPath id="playedClip">
-                              <rect x="0" y="0" width={progressX} height="32" />
-                            </clipPath>
-                            <path
-                              d={`M 0 16 ${waveformData.map((amp, i) => {
-                                const x = (i / (waveformData.length - 1)) * 400;
-                                const y1 = 16 - (amp * 12);
-                                const y2 = 16 + (amp * 12);
-                                return `L ${x} ${y1} L ${x} ${y2}`;
-                              }).join(' ')} L 400 16`}
-                              fill="none"
-                              stroke="url(#waveGradient)"
-                              strokeWidth="2"
-                              opacity="1"
-                              clipPath="url(#playedClip)"
-                              style={{
-                                filter: 'drop-shadow(0 0 4px rgba(25,227,255,0.6))',
-                              }}
-                            />
-                            
-                            {/* Current position indicator */}
-                            {progressRatio > 0 && (() => {
-                              // Get current song's element color for progress indicator
-                              const currentSong = resolvedSongs.find(s => s.id === active);
-                              const elementColor = currentSong?.color || '#19E3FF';
-                              
-                              // Convert hex to rgba
-                              const hexToRgba = (hex, alpha) => {
-                                const r = parseInt(hex.slice(1, 3), 16);
-                                const g = parseInt(hex.slice(3, 5), 16);
-                                const b = parseInt(hex.slice(5, 7), 16);
-                                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-                              };
-                              
-                              return (
-                                <g>
-                                  {/* Progress dot and pulse removed: element icon now serves as the playhead */}
-                                </g>
-                              );
-                            })()}
-                          </>
-                        );
-                      })()}
-                    </svg>
-                    
-                    {/* Element icon cursor positioned above progress */}
-                      <div
-                        className="absolute top-0 h-full flex flex-col items-center justify-center pointer-events-none z-10 hud-cursor-transition"
-                        style={{
-                          left: `${(() => {
-                          // Prefer live audio element values; fall back to local state
-                          const a = liveAudioRef.current;
-                          const liveDur = (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
-                          const liveTime = (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
-                          const progressPercent = liveDur > 0 ? (liveTime / liveDur) * 100 : 0;
-                          const leftPos = Math.max(0, Math.min(100, progressPercent));
-
-                          // Debug logging for cursor movement
-                          if (playing && liveTime > 0 && DEBUG_MEDIA) {
-                            dlog('🎯 HUDPanel Cursor Position:', {
-                              usingLive: !!a,
-                              progress: liveTime.toFixed(3),
-                              duration: liveDur.toFixed(3),
-                              progressPercent: progressPercent.toFixed(3),
-                              leftPos: leftPos.toFixed(3),
-                              playing
-                            });
-                          }
-
-                          return leftPos;
-                        })()}%`,
-                        transform: 'translateX(-50%)',
-                        width: '32px',
-                        // Remove transition while playing to avoid cursor lagging behind
-                        transition: playing ? 'none' : 'left 0.25s ease',
-                        willChange: 'left',
-                      }}
-                    >
-                      {/* Element icon at cursor position */}
-                      {(() => {
-                        // Use CHXNDLER element when in home mode (no specific song selected)
-                          if (!currentId) {
-                            const elementIcon = 'chxndler';
-                            const elementColor = '#19E3FF';
-                          
-                          // Convert hex to rgba
-                          const hexToRgba = (hex, alpha) => {
-                            const r = parseInt(hex.slice(1, 3), 16);
-                            const g = parseInt(hex.slice(3, 5), 16);
-                            const b = parseInt(hex.slice(5, 7), 16);
-                            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-                          };
-                          
-                            return (
-                              <img
-                                src={`/elements/${elementIcon}.png`}
-                                alt="CHXNDLER element"
-                                className="brightness-150 saturate-125"
-                                style={{
-                                  width: '1.8rem',
-                                  height: '1.8rem',
-                                  filter: `drop-shadow(0 0 14px ${hexToRgba(elementColor, 1)}) drop-shadow(0 0 32px ${hexToRgba(elementColor, 0.8)}) drop-shadow(0 0 64px ${hexToRgba(elementColor, 0.35)})`,
-                                }}
-                                onError={(e) => {
-                                  e.target.src = '/elements/music.png';
-                                  try { e.target.style.filter = 'drop-shadow(0 0 10px #FFFFFF) drop-shadow(0 0 24px rgba(255,255,255,0.9)) drop-shadow(0 0 48px rgba(255,255,255,0.6))'; } catch {}
-                                }}
-                              />
-                            );
-                          }
-                        
-                        const currentSong = resolvedSongs.find(s => s.id === active);
-                        const elementIcon = currentSong?.icon;
-                        const elementColor = currentSong?.color || '#19E3FF';
-                        if (!elementIcon) return null;
-                        
-                        // Convert hex to rgba
-                        const hexToRgba = (hex, alpha) => {
-                          const r = parseInt(hex.slice(1, 3), 16);
-                          const g = parseInt(hex.slice(3, 5), 16);
-                          const b = parseInt(hex.slice(5, 7), 16);
-                          return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-                        };
-                        
-                          return (
-                            <img
-                              src={`/elements/${elementIcon}.png`}
-                              alt={`${currentSong?.title || 'Current song'} element`}
-                              className="brightness-150 saturate-125"
-                              style={{
-                                width: '1.8rem',
-                                height: '1.8rem',
-                                filter: elementIcon === 'music'
-                                  ? 'drop-shadow(0 0 10px #FFFFFF) drop-shadow(0 0 24px rgba(255,255,255,0.9)) drop-shadow(0 0 48px rgba(255,255,255,0.6))'
-                                  : `drop-shadow(0 0 14px ${hexToRgba(elementColor, 1)}) drop-shadow(0 0 32px ${hexToRgba(elementColor, 0.8)}) drop-shadow(0 0 64px ${hexToRgba(elementColor, 0.35)})`,
-                              }}
-                              onError={(e) => {
-                                e.target.src = '/elements/music.png';
-                                try { e.target.style.filter = 'drop-shadow(0 0 10px #FFFFFF) drop-shadow(0 0 24px rgba(255,255,255,0.9)) drop-shadow(0 0 48px rgba(255,255,255,0.6))'; } catch {}
-                              }}
-                            />
-                          );
-                        })()}
-                      </div>
-                  </div>
-                </div>
+                {/* Compact waveform moved inline near Volume; removed large block */}
                 
                 {/* Time display */}
               </div>

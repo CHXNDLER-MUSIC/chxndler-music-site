@@ -14,6 +14,11 @@ export default function LazyLoadEnhancer() {
 
     const enhanceImg = (img: HTMLImageElement) => {
       if (img.hasAttribute("data-no-lazy")) return;
+      // Skip Next.js managed images to avoid attribute churn/flicker
+      if (img.hasAttribute("data-nimg")) return;
+      // Skip critical UI icons/covers to avoid any loading hint changes while visible
+      const el = img as HTMLElement;
+      if (el.closest('.songs-icon') || el.closest('.cover-hologram-container') || el.closest('.hud-cover')) return;
       if (!img.hasAttribute("loading")) img.setAttribute("loading", "lazy");
       if (!img.hasAttribute("decoding")) img.setAttribute("decoding", "async");
       // Reduce main-thread competition for non-critical images
@@ -48,4 +53,3 @@ export default function LazyLoadEnhancer() {
 
   return null;
 }
-

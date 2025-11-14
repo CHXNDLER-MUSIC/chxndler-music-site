@@ -794,53 +794,11 @@ export default function HoloHubMenu({
             inset 0 -6px 18px rgba(0,0,0,.6) !important;
           filter: brightness(1.12) saturate(1.25) !important;
         }
-        /* YouTube: match Spotify's thicker rim + contained red glow */
-        .item[data-id="yt"]{
-          --tint: #FF0000; /* YouTube red */
-          /* Add tinted base like Spotify/Apple for consistent chrome */
-          background:
-            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
-            rgba(255,0,0,0.45);
-          /* Thicker, always-visible rim (match Spotify) */
-          border: 2px solid rgba(255,255,255,.34);
-          overflow: hidden; /* clip inner bloom to the circle */
-          box-shadow:
-            0 14px 30px rgba(0,0,0,.58),
-            inset 0 1px 0 rgba(255,255,255,.24),
-            inset 0 -6px 16px rgba(0,0,0,.6),
-            inset 0 0 36px rgba(255,0,0,0.80) !important,
-            inset 0 0 90px rgba(255,0,0,0.50) !important;
-          filter: saturate(1.06) brightness(1.05) !important;
-        }
-        .item[data-id="yt"]::before{
-          content: "" !important;
-          display: block !important;
-          position: absolute; inset: 0; border-radius: 9999px; pointer-events: none;
-          /* Add inner white rim + red bloom to mirror Spotify's inset rim */
-          box-shadow:
-            0 0 0 2px rgba(255,255,255,.26) inset,
-            0 0 22px rgba(255,0,0,.75) inset,
-            0 0 60px rgba(255,0,0,.35) inset !important;
-          /* Maintain subtle inner red bloom */
-          background: radial-gradient(closest-side, rgba(255,0,0,0.60), rgba(255,0,0,0.0) 70%);
-          mix-blend-mode: screen; filter: blur(10px);
-        }
-        .item[data-id="yt"]:hover{
-          box-shadow:
-            inset 0 0 60px rgba(255,0,0,1) !important,
-            inset 0 0 140px rgba(255,0,0,0.95) !important;
-          border-color: rgba(255,255,255,.42) !important; /* emphasize rim on hover */
-        }
-        .item[data-id="yt"]:hover::before{ filter: blur(12px) brightness(1.25); }
+        /* YouTube: match Spotify growth on hover for consistency */
         .item[data-id="yt"]:hover{
           transform: translate(var(--tx,0), var(--ty,0)) translate(-50%, -50%) scale(1.14) !important;
-          box-shadow:
-            0 20px 40px rgba(0,0,0,.68) !important,
-            0 0 70px rgba(255,0,0,1) !important,
-            0 0 160px rgba(255,0,0,0.85) !important;
-          filter: brightness(1.12) saturate(1.25) !important;
         }
-        .item[data-id="yt"]:hover::before{ filter: blur(16px) brightness(1.15); }
+        /* YouTube: use shared item tint/glow (red) */
 
         /* Apple Music: Spotify-style rim with PINK glow */
         .item[data-id="am"]{
@@ -991,41 +949,7 @@ export default function HoloHubMenu({
         }
         .item[data-id="tt"]:hover::before{ filter: brightness(1.02); }
 
-        /* YouTube: Spotify-style rim with RED glow (always visible, not just hover) */
-        .item[data-id="yt"]{
-          --tint: #FF0000;
-          background:
-            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
-            rgba(255,0,0,0.45);
-          /* Thicker, always-visible rim (match Spotify) */
-          border: 2px solid rgba(255,255,255,.34);
-          overflow: hidden;
-          box-shadow:
-            0 14px 30px rgba(0,0,0,.58),
-            inset 0 1px 0 rgba(255,255,255,.24),
-            inset 0 -6px 16px rgba(0,0,0,.6);
-          filter: saturate(1.06) brightness(1.05);
-        }
-        .item[data-id="yt"]::before{
-          /* Inset white rim + inner red bloom */
-          content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none;
-          background: none !important;
-          box-shadow:
-            0 0 0 2px rgba(255,255,255,.26) inset,
-            0 0 22px rgba(255,0,0,.65) inset,
-            0 0 60px rgba(255,0,0,.35) inset !important;
-        }
-        .item[data-id="yt"]:hover{
-          transform: translate(var(--tx,0), var(--ty,0)) translate(-50%, -50%) scale(1.14) !important;
-          box-shadow:
-            0 20px 40px rgba(0,0,0,.68) !important,
-            inset 0 0 28px rgba(255,0,0,0.95) !important,
-            inset 0 0 90px rgba(255,0,0,0.58) !important,
-            inset 0 1px 0 rgba(255,255,255,.28) !important,
-            inset 0 -6px 18px rgba(0,0,0,.6) !important;
-          border-color: rgba(255,255,255,.42) !important; /* emphasize rim on hover */
-          filter: brightness(1.12) saturate(1.25) !important;
-        }
+        /* YouTube styles fall back to the shared .item rules with --tint set to red */
 
         @media (max-width: 480px) { .hub{ left:-32px; top:-32px; width:64px; height:64px; } .hub-icon{ width: 38px; height: 38px; } }
       `}</style>

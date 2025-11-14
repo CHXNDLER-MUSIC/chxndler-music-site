@@ -871,6 +871,9 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                           { id: 'house-party-poster', title: 'HOUSE PARTY POSTER' },
                           { id: 'button', title: 'BUTTON' },
                           { id: 'keychain', title: 'KEYCHAIN' },
+                          // Newly added items
+                          { id: 'pick', title: 'PICK' },
+                          { id: 'bracelet', title: 'BRACELET' },
                         ] as Array<{id:string;title:string}>).map((prod) => {
                           const serverCount = metrics?.storeItemClicks?.[prod.id]?.count || 0;
                           const localCount = (() => {

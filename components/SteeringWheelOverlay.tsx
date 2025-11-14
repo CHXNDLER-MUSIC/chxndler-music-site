@@ -343,11 +343,25 @@ export default function SteeringWheelOverlay({
             }
           } catch {}
           if (disable) {
-            // Lightweight placeholder to keep layout stable when disabled
+            // If explicitly disabled, still render a plain <video> so the wheel is visible
             return (
-              <div
-                aria-label="wheel-video-disabled"
-                style={{ width: vs, height: vs, background: 'transparent' }}
+              <video
+                src={"/cockpit/wheel.mp4"}
+                autoPlay
+                muted
+                loop
+                playsInline
+                aria-label="wheel-video-plain"
+                style={{
+                  display: 'block',
+                  width: vs,
+                  height: vs,
+                  objectFit: 'cover',
+                  pointerEvents: 'none',
+                  background: 'transparent',
+                  transform: 'scale(1.0)',
+                  transformOrigin: 'bottom center',
+                }}
               />
             );
           }

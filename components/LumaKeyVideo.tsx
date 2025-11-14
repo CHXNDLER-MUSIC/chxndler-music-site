@@ -432,8 +432,29 @@ export default function LumaKeyVideo({
     contain: 'layout paint',
   };
 
+  // If luma processing is disabled, render a plain <video> fallback
   if (disabled) {
-    return <div className={className} style={{ ...(style || {}), background: 'transparent' }} />;
+    const src = srcMp4 || srcAlt || '';
+    return (
+      <video
+        src={src}
+        autoPlay
+        muted
+        loop
+        playsInline
+        aria-label="luma-fallback-video"
+        className={className}
+        style={{
+          ...(style || {}),
+          display: 'block',
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          background: 'transparent',
+          pointerEvents: 'none',
+        }}
+      />
+    );
   }
   return <canvas ref={canvasRef} className={className} style={canvasStyle} />;
 }

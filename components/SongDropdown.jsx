@@ -230,6 +230,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                   className="w-7 h-7 object-contain" 
                   width={28} 
                   height={28} 
+                  priority
                 />
               </span>
             );
@@ -293,7 +294,8 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                     hover_method: 'mouse'
                   });
                 }}
-                onMouseLeave={() => { try { setTimeout(() => playerStore.getState().setHover(null), 0); } catch{} }}
+                // Keep last hover active to avoid rapid hide/show flicker while moving
+                onMouseLeave={() => { /* intentionally noop; clear on close */ }}
                 onPointerDown={(e) => {
                   // Play warp sound
                   try { sfx.play('warp', 0.9); } catch {}
@@ -391,14 +393,19 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
           transform: translateZ(0) scale(1.02);
           color: rgba(255, 255, 255, 1) !important;
         }
-        .holo-icon{ display:inline-flex; will-change: transform; animation: holoPulse 2.6s ease-in-out infinite; }
+        .holo-icon{ display:inline-flex; will-change: transform; }
         @keyframes holoPulse { 0%,100%{ transform: scale(1);} 50%{ transform: scale(1.06);} }
         .songs-icon{ display:inline-flex; align-items:center; 
           filter: brightness(1.25) saturate(1.6)
             drop-shadow(0 0 16px #19E3FF)
             drop-shadow(0 0 36px #19E3FF)
             drop-shadow(0 0 64px #19E3FF);
-          mix-blend-mode: screen; will-change: transform; animation: holoPulse 2.2s ease-in-out infinite; transform: translateZ(0);
+          /* Disable blend-mode to avoid compositing flicker over WebGL/canvas */
+          mix-blend-mode: normal; 
+          will-change: transform; 
+          /* Avoid GPU re-composition flicker */
+          backface-visibility: hidden; -webkit-backface-visibility: hidden;
+          transform: translateZ(0);
         }
         /* Force neon-white glow when the music icon is shown in header */
         .songs-icon[data-icon="music"]{
@@ -411,6 +418,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
             drop-shadow(0 0 36px rgba(255,255,255,0.95))
             drop-shadow(0 0 80px rgba(255,255,255,0.85));
           mix-blend-mode: normal;
+          /* no pulsing to avoid perceived flashing */
           animation: none;
         }
         .songs-icon[data-icon="music"] img{
@@ -423,6 +431,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
             drop-shadow(0 0 12px rgba(255,255,255,1))
             drop-shadow(0 0 28px rgba(255,255,255,0.95))
             drop-shadow(0 0 60px rgba(255,255,255,0.9));
+          backface-visibility: hidden; -webkit-backface-visibility: hidden; transform: translateZ(0);
         }
         .songs-label{ color:#EFFFFF; text-shadow: none; }
         .opt:hover .holo-icon{ 

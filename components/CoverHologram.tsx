@@ -124,6 +124,87 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
   const [elementsLoading, setElementsLoading] = useState(false);
   const [elementsError, setElementsError] = useState<string | null>(null);
   const [elementsContent, setElementsContent] = useState('');
+  // Render ELEMENTS.md into structured headings with ids for quadrant scrolling
+  const renderElementsContent = (content: string) => {
+    if (!content) return null;
+    const lines = content.split(/\r?\n/);
+    type Key = 'water' | 'heart' | 'lightning' | 'darkness';
+    const keyFromHeading = (s: string): Key | null => {
+      const t = s.trim().toLowerCase();
+      if (t.startsWith('💧 water')) return 'water';
+      if (t.startsWith('🩷 heart')) return 'heart';
+      if (t.startsWith('⚡️ lightning') || t.startsWith('⚡ lightning')) return 'lightning';
+      if (t.startsWith('🌑 darkness')) return 'darkness';
+      return null;
+    };
+    const blocks: Array<{ type: 'h2' | 'h3' | 'p'; key?: Key; text: string }> = [];
+    let buffer: string[] = [];
+    let currentKey: Key | undefined;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const asKey = keyFromHeading(line);
+      if (i === 0 && line.trim()) {
+        blocks.push({ type: 'h2', text: line.trim() });
+        continue;
+      }
+      if (asKey) {
+        if (buffer.length) {
+          blocks.push({ type: 'p', key: currentKey, text: buffer.join('\n').trim() });
+          buffer = [];
+        }
+        currentKey = asKey;
+        blocks.push({ type: 'h3', key: asKey, text: line.trim() });
+        continue;
+      }
+      buffer.push(line);
+    }
+    if (buffer.length) blocks.push({ type: 'p', key: currentKey, text: buffer.join('\n').trim() });
+
+    return (
+      <div style={{ lineHeight: 1.6, fontSize: 15, textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>
+        {blocks.map((b, idx) => {
+          if (b.type === 'h2') {
+            return (
+              <div key={`h2-${idx}`} style={{ fontSize: 16, fontWeight: 800, margin: '6px 0 10px' }}>
+                {b.text}
+              </div>
+            );
+          }
+          if (b.type === 'h3') {
+            const id = `elt-${b.key}`;
+            return (
+              <div id={id} key={`h3-${idx}`} style={{ fontSize: 15, fontWeight: 700, margin: '10px 0 6px' }}>
+                {b.text}
+              </div>
+            );
+          }
+          return (
+            <div key={`p-${idx}`} style={{ whiteSpace: 'pre-wrap', margin: '0 0 10px' }}>
+              {b.text}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // Smoothly scroll the open Elements popover(s) to a section id
+  const scrollElementsTo = (key: 'water' | 'heart' | 'lightning' | 'darkness') => {
+    try {
+      const containers = Array.from(document.querySelectorAll('[aria-label="Elements"]')) as HTMLElement[];
+      const id = `elt-${key}`;
+      containers.forEach((container) => {
+        const target = container.querySelector(`#${id}`) as HTMLElement | null;
+        if (!target) return;
+        const cRect = container.getBoundingClientRect();
+        const tRect = target.getBoundingClientRect();
+        const top = container.scrollTop + (tRect.top - cRect.top) - 8;
+        container.scrollTo({ top, behavior: 'smooth' });
+      });
+      try { sfx.play('click', 0.5); } catch {}
+      try { track('elements_quadrant_click', { quadrant: key }); } catch {}
+    } catch {}
+  };
   const elementBtnRef = useRef<HTMLButtonElement | null>(null);
   const [elementsPopoverPos, setElementsPopoverPos] = useState<{ left: number; top: number; width?: number } | null>(null);
   const closeCoverRef = useRef(null);
@@ -564,22 +645,20 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
             </svg>
           </button>
 
-          {/* Header image at the top of the Elements popout */}
-          <div style={{ marginBottom: 12 }}>
-            <img
-              src="/elements/elementals.png?v=20241027"
-              alt="Elementals"
-              style={{
-                display: 'block',
-                width: '36%',
-                maxWidth: 200,
-                margin: '0 auto',
-                height: 'auto',
-                borderRadius: 0,
-                boxShadow: 'none',
-                background: 'transparent'
-              }}
-            />
+          {/* Header image with clickable quadrants */}
+          <div style={{ marginBottom: 12, display: 'grid', placeItems: 'center' }}>
+            <div style={{ position: 'relative', width: '36%', maxWidth: 200 }}>
+              <img
+                src="/elements/elementals.png?v=20241027"
+                alt="Elementals"
+                style={{ display: 'block', width: '100%', height: 'auto', background: 'transparent' }}
+              />
+              {/* Quadrant overlay buttons */}
+              <button aria-label="Water" title="Water" onClick={() => scrollElementsTo('water')} className="elt-q elt-q-tl" />
+              <button aria-label="Heart" title="Heart" onClick={() => scrollElementsTo('heart')} className="elt-q elt-q-tr" />
+              <button aria-label="Lightning" title="Lightning" onClick={() => scrollElementsTo('lightning')} className="elt-q elt-q-bl" />
+              <button aria-label="Darkness" title="Darkness" onClick={() => scrollElementsTo('darkness')} className="elt-q elt-q-br" />
+            </div>
           </div>
 
           {elementsLoading ? (
@@ -587,9 +666,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
           ) : elementsError ? (
             <div style={{ fontSize: 15, color: '#ff7b7b' }}>{elementsError}</div>
           ) : (
-            <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: 15, textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>
-              {elementsContent || 'No elements content available.'}
-            </div>
+            renderElementsContent(elementsContent || 'No elements content available.')
           )}
         </div>,
         document.body
@@ -748,6 +825,15 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
             0 0 36px rgba(242,239,29,0.5),
             inset 0 0 10px rgba(255,255,255,0.22);
         }
+        /* Clickable quadrants overlay for elementals image */
+        .elt-q{ position:absolute; width:50%; height:50%; background: transparent; border:0; padding:0; cursor:pointer; z-index:2; }
+        .elt-q:focus-visible{ outline: 2px solid rgba(25,227,255,0.85); border-radius: 8px; }
+        .elt-q::after{ content:''; position:absolute; inset:8%; border-radius: 50%; box-shadow: none; transition: box-shadow .15s ease; pointer-events: none; }
+        .elt-q:hover::after{ box-shadow: inset 0 0 0 2px rgba(242,239,29,0.9), 0 0 14px rgba(242,239,29,0.7); }
+        .elt-q-tl{ top:0; left:0; }
+        .elt-q-tr{ top:0; left:50%; }
+        .elt-q-bl{ top:50%; left:0; }
+        .elt-q-br{ top:50%; left:50%; }
         /* ELEMENT button icon styles */
         .btn-element{
           position: relative; display:inline-grid; place-items:center;

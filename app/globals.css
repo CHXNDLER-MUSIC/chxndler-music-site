@@ -469,6 +469,24 @@ img[src$="/elements/music.png"] {
   .cover-art-container, .cover-hologram-container, .hud-cover { transition: none !important; transform: none !important; scale: 1 !important; }
   .cover-art-container:hover, .cover-hologram-container:hover, .hud-cover:hover { box-shadow: none !important; transform: none !important; scale: 1 !important; }
   .cover-art-container:active, .hud-cover:active { transform: scale(1.01) translateZ(0) !important; }
+  /* Disable heavy blur layers on mobile to prevent Safari compositing flicker */
+  .cover-hologram-container { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  /* Song dropdown trigger and list: remove backdrop blur on mobile */
+  .songs-trigger { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  #song-dropdown-list { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  /* Stop slow pulse/scale animations that can look like flashing on mobile */
+  .songs-icon, .holo-icon { animation: none !important; }
+  /* Avoid blend-mode related flicker on iOS by using normal blending for icons */
+  .songs-icon { mix-blend-mode: normal !important; }
+
+  /* Lock dropdown button height to avoid jitter from font metrics/rounding */
+  .songs-trigger { min-height: 44px !important; contain: layout paint; transform: translateZ(0); -webkit-transform: translateZ(0); }
+  .songs-label { line-height: 1.2 !important; }
+
+  /* Lock waveform container size on mobile to prevent vw-based oscillation */
+  .waveform-container { width: 160px !important; height: 120px !important; contain: layout paint; transform: translateZ(0); -webkit-transform: translateZ(0); }
+  /* Also remove blur on related controls to reduce re-rasterizing */
+  .sleek-controls, .volume-popover { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 }
 
 /* Mobile Safari compositing + flicker fixes for cover */
@@ -614,6 +632,16 @@ img[src$="/elements/music.png"] {
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 4px 16px rgba(242,239,29,.55);
+}
+
+/* Hide duplicate streaming buttons rendered after moving into hud-top-controls */
+.hud-top-controls ~ .spotify-btn-waveform-hud,
+.hud-top-controls ~ .spotify-btn-unavailable-hud,
+.hud-top-controls ~ .apple-btn-waveform-hud,
+.hud-top-controls ~ .apple-btn-unavailable-hud,
+.hud-top-controls ~ .youtube-btn-waveform-hud,
+.hud-top-controls ~ .youtube-btn-unavailable-hud {
+  display: none !important;
 }
 .hud-lyrics-btn:hover{
   transform: scale(1.08);
@@ -869,6 +897,97 @@ img[src$="/elements/music.png"] {
   transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease, border-color 0.2s ease;
   flex-shrink: 0;
 }
+
+/* HEART coin button (matches Store button size/shape) */
+.heart-coin-btn-waveform-hud{
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: transparent; /* edge-to-edge image, no rim */
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  /* Blue glow behind the coin button */
+  box-shadow: 0 0 12px rgba(56, 182, 255, 0.75), 0 0 22px rgba(56, 182, 255, 0.55);
+  border: 1px solid rgba(255,255,255,0.4);
+  position: relative;
+  flex-shrink: 0;
+  overflow: hidden; /* clip the image to the circular mask */
+}
+.heart-coin-btn-waveform-hud::before{
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* Stronger metallic sheen and radial edge shine */
+  background:
+    /* Chrome-like streaks */
+    conic-gradient(from 25deg, rgba(255,255,255,0.35) 0deg, rgba(180,180,180,0.15) 60deg, rgba(255,255,255,0.35) 120deg, rgba(180,180,180,0.15) 180deg, rgba(255,255,255,0.35) 240deg, rgba(180,180,180,0.15) 300deg, rgba(255,255,255,0.35) 360deg),
+    /* Top highlight */
+    radial-gradient(85% 85% at 32% 18%, rgba(255,255,255,0.55), rgba(255,255,255,0.08) 42%, transparent 62%),
+    /* Bottom rim glow */
+    radial-gradient(120% 100% at 50% 120%, rgba(200,200,200,0.28), rgba(0,0,0,0) 60%);
+  mix-blend-mode: screen;
+}
+.heart-coin-btn-waveform-hud::after{
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  pointer-events: none;
+  /* Inner rim and vignette for depth */
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35), inset 0 0 14px rgba(230,230,230,0.35), inset 0 0 28px rgba(160,160,160,0.25);
+}
+.heart-coin-btn-waveform-hud:hover{
+  transform: scale(1.14);
+  /* Stronger blue glow on hover */
+  box-shadow: 0 0 18px rgba(56, 182, 255, 0.95), 0 0 38px rgba(56, 182, 255, 0.75);
+}
+.heart-coin-btn-waveform-hud:active{ transform: scale(0.95); }
+.heart-coin-btn-waveform-hud img{
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover; /* fully fill the circular button */
+  /* Keep original heart coin colors */
+  filter: none;
+  /* Slightly larger and nudged down for visual balance */
+  transform: translateY(1px) scale(1.08);
+  transform-origin: center;
+  transition: transform 0.2s ease;
+  margin: 0;
+}
+
+/*
+  Global glow for HEART coin images
+  Adjust color via --heart-coin-glow-color (includes alpha)
+*/
+:root{
+  /* Default to the HUD button blue; change as desired */
+  --heart-coin-glow-color: rgba(56, 182, 255, 0.85);
+}
+
+/* Apply the glow to any explicit class or any <img> using heart-coin.png */
+.heart-coin-glow,
+img[src$="/elements/heart-coin.png"]{
+  /* two layers for a fuller glow */
+  filter: drop-shadow(0 0 12px var(--heart-coin-glow-color)) drop-shadow(0 0 26px var(--heart-coin-glow-color));
+  transition: transform 0.18s ease; /* smooth grow on hover */
+  transform-origin: center;
+}
+/* Grow the heart coin image when its button is hovered in the Store */
+button:hover > .heart-coin-glow,
+.heart-coin-glow:hover{
+  transform: scale(1.12);
+}
+
+/* Keyframes removed for non-pulsing silver glow */
 /* Even when unavailable, add a subtle pink glow and grow on hover */
 .gem-btn-unavailable-hud:hover{
   transform: scale(1.1);
