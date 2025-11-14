@@ -78,7 +78,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
     // Cards by song
     'baby': 'https://ik.imagekit.io/CHXNDLER/card/baby.png?updatedAt=1762388345192',
     'feeling-this': 'https://ik.imagekit.io/CHXNDLER/card/feeling-this.png?updatedAt=1762388347289',
-    'colors-of-our-home': 'https://ik.imagekit.io/CHXNDLER/card/colors-of-our-home.png?updatedAt=1762388341855',
+    'colors-of-our-home': 'https://ik.imagekit.io/CHXNDLER/card/COLORS%20OF%20OUR%20HOME%20.png?updatedAt=1763055065493',
     'tienes-un-amigo': 'https://ik.imagekit.io/CHXNDLER/card/tienes-un-amigo.png?updatedAt=1762388343639',
     'alone': 'https://ik.imagekit.io/CHXNDLER/card/alone.png?updatedAt=1762388342410',
     'always-on-my-mind': 'https://ik.imagekit.io/CHXNDLER/card/always-on-my-mind.png?updatedAt=1762388345883',
@@ -89,6 +89,8 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
     'brain-freeze': 'https://ik.imagekit.io/CHXNDLER/card/brain-freeze.png?updatedAt=1762388347224',
     'cheerleader': 'https://ik.imagekit.io/CHXNDLER/card/cheerleader.png?updatedAt=1762388346177',
     'colors-of-our-home-bluma': 'https://ik.imagekit.io/CHXNDLER/card/colors-of-our-home-bluma.png?updatedAt=1762388344204',
+    'colors-of-our-home-bluma-game-soundtrack': 'https://ik.imagekit.io/CHXNDLER/card/colors-of-our-home-bluma.png?updatedAt=1762388344204',
+    'colors-of-our-home-acoustic': 'https://ik.imagekit.io/CHXNDLER/card/COLORS%20OF%20OUR%20HOME%20(ACOUSTIC).png?updatedAt=1763056318632',
     'game-boy-heart': 'https://ik.imagekit.io/CHXNDLER/card/game-boy-heart.png?updatedAt=1762388346348',
     'home': 'https://ik.imagekit.io/CHXNDLER/card/home.png?updatedAt=1762388345590',
     'home-acoustic': 'https://ik.imagekit.io/CHXNDLER/card/home-acoustic.png?updatedAt=1762388344295',

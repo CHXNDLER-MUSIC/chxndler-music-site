@@ -1147,6 +1147,11 @@ export default function DashboardApp({ initialSlug } = {}) {
               playerStore.getState().setPlanetsVisible(true);
             } catch {}
           }
+          // Kick off join-alien SFX as soon as warp SFX ends so it's definitely
+          // in progress before base sky reports playing (avoids race conditions).
+          if (pendingTrackPlay) {
+            try { joinSfxWaitRef.current = sfx.playAndWait('join', 0.9); } catch { joinSfxWaitRef.current = null; }
+          }
           // If we're landing on home via Start, reveal overlay/UI after warp finishes
           // Only revert to home if this isn't a user-selected song
           if (pendingOverlayReveal && !userSelected && !pendingTrackPlay) {
@@ -1267,8 +1272,7 @@ export default function DashboardApp({ initialSlug } = {}) {
               playerStore.getState().setPlanetsVisible(true);
             } catch {}
           }
-          // If a track play is pending, begin UI fade-in immediately at warp end
-          // and play join-alien SFX right away; the song will wait for it to finish
+          // If a track play is pending, begin UI fade-in immediately at warp end.
           if (pendingTrackPlay) {
             try {
               // Cancel any fallback that might race with our sequencing
@@ -1279,8 +1283,6 @@ export default function DashboardApp({ initialSlug } = {}) {
             setBeamEnabled(true);
             setBeamOnly(false);
             setShowOverlayUI(true);
-            // Kick off join-alien SFX now (right after warp). Song waits for this to complete.
-            try { joinSfxWaitRef.current = sfx.playAndWait('join', 0.9); } catch { joinSfxWaitRef.current = null; }
             // Safety: if base video readiness callback is delayed, start music after a grace period
             try {
               if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); }

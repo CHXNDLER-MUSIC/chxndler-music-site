@@ -352,8 +352,9 @@ export default function LumaKeyVideo({
           try {
             const img = wctx.getImageData(0, 0, Ww, Hw);
             const data = img.data;
-            const floor = isSafari ? Math.max(threshold, 0.045) : threshold;
-            const feather = isSafari ? Math.max(softness, 0.060) : softness;
+            // Relax Safari floor/feather minimums: respect provided values to avoid over-keying
+            const floor = Math.max(0, threshold);
+            const feather = Math.max(0, softness);
             const t0 = floor * 255;
             const t1 = (floor + feather) * 255;
             for (let i = 0; i < data.length; i += 4) {
@@ -387,8 +388,9 @@ export default function LumaKeyVideo({
           try {
             const img = ctx.getImageData(0, 0, CW, CH);
             const data = img.data;
-            const floor = isSafari ? Math.max(threshold, 0.045) : threshold;
-            const feather = isSafari ? Math.max(softness, 0.060) : softness;
+            // Relax Safari floor/feather minimums: respect provided values to avoid over-keying
+            const floor = Math.max(0, threshold);
+            const feather = Math.max(0, softness);
             const t0 = floor * 255;
             const t1 = (floor + feather) * 255;
             for (let i = 0; i < data.length; i += 4) {

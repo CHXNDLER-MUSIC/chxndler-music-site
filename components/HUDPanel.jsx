@@ -199,6 +199,8 @@ export default function HUDPanel({
   const [showHeartPopover, setShowHeartPopover] = useState(false);
   const heartBtnRef = useRef(null);
   const [heartPopoverPos, setHeartPopoverPos] = useState(null);
+  // Selected HEART tier details view (null shows tier cards)
+  const [heartTierDetails, setHeartTierDetails] = useState(null);
   // Position heart popover similar to lyrics popover
   const HEART_POPOVER_Y_OFFSET = -40;
 
@@ -232,6 +234,7 @@ export default function HUDPanel({
         setHeartPopoverPos({ left: r.left + r.width/2, top, height });
       }
     } catch {}
+    setHeartTierDetails(null);
     setShowHeartPopover(true);
   };
 
@@ -2004,6 +2007,7 @@ export default function HUDPanel({
                   <div
                     role="dialog"
                     aria-label="HEARTVERSE TIERS"
+                    className="heart-hologram"
                     style={{
                       position: 'fixed',
                       left: (heartPopoverPos && heartPopoverPos.left) || 0,
@@ -2052,7 +2056,57 @@ export default function HUDPanel({
                         <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
                       </svg>
                     </button>
-                    <div style={{ paddingRight: 6, paddingTop: 2 }}>
+                    <div style={{ paddingRight: 6, paddingTop: 0, marginTop: -8 }}>
+                      {/* User summary above HEARTVERSE TIERS */}
+                      <div
+                        style={{
+                          position: 'relative',
+                          display: 'flex',
+                          alignItems: 'center',
+                          width: '100%',
+                          padding: '4px 2px 10px 2px',
+                          borderBottom: '1px solid rgba(252,84,175,0.25)'
+                        }}
+                      >
+                        {/* Left: SOFIA */}
+                        <div
+                          style={{
+                            fontSize: 18,
+                            fontWeight: 900,
+                            letterSpacing: '.02em',
+                            color: '#FC54AF',
+                            textShadow: '0 0 12px rgba(252,84,175,0.35)'
+                          }}
+                        >
+                          SOFIA
+                        </div>
+                        {/* Center: THE DREAMER */}
+                        <div
+                          style={{
+                            position: 'absolute',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            fontSize: 22,
+                            fontWeight: 900,
+                            letterSpacing: '.02em',
+                            color: '#19E3FF',
+                            textShadow: '0 0 14px rgba(25,227,255,0.5)'
+                          }}
+                        >
+                          THE DREAMER
+                        </div>
+                        {/* Right: heart coin + 32 */}
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginLeft: 'auto', marginRight: 20 }}>
+                          <img
+                            src="/elements/heart-coin.png"
+                            alt="HEART Coin"
+                            width={36}
+                            height={36}
+                            style={{ display: 'block', width: 36, height: 36, objectFit: 'contain', filter: 'drop-shadow(0 0 10px rgba(252,84,175,0.45))' }}
+                          />
+                          <span style={{ fontSize: 16, fontWeight: 800, color: '#d3168c' }}>32</span>
+                        </div>
+                      </div>
                       {/* Header / Hero */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 2px 8px 2px' }}>
                         <img
@@ -2068,106 +2122,174 @@ export default function HUDPanel({
                           <div style={{ fontSize: 13, opacity: 0.8 }}>Choose your path. Earn HEARTS. Unlock deeper access.</div>
                         </div>
                       </div>
-                      {/* Tier buttons: horizontal, tall, neon */}
-                      <div
-                        style={{
-                          marginTop: 8,
-                          display: 'flex',
-                          flexDirection: 'row',
-                          justifyContent: 'center',
-                          alignItems: 'stretch',
-                          gap: 16
-                        }}
-                      >
-                        {/* Wanderer */}
-                        <div
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => { try { sfx.play('click', 0.4); } catch {}; try { trackAnalytics('heart_tier_clicked', { tier: 'wanderer' }); } catch {} }}
-                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('click', 0.4); } catch {}; try { trackAnalytics('heart_tier_clicked', { tier: 'wanderer' }); } catch {} } }}
-                          style={{
-                            width: 110,
-                            height: 200,
-                            display: 'inline-flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: 8,
-                            borderRadius: 16,
-                            background: 'linear-gradient(180deg, rgba(0,180,255,0.12), rgba(0,180,255,0.04))',
-                            border: '2px solid rgba(0,180,255,0.85)',
-                            boxShadow: '0 0 10px rgba(0,180,255,0.65), 0 0 26px rgba(0,180,255,0.45), inset 0 0 12px rgba(0,180,255,0.25)',
-                            color: '#023047',
-                            textAlign: 'center',
-                            cursor: 'pointer'
-                          }}
-                          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)'; e.currentTarget.style.boxShadow = '0 0 14px rgba(0,180,255,0.85), 0 0 34px rgba(0,180,255,0.55), inset 0 0 18px rgba(0,180,255,0.35)'; try { sfx.play('hover', 0.25); } catch {} }}
-                          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(0,180,255,0.65), 0 0 26px rgba(0,180,255,0.45), inset 0 0 12px rgba(0,180,255,0.25)'; }}
-                        >
-                          <div aria-hidden style={{ fontSize: 46, filter: 'drop-shadow(0 0 8px rgba(0,180,255,0.8))' }}>🧭</div>
-                          <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: '.02em', color: '#015073' }}>The Wanderer</div>
+                      {/* Tier ranges summary */}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, padding: '2px 2px 6px 2px', fontSize: 12, lineHeight: 1.25 }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, opacity: 0.95 }}>
+                          <img src="/elements/heart-coin.png" alt="HEART" width={14} height={14} style={{ display: 'block', width: 14, height: 14, objectFit: 'contain' }} />
+                          <span><strong>0–4</strong> HEARTS — The Wanderer</span>
                         </div>
-                        {/* Dreamer */}
-                        <div
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => { try { sfx.play('click', 0.4); } catch {}; try { trackAnalytics('heart_tier_clicked', { tier: 'dreamer' }); } catch {} }}
-                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('click', 0.4); } catch {}; try { trackAnalytics('heart_tier_clicked', { tier: 'dreamer' }); } catch {} } }}
-                          style={{
-                            width: 110,
-                            height: 200,
-                            display: 'inline-flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: 8,
-                            borderRadius: 16,
-                            background: 'linear-gradient(180deg, rgba(255,212,0,0.12), rgba(255,212,0,0.04))',
-                            border: '2px solid rgba(255,212,0,0.9)',
-                            boxShadow: '0 0 10px rgba(255,212,0,0.70), 0 0 26px rgba(255,212,0,0.45), inset 0 0 12px rgba(255,212,0,0.25)',
-                            color: '#5f4b00',
-                            textAlign: 'center',
-                            cursor: 'pointer'
-                          }}
-                          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)'; e.currentTarget.style.boxShadow = '0 0 14px rgba(255,212,0,0.95), 0 0 34px rgba(255,212,0,0.55), inset 0 0 18px rgba(255,212,0,0.35)'; try { sfx.play('hover', 0.25); } catch {} }}
-                          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(255,212,0,0.70), 0 0 26px rgba(255,212,0,0.45), inset 0 0 12px rgba(255,212,0,0.25)'; }}
-                        >
-                          <div aria-hidden style={{ fontSize: 46, filter: 'drop-shadow(0 0 8px rgba(255,212,0,0.85))' }}>🌙</div>
-                          <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: '.02em', color: '#6f5c00' }}>The Dreamer</div>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, opacity: 0.95 }}>
+                          <img src="/elements/heart-coin.png" alt="HEART" width={14} height={14} style={{ display: 'block', width: 14, height: 14, objectFit: 'contain' }} />
+                          <span><strong>5–24</strong> HEARTS — The Dreamer</span>
                         </div>
-                        {/* Lover */}
-                        <div
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => { try { sfx.play('click', 0.4); } catch {}; try { trackAnalytics('heart_tier_clicked', { tier: 'lover' }); } catch {} }}
-                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('click', 0.4); } catch {}; try { trackAnalytics('heart_tier_clicked', { tier: 'lover' }); } catch {} } }}
-                          style={{
-                            width: 110,
-                            height: 200,
-                            display: 'inline-flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: 8,
-                            borderRadius: 16,
-                            background: 'linear-gradient(180deg, rgba(255,79,216,0.12), rgba(255,79,216,0.04))',
-                            border: '2px solid rgba(255,79,216,0.90)',
-                            boxShadow: '0 0 10px rgba(255,79,216,0.65), 0 0 28px rgba(255,79,216,0.50), inset 0 0 12px rgba(255,79,216,0.28)',
-                            color: '#82004f',
-                            textAlign: 'center',
-                            cursor: 'pointer'
-                          }}
-                          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)'; e.currentTarget.style.boxShadow = '0 0 14px rgba(255,79,216,0.90), 0 0 36px rgba(255,79,216,0.60), inset 0 0 18px rgba(255,79,216,0.35)'; try { sfx.play('hover', 0.28); } catch {} }}
-                          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(255,79,216,0.65), 0 0 28px rgba(255,79,216,0.50), inset 0 0 12px rgba(255,79,216,0.28)'; }}
-                        >
-                          <div aria-hidden style={{ fontSize: 46, filter: 'drop-shadow(0 0 8px rgba(255,79,216,0.85))' }}>❤️</div>
-                          <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: '.02em', color: '#980060' }}>The Lover</div>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, opacity: 0.95 }}>
+                          <img src="/elements/heart-coin.png" alt="HEART" width={14} height={14} style={{ display: 'block', width: 14, height: 14, objectFit: 'contain' }} />
+                          <span><strong>25+</strong> HEARTS — The Lover</span>
                         </div>
                       </div>
+                      {/* Tiers: interactive cards or details view */}
+                      {heartTierDetails ? (
+                        <div style={{ marginTop: 8 }}>
+                          <button
+                            onClick={() => { try { sfx.play('hover', 0.3); } catch {}; setHeartTierDetails(null); }}
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', gap: 8,
+                              padding: '6px 10px', borderRadius: 10,
+                              background: 'rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.12)',
+                              cursor: 'pointer', fontSize: 12
+                            }}
+                          >
+                            <span aria-hidden>←</span>
+                            <span>Back to tiers</span>
+                          </button>
+                          <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <div style={{ fontSize: 16, fontWeight: 900, letterSpacing: '.02em' }}>
+                              {heartTierDetails === 'wanderer' && 'The Wanderer (0–4 HEARTS)'}
+                              {heartTierDetails === 'dreamer' && 'The Dreamer (5–24 HEARTS)'}
+                              {heartTierDetails === 'lover' && 'The Lover (25+ HEARTS)'}
+                            </div>
+                            <div style={{ fontSize: 12, opacity: 0.9 }}>
+                              {heartTierDetails === 'wanderer' && 'You’ve just arrived in the Heartverse — drawn here by the signal.'}
+                              {heartTierDetails === 'dreamer' && 'You’re part of the crew now — traveling through sound and starlight.'}
+                              {heartTierDetails === 'lover' && 'You’ve reached the center — the pulse that powers it all.'}
+                            </div>
+                            <ul style={{ marginTop: 4, paddingLeft: 16, fontSize: 12, lineHeight: 1.45 }}>
+                              {heartTierDetails === 'wanderer' && (
+                                <>
+                                  <li><span style={{ fontWeight: 800 }}>Access:</span> public songs, stories, and your own Heartverse profile.</li>
+                                  <li><span style={{ fontWeight: 800 }}>Goal:</span> start collecting HEARTS and begin your journey.</li>
+                                </>
+                              )}
+                              {heartTierDetails === 'dreamer' && (
+                                <>
+                                  <li><span style={{ fontWeight: 800 }}>Access:</span> hidden songs, early demos, private livestreams, exclusive CHXNDLER cards.</li>
+                                  <li><span style={{ fontWeight: 800 }}>Goal:</span> keep exploring and deepen your connection.</li>
+                                </>
+                              )}
+                              {heartTierDetails === 'lover' && (
+                                <>
+                                  <li><span style={{ fontWeight: 800 }}>Access:</span> The Vault, unreleased music, early merch drops, rare CHXNDLER cards.</li>
+                                  <li><span style={{ fontWeight: 800 }}>Goal:</span> shape the future of the Heartverse.</li>
+                                </>
+                              )}
+                            </ul>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          style={{
+                            marginTop: 8,
+                            display: 'flex',
+                            flexDirection: 'row',
+                            justifyContent: 'center',
+                            alignItems: 'stretch',
+                            gap: 16
+                          }}
+                        >
+                          {/* Wanderer */}
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => { try { sfx.play('click', 0.4); } catch {}; setHeartTierDetails('wanderer'); try { trackAnalytics('heart_tier_clicked', { tier: 'wanderer' }); } catch {} }}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('click', 0.4); } catch {}; setHeartTierDetails('wanderer'); try { trackAnalytics('heart_tier_clicked', { tier: 'wanderer' }); } catch {} } }}
+                            style={{
+                              width: 110,
+                              height: 170,
+                              display: 'inline-flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 8,
+                              borderRadius: 16,
+                              background: 'linear-gradient(180deg, rgba(0,180,255,0.12), rgba(0,180,255,0.04))',
+                              border: '2px solid rgba(0,180,255,0.85)',
+                              boxShadow: '0 0 10px rgba(0,180,255,0.65), 0 0 26px rgba(0,180,255,0.45), inset 0 0 12px rgba(0,180,255,0.25)',
+                              color: '#023047',
+                              textAlign: 'center',
+                              cursor: 'pointer'
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)'; e.currentTarget.style.boxShadow = '0 0 14px rgba(0,180,255,0.85), 0 0 34px rgba(0,180,255,0.55), inset 0 0 18px rgba(0,180,255,0.35)'; try { sfx.play('hover', 0.25); } catch {} }}
+                            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(0,180,255,0.65), 0 0 26px rgba(0,180,255,0.45), inset 0 0 12px rgba(0,180,255,0.25)'; }}
+                          >
+                            <div aria-hidden style={{ fontSize: 46 }} className="neon-icon neon-blue">🧭</div>
+                            <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: '.02em', color: '#015073' }}>The Wanderer</div>
+                            <div style={{ fontSize: 11, lineHeight: 1.2, opacity: 0.85, maxWidth: 90 }}>You’ve just arrived — drawn by the signal.</div>
+                          </div>
+                          {/* Dreamer */}
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => { try { sfx.play('click', 0.4); } catch {}; setHeartTierDetails('dreamer'); try { trackAnalytics('heart_tier_clicked', { tier: 'dreamer' }); } catch {} }}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('click', 0.4); } catch {}; setHeartTierDetails('dreamer'); try { trackAnalytics('heart_tier_clicked', { tier: 'dreamer' }); } catch {} } }}
+                            style={{
+                              width: 110,
+                              height: 170,
+                              display: 'inline-flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 8,
+                              borderRadius: 16,
+                              background: 'linear-gradient(180deg, rgba(255,212,0,0.12), rgba(255,212,0,0.04))',
+                              border: '2px solid rgba(255,212,0,0.9)',
+                              boxShadow: '0 0 10px rgba(255,212,0,0.70), 0 0 26px rgba(255,212,0,0.45), inset 0 0 12px rgba(255,212,0,0.25)',
+                              color: '#5f4b00',
+                              textAlign: 'center',
+                              cursor: 'pointer'
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)'; e.currentTarget.style.boxShadow = '0 0 14px rgba(255,212,0,0.95), 0 0 34px rgba(255,212,0,0.55), inset 0 0 18px rgba(255,212,0,0.35)'; try { sfx.play('hover', 0.25); } catch {} }}
+                            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(255,212,0,0.70), 0 0 26px rgba(255,212,0,0.45), inset 0 0 12px rgba(255,212,0,0.25)'; }}
+                          >
+                            <div aria-hidden style={{ fontSize: 46 }} className="neon-icon neon-yellow">🌙</div>
+                            <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: '.02em', color: '#6f5c00' }}>The Dreamer</div>
+                            <div style={{ fontSize: 11, lineHeight: 1.2, opacity: 0.9, maxWidth: 90 }}>Traveling through sound and starlight.</div>
+                          </div>
+                          {/* Lover */}
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => { try { sfx.play('click', 0.4); } catch {}; setHeartTierDetails('lover'); try { trackAnalytics('heart_tier_clicked', { tier: 'lover' }); } catch {} }}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('click', 0.4); } catch {}; setHeartTierDetails('lover'); try { trackAnalytics('heart_tier_clicked', { tier: 'lover' }); } catch {} } }}
+                            style={{
+                              width: 110,
+                              height: 170,
+                              display: 'inline-flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 8,
+                              borderRadius: 16,
+                              background: 'linear-gradient(180deg, rgba(255,79,216,0.12), rgba(255,79,216,0.04))',
+                              border: '2px solid rgba(255,79,216,0.90)',
+                              boxShadow: '0 0 10px rgba(255,79,216,0.65), 0 0 28px rgba(255,79,216,0.50), inset 0 0 12px rgba(255,79,216,0.28)',
+                              color: '#82004f',
+                              textAlign: 'center',
+                              cursor: 'pointer'
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)'; e.currentTarget.style.boxShadow = '0 0 14px rgba(255,79,216,0.90), 0 0 36px rgba(255,79,216,0.60), inset 0 0 18px rgba(255,79,216,0.35)'; try { sfx.play('hover', 0.28); } catch {} }}
+                            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(255,79,216,0.65), 0 0 28px rgba(255,79,216,0.50), inset 0 0 12px rgba(255,79,216,0.28)'; }}
+                          >
+                            <div aria-hidden style={{ fontSize: 46 }} className="neon-icon neon-pink">❤️</div>
+                            <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: '.02em', color: '#980060' }}>The Lover</div>
+                            <div style={{ fontSize: 11, lineHeight: 1.2, opacity: 0.9, maxWidth: 90 }}>At the center — the pulse that powers it all.</div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>,
                   document.body
                 ) : null}
+                {/* END heart popover */}
 
                 {typeof document !== 'undefined' && showApplePopover && amEmbedUrl ? require('react-dom').createPortal(
                   <div

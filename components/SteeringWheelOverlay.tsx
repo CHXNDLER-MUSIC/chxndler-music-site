@@ -4,6 +4,7 @@ import { track } from "@/lib/analytics";
 import HoloHubMenu from "@/components/HoloHubMenu";
 import LumaKeyVideo from "@/components/LumaKeyVideo";
 import HoloJoinButton from "@/components/HoloJoinButton";
+import AuthJoinCta from "@/components/AuthJoinCta";
 import JoinAliens from "@/components/JoinAliens";
 import { LINKS } from "@/config/cockpit";
 
@@ -611,14 +612,8 @@ export default function SteeringWheelOverlay({
           const joinSize: number = 72; // Fixed size to match yellow and blue buttons
           return (
             <div style={{ pointerEvents: showUI && !isDimmingOverlayActive && isUIUnlocked ? 'auto' : 'none' }}>
-              <HoloJoinButton 
-                size={joinSize} 
-                label="Join Alien Display" 
-                iconSrc="/elements/join.png" 
-                hubColor={activeBeamColor === 'pink' ? "#FC54AF" : "#FC54AF"}
-                isActive={activeBeamColor === 'pink'} 
-                onClick={handleJoinAlienToggle}
-              />
+              {/* Auth-aware CTA using existing HoloJoinButton styling */}
+              <AuthJoinCta size={joinSize} hubColor="#FC54AF" />
             </div>
           );
         })()}

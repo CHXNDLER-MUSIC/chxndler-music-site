@@ -246,6 +246,22 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme">
     { time: 119.9, label: "Drop 2", kind: "chorus" },
     { time: 152.5, label: "Final Drop", kind: "chorus" }
   ] },
+  // COLORS OF OUR HOME — three variants
+  { title: "COLORS OF OUR HOME (BLUMA Game Soundtrack)",
+    youtube: "https://youtu.be/_pycyld2Goc",
+    cover: "https://ik.imagekit.io/CHXNDLER/cover/COLORS%20OF%20OUR%20HOME%20(BLUMA%20Game%20Soundtrack).png?updatedAt=1763056338011",
+    src: "https://ik.imagekit.io/CHXNDLER/tracks/COLORS%20OF%20OUR%20HOME%20(BLUMA%20Game%20Soundtrack).mp3?updatedAt=1763057755898",
+  },
+  { title: "COLORS OF OUR HOME (ACOUSTIC)",
+    youtube: "https://youtu.be/_pycyld2Goc",
+    cover: "https://ik.imagekit.io/CHXNDLER/cover/COLORS%20OF%20OUR%20HOME%20(ACOUSTIC).png?updatedAt=1763056318632",
+    src: "https://ik.imagekit.io/CHXNDLER/tracks/COLORS%20OF%20OUR%20HOME%20(ACOUSTIC).mp3?updatedAt=1763057756024",
+  },
+  { title: "COLORS OF OUR HOME",
+    youtube: "https://youtu.be/_pycyld2Goc",
+    cover: "https://ik.imagekit.io/CHXNDLER/cover/COLORS%20OF%20OUR%20HOME.png?updatedAt=1763056318729",
+    src: "https://ik.imagekit.io/CHXNDLER/tracks/COLORS%20OF%20OUR%20HOME.mp3?updatedAt=1763082471946",
+  },
   { title: "COLLIDE", spotify:"https://open.spotify.com/track/4CCfWIk6SDUwmcUvGvgVQG?si=2788de692cc3435d", apple:"https://music.apple.com/us/album/collide/1814599250?i=1814599264", cover:"https://ik.imagekit.io/CHXNDLER/cover/collide.png?updatedAt=1762361385809", src: "https://ik.imagekit.io/CHXNDLER/tracks/collide.mp3?updatedAt=1762391910342", sections: [
     { time: 18.4, label: "Verse 1", kind: "verse" },
     { time: 51.0, label: "Chorus 1", kind: "chorus" },

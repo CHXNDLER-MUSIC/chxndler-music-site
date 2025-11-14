@@ -149,25 +149,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     return () => { try { a.removeEventListener('playing', onPlaying); } catch {} };
   }, []);
 
-  // If planets are hidden (warp sequence), force-pause any main audio to avoid early starts
-  useEffect(() => {
-    try {
-      const { playerStore } = require("@/store/usePlayerStore");
-      const stopIfWarping = () => {
-        try {
-          const st = playerStore.getState();
-          if (st && st.planetDisplayMode === 'hidden') {
-            const a = audioRef.current; if (!a) return;
-            if (!a.paused) a.pause();
-          }
-        } catch {}
-      };
-      // Run once in case we're already in hidden mode
-      stopIfWarping();
-      const unsub = playerStore.subscribe(stopIfWarping);
-      return () => { try { unsub && unsub(); } catch {} };
-    } catch {}
-  }, []);
+  // (Removed live store subscription pause; gating is handled in onPlay for reliability)
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [animationTime, setAnimationTime] = useState(0);

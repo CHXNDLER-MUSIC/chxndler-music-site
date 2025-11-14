@@ -13,6 +13,8 @@ export const YOUTUBE_SKIES: Record<string, string> = {
   'brain-freeze': 'https://youtu.be/eDsXZxWB66Y',
   collide: 'https://youtu.be/8qtq8DlS8ws',
   'colors-of-our-home': 'https://youtu.be/_pycyld2Goc',
+  'colors-of-our-home-acoustic': 'https://youtu.be/_pycyld2Goc',
+  'colors-of-our-home-bluma-game-soundtrack': 'https://youtu.be/_pycyld2Goc',
   // Feeling This (cover) — map both common slugs
   'feeling-this': 'https://youtu.be/vQo8TaVJuec',
   'feeling-this-blink-182-cover': 'https://youtu.be/vQo8TaVJuec',

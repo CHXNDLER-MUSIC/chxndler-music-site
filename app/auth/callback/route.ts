@@ -31,16 +31,17 @@ export async function GET(req: Request) {
   // Set auth cookies so our API routes can read them
   const res = NextResponse.redirect(new URL('/profile', req.url));
   // Mirror cookie names expected by our API route
+  const secure = process.env.NODE_ENV === 'production';
   res.cookies.set('sb-access-token', accessToken, {
     httpOnly: true,
-    secure: true,
+    secure,
     sameSite: 'lax',
     path: '/',
     maxAge: 60 * 60 * 24 * 7, // 7 days
   });
   res.cookies.set('sb-refresh-token', refreshToken ?? '', {
     httpOnly: true,
-    secure: true,
+    secure,
     sameSite: 'lax',
     path: '/',
     maxAge: 60 * 60 * 24 * 7,
