@@ -283,8 +283,8 @@ export default function SteeringWheelOverlay({
           // Do not mask/clamp — allow hands to extend beyond the wheel
           borderRadius: undefined,
           overflow: "visible",
-          // Ensure wheel renders above dimming overlay (z-[89]) and lightbeam base (z-[100])
-          zIndex: 101,
+          // Wheel should be above cockpit but below UI elements (lightbeam base is z-[100])
+          zIndex: 95,
           outline: vconf.debug ? "1px dashed rgba(25,227,255,0.6)" : (typeof window !== 'undefined' && window.localStorage.getItem('WHEEL_DEBUG') === '1' ? '2px dashed rgba(255,0,0,0.5)' : undefined),
           background: vconf.debug ? "rgba(25,227,255,0.08)" : "transparent",
           // Allow hiding via config if needed, default to visible
@@ -299,7 +299,7 @@ export default function SteeringWheelOverlay({
         {/* Prevent page scrolling when the pointer is over the wheel area */}
         <div
           aria-hidden
-          style={{ position: 'absolute', inset: 0, pointerEvents: 'auto', background: 'transparent', zIndex: 200, touchAction: 'none' as any }}
+          style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'transparent', zIndex: 96, touchAction: 'none' as any }}
           onWheelCapture={(e) => { try { e.preventDefault(); e.stopPropagation(); } catch {} }}
           onWheel={(e) => { try { e.preventDefault(); e.stopPropagation(); } catch {} }}
           onTouchMoveCapture={(e) => { try { e.preventDefault(); e.stopPropagation(); } catch {} }}
@@ -360,7 +360,7 @@ export default function SteeringWheelOverlay({
             // If explicitly disabled, still render a plain <video> so the wheel is visible
             return (
               <video
-                src={"/cockpit/wheel.mp4"}
+                src={"/cockpit/wheel_less_transparent.webm"}
                 autoPlay
                 muted
                 loop
@@ -386,7 +386,7 @@ export default function SteeringWheelOverlay({
           if (plainWheel) {
             return (
               <video
-                src={"/cockpit/wheel.mp4"}
+                src={"/cockpit/wheel_less_transparent.webm"}
                 autoPlay
                 muted
                 loop
@@ -410,7 +410,7 @@ export default function SteeringWheelOverlay({
           }
           return (
             <LumaKeyVideo
-              srcMp4="/cockpit/wheel.mp4"
+              srcMp4="/cockpit/wheel_less_transparent.webm"
               // Safer chroma key with blended fallback so it never disappears
               keyColor={(vconf as any)?.keyColor ?? [0, 0, 0]}
               keyTolerance={(vconf as any)?.keyTolerance ?? 0.12}

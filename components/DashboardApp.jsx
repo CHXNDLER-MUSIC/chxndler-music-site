@@ -31,17 +31,31 @@ import { debugLog } from "@/lib/debug";
 
 export default function DashboardApp({ initialSlug } = {}) {
   // Global wheel render mode (LUMA vs PLAIN). Must be top-level to obey Hooks rules.
-  const [wheelPlain, setWheelPlain] = useState(() => {
+  // Use false initially to match SSR, then sync with localStorage after hydration
+  const [wheelPlain, setWheelPlain] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
+  
+  // Sync with localStorage after hydration to prevent hydration mismatch
+  useEffect(() => {
     try {
-      if (typeof window === 'undefined') return false;
-      if (window.localStorage.getItem('WHEEL_FORCE_LUMA') === '1') return false;
-      const ls = window.localStorage.getItem('PLAIN_WHEEL');
-      if (ls === '1') return true;
-      if (ls === '0') return false;
-      window.localStorage.setItem('PLAIN_WHEEL', '0');
-      return false; // default to LUMA (keyed) for transparent background
-    } catch { return false; }
-  });
+      if (window.localStorage.getItem('WHEEL_FORCE_LUMA') === '1') {
+        setWheelPlain(false);
+      } else {
+        const ls = window.localStorage.getItem('PLAIN_WHEEL');
+        if (ls === '1') {
+          setWheelPlain(true);
+        } else if (ls === '0') {
+          setWheelPlain(false);
+        } else {
+          window.localStorage.setItem('PLAIN_WHEEL', '0');
+          setWheelPlain(false); // default to LUMA (keyed) for transparent background
+        }
+      }
+    } catch {
+      setWheelPlain(false);
+    }
+    setIsHydrated(true);
+  }, []);
   useEffect(() => {
     const onKey = (e) => {
       if ((e.key === 'W' || e.key === 'w') && (e.metaKey || e.ctrlKey || e.shiftKey)) {
@@ -1044,7 +1058,7 @@ export default function DashboardApp({ initialSlug } = {}) {
         >
           {wheelPlain ? (
             <video
-              src="/cockpit/wheel.mp4"
+              src="/cockpit/wheel_less_transparent.webm"
               autoPlay
               muted
               loop
@@ -1054,7 +1068,7 @@ export default function DashboardApp({ initialSlug } = {}) {
             />
           ) : (
             <LumaKeyVideo
-              srcMp4="/cockpit/wheel.mp4"
+              srcMp4="/cockpit/wheel_less_transparent.webm"
               threshold={0.02}
               softness={0.04}
               saturation={1.0}

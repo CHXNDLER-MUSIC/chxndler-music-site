@@ -47,7 +47,8 @@ export async function GET(
   _req: Request,
   ctx: { params: { slug: string } }
 ) {
-  const slug = (ctx?.params?.slug || '').toLowerCase();
+  const params = await ctx.params;
+  const slug = (params?.slug || '').toLowerCase();
   if (!slug) return NextResponse.json({ error: 'Missing slug' }, { status: 400 });
 
   try {

@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import Link from 'next/link';
 import JoinUsButton from '@/components/JoinUsButton';
+import BookButton from '@/components/BookButton';
 
 type Profile = {
   id: string;
@@ -64,8 +65,9 @@ export default async function DashboardWelcomeDisplay() {
         mixBlendMode: 'screen'
       }} />
       <div className="relative">
-        <h2 className="text-4xl sm:text-5xl font-extrabold tracking-[0.12em] text-white drop-shadow mb-2">
+        <h2 className="text-4xl sm:text-5xl font-extrabold tracking-[0.12em] text-white drop-shadow mb-2 flex items-center gap-4">
           WELCOME HOME, {name}
+          <BookButton />
         </h2>
         <p className="text-white/80 mb-6">You have {hearts} HeartCoins.</p>
         <Link href="/dashboard" className="inline-flex items-center justify-center rounded-xl px-5 py-3 font-semibold text-black bg-[#FC54AF] hover:brightness-110 transition shadow-[0_0_24px_rgba(252,84,175,0.45)]">

@@ -54,7 +54,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
   const hoverRef = useRef(null);
   const clickRef = useRef(null);
   const hoverBtnRef = useRef(null);
-  const [elementFilter, setElementFilter] = useState(null);
+  const [activeElement, setActiveElement] = useState(null);
 
   const current = useMemo(() => items.find(i => i.id === activeId) || items[0], [items, activeId]);
 
@@ -65,10 +65,12 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
 
   // Filtered/visible list based on selected element
   const displayItems = useMemo(() => {
-    if (!elementFilter) return items;
-    const f = String(elementFilter).toLowerCase();
-    return items.filter((i) => String(i.icon || '').toLowerCase() === f);
-  }, [items, elementFilter]);
+    if (!activeElement) return items;
+    return items.filter((i) => {
+      const itemIcon = String(i.icon || '').toLowerCase();
+      return itemIcon === activeElement;
+    });
+  }, [items, activeElement]);
 
   // Keep highlight in sync with the visible list
   useEffect(() => {
@@ -88,7 +90,12 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
   useEffect(() => {
     function onDocClick(e) {
       if (!open) return;
-      if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false);
+      // Check if click is within the trigger button
+      if (rootRef.current && rootRef.current.contains(e.target)) return;
+      // Check if click is within the dropdown list (portal)
+      if (listRef.current && listRef.current.contains(e.target)) return;
+      // If neither, close the dropdown
+      setOpen(false);
     }
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
@@ -282,20 +289,75 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
           {/* Element filter row */}
           <div className="px-2 pt-2 pb-1">
             <div className="flex items-center gap-2 flex-wrap">
-              {['lightning','darkness','water','heart'].map((el) => {
-                const active = elementFilter === el;
+              {/* ALL filter */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveElement(null);
+                  setHighlight(0);
+                  try { sfx.play('hover', 0.35); } catch {}
+                  track('element_filter_selected', { element: 'ALL', active: true });
+                }}
+                className={`filter-pill inline-flex items-center gap-2 px-2.5 py-1 rounded-md border text-xs font-semibold tracking-wide transition-all duration-200 ${
+                  !activeElement
+                    ? 'bg-[#19E3FF] text-black border-[#19E3FF]' 
+                    : 'border-[#19E3FF]/40 text-[#CFF7FF] hover:bg-cyan-400/10'
+                }`}
+                style={!activeElement ? {
+                  boxShadow: 'inset 0 0 20px rgba(25, 227, 255, 0.4), inset 0 0 40px rgba(25, 227, 255, 0.2)'
+                } : {}}
+                aria-pressed={!activeElement}
+              >
+                <span>ALL</span>
+              </button>
+              
+              {['heart','water','lightning','darkness'].map((el) => {
+                const active = activeElement === el;
+                const getElementBgColor = (element, isActive) => {
+                  if (!isActive) return '';
+                  switch(element) {
+                    case 'heart': return 'bg-[#FC54AF]';
+                    case 'water': return 'bg-[#38B6FF]';
+                    case 'lightning': return 'bg-[#F2EF1D]';
+                    case 'darkness': return 'bg-white';
+                    default: return '';
+                  }
+                };
+                const getElementTextColor = (element, isActive) => {
+                  if (!isActive) return 'text-[#CFF7FF]';
+                  return element === 'darkness' ? 'text-black' : 'text-white';
+                };
+                const getElementGlowColor = (element) => {
+                  switch(element) {
+                    case 'heart': return 'rgba(252, 84, 175, 0.4)';
+                    case 'water': return 'rgba(56, 182, 255, 0.4)';
+                    case 'lightning': return 'rgba(242, 239, 29, 0.4)';
+                    case 'darkness': return 'rgba(255, 255, 255, 0.4)';
+                    default: return 'rgba(25, 227, 255, 0.4)';
+                  }
+                };
                 return (
                   <button
                     key={el}
                     type="button"
-                    onClick={() => {
-                      const next = active ? null : el;
-                      setElementFilter(next);
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Toggle: if clicking the active element, deselect it, otherwise select it
+                      const newActiveElement = active ? null : el;
+                      setActiveElement(newActiveElement);
                       setHighlight(0);
                       try { sfx.play('hover', 0.35); } catch {}
-                      track('element_filter_selected', { element: (el || '').toUpperCase(), active: !!next });
+                      track('element_filter_selected', { element: (el || '').toUpperCase(), active: !active });
                     }}
-                    className={`filter-pill inline-flex items-center gap-2 px-2.5 py-1 rounded-md border text-xs font-semibold tracking-wide ${active ? 'border-cyan-300 text-white bg-cyan-400/20' : 'border-[#19E3FF]/40 text-[#CFF7FF] hover:bg-cyan-400/10'}`}
+                    className={`filter-pill inline-flex items-center gap-2 px-2.5 py-1 rounded-md border text-xs font-semibold tracking-wide transition-all duration-200 ${
+                      active 
+                        ? `${getElementBgColor(el, true)} ${getElementTextColor(el, true)} border-transparent` 
+                        : 'border-[#19E3FF]/40 hover:bg-cyan-400/10'
+                    } ${getElementTextColor(el, active)}`}
+                    style={active ? {
+                      boxShadow: `inset 0 0 20px ${getElementGlowColor(el)}, inset 0 0 40px ${getElementGlowColor(el)}`
+                    } : {}}
                     aria-pressed={active}
                   >
                     <OptimizedElementIcon name={el} alt={el} className="w-4 h-4 object-contain" width={16} height={16} />

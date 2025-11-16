@@ -4,7 +4,7 @@ import { createSupabaseServerClientWithJwt } from '@/lib/supabaseServer';
 import { getSupabaseAdmin } from '@/lib/supabaseServer';
 
 export async function GET(req: NextRequest) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get('sb-access-token')?.value || '';
   if (!token) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

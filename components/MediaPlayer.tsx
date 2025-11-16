@@ -1455,6 +1455,13 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 <pattern id="grid" width="20" height="10" patternUnits="userSpaceOnUse">
                   <path d="M 20 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="0.5"/>
                 </pattern>
+                <filter id="glow">
+                  <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                  <feMerge> 
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
               </defs>
               <rect width="100%" height="100%" fill="url(#grid)" />
               
@@ -1503,14 +1510,16 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                       y1="50"
                       x2="800"
                       y2="50"
-                      stroke={currentElementColor}
+                      stroke="white"
                       strokeWidth="1.2"
-                      opacity="0.45"
+                      opacity="0.3"
                     />
-                    {/* Played portion: multi-layer glow for brightness */}
-                    <line x1="0" y1="50" x2={`${progress * 800}`} y2="50" stroke={currentElementColor} strokeWidth="14" opacity="0.16" strokeLinecap="round" />
-                    <line x1="0" y1="50" x2={`${progress * 800}`} y2="50" stroke={currentElementColor} strokeWidth="8" opacity="0.28" strokeLinecap="round" />
-                    <line x1="0" y1="50" x2={`${progress * 800}`} y2="50" stroke={currentElementColor} strokeWidth="2" opacity="0.98" strokeLinecap="round" />
+                    {/* Played portion: multi-layer white glow for brightness */}
+                    <line x1="0" y1="50" x2={`${progress * 800}`} y2="50" stroke="white" strokeWidth="12" opacity="0.2" strokeLinecap="round" filter="url(#glow)" />
+                    <line x1="0" y1="50" x2={`${progress * 800}`} y2="50" stroke="white" strokeWidth="6" opacity="0.5" strokeLinecap="round" />
+                    <line x1="0" y1="50" x2={`${progress * 800}`} y2="50" stroke="white" strokeWidth="2" opacity="1" strokeLinecap="round" />
+                    {/* Progress circle at current position */}
+                    <circle cx={`${progress * 800}`} cy="50" r="4" fill="white" opacity="1" filter="url(#glow)" />
                   </>
                 );
               })()}
@@ -1721,9 +1730,9 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               <div 
                 className="absolute -bottom-6 text-xs font-mono px-2 py-1 rounded transition-all duration-200"
                 style={{ 
-                  background: `${currentElementColor}22`,
-                  color: currentElementColor,
-                  border: `1px solid ${currentElementColor}44`,
+                  background: 'rgba(255,255,255,0.13)',
+                  color: 'white',
+                  border: '1px solid rgba(255,255,255,0.27)',
                 }}
               >
                 {(() => {
@@ -2116,30 +2125,31 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       <style jsx>{`
         /* Waveform wrapper to contain both waveform and spotify button */
         .waveform-wrapper {
-          position: relative;
+          position: relative !important;
           display: flex;
           align-items: center;
           gap: 12px;
           justify-content: center; /* center under controls */
           margin-top: 6px;
           width: 100%;
+          order: -1 !important; /* Move waveform above controls */
         }
         
         /* Waveform visualization container - slightly wider to accommodate both buttons */
         .waveform-container{
           position: relative; /* make positioned context for absolute children */
           width: 28vw;
-          height: 22vw;
+          height: 8vw;
           min-width: 140px;
-          min-height: 98px;
+          min-height: 40px;
           max-width: 170px;
-          max-height: 130px;
+          max-height: 50px;
           display: flex;
           align-items: center;
           justify-content: center;
           background: rgba(0,0,0,0.3);
           border-radius: 16px;
-          border: 1px solid ${currentElementColor}40;
+          border: 1px solid rgba(255,255,255,0.25);
           backdrop-filter: blur(8px);
           overflow: visible;
           /* Avoid bottom clipping of the blue waveform stroke by not reducing the content height */
@@ -2513,6 +2523,15 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           -webkit-user-select: none;
           touch-action: none; /* allow precise pointer scrubbing without scrolling */
         }
+        
+        /* Ensure white waveform lines with glow */
+        .waveform svg line {
+          stroke: white !important;
+        }
+        
+        .waveform svg circle {
+          fill: white !important;
+        }
 
         /* Section markers */
         .section-markers { position: absolute; inset: 0; pointer-events: none; }
@@ -2569,6 +2588,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         /* Sleek integrated controls - matching blue container style */
         .sleek-controls {
           display: flex;
+          order: 1 !important; /* Move controls below waveform */
           align-items: center;
           justify-content: center; /* center row so waveform can sit directly under */
           flex-wrap: wrap; /* allow wrapping on smaller screens */

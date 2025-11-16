@@ -8,6 +8,27 @@ import { track } from "@/lib/analytics";
 import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sfx";
 
+// Helper functions for element styling
+const getElementBackground = (element: string | null) => {
+  switch (element) {
+    case 'heart': return 'radial-gradient(circle, rgba(252,84,175,0.3), rgba(252,84,175,0.1))';
+    case 'water': return 'radial-gradient(circle, rgba(56,182,255,0.3), rgba(56,182,255,0.1))';
+    case 'lightning': return 'radial-gradient(circle, rgba(242,239,29,0.3), rgba(242,239,29,0.1))';
+    case 'darkness': return 'radial-gradient(circle, rgba(255,255,255,0.3), rgba(255,255,255,0.1))';
+    default: return 'radial-gradient(circle, rgba(252,84,175,0.3), rgba(252,84,175,0.1))';
+  }
+};
+
+const getElementGlow = (element: string | null) => {
+  switch (element) {
+    case 'heart': return '0 0 12px rgba(252,84,175,0.8), 0 0 24px rgba(252,84,175,0.6), 0 0 36px rgba(252,84,175,0.4)';
+    case 'water': return '0 0 12px rgba(56,182,255,0.8), 0 0 24px rgba(56,182,255,0.6), 0 0 36px rgba(56,182,255,0.4)';
+    case 'lightning': return '0 0 12px rgba(242,239,29,0.8), 0 0 24px rgba(242,239,29,0.6), 0 0 36px rgba(242,239,29,0.4)';
+    case 'darkness': return '0 0 12px rgba(255,255,255,0.8), 0 0 24px rgba(255,255,255,0.6), 0 0 36px rgba(255,255,255,0.4)';
+    default: return '0 0 12px rgba(252,84,175,0.8), 0 0 24px rgba(252,84,175,0.6), 0 0 36px rgba(252,84,175,0.4)';
+  }
+};
+
 // Generate purchase URL based on song title
 const getPurchaseUrl = (title: string) => {
   const slug = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -121,6 +142,54 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
   const [mounted, setMounted] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [hasRealCard, setHasRealCard] = useState(false);
+  
+  // Collection panel state
+  const [showCollectionPanel, setShowCollectionPanel] = useState(false);
+  const [userProfile, setUserProfile] = useState<{display_name: string; hearts: number; selected_element?: ElementKey} | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [selectedCardType, setSelectedCardType] = useState<'digital' | 'physical'>('digital');
+  const [userSelectedElement, setUserSelectedElement] = useState<ElementKey | null>('heart');
+  
+  // Function to fetch user profile
+  const fetchUserProfile = async () => {
+    setLoadingProfile(true);
+    try {
+      const response = await fetch('/api/profile');
+      if (response.ok) {
+        const profile = await response.json();
+        setUserProfile(profile);
+        
+        // Also fetch the user's selected element
+        try {
+          const elementResponse = await fetch('/api/profile/element');
+          if (elementResponse.ok) {
+            const elementData = await elementResponse.json();
+            setUserSelectedElement(elementData?.selected_element || 'heart');
+          }
+        } catch {
+          setUserSelectedElement('heart'); // Default fallback
+        }
+      } else {
+        // User not logged in or no profile - use hardcoded data for now
+        setUserProfile({ display_name: 'Guest User', hearts: 5 });
+        setUserSelectedElement('heart');
+      }
+    } catch (error) {
+      // Fallback to hardcoded data
+      setUserProfile({ display_name: 'Guest User', hearts: 5 });
+      setUserSelectedElement('heart');
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
+
+  // Load profile when collection panel opens
+  useEffect(() => {
+    if (showCollectionPanel && !userProfile && !loadingProfile) {
+      fetchUserProfile();
+    }
+  }, [showCollectionPanel, userProfile, loadingProfile]);
+  
   // ELEMENT popover state
   const [showElementsPopover, setShowElementsPopover] = useState(false);
   const [elementsLoading, setElementsLoading] = useState(false);
@@ -129,6 +198,8 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
   // Selected element to display within Elements popover; null shows only intro
   type ElementKey = 'water' | 'heart' | 'lightning' | 'darkness';
   const [selectedElement, setSelectedElement] = useState<ElementKey | null>(null);
+  // Hovered element for hover effects
+  const [hoveredElement, setHoveredElement] = useState<ElementKey | null>(null);
   // Render ELEMENTS.md into structured headings with ids for quadrant scrolling
   const renderElementsContent = (content: string) => {
     if (!content) return null;
@@ -211,15 +282,49 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
     );
   };
 
-  // Smoothly scroll the open Elements popover(s) to a section id
-  const scrollElementsTo = (key: ElementKey) => {
+  // Handle element selection without closing popup
+  const selectElement = async (key: ElementKey) => {
     try {
       // Select the element section to reveal; keep intro visible
       setSelectedElement(key);
-      try { sfx.play('click', 0.5); } catch {}
+      try { 
+        const a = chimeAudioRef.current; 
+        if (a && a.readyState >= 2) { 
+          a.currentTime = 0; 
+          a.volume = 0.6; 
+          a.play().catch(() => {}); 
+        }
+      } catch {}
       try { track('elements_quadrant_click', { quadrant: key }); } catch {}
+      
+      // Save to user profile selected_element field
+      try {
+        await fetch('/api/profile/element', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ selected_element: key })
+        });
+        // Update the local state for the Heart Coin display
+        setUserSelectedElement(key);
+      } catch (error) {
+        console.warn('Failed to save selected element:', error);
+      }
     } catch {}
   };
+  
+  // Load user's previously selected element
+  useEffect(() => {
+    if (showElementsPopover) {
+      fetch('/api/profile/element')
+        .then(res => res.json())
+        .then(data => {
+          if (data?.selected_element) {
+            setSelectedElement(data.selected_element);
+          }
+        })
+        .catch(() => {}); // Ignore errors
+    }
+  }, [showElementsPopover]);
   const elementBtnRef = useRef<HTMLButtonElement | null>(null);
   const [elementsPopoverPos, setElementsPopoverPos] = useState<{ left: number; top: number; width?: number } | null>(null);
   const closeCoverRef = useRef(null);
@@ -230,6 +335,8 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
   // Plays a subtle sound when scrolling elements popover
   const scrollAudioRef = useRef<HTMLAudioElement | null>(null);
   const lastScrollSoundRef = useRef<number>(0);
+  // Plays when selecting an element quadrant
+  const chimeAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Compute effective slug and preferred card image path (overridden by CARD_URLS when available)
   const effectiveSlug = (() => {
@@ -313,6 +420,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
     if (!showCard) {
       setCardFlipped(false);
       setShowElementsPopover(false);
+      setShowCollectionPanel(false);
     }
   }, [showCard]);
 
@@ -332,7 +440,14 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
       const withinBtn = elementBtnRef.current && t && elementBtnRef.current.contains(t);
       const dialog = document.querySelector('[aria-label="Elements"]');
       const withinDialog = dialog && t && (dialog as HTMLElement).contains(t);
-      if (!withinBtn && !withinDialog) { try { sfx.play('close', 0.4); } catch {}; setShowElementsPopover(false); }
+      
+      // Check if click is on a quadrant button by checking for the elt-q class
+      const isQuadrantButton = t && (t.classList?.contains('elt-q') || t.closest('.elt-q'));
+      
+      if (!withinBtn && !withinDialog && !isQuadrantButton) { 
+        try { sfx.play('close', 0.4); } catch {}; 
+        setShowElementsPopover(false); 
+      }
     };
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowElementsPopover(false); } };
     document.addEventListener('mousedown', onDoc);
@@ -520,7 +635,6 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                       sizes="36px"
                       className="btn-element-icon"
                       aria-hidden
-                      style={{ objectFit: 'cover' }}
                     />
                     <span className="sr-only">Elements</span>
                   </button>
@@ -530,10 +644,8 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                 <div className="absolute top-[5px] left-1/2 transform -translate-x-1/2 z-10">
                   <div className="buttons-row" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div className="ocean-cta-wrap relative">
-                      <a
-                        href={getPurchaseUrl(title)}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        type="button"
                         className="btn-ocean"
                         title="Collect this card"
                         aria-label={`Collect Card: ${title}`}
@@ -543,30 +655,208 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                         onClick={(e) => {
                           try { e.preventDefault(); } catch {}
                           try { sfx.play('click', 0.7); } catch {}
+                          setShowCollectionPanel(!showCollectionPanel);
                           try {
                             track('collect_card_clicked', { 
                               song_slug: title?.toLowerCase().replace(/\s+/g, '-'),
                               card_src: src,
-                              payload: { song_title: title, card_image: src, stripe_url: e.currentTarget.href } 
+                              payload: { song_title: title, card_image: src, action: 'panel_opened' } 
                             });
                           } catch {}
-                          try {
-                            const el = e.currentTarget;
-                            el.classList.remove('is-rippling');
-                            void el.offsetWidth;
-                            el.classList.add('is-rippling');
-                            setTimeout(() => { window.open(el.href, '_blank', 'noopener,noreferrer'); }, 520);
-                          } catch { window.open((e.currentTarget || {}).href, '_blank', 'noopener,noreferrer'); }
                         }}
                       >
                         <span className="btn-label" style={{ whiteSpace: 'nowrap' }}>COLLECT CARD</span>
                         <span className="btn-ripple" aria-hidden />
-                      </a>
+                      </button>
                     </div>
                   </div>
                 </div>
               </>
             )}
+
+            {/* Collection Panel */}
+            {showCollectionPanel && hasRealCard && (
+              <div className="collection-panel absolute top-[50px] left-1/2 transform -translate-x-1/2 z-20 w-full max-w-[320px] p-4 rounded-lg bg-black/80 backdrop-blur-lg border border-[#19E3FF]/60 shadow-[0_8px_24px_rgba(0,0,0,0.35)] text-white">
+                {/* Close button */}
+                <button
+                  type="button"
+                  aria-label="Close collection panel"
+                  onClick={() => {
+                    try { sfx.play('close', 0.4); } catch {}
+                    setShowCollectionPanel(false);
+                  }}
+                  onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                  className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-[#19E3FF] text-black font-bold text-sm flex items-center justify-center transition-all duration-200 hover:scale-110 hover:shadow-[0_0_20px_rgba(25,227,255,0.8)]"
+                  style={{
+                    boxShadow: '0 0 12px rgba(25,227,255,0.6)'
+                  }}
+                >
+                  ×
+                </button>
+
+                {loadingProfile ? (
+                  <div className="text-center text-[#19E3FF] text-sm">Loading profile...</div>
+                ) : userProfile ? (
+                  <>
+                    {/* User Display */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="w-10 h-10 rounded-full relative overflow-hidden flex items-center justify-center"
+                          style={{
+                            background: getElementBackground(userSelectedElement),
+                            boxShadow: getElementGlow(userSelectedElement)
+                          }}
+                        >
+                          <img
+                            src={`/elements/${userSelectedElement || 'heart'}.png`}
+                            alt={`${userSelectedElement || 'Heart'} Element`}
+                            className="w-full h-full object-cover"
+                            style={{
+                              filter: 'brightness(1.2) saturate(1.5)'
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <div className="text-sm font-semibold text-[#CFF7FF]">{userProfile.display_name}</div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-[#F2EF1D] font-bold">{userProfile.hearts}</span>
+                            <img
+                              src="/elements/heart-coin.png"
+                              alt="Heart Coin"
+                              className="w-4 h-4 object-contain"
+                              style={{
+                                filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Cost Display */}
+                    <div className="mb-4 text-sm">
+                      <span className="text-[#9EEBFF]">Cost of this card: </span>
+                      <span className="text-[#F2EF1D] font-bold">{selectedCardType === 'digital' ? '5' : '10'}</span>
+                    </div>
+
+                    {/* Affordability Indicator */}
+                    <div className="mb-4">
+                      {userProfile.hearts >= (selectedCardType === 'digital' ? 5 : 10) ? (
+                        <div className="text-sm font-semibold text-green-400 bg-green-400/20 px-3 py-1 rounded border border-green-400/40">
+                          ✓ You can collect this
+                        </div>
+                      ) : (
+                        <div className="text-sm font-semibold text-red-400 bg-red-400/20 px-3 py-1 rounded border border-red-400/40">
+                          ✗ Not enough coins
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Digital vs Physical Selection */}
+                    <div className="space-y-3">
+                      <div className="text-sm font-semibold text-[#CFF7FF] mb-2">Select Card Type:</div>
+                      
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedCardType('digital');
+                          try { sfx.play('hover', 0.35); } catch {}
+                        }}
+                        className={`w-full p-3 rounded-lg border-2 transition-all duration-200 ${
+                          selectedCardType === 'digital'
+                            ? 'border-[#19E3FF] bg-[#19E3FF]/20 shadow-[0_0_20px_rgba(25,227,255,0.6)]'
+                            : 'border-[#19E3FF]/40 bg-[#19E3FF]/5 hover:border-[#19E3FF]/60'
+                        }`}
+                        style={selectedCardType === 'digital' ? {
+                          boxShadow: '0 0 20px rgba(25, 227, 255, 0.6), 0 0 40px rgba(25, 227, 255, 0.3)'
+                        } : {}}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="font-semibold text-[#19E3FF]">Digital Card</div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[#F2EF1D] font-bold">5</span>
+                            <img
+                              src="/elements/heart-coin.png"
+                              alt="Heart Coin"
+                              className="w-4 h-4 object-contain"
+                              style={{
+                                filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedCardType('physical');
+                          try { sfx.play('hover', 0.35); } catch {}
+                        }}
+                        className={`w-full p-3 rounded-lg border-2 transition-all duration-200 ${
+                          selectedCardType === 'physical'
+                            ? 'border-[#FC54AF] bg-[#FC54AF]/20 shadow-[0_0_20px_rgba(252,84,175,0.6)]'
+                            : 'border-[#FC54AF]/40 bg-[#FC54AF]/5 hover:border-[#FC54AF]/60'
+                        }`}
+                        style={selectedCardType === 'physical' ? {
+                          boxShadow: '0 0 20px rgba(252, 84, 175, 0.6), 0 0 40px rgba(252, 84, 175, 0.3)'
+                        } : {}}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="font-semibold text-[#FC54AF]">Physical Card</div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[#F2EF1D] font-bold">10</span>
+                            <img
+                              src="/elements/heart-coin.png"
+                              alt="Heart Coin"
+                              className="w-4 h-4 object-contain"
+                              style={{
+                                filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+
+                    {/* Purchase Button */}
+                    <div className="mt-6 pt-4 border-t border-[#19E3FF]/30">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          try { e.preventDefault(); } catch {}
+                          try { sfx.play('click', 0.7); } catch {}
+                          try {
+                            track('purchase_card_clicked', { 
+                              song_slug: title?.toLowerCase().replace(/\s+/g, '-'),
+                              card_src: src,
+                              card_type: selectedCardType,
+                              payload: { song_title: title, card_image: src, stripe_url: getPurchaseUrl(title) } 
+                            });
+                          } catch {}
+                          try {
+                            const url = getPurchaseUrl(title);
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                          } catch { }
+                        }}
+                        onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
+                        className="w-full purchase-btn relative overflow-hidden bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black font-bold py-3 px-6 rounded-lg border-2 border-[#F2EF1D] transition-all duration-200 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(242,239,29,0.8)]"
+                        style={{
+                          boxShadow: '0 0 20px rgba(242,239,29,0.6), inset 0 2px 0 rgba(255,255,255,0.6), inset 0 -8px 16px rgba(0,0,0,0.22)'
+                        }}
+                      >
+                        <span className="relative z-10 text-sm font-bold tracking-wide">PURCHASE</span>
+                        <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 -translate-x-full transition-transform duration-700 hover:translate-x-full" aria-hidden />
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center text-red-400 text-sm">Failed to load profile</div>
+                )}
+              </div>
+            )}
+
             <button
               type="button"
               aria-label="Close"
@@ -663,6 +953,30 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
 
           {/* Header image with clickable quadrants */}
           <div style={{ marginBottom: 12, display: 'grid', placeItems: 'center' }}>
+            {selectedElement && (
+              <div style={{ 
+                marginBottom: 8, 
+                padding: '4px 12px', 
+                borderRadius: 8, 
+                fontSize: 12, 
+                fontWeight: 600, 
+                textAlign: 'center',
+                background: selectedElement === 'darkness' ? 'rgba(255,255,255,0.2)' :
+                           selectedElement === 'heart' ? 'rgba(252,84,175,0.2)' :
+                           selectedElement === 'water' ? 'rgba(56,182,255,0.2)' :
+                           selectedElement === 'lightning' ? 'rgba(242,239,29,0.2)' : 'rgba(25,227,255,0.2)',
+                border: `1px solid ${selectedElement === 'darkness' ? 'rgba(255,255,255,0.6)' :
+                                    selectedElement === 'heart' ? 'rgba(252,84,175,0.6)' :
+                                    selectedElement === 'water' ? 'rgba(56,182,255,0.6)' :
+                                    selectedElement === 'lightning' ? 'rgba(242,239,29,0.6)' : 'rgba(25,227,255,0.6)'}`,
+                color: selectedElement === 'darkness' ? '#ffffff' :
+                       selectedElement === 'heart' ? '#FC54AF' :
+                       selectedElement === 'water' ? '#38B6FF' :
+                       selectedElement === 'lightning' ? '#F2EF1D' : '#19E3FF'
+              }}>
+                {selectedElement.toUpperCase()} SELECTED
+              </div>
+            )}
             <div style={{ position: 'relative', width: '58%', maxWidth: 280 }}>
               <img
                 src="/elements/elementals.png?v=20241027"
@@ -672,10 +986,86 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
               />
               {/* Quadrant overlay buttons */}
               {/* Mapping per request: TL=darkness, TR=heart, BL=water, BR=lightning */}
-              <button aria-label="Darkness" title="Darkness" onClick={() => scrollElementsTo('darkness')} className="elt-q elt-q-tl" />
-              <button aria-label="Heart" title="Heart" onClick={() => scrollElementsTo('heart')} className="elt-q elt-q-tr" />
-              <button aria-label="Water" title="Water" onClick={() => scrollElementsTo('water')} className="elt-q elt-q-bl" />
-              <button aria-label="Lightning" title="Lightning" onClick={() => scrollElementsTo('lightning')} className="elt-q elt-q-br" />
+              <button 
+                aria-label="Darkness" 
+                title="Darkness" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.stopImmediatePropagation();
+                  selectElement('darkness');
+                }} 
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                }}
+                onMouseEnter={() => {
+                  setHoveredElement('darkness');
+                  try { sfx.play('hover', 0.25); } catch {}
+                }}
+                onMouseLeave={() => setHoveredElement(null)}
+                className={`elt-q elt-q-tl ${selectedElement === 'darkness' ? 'elt-q-selected' : ''} ${hoveredElement === 'darkness' ? 'elt-q-hovered' : ''}`}
+                data-element="darkness"
+              />
+              <button 
+                aria-label="Heart" 
+                title="Heart" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.stopImmediatePropagation();
+                  selectElement('heart');
+                }} 
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                }}
+                onMouseEnter={() => {
+                  setHoveredElement('heart');
+                  try { sfx.play('hover', 0.25); } catch {}
+                }}
+                onMouseLeave={() => setHoveredElement(null)}
+                className={`elt-q elt-q-tr ${selectedElement === 'heart' ? 'elt-q-selected' : ''} ${hoveredElement === 'heart' ? 'elt-q-hovered' : ''}`}
+                data-element="heart"
+              />
+              <button 
+                aria-label="Water" 
+                title="Water" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.stopImmediatePropagation();
+                  selectElement('water');
+                }} 
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                }}
+                onMouseEnter={() => {
+                  setHoveredElement('water');
+                  try { sfx.play('hover', 0.25); } catch {}
+                }}
+                onMouseLeave={() => setHoveredElement(null)}
+                className={`elt-q elt-q-bl ${selectedElement === 'water' ? 'elt-q-selected' : ''} ${hoveredElement === 'water' ? 'elt-q-hovered' : ''}`}
+                data-element="water"
+              />
+              <button 
+                aria-label="Lightning" 
+                title="Lightning" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.stopImmediatePropagation();
+                  selectElement('lightning');
+                }} 
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                }}
+                onMouseEnter={() => {
+                  setHoveredElement('lightning');
+                  try { sfx.play('hover', 0.25); } catch {}
+                }}
+                onMouseLeave={() => setHoveredElement(null)}
+                className={`elt-q elt-q-br ${selectedElement === 'lightning' ? 'elt-q-selected' : ''} ${hoveredElement === 'lightning' ? 'elt-q-hovered' : ''}`}
+                data-element="lightning"
+              />
             </div>
           </div>
 
@@ -845,22 +1235,109 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
         }
         /* Clickable quadrants overlay for elementals image */
         .elt-img{ position: relative; z-index: 1; }
-        .elt-q{ position:absolute; top:0; left:0; width:100%; height:100%; background: transparent; border:0; padding:0; cursor:pointer; z-index:3; }
+        .elt-q{ 
+          position: absolute; 
+          top: 0; 
+          left: 0; 
+          width: 100%; 
+          height: 100%; 
+          background: transparent; 
+          border: 0; 
+          padding: 0; 
+          cursor: pointer; 
+          z-index: 10; /* Higher z-index to render above art */
+        }
         .elt-q:focus-visible{ outline: 2px solid rgba(25,227,255,0.85); outline-offset: 2px; }
-        .elt-q::after{ content:''; position:absolute; inset:0; clip-path: inherit; box-shadow: none; transition: box-shadow .15s ease; pointer-events: none; z-index:4; }
-        .elt-q:hover::after{ box-shadow: inset 0 0 0 2px rgba(242,239,29,0.9), 0 0 14px rgba(242,239,29,0.7); }
+        .elt-q::after{ 
+          content: ''; 
+          position: absolute; 
+          inset: 0; 
+          clip-path: inherit; 
+          box-shadow: none; 
+          transition: all .2s ease; 
+          pointer-events: none; 
+          z-index: 11; /* Even higher to ensure visibility */
+        }
+        
+        /* Hover state with element-specific colors */
+        .elt-q.elt-q-hovered[data-element="darkness"]::after{ 
+          box-shadow: inset 0 0 0 2px rgba(255,255,255,0.8), 0 0 20px rgba(255,255,255,0.6), 0 0 40px rgba(255,255,255,0.4); 
+        }
+        .elt-q.elt-q-hovered[data-element="heart"]::after{ 
+          box-shadow: inset 0 0 0 2px rgba(252,84,175,0.8), 0 0 20px rgba(252,84,175,0.6), 0 0 40px rgba(252,84,175,0.4); 
+        }
+        .elt-q.elt-q-hovered[data-element="water"]::after{ 
+          box-shadow: inset 0 0 0 2px rgba(56,182,255,0.8), 0 0 20px rgba(56,182,255,0.6), 0 0 40px rgba(56,182,255,0.4); 
+        }
+        .elt-q.elt-q-hovered[data-element="lightning"]::after{ 
+          box-shadow: inset 0 0 0 2px rgba(242,239,29,0.8), 0 0 20px rgba(242,239,29,0.6), 0 0 40px rgba(242,239,29,0.4); 
+        }
+        
+        /* Selected state with proper element colors */
+        .elt-q.elt-q-selected[data-element="darkness"]::after{ 
+          box-shadow: inset 0 0 0 3px rgba(255,255,255,1), 0 0 25px rgba(255,255,255,0.8), 0 0 45px rgba(255,255,255,0.5); 
+        }
+        .elt-q.elt-q-selected[data-element="heart"]::after{ 
+          box-shadow: inset 0 0 0 3px rgba(252,84,175,1), 0 0 25px rgba(252,84,175,0.8), 0 0 45px rgba(252,84,175,0.5); 
+        }
+        .elt-q.elt-q-selected[data-element="water"]::after{ 
+          box-shadow: inset 0 0 0 3px rgba(56,182,255,1), 0 0 25px rgba(56,182,255,0.8), 0 0 45px rgba(56,182,255,0.5); 
+        }
+        .elt-q.elt-q-selected[data-element="lightning"]::after{ 
+          box-shadow: inset 0 0 0 3px rgba(242,239,29,1), 0 0 25px rgba(242,239,29,0.8), 0 0 45px rgba(242,239,29,0.5); 
+        }
+        
         /* Quarter-circle clip shapes matching the image quadrants */
         .elt-q-tl{ clip-path: polygon(50% 50%, 50% 0%, 43% 2%, 35% 6%, 27% 12%, 19% 19%, 12% 27%, 6% 35%, 2% 43%, 0% 50%, 50% 50%); }
         .elt-q-tr{ clip-path: polygon(50% 50%, 50% 0%, 57% 2%, 65% 6%, 73% 12%, 81% 19%, 88% 27%, 94% 35%, 98% 43%, 100% 50%, 50% 50%); }
         .elt-q-bl{ clip-path: polygon(50% 50%, 0% 50%, 2% 57%, 6% 65%, 12% 73%, 19% 81%, 27% 88%, 35% 94%, 43% 98%, 50% 100%, 50% 50%); }
         .elt-q-br{ clip-path: polygon(50% 50%, 100% 50%, 98% 57%, 94% 65%, 88% 73%, 81% 81%, 73% 88%, 65% 94%, 57% 98%, 50% 100%, 50% 50%); }
+        
+        /* Mobile responsive improvements */
+        @media (max-width: 768px) {
+          .elements-popover {
+            width: min(95vw, 380px) !important;
+            maxWidth: 95vw !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            padding: 12px 14px !important;
+          }
+          
+          .elt-q {
+            /* Larger touch targets on mobile */
+            min-width: 44px;
+            min-height: 44px;
+          }
+          
+          .elt-q::after {
+            /* Stronger visual feedback on mobile */
+            transition: all .3s ease;
+          }
+          
+          .elt-q.elt-q-hovered::after,
+          .elt-q:active::after {
+            box-shadow: inset 0 0 0 3px rgba(255,255,255,0.9), 0 0 25px rgba(255,255,255,0.7);
+          }
+        }
+        
+        @media (max-width: 480px) {
+          .elements-popover {
+            width: min(98vw, 340px) !important;
+            maxWidth: 98vw !important;
+            fontSize: 14px !important;
+          }
+          
+          .card-modal {
+            width: min(85vw, 220px) !important;
+          }
+        }
         /* ELEMENT button icon styles */
         .btn-element{
           position: relative; display:inline-grid; place-items:center;
           width: 36px; height: 36px; border-radius: 50%; font-weight:800; letter-spacing:.06em; font-size: 15px; line-height: 1.1;
           color:#001014; text-transform:none; font-family: InterLocal, system-ui, sans-serif;
           background: transparent; /* fill entirely with elementals.png */
-          border: 1px solid rgba(255,255,255,.24);
+          border: 0.5px solid rgba(255,255,255,.15);
           box-shadow: 0 0 20px rgba(25,227,255,.55); /* remove inner insets so image fully reads */
           transition: transform .12s ease, box-shadow .18s ease, filter .18s ease;
           overflow: visible; /* allow icon/glow to sit on top of the button without clipping */
@@ -871,10 +1348,11 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
           inset: 0; 
           width: 100%; 
           height: 100%; 
-          object-fit: cover; 
+          object-fit: cover !important; 
           display: block; 
           pointer-events: none; 
-          transform: scale(1.08); /* slightly overfill so art sits on top of circular border */
+          transform: scale(1.2); /* overfill to ensure image completely fills the circular button */
+          border-radius: 50%; /* ensure the image itself is circular */
         }
         .btn-element:hover{
           transform: scale(1.12);
@@ -901,6 +1379,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
       <audio ref={openDingRef} src="/audio/card-ding.mp3" preload="auto" />
       <audio ref={flipCoverRef} src="/audio/flip.mp3" preload="auto" />
       <audio ref={scrollAudioRef} src="/audio/scroll.mp3" preload="auto" />
+      <audio ref={chimeAudioRef} src="/audio/card-ding.mp3" preload="auto" />
     </motion.div>
   );
 }

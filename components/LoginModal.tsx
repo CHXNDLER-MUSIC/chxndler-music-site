@@ -68,18 +68,19 @@ export default function LoginModal({ open, onClose }: Props) {
       aria-modal="true"
       role="dialog"
       aria-label="Sign in"
+      style={{ alignItems: 'flex-start', paddingTop: '15vh' }}
     >
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/85 backdrop-blur-md"
         onClick={onClose}
       />
-      <div className="relative mx-4 max-w-md w-full">
-        <div className="relative rounded-2xl p-6 backdrop-blur-md border border-white/20 bg-white/5 shadow-[0_0_26px_rgba(56,182,255,0.35)]">
+      <div className="relative mx-4 max-w-sm w-full">
+        <div className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-[#FC54AF]/60 bg-white/5 shadow-[0_0_26px_rgba(56,182,255,0.35)]">
           <div
             className="absolute inset-0 rounded-2xl pointer-events-none"
             style={{
               boxShadow:
-                "0 0 40px rgba(252,84,175,0.25), 0 0 80px rgba(56,182,255,0.25), inset 0 0 24px rgba(242,239,29,0.15)",
+                "0 0 40px rgba(252,84,175,0.5), 0 0 80px rgba(252,84,175,0.3), inset 0 0 24px rgba(252,84,175,0.2)",
             }}
           />
 
@@ -92,23 +93,23 @@ export default function LoginModal({ open, onClose }: Props) {
             ×
           </button>
 
-          <h2 className="relative text-2xl font-bold tracking-wider text-white drop-shadow mb-2">
+          <h2 className="relative text-xl font-bold tracking-wider text-white drop-shadow mb-1">
             WELCOME HOME
           </h2>
-          <p className="relative text-sm text-white/80 mb-4">You’re invited into the Heartverse.</p>
+          <p className="relative text-sm text-white/80 mb-3">You're invited into the Heartverse.</p>
 
           {error && (
-            <div className="relative mb-3 rounded-md bg-red-50/10 border border-red-200/40 p-3 text-sm text-red-200">
+            <div className="relative mb-2 rounded-md bg-red-50/10 border border-red-200/40 p-2 text-sm text-red-200">
               {error}
             </div>
           )}
           {message && (
-            <div className="relative mb-3 rounded-md bg-green-50/10 border border-green-200/40 p-3 text-sm text-green-200">
+            <div className="relative mb-2 rounded-md bg-green-50/10 border border-green-200/40 p-2 text-sm text-green-200">
               {message}
             </div>
           )}
 
-          <div className="relative space-y-3">
+          <div className="relative space-y-2">
             <button
               onClick={signInWithGoogle}
               disabled={loading}
@@ -123,7 +124,7 @@ export default function LoginModal({ open, onClose }: Props) {
               <div className="flex-grow border-t border-white/20" />
             </div>
 
-            <form onSubmit={signInWithEmail} className="space-y-3">
+            <form onSubmit={signInWithEmail} className="space-y-2">
               <label htmlFor="login-email" className="block text-sm font-medium text-white/90">
                 Email for magic link
               </label>
@@ -139,7 +140,12 @@ export default function LoginModal({ open, onClose }: Props) {
               <button
                 type="submit"
                 disabled={loading || email.length === 0}
-                className="w-full inline-flex items-center justify-center rounded-lg bg-white/10 border border-white/20 px-4 py-3 text-sm font-medium text-white hover:bg-white/15 transition disabled:opacity-50"
+                className="w-full inline-flex items-center justify-center rounded-lg bg-[#FC54AF]/20 border-2 border-[#FC54AF]/60 px-4 py-3 text-sm font-medium text-white hover:bg-[#FC54AF]/30 transition disabled:opacity-50"
+                style={{
+                  boxShadow: loading || email.length === 0 
+                    ? 'none' 
+                    : '0 0 20px rgba(252,84,175,0.6), 0 0 40px rgba(252,84,175,0.4), inset 0 0 10px rgba(252,84,175,0.2)'
+                }}
               >
                 Send magic link
               </button>

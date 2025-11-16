@@ -211,6 +211,10 @@ export default function HUDPanel({
   const [dreamerHovered, setDreamerHovered] = useState(false);
   const [loverFlipped, setLoverFlipped] = useState(false);
   const [loverHovered, setLoverHovered] = useState(false);
+  // HEARTVERSE code display state
+  const [showHeartverseCode, setShowHeartverseCode] = useState(false);
+  // Digital binder popover state
+  const [showBookPopover, setShowBookPopover] = useState(false);
   // Position heart popover similar to lyrics popover
   const HEART_POPOVER_Y_OFFSET = -40;
 
@@ -299,52 +303,22 @@ export default function HUDPanel({
   const [patchHovered, setPatchHovered] = useState(false);
   const products = [
     {
+      id: 'sticker',
+      title: 'STICKER',
+      image: '/store/sticker.png',
+      url: 'https://buy.stripe.com/8x24gA99f9Bj1gR6WX4gg0F',
+      price: '$3',
+      heartcoins: 2,
+      description: "A simple reminder that you're part of something bigger. Remember you're not alone in this story."
+    },
+    {
       id: 'pin',
       title: 'PIN',
       image: '/store/pin.png',
       url: 'https://buy.stripe.com/cNi00kfxDeVD3oZ5ST4gg0B',
       price: '$5',
+      heartcoins: 3,
       description: 'A symbol that you belong here with the people who feel deeply, dream big, and find beauty in being different.'
-    },
-    {
-      id: 'patch',
-      title: 'PATCH',
-      image: '/store/patch.png',
-      url: 'https://buy.stripe.com/00w5kEgBHdRz1gRgxx4gg0C',
-      price: '$5',
-      description: 'Stitch this into your world as a quiet reminder that this isn’t just music, it’s a community.'
-    },
-    {
-      id: 'necklace',
-      title: 'NECKLACE',
-      image: '/store/necklace.png',
-      url: 'https://buy.stripe.com/bJe3cw99f28R5x7epp4gg0K',
-      price: '$15',
-      description: 'A symbol of love, connection, and everything this world stands for. It’s a keepsake for the people who found home here.'
-    },
-    {
-      id: 'beanie',
-      title: 'BEANIE',
-      image: '/store/beanie-front.png',
-      url: 'https://buy.stripe.com/dRm8wQetz14N5x71CD4gg0L',
-      price: '$30',
-      description: 'For the ones who wear their hearts out loud and aren’t afraid to stand out.'
-    },
-    {
-      id: 'sticker',
-      title: 'STICKER',
-      image: '/store/sticker.png',
-      url: 'https://buy.stripe.com/8x24gA99f9Bj1gR6WX4gg0F',
-      price: '$5',
-      description: 'A simple reminder that you’re part of something bigger. Remember you’re not alone in this story.'
-    },
-    {
-      id: 'hat',
-      title: 'HAT',
-      image: '/store/hat.png',
-      url: 'https://buy.stripe.com/6oU28s717aFn1gR1CD4gg0I',
-      price: '$25',
-      description: 'A classic you’ll wear everywhere. It’s lowkey, but it says everything it needs to.'
     },
     {
       id: 'button',
@@ -352,38 +326,79 @@ export default function HUDPanel({
       image: '/store/button.png',
       url: 'https://buy.stripe.com/6oU14oclr8xfbVvbdd4gg0J',
       price: '$5',
+      heartcoins: 3,
       description: 'A symbol of unity, curiosity, and courage for those who feel deeply and dream beyond the ordinary.'
+    },
+    {
+      id: 'patch',
+      title: 'PATCH',
+      image: '/store/patch.png',
+      url: 'https://buy.stripe.com/00w5kEgBHdRz1gRgxx4gg0C',
+      price: '$6',
+      heartcoins: 4,
+      description: "Stitch this into your world as a quiet reminder that this isn't just music, it's a community."
     },
     {
       id: 'keychain',
       title: 'KEYCHAIN',
       image: '/store/keychain.png',
       url: 'https://buy.stripe.com/8x214o99faFn0cN5ST4gg0H',
-      price: '$5',
-      description: 'A small piece of the HEARTVERSE to carry everywhere. A quiet reminder that you’re connected, always.'
+      price: '$6',
+      heartcoins: 4,
+      description: "A small piece of the HEARTVERSE to carry everywhere. A quiet reminder that you're connected, always."
     },
     {
       id: 'pick',
       title: 'PICK',
       image: '/store/pick.png',
       url: 'https://buy.stripe.com/4gM9AUadj9Bj2kVgxx4gg0O',
-      price: '5',
+      price: '$6',
+      heartcoins: 4,
       description: 'A glow in the dark pick made for the dreamers and late night creators who carry music like a heartbeat through the dark.'
+    },
+    {
+      id: 'necklace',
+      title: 'NECKLACE',
+      image: '/store/necklace.png',
+      url: 'https://buy.stripe.com/bJe3cw99f28R5x7epp4gg0K',
+      price: '$18',
+      heartcoins: 12,
+      description: "A symbol of love, connection, and everything this world stands for. It's a keepsake for the people who found home here."
     },
     {
       id: 'bracelet',
       title: 'BRACELET',
       image: '/store/bracelet.png',
       url: 'https://buy.stripe.com/aFa8wQ2KR8xf6Bbftt4gg0N',
-      price: '10',
+      price: '$24',
+      heartcoins: 16,
       description: 'A HEARTVERSE charm that connects you to the Aliens who feel deeply and walk the world with open hearts.'
+    },
+    {
+      id: 'hat',
+      title: 'HAT',
+      image: '/store/hat.png',
+      url: 'https://buy.stripe.com/6oU28s717aFn1gR1CD4gg0I',
+      price: '$30',
+      heartcoins: 20,
+      description: "A classic you'll wear everywhere. It's lowkey, but it says everything it needs to."
+    },
+    {
+      id: 'beanie',
+      title: 'BEANIE',
+      image: '/store/beanie-front.png',
+      url: 'https://buy.stripe.com/dRm8wQetz14N5x71CD4gg0L',
+      price: '$30',
+      heartcoins: 20,
+      description: "For the ones who wear their hearts out loud and aren't afraid to stand out."
     },
     {
       id: 'house-party-poster',
       title: 'HOUSE PARTY POSTER',
       image: '/store/house-party-poster.png',
       url: 'https://buy.stripe.com/dRm8wQetz14N5x71CD4gg0L',
-      price: '$25',
+      price: '$30',
+      heartcoins: 20,
       description: 'This poster captures the night the HEARTVERSE came alive. Hang it up and remember when you joined the story.'
     }
   ];
@@ -611,8 +626,26 @@ export default function HUDPanel({
     if (!showHeartPopover) {
       try { setHeartTierDetails(null); } catch {}
       try { setWandererFlipped(false); setWandererHovered(false); } catch {}
+      try { setShowHeartverseCode(false); } catch {}
     }
   }, [showHeartPopover]);
+  
+  // Close book popover on outside click / Escape
+  useEffect(() => {
+    if (!showBookPopover) return;
+    const onDocDown = (e) => {
+      const dialog = document.querySelector('[aria-label="Digital Binder"]');
+      const withinDialog = dialog && e.target && dialog.contains(e.target);
+      if (!withinDialog) setShowBookPopover(false);
+    };
+    const onKey = (e) => { if (e.key === 'Escape') setShowBookPopover(false); };
+    document.addEventListener('mousedown', onDocDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [showBookPopover]);
 
   // Open Store (Gem) popover anchored to the gem button
   const openStorePopover = async () => {
@@ -2047,7 +2080,7 @@ export default function HUDPanel({
                       transform: (heartPopoverPos && heartPopoverPos.width) ? 'none' : 'translateX(-50%)',
                       padding: '14px 16px 16px 16px',
                       borderRadius: 14,
-                      background: 'radial-gradient(140% 160% at 50% 0%, rgba(25,227,255,0.28), rgba(14,168,208,0.22) 35%, rgba(6,40,55,0.35) 100%)',
+                      background: 'radial-gradient(140% 160% at 50% 0%, rgba(25,227,255,0.20), rgba(14,168,208,0.15) 35%, rgba(6,40,55,0.50) 100%)',
                       border: '1px solid rgba(25,227,255,0.45)',
                       boxShadow: '0 18px 46px rgba(0,0,0,0.35), 0 0 26px rgba(25,227,255,0.35)',
                       backdropFilter: 'blur(8px) saturate(1.15)',
@@ -2060,6 +2093,29 @@ export default function HUDPanel({
                     }}
                     onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowHeartPopover(false); } }}
                   >
+                    {/* Heart coin + 32 moved to left of X button */}
+                    <div style={{
+                      position: 'absolute',
+                      top: 8,
+                      right: 48,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      background: 'rgba(0,0,0,0.3)',
+                      padding: '6px 10px',
+                      borderRadius: 16,
+                      border: '1px solid rgba(252,84,175,0.4)'
+                    }}>
+                      <img
+                        src="/elements/heart-coin.png"
+                        alt="HEART Coin"
+                        width={20}
+                        height={20}
+                        style={{ display: 'block', width: 20, height: 20, objectFit: 'contain', filter: 'drop-shadow(0 0 6px rgba(252,84,175,0.45))' }}
+                      />
+                      <span style={{ fontSize: 13, fontWeight: 800, color: '#d3168c' }}>32</span>
+                    </div>
+                    
                     {/* Close button in the top-right corner (pink accent) */}
                     <button
                       aria-label="Close"
@@ -2136,16 +2192,59 @@ export default function HUDPanel({
                             <ElementIcon name={sofiaElement} size={18} glow={true} />
                           </button>
                           {/* SOFIA label */}
-                          <div
-                            style={{
-                              fontSize: 18,
-                              fontWeight: 900,
-                              letterSpacing: '.02em',
-                              color: '#FC54AF',
-                              textShadow: '0 0 12px rgba(252,84,175,0.35)'
-                            }}
-                          >
-                            SOFIA
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
+                            <div
+                              style={{
+                                fontSize: 18,
+                                fontWeight: 900,
+                                letterSpacing: '.02em',
+                                color: '#FC54AF',
+                                textShadow: '0 0 12px rgba(252,84,175,0.35)'
+                              }}
+                            >
+                              SOFIA
+                            </div>
+                            {/* Book button below SOFIA */}
+                            <button
+                              type="button"
+                              aria-label="Digital Binder"
+                              title="Digital Binder"
+                              onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                              onClick={() => {
+                                try { sfx.play('click', 0.4); } catch {}
+                                setShowBookPopover(!showBookPopover);
+                              }}
+                              style={{
+                                padding: 6,
+                                borderRadius: 6,
+                                background: 'linear-gradient(135deg, rgba(252,84,175,0.15), rgba(25,227,255,0.15))',
+                                border: '1px solid rgba(252,84,175,0.4)',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6
+                              }}
+                              onMouseOver={(e) => {
+                                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(252,84,175,0.25), rgba(25,227,255,0.25))';
+                                e.currentTarget.style.borderColor = 'rgba(252,84,175,0.6)';
+                                e.currentTarget.style.transform = 'scale(1.05)';
+                              }}
+                              onMouseOut={(e) => {
+                                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(252,84,175,0.15), rgba(25,227,255,0.15))';
+                                e.currentTarget.style.borderColor = 'rgba(252,84,175,0.4)';
+                                e.currentTarget.style.transform = 'scale(1.0)';
+                              }}
+                            >
+                              <img
+                                src="/book.png"
+                                alt="Book"
+                                width={16}
+                                height={16}
+                                style={{ display: 'block', width: 16, height: 16, objectFit: 'contain' }}
+                              />
+                              <span style={{ fontSize: 11, fontWeight: 600, color: '#FC54AF' }}>BINDER</span>
+                            </button>
                           </div>
                           {/* Small element picker popover */}
                           {sofiaPickerOpen ? (
@@ -2195,6 +2294,7 @@ export default function HUDPanel({
                           style={{
                             position: 'absolute',
                             left: '50%',
+                            top: '8px',
                             transform: 'translateX(-50%)',
                             fontSize: 22,
                             fontWeight: 900,
@@ -2205,24 +2305,126 @@ export default function HUDPanel({
                         >
                           THE DREAMER
                         </div>
-                        {/* Right: heart coin + 32 */}
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginLeft: 'auto', marginRight: 20 }}>
-                          <img
-                            src="/elements/heart-coin.png"
-                            alt="HEART Coin"
-                            width={36}
-                            height={36}
-                            style={{ display: 'block', width: 36, height: 36, objectFit: 'contain', filter: 'drop-shadow(0 0 10px rgba(252,84,175,0.45))' }}
-                          />
-                          <span style={{ fontSize: 16, fontWeight: 800, color: '#d3168c' }}>32</span>
-                        </div>
+                        {/* Right side empty - content moved below */}
+                      </div>
+                      
+                      {/* THE CODE button moved below THE DREAMER */}
+                      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
+                        <button
+                          type="button"
+                          aria-label="HEARTVERSE Code"
+                          title="HEARTVERSE Code"
+                          onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                          onClick={() => {
+                            try { sfx.play('click', 0.4); } catch {}
+                            setShowHeartverseCode(!showHeartverseCode);
+                          }}
+                          style={{
+                            padding: '8px 16px',
+                            borderRadius: 8,
+                            background: 'linear-gradient(135deg, rgba(252,84,175,0.15), rgba(25,227,255,0.15))',
+                            border: '1px solid rgba(252,84,175,0.4)',
+                            color: '#FC54AF',
+                            fontSize: 12,
+                            fontWeight: 700,
+                            letterSpacing: '0.02em',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onMouseOver={(e) => {
+                            e.target.style.background = 'linear-gradient(135deg, rgba(252,84,175,0.25), rgba(25,227,255,0.25))';
+                            e.target.style.borderColor = 'rgba(252,84,175,0.6)';
+                            e.target.style.transform = 'scale(1.05)';
+                          }}
+                          onMouseOut={(e) => {
+                            e.target.style.background = 'linear-gradient(135deg, rgba(252,84,175,0.15), rgba(25,227,255,0.15))';
+                            e.target.style.borderColor = 'rgba(252,84,175,0.4)';
+                            e.target.style.transform = 'scale(1.0)';
+                          }}
+                        >
+                          THE CODE
+                        </button>
                       </div>
                       {/* Header / Hero */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 2px 8px 2px' }}>
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <div style={{ fontSize: 13, opacity: 0.8 }}>Choose your path. Earn HEARTS. Unlock deeper access.</div>
+                          <div style={{ fontSize: 14, opacity: 0.8 }}>Choose your path. Earn HEARTS. Unlock deeper access.</div>
                         </div>
                       </div>
+
+                      {/* HEARTVERSE Code Display */}
+                      {showHeartverseCode && (
+                        <div style={{ 
+                          margin: '6px 0 8px 0',
+                          padding: '12px',
+                          borderRadius: 12,
+                          background: 'linear-gradient(135deg, rgba(252,84,175,0.1), rgba(25,227,255,0.05))',
+                          border: '1px solid rgba(252,84,175,0.3)',
+                          boxShadow: '0 0 20px rgba(252,84,175,0.15)'
+                        }}>
+                          <div style={{ 
+                            fontSize: 18, 
+                            fontWeight: 800, 
+                            color: '#FC54AF', 
+                            marginBottom: 4,
+                            textAlign: 'center',
+                            letterSpacing: '0.02em',
+                            textShadow: '0 0 12px rgba(252,84,175,0.5)'
+                          }}>
+                            HEARTVERSE CODE
+                          </div>
+                          
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            {/* We Believe Section */}
+                            <div>
+                              <div style={{ 
+                                fontSize: 16, 
+                                fontWeight: 700, 
+                                color: '#19E3FF', 
+                                marginBottom: 4,
+                                textShadow: '0 0 8px rgba(25,227,255,0.4)'
+                              }}>
+                                We Believe
+                              </div>
+                              <ul style={{ margin: 0, paddingLeft: 20, listStyle: 'disc' }}>
+                                <li style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 2, color: '#fff' }}>
+                                  We believe being your truest self is the beginning of freedom.
+                                </li>
+                                <li style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 2, color: '#fff' }}>
+                                  We believe passion is sacred and should be pursued loudly.
+                                </li>
+                                <li style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 2, color: '#fff' }}>
+                                  We believe love is the force that connects every soul.
+                                </li>
+                              </ul>
+                            </div>
+
+                            {/* We Do Not Believe Section */}
+                            <div>
+                              <div style={{ 
+                                fontSize: 16, 
+                                fontWeight: 700, 
+                                color: '#FF4FD8', 
+                                marginBottom: 8,
+                                textShadow: '0 0 8px rgba(255,79,216,0.4)'
+                              }}>
+                                We Do Not Believe
+                              </div>
+                              <ul style={{ margin: 0, paddingLeft: 20, listStyle: 'disc' }}>
+                                <li style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 2, color: '#fff' }}>
+                                  We do not believe you must shrink to be accepted.
+                                </li>
+                                <li style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 2, color: '#fff' }}>
+                                  We do not believe your magic needs to be perfect.
+                                </li>
+                                <li style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 2, color: '#fff' }}>
+                                  We do not believe wonder must fade as you grow.
+                                </li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       
                       {/* Tiers: interactive cards or details view */}
                       {heartTierDetails ? (
@@ -2291,7 +2493,7 @@ export default function HUDPanel({
                             gap: 16
                           }}
                         >
-                          {/* Wanderer - circular flip button (keeps shape, store-like animation) */}
+                          {/* Wanderer - vertical capsule flip button (tall rounded badge) */}
                           <div
                             role="button"
                             tabIndex={0}
@@ -2301,13 +2503,13 @@ export default function HUDPanel({
                             onClick={() => { try { sfx.play('flip', 0.45); } catch {}; setWandererFlipped(v => !v); try { trackAnalytics('heart_tier_clicked', { tier: 'wanderer', style: 'flip' }); } catch {} }}
                             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('flip', 0.45); } catch {}; setWandererFlipped(v => !v); try { trackAnalytics('heart_tier_clicked', { tier: 'wanderer', style: 'flip' }); } catch {} } }}
                             style={{
-                              width: 128,
-                              height: 128,
+                              width: 110,
+                              height: 160,
                               position: 'relative',
-                              borderRadius: '50%',
+                              borderRadius: '24px',
                               background: 'radial-gradient(120% 140% at 50% 28%, rgba(0,180,255,0.34), rgba(0,180,255,0.16) 46%, rgba(0,60,90,0.35) 100%)',
                               border: '2px solid rgba(0,180,255,0.85)',
-                              boxShadow: wandererHovered ? '0 0 18px rgba(0,180,255,0.85), 0 0 36px rgba(0,180,255,0.55), inset 0 0 18px rgba(0,180,255,0.35)' : '0 0 10px rgba(0,180,255,0.65), 0 0 26px rgba(0,180,255,0.45), inset 0 0 12px rgba(0,180,255,0.25)',
+                              boxShadow: wandererHovered ? '0 0 18px rgba(0,180,255,0.85), 0 0 36px rgba(0,180,255,0.55), 0 0 50px rgba(0,180,255,0.05), inset 0 0 18px rgba(0,180,255,0.35)' : '0 0 10px rgba(0,180,255,0.65), 0 0 26px rgba(0,180,255,0.45), 0 0 40px rgba(0,180,255,0.05), inset 0 0 12px rgba(0,180,255,0.25)',
                               overflow: 'hidden',
                               cursor: 'pointer',
                               perspective: 700,
@@ -2335,25 +2537,25 @@ export default function HUDPanel({
                                   style={{ display: 'block', width: 56, height: 56, objectFit: 'contain', filter: 'drop-shadow(0 0 14px rgba(25,227,255,0.9)) drop-shadow(0 0 28px rgba(25,227,255,0.55))' }}
                                 />
                                 <div className="neon-blue" style={{ fontSize: 13, fontWeight: 800, letterSpacing: '.02em', color: '#19E3FF' }}>The Wanderer</div>
-                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#19E3FF' }}>
-                                  <img src="/elements/heart-coin.png" alt="HEART" width={26} height={26} className="heart-tier-icon heart-coin-glow" style={{ display: 'block', width: 26, height: 26, objectFit: 'contain', transform: 'translateY(0.5px) scale(1.08)' }} />
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: '#19E3FF' }}>
                                   <span className="neon-blue heart-tier-range" style={{ fontSize: 13, fontWeight: 900, letterSpacing: '.02em' }}>0–4</span>
+                                  <img src="/elements/heart-coin.png" alt="HEART" width={26} height={26} className="heart-tier-icon heart-coin-glow" style={{ display: 'block', width: 26, height: 26, objectFit: 'contain', transform: 'translateY(0.5px) scale(1.08)' }} />
                                 </div>
                               </div>
                               {/* Back */}
-                              <div style={{ position: 'absolute', inset: 0, backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 10 }}>
+                              <div style={{ position: 'absolute', inset: 0, backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8 }}>
                                 <div style={{ textAlign: 'center', color: '#19E3FF' }}>
-                                  <div style={{ fontSize: 10, lineHeight: 1.2, opacity: 0.95, marginTop: 4 }} className="neon-blue">You’ve just arrived — drawn by the signal.</div>
-                                  <ul style={{ listStyle: 'disc', paddingLeft: 14, textAlign: 'left', margin: '6px auto 0', width: '90%', fontSize: 10, lineHeight: 1.3 }}>
-                                    <li>Public songs</li>
-                                    <li>Stories</li>
-                                    <li>Your Heartverse profile</li>
+                                  <div style={{ fontSize: 10, lineHeight: 1.2, opacity: 0.95, marginTop: 4 }} className="neon-blue">You have just arrived, drawn by the signal.</div>
+                                  <ul style={{ listStyle: 'disc', paddingLeft: 8, textAlign: 'left', margin: '6px auto 0', width: '95%', fontSize: 10, lineHeight: 1.3 }}>
+                                    <li>Released songs</li>
+                                    <li>CHXNDLER card</li>
+                                    <li>Entry into the HEARTVERSE</li>
                                   </ul>
                                 </div>
                               </div>
                             </div>
                           </div>
-                          {/* Dreamer - circular flip button (mirrors Wanderer behavior) */}
+                          {/* Dreamer - vertical capsule flip button (tall rounded badge) */}
                           <div
                             role="button"
                             tabIndex={0}
@@ -2363,13 +2565,13 @@ export default function HUDPanel({
                             onClick={() => { try { sfx.play('flip', 0.45); } catch {}; setDreamerFlipped(v => !v); try { trackAnalytics('heart_tier_clicked', { tier: 'dreamer', style: 'flip' }); } catch {} }}
                             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('flip', 0.45); } catch {}; setDreamerFlipped(v => !v); try { trackAnalytics('heart_tier_clicked', { tier: 'dreamer', style: 'flip' }); } catch {} } }}
                             style={{
-                              width: 128,
-                              height: 128,
+                              width: 110,
+                              height: 160,
                               position: 'relative',
-                              borderRadius: '50%',
+                              borderRadius: '24px',
                               background: 'radial-gradient(120% 140% at 50% 28%, rgba(255,212,0,0.36), rgba(255,212,0,0.18) 46%, rgba(90,80,0,0.32) 100%)',
                               border: '2px solid rgba(255,212,0,0.95)',
-                              boxShadow: dreamerHovered ? '0 0 18px rgba(255,212,0,0.95), 0 0 36px rgba(255,212,0,0.60), inset 0 0 18px rgba(255,212,0,0.35)' : '0 0 10px rgba(255,212,0,0.70), 0 0 26px rgba(255,212,0,0.45), inset 0 0 12px rgba(255,212,0,0.25)',
+                              boxShadow: dreamerHovered ? '0 0 18px rgba(255,212,0,0.95), 0 0 36px rgba(255,212,0,0.60), 0 0 50px rgba(255,212,0,0.05), inset 0 0 18px rgba(255,212,0,0.35)' : '0 0 10px rgba(255,212,0,0.70), 0 0 26px rgba(255,212,0,0.45), 0 0 40px rgba(255,212,0,0.05), inset 0 0 12px rgba(255,212,0,0.25)',
                               overflow: 'hidden',
                               cursor: 'pointer',
                               perspective: 700,
@@ -2396,26 +2598,25 @@ export default function HUDPanel({
                                   style={{ display: 'block', width: 56, height: 56, objectFit: 'contain', filter: 'drop-shadow(0 0 14px rgba(255,212,0,0.9)) drop-shadow(0 0 28px rgba(255,212,0,0.55))' }}
                                 />
                                 <div className="neon-yellow" style={{ fontSize: 13, fontWeight: 800, letterSpacing: '.02em', color: '#FFD400' }}>The Dreamer</div>
-                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#FFD400' }}>
-                                  <img src="/elements/heart-coin.png" alt="HEART" width={26} height={26} className="heart-tier-icon heart-coin-glow" style={{ display: 'block', width: 26, height: 26, objectFit: 'contain', transform: 'translateY(0.5px) scale(1.08)' }} />
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: '#FFD400' }}>
                                   <span className="neon-yellow heart-tier-range" style={{ fontSize: 13, fontWeight: 900, letterSpacing: '.02em' }}>5–24</span>
+                                  <img src="/elements/heart-coin.png" alt="HEART" width={26} height={26} className="heart-tier-icon heart-coin-glow" style={{ display: 'block', width: 26, height: 26, objectFit: 'contain', transform: 'translateY(0.5px) scale(1.08)' }} />
                                 </div>
                               </div>
                               {/* Back */}
-                              <div style={{ position: 'absolute', inset: 0, backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 10 }}>
+                              <div style={{ position: 'absolute', inset: 0, backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8 }}>
                                 <div style={{ textAlign: 'center', color: '#FFD400' }}>
-                                  <div style={{ fontSize: 10, lineHeight: 1.2, opacity: 0.95, marginTop: 4 }} className="neon-yellow">Traveling through sound and starlight.</div>
-                                  <ul style={{ listStyle: 'disc', paddingLeft: 14, textAlign: 'left', margin: '6px auto 0', width: '90%', fontSize: 10, lineHeight: 1.3 }}>
-                                    <li>Hidden songs</li>
-                                    <li>Early demos</li>
-                                    <li>Private livestreams</li>
-                                    <li>Exclusive CHXNDLER cards</li>
+                                  <div style={{ fontSize: 10, lineHeight: 1.2, opacity: 0.95, marginTop: 4 }} className="neon-yellow">You begin to awaken to the magic.</div>
+                                  <ul style={{ listStyle: 'disc', paddingLeft: 8, textAlign: 'left', margin: '6px auto 0', width: '95%', fontSize: 10, lineHeight: 1.3 }}>
+                                    <li>Unreleased songs</li>
+                                    <li>Physical CHXNDLER cards</li>
+                                    <li>Exclusive merch</li>
                                   </ul>
                                 </div>
                               </div>
                             </div>
                           </div>
-                          {/* Lover - circular flip button (mirrors Wanderer behavior) */}
+                          {/* Lover - vertical capsule flip button (tall rounded badge) */}
                           <div
                             role="button"
                             tabIndex={0}
@@ -2425,13 +2626,13 @@ export default function HUDPanel({
                             onClick={() => { try { sfx.play('flip', 0.45); } catch {}; setLoverFlipped(v => !v); try { trackAnalytics('heart_tier_clicked', { tier: 'lover', style: 'flip' }); } catch {} }}
                             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('flip', 0.45); } catch {}; setLoverFlipped(v => !v); try { trackAnalytics('heart_tier_clicked', { tier: 'lover', style: 'flip' }); } catch {} } }}
                             style={{
-                              width: 128,
-                              height: 128,
+                              width: 110,
+                              height: 160,
                               position: 'relative',
-                              borderRadius: '50%',
+                              borderRadius: '24px',
                               background: 'radial-gradient(120% 140% at 50% 28%, rgba(255,79,216,0.38), rgba(255,79,216,0.18) 46%, rgba(90,0,60,0.32) 100%)',
                               border: '2px solid rgba(255,79,216,0.95)',
-                              boxShadow: loverHovered ? '0 0 18px rgba(255,79,216,0.95), 0 0 36px rgba(255,79,216,0.60), inset 0 0 18px rgba(255,79,216,0.35)' : '0 0 10px rgba(255,79,216,0.65), 0 0 28px rgba(255,79,216,0.50), inset 0 0 12px rgba(255,79,216,0.28)',
+                              boxShadow: loverHovered ? '0 0 18px rgba(255,79,216,0.95), 0 0 36px rgba(255,79,216,0.60), 0 0 50px rgba(255,79,216,0.05), inset 0 0 18px rgba(255,79,216,0.35)' : '0 0 10px rgba(255,79,216,0.65), 0 0 28px rgba(255,79,216,0.50), 0 0 40px rgba(255,79,216,0.05), inset 0 0 12px rgba(255,79,216,0.28)',
                               overflow: 'hidden',
                               cursor: 'pointer',
                               perspective: 700,
@@ -2458,19 +2659,19 @@ export default function HUDPanel({
                                   style={{ display: 'block', width: 56, height: 56, objectFit: 'contain', filter: 'drop-shadow(0 0 14px rgba(252,84,175,0.95)) drop-shadow(0 0 28px rgba(252,84,175,0.55))' }}
                                 />
                                 <div className="neon-pink" style={{ fontSize: 13, fontWeight: 800, letterSpacing: '.02em', color: '#FF4FD8' }}>The Lover</div>
-                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#FC54AF' }}>
-                                  <img src="/elements/heart-coin.png" alt="HEART" width={26} height={26} className="heart-tier-icon heart-coin-glow" style={{ display: 'block', width: 26, height: 26, objectFit: 'contain', transform: 'translateY(0.5px) scale(1.08)' }} />
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: '#FC54AF' }}>
                                   <span className="neon-pink heart-tier-range" style={{ fontSize: 13, fontWeight: 900, letterSpacing: '.02em' }}>25+</span>
+                                  <img src="/elements/heart-coin.png" alt="HEART" width={26} height={26} className="heart-tier-icon heart-coin-glow" style={{ display: 'block', width: 26, height: 26, objectFit: 'contain', transform: 'translateY(0.5px) scale(1.08)' }} />
                                 </div>
                               </div>
                               {/* Back */}
-                              <div style={{ position: 'absolute', inset: 0, backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 10 }}>
+                              <div style={{ position: 'absolute', inset: 0, backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8 }}>
                                 <div style={{ textAlign: 'center', color: '#FF4FD8' }}>
-                                  <div style={{ fontSize: 10, lineHeight: 1.2, opacity: 0.95, marginTop: 4 }} className="neon-pink">At the center — the pulse that powers it all.</div>
-                                  <ul style={{ listStyle: 'disc', paddingLeft: 14, textAlign: 'left', margin: '6px auto 0', width: '90%', fontSize: 10, lineHeight: 1.3 }}>
-                                    <li>The Vault</li>
-                                    <li>Unreleased music</li>
-                                    <li>Early merch drops</li>
+                                  <div style={{ fontSize: 10, lineHeight: 1.2, opacity: 0.95, marginTop: 4 }} className="neon-pink">The ones who feel the HEARTVERSE beating inside them.</div>
+                                  <ul style={{ listStyle: 'disc', paddingLeft: 8, textAlign: 'left', margin: '6px auto 0', width: '95%', fontSize: 10, lineHeight: 1.3 }}>
+                                    <li>Direct line to CHXNDLER</li>
+                                    <li>Private concert</li>
+                                    <li>Limited edition merch</li>
                                     <li>Rare CHXNDLER cards</li>
                                   </ul>
                                 </div>
@@ -2484,6 +2685,135 @@ export default function HUDPanel({
                   document.body
                 ) : null}
                 {/* END heart popover */}
+                
+                {/* Digital Binder Popover */}
+                {typeof document !== 'undefined' && showBookPopover ? require('react-dom').createPortal(
+                  <div
+                    role="dialog"
+                    aria-label="Digital Binder"
+                    style={{
+                      position: 'fixed',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      width: 'min(90vw, 600px)',
+                      height: 'min(80vh, 500px)',
+                      background: 'radial-gradient(140% 160% at 50% 0%, rgba(252,84,175,0.25), rgba(14,168,208,0.18) 35%, rgba(60,20,45,0.55) 100%)',
+                      border: '1px solid rgba(252,84,175,0.5)',
+                      borderRadius: 16,
+                      boxShadow: '0 20px 50px rgba(0,0,0,0.4), 0 0 30px rgba(252,84,175,0.3)',
+                      backdropFilter: 'blur(12px) saturate(1.2)',
+                      color: '#fff',
+                      zIndex: 2147483647,
+                      padding: 20,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      overflow: 'hidden'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Close button */}
+                    <button
+                      aria-label="Close Digital Binder"
+                      onClick={() => setShowBookPopover(false)}
+                      style={{
+                        position: 'absolute',
+                        top: 12,
+                        right: 12,
+                        width: 32,
+                        height: 32,
+                        border: 'none',
+                        background: 'rgba(255,255,255,0.1)',
+                        borderRadius: 16,
+                        color: '#fff',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 18,
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      ×
+                    </button>
+                    
+                    {/* Header */}
+                    <div style={{
+                      textAlign: 'center',
+                      marginBottom: 24,
+                      paddingTop: 8
+                    }}>
+                      <h2 style={{
+                        fontSize: 24,
+                        fontWeight: 900,
+                        color: '#FC54AF',
+                        textShadow: '0 0 12px rgba(252,84,175,0.6)',
+                        margin: 0,
+                        marginBottom: 8
+                      }}>
+                        DIGITAL BINDER
+                      </h2>
+                      <p style={{
+                        fontSize: 14,
+                        opacity: 0.8,
+                        margin: 0,
+                        color: '#fff'
+                      }}>
+                        Your personal collection of HEARTVERSE memories
+                      </p>
+                    </div>
+                    
+                    {/* Content area */}
+                    <div style={{
+                      flex: 1,
+                      background: 'rgba(0,0,0,0.2)',
+                      borderRadius: 12,
+                      padding: 20,
+                      textAlign: 'center',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexDirection: 'column',
+                      gap: 16
+                    }}>
+                      <img
+                        src="/book.png"
+                        alt="Book"
+                        width={48}
+                        height={48}
+                        style={{ 
+                          display: 'block', 
+                          width: 48, 
+                          height: 48, 
+                          objectFit: 'contain',
+                          opacity: 0.6,
+                          filter: 'drop-shadow(0 0 8px rgba(252,84,175,0.4))'
+                        }}
+                      />
+                      <div>
+                        <h3 style={{
+                          fontSize: 18,
+                          fontWeight: 700,
+                          color: '#FC54AF',
+                          margin: 0,
+                          marginBottom: 8
+                        }}>
+                          Coming Soon
+                        </h3>
+                        <p style={{
+                          fontSize: 14,
+                          opacity: 0.7,
+                          margin: 0,
+                          lineHeight: 1.5
+                        }}>
+                          Collect cards, lyrics, exclusive content, and memories from your journey through the HEARTVERSE.
+                        </p>
+                      </div>
+                    </div>
+                  </div>,
+                  document.body
+                ) : null}
+                {/* END Digital Binder popover */}
 
                 {typeof document !== 'undefined' && showApplePopover && amEmbedUrl ? require('react-dom').createPortal(
                   <div
@@ -2895,41 +3225,42 @@ export default function HUDPanel({
                               ) : (
                                 <img src={item.image || 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910'} alt={item.title} style={{ display: 'block', width: 104, height: 104, objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(252,84,175,0.35)', boxShadow: '0 6px 18px rgba(0,0,0,0.35)' }} onError={(e)=>{ try { e.currentTarget.src = 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910'; } catch {} }} />
                               )}
-                              {/* Price directly under the image (show HEART coin icon when applicable) */}
-                              <div style={{ fontSize: 18, fontWeight: 700, color: '#FFB9E1' }}>
-                                {item.price ? (
-                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                    {((item && (item.id === 'pick' || item.id === 'bracelet')) || String(item.price).toUpperCase().includes('HEART')) ? (
-                                      <button
-                                        type="button"
-                                        aria-label="HEART Coin tiers"
-                                        title="HEART Coin tiers"
-                                        onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
-                                        onClick={() => {
-                                          try { sfx.play('click', 0.35); } catch {};
-                                          try { trackAnalytics('heart_coin_clicked', { song_slug: String(active || currentId || 'store'), payload: { song_title: track?.title || 'Unknown', location: 'store_price_icon' } }); } catch {}
-                                          if (showHeartPopover) { setShowHeartPopover(false); return; }
-                                          openHeartPopover();
-                                        }}
-                                        style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer', lineHeight: 0 }}
-                                      >
-                                        <img
-                                          src="/elements/heart-coin.png"
-                                          alt="HEART Coin"
-                                          width={28}
-                                          height={28}
-                                          className="heart-coin-glow"
-                                          style={{ display: 'inline-block', width: 28, height: 28, objectFit: 'contain' }}
-                                        />
-                                      </button>
-                                    ) : null}
-                                    <span>{item.price}</span>
-                                  </span>
-                                ) : null}
+                              {/* Price directly under the image (show $ price and HEART coins side by side) */}
+                              <div style={{ fontSize: 16, fontWeight: 700, color: '#FFB9E1', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                {/* Cash price */}
+                                <span>{item.price}</span>
+                                {/* Separator */}
+                                <span style={{ color: '#FFB9E1', opacity: 0.6 }}>|</span>
+                                {/* HeartCoin price */}
+                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                  <button
+                                    type="button"
+                                    aria-label="HEART Coin tiers"
+                                    title="HEART Coin tiers"
+                                    onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                                    onClick={() => {
+                                      try { sfx.play('click', 0.35); } catch {};
+                                      try { trackAnalytics('heart_coin_clicked', { song_slug: String(active || currentId || 'store'), payload: { song_title: track?.title || 'Unknown', location: 'store_price_icon' } }); } catch {}
+                                      if (showHeartPopover) { setShowHeartPopover(false); return; }
+                                      openHeartPopover();
+                                    }}
+                                    style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer', lineHeight: 0 }}
+                                  >
+                                    <img
+                                      src="/elements/heart-coin.png"
+                                      alt="HEART Coin"
+                                      width={22}
+                                      height={22}
+                                      className="heart-coin-glow"
+                                      style={{ display: 'inline-block', width: 22, height: 22, objectFit: 'contain' }}
+                                    />
+                                  </button>
+                                  <span style={{ fontSize: 14 }}>{item.heartcoins}</span>
+                                </div>
                               </div>
                             </div>
                             <div>
-                              <div style={{ fontSize: 16, fontWeight: 800, color: '#FFD9EF', textShadow: '0 0 10px rgba(252,84,175,0.9)' }}>{item.title}</div>
+                              <div style={{ fontSize: 18, fontWeight: 800, color: '#FFD9EF', textShadow: '0 0 10px rgba(252,84,175,0.9)' }}>{item.title}</div>
                               <div style={{ fontSize: 14, opacity: 0.9, marginTop: 4 }}>{item.description}</div>
                               {/* Details only; actions moved to bottom bar */}
                             </div>
@@ -3030,7 +3361,7 @@ export default function HUDPanel({
                   <div
                     role="dialog"
                     aria-label="Lyrics"
-                    className="lyrics-popover-hud holo-scrollbar-yellow"
+                    className="lyrics-popover-hud holo-scrollbar-yellow lyrics-modal-enhanced"
                     ref={lyricsScrollRef}
                     style={{
                       position: 'fixed',
@@ -3048,7 +3379,9 @@ export default function HUDPanel({
                       width: (lyricsPopoverPos && lyricsPopoverPos.width) ? lyricsPopoverPos.width : 'min(98vw, 1400px)',
                       // Fix height to the blue display area; slightly shorter fallback
                       height: (lyricsPopoverPos && lyricsPopoverPos.height) ? lyricsPopoverPos.height : '42vh',
-                      overflow: 'auto'
+                      overflow: 'auto',
+                      // Fade-in and float animations
+                      animation: 'lyricsModalFadeIn 0.25s ease-out, lyricsModalFloat 6s ease-in-out infinite alternate'
                     }}
                     onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowLyricsPopover(false); } }}
                   >
@@ -3081,12 +3414,18 @@ export default function HUDPanel({
                         <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
                       </svg>
                     </button>
+                    {/* Moving glow background */}
+                    <div className="lyrics-glow-bg"></div>
+                    {/* Section header */}
+                    <div className="lyrics-header">
+                      LYRICS — {isHome ? 'CHXNDLER' : (currentSong?.title || 'UNKNOWN')}
+                    </div>
                     {lyricsLoading ? (
                       <div style={{ fontSize: 18, opacity: .99, color: '#F2EF1D', textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>Loading…</div>
                     ) : lyricsError ? (
                       <div style={{ fontSize: 18, color: '#ff7b7b' }}>{lyricsError}</div>
                     ) : (
-                      <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: 18, color: '#F2EF1D', textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>{lyricsContent || 'No lyrics available.'}</div>
+                      <div className="lyrics-content-enhanced" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.5, fontSize: 18, color: '#F6F4A9', textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(246,244,169,0.6)' }}>{lyricsContent || 'No lyrics available.'}</div>
                     )}
                     {null}
                   </div>,

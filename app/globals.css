@@ -687,6 +687,98 @@ img[src$="/elements/music.png"] {
   -webkit-overflow-scrolling: touch;
 }
 
+/* Enhanced lyrics modal animations and effects */
+@keyframes lyricsModalFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes lyricsModalFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes lyricsGlowMove {
+  0% {
+    transform: translateX(-20px);
+  }
+  50% {
+    transform: translateX(20px);
+  }
+  100% {
+    transform: translateX(-20px);
+  }
+}
+
+.lyrics-modal-enhanced {
+  position: relative;
+}
+
+/* Background texture for lyrics modal */
+.lyrics-modal-enhanced::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 25% 25%, rgba(255,255,255,0.02) 1px, transparent 1px),
+    radial-gradient(circle at 75% 75%, rgba(255,255,255,0.03) 1px, transparent 1px),
+    radial-gradient(circle at 50% 20%, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 20px 20px, 15px 15px, 12px 12px;
+  opacity: 0.04;
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+/* Moving glow behind lyrics */
+.lyrics-glow-bg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 200px;
+  height: 100px;
+  background: radial-gradient(ellipse, rgba(173, 216, 230, 0.1) 0%, rgba(255, 255, 255, 0.05) 70%, transparent 100%);
+  border-radius: 50%;
+  filter: blur(30px);
+  animation: lyricsGlowMove 8s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Lyrics content styling */
+.lyrics-content-enhanced {
+  position: relative;
+  z-index: 3;
+}
+
+/* Section header styling */
+.lyrics-header {
+  font-family: 'Orbitron', 'OrbitronLocal', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #F2EF1D;
+  text-shadow: 0 0 8px rgba(242,239,29,0.6);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(242,239,29,0.3);
+  text-align: center;
+}
+
 /* Ensure consistent thickness in WebKit as well (explicit, though yellow variant already sets 16px) */
 .lyrics-popover-hud::-webkit-scrollbar {
   width: 16px;
@@ -975,8 +1067,8 @@ img[src$="/elements/music.png"] {
   object-fit: cover; /* fully fill the circular button */
   /* Keep original heart coin colors */
   filter: none;
-  /* Slightly larger and nudged down for visual balance */
-  transform: translateY(1px) scale(1.08);
+  /* Scale up to completely fill the circular button */
+  transform: translateY(1px) scale(1.25);
   transform-origin: center;
   transition: transform 0.2s ease;
   margin: 0;
@@ -985,7 +1077,7 @@ img[src$="/elements/music.png"] {
 }
 /* Make the HEART coin image pop further on hover */
 .heart-coin-btn-waveform-hud:hover img{
-  transform: translateY(1px) scale(1.22);
+  transform: translateY(1px) scale(1.4);
 }
 
 /* JOIN US button inside HUD mini waveform container */
