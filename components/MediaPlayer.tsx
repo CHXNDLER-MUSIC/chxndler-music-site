@@ -1076,7 +1076,153 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           </div>
           
         </div>
-        {/* Sleek integrated control bar - moved above waveform */}
+        
+        {/* Waveform section moved above controls */}
+        <div className="waveform-wrapper">
+          <div className="waveform-container" title={cur.title}>
+            <div 
+            className="waveform" 
+            aria-label="Audio waveform visualization"
+            onPointerDown={(e) => {
+              const a = audioRef.current;
+              const d = liveDuration;
+              if (!a || !d) return;
+              
+              // Helper to compute and apply seek time from a given clientX
+              const applySeekFromClientX = (clientX: number) => {
+                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+                const progress = rect.width > 0 ? (x / rect.width) : 0;
+                const newTime = progress * d;
+                
+                // Set seeking state FIRST to disable transitions
+                setSeeking(true); 
+                seekingRef.current = true;
+                
+                // Store the visual position for immediate cursor update
+                seekPositionRef.current = newTime;
+                
+                // Also update state for consistency
+                setCurrentTime(newTime);
+                
+                const seekTime = Math.max(0, Math.min(Math.max(0, d - 0.2), newTime));
+                try { a.currentTime = seekTime; } catch {}
+                return { progress, newTime };
+              };
+
+              // Prevent text selection/scroll jank while dragging
+              try { (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); } catch {}
+              e.preventDefault();
+
+              const first = applySeekFromClientX(e.clientX);
+              // Start/resume playback on interaction to match previous click behavior
+              intentionalPlayRef.current = true;
+              a.play().catch(() => {});
+              setPlaying(true);
+              gaTrack("seek_waveform", { slug: cur.slug, seconds: first.newTime, progress: first.progress });
+
+              const onMove = (ev: PointerEvent) => {
+                applySeekFromClientX(ev.clientX);
+              };
+              const onUp = () => {
+                seekingRef.current = false; // allow normal updates again; seeked will also sync
+                seekPositionRef.current = null; // clear visual override
+                setSeeking(false); // re-enable smooth transitions
+                window.removeEventListener('pointermove', onMove);
+                window.removeEventListener('pointerup', onUp);
+              };
+              window.addEventListener('pointermove', onMove);
+              window.addEventListener('pointerup', onUp, { once: true } as any);
+            }}
+            style={{ cursor: 'pointer' }}
+          onMouseEnter={playHover}
+          >
+            {/* Audio Waveform using SVG for smooth curves */}
+            <svg 
+              className="w-full h-full" 
+              viewBox="0 0 800 100" 
+              preserveAspectRatio="none"
+              style={{ background: 'transparent' }}
+            >
+              {/* Background grid lines for audio feel */}
+              <defs>
+                <pattern id="grid" width="20" height="10" patternUnits="userSpaceOnUse">
+                  <path d="M 20 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="0.5"/>
+                </pattern>
+                <filter id="glow">
+                  <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                  <feMerge> 
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#grid)" />
+              
+              {/* Generate realistic waveform data */}
+              {(() => {
+                const waveformData = Array.from({ length: 200 }, (_, i) => {
+                  // Use song title as seed for consistent waveform per song
+                  const seed = cur.title.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+                  
+                  // Create realistic audio frequency components
+                  const bassLine = Math.sin((i + seed) * 0.01) * 0.4;           // Bass frequencies
+                  const melody = Math.sin((i + seed) * 0.05 + 2) * 0.3;         // Mid frequencies  
+                  const percussion = Math.sin((i + seed) * 0.15 + 4) * 0.2;     // High frequencies
+                  const vocals = Math.sin((i + seed) * 0.08 + 1) * 0.25;        // Vocal range
+                  const harmonics = Math.sin((i + seed) * 0.3 + 5) * 0.1;       // Harmonics
+                  
+                  // Create natural audio envelope (songs typically start/end quieter)
+                  const fadeIn = Math.min(1, i / 20);
+                  const fadeOut = Math.min(1, (200 - i) / 30);
+                  const envelope = Math.min(fadeIn, fadeOut);
+                  
+                  // Add some natural variation like dynamics in music
+                  const dynamics = Math.sin((i / 200) * Math.PI * 3) * 0.3 + 0.7; // Musical dynamics
+                  
+                  // Combine all elements for realistic audio appearance
+                  const amplitude = Math.abs(bassLine + melody + percussion + vocals + harmonics) * envelope * dynamics;
+                  
+                  return Math.max(0.02, Math.min(0.95, amplitude));
+                });
+                
+                // Use live audio time for perfect sync (falls back to state); respect seeking override
+                const d = liveDuration;
+                const aEl = audioRef.current;
+                const liveT = (aEl && isFinite(aEl.currentTime)) ? aEl.currentTime : currentTime;
+                const baseT = (seekPositionRef.current !== null) ? seekPositionRef.current : liveT;
+                const isPaused = !!(aEl ? aEl.paused : !playing);
+                // Apply small lead only when playing and not seeking
+                const displayT = (!seekingRef.current && !isPaused) ? Math.min(d || Infinity, baseT + CURSOR_LEAD_SEC) : baseT;
+                const progress = (d > 0 && isFinite(displayT)) ? Math.max(0, Math.min(1, displayT / d)) : 0;
+                
+                return (
+                  <>
+                    {/* Background track as a single faint line */}
+                    <line
+                      x1="0"
+                      y1="50"
+                      x2="800"
+                      y2="50"
+                      stroke="white"
+                      strokeWidth="1.2"
+                      opacity="0.3"
+                    />
+                    {/* Played portion: multi-layer white glow for brightness */}
+                    <line x1="0" y1="50" x2={`${progress * 800}`} y2="50" stroke="white" strokeWidth="12" opacity="0.2" strokeLinecap="round" filter="url(#glow)" />
+                    <line x1="0" y1="50" x2={`${progress * 800}`} y2="50" stroke="white" strokeWidth="6" opacity="0.5" strokeLinecap="round" />
+                    <line x1="0" y1="50" x2={`${progress * 800}`} y2="50" stroke="white" strokeWidth="2" opacity="1" strokeLinecap="round" />
+                    {/* Progress circle at current position */}
+                    <circle cx={`${progress * 800}`} cy="50" r="4" fill="white" opacity="1" filter="url(#glow)" />
+                  </>
+                );
+              })()}
+            </svg>
+            </div>
+          </div>
+        </div>
+        
+        {/* Sleek integrated control bar - moved below waveform */}
         <div className="sleek-controls mt-2">
           {showHUDPlay && (
             <button 
@@ -1339,7 +1485,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                   </svg>
                 </div>
               )}
-              {null}
+              <a href="#" className="join-us-neon">JOIN US</a>
             </div>
 
             <div className="volume-button-wrap">
@@ -1384,395 +1530,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             </div>
           </div>
         </div>
-        <div className="waveform-wrapper">
-          <div className="waveform-container" title={cur.title}>
-            <div 
-            className="waveform" 
-            aria-label="Audio waveform visualization"
-            onPointerDown={(e) => {
-              const a = audioRef.current;
-              const d = liveDuration;
-              if (!a || !d) return;
-              
-              // Helper to compute and apply seek time from a given clientX
-              const applySeekFromClientX = (clientX: number) => {
-                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
-                const progress = rect.width > 0 ? (x / rect.width) : 0;
-                const newTime = progress * d;
-                
-                // Set seeking state FIRST to disable transitions
-                setSeeking(true); 
-                seekingRef.current = true;
-                
-                // Store the visual position for immediate cursor update
-                seekPositionRef.current = newTime;
-                
-                // Also update state for consistency
-                setCurrentTime(newTime);
-                
-                const seekTime = Math.max(0, Math.min(Math.max(0, d - 0.2), newTime));
-                try { a.currentTime = seekTime; } catch {}
-                return { progress, newTime };
-              };
-
-              // Prevent text selection/scroll jank while dragging
-              try { (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); } catch {}
-              e.preventDefault();
-
-              const first = applySeekFromClientX(e.clientX);
-              // Start/resume playback on interaction to match previous click behavior
-              intentionalPlayRef.current = true;
-              a.play().catch(() => {});
-              setPlaying(true);
-              gaTrack("seek_waveform", { slug: cur.slug, seconds: first.newTime, progress: first.progress });
-
-              const onMove = (ev: PointerEvent) => {
-                applySeekFromClientX(ev.clientX);
-              };
-              const onUp = () => {
-                seekingRef.current = false; // allow normal updates again; seeked will also sync
-                seekPositionRef.current = null; // clear visual override
-                setSeeking(false); // re-enable smooth transitions
-                window.removeEventListener('pointermove', onMove);
-                window.removeEventListener('pointerup', onUp);
-              };
-              window.addEventListener('pointermove', onMove);
-              window.addEventListener('pointerup', onUp, { once: true } as any);
-            }}
-            style={{ cursor: 'pointer' }}
-          onMouseEnter={playHover}
-          >
-            {/* Audio Waveform using SVG for smooth curves */}
-            <svg 
-              className="w-full h-full" 
-              viewBox="0 0 800 100" 
-              preserveAspectRatio="none"
-              style={{ background: 'transparent' }}
-            >
-              {/* Background grid lines for audio feel */}
-              <defs>
-                <pattern id="grid" width="20" height="10" patternUnits="userSpaceOnUse">
-                  <path d="M 20 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="0.5"/>
-                </pattern>
-                <filter id="glow">
-                  <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                  <feMerge> 
-                    <feMergeNode in="coloredBlur"/>
-                    <feMergeNode in="SourceGraphic"/>
-                  </feMerge>
-                </filter>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#grid)" />
-              
-              {/* Generate realistic waveform data */}
-              {(() => {
-                const waveformData = Array.from({ length: 200 }, (_, i) => {
-                  // Use song title as seed for consistent waveform per song
-                  const seed = cur.title.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
-                  
-                  // Create realistic audio frequency components
-                  const bassLine = Math.sin((i + seed) * 0.01) * 0.4;           // Bass frequencies
-                  const melody = Math.sin((i + seed) * 0.05 + 2) * 0.3;         // Mid frequencies  
-                  const percussion = Math.sin((i + seed) * 0.15 + 4) * 0.2;     // High frequencies
-                  const vocals = Math.sin((i + seed) * 0.08 + 1) * 0.25;        // Vocal range
-                  const harmonics = Math.sin((i + seed) * 0.3 + 5) * 0.1;       // Harmonics
-                  
-                  // Create natural audio envelope (songs typically start/end quieter)
-                  const fadeIn = Math.min(1, i / 20);
-                  const fadeOut = Math.min(1, (200 - i) / 30);
-                  const envelope = Math.min(fadeIn, fadeOut);
-                  
-                  // Add some natural variation like dynamics in music
-                  const dynamics = Math.sin((i / 200) * Math.PI * 3) * 0.3 + 0.7; // Musical dynamics
-                  
-                  // Combine all elements for realistic audio appearance
-                  const amplitude = Math.abs(bassLine + melody + percussion + vocals + harmonics) * envelope * dynamics;
-                  
-                  return Math.max(0.02, Math.min(0.95, amplitude));
-                });
-                
-                // Use live audio time for perfect sync (falls back to state); respect seeking override
-                const d = liveDuration;
-                const aEl = audioRef.current;
-                const liveT = (aEl && isFinite(aEl.currentTime)) ? aEl.currentTime : currentTime;
-                const baseT = (seekPositionRef.current !== null) ? seekPositionRef.current : liveT;
-                const isPaused = !!(aEl ? aEl.paused : !playing);
-                // Apply small lead only when playing and not seeking
-                const displayT = (!seekingRef.current && !isPaused) ? Math.min(d || Infinity, baseT + CURSOR_LEAD_SEC) : baseT;
-                const progress = (d > 0 && isFinite(displayT)) ? Math.max(0, Math.min(1, displayT / d)) : 0;
-                
-                return (
-                  <>
-                    {/* Background track as a single faint line */}
-                    <line
-                      x1="0"
-                      y1="50"
-                      x2="800"
-                      y2="50"
-                      stroke="white"
-                      strokeWidth="1.2"
-                      opacity="0.3"
-                    />
-                    {/* Played portion: multi-layer white glow for brightness */}
-                    <line x1="0" y1="50" x2={`${progress * 800}`} y2="50" stroke="white" strokeWidth="12" opacity="0.2" strokeLinecap="round" filter="url(#glow)" />
-                    <line x1="0" y1="50" x2={`${progress * 800}`} y2="50" stroke="white" strokeWidth="6" opacity="0.5" strokeLinecap="round" />
-                    <line x1="0" y1="50" x2={`${progress * 800}`} y2="50" stroke="white" strokeWidth="2" opacity="1" strokeLinecap="round" />
-                    {/* Progress circle at current position */}
-                    <circle cx={`${progress * 800}`} cy="50" r="4" fill="white" opacity="1" filter="url(#glow)" />
-                  </>
-                );
-              })()}
-            </svg>
-            {/* Section markers (verse/chorus/bridge/intro/outro) */}
-            {liveDuration > 0 && sections.length > 0 && (
-              <div className="section-markers" aria-hidden>
-                {sections.map((s, i) => {
-                  const pct = Math.max(0, Math.min(100, (s.time / liveDuration) * 100));
-                  if (pct <= 0 || pct >= 100) return null;
-                  const kind = (s.kind || '').toLowerCase();
-                  const klass = kind ? `section-marker ${kind}` : 'section-marker';
-                  return (
-                    <button
-                      key={`${cur.slug}-section-${i}`}
-                      type="button"
-                      className={klass}
-                      style={{ left: `${pct}%` }}
-                      title={`${s.label} (${Math.round(s.time)}s)`}
-                      onClick={() => {
-                        const a = audioRef.current; if (!a || !liveDuration) return;
-                        
-                        // Set seeking state FIRST to disable transitions
-                        setSeeking(true);
-                        seekingRef.current = true;
-                        
-                        // Store visual position for immediate cursor update
-                        seekPositionRef.current = s.time;
-                        setCurrentTime(s.time);
-                        
-                        const seekTime = Math.max(0, Math.min(liveDuration - 0.2, s.time));
-                        a.currentTime = seekTime;
-                        
-                        intentionalPlayRef.current = true; // Mark as intentional play
-                        a.play().catch(()=>{});
-                        setPlaying(true);
-                        gaTrack("seek_section", { slug: cur.slug, index: i, kind: kind || 'section', label: s.label, seconds: s.time });
-                      }}
-                    >
-                      <span className="sr-only">Jump to {s.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            
-            {/* Lyrics/YouTube/Inline volume moved into controls above */}
-
-
-            {/* Spotify button positioned in waveform container */}
-            {cur.spotify ? (
-                <a
-                  href={cur.spotify}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="spotify-btn-waveform"
-                  title="Open on Spotify"
-                  aria-label={`Open ${cur.title} on Spotify`}
-                  data-song={cur.title}
-                  data-slug={cur.slug}
-                  data-id="sp"
-                  onClick={(e) => {
-                    try { e.preventDefault(); } catch {}
-                    try { uiClick(); } catch {}
-                    // Pause site audio while Spotify embed plays
-                    try { const a = audioRef.current; if (a) { a.pause(); setPlaying(false); } } catch {}
-                    // Track analytics
-                    try {
-                      gaTrack('spotify_clicked', {
-                        song_slug: cur.slug,
-                        payload: { song_title: cur.title, location: 'waveform_player', href: cur.spotify }
-                      });
-                    } catch {}
-                    try {
-                      const { toSpotifyEmbed } = require('@/lib/spotify');
-                      const embed = toSpotifyEmbed(cur.spotify);
-                      if (embed) { setSpEmbedUrl(embed); setShowSpotifyPopover(true); }
-                      else { window.open(cur.spotify, '_blank', 'noopener,noreferrer'); }
-                    } catch {
-                      try { window.open(cur.spotify, '_blank', 'noopener,noreferrer'); } catch {}
-                    }
-                  }}
-                  onMouseEnter={playHover}
-              >
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                  <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
-                </svg>
-              </a>
-            ) : (
-              <div 
-                className="spotify-btn-unavailable-waveform"
-                title={`No Spotify link available for ${cur.title}`}
-              >
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" opacity="0.5">
-                  <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
-                </svg>
-              </div>
-            )}
-
-            {/* Apple logo button in waveform container */}
-            {cur.apple ? (
-              <a
-                href={cur.apple}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="apple-btn-waveform"
-                title="Open on Apple Music"
-                aria-label={`Open ${cur.title} on Apple Music`}
-                data-song={cur.title}
-                data-slug={cur.slug}
-                data-id="am"
-                onClick={(e) => {
-                  try { e.preventDefault(); } catch {}
-                  try { uiClick(); } catch {}
-                  try { const a = audioRef.current; if (a) { a.pause(); setPlaying(false); } } catch {}
-                  try {
-                    gaTrack('apple_music_clicked', {
-                      song_slug: cur.slug,
-                      payload: { song_title: cur.title, location: 'waveform_player', href: cur.apple }
-                    });
-                  } catch {}
-                  try {
-                    const { toAppleEmbed } = require('@/lib/apple');
-                    const embed = toAppleEmbed(cur.apple);
-                    if (embed) { setAmEmbedUrl(embed); setShowApplePopover(true); }
-                    else { window.open(cur.apple, '_blank', 'noopener,noreferrer'); }
-                  } catch {
-                    try { window.open(cur.apple, '_blank', 'noopener,noreferrer'); } catch {}
-                  }
-                }}
-              >
-                {/* White beamed music note (Apple-like) */}
-                <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden>
-                  <circle cx="9" cy="16.2" r="2.4" />
-                  <circle cx="17" cy="14.2" r="2.4" />
-                  <rect x="8.2" y="8.0" width="1.6" height="7.6" rx="0.8" />
-                  <rect x="16.2" y="6.0" width="1.6" height="8.4" rx="0.8" />
-                  <rect x="9.0" y="7.0" width="9.0" height="2.0" rx="1.0" />
-                </svg>
-              </a>
-            ) : (
-              <div 
-                className="apple-btn-unavailable-waveform"
-                title={`No Apple Music link available for ${cur.title}`}
-              >
-                {/* White beamed music note (disabled) */}
-                <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" opacity={0.5} aria-hidden>
-                  <circle cx="9" cy="16.2" r="2.4" />
-                  <circle cx="17" cy="14.2" r="2.4" />
-                  <rect x="8.2" y="8.0" width="1.6" height="7.6" rx="0.8" />
-                  <rect x="16.2" y="6.0" width="1.6" height="8.4" rx="0.8" />
-                  <rect x="9.0" y="7.0" width="9.0" height="2.0" rx="1.0" />
-                </svg>
-              </div>
-            )}
-
-            {/* Time cursor with element icon - positioned to match animated circle exactly */}
-            <div
-              className={`absolute top-0 h-full flex flex-col items-center justify-center pointer-events-none z-10 cursor-transition ${playing ? 'playing' : ''} ${seeking ? 'seeking' : ''}`}
-              style={{
-                left: `${(() => {
-                  // Use ref for immediate visual feedback during seeking; otherwise, read from the live audio element to avoid state lag
-                  const aEl = audioRef.current;
-                  const liveT = (aEl && isFinite(aEl.currentTime)) ? aEl.currentTime : currentTime;
-                  // Nudge cursor slightly ahead to compensate for render/audio output latency while playing
-                  const baseT = seekPositionRef.current !== null ? seekPositionRef.current : liveT;
-                  const isPaused = !!(aEl ? aEl.paused : !playing);
-                  const timeToUse = (!seekingRef.current && !isPaused) ? Math.min(liveDuration || Infinity, baseT + CURSOR_LEAD_SEC) : baseT;
-                  const progressPercent = Math.max(0, Math.min(100, (liveDuration > 0 && isFinite(timeToUse) ? (timeToUse / liveDuration) * 100 : 0)));
-                  return progressPercent;
-                })()}%`,
-                transform: 'translateX(-50%)',
-                width: '32px',
-              }}
-            >
-              {/* Vertical cursor line for better tracking visibility */}
-              <div
-                className="absolute top-0 bottom-0 w-0.5 bg-current opacity-80"
-                style={{
-                  background: `linear-gradient(to bottom, transparent 0%, ${currentElementColor} 20%, ${currentElementColor} 80%, transparent 100%)`,
-                  boxShadow: `0 0 4px ${currentElementColor}`,
-                }}
-              />
-              
-              {/* Chxndler cursor icon - positioned exactly at circle center (cy="50" = 50% height) */}
-              <img
-                src={`/elements/${currentElement}.png`}
-                alt={`${cur?.title || 'Current track'} cursor`}
-                className="absolute w-[1.8rem] h-[1.8rem] min-w-[1.8rem] min-h-[1.8rem] brightness-150 saturate-125"
-                style={{ 
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  filter: currentElement === 'music'
-                    ? 'drop-shadow(0 0 10px #FFFFFF) drop-shadow(0 0 24px rgba(255,255,255,0.9)) drop-shadow(0 0 48px rgba(255,255,255,0.6))'
-                    : `drop-shadow(0 0 14px ${currentElementColor}) drop-shadow(0 0 32px ${currentElementColor}AA) drop-shadow(0 0 64px ${currentElementColor}55)`,
-                  animation: playing ? 'cursorPulse 2s ease-in-out infinite' : 'none'
-                }}
-                onError={(e) => {
-                  const img = (e.target as HTMLImageElement);
-                  img.src = '/elements/music.png';
-                  // Ensure neon white glow on fallback
-                  img.style.filter = 'drop-shadow(0 0 10px #FFFFFF) drop-shadow(0 0 24px rgba(255,255,255,0.9)) drop-shadow(0 0 48px rgba(255,255,255,0.6))';
-                }}
-              />
-              
-              {/* Time + section display */}
-              <div 
-                className="absolute -bottom-6 text-xs font-mono px-2 py-1 rounded transition-all duration-200"
-                style={{ 
-                  background: 'rgba(255,255,255,0.13)',
-                  color: 'white',
-                  border: '1px solid rgba(255,255,255,0.27)',
-                }}
-              >
-                {(() => {
-                  const aEl = audioRef.current;
-                  const liveT = (aEl && isFinite(aEl.currentTime)) ? aEl.currentTime : currentTime;
-                  const baseT = (seekPositionRef.current ?? liveT);
-                  const isPaused = !!(aEl ? aEl.paused : !playing);
-                  const t = (!seekingRef.current && !isPaused) ? Math.min(liveDuration || Infinity, baseT + CURSOR_LEAD_SEC) : baseT;
-                  return liveDuration > 0 ? Math.floor(((t) / liveDuration) * 100) : 0;
-                })()}%
-              </div>
-              {currentSection ? (
-                <div 
-                  className="absolute -top-6 text-[10px] font-mono px-2 py-0.5 rounded transition-all duration-300"
-                  style={{ 
-                    background: 'rgba(0,0,0,0.35)',
-                    color: '#fff',
-                    border: '1px solid rgba(255,255,255,0.2)'
-                  }}
-                >
-                  {currentSection.label}
-                </div>
-              ) : null}
-            </div>
-
-            {/* JOIN US: position inside the waveform container, right-center */}
-            <button
-              type="button"
-              className="join-us-waveform"
-              title="Join Us"
-              data-id="join-us-cta"
-              onMouseEnter={playHover}
-              onClick={(e) => { e.preventDefault(); setLoginOpen(true); }}
-            >
-              JOIN US
-            </button>
-          </div>
-          
-        </div>
-      </div>
       </div>
 
 

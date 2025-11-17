@@ -7,6 +7,8 @@ import { useState, useEffect, useRef } from "react";
 import { track } from "@/lib/analytics";
 import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sfx";
+import HeartCardCheckout from "./HeartCardCheckout";
+import HeartCardSuccess from "./HeartCardSuccess";
 
 // Helper functions for element styling
 const getElementBackground = (element: string | null) => {
@@ -145,10 +147,15 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
   
   // Collection panel state
   const [showCollectionPanel, setShowCollectionPanel] = useState(false);
-  const [userProfile, setUserProfile] = useState<{display_name: string; hearts: number; selected_element?: ElementKey} | null>(null);
+  const [userProfile, setUserProfile] = useState<{display_name: string; hearts: number; selected_element?: ElementKey; email?: string; phone?: string} | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [selectedCardType, setSelectedCardType] = useState<'digital' | 'physical'>('digital');
   const [userSelectedElement, setUserSelectedElement] = useState<ElementKey | null>('heart');
+  
+  // Checkout flow state
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [completedOrder, setCompletedOrder] = useState<any>(null);
   
   // Function to fetch user profile
   const fetchUserProfile = async () => {
@@ -737,12 +744,12 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                     {/* Cost Display */}
                     <div className="mb-4 text-sm">
                       <span className="text-[#9EEBFF]">Cost of this card: </span>
-                      <span className="text-[#F2EF1D] font-bold">{selectedCardType === 'digital' ? '5' : '10'}</span>
+                      <span className="text-[#F2EF1D] font-bold">{selectedCardType === 'digital' ? '20' : '30'}</span>
                     </div>
 
                     {/* Affordability Indicator */}
                     <div className="mb-4">
-                      {userProfile.hearts >= (selectedCardType === 'digital' ? 5 : 10) ? (
+                      {userProfile.hearts >= (selectedCardType === 'digital' ? 20 : 30) ? (
                         <div className="text-sm font-semibold text-green-400 bg-green-400/20 px-3 py-1 rounded border border-green-400/40">
                           ✓ You can collect this
                         </div>
@@ -775,7 +782,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                         <div className="flex items-center justify-between">
                           <div className="font-semibold text-[#19E3FF]">Digital Card</div>
                           <div className="flex items-center gap-2">
-                            <span className="text-[#F2EF1D] font-bold">5</span>
+                            <span className="text-[#F2EF1D] font-bold">20</span>
                             <img
                               src="/elements/heart-coin.png"
                               alt="Heart Coin"
@@ -806,7 +813,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                         <div className="flex items-center justify-between">
                           <div className="font-semibold text-[#FC54AF]">Physical Card</div>
                           <div className="flex items-center gap-2">
-                            <span className="text-[#F2EF1D] font-bold">10</span>
+                            <span className="text-[#F2EF1D] font-bold">30</span>
                             <img
                               src="/elements/heart-coin.png"
                               alt="Heart Coin"
@@ -822,33 +829,70 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
 
                     {/* Purchase Button */}
                     <div className="mt-6 pt-4 border-t border-[#19E3FF]/30">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          try { e.preventDefault(); } catch {}
-                          try { sfx.play('click', 0.7); } catch {}
-                          try {
-                            track('purchase_card_clicked', { 
-                              song_slug: title?.toLowerCase().replace(/\s+/g, '-'),
-                              card_src: src,
-                              card_type: selectedCardType,
-                              payload: { song_title: title, card_image: src, stripe_url: getPurchaseUrl(title) } 
-                            });
-                          } catch {}
-                          try {
-                            const url = getPurchaseUrl(title);
-                            window.open(url, '_blank', 'noopener,noreferrer');
-                          } catch { }
-                        }}
-                        onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
-                        className="w-full purchase-btn relative overflow-hidden bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black font-bold py-3 px-6 rounded-lg border-2 border-[#F2EF1D] transition-all duration-200 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(242,239,29,0.8)]"
-                        style={{
-                          boxShadow: '0 0 20px rgba(242,239,29,0.6), inset 0 2px 0 rgba(255,255,255,0.6), inset 0 -8px 16px rgba(0,0,0,0.22)'
-                        }}
-                      >
-                        <span className="relative z-10 text-sm font-bold tracking-wide">PURCHASE</span>
-                        <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 -translate-x-full transition-transform duration-700 hover:translate-x-full" aria-hidden />
-                      </button>
+                      {selectedCardType === 'physical' ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            try { e.preventDefault(); } catch {}
+                            try { sfx.play('click', 0.7); } catch {}
+                            try {
+                              track('heart_coins_purchase_clicked', { 
+                                song_slug: title?.toLowerCase().replace(/\s+/g, '-'),
+                                card_src: src,
+                                card_type: selectedCardType,
+                                heart_coins_cost: 30,
+                                payload: { song_title: title, card_image: src } 
+                              });
+                            } catch {}
+                            setShowCheckout(true);
+                          }}
+                          disabled={userProfile.hearts < 30}
+                          onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
+                          className={`w-full purchase-btn relative overflow-hidden font-bold py-3 px-6 rounded-lg border-2 transition-all duration-200 ${
+                            userProfile.hearts >= 30
+                              ? 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black border-[#F2EF1D] hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(242,239,29,0.8)]'
+                              : 'bg-gray-600 text-gray-300 border-gray-600 cursor-not-allowed'
+                          }`}
+                          style={userProfile.hearts >= 30 ? {
+                            boxShadow: '0 0 20px rgba(242,239,29,0.6), inset 0 2px 0 rgba(255,255,255,0.6), inset 0 -8px 16px rgba(0,0,0,0.22)'
+                          } : {}}
+                        >
+                          <span className="relative z-10 text-sm font-bold tracking-wide">
+                            PURCHASE WITH HEART COINS
+                          </span>
+                          {userProfile.hearts >= 30 && (
+                            <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 -translate-x-full transition-transform duration-700 hover:translate-x-full" aria-hidden />
+                          )}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            try { e.preventDefault(); } catch {}
+                            try { sfx.play('click', 0.7); } catch {}
+                            try {
+                              track('purchase_card_clicked', { 
+                                song_slug: title?.toLowerCase().replace(/\s+/g, '-'),
+                                card_src: src,
+                                card_type: selectedCardType,
+                                payload: { song_title: title, card_image: src, stripe_url: getPurchaseUrl(title) } 
+                              });
+                            } catch {}
+                            try {
+                              const url = getPurchaseUrl(title);
+                              window.open(url, '_blank', 'noopener,noreferrer');
+                            } catch { }
+                          }}
+                          onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
+                          className="w-full purchase-btn relative overflow-hidden bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black font-bold py-3 px-6 rounded-lg border-2 border-[#F2EF1D] transition-all duration-200 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(242,239,29,0.8)]"
+                          style={{
+                            boxShadow: '0 0 20px rgba(242,239,29,0.6), inset 0 2px 0 rgba(255,255,255,0.6), inset 0 -8px 16px rgba(0,0,0,0.22)'
+                          }}
+                        >
+                          <span className="relative z-10 text-sm font-bold tracking-wide">PURCHASE</span>
+                          <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 -translate-x-full transition-transform duration-700 hover:translate-x-full" aria-hidden />
+                        </button>
+                      )}
                     </div>
                   </>
                 ) : (
@@ -1380,6 +1424,41 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
       <audio ref={flipCoverRef} src="/audio/flip.mp3" preload="auto" />
       <audio ref={scrollAudioRef} src="/audio/scroll.mp3" preload="auto" />
       <audio ref={chimeAudioRef} src="/audio/card-ding.mp3" preload="auto" />
+
+      {/* Heart Coins Checkout Modal */}
+      <HeartCardCheckout
+        isOpen={showCheckout}
+        onClose={() => setShowCheckout(false)}
+        onSuccess={(shippingData) => {
+          setShowCheckout(false);
+          setCompletedOrder({
+            fullName: shippingData.fullName,
+            streetAddress: shippingData.streetAddress,
+            apartment: shippingData.apartment,
+            city: shippingData.city,
+            stateRegion: shippingData.stateRegion,
+            zipPostal: shippingData.zipPostal,
+            country: shippingData.country
+          });
+          setShowSuccess(true);
+          // Refresh user profile to update Heart Coins balance
+          fetchUserProfile();
+        }}
+        cardTitle={title}
+        cardCost={30}
+        userEmail={userProfile?.email}
+        userPhone={userProfile?.phone}
+      />
+
+      {/* Success Modal */}
+      <HeartCardSuccess
+        isOpen={showSuccess}
+        onClose={() => {
+          setShowSuccess(false);
+          setCompletedOrder(null);
+        }}
+        shippingAddress={completedOrder}
+      />
     </motion.div>
   );
 }

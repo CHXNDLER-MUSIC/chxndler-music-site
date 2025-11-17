@@ -215,6 +215,471 @@ export default function HUDPanel({
   const [showHeartverseCode, setShowHeartverseCode] = useState(false);
   // Digital binder popover state
   const [showBookPopover, setShowBookPopover] = useState(false);
+  // Full collection view state
+  const [showFullCollection, setShowFullCollection] = useState(false);
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [selectedRarity, setSelectedRarity] = useState('all');
+  const [selectedType, setSelectedType] = useState('all');
+  
+  // Binder card popup state
+  const [showCardPopup, setShowCardPopup] = useState(false);
+  const [selectedCard, setSelectedCard] = useState(null);
+  
+  // Digital binder cards - CHXNDLER card as first slot
+  const binderCards = [
+    {
+      id: 'chxndler',
+      title: 'CHXNDLER',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',
+      rarity: 'legendary',
+      type: 'brand'
+    },
+    null, // Empty slot
+    null, // Empty slot
+    null, // Empty slot
+    null  // Empty slot
+  ];
+
+  // Available songs that show in dropdown (these should NOT be blurry)
+  const availableSongs = [
+    'GAME BOY HEART', 'KID FOREVER', 'BRAIN FREEZE', "WE'RE JUST FRIENDS (mickey jas Remix)", 'BE MY BEE',
+    "WE'RE JUST FRIENDS", 'PARIS', 'POKÉMON', 'HOUSE PARTY', "WE'RE JUST FRIENDS (DMVRCO Remix)",
+    'BABY', 'OCEAN GIRL', 'OCEAN GIRL (ACOUSTIC)', 'OCEAN GIRL (REMIX)', 'COLORS OF OUR HOME (BLUMA Game Soundtrack)',
+    'COLORS OF OUR HOME (ACOUSTIC)', 'COLORS OF OUR HOME', 'COLLIDE'
+  ];
+
+  // Card collection data using actual song covers
+  const allCards = [
+    // HEART TYPE CARDS
+    {
+      id: 1,
+      name: 'ALWAYS ON MY MIND',
+      type: 'HEART',
+      rarity: 'Legendary',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/always-on-my-mind.png?updatedAt=1762388345883',
+      description: 'Rose-pink velvet plains shimmering under soft light.',
+      collected: false
+    },
+    {
+      id: 2,
+      name: 'ALWAYS ON MY MIND (ACOUSTIC)',
+      type: 'HEART',
+      rarity: 'Rare',
+      image: 'https://ik.imagekit.io/CHXNDLER/cover/ALWAYS%20ON%20MY%20MIND%20(ACOUSTIC).png?updatedAt=1763058363705',
+      description: 'Soft twilight-blue suburban terrain with gentle glowing windows.',
+      collected: false
+    },
+    {
+      id: 3,
+      name: 'ALWAYS ON MY MIND (REMIX)',
+      type: 'HEART',
+      rarity: 'Rare',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/always-on-my-mind-remix.png?updatedAt=1762388342107',
+      description: 'Neon pink suburban terrain glowing like cotton candy.',
+      collected: false
+    },
+    {
+      id: 4,
+      name: 'BABY',
+      type: 'HEART',
+      rarity: 'Rare',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/baby.png?updatedAt=1762388345192',
+      description: 'Pastel pink terrain with toy block mountains and carousel-striped craters.',
+      collected: availableSongs.includes('BABY')
+    },
+    {
+      id: 5,
+      name: 'BE MY BEE',
+      type: 'HEART',
+      rarity: 'Rare',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/be-my-bee.png?updatedAt=1762388342848',
+      description: 'Golden honeycomb crust glowing from within, dripping molten honey.',
+      collected: availableSongs.includes('BE MY BEE')
+    },
+    {
+      id: 6,
+      name: 'BE MY BEE (ACOUSTIC)',
+      type: 'HEART',
+      rarity: 'Common',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/be-my-bee-acoustic.png?updatedAt=1762388342912',
+      description: 'Golden honeycomb crust with pink nectar pools.',
+      collected: false
+    },
+    {
+      id: 7,
+      name: 'COLLIDE',
+      type: 'HEART',
+      rarity: 'Rare',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/collide.png?updatedAt=1762388347054',
+      description: 'Crystalline pink ridges colliding at sharp angles, glowing fractures.',
+      collected: availableSongs.includes('COLLIDE')
+    },
+    {
+      id: 8,
+      name: 'COLORS OF OUR HOME',
+      type: 'HEART',
+      rarity: 'Legendary',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/COLORS%20OF%20OUR%20HOME%20.png?updatedAt=1763055065493',
+      description: 'Warm pink base veined with pastel rainbow rivers.',
+      collected: availableSongs.includes('COLORS OF OUR HOME')
+    },
+    {
+      id: 9,
+      name: 'COLORS OF OUR HOME (ACOUSTIC)',
+      type: 'HEART',
+      rarity: 'Rare',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/COLORS%20OF%20OUR%20HOME%20(ACOUSTIC).png?updatedAt=1763055064803',
+      description: 'Soft pink‑violet forest floor with glowing grassy patches.',
+      collected: availableSongs.includes('COLORS OF OUR HOME (ACOUSTIC)')
+    },
+    {
+      id: 10,
+      name: 'COLORS OF OUR HOME (BLUMA GAME SOUNDTRACK)',
+      type: 'HEART',
+      rarity: 'Common',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/colors-of-our-home-bluma.png?updatedAt=1762388344204',
+      description: 'Pink and blue terrain blending together like game-level tiles.',
+      collected: availableSongs.includes('COLORS OF OUR HOME (BLUMA Game Soundtrack)')
+    },
+    {
+      id: 11,
+      name: 'I MIGHT FALL IN LOVE WITH YOU',
+      type: 'HEART',
+      rarity: 'Rare',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/i-might-fall-in-love-with-you.png?updatedAt=1762388340663',
+      description: 'Pastel rose surface with swirling golden brushstrokes.',
+      collected: false
+    },
+    {
+      id: 12,
+      name: 'I MIGHT FALL IN LOVE WITH YOU (ACOUSTIC)',
+      type: 'HEART',
+      rarity: 'Common',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/I%20MIGHT%20FALL%20IN%20LOVE%20WITH%20YOU%20(ACOUSTIC).png?updatedAt=1763055066309',
+      description: 'Smooth blue‑toned cartoon terrain resembling soft vinyl.',
+      collected: false
+    },
+    {
+      id: 13,
+      name: 'LITTLE BLACK HEART',
+      type: 'DARKNESS',
+      rarity: 'Rare',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/little-black-heart.png?updatedAt=1762388346814',
+      description: 'Volcanic rock cracked with violet magma veins shaped like arteries.',
+      collected: false
+    },
+    {
+      id: 14,
+      name: 'LITTLE BLACK HEART (ACOUSTIC)',
+      type: 'DARKNESS',
+      rarity: 'Common',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/LITTLE%20BLACK%20HEART%20(ACOUSTIC).png?updatedAt=1763055066090',
+      description: 'Stone‑grey cemetery terrain with cracked tombstone texture.',
+      collected: false
+    },
+    {
+      id: 15,
+      name: 'LOVE ME',
+      type: 'HEART',
+      rarity: 'Rare',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/love-me.png?updatedAt=1762388339563',
+      description: 'Pink crust fractured with glowing violet rivers of light.',
+      collected: false
+    },
+    {
+      id: 16,
+      name: 'LOVE ME (ACOUSTIC)',
+      type: 'HEART',
+      rarity: 'Common',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/love-me-acoustic.png?updatedAt=1762388330787',
+      description: 'Jet-black neon surface with glowing blue fractured heart symbol.',
+      collected: false
+    },
+    {
+      id: 17,
+      name: 'SOMEBODY TO LOVE',
+      type: 'HEART',
+      rarity: 'Rare',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/somebody-to-love.png?updatedAt=1762388347148',
+      description: 'Pink marble terrain with handprint depressions etched in gold.',
+      collected: false
+    },
+    {
+      id: 18,
+      name: 'TIENES UN AMIGO',
+      type: 'HEART',
+      rarity: 'Common',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/tienes-un-amigo.png?updatedAt=1762388343639',
+      description: 'Glowing pink surface veined with golden rivers forming constellation-like maps.',
+      collected: false
+    },
+    {
+      id: 19,
+      name: "WE'RE JUST FRIENDS",
+      type: 'HEART',
+      rarity: 'Legendary',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/we\'re-just-friends.png?updatedAt=1762388347233',
+      description: 'Pink terrain shattered into crystal shards glowing white along cracks.',
+      collected: availableSongs.includes("WE'RE JUST FRIENDS")
+    },
+    {
+      id: 20,
+      name: "WE'RE JUST FRIENDS (ACOUSTIC)",
+      type: 'HEART',
+      rarity: 'Rare',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/we\'re-just-friends-acoustic.png?updatedAt=1762388340285',
+      description: 'Pastel blue-pink road curving through bubblegum-colored landscape.',
+      collected: false
+    },
+    {
+      id: 21,
+      name: "WE'RE JUST FRIENDS (DMVRCO REMIX)",
+      type: 'HEART',
+      rarity: 'Rare',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/we\'re-just-friends-dmvrco-remix.png?updatedAt=1762388345669',
+      description: 'Bright neon orange-pink terrain with hyper-saturated hills and palm trees.',
+      collected: availableSongs.includes("WE'RE JUST FRIENDS (DMVRCO Remix)")
+    },
+    {
+      id: 22,
+      name: "WE'RE JUST FRIENDS (MICKEY JAS REMIX)",
+      type: 'HEART',
+      rarity: 'Common',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/we\'re-just-friends-mickey-jas-remix.png?updatedAt=1762388346859',
+      description: 'Soft pastel teal landscape with cotton-candy pink land ridges.',
+      collected: availableSongs.includes("WE'RE JUST FRIENDS (mickey jas Remix)")
+    },
+    {
+      id: 23,
+      name: 'PINK MOON',
+      type: 'HEART',
+      rarity: 'Common',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/pink-moon.png?updatedAt=1762388347173',
+      description: 'Bright pink glowing terrain illuminated with neon lights.',
+      collected: false
+    },
+
+    // WATER TYPE CARDS
+    {
+      id: 24,
+      name: 'LETTING GO',
+      type: 'WATER',
+      rarity: 'Rare',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/letting-go.png?updatedAt=1762388344472',
+      description: 'Deep swirling oceans with glowing whirlpools.',
+      collected: false
+    },
+    {
+      id: 25,
+      name: 'OCEAN GIRL',
+      type: 'WATER',
+      rarity: 'Legendary',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl.png?updatedAt=1762388343942',
+      description: 'Turquoise waves frozen mid-crest, liquid glass reflection.',
+      collected: availableSongs.includes('OCEAN GIRL')
+    },
+    {
+      id: 26,
+      name: 'OCEAN GIRL (ACOUSTIC)',
+      type: 'WATER',
+      rarity: 'Rare',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl-acoustic.png?updatedAt=1762388344386',
+      description: 'Turquoise waves with purple accents flowing through water.',
+      collected: availableSongs.includes('OCEAN GIRL (ACOUSTIC)')
+    },
+    {
+      id: 27,
+      name: 'OCEAN GIRL (REMIX)',
+      type: 'WATER',
+      rarity: 'Common',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl-remix.png?updatedAt=1762388346301',
+      description: 'Turquoise waves with black streaks flowing across surface.',
+      collected: availableSongs.includes('OCEAN GIRL (REMIX)')
+    },
+
+    // LIGHTNING TYPE CARDS
+    {
+      id: 28,
+      name: 'AMERICAN DREAM',
+      type: 'LIGHTNING',
+      rarity: 'Rare',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/american-dream.png?updatedAt=1762388346126',
+      description: 'Neon yellow skyscraper formations like jagged teeth covered in glowing billboards.',
+      collected: false
+    },
+    {
+      id: 29,
+      name: 'BLUE',
+      type: 'LIGHTNING',
+      rarity: 'Rare',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/blue.png?updatedAt=1762388346777',
+      description: 'Yellow crust covered with stormy sapphire-blue clouds.',
+      collected: false
+    },
+    {
+      id: 30,
+      name: 'BLUE (ACOUSTIC)',
+      type: 'LIGHTNING',
+      rarity: 'Common',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/BLUE%20(ACOUSTIC).png?updatedAt=1763055066119',
+      description: 'Hyper‑pink snow‑textured terrain with cotton‑candy hills and crystalline frost.',
+      collected: false
+    },
+    {
+      id: 31,
+      name: 'BRAIN FREEZE',
+      type: 'LIGHTNING',
+      rarity: 'Rare',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/brain-freeze.png?updatedAt=1762388347224',
+      description: 'Yellow frozen crust cracked with glowing icy fissures.',
+      collected: availableSongs.includes('BRAIN FREEZE')
+    },
+    {
+      id: 32,
+      name: 'FEELING THIS',
+      type: 'LIGHTNING',
+      rarity: 'Common',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/feeling-this.png?updatedAt=1762388347289',
+      description: 'Jagged punk-graffiti terrain with neon graffiti art sprayed across.',
+      collected: false
+    },
+    {
+      id: 33,
+      name: 'GAME BOY HEART',
+      type: 'LIGHTNING',
+      rarity: 'Legendary',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/game-boy-heart.png?updatedAt=1762388346348',
+      description: 'Pixel-mapped yellow terrain with giant 8-bit blocks.',
+      collected: availableSongs.includes('GAME BOY HEART')
+    },
+    {
+      id: 34,
+      name: 'HOME',
+      type: 'LIGHTNING',
+      rarity: 'Rare',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/home.png?updatedAt=1762388345590',
+      description: 'Golden stitched quilt patches glowing softly.',
+      collected: false
+    },
+    {
+      id: 35,
+      name: 'HOME (ACOUSTIC)',
+      type: 'LIGHTNING',
+      rarity: 'Common',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/home-acoustic.png?updatedAt=1762388344295',
+      description: 'Golden quilt patches mixed with pink and blue accents.',
+      collected: false
+    },
+    {
+      id: 36,
+      name: 'HOUSE PARTY',
+      type: 'LIGHTNING',
+      rarity: 'Rare',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/HOUSE%20PARTY.png?updatedAt=1763055601783',
+      description: 'Neon cracked dance floor tiles flashing on/off.',
+      collected: availableSongs.includes('HOUSE PARTY')
+    },
+    {
+      id: 37,
+      name: 'HOUSE PARTY (ACOUSTIC)',
+      type: 'LIGHTNING',
+      rarity: 'Common',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/house-party-acoustic.png?updatedAt=1762388343028',
+      description: 'Neon cracked dance floor tiles with yellow accents instead of pink.',
+      collected: false
+    },
+    {
+      id: 38,
+      name: 'KID FOREVER',
+      type: 'LIGHTNING',
+      rarity: 'Legendary',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/kid-forever.png?updatedAt=1762388339589',
+      description: 'Yellow graffiti-covered terrain like cosmic playground.',
+      collected: availableSongs.includes('KID FOREVER')
+    },
+    {
+      id: 39,
+      name: 'POKÉMON',
+      type: 'LIGHTNING',
+      rarity: 'Rare',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/pokemon.png?updatedAt=1762388341960',
+      description: 'Neon yellow surface textured like a glowing Poké Ball grid.',
+      collected: availableSongs.includes('POKÉMON')
+    },
+
+    // DARKNESS TYPE CARDS
+    {
+      id: 40,
+      name: 'ALONE',
+      type: 'DARKNESS',
+      rarity: 'Legendary',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/alone.png?updatedAt=1762388342410',
+      description: 'Jagged obsidian crust with deep canyons glowing faint red, fractured tectonic plates.',
+      collected: false
+    },
+    {
+      id: 41,
+      name: 'ALONE (ACOUSTIC)',
+      type: 'DARKNESS',
+      rarity: 'Rare',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/ALONE%20(ACOUSTIC).png?updatedAt=1763054836196',
+      description: 'Midnight‑purple cityscape silhouette with glowing teal light between buildings.',
+      collected: false
+    },
+    {
+      id: 42,
+      name: 'CHEERLEADER',
+      type: 'DARKNESS',
+      rarity: 'Common',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/cheerleader.png?updatedAt=1762388346177',
+      description: 'Black asphalt terrain with faded white lines like abandoned stadium floor.',
+      collected: false
+    },
+    {
+      id: 43,
+      name: 'MR. BRIGHTSIDE',
+      type: 'DARKNESS',
+      rarity: 'Rare',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/mr.brightside.png?updatedAt=1762388346700',
+      description: 'Smooth black mirrored plains broken by jagged silver shards.',
+      collected: false
+    },
+    {
+      id: 44,
+      name: 'PARIS',
+      type: 'DARKNESS',
+      rarity: 'Rare',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/paris.png?updatedAt=1762388344978',
+      description: 'Black cobblestone terrain glistening with rain, glowing Eiffel Tower fissures.',
+      collected: availableSongs.includes('PARIS')
+    },
+
+    // SPECIAL CHXNDLER CARD
+    {
+      id: 45,
+      name: 'CHXNDLER',
+      type: 'HEART',
+      rarity: 'Legendary',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',
+      description: 'The artist himself, heart of the HEARTVERSE.',
+      collected: true // Always collected
+    }
+  ];
+
+  // Filter cards based on selected filters
+  const filteredCards = allCards.filter(card => {
+    const rarityMatch = selectedRarity === 'all' || card.rarity === selectedRarity;
+    const typeMatch = selectedType === 'all' || card.type === selectedType;
+    return rarityMatch && typeMatch;
+  });
+
+  // Reset card index if out of bounds when filters change
+  useEffect(() => {
+    if (currentCardIndex >= filteredCards.length && filteredCards.length > 0) {
+      setCurrentCardIndex(0);
+    }
+  }, [filteredCards.length, currentCardIndex]);
+
   // Position heart popover similar to lyrics popover
   const HEART_POPOVER_Y_OFFSET = -40;
 
@@ -1542,7 +2007,7 @@ export default function HUDPanel({
                 {(() => {
                   const isHome = !currentId;
                   const currentSong = resolvedSongs.find(s => s.id === active);
-                  const slug = isHome ? 'homepage' : (currentSong?.id || '');
+                  const slug = isHome ? 'homepage' : (currentSong?.id || active || 'homepage');
                   const hasLyrics = isHome ? true : !!(currentSong && (currentSong.hasLyrics !== false));
                   const lyricsTitle = isHome ? 'Lyrics for CHXNDLER' : `Lyrics for ${currentSong?.title || 'current track'}`;
                   const lyricsAria = isHome ? 'View lyrics for CHXNDLER' : `View lyrics for ${currentSong?.title || 'current track'}`;
@@ -2215,15 +2680,18 @@ export default function HUDPanel({
                                 setShowBookPopover(!showBookPopover);
                               }}
                               style={{
-                                padding: 6,
-                                borderRadius: 6,
+                                width: 30,
+                                height: 30,
+                                padding: 0,
+                                borderRadius: '50%',
                                 background: 'linear-gradient(135deg, rgba(252,84,175,0.15), rgba(25,227,255,0.15))',
                                 border: '1px solid rgba(252,84,175,0.4)',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s ease',
-                                display: 'inline-flex',
+                                display: 'flex',
                                 alignItems: 'center',
-                                gap: 6
+                                justifyContent: 'center',
+                                overflow: 'hidden'
                               }}
                               onMouseOver={(e) => {
                                 e.currentTarget.style.background = 'linear-gradient(135deg, rgba(252,84,175,0.25), rgba(25,227,255,0.25))';
@@ -2237,13 +2705,15 @@ export default function HUDPanel({
                               }}
                             >
                               <img
-                                src="/book.png"
-                                alt="Book"
-                                width={16}
-                                height={16}
-                                style={{ display: 'block', width: 16, height: 16, objectFit: 'contain' }}
+                                src="/elements/binder.png"
+                                alt="Binder"
+                                style={{ 
+                                  width: '100%', 
+                                  height: '100%', 
+                                  objectFit: 'cover',
+                                  borderRadius: '50%'
+                                }}
                               />
-                              <span style={{ fontSize: 11, fontWeight: 600, color: '#FC54AF' }}>BINDER</span>
                             </button>
                           </div>
                           {/* Small element picker popover */}
@@ -2763,50 +3233,276 @@ export default function HUDPanel({
                       </p>
                     </div>
                     
-                    {/* Content area */}
+                    {/* Trading Card Album Content */}
                     <div style={{
                       flex: 1,
-                      background: 'rgba(0,0,0,0.2)',
+                      background: 'linear-gradient(135deg, rgba(255,255,255,0.02), rgba(252,84,175,0.03), rgba(25,227,255,0.02))',
                       borderRadius: 12,
-                      padding: 20,
-                      textAlign: 'center',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexDirection: 'column',
-                      gap: 16
+                      padding: '20px',
+                      position: 'relative',
+                      overflow: 'auto'
                     }}>
-                      <img
-                        src="/book.png"
-                        alt="Book"
-                        width={48}
-                        height={48}
-                        style={{ 
-                          display: 'block', 
-                          width: 48, 
-                          height: 48, 
-                          objectFit: 'contain',
-                          opacity: 0.6,
-                          filter: 'drop-shadow(0 0 8px rgba(252,84,175,0.4))'
-                        }}
-                      />
-                      <div>
+                      {/* Hologram pattern overlay */}
+                      <div style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.01) 10px, rgba(255,255,255,0.01) 11px)',
+                        borderRadius: 12,
+                        pointerEvents: 'none'
+                      }} />
+                      
+                      {/* FULL COLLECTION Button */}
+                      <div style={{
+                        marginBottom: 20,
+                        textAlign: 'center',
+                        position: 'relative',
+                        zIndex: 1
+                      }}>
+                        <button
+                          aria-label="View Full Collection"
+                          title="View Full Collection"
+                          onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                          onClick={() => {
+                            try { sfx.play('click', 0.4); } catch {}
+                            setShowFullCollection(true);
+                            setCurrentCardIndex(0);
+                          }}
+                          style={{
+                            padding: '8px 16px',
+                            borderRadius: 8,
+                            background: 'linear-gradient(135deg, rgba(252,84,175,0.2), rgba(25,227,255,0.15))',
+                            border: '1px solid rgba(252,84,175,0.5)',
+                            color: '#FC54AF',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            fontSize: 12,
+                            fontWeight: 700,
+                            letterSpacing: '0.5px',
+                            textShadow: '0 0 8px rgba(252,84,175,0.4)',
+                            boxShadow: '0 2px 8px rgba(252,84,175,0.1)'
+                          }}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(252,84,175,0.3), rgba(25,227,255,0.25))';
+                            e.currentTarget.style.borderColor = 'rgba(252,84,175,0.7)';
+                            e.currentTarget.style.transform = 'translateY(-1px)';
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(252,84,175,0.2)';
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(252,84,175,0.2), rgba(25,227,255,0.15))';
+                            e.currentTarget.style.borderColor = 'rgba(252,84,175,0.5)';
+                            e.currentTarget.style.transform = 'translateY(0px)';
+                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(252,84,175,0.1)';
+                          }}
+                        >
+                          FULL COLLECTION
+                        </button>
+                      </div>
+
+                      {/* Collection stats */}
+                      <div style={{
+                        marginBottom: 20,
+                        textAlign: 'center',
+                        position: 'relative',
+                        zIndex: 1
+                      }}>
                         <h3 style={{
-                          fontSize: 18,
+                          fontSize: 16,
                           fontWeight: 700,
                           color: '#FC54AF',
                           margin: 0,
-                          marginBottom: 8
+                          marginBottom: 4,
+                          textShadow: '0 0 8px rgba(252,84,175,0.4)'
                         }}>
-                          Coming Soon
+                          CHXNDLER Card Collection
                         </h3>
                         <p style={{
-                          fontSize: 14,
+                          fontSize: 12,
                           opacity: 0.7,
                           margin: 0,
-                          lineHeight: 1.5
+                          color: '#fff'
                         }}>
-                          Collect cards, lyrics, exclusive content, and memories from your journey through the HEARTVERSE.
+                          0 of 5 cards collected
+                        </p>
+                      </div>
+                      
+                      {/* Card slots grid */}
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))',
+                        gap: '12px',
+                        maxWidth: '600px',
+                        margin: '0 auto',
+                        position: 'relative',
+                        zIndex: 1,
+                        '@media (max-width: 768px)': {
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(75px, 1fr))',
+                          gap: '8px'
+                        }
+                      }}>
+                        {binderCards.map((card, index) => (
+                          <div
+                            key={index}
+                            style={{
+                              aspectRatio: '2.5/3.5',
+                              background: card ? 
+                                'radial-gradient(circle at 30% 40%, rgba(25,227,255,0.15), rgba(252,84,175,0.08) 60%, rgba(255,212,0,0.06) 100%)' :
+                                'radial-gradient(circle at 30% 40%, rgba(252,84,175,0.08), rgba(25,227,255,0.06) 60%, rgba(255,212,0,0.04) 100%)',
+                              border: card ? 
+                                '2px solid rgba(25,227,255,0.6)' :
+                                '2px dashed rgba(252,84,175,0.3)',
+                              borderRadius: '12px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              position: 'relative',
+                              cursor: card ? 'pointer' : 'default',
+                              transition: 'all 0.3s ease',
+                              minHeight: '120px',
+                              overflow: 'hidden'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (card) {
+                                try { sfx.play('hover', 0.35); } catch {}
+                                e.currentTarget.style.transform = 'scale(1.05)';
+                                e.currentTarget.style.boxShadow = '0 8px 25px rgba(25,227,255,0.4), 0 0 20px rgba(252,84,175,0.3)';
+                                e.currentTarget.style.borderColor = 'rgba(25,227,255,0.8)';
+                              } else {
+                                e.currentTarget.style.borderColor = 'rgba(252,84,175,0.6)';
+                                e.currentTarget.style.background = 'radial-gradient(circle at 30% 40%, rgba(252,84,175,0.12), rgba(25,227,255,0.08) 60%, rgba(255,212,0,0.06) 100%)';
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.boxShadow = '0 8px 25px rgba(252,84,175,0.2)';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.transform = card ? 'scale(1)' : 'translateY(0px)';
+                              e.currentTarget.style.boxShadow = 'none';
+                              e.currentTarget.style.borderColor = card ? 
+                                'rgba(25,227,255,0.6)' :
+                                'rgba(252,84,175,0.3)';
+                              if (!card) {
+                                e.currentTarget.style.background = 'radial-gradient(circle at 30% 40%, rgba(252,84,175,0.08), rgba(25,227,255,0.06) 60%, rgba(255,212,0,0.04) 100%)';
+                              }
+                            }}
+                            onClick={() => {
+                              if (card) {
+                                try { sfx.play('click', 0.4); } catch {}
+                                setSelectedCard(card);
+                                setShowCardPopup(true);
+                              }
+                            }}
+                          >
+                            {card ? (
+                              // Card content
+                              <>
+                                <img
+                                  src={card.image}
+                                  alt={card.title}
+                                  style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
+                                    borderRadius: '10px',
+                                    filter: 'brightness(1.1) contrast(1.05) saturate(1.1)',
+                                    transition: 'filter 0.3s ease'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.target.style.filter = 'brightness(1.3) contrast(1.2) saturate(1.3) drop-shadow(0 0 15px rgba(25,227,255,0.8))';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.target.style.filter = 'brightness(1.1) contrast(1.05) saturate(1.1)';
+                                  }}
+                                />
+                                {/* Card overlay with title */}
+                                <div style={{
+                                  position: 'absolute',
+                                  bottom: 0,
+                                  left: 0,
+                                  right: 0,
+                                  background: 'linear-gradient(transparent, rgba(0,0,0,0.8))',
+                                  color: '#fff',
+                                  padding: '8px 4px 4px',
+                                  fontSize: '8px',
+                                  fontWeight: 'bold',
+                                  textAlign: 'center',
+                                  textShadow: '0 0 8px rgba(25,227,255,0.8)'
+                                }}>
+                                  {card.title}
+                                </div>
+                              </>
+                            ) : (
+                              // Empty slot content
+                              <>
+                                {/* Shimmer effect for empty slots */}
+                                <div style={{
+                                  position: 'absolute',
+                                  top: '-50%',
+                                  left: '-50%',
+                                  width: '200%',
+                                  height: '200%',
+                                  background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%)',
+                                  animation: 'shimmer 3s ease-in-out infinite',
+                                  borderRadius: '12px'
+                                }} />
+                                
+                                {/* Empty state content */}
+                                <div style={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'center',
+                                  gap: '8px',
+                                  opacity: 0.6,
+                                  zIndex: 1
+                                }}>
+                                  <div style={{
+                                    width: '32px',
+                                    height: '32px',
+                                    border: '2px dashed rgba(252,84,175,0.4)',
+                                    borderRadius: '6px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                  }}>
+                                    <span style={{
+                                      fontSize: '18px',
+                                      color: 'rgba(252,84,175,0.5)'
+                                    }}>
+                                      +
+                                    </span>
+                                  </div>
+                                  <span style={{
+                                    fontSize: '10px',
+                                    color: 'rgba(255,255,255,0.5)',
+                                    textAlign: 'center',
+                                    fontWeight: 500
+                                  }}>
+                                    Empty Slot
+                                  </span>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Collection hint */}
+                      <div style={{
+                        marginTop: 20,
+                        textAlign: 'center',
+                        position: 'relative',
+                        zIndex: 1
+                      }}>
+                        <p style={{
+                          fontSize: 11,
+                          opacity: 0.6,
+                          margin: 0,
+                          color: '#fff',
+                          lineHeight: 1.4
+                        }}>
+                          Earn CHXNDLER cards by purchasing merch and unlocking HEARTVERSE tiers
                         </p>
                       </div>
                     </div>
@@ -2814,6 +3510,518 @@ export default function HUDPanel({
                   document.body
                 ) : null}
                 {/* END Digital Binder popover */}
+                
+                {/* Card Popup Modal */}
+                {typeof document !== 'undefined' && showCardPopup && selectedCard ? require('react-dom').createPortal(
+                  <div
+                    role="dialog"
+                    aria-label="Card Details"
+                    style={{
+                      position: 'fixed',
+                      inset: 0,
+                      background: 'rgba(0,0,0,0.8)',
+                      backdropFilter: 'blur(8px)',
+                      zIndex: 2147483648,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: 20
+                    }}
+                    onClick={() => setShowCardPopup(false)}
+                  >
+                    <div
+                      style={{
+                        position: 'relative',
+                        maxWidth: '90vw',
+                        maxHeight: '90vh',
+                        background: 'radial-gradient(140% 160% at 50% 0%, rgba(25,227,255,0.25), rgba(252,84,175,0.18) 35%, rgba(20,60,85,0.55) 100%)',
+                        border: '2px solid rgba(25,227,255,0.6)',
+                        borderRadius: 20,
+                        boxShadow: '0 20px 50px rgba(0,0,0,0.5), 0 0 40px rgba(25,227,255,0.4)',
+                        backdropFilter: 'blur(16px) saturate(1.3)',
+                        padding: 0,
+                        overflow: 'hidden'
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {/* Close button */}
+                      <button
+                        aria-label="Close Card Popup"
+                        onClick={() => setShowCardPopup(false)}
+                        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                        style={{
+                          position: 'absolute',
+                          top: 16,
+                          right: 16,
+                          width: 40,
+                          height: 40,
+                          border: 'none',
+                          background: 'rgba(0,0,0,0.6)',
+                          borderRadius: 20,
+                          color: '#19E3FF',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 20,
+                          fontWeight: 'bold',
+                          zIndex: 10,
+                          transition: 'all 0.2s ease',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                        }}
+                        onMouseOver={(e) => {
+                          e.target.style.background = 'rgba(25,227,255,0.2)';
+                          e.target.style.transform = 'scale(1.1)';
+                        }}
+                        onMouseOut={(e) => {
+                          e.target.style.background = 'rgba(0,0,0,0.6)';
+                          e.target.style.transform = 'scale(1)';
+                        }}
+                      >
+                        ×
+                      </button>
+
+                      {/* Card display area */}
+                      <div style={{
+                        position: 'relative',
+                        width: 'min(80vw, 400px)',
+                        height: 'min(80vh, 560px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '40px'
+                      }}>
+                        {/* Card image with tilt effect */}
+                        <div style={{
+                          position: 'relative',
+                          width: '100%',
+                          height: '100%',
+                          perspective: '1200px'
+                        }}>
+                          <div style={{
+                            position: 'relative',
+                            width: '100%',
+                            height: '100%',
+                            transformStyle: 'preserve-3d',
+                            transform: 'rotateX(10deg) rotateY(-10deg)',
+                            transition: 'transform 0.3s ease',
+                            cursor: 'pointer'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'rotateX(5deg) rotateY(-5deg) scale(1.02)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'rotateX(10deg) rotateY(-10deg) scale(1)';
+                          }}>
+                            <img
+                              src={selectedCard.image}
+                              alt={selectedCard.title}
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'contain',
+                                borderRadius: '16px',
+                                filter: 'brightness(1.1) contrast(1.05) saturate(1.2) drop-shadow(0 10px 30px rgba(25,227,255,0.4)) drop-shadow(0 5px 15px rgba(252,84,175,0.3))',
+                                transition: 'filter 0.3s ease'
+                              }}
+                            />
+                            
+                            {/* Holographic sheen effect */}
+                            <div style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(25,227,255,0.1) 100%)',
+                              borderRadius: '16px',
+                              pointerEvents: 'none',
+                              opacity: 0.6
+                            }} />
+                          </div>
+                        </div>
+
+                        {/* Floating particles effect around card */}
+                        <div style={{
+                          position: 'absolute',
+                          inset: 0,
+                          pointerEvents: 'none',
+                          overflow: 'hidden'
+                        }}>
+                          {[...Array(8)].map((_, i) => (
+                            <div
+                              key={i}
+                              style={{
+                                position: 'absolute',
+                                width: '4px',
+                                height: '4px',
+                                background: i % 2 === 0 ? '#19E3FF' : '#FC54AF',
+                                borderRadius: '50%',
+                                left: `${20 + (i * 10)}%`,
+                                top: `${10 + (i * 8)}%`,
+                                animation: `float ${3 + Math.random() * 2}s ease-in-out infinite ${Math.random() * 2}s`,
+                                filter: 'blur(0.5px)',
+                                opacity: 0.7
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Card info overlay */}
+                      <div style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        background: 'linear-gradient(transparent, rgba(0,0,0,0.9))',
+                        color: '#fff',
+                        padding: '20px',
+                        textAlign: 'center'
+                      }}>
+                        <h3 style={{
+                          margin: 0,
+                          fontSize: '24px',
+                          fontWeight: 'bold',
+                          color: '#19E3FF',
+                          textShadow: '0 0 12px rgba(25,227,255,0.6)'
+                        }}>
+                          {selectedCard.title}
+                        </h3>
+                        <div style={{
+                          marginTop: '8px',
+                          fontSize: '14px',
+                          opacity: 0.8,
+                          color: '#CFF7FF'
+                        }}>
+                          {selectedCard.rarity?.toUpperCase()} • {selectedCard.type?.toUpperCase()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>,
+                  document.body
+                ) : null}
+                {/* END Card Popup Modal */}
+
+                {/* Full Collection Modal */}
+                {typeof document !== 'undefined' && showFullCollection ? require('react-dom').createPortal(
+                  <div
+                    role="dialog"
+                    aria-label="Full Card Collection"
+                    style={{
+                      position: 'fixed',
+                      inset: 0,
+                      background: 'rgba(0,0,0,0.8)',
+                      backdropFilter: 'blur(8px)',
+                      zIndex: 2147483648,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: 20
+                    }}
+                    onClick={() => setShowFullCollection(false)}
+                  >
+                    <div
+                      style={{
+                        width: 'min(90vw, 500px)',
+                        height: 'min(80vh, 600px)',
+                        background: 'radial-gradient(140% 160% at 50% 0%, rgba(252,84,175,0.3), rgba(14,168,208,0.2) 35%, rgba(60,20,45,0.6) 100%)',
+                        border: '1px solid rgba(252,84,175,0.5)',
+                        borderRadius: 20,
+                        boxShadow: '0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(252,84,175,0.3)',
+                        backdropFilter: 'blur(12px)',
+                        color: '#fff',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflow: 'hidden'
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {/* Header with close button */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '20px 20px 0 20px'
+                      }}>
+                        <h2 style={{
+                          fontSize: 24,
+                          fontWeight: 900,
+                          color: '#FC54AF',
+                          textShadow: '0 0 12px rgba(252,84,175,0.6)',
+                          margin: 0
+                        }}>
+                          FULL COLLECTION
+                        </h2>
+                        <button
+                          aria-label="Close Full Collection"
+                          onClick={() => setShowFullCollection(false)}
+                          style={{
+                            width: 32,
+                            height: 32,
+                            border: 'none',
+                            background: 'rgba(255,255,255,0.1)',
+                            borderRadius: 16,
+                            color: '#fff',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: 18,
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+
+                      {/* Filters */}
+                      <div style={{
+                        display: 'flex',
+                        gap: 12,
+                        padding: '0 20px 20px 20px',
+                        alignItems: 'center'
+                      }}>
+                        <select
+                          value={selectedRarity}
+                          onChange={(e) => {
+                            setSelectedRarity(e.target.value);
+                            setCurrentCardIndex(0);
+                          }}
+                          style={{
+                            padding: '6px 10px',
+                            borderRadius: 6,
+                            border: '1px solid rgba(252,84,175,0.4)',
+                            background: 'rgba(0,0,0,0.3)',
+                            color: '#fff',
+                            fontSize: 12,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <option value="all">All Rarities</option>
+                          <option value="Common">Common</option>
+                          <option value="Rare">Rare</option>
+                          <option value="Legendary">Legendary</option>
+                        </select>
+                        
+                        <select
+                          value={selectedType}
+                          onChange={(e) => {
+                            setSelectedType(e.target.value);
+                            setCurrentCardIndex(0);
+                          }}
+                          style={{
+                            padding: '6px 10px',
+                            borderRadius: 6,
+                            border: '1px solid rgba(252,84,175,0.4)',
+                            background: 'rgba(0,0,0,0.3)',
+                            color: '#fff',
+                            fontSize: 12,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <option value="all">All Types</option>
+                          <option value="HEART">HEART</option>
+                          <option value="WATER">WATER</option>
+                          <option value="LIGHTNING">LIGHTNING</option>
+                          <option value="DARKNESS">DARKNESS</option>
+                        </select>
+                        
+                        <span style={{
+                          fontSize: 12,
+                          opacity: 0.7,
+                          marginLeft: 'auto'
+                        }}>
+                          {currentCardIndex + 1} of {filteredCards.length}
+                        </span>
+                      </div>
+
+                      {/* Card Display */}
+                      {filteredCards.length > 0 && (
+                        <div style={{
+                          flex: 1,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: '0 20px 20px 20px'
+                        }}>
+                          {(() => {
+                            const card = filteredCards[currentCardIndex];
+                            return (
+                              <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: 16,
+                                maxWidth: '100%'
+                              }}>
+                                {/* Card Image */}
+                                <div style={{
+                                  position: 'relative',
+                                  aspectRatio: '2.5/3.5',
+                                  width: '200px',
+                                  background: 'radial-gradient(circle at 30% 40%, rgba(252,84,175,0.1), rgba(25,227,255,0.08) 60%, rgba(255,212,0,0.06) 100%)',
+                                  border: `2px solid ${card.rarity === 'Legendary' ? '#FFD700' : card.rarity === 'Rare' ? '#3498DB' : '#95A5A6'}`,
+                                  borderRadius: 12,
+                                  overflow: 'hidden',
+                                  boxShadow: `0 0 20px ${card.rarity === 'Legendary' ? 'rgba(255,215,0,0.3)' : card.rarity === 'Rare' ? 'rgba(52,152,219,0.3)' : 'rgba(149,165,166,0.3)'}`
+                                }}>
+                                  <img
+                                    src={card.image}
+                                    alt={card.name}
+                                    style={{
+                                      width: '100%',
+                                      height: '100%',
+                                      objectFit: 'cover',
+                                      filter: card.collected ? 'none' : 'blur(8px) grayscale(0.7) brightness(0.6)',
+                                      transition: 'filter 0.3s ease'
+                                    }}
+                                  />
+                                  {!card.collected && (
+                                    <div style={{
+                                      position: 'absolute',
+                                      top: '50%',
+                                      left: '50%',
+                                      transform: 'translate(-50%, -50%)',
+                                      background: 'rgba(0,0,0,0.8)',
+                                      color: '#fff',
+                                      padding: '4px 8px',
+                                      borderRadius: 4,
+                                      fontSize: 10,
+                                      fontWeight: 600,
+                                      textShadow: '0 0 4px rgba(0,0,0,0.8)'
+                                    }}>
+                                      NOT COLLECTED
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Card Info */}
+                                <div style={{
+                                  textAlign: 'center',
+                                  maxWidth: '300px'
+                                }}>
+                                  <h3 style={{
+                                    fontSize: 18,
+                                    fontWeight: 700,
+                                    margin: 0,
+                                    marginBottom: 4,
+                                    color: '#FC54AF'
+                                  }}>
+                                    {card.name}
+                                  </h3>
+                                  <div style={{
+                                    display: 'flex',
+                                    gap: 8,
+                                    justifyContent: 'center',
+                                    marginBottom: 8
+                                  }}>
+                                    <span style={{
+                                      fontSize: 12,
+                                      padding: '2px 8px',
+                                      borderRadius: 10,
+                                      background: card.rarity === 'Legendary' ? 'rgba(255,215,0,0.2)' : card.rarity === 'Rare' ? 'rgba(52,152,219,0.2)' : 'rgba(149,165,166,0.2)',
+                                      color: card.rarity === 'Legendary' ? '#FFD700' : card.rarity === 'Rare' ? '#3498DB' : '#95A5A6'
+                                    }}>
+                                      {card.rarity}
+                                    </span>
+                                    <span style={{
+                                      fontSize: 12,
+                                      padding: '2px 8px',
+                                      borderRadius: 10,
+                                      background: 'rgba(252,84,175,0.2)',
+                                      color: '#FC54AF'
+                                    }}>
+                                      {card.type}
+                                    </span>
+                                  </div>
+                                  <p style={{
+                                    fontSize: 14,
+                                    opacity: 0.8,
+                                    margin: 0,
+                                    lineHeight: 1.4
+                                  }}>
+                                    {card.description}
+                                  </p>
+                                </div>
+
+                                {/* Navigation */}
+                                <div style={{
+                                  display: 'flex',
+                                  gap: 16,
+                                  alignItems: 'center'
+                                }}>
+                                  <button
+                                    onClick={() => {
+                                      try { sfx.play('click', 0.3); } catch {}
+                                      setCurrentCardIndex(prev => prev > 0 ? prev - 1 : filteredCards.length - 1);
+                                    }}
+                                    disabled={filteredCards.length <= 1}
+                                    style={{
+                                      width: 40,
+                                      height: 40,
+                                      borderRadius: '50%',
+                                      border: '1px solid rgba(252,84,175,0.4)',
+                                      background: 'rgba(252,84,175,0.1)',
+                                      color: '#FC54AF',
+                                      cursor: filteredCards.length > 1 ? 'pointer' : 'not-allowed',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      fontSize: 18,
+                                      opacity: filteredCards.length > 1 ? 1 : 0.5
+                                    }}
+                                  >
+                                    ←
+                                  </button>
+                                  
+                                  <button
+                                    onClick={() => {
+                                      try { sfx.play('click', 0.3); } catch {}
+                                      setCurrentCardIndex(prev => prev < filteredCards.length - 1 ? prev + 1 : 0);
+                                    }}
+                                    disabled={filteredCards.length <= 1}
+                                    style={{
+                                      width: 40,
+                                      height: 40,
+                                      borderRadius: '50%',
+                                      border: '1px solid rgba(252,84,175,0.4)',
+                                      background: 'rgba(252,84,175,0.1)',
+                                      color: '#FC54AF',
+                                      cursor: filteredCards.length > 1 ? 'pointer' : 'not-allowed',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      fontSize: 18,
+                                      opacity: filteredCards.length > 1 ? 1 : 0.5
+                                    }}
+                                  >
+                                    →
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+
+                      {filteredCards.length === 0 && (
+                        <div style={{
+                          flex: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          opacity: 0.6
+                        }}>
+                          <p>No cards match the selected filters.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>,
+                  document.body
+                ) : null}
+                {/* END Full Collection Modal */}
 
                 {typeof document !== 'undefined' && showApplePopover && amEmbedUrl ? require('react-dom').createPortal(
                   <div
