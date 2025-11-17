@@ -64,17 +64,22 @@ export default function LoginModal({ open, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center"
+      className="fixed z-[9999] flex justify-center"
       aria-modal="true"
       role="dialog"
       aria-label="Sign in"
-      style={{ alignItems: 'flex-start', paddingTop: '15vh' }}
+      style={{ 
+        top: '10px',
+        left: '0',
+        right: '0',
+        bottom: '0'
+      }}
     >
       <div
         className="absolute inset-0 bg-black/85 backdrop-blur-md"
         onClick={onClose}
       />
-      <div className="relative mx-4 max-w-sm w-full">
+      <div className="absolute top-2 left-1/2 transform -translate-x-1/2 mx-4 max-w-sm w-full">
         <div className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-[#FC54AF]/60 bg-white/5 shadow-[0_0_26px_rgba(56,182,255,0.35)]">
           <div
             className="absolute inset-0 rounded-2xl pointer-events-none"

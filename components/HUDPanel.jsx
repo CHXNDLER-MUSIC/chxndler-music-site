@@ -253,54 +253,54 @@ export default function HUDPanel({
       id: 0,
       name: 'HEART',
       type: 'HEART',
-      rarity: 'Legendary',
+      rarity: 'Rare',
       image: 'https://ik.imagekit.io/CHXNDLER/card/HEART.png',
-      description: 'The elemental essence of HEART energy.',
+      description: 'This is the emotional core. These songs don\'t just want — they feel. Love isn\'t clean here — it\'s messy, soft, and intense.',
       collected: true
     },
     {
       id: 1,
       name: 'ALWAYS ON MY MIND',
       type: 'HEART',
-      rarity: 'Legendary',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/always-on-my-mind.png?updatedAt=1762388345883',
-      description: 'Rose-pink velvet plains shimmering under soft light.',
+      description: 'Some voices never fade — they just guide you from within.',
       collected: false
     },
     {
       id: 2,
       name: 'ALWAYS ON MY MIND (ACOUSTIC)',
       type: 'HEART',
-      rarity: 'Rare',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/cover/ALWAYS%20ON%20MY%20MIND%20(ACOUSTIC).png?updatedAt=1763058363705',
-      description: 'Soft twilight-blue suburban terrain with gentle glowing windows.',
+      description: 'Some voices never fade — they just guide you from within.',
       collected: false
     },
     {
       id: 3,
       name: 'ALWAYS ON MY MIND (REMIX)',
       type: 'HEART',
-      rarity: 'Rare',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/always-on-my-mind-remix.png?updatedAt=1762388342107',
-      description: 'Neon pink suburban terrain glowing like cotton candy.',
+      description: 'Some voices never fade — they just guide you from within.',
       collected: false
     },
     {
       id: 4,
       name: 'BABY',
       type: 'HEART',
-      rarity: 'Rare',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/baby.png?updatedAt=1762388345192',
-      description: 'Pastel pink terrain with toy block mountains and carousel-striped craters.',
+      description: 'A chaotic, messy, romantic ride through the magic of a first date.',
       collected: availableSongs.includes('BABY')
     },
     {
       id: 5,
       name: 'BE MY BEE',
       type: 'HEART',
-      rarity: 'Rare',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/be-my-bee.png?updatedAt=1762388342848',
-      description: 'Golden honeycomb crust glowing from within, dripping molten honey.',
+      description: 'You buzzed like love on a first date… but the sting brought you back to Earth.',
       collected: availableSongs.includes('BE MY BEE')
     },
     {
@@ -309,34 +309,34 @@ export default function HUDPanel({
       type: 'HEART',
       rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/be-my-bee-acoustic.png?updatedAt=1762388342912',
-      description: 'Golden honeycomb crust with pink nectar pools.',
+      description: 'You buzzed like love on a first date… but the sting brought you back to Earth.',
       collected: false
     },
     {
       id: 7,
       name: 'COLLIDE',
       type: 'HEART',
-      rarity: 'Rare',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/collide.png?updatedAt=1762388347054',
-      description: 'Crystalline pink ridges colliding at sharp angles, glowing fractures.',
+      description: 'Two souls crash into each other in a cosmic dance of fate.',
       collected: availableSongs.includes('COLLIDE')
     },
     {
       id: 8,
       name: 'COLORS OF OUR HOME',
       type: 'HEART',
-      rarity: 'Legendary',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/COLORS%20OF%20OUR%20HOME%20.png?updatedAt=1763055065493',
-      description: 'Warm pink base veined with pastel rainbow rivers.',
+      rarity: 'Common',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/COLORS%20OF%20OUR%20HOME%20.png',
+      description: 'A journey from isolation to connection in a world full of color.',
       collected: availableSongs.includes('COLORS OF OUR HOME')
     },
     {
       id: 9,
       name: 'COLORS OF OUR HOME (ACOUSTIC)',
       type: 'HEART',
-      rarity: 'Rare',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/COLORS%20OF%20OUR%20HOME%20(ACOUSTIC).png?updatedAt=1763055064803',
-      description: 'Soft pink‑violet forest floor with glowing grassy patches.',
+      description: 'A journey from isolation to connection in a world full of color.',
       collected: availableSongs.includes('COLORS OF OUR HOME (ACOUSTIC)')
     },
     {
@@ -345,16 +345,16 @@ export default function HUDPanel({
       type: 'HEART',
       rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/colors-of-our-home-bluma.png?updatedAt=1762388344204',
-      description: 'Pink and blue terrain blending together like game-level tiles.',
+      description: 'A journey from isolation to connection in a world full of color.',
       collected: availableSongs.includes('COLORS OF OUR HOME (BLUMA Game Soundtrack)')
     },
     {
       id: 11,
       name: 'I MIGHT FALL IN LOVE WITH YOU',
       type: 'HEART',
-      rarity: 'Rare',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/i-might-fall-in-love-with-you.png?updatedAt=1762388340663',
-      description: 'Pastel rose surface with swirling golden brushstrokes.',
+      description: 'Falling into warm sweaters, slow mornings, and a love that feels like home.',
       collected: false
     },
     {
@@ -363,16 +363,16 @@ export default function HUDPanel({
       type: 'HEART',
       rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/I%20MIGHT%20FALL%20IN%20LOVE%20WITH%20YOU%20(ACOUSTIC).png?updatedAt=1763055066309',
-      description: 'Smooth blue‑toned cartoon terrain resembling soft vinyl.',
+      description: 'Falling into warm sweaters, slow mornings, and a love that feels like home.',
       collected: false
     },
     {
       id: 13,
       name: 'LITTLE BLACK HEART',
       type: 'DARKNESS',
-      rarity: 'Rare',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/little-black-heart.png?updatedAt=1762388346814',
-      description: 'Volcanic rock cracked with violet magma veins shaped like arteries.',
+      description: 'Are you afraid to live or afraid to die?',
       collected: false
     },
     {
@@ -381,16 +381,16 @@ export default function HUDPanel({
       type: 'DARKNESS',
       rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/LITTLE%20BLACK%20HEART%20(ACOUSTIC).png?updatedAt=1763055066090',
-      description: 'Stone‑grey cemetery terrain with cracked tombstone texture.',
+      description: 'Are you afraid to live or afraid to die?',
       collected: false
     },
     {
       id: 15,
       name: 'LOVE ME',
       type: 'HEART',
-      rarity: 'Rare',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/love-me.png?updatedAt=1762388339563',
-      description: 'Pink crust fractured with glowing violet rivers of light.',
+      description: 'If I gave it all away for the dream and never made it — would you still love me?',
       collected: false
     },
     {
@@ -399,16 +399,16 @@ export default function HUDPanel({
       type: 'HEART',
       rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/love-me-acoustic.png?updatedAt=1762388330787',
-      description: 'Jet-black neon surface with glowing blue fractured heart symbol.',
+      description: 'If I gave it all away for the dream and never made it — would you still love me?',
       collected: false
     },
     {
       id: 17,
       name: 'SOMEBODY TO LOVE',
       type: 'HEART',
-      rarity: 'Rare',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/somebody-to-love.png?updatedAt=1762388347148',
-      description: 'Pink marble terrain with handprint depressions etched in gold.',
+      description: 'You want to give real love — not the kind they expect, but the kind you know. Too bad they\'re not the one.',
       collected: false
     },
     {
@@ -417,34 +417,34 @@ export default function HUDPanel({
       type: 'HEART',
       rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/tienes-un-amigo.png?updatedAt=1762388343639',
-      description: 'Glowing pink surface veined with golden rivers forming constellation-like maps.',
+      description: 'No galaxy too far, no accent too strong — friendship always finds a way.',
       collected: false
     },
     {
       id: 19,
       name: "WE'RE JUST FRIENDS",
       type: 'HEART',
-      rarity: 'Legendary',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/we\'re-just-friends.png?updatedAt=1762388347233',
-      description: 'Pink terrain shattered into crystal shards glowing white along cracks.',
+      description: 'Unspoken feelings blur the lines between friendship and something more.',
       collected: availableSongs.includes("WE'RE JUST FRIENDS")
     },
     {
       id: 20,
       name: "WE'RE JUST FRIENDS (ACOUSTIC)",
       type: 'HEART',
-      rarity: 'Rare',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/we\'re-just-friends-acoustic.png?updatedAt=1762388340285',
-      description: 'Pastel blue-pink road curving through bubblegum-colored landscape.',
+      description: 'Unspoken feelings blur the lines between friendship and something more.',
       collected: false
     },
     {
       id: 21,
       name: "WE'RE JUST FRIENDS (DMVRCO REMIX)",
       type: 'HEART',
-      rarity: 'Rare',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/we\'re-just-friends-dmvrco-remix.png?updatedAt=1762388345669',
-      description: 'Bright neon orange-pink terrain with hyper-saturated hills and palm trees.',
+      description: 'Unspoken feelings blur the lines between friendship and something more.',
       collected: availableSongs.includes("WE'RE JUST FRIENDS (DMVRCO Remix)")
     },
     {
@@ -453,7 +453,7 @@ export default function HUDPanel({
       type: 'HEART',
       rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/we\'re-just-friends-mickey-jas-remix.png?updatedAt=1762388346859',
-      description: 'Soft pastel teal landscape with cotton-candy pink land ridges.',
+      description: 'Unspoken feelings blur the lines between friendship and something more.',
       collected: availableSongs.includes("WE'RE JUST FRIENDS (mickey jas Remix)")
     },
     {
@@ -462,7 +462,7 @@ export default function HUDPanel({
       type: 'HEART',
       rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/pink-moon.png?updatedAt=1762388347173',
-      description: 'Bright pink glowing terrain illuminated with neon lights.',
+      description: 'Lost in the static, the pink moon guides me home.',
       collected: false
     },
 
@@ -471,36 +471,36 @@ export default function HUDPanel({
       id: 23.5,
       name: 'WATER',
       type: 'WATER',
-      rarity: 'Legendary',
+      rarity: 'Rare',
       image: 'https://ik.imagekit.io/CHXNDLER/card/WATER.png',
-      description: 'The elemental essence of WATER energy.',
+      description: 'These songs carry waves of emotion — not explosive, but steady, like a tide that pulls you out and then leaves you still',
       collected: true
     },
     {
       id: 24,
       name: 'LETTING GO',
       type: 'WATER',
-      rarity: 'Rare',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/letting-go.png?updatedAt=1762388344472',
-      description: 'Deep swirling oceans with glowing whirlpools.',
+      description: 'Letting go of expectations — theirs and yours — to finally be free.',
       collected: false
     },
     {
       id: 25,
       name: 'OCEAN GIRL',
       type: 'WATER',
-      rarity: 'Legendary',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl.png?updatedAt=1762388343942',
-      description: 'Turquoise waves frozen mid-crest, liquid glass reflection.',
+      description: 'A love that moves like the sea — you let go and trust to always come back to you.',
       collected: availableSongs.includes('OCEAN GIRL')
     },
     {
       id: 26,
       name: 'OCEAN GIRL (ACOUSTIC)',
       type: 'WATER',
-      rarity: 'Rare',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl-acoustic.png?updatedAt=1762388344386',
-      description: 'Turquoise waves with purple accents flowing through water.',
+      description: 'A love that moves like the sea — you let go and trust to always come back to you.',
       collected: availableSongs.includes('OCEAN GIRL (ACOUSTIC)')
     },
     {
@@ -509,7 +509,7 @@ export default function HUDPanel({
       type: 'WATER',
       rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl-remix.png?updatedAt=1762388346301',
-      description: 'Turquoise waves with black streaks flowing across surface.',
+      description: 'A love that moves like the sea — you let go and trust to always come back to you.',
       collected: availableSongs.includes('OCEAN GIRL (REMIX)')
     },
 
@@ -518,27 +518,27 @@ export default function HUDPanel({
       id: 27.5,
       name: 'LIGHTNING',
       type: 'LIGHTNING',
-      rarity: 'Legendary',
+      rarity: 'Rare',
       image: 'https://ik.imagekit.io/CHXNDLER/card/LIGHTNING.png',
-      description: 'The elemental essence of LIGHTNING energy.',
+      description: 'Lightning is the electric jolt of feeling alive. These tracks buzz. You move fast, crash hard, and maybe regret nothing.',
       collected: true
     },
     {
       id: 28,
       name: 'AMERICAN DREAM',
       type: 'LIGHTNING',
-      rarity: 'Rare',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/american-dream.png?updatedAt=1762388346126',
-      description: 'Neon yellow skyscraper formations like jagged teeth covered in glowing billboards.',
+      description: 'The American Dream isn\'t where we live — it\'s where our dreams go to die.',
       collected: false
     },
     {
       id: 29,
       name: 'BLUE',
       type: 'LIGHTNING',
-      rarity: 'Rare',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/blue.png?updatedAt=1762388346777',
-      description: 'Yellow crust covered with stormy sapphire-blue clouds.',
+      description: 'You were the match to ignite the ash in my heart.',
       collected: false
     },
     {
@@ -547,16 +547,16 @@ export default function HUDPanel({
       type: 'LIGHTNING',
       rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/BLUE%20(ACOUSTIC).png?updatedAt=1763055066119',
-      description: 'Hyper‑pink snow‑textured terrain with cotton‑candy hills and crystalline frost.',
+      description: 'You were the match to ignite the ash in my heart.',
       collected: false
     },
     {
       id: 31,
       name: 'BRAIN FREEZE',
       type: 'LIGHTNING',
-      rarity: 'Rare',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/brain-freeze.png?updatedAt=1762388347224',
-      description: 'Yellow frozen crust cracked with glowing icy fissures.',
+      description: 'A rush of emotion and chaos from chasing summer highs.',
       collected: availableSongs.includes('BRAIN FREEZE')
     },
     {
@@ -565,25 +565,25 @@ export default function HUDPanel({
       type: 'LIGHTNING',
       rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/feeling-this.png?updatedAt=1762388347289',
-      description: 'Jagged punk-graffiti terrain with neon graffiti art sprayed across.',
+      description: 'When chaos feels like connection, and that\'s enough for tonight.',
       collected: false
     },
     {
       id: 33,
       name: 'GAME BOY HEART',
       type: 'LIGHTNING',
-      rarity: 'Legendary',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/game-boy-heart.png?updatedAt=1762388346348',
-      description: 'Pixel-mapped yellow terrain with giant 8-bit blocks.',
+      description: 'A nostalgic escape into an 8-bit dreamworld where your heart lives free.',
       collected: availableSongs.includes('GAME BOY HEART')
     },
     {
       id: 34,
       name: 'HOME',
       type: 'LIGHTNING',
-      rarity: 'Rare',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/home.png?updatedAt=1762388345590',
-      description: 'Golden stitched quilt patches glowing softly.',
+      description: 'A journey through the stars to fill the void—only to find home was within all along',
       collected: false
     },
     {
@@ -592,16 +592,16 @@ export default function HUDPanel({
       type: 'LIGHTNING',
       rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/home-acoustic.png?updatedAt=1762388344295',
-      description: 'Golden quilt patches mixed with pink and blue accents.',
+      description: 'A journey through the stars to fill the void—only to find home was within all along',
       collected: false
     },
     {
       id: 36,
       name: 'HOUSE PARTY',
       type: 'LIGHTNING',
-      rarity: 'Rare',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/HOUSE%20PARTY.png?updatedAt=1763055601783',
-      description: 'Neon cracked dance floor tiles flashing on/off.',
+      description: 'A crowded room, an unspoken crush, and the quiet realization that we\'re all aliens in disguise.',
       collected: availableSongs.includes('HOUSE PARTY')
     },
     {
@@ -610,25 +610,25 @@ export default function HUDPanel({
       type: 'LIGHTNING',
       rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/house-party-acoustic.png?updatedAt=1762388343028',
-      description: 'Neon cracked dance floor tiles with yellow accents instead of pink.',
+      description: 'A crowded room, an unspoken crush, and the quiet realization that we\'re all aliens in disguise.',
       collected: false
     },
     {
       id: 38,
       name: 'KID FOREVER',
       type: 'LIGHTNING',
-      rarity: 'Legendary',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/kid-forever.png?updatedAt=1762388339589',
-      description: 'Yellow graffiti-covered terrain like cosmic playground.',
+      description: 'Live fearlessly in the land your daydreams call home.',
       collected: availableSongs.includes('KID FOREVER')
     },
     {
       id: 39,
       name: 'POKÉMON',
       type: 'LIGHTNING',
-      rarity: 'Rare',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/pokemon.png?updatedAt=1762388341960',
-      description: 'Neon yellow surface textured like a glowing Poké Ball grid.',
+      description: 'Some dreams don\'t fade — they evolve with you.',
       collected: availableSongs.includes('POKÉMON')
     },
 
@@ -637,27 +637,27 @@ export default function HUDPanel({
       id: 39.5,
       name: 'DARKNESS',
       type: 'DARKNESS',
-      rarity: 'Legendary',
+      rarity: 'Rare',
       image: 'https://ik.imagekit.io/CHXNDLER/card/DARKNESS.png',
-      description: 'The elemental essence of DARKNESS energy.',
+      description: 'Darkness isn\'t evil — it\'s vulnerability in disguise. These songs explore what\'s not said, what we hide, or what we want but don\'t admit.',
       collected: true
     },
     {
       id: 40,
       name: 'ALONE',
       type: 'DARKNESS',
-      rarity: 'Legendary',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/alone.png?updatedAt=1762388342410',
-      description: 'Jagged obsidian crust with deep canyons glowing faint red, fractured tectonic plates.',
+      description: 'Lost in a sea of strangers under the city\'s glittering glow.',
       collected: false
     },
     {
       id: 41,
       name: 'ALONE (ACOUSTIC)',
       type: 'DARKNESS',
-      rarity: 'Rare',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/ALONE%20(ACOUSTIC).png?updatedAt=1763054836196',
-      description: 'Midnight‑purple cityscape silhouette with glowing teal light between buildings.',
+      description: 'Lost in a sea of strangers under the city\'s glittering glow.',
       collected: false
     },
     {
@@ -666,25 +666,25 @@ export default function HUDPanel({
       type: 'DARKNESS',
       rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/cheerleader.png?updatedAt=1762388346177',
-      description: 'Black asphalt terrain with faded white lines like abandoned stadium floor.',
+      description: 'Wanting the person you love most to be cheering in the crowd.',
       collected: false
     },
     {
       id: 43,
       name: 'MR. BRIGHTSIDE',
       type: 'DARKNESS',
-      rarity: 'Rare',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/mr.brightside.png?updatedAt=1762388346700',
-      description: 'Smooth black mirrored plains broken by jagged silver shards.',
+      description: 'When love turns to doubt and every glance feels like betrayal.',
       collected: false
     },
     {
       id: 44,
       name: 'PARIS',
       type: 'DARKNESS',
-      rarity: 'Rare',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/paris.png?updatedAt=1762388344978',
-      description: 'Black cobblestone terrain glistening with rain, glowing Eiffel Tower fissures.',
+      description: 'A love affair with self-destruction — poison dressed up as romance.',
       collected: availableSongs.includes('PARIS')
     },
 
@@ -693,7 +693,7 @@ export default function HUDPanel({
       id: 45,
       name: 'CHXNDLER',
       type: 'HEART',
-      rarity: 'Legendary',
+      rarity: 'Common',
       image: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',
       description: 'The artist himself, heart of the HEARTVERSE.',
       collected: true // Always collected
@@ -2587,7 +2587,7 @@ export default function HUDPanel({
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: 6,
-                      background: 'rgba(0,0,0,0.3)',
+                      background: 'transparent',
                       padding: '6px 10px',
                       borderRadius: 16,
                       border: '1px solid rgba(252,84,175,0.4)'
@@ -2713,17 +2713,20 @@ export default function HUDPanel({
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                overflow: 'hidden'
+                                overflow: 'hidden',
+                                boxShadow: '0 0 12px rgba(252,84,175,0.3), 0 0 24px rgba(252,84,175,0.15), 0 0 36px rgba(25,227,255,0.1)'
                               }}
                               onMouseOver={(e) => {
                                 e.currentTarget.style.background = 'linear-gradient(135deg, rgba(252,84,175,0.25), rgba(25,227,255,0.25))';
                                 e.currentTarget.style.borderColor = 'rgba(252,84,175,0.6)';
                                 e.currentTarget.style.transform = 'scale(1.05)';
+                                e.currentTarget.style.boxShadow = '0 0 18px rgba(252,84,175,0.45), 0 0 36px rgba(252,84,175,0.25), 0 0 48px rgba(25,227,255,0.15)';
                               }}
                               onMouseOut={(e) => {
                                 e.currentTarget.style.background = 'linear-gradient(135deg, rgba(252,84,175,0.15), rgba(25,227,255,0.15))';
                                 e.currentTarget.style.borderColor = 'rgba(252,84,175,0.4)';
                                 e.currentTarget.style.transform = 'scale(1.0)';
+                                e.currentTarget.style.boxShadow = '0 0 12px rgba(252,84,175,0.3), 0 0 24px rgba(252,84,175,0.15), 0 0 36px rgba(25,227,255,0.1)';
                               }}
                             >
                               <img
@@ -2793,7 +2796,24 @@ export default function HUDPanel({
                             fontWeight: 900,
                             letterSpacing: '.02em',
                             color: '#19E3FF',
-                            textShadow: '0 0 14px rgba(25,227,255,0.5)'
+                            textShadow: '0 0 14px rgba(25,227,255,0.5)',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onClick={() => {
+                            try { sfx.play('click', 0.4); } catch {}
+                            if (showHeartverseCode) {
+                              setShowHeartverseCode(false);
+                            }
+                          }}
+                          onMouseEnter={(e) => {
+                            try { sfx.play('hover', 0.25); } catch {}
+                            e.target.style.textShadow = '0 0 20px rgba(25,227,255,0.8), 0 0 30px rgba(25,227,255,0.4)';
+                            e.target.style.transform = 'translateX(-50%) scale(1.05)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.textShadow = '0 0 14px rgba(25,227,255,0.5)';
+                            e.target.style.transform = 'translateX(-50%) scale(1.0)';
                           }}
                         >
                           THE DREAMER
@@ -2810,7 +2830,7 @@ export default function HUDPanel({
                               setShowHeartverseCode(!showHeartverseCode);
                             }}
                             style={{
-                              padding: '8px 16px',
+                              padding: '6px 16px',
                               borderRadius: 8,
                               background: 'linear-gradient(135deg, rgba(252,84,175,0.15), rgba(25,227,255,0.15))',
                               border: '1px solid rgba(252,84,175,0.4)',
@@ -2819,17 +2839,20 @@ export default function HUDPanel({
                               fontWeight: 700,
                               letterSpacing: '0.02em',
                               cursor: 'pointer',
-                              transition: 'all 0.2s ease'
+                              transition: 'all 0.2s ease',
+                              boxShadow: '0 0 12px rgba(252,84,175,0.3), 0 0 24px rgba(252,84,175,0.15), 0 0 36px rgba(25,227,255,0.1)'
                             }}
                             onMouseOver={(e) => {
                               e.target.style.background = 'linear-gradient(135deg, rgba(252,84,175,0.25), rgba(25,227,255,0.25))';
                               e.target.style.borderColor = 'rgba(252,84,175,0.6)';
                               e.target.style.transform = 'scale(1.05)';
+                              e.target.style.boxShadow = '0 0 18px rgba(252,84,175,0.45), 0 0 36px rgba(252,84,175,0.25), 0 0 48px rgba(25,227,255,0.15)';
                             }}
                             onMouseOut={(e) => {
                               e.target.style.background = 'linear-gradient(135deg, rgba(252,84,175,0.15), rgba(25,227,255,0.15))';
                               e.target.style.borderColor = 'rgba(252,84,175,0.4)';
                               e.target.style.transform = 'scale(1.0)';
+                              e.target.style.boxShadow = '0 0 12px rgba(252,84,175,0.3), 0 0 24px rgba(252,84,175,0.15), 0 0 36px rgba(25,227,255,0.1)';
                             }}
                           >
                             THE CODE
@@ -2837,17 +2860,19 @@ export default function HUDPanel({
                         </div>
                       </div>
                       {/* Header / Hero */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 2px 8px 2px' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <div style={{ fontSize: 14, opacity: 0.8 }}>Choose your path. Earn HEARTS. Unlock deeper access.</div>
+                      {!showHeartverseCode && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 2px 8px 2px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ fontSize: 14, opacity: 0.8 }}>Choose your path. Earn HEARTS. Unlock deeper access.</div>
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       {/* HEARTVERSE Code Display */}
                       {showHeartverseCode && (
                         <div style={{ 
                           position: 'absolute',
-                          top: '-120px',
+                          bottom: '-120px',
                           left: '50%',
                           transform: 'translateX(-50%)',
                           width: 'calc(100% - 32px)',
@@ -2979,10 +3004,10 @@ export default function HUDPanel({
                             </ul>
                           </div>
                         </div>
-                      ) : (
+                      ) : !showHeartverseCode ? (
                         <div
                           style={{
-                            marginTop: 8,
+                            marginTop: 4,
                             display: 'flex',
                             flexDirection: 'row',
                             justifyContent: 'center',
@@ -3176,7 +3201,7 @@ export default function HUDPanel({
                             </div>
                           </div>
                         </div>
-                      )}
+                      ) : null}
                     </div>
                   </div>,
                   document.body
@@ -3237,7 +3262,7 @@ export default function HUDPanel({
                     {/* Header */}
                     <div style={{
                       textAlign: 'center',
-                      marginBottom: 12,
+                      marginBottom: 8,
                       paddingTop: 6
                     }}>
                       <h2 style={{
@@ -3254,9 +3279,19 @@ export default function HUDPanel({
                         fontSize: 13,
                         opacity: 0.8,
                         margin: 0,
+                        marginBottom: 2,
                         color: '#fff'
                       }}>
                         Your personal collection of HEARTVERSE memories
+                      </p>
+                      <p style={{
+                        fontSize: 11,
+                        opacity: 0.6,
+                        margin: 0,
+                        color: '#fff',
+                        lineHeight: 1.4
+                      }}>
+                        Earn CHXNDLER cards by purchasing merch and unlocking HEARTVERSE tiers
                       </p>
                     </div>
                     
@@ -3265,7 +3300,7 @@ export default function HUDPanel({
                       flex: 1,
                       background: 'linear-gradient(135deg, rgba(255,255,255,0.02), rgba(252,84,175,0.03), rgba(25,227,255,0.02))',
                       borderRadius: 12,
-                      padding: '20px',
+                      padding: '12px',
                       position: 'relative',
                       overflow: 'auto'
                     }}>
@@ -3283,7 +3318,7 @@ export default function HUDPanel({
                       
                       {/* FULL COLLECTION Button */}
                       <div style={{
-                        marginBottom: 12,
+                        marginBottom: 4,
                         textAlign: 'center',
                         position: 'relative',
                         zIndex: 1
@@ -3331,7 +3366,7 @@ export default function HUDPanel({
 
                       {/* Collection stats */}
                       <div style={{
-                        marginBottom: 12,
+                        marginBottom: 8,
                         textAlign: 'center',
                         position: 'relative',
                         zIndex: 1
@@ -3516,23 +3551,6 @@ export default function HUDPanel({
                         ))}
                       </div>
                       
-                      {/* Collection hint */}
-                      <div style={{
-                        marginTop: 20,
-                        textAlign: 'center',
-                        position: 'relative',
-                        zIndex: 1
-                      }}>
-                        <p style={{
-                          fontSize: 11,
-                          opacity: 0.6,
-                          margin: 0,
-                          color: '#fff',
-                          lineHeight: 1.4
-                        }}>
-                          Earn CHXNDLER cards by purchasing merch and unlocking HEARTVERSE tiers
-                        </p>
-                      </div>
                     </div>
                   </div>,
                   document.body
@@ -3915,7 +3933,7 @@ export default function HUDPanel({
                                       fontWeight: 600,
                                       textShadow: '0 0 4px rgba(0,0,0,0.8)'
                                     }}>
-                                      NOT COLLECTED
+                                      UNRELEASED
                                     </div>
                                   )}
                                 </div>
@@ -4794,9 +4812,6 @@ export default function HUDPanel({
               onChange={(id) => {
                 setActive(id);
 
-                // Defer planet visibility changes to the warp sequence
-                try { playerStore.getState().setMain(id); } catch {}
-
                 // Stop ambient space music when switching songs
                 try {
                   const ambient = document.querySelector('audio[data-ambient="1"]');
@@ -4818,6 +4833,7 @@ export default function HUDPanel({
                   if (DEBUG_MEDIA) dwarn('HUDPanel: failed to stop intro VO', error);
                 }
                 
+                // Let DashboardApp.onSongChange handle the complete warp sequence
                 onSongChange?.(id);
                 // Stay in place; DashboardApp.onSongChange handles switch without spotlight/route
               }}

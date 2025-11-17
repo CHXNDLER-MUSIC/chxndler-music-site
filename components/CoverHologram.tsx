@@ -297,14 +297,20 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
         style={{ 
           fontSize: 16, 
           fontWeight: 800, 
-          margin: '6px 0 10px', 
+          margin: '16px 0 10px', 
           lineHeight: 1.6, 
           textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)', 
           textAlign: 'center',
           cursor: 'pointer',
           transition: 'opacity 0.2s ease'
         }}
-        onClick={() => {
+        onMouseDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation(); // Prevent event from bubbling up
+        }}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation(); // Prevent event from bubbling up
           setSelectedElement(null); // Reset to intro text
           try { sfx.play('click', 0.4); } catch {}
         }}
@@ -616,7 +622,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
             className="card-anchored"
             style={{
               position: 'fixed',
-              bottom: '45vh', // Position above light beam area
+              bottom: '40vh', // Position above light beam area (brought in slightly)
               left: '50%',
               transform: 'translateX(-50%)',
               pointerEvents: 'auto'
@@ -1067,18 +1073,18 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
               width: 30,
               height: 30,
               borderRadius: 999,
-              border: '1px solid rgba(25,227,255,0.6)',
+              border: '1px solid rgba(242,239,29,0.6)',
               background: 'rgba(0,0,0,0.5)',
-              color: '#19E3FF',
+              color: '#F2EF1D',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              boxShadow: '0 0 16px rgba(25,227,255,0.35)',
+              boxShadow: '0 0 16px rgba(242,239,29,0.35)',
               transition: 'transform 0.15s ease, box-shadow 0.15s ease'
             }}
-            onMouseOver={(e)=>{ try { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.08)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 24px rgba(25,227,255,0.75)'; } catch {} }}
-            onMouseOut={(e)=>{ try { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.0)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 16px rgba(25,227,255,0.35)'; } catch {} }}
+            onMouseOver={(e)=>{ try { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.08)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 24px rgba(242,239,29,0.75)'; } catch {} }}
+            onMouseOut={(e)=>{ try { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.0)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 16px rgba(242,239,29,0.35)'; } catch {} }}
           >
             <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
               <path fill="currentColor" d="M18.3 5.71L12 12l6.3 6.29-1.41 1.41L10.59 13.41 4.29 19.7 2.88 18.29 9.17 12 2.88 5.71 4.29 4.3 10.59 10.59 16.89 4.3z" />
@@ -1091,7 +1097,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
           )}
 
           {/* Header image with clickable quadrants */}
-          <div style={{ marginBottom: 12, display: 'grid', placeItems: 'center', position: 'relative' }}>
+          <div style={{ marginBottom: 8, display: 'grid', placeItems: 'center', position: 'relative' }}>
             <div style={{ position: 'relative', width: '58%', maxWidth: 280 }} id="elemental-container">
               <img
                 src="/elements/elementals.png?v=20241027"
@@ -1184,11 +1190,11 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
               <div 
                 style={{
                   position: 'absolute',
-                  top: selectedElement ? '33px' : '25px',
+                  top: selectedElement ? '0px' : '-8px',
                   left: '50%',
                   transform: 'translateX(-50%)',
-                  width: '58%',
-                  maxWidth: 280,
+                  width: '54%',
+                  maxWidth: 260,
                   aspectRatio: '1',
                   pointerEvents: 'none',
                   zIndex: 10000,
@@ -1559,28 +1565,31 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
           width: 36px; height: 36px; border-radius: 50%; font-weight:800; letter-spacing:.06em; font-size: 15px; line-height: 1.1;
           color:#001014; text-transform:none; font-family: InterLocal, system-ui, sans-serif;
           background: transparent; /* fill entirely with elementals.png */
-          border: 0.5px solid rgba(255,255,255,.15);
-          box-shadow: 0 0 20px rgba(25,227,255,.55); /* remove inner insets so image fully reads */
+          border: 0; /* remove border so image can fill completely */
+          padding: 0; /* remove any padding */
+          box-shadow: 0 0 8px rgba(25,227,255,.55); /* further reduced glow to stay within bounds */
           transition: transform .12s ease, box-shadow .18s ease, filter .18s ease;
-          overflow: visible; /* allow icon/glow to sit on top of the button without clipping */
+          overflow: hidden; /* contain glow within the circular button */
           z-index: 12;
         }
         .btn-element-icon{ 
           position: absolute; 
-          inset: 0; 
-          width: 100%; 
-          height: 100%; 
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 105%; 
+          height: 105%; 
           object-fit: cover !important; 
           display: block; 
           pointer-events: none; 
-          transform: scale(1.2); /* overfill to ensure image completely fills the circular button */
           border-radius: 50%; /* ensure the image itself is circular */
+          margin: 0; /* remove any default margin */
         }
         .btn-element:hover{
           transform: scale(1.12);
           box-shadow:
-            0 0 36px rgba(25,227,255,.95),
-            0 0 80px rgba(25,227,255,.55),
+            0 0 12px rgba(25,227,255,.95),
+            0 0 20px rgba(25,227,255,.55),
             inset 0 2px 0 rgba(255,255,255,.7),
             inset 0 -10px 18px rgba(0,0,0,.28);
           filter: saturate(1.08) brightness(1.07);
@@ -1589,10 +1598,10 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
         .btn-element:active{ transform: scale(.98); }
         @keyframes elementGlow {
           0%, 100% {
-            box-shadow: 0 0 36px rgba(25,227,255,.95), 0 0 80px rgba(25,227,255,.55), inset 0 2px 0 rgba(255,255,255,.7), inset 0 -10px 18px rgba(0,0,0,.28);
+            box-shadow: 0 0 12px rgba(25,227,255,.95), 0 0 20px rgba(25,227,255,.55), inset 0 2px 0 rgba(255,255,255,.7), inset 0 -10px 18px rgba(0,0,0,.28);
           }
           50% {
-            box-shadow: 0 0 52px rgba(25,227,255,1), 0 0 110px rgba(25,227,255,.7), inset 0 2px 0 rgba(255,255,255,.75), inset 0 -12px 20px rgba(0,0,0,.3);
+            box-shadow: 0 0 16px rgba(25,227,255,1), 0 0 24px rgba(25,227,255,.7), inset 0 2px 0 rgba(255,255,255,.75), inset 0 -12px 20px rgba(0,0,0,.3);
           }
         }
       `}</style>

@@ -204,12 +204,11 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
       const id = displayItems[highlight]?.id;
       if (id) { 
         setActiveId(id);
-        // Defer planet visibility changes to the warp sequence
-        try { playerStore.getState().setMain(id); } catch {}
+        setOpen(false);
+        // Use onChange to trigger proper warp sequence
         onChange?.(id);
       }
-      setOpen(false);
-      // Playback will start after warp SFX delay via MediaPlayer
+      // Clear hover state
       try { playerStore.getState().setHover(null); } catch {}
     }
   }
@@ -395,9 +394,6 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                 // Keep last hover active to avoid rapid hide/show flicker while moving
                 onMouseLeave={() => { /* intentionally noop; clear on close */ }}
                 onPointerDown={(e) => {
-                  // Play warp sound now; defer join-alien until post-warp sequence
-                  try { sfx.play('warp', 0.9); } catch {}
-                  
                   // Track song selection (normalized: include slug + details)
                   track("song_selected", {
                     song_slug: (s.slug || s.id || '').toLowerCase?.() || (s.id || ''),
@@ -412,14 +408,14 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                     song_icon: s.icon || 'none'
                   });
                   
-                  // Focus the clicked planet: set as main, switch to single planet view, and show planets
+                  // Set active id for UI state
                   setActiveId(s.id);
-                  // Defer planet visibility changes to the warp sequence
-                  try { playerStore.getState().setMain(s.id); } catch {}
+                  setOpen(false);
+                  
+                  // Use onChange to trigger proper warp sequence instead of direct playerStore manipulation
                   if (onChange) {
                     onChange(s.id);
                   }
-                  setOpen(false);
                   
                   try { 
                     setTimeout(() => {
