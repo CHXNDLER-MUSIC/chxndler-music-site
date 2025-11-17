@@ -10,9 +10,13 @@ import HoloJoinButton from "./HoloJoinButton";
 export default function AuthJoinCta({
   hubColor = "#FC54AF",
   size = 72,
+  onClick,
+  isActive = false,
 }: {
   hubColor?: string;
   size?: number;
+  onClick?: () => void;
+  isActive?: boolean;
 }) {
   const [authed, setAuthed] = useState<boolean | null>(null);
 
@@ -45,11 +49,11 @@ export default function AuthJoinCta({
     // Avoid layout shift: render a disabled button placeholder
     return (
       <HoloJoinButton
-        onClick={() => {}}
+        onClick={onClick || (() => {})}
         hubColor={hubColor}
         size={size}
         label="Join the Heartverse"
-        isActive={false}
+        isActive={isActive}
       />
     );
   }
@@ -57,22 +61,22 @@ export default function AuthJoinCta({
   if (!authed) {
     return (
       <HoloJoinButton
-        onClick={() => { try { window.location.assign("/signin"); } catch {} }}
+        onClick={onClick || (() => { try { window.location.assign("/signin"); } catch {} })}
         hubColor={hubColor}
         size={size}
         label="Join the Heartverse"
-        isActive={false}
+        isActive={isActive}
       />
     );
   }
 
   return (
     <HoloJoinButton
-      onClick={() => { try { window.location.assign("/profile"); } catch {} }}
+      onClick={onClick || (() => { try { window.location.assign("/profile"); } catch {} })}
       hubColor={hubColor}
       size={size}
       label="Welcome back, Alien"
-      isActive={true}
+      isActive={isActive}
     />
   );
 }

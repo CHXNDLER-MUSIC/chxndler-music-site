@@ -65,6 +65,39 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
+    // Create orders table if it doesn't exist
+    const { error: createTableError } = await supabase.rpc('create_orders_table_if_not_exists');
+    
+    if (createTableError) {
+      console.warn('Could not ensure orders table exists:', createTableError);
+    }
+
+    // Save the order details in the database
+    const orderData = {
+      user_id: user.id,
+      card_title: cardTitle,
+      heart_coins_spent: heartCoins,
+      full_name: fullName,
+      street_address: streetAddress,
+      apartment: shippingAddress.apartment || null,
+      city,
+      state_region: stateRegion,
+      zip_postal: zipPostal,
+      country,
+      email: email || user.email,
+      phone: phone || null,
+      created_at: new Date().toISOString()
+    };
+
+    const { error: orderError } = await supabase
+      .from('orders')
+      .insert(orderData);
+
+    if (orderError) {
+      console.error('Failed to save order:', orderError);
+      // Don't fail the purchase if order save fails, but log it
+    }
+
     // Deduct Heart Coins from user's balance
     const { error: updateError } = await supabase
       .from('profiles')
@@ -77,19 +110,6 @@ export async function POST(req: NextRequest) {
     if (updateError) {
       return NextResponse.json({ error: 'Failed to deduct Heart Coins' }, { status: 500 });
     }
-
-    // Note: For now, we're not storing the order as requested
-    // In the future, you would insert the order details into an orders table here
-
-    console.log('Heart Coins Purchase:', {
-      userId: user.id,
-      cardTitle,
-      heartCoinsSpent: heartCoins,
-      shippingAddress,
-      email,
-      phone,
-      timestamp: new Date().toISOString()
-    });
 
     return NextResponse.json({
       success: true,

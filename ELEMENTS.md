@@ -2,24 +2,16 @@
 Every song in the Heartverse is born from an element — a living force with its own energy and emotion. Together, they shape the world of CHXNDLER: fluid, electric, human, and infinite.
 
 💧 WATER
-Themes: Flow • Adaptability • Emotion
-Meaning: Change, healing, and trust in life’s current.
-Essence: Soft but powerful. These songs move like tides — calm, deep, and cleansing. They teach us to let go and trust the flow.
+Soft yet powerful, WATER represents flow, adaptability, and emotional depth. It carries themes of change, healing, and trusting life's current. WATER songs move like tides, calm and cleansing, inviting you to release control and let the moment guide you.
 
 🩷 HEART
-Themes: Emotion • Vulnerability • Connection
-Meaning: Love, compassion, and strength through openness.
-Essence: The emotional core. These songs feel deeply — messy, tender, and real. They remind us what it means to be human.
+HEART embodies emotion, vulnerability, and connection. It symbolizes love, compassion, and the courage to stay open. HEART songs are tender, raw, and real, pulling you into the spaces where feeling becomes truth and connection begins.
 
 ⚡️ LIGHTNING
-Themes: Energy • Passion • Awakening
-Meaning: Breakthroughs, inspiration, and sudden clarity.
-Essence: Fast, alive, electric. These songs capture the spark of change — moments that jolt you awake and make you feel alive.
+LIGHTNING holds energy, passion, and awakening. It represents breakthroughs, inspiration, and sudden clarity. These songs are fast, alive, and electric, striking with intensity and capturing the rush of change when everything shifts at once.
 
 🌑 DARKNESS
-Themes: Mystery • Shadow • Transformation
-Meaning: The unknown and growth through struggle.
-Essence: These songs face heartbreak, isolation, and truth. Darkness isn’t the enemy — it’s what helps us transform and find our light again.
+DARKNESS carries mystery, shadow, and transformation. It symbolizes the unknown and the growth that rises from struggle. These songs dive into heartbreak, isolation, and truth, revealing that darkness is not the enemy but the place where transformation starts and light returns.
 
 ✨ THE BALANCE
 Each element tells a different truth.

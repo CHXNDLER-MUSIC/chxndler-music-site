@@ -2087,8 +2087,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           width: 32px;
           height: 32px;
           border-radius: 50%;
-          /* Thin rim to match Apple/Store */
-          border: 1px solid rgba(255, 255, 255, 0.4);
+          border: none;
           background: radial-gradient(circle at 30% 30%, #FF6B6B, #FF0000);
           color: #FFFFFF;
           display: inline-flex;
@@ -2097,13 +2096,16 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           line-height: 0;
           text-decoration: none;
           transition: all 0.25s ease;
-          /* Match glow strength with other rimmed buttons */
-          box-shadow: 0 4px 16px rgba(255,59,48,0.45);
+          box-shadow: 
+            0 4px 16px rgba(255,59,48,0.3),
+            inset 0 1px 0 rgba(255,255,255,0.2);
           position: relative;
           z-index: 600; /* sit above waveform/svg and streaming buttons */
         }
         .youtube-link-waveform:hover { 
-          box-shadow: 0 6px 20px rgba(255,59,48,0.6);
+          box-shadow: 
+            0 6px 20px rgba(255,59,48,0.6),
+            inset 0 1px 0 rgba(255,255,255,0.3);
         }
         .youtube-link-waveform:active { }
         /* Increase icon size so the outer rim appears thinner */
@@ -2124,33 +2126,44 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         }
         .youtube-link-unavailable-waveform svg { width: 24px; height: 24px; }
         
-        /* Wrap YouTube button with stacked JOIN US link */
+        /* Wrap YouTube button with JOIN US link to the right */
         .yt-with-join {
           display: inline-flex;
-          flex-direction: column;
+          flex-direction: row;
           align-items: center;
           justify-content: flex-start;
+          gap: 8px;
         }
         .join-us-neon {
-          margin-top: 4px;
-          font-size: 10px;
-          letter-spacing: 0.12em;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          border: 1px solid rgba(56,182,255,0.5);
+          background: radial-gradient(circle at 30% 30%, rgba(56,182,255,0.9), rgba(56,182,255,0.6));
+          color: #000;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          text-decoration: none;
+          font-size: 8px;
+          letter-spacing: 0.08em;
           font-weight: 800;
           text-transform: uppercase;
-          color: #38B6FF; /* neon cyan */
-          text-decoration: none;
-          filter: drop-shadow(0 0 6px rgba(56,182,255,0.85)) drop-shadow(0 0 14px rgba(56,182,255,0.55));
-          text-shadow: 0 0 8px rgba(56,182,255,0.85), 0 0 18px rgba(56,182,255,0.55);
-          transition: transform 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
-          opacity: 0.95;
-        }
-        .join-us-neon:hover {
-          transform: translateY(-1px);
-          filter: drop-shadow(0 0 10px rgba(56,182,255,0.95)) drop-shadow(0 0 22px rgba(56,182,255,0.7));
-          text-shadow: 0 0 10px rgba(56,182,255,0.95), 0 0 26px rgba(56,182,255,0.7);
+          transition: all 0.25s ease;
+          box-shadow: 0 4px 16px rgba(56,182,255,0.55);
+          flex: 0 0 auto;
+          text-shadow: none;
+          filter: none;
           opacity: 1;
+          margin: 0;
+          padding: 0;
+          vertical-align: middle;
+          align-self: center;
         }
-        .join-us-neon:active { transform: translateY(0); }
+        .join-us-neon:hover { 
+          box-shadow: 0 6px 22px rgba(56,182,255,0.9); 
+        }
+        .join-us-neon:active { }
         
         /* JOIN US inside waveform container (right of waveform) */
         .join-us-waveform {

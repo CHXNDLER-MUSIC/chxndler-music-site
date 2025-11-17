@@ -91,16 +91,18 @@ export default function HoloJoinButton({
         }
         .hub-icon{ width:${Math.round(size*0.62)}px; height:${Math.round(size*0.62)}px; object-fit: contain; filter: saturate(1.1) brightness(1.04) drop-shadow(0 0 6px ${hubColor}) drop-shadow(0 0 14px ${hubColor}); transition: filter 180ms ease, transform 180ms ease; }
         .hub:hover .hub-icon{ transform: scale(1.06); filter: saturate(1.18) brightness(1.06) drop-shadow(0 0 10px ${hubColor}) drop-shadow(0 0 22px ${hubColor}) drop-shadow(0 0 36px ${hubColor}); }
+        .hub-active .hub-icon{ filter: saturate(1.3) brightness(1.15) drop-shadow(0 0 12px ${hubColor}) drop-shadow(0 0 24px ${hubColor}) drop-shadow(0 0 40px ${hubColor}); }
         .hub-active {
-          /* Selected state: calmer glow, no pulsing */
-          animation: none;
+          /* Selected state: stronger glow, enhanced pulsing */
+          animation: joinActivePulse 2.0s ease-in-out infinite;
           box-shadow:
-            0 14px 28px rgba(0,0,0,.6),
-            0 0 16px ${hubColor}66,
-            0 0 28px ${hubColor}44,
-            inset 0 2px 0 rgba(255,255,255,.22),
-            inset 0 -6px 14px rgba(0,0,0,.65);
-          filter: brightness(1.0) saturate(1.04);
+            0 16px 32px rgba(0,0,0,.7),
+            0 0 30px ${hubColor}CC,
+            0 0 60px ${hubColor}88,
+            0 0 100px ${hubColor}44,
+            inset 0 2px 0 rgba(255,255,255,.3),
+            inset 0 -6px 14px rgba(0,0,0,.7);
+          filter: brightness(1.15) saturate(1.25);
         }
         
         /* Synchronized base pulse matching other holographic components */
@@ -110,6 +112,30 @@ export default function HoloJoinButton({
           }
           50% { 
             filter: brightness(1.08) saturate(1.1);
+          }
+        }
+        
+        /* Enhanced pulsing for active state with stronger glow */
+        @keyframes joinActivePulse {
+          0%, 100% { 
+            filter: brightness(1.15) saturate(1.25);
+            box-shadow:
+              0 16px 32px rgba(0,0,0,.7),
+              0 0 30px ${hubColor}CC,
+              0 0 60px ${hubColor}88,
+              0 0 100px ${hubColor}44,
+              inset 0 2px 0 rgba(255,255,255,.3),
+              inset 0 -6px 14px rgba(0,0,0,.7);
+          }
+          50% { 
+            filter: brightness(1.25) saturate(1.4);
+            box-shadow:
+              0 18px 36px rgba(0,0,0,.8),
+              0 0 40px ${hubColor}FF,
+              0 0 80px ${hubColor}BB,
+              0 0 120px ${hubColor}66,
+              inset 0 2px 0 rgba(255,255,255,.35),
+              inset 0 -6px 14px rgba(0,0,0,.7);
           }
         }
       `}</style>

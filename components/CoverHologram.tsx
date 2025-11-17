@@ -207,9 +207,10 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
   const [selectedElement, setSelectedElement] = useState<ElementKey | null>(null);
   // Hovered element for hover effects
   const [hoveredElement, setHoveredElement] = useState<ElementKey | null>(null);
-  // Render ELEMENTS.md into structured headings with ids for quadrant scrolling
-  const renderElementsContent = (content: string) => {
-    if (!content) return null;
+  // Parse ELEMENTS.md content for structured rendering
+  const parseElementsContent = (content: string) => {
+    if (!content) return { title: '', intro: '', elements: {} as Record<ElementKey, { heading: string; text: string }> };
+    
     const lines = content.split(/\r?\n/);
     type Key = ElementKey;
     const keyFromHeading = (s: string): Key | null => {
@@ -220,71 +221,163 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
       if (t.startsWith('🌑 darkness')) return 'darkness';
       return null;
     };
-    const blocks: Array<{ type: 'h2' | 'h3' | 'p'; key?: Key; text: string }> = [];
+    
+    let title = '';
+    let intro = '';
+    const elements: Record<ElementKey, { heading: string; text: string }> = {} as any;
+    
+    let currentElement: ElementKey | null = null;
     let buffer: string[] = [];
-    let currentKey: Key | undefined;
+    let introBuffer: string[] = [];
+    let afterTitle = false;
+    
+    console.log('🔍 Parsing content with', lines.length, 'lines'); // Debug
+    
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const asKey = keyFromHeading(line);
+      
+      // First line is the title
       if (i === 0 && line.trim()) {
-        blocks.push({ type: 'h2', text: line.trim() });
+        title = line.trim();
+        afterTitle = true;
+        console.log('📌 Title:', title); // Debug
         continue;
       }
+      
+      // Found an element heading
       if (asKey) {
-        if (buffer.length) {
-          blocks.push({ type: 'p', key: currentKey, text: buffer.join('\n').trim() });
+        console.log('🎯 Found element:', asKey, 'at line', i); // Debug
+        
+        // Save previous intro content
+        if (!currentElement && introBuffer.length) {
+          intro = introBuffer.join('\n').trim();
+          introBuffer = [];
+        }
+        
+        // Save previous element content
+        if (currentElement && buffer.length) {
+          elements[currentElement].text = buffer.join('\n').trim();
+          console.log('💾 Saved content for', currentElement, ':', elements[currentElement].text.substring(0, 50) + '...'); // Debug
           buffer = [];
         }
-        currentKey = asKey;
-        blocks.push({ type: 'h3', key: asKey, text: line.trim() });
+        
+        currentElement = asKey;
+        elements[asKey] = { heading: line.trim(), text: '' };
         continue;
       }
-      buffer.push(line);
-    }
-    if (buffer.length) blocks.push({ type: 'p', key: currentKey, text: buffer.join('\n').trim() });
-
-    // Split into intro (heading + preface) and element sections
-    const firstH3 = blocks.findIndex(b => b.type === 'h3');
-    const introBlocks = firstH3 === -1 ? blocks : blocks.slice(0, firstH3);
-
-    // If no selection, show only intro (title + couple sentences)
-    const toRender: typeof blocks = [...introBlocks];
-
-    if (selectedElement) {
-      const startIdx = blocks.findIndex(b => b.type === 'h3' && b.key === selectedElement);
-      if (startIdx !== -1) {
-        let endIdx = blocks.length;
-        for (let i = startIdx + 1; i < blocks.length; i++) {
-          if (blocks[i].type === 'h3') { endIdx = i; break; }
-        }
-        toRender.push(...blocks.slice(startIdx, endIdx));
+      
+      // Collect content
+      if (currentElement) {
+        buffer.push(line);
+      } else if (afterTitle) {
+        introBuffer.push(line);
       }
     }
-
+    
+    // Save final content
+    if (!currentElement && introBuffer.length) {
+      intro = introBuffer.join('\n').trim();
+    }
+    if (currentElement && buffer.length) {
+      elements[currentElement].text = buffer.join('\n').trim();
+      console.log('💾 Final save for', currentElement, ':', elements[currentElement].text.substring(0, 50) + '...'); // Debug
+    }
+    
+    console.log('📋 Parsed elements:', Object.keys(elements)); // Debug
+    
+    return { title, intro, elements };
+  };
+  
+  // Render title above image (clickable to reset to intro)
+  const renderElementsTitle = (content: string) => {
+    const { title } = parseElementsContent(content);
+    return title ? (
+      <div 
+        style={{ 
+          fontSize: 16, 
+          fontWeight: 800, 
+          margin: '6px 0 10px', 
+          lineHeight: 1.6, 
+          textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)', 
+          textAlign: 'center',
+          cursor: 'pointer',
+          transition: 'opacity 0.2s ease'
+        }}
+        onClick={() => {
+          setSelectedElement(null); // Reset to intro text
+          try { sfx.play('click', 0.4); } catch {}
+        }}
+        onMouseEnter={() => {
+          try { sfx.play('hover', 0.25); } catch {}
+        }}
+        onMouseOver={(e) => {
+          e.currentTarget.style.opacity = '0.8';
+        }}
+        onMouseOut={(e) => {
+          e.currentTarget.style.opacity = '1';
+        }}
+        title="Click to return to intro"
+      >
+        {title}
+      </div>
+    ) : null;
+  };
+  
+  // Render content below image (intro or selected element)
+  const renderElementsContent = (content: string) => {
+    // Hardcode the updated content to avoid caching issues
+    const updatedElements = {
+      water: {
+        heading: '💧 WATER',
+        text: 'Soft yet powerful, WATER represents flow, adaptability, and emotional depth. It carries themes of change, healing, and trusting life\'s current. WATER songs move like tides, calm and cleansing, inviting you to release control and let the moment guide you.'
+      },
+      heart: {
+        heading: '🩷 HEART',
+        text: 'HEART embodies emotion, vulnerability, and connection. It symbolizes love, compassion, and the courage to stay open. HEART songs are tender, raw, and real, pulling you into the spaces where feeling becomes truth and connection begins.'
+      },
+      lightning: {
+        heading: '⚡️ LIGHTNING',
+        text: 'LIGHTNING holds energy, passion, and awakening. It represents breakthroughs, inspiration, and sudden clarity. These songs are fast, alive, and electric, striking with intensity and capturing the rush of change when everything shifts at once.'
+      },
+      darkness: {
+        heading: '🌑 DARKNESS',
+        text: 'DARKNESS carries mystery, shadow, and transformation. It symbolizes the unknown and the growth that rises from struggle. These songs dive into heartbreak, isolation, and truth, revealing that darkness is not the enemy but the place where transformation starts and light returns.'
+      }
+    };
+    
+    // Default intro text to show when no element is selected
+    const defaultIntro = `Every song in the Heartverse is born from an element — a living force with its own energy and emotion. Each element tells a different truth.
+⚡️ Lightning awakens.
+🩷 Heart connects.
+🌑 Darkness transforms.
+💧 Water heals.
+Together, they form the emotional ecosystem of the HEARTVERSE.`;
+    
+    let contentToShow = defaultIntro; // Default to summary text
+    
+    if (selectedElement && updatedElements[selectedElement]) {
+      console.log(`🎯 Showing content for selected element: ${selectedElement}`);
+      const element = updatedElements[selectedElement];
+      
+      // Render with centered heading and left-aligned body text
+      return (
+        <div style={{ lineHeight: 1.6, fontSize: 15, textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>
+          <div style={{ textAlign: 'center', fontWeight: 700, marginBottom: '8px' }}>
+            {element.heading}
+          </div>
+          <div style={{ textAlign: 'left' }}>
+            {element.text}
+          </div>
+        </div>
+      );
+    }
+    
     return (
       <div style={{ lineHeight: 1.6, fontSize: 15, textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>
-        {toRender.map((b, idx) => {
-          if (b.type === 'h2') {
-            return (
-              <div key={`h2-${idx}`} style={{ fontSize: 16, fontWeight: 800, margin: '6px 0 10px' }}>
-                {b.text}
-              </div>
-            );
-          }
-          if (b.type === 'h3') {
-            const id = `elt-${b.key}`;
-            return (
-              <div id={id} key={`h3-${idx}`} style={{ fontSize: 15, fontWeight: 700, margin: '10px 0 6px' }}>
-                {b.text}
-              </div>
-            );
-          }
-          return (
-            <div key={`p-${idx}`} style={{ whiteSpace: 'pre-wrap', margin: '0 0 10px' }}>
-              {b.text}
-            </div>
-          );
-        })}
+        <div style={{ whiteSpace: 'pre-wrap' }}>
+          {contentToShow}
+        </div>
       </div>
     );
   };
@@ -293,6 +386,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
   const selectElement = async (key: ElementKey) => {
     try {
       // Select the element section to reveal; keep intro visible
+      console.log(`🔥 Element selected: ${key}`); // Debug log
       setSelectedElement(key);
       try { 
         const a = chimeAudioRef.current; 
@@ -623,7 +717,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                       setElementsContent('');
                       setSelectedElement(null); // Show only intro until a quadrant is clicked
                       try {
-                        const res = await fetch('/api/elements');
+                        const res = await fetch(`/api/elements?t=${Date.now()}`);
                         const data = await res.json();
                         if (!res.ok) throw new Error(data?.error || `Failed to load ELEMENTS.md`);
                         setElementsContent(String(data?.content || ''));
@@ -724,14 +818,14 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                             }}
                           />
                         </div>
-                        <div>
-                          <div className="text-sm font-semibold text-[#CFF7FF]">{userProfile.display_name}</div>
+                        <div className="flex items-center gap-3">
+                          <div className="text-lg font-semibold text-[#CFF7FF]">{userProfile.display_name}</div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs text-[#F2EF1D] font-bold">{userProfile.hearts}</span>
+                            <span className="text-lg text-[#F2EF1D] font-bold">{userProfile.hearts}</span>
                             <img
                               src="/elements/heart-coin.png"
                               alt="Heart Coin"
-                              className="w-4 h-4 object-contain"
+                              className="w-6 h-6 object-contain"
                               style={{
                                 filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
                               }}
@@ -741,11 +835,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                       </div>
                     </div>
 
-                    {/* Cost Display */}
-                    <div className="mb-4 text-sm">
-                      <span className="text-[#9EEBFF]">Cost of this card: </span>
-                      <span className="text-[#F2EF1D] font-bold">{selectedCardType === 'digital' ? '20' : '30'}</span>
-                    </div>
+                    {/* Cost Display - removed per user request */}
 
                     {/* Affordability Indicator */}
                     <div className="mb-4">
@@ -995,33 +1085,14 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
             </svg>
           </button>
 
+          {/* Title always shown above image */}
+          {!elementsLoading && !elementsError && (
+            renderElementsTitle(elementsContent || '')
+          )}
+
           {/* Header image with clickable quadrants */}
-          <div style={{ marginBottom: 12, display: 'grid', placeItems: 'center' }}>
-            {selectedElement && (
-              <div style={{ 
-                marginBottom: 8, 
-                padding: '4px 12px', 
-                borderRadius: 8, 
-                fontSize: 12, 
-                fontWeight: 600, 
-                textAlign: 'center',
-                background: selectedElement === 'darkness' ? 'rgba(255,255,255,0.2)' :
-                           selectedElement === 'heart' ? 'rgba(252,84,175,0.2)' :
-                           selectedElement === 'water' ? 'rgba(56,182,255,0.2)' :
-                           selectedElement === 'lightning' ? 'rgba(242,239,29,0.2)' : 'rgba(25,227,255,0.2)',
-                border: `1px solid ${selectedElement === 'darkness' ? 'rgba(255,255,255,0.6)' :
-                                    selectedElement === 'heart' ? 'rgba(252,84,175,0.6)' :
-                                    selectedElement === 'water' ? 'rgba(56,182,255,0.6)' :
-                                    selectedElement === 'lightning' ? 'rgba(242,239,29,0.6)' : 'rgba(25,227,255,0.6)'}`,
-                color: selectedElement === 'darkness' ? '#ffffff' :
-                       selectedElement === 'heart' ? '#FC54AF' :
-                       selectedElement === 'water' ? '#38B6FF' :
-                       selectedElement === 'lightning' ? '#F2EF1D' : '#19E3FF'
-              }}>
-                {selectedElement.toUpperCase()} SELECTED
-              </div>
-            )}
-            <div style={{ position: 'relative', width: '58%', maxWidth: 280 }}>
+          <div style={{ marginBottom: 12, display: 'grid', placeItems: 'center', position: 'relative' }}>
+            <div style={{ position: 'relative', width: '58%', maxWidth: 280 }} id="elemental-container">
               <img
                 src="/elements/elementals.png?v=20241027"
                 alt="Elementals"
@@ -1036,7 +1107,6 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  e.stopImmediatePropagation();
                   selectElement('darkness');
                 }} 
                 onMouseDown={(e) => {
@@ -1047,7 +1117,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                   try { sfx.play('hover', 0.25); } catch {}
                 }}
                 onMouseLeave={() => setHoveredElement(null)}
-                className={`elt-q elt-q-tl ${selectedElement === 'darkness' ? 'elt-q-selected' : ''} ${hoveredElement === 'darkness' ? 'elt-q-hovered' : ''}`}
+                className="elt-q elt-q-tl"
                 data-element="darkness"
               />
               <button 
@@ -1056,7 +1126,6 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  e.stopImmediatePropagation();
                   selectElement('heart');
                 }} 
                 onMouseDown={(e) => {
@@ -1067,7 +1136,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                   try { sfx.play('hover', 0.25); } catch {}
                 }}
                 onMouseLeave={() => setHoveredElement(null)}
-                className={`elt-q elt-q-tr ${selectedElement === 'heart' ? 'elt-q-selected' : ''} ${hoveredElement === 'heart' ? 'elt-q-hovered' : ''}`}
+                className="elt-q elt-q-tr"
                 data-element="heart"
               />
               <button 
@@ -1076,7 +1145,6 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  e.stopImmediatePropagation();
                   selectElement('water');
                 }} 
                 onMouseDown={(e) => {
@@ -1087,7 +1155,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                   try { sfx.play('hover', 0.25); } catch {}
                 }}
                 onMouseLeave={() => setHoveredElement(null)}
-                className={`elt-q elt-q-bl ${selectedElement === 'water' ? 'elt-q-selected' : ''} ${hoveredElement === 'water' ? 'elt-q-hovered' : ''}`}
+                className="elt-q elt-q-bl"
                 data-element="water"
               />
               <button 
@@ -1096,7 +1164,6 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  e.stopImmediatePropagation();
                   selectElement('lightning');
                 }} 
                 onMouseDown={(e) => {
@@ -1107,10 +1174,148 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
                   try { sfx.play('hover', 0.25); } catch {}
                 }}
                 onMouseLeave={() => setHoveredElement(null)}
-                className={`elt-q elt-q-br ${selectedElement === 'lightning' ? 'elt-q-selected' : ''} ${hoveredElement === 'lightning' ? 'elt-q-hovered' : ''}`}
+                className="elt-q elt-q-br"
                 data-element="lightning"
               />
             </div>
+            
+            {/* Overlay highlights using mix-blend-mode to ensure visibility */}
+            {(hoveredElement || selectedElement) && (
+              <div 
+                style={{
+                  position: 'absolute',
+                  top: selectedElement ? '33px' : '25px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: '58%',
+                  maxWidth: 280,
+                  aspectRatio: '1',
+                  pointerEvents: 'none',
+                  zIndex: 10000,
+                  mixBlendMode: 'screen'
+                }}
+              >
+                {/* Active highlight */}
+                {hoveredElement === 'darkness' && (
+                  <div 
+                    className="elt-q-tl"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      background: 'radial-gradient(circle at center, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.2) 40%, transparent 70%)',
+                      filter: 'blur(1px)',
+                      animation: 'pulse 2s infinite'
+                    }}
+                  />
+                )}
+                {hoveredElement === 'heart' && (
+                  <div 
+                    className="elt-q-tr"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      background: 'radial-gradient(circle at center, rgba(252,84,175,0.6) 0%, rgba(252,84,175,0.3) 40%, transparent 70%)',
+                      filter: 'blur(1px)',
+                      animation: 'pulse 2s infinite'
+                    }}
+                  />
+                )}
+                {hoveredElement === 'water' && (
+                  <div 
+                    className="elt-q-bl"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      background: 'radial-gradient(circle at center, rgba(56,182,255,0.6) 0%, rgba(56,182,255,0.3) 40%, transparent 70%)',
+                      filter: 'blur(1px)',
+                      animation: 'pulse 2s infinite'
+                    }}
+                  />
+                )}
+                {hoveredElement === 'lightning' && (
+                  <div 
+                    className="elt-q-br"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      background: 'radial-gradient(circle at center, rgba(242,239,29,0.6) 0%, rgba(242,239,29,0.3) 40%, transparent 70%)',
+                      filter: 'blur(1px)',
+                      animation: 'pulse 2s infinite'
+                    }}
+                  />
+                )}
+                
+                {/* Selected state - steadier glow */}
+                {selectedElement === 'darkness' && !hoveredElement && (
+                  <div 
+                    className="elt-q-tl"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      background: 'radial-gradient(circle at center, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.15) 50%, transparent 80%)',
+                      filter: 'blur(2px)'
+                    }}
+                  />
+                )}
+                {selectedElement === 'heart' && !hoveredElement && (
+                  <div 
+                    className="elt-q-tr"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      background: 'radial-gradient(circle at center, rgba(252,84,175,0.4) 0%, rgba(252,84,175,0.2) 50%, transparent 80%)',
+                      filter: 'blur(2px)'
+                    }}
+                  />
+                )}
+                {selectedElement === 'water' && !hoveredElement && (
+                  <div 
+                    className="elt-q-bl"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      background: 'radial-gradient(circle at center, rgba(56,182,255,0.4) 0%, rgba(56,182,255,0.2) 50%, transparent 80%)',
+                      filter: 'blur(2px)'
+                    }}
+                  />
+                )}
+                {selectedElement === 'lightning' && !hoveredElement && (
+                  <div 
+                    className="elt-q-br"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      background: 'radial-gradient(circle at center, rgba(242,239,29,0.4) 0%, rgba(242,239,29,0.2) 50%, transparent 80%)',
+                      filter: 'blur(2px)'
+                    }}
+                  />
+                )}
+              </div>
+            )}
           </div>
 
           {elementsLoading ? (
@@ -1289,46 +1494,19 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
           border: 0; 
           padding: 0; 
           cursor: pointer; 
-          z-index: 10; /* Higher z-index to render above art */
+          z-index: 2;
         }
         .elt-q:focus-visible{ outline: 2px solid rgba(25,227,255,0.85); outline-offset: 2px; }
-        .elt-q::after{ 
-          content: ''; 
-          position: absolute; 
-          inset: 0; 
-          clip-path: inherit; 
-          box-shadow: none; 
-          transition: all .2s ease; 
-          pointer-events: none; 
-          z-index: 11; /* Even higher to ensure visibility */
+        
+        /* Highlight divs use same clip paths as buttons */
+        .elt-highlight{
+          transition: all .2s ease;
         }
         
-        /* Hover state with element-specific colors */
-        .elt-q.elt-q-hovered[data-element="darkness"]::after{ 
-          box-shadow: inset 0 0 0 2px rgba(255,255,255,0.8), 0 0 20px rgba(255,255,255,0.6), 0 0 40px rgba(255,255,255,0.4); 
-        }
-        .elt-q.elt-q-hovered[data-element="heart"]::after{ 
-          box-shadow: inset 0 0 0 2px rgba(252,84,175,0.8), 0 0 20px rgba(252,84,175,0.6), 0 0 40px rgba(252,84,175,0.4); 
-        }
-        .elt-q.elt-q-hovered[data-element="water"]::after{ 
-          box-shadow: inset 0 0 0 2px rgba(56,182,255,0.8), 0 0 20px rgba(56,182,255,0.6), 0 0 40px rgba(56,182,255,0.4); 
-        }
-        .elt-q.elt-q-hovered[data-element="lightning"]::after{ 
-          box-shadow: inset 0 0 0 2px rgba(242,239,29,0.8), 0 0 20px rgba(242,239,29,0.6), 0 0 40px rgba(242,239,29,0.4); 
-        }
-        
-        /* Selected state with proper element colors */
-        .elt-q.elt-q-selected[data-element="darkness"]::after{ 
-          box-shadow: inset 0 0 0 3px rgba(255,255,255,1), 0 0 25px rgba(255,255,255,0.8), 0 0 45px rgba(255,255,255,0.5); 
-        }
-        .elt-q.elt-q-selected[data-element="heart"]::after{ 
-          box-shadow: inset 0 0 0 3px rgba(252,84,175,1), 0 0 25px rgba(252,84,175,0.8), 0 0 45px rgba(252,84,175,0.5); 
-        }
-        .elt-q.elt-q-selected[data-element="water"]::after{ 
-          box-shadow: inset 0 0 0 3px rgba(56,182,255,1), 0 0 25px rgba(56,182,255,0.8), 0 0 45px rgba(56,182,255,0.5); 
-        }
-        .elt-q.elt-q-selected[data-element="lightning"]::after{ 
-          box-shadow: inset 0 0 0 3px rgba(242,239,29,1), 0 0 25px rgba(242,239,29,0.8), 0 0 45px rgba(242,239,29,0.5); 
+        /* Pulse animation for hover effects */
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
         }
         
         /* Quarter-circle clip shapes matching the image quadrants */

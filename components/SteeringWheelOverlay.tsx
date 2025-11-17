@@ -625,7 +625,7 @@ export default function SteeringWheelOverlay({
       <div
         style={{
           position: "absolute",
-          bottom: `${buttonsBottomPercent}%`, // Same level as power button
+          bottom: `${buttonsBottomPercent}%`, // Same vertical level as blue and yellow buttons
           left: `calc(50% + ${buttonOffsetPx}px + 10px)`, // Nudge slightly further right
           transform: 'translate(-50%, 8px)',
           zIndex: 92,
@@ -640,7 +640,7 @@ export default function SteeringWheelOverlay({
           return (
             <div style={{ pointerEvents: showUI && !isDimmingOverlayActive && isUIUnlocked ? 'auto' : 'none' }}>
               {/* Auth-aware CTA using existing HoloJoinButton styling */}
-              <AuthJoinCta size={joinSize} hubColor="#FC54AF" />
+              <AuthJoinCta size={joinSize} hubColor="#FC54AF" onClick={handleJoinAlienToggle} isActive={joinAlienOpen} />
             </div>
           );
         })()}

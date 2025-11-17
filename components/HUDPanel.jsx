@@ -2050,7 +2050,85 @@ export default function HUDPanel({
                   const lyricsTitle = isHome ? 'Lyrics for CHXNDLER' : `Lyrics for ${currentSong?.title || 'current track'}`;
                   const lyricsAria = isHome ? 'View lyrics for CHXNDLER' : `View lyrics for ${currentSong?.title || 'current track'}`;
                   return (
-                    <div className="hud-top-controls" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <>
+                      {/* Waveform positioned above play/pause button */}
+                      <div className="hud-mini-wave flex items-center justify-center" style={{ marginBottom: 8 }}>
+                        <div 
+                          className="waveform"
+                          onClick={handleProgressClick}
+                          onMouseMove={(e) => {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const hoverX = e.clientX - rect.left;
+                            const hoverPercentage = (hoverX / rect.width) * 100;
+                            e.currentTarget.style.setProperty('--hover-position', `${hoverPercentage}%`);
+                          }}
+                          style={{
+                            position: 'relative',
+                            border: 'none',
+                            width: `calc((100vw - ${(inConsole ? 6 : 8) + (oneLinerRight + 4) + 32}px) * 0.6)`, // 60% of dropdown width
+                            height: 18,
+                            borderRadius: 0,
+                            background: 'transparent'
+                          }}
+                          onMouseEnter={(e) => {
+                            try { sfx.play('hover', 0.3); } catch {}
+                            // No border styling needed for invisible container
+                          }}
+                          onMouseLeave={(e) => {
+                            // No border styling needed for invisible container
+                          }}
+                        >
+                          <svg className="w-full h-full" viewBox="0 0 100 18" preserveAspectRatio="none" style={{ background: 'transparent' }}>
+                            <defs>
+                              {(() => {
+                                const currentSong = resolvedSongs.find(s => s.id === active);
+                                const elementColor = '#FFFFFF'; // Use white for waveform gradient
+                                const hexToRgba = (hex, alpha) => {
+                                  const r = parseInt(hex.slice(1, 3), 16);
+                                  const g = parseInt(hex.slice(3, 5), 16);
+                                  const b = parseInt(hex.slice(5, 7), 16);
+                                  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+                                };
+                                return (
+                                  <>
+                                    <linearGradient id="miniUnplayed" x1="0%" y1="0%" x2="0%" y2="100%">
+                                      <stop offset="0%" stopColor={hexToRgba(elementColor, 0.25)} />
+                                      <stop offset="50%" stopColor={hexToRgba(elementColor, 0.35)} />
+                                      <stop offset="100%" stopColor={hexToRgba(elementColor, 0.25)} />
+                                    </linearGradient>
+                                    <linearGradient id="miniPlayed" x1="0%" y1="0%" x2="0%" y2="100%">
+                                      <stop offset="0%" stopColor={hexToRgba(elementColor, 0.8)} />
+                                      <stop offset="50%" stopColor={hexToRgba(elementColor, 1)} />
+                                      <stop offset="100%" stopColor={hexToRgba(elementColor, 0.8)} />
+                                    </linearGradient>
+                                  </>
+                                );
+                              })()}
+                            </defs>
+                            {(() => {
+                              const currentSong = resolvedSongs.find(s => s.id === active);
+                              const elementColor = '#FFFFFF'; // Use white for waveform line
+                              const a = liveAudioRef.current;
+                              const liveDur = (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
+                              const liveTime = (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
+                              const progressRatio = liveDur > 0 ? (liveTime / liveDur) : 0;
+                              const progressX = progressRatio * 100;
+                              const centerY = 9; // half of 18
+                              return (
+                                <>
+                                  {/* Background track as a rounded line */}
+                                  <line x1="0" y1={centerY} x2="100" y2={centerY} stroke={elementColor} strokeWidth="4" opacity="0.45" strokeLinecap="round" />
+                                  {/* Played portion: multi-layer glow for brightness with rounded caps */}
+                                  <line x1="0" y1={centerY} x2={progressX} y2={centerY} stroke={elementColor} strokeWidth="12" opacity="0.16" strokeLinecap="round" />
+                                  <line x1="0" y1={centerY} x2={progressX} y2={centerY} stroke={elementColor} strokeWidth="8" opacity="0.28" strokeLinecap="round" />
+                                  <line x1="0" y1={centerY} x2={progressX} y2={centerY} stroke={elementColor} strokeWidth="4" opacity="0.98" strokeLinecap="round" />
+                                </>
+                              );
+                            })()}
+                          </svg>
+                        </div>
+                      </div>
+                      <div className="hud-top-controls" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <button 
                         onClick={handlePlayPause}
                         className="hud-play-btn-enhanced"
@@ -2321,8 +2399,19 @@ export default function HUDPanel({
                           </a>
                         );
                       })()}
-                      {/* Removed duplicate HEART coin button placed after YouTube */}
+                      {/* JOIN US button next to YouTube */}
+                      <button
+                        type="button"
+                        className="join-us-neon"
+                        style={{ marginLeft: '8px' }}
+                        title="Join Us"
+                        onClick={(e) => { e.stopPropagation(); try { sfx.play('click', 0.45); } catch {}; try { trackAnalytics('join_us_clicked', { location: 'hud_controls' }); } catch {}; setLoginOpen(true); }}
+                        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                      >
+                        JOIN US
+                      </button>
                     </div>
+                    </>
                   );
                 })()}
                 {/* Volume + Waveform row directly under Play/Pause */}
@@ -2372,112 +2461,6 @@ export default function HUDPanel({
                         </svg>
                       )}
                     </button>
-                  </div>
-                  {/* Compact waveform placed directly to the right of Volume */}
-                  <div className="hud-mini-wave flex items-center" style={{ marginTop: 2 }}>
-                    <div 
-                      className="waveform"
-                      onClick={handleProgressClick}
-                      onMouseMove={(e) => {
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        const hoverX = e.clientX - rect.left;
-                        const hoverPercentage = (hoverX / rect.width) * 100;
-                        e.currentTarget.style.setProperty('--hover-position', `${hoverPercentage}%`);
-                      }}
-                      style={{
-                        position: 'relative',
-                        border: `1px solid ${(() => {
-                          const currentSong = resolvedSongs.find(s => s.id === active);
-                          const elementColor = currentSong?.color || '#19E3FF';
-                          const r = parseInt(elementColor.slice(1, 3), 16);
-                          const g = parseInt(elementColor.slice(3, 5), 16);
-                          const b = parseInt(elementColor.slice(5, 7), 16);
-                          return `rgba(${r}, ${g}, ${b}, 0.25)`;
-                        })()}`,
-                        width: 200,
-                        height: 18,
-                        borderRadius: 8,
-                        background: 'rgba(0,0,0,0.3)'
-                      }}
-                      onMouseEnter={(e) => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                        const currentSong = resolvedSongs.find(s => s.id === active);
-                        const elementColor = currentSong?.color || '#19E3FF';
-                        const r = parseInt(elementColor.slice(1, 3), 16);
-                        const g = parseInt(elementColor.slice(3, 5), 16);
-                        const b = parseInt(elementColor.slice(5, 7), 16);
-                        e.currentTarget.style.borderColor = `rgba(${r}, ${g}, ${b}, 0.45)`;
-                        e.currentTarget.style.boxShadow = `0 0 10px rgba(${r}, ${g}, ${b}, 0.25)`;
-                      }}
-                      onMouseLeave={(e) => {
-                        const currentSong = resolvedSongs.find(s => s.id === active);
-                        const elementColor = currentSong?.color || '#19E3FF';
-                        const r = parseInt(elementColor.slice(1, 3), 16);
-                        const g = parseInt(elementColor.slice(3, 5), 16);
-                        const b = parseInt(elementColor.slice(5, 7), 16);
-                        e.currentTarget.style.borderColor = `rgba(${r}, ${g}, ${b}, 0.25)`;
-                        e.currentTarget.style.boxShadow = 'none';
-                      }}
-                    >
-                      <svg className="w-full h-full" viewBox="0 0 400 18" preserveAspectRatio="none" style={{ background: 'transparent' }}>
-                        <defs>
-                          {(() => {
-                            const currentSong = resolvedSongs.find(s => s.id === active);
-                            const elementColor = currentSong?.color || '#19E3FF';
-                            const hexToRgba = (hex, alpha) => {
-                              const r = parseInt(hex.slice(1, 3), 16);
-                              const g = parseInt(hex.slice(3, 5), 16);
-                              const b = parseInt(hex.slice(5, 7), 16);
-                              return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-                            };
-                            return (
-                              <>
-                                <linearGradient id="miniUnplayed" x1="0%" y1="0%" x2="0%" y2="100%">
-                                  <stop offset="0%" stopColor={hexToRgba(elementColor, 0.25)} />
-                                  <stop offset="50%" stopColor={hexToRgba(elementColor, 0.35)} />
-                                  <stop offset="100%" stopColor={hexToRgba(elementColor, 0.25)} />
-                                </linearGradient>
-                                <linearGradient id="miniPlayed" x1="0%" y1="0%" x2="0%" y2="100%">
-                                  <stop offset="0%" stopColor={hexToRgba(elementColor, 0.8)} />
-                                  <stop offset="50%" stopColor={hexToRgba(elementColor, 1)} />
-                                  <stop offset="100%" stopColor={hexToRgba(elementColor, 0.8)} />
-                                </linearGradient>
-                              </>
-                            );
-                          })()}
-                        </defs>
-                        {(() => {
-                          const currentSong = resolvedSongs.find(s => s.id === active);
-                          const elementColor = currentSong?.color || '#19E3FF';
-                          const a = liveAudioRef.current;
-                          const liveDur = (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
-                          const liveTime = (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
-                          const progressRatio = liveDur > 0 ? (liveTime / liveDur) : 0;
-                          const progressX = progressRatio * 400;
-                          const centerY = 9; // half of 18
-                          return (
-                            <>
-                              {/* Background track as a single faint line */}
-                              <line x1="0" y1={centerY} x2="400" y2={centerY} stroke={elementColor} strokeWidth="1.2" opacity="0.45" />
-                              {/* Played portion: multi-layer glow for brightness */}
-                              <line x1="0" y1={centerY} x2={progressX} y2={centerY} stroke={elementColor} strokeWidth="10" opacity="0.16" strokeLinecap="round" />
-                              <line x1="0" y1={centerY} x2={progressX} y2={centerY} stroke={elementColor} strokeWidth="6" opacity="0.28" strokeLinecap="round" />
-                              <line x1="0" y1={centerY} x2={progressX} y2={centerY} stroke={elementColor} strokeWidth="2" opacity="0.98" strokeLinecap="round" />
-                            </>
-                          );
-                        })()}
-                      </svg>
-                      {/* JOIN US button inside waveform container, neon pink, bottom-center */}
-                      <button
-                        type="button"
-                        className="join-us-waveform-hud"
-                        title="Join Us"
-                        onClick={(e) => { e.stopPropagation(); try { sfx.play('click', 0.45); } catch {}; try { trackAnalytics('join_us_clicked', { location: 'hud_waveform' }); } catch {}; setLoginOpen(true); }}
-                        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                      >
-                        JOIN US
-                      </button>
-                    </div>
                   </div>
                 </div>
                 </div>
@@ -3219,7 +3202,7 @@ export default function HUDPanel({
                       backdropFilter: 'blur(12px) saturate(1.2)',
                       color: '#fff',
                       zIndex: 2147483647,
-                      padding: 20,
+                      padding: 16,
                       display: 'flex',
                       flexDirection: 'column',
                       overflow: 'hidden'
@@ -3254,7 +3237,7 @@ export default function HUDPanel({
                     {/* Header */}
                     <div style={{
                       textAlign: 'center',
-                      marginBottom: 16,
+                      marginBottom: 12,
                       paddingTop: 6
                     }}>
                       <h2 style={{
@@ -3300,7 +3283,7 @@ export default function HUDPanel({
                       
                       {/* FULL COLLECTION Button */}
                       <div style={{
-                        marginBottom: 20,
+                        marginBottom: 12,
                         textAlign: 'center',
                         position: 'relative',
                         zIndex: 1
@@ -3326,7 +3309,8 @@ export default function HUDPanel({
                             fontWeight: 700,
                             letterSpacing: '0.5px',
                             textShadow: '0 0 8px rgba(252,84,175,0.4)',
-                            boxShadow: '0 2px 8px rgba(252,84,175,0.1)'
+                            boxShadow: '0 0 15px rgba(252,84,175,0.6), 0 0 30px rgba(252,84,175,0.3), 0 2px 8px rgba(252,84,175,0.1)',
+                            filter: 'drop-shadow(0 0 8px rgba(252,84,175,0.5))'
                           }}
                           onMouseOver={(e) => {
                             e.currentTarget.style.background = 'linear-gradient(135deg, rgba(252,84,175,0.3), rgba(25,227,255,0.25))';
@@ -3347,7 +3331,7 @@ export default function HUDPanel({
 
                       {/* Collection stats */}
                       <div style={{
-                        marginBottom: 20,
+                        marginBottom: 12,
                         textAlign: 'center',
                         position: 'relative',
                         zIndex: 1

@@ -565,11 +565,11 @@ img[src$="/elements/music.png"] {
 .hud-waveform-player{
   position: relative;
   border-radius: 10px;
-  border: 2px solid rgba(25,227,255,0.8);
-  background: rgba(25,227,255,0.1);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 0 18px rgba(25,227,255,0.35);
+  border: none;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
   /* Safari performance fixes */
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
