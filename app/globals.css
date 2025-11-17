@@ -485,8 +485,8 @@ img[src$="/elements/music.png"] {
   .songs-trigger { min-height: 44px !important; contain: layout paint; transform: translateZ(0); -webkit-transform: translateZ(0); }
   .songs-label { line-height: 1.2 !important; }
 
-  /* Lock waveform container size on mobile to prevent vw-based oscillation */
-  .waveform-container { width: 160px !important; height: 120px !important; contain: layout paint; transform: translateZ(0); -webkit-transform: translateZ(0); }
+  /* Lock waveform size on mobile to prevent vw-based oscillation */
+  .waveform { width: 160px !important; height: 120px !important; contain: layout paint; transform: translateZ(0); -webkit-transform: translateZ(0); }
   /* Also remove blur on related controls to reduce re-rasterizing */
   .sleek-controls, .volume-popover { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 }
@@ -581,7 +581,7 @@ img[src$="/elements/music.png"] {
   .hud-waveform-player{ backdrop-filter: none; -webkit-backdrop-filter: none; }
 }
 
-.waveform-container{
+.waveform{
   position: relative;
   height: 32px;
   cursor: pointer;
@@ -1011,8 +1011,8 @@ img[src$="/elements/music.png"] {
   transition: all 0.2s ease;
   /* Blue glow behind the coin button */
   box-shadow: 0 0 12px rgba(56, 182, 255, 0.75), 0 0 22px rgba(56, 182, 255, 0.55);
-  /* Blue-tinted rim to avoid silver appearance */
-  border: 1px solid rgba(56,182,255,0.45);
+  /* Blue-tinted rim to avoid silver appearance - thinner like store button */
+  border: 0.5px solid rgba(56,182,255,0.45);
   position: relative;
   flex-shrink: 0;
   overflow: hidden; /* clip the image to the circular mask */

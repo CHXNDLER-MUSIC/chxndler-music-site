@@ -67,12 +67,12 @@ function ElementIcon({ name, size = 18, glow = true }) {
     if (k.includes("lightning") || k.includes("electric")) return "#FFC700"; // deeper yellow
     if (k.includes("earth")) return "#F2EF1D";     // reuse neon yellow
     if (k.includes("air")) return "#8BF9FF";       // light cyan
-    if (k.includes("dark")) return "#000000";      // deep black
+    if (k.includes("dark")) return "#FFFFFF";      // white
     return "#38B6FF";
   };
   const clr = colorFor(n);
-  // Outer halo uses same color except for darkness which would be invisible — use cyan halo to sell hologram
-  const outer = (n.includes("dark")) ? "#19E3FF" : clr;
+  // Outer halo uses same color for all elements
+  const outer = clr;
   const glowFilter = glow ? `saturate(1.2) brightness(1.08) drop-shadow(0 0 6px ${outer}) drop-shadow(0 0 16px ${outer}) drop-shadow(0 0 34px ${outer})` : 'none';
   
   return (
@@ -83,7 +83,7 @@ function ElementIcon({ name, size = 18, glow = true }) {
         width={size} 
         height={size}
         style={{
-          objectFit: 'contain',
+          objectFit: 'cover',
           display:'block',
           background: 'transparent',
           filter: glowFilter,
@@ -235,8 +235,6 @@ export default function HUDPanel({
       type: 'brand'
     },
     null, // Empty slot
-    null, // Empty slot
-    null, // Empty slot
     null  // Empty slot
   ];
 
@@ -251,6 +249,15 @@ export default function HUDPanel({
   // Card collection data using actual song covers
   const allCards = [
     // HEART TYPE CARDS
+    {
+      id: 0,
+      name: 'HEART',
+      type: 'HEART',
+      rarity: 'Legendary',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/HEART.png',
+      description: 'The elemental essence of HEART energy.',
+      collected: true
+    },
     {
       id: 1,
       name: 'ALWAYS ON MY MIND',
@@ -461,6 +468,15 @@ export default function HUDPanel({
 
     // WATER TYPE CARDS
     {
+      id: 23.5,
+      name: 'WATER',
+      type: 'WATER',
+      rarity: 'Legendary',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/WATER.png',
+      description: 'The elemental essence of WATER energy.',
+      collected: true
+    },
+    {
       id: 24,
       name: 'LETTING GO',
       type: 'WATER',
@@ -498,6 +514,15 @@ export default function HUDPanel({
     },
 
     // LIGHTNING TYPE CARDS
+    {
+      id: 27.5,
+      name: 'LIGHTNING',
+      type: 'LIGHTNING',
+      rarity: 'Legendary',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/LIGHTNING.png',
+      description: 'The elemental essence of LIGHTNING energy.',
+      collected: true
+    },
     {
       id: 28,
       name: 'AMERICAN DREAM',
@@ -608,6 +633,15 @@ export default function HUDPanel({
     },
 
     // DARKNESS TYPE CARDS
+    {
+      id: 39.5,
+      name: 'DARKNESS',
+      type: 'DARKNESS',
+      rarity: 'Legendary',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/DARKNESS.png',
+      description: 'The elemental essence of DARKNESS energy.',
+      collected: true
+    },
     {
       id: 40,
       name: 'ALONE',
@@ -751,6 +785,10 @@ export default function HUDPanel({
       }
     } catch {}
     setHeartTierDetails(null);
+    // Reset all flip states to original position
+    setWandererFlipped(false);
+    setDreamerFlipped(false);
+    setLoverFlipped(false);
     setShowHeartPopover(true);
   };
 
@@ -2338,7 +2376,7 @@ export default function HUDPanel({
                   {/* Compact waveform placed directly to the right of Volume */}
                   <div className="hud-mini-wave flex items-center" style={{ marginTop: 2 }}>
                     <div 
-                      className="waveform-container"
+                      className="waveform"
                       onClick={handleProgressClick}
                       onMouseMove={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
@@ -2545,7 +2583,7 @@ export default function HUDPanel({
                       transform: (heartPopoverPos && heartPopoverPos.width) ? 'none' : 'translateX(-50%)',
                       padding: '14px 16px 16px 16px',
                       borderRadius: 14,
-                      background: 'radial-gradient(140% 160% at 50% 0%, rgba(25,227,255,0.20), rgba(14,168,208,0.15) 35%, rgba(6,40,55,0.50) 100%)',
+                      background: 'radial-gradient(140% 160% at 50% 0%, rgba(25,227,255,0.15), rgba(14,168,208,0.10) 35%, rgba(6,40,55,0.85) 100%)',
                       border: '1px solid rgba(25,227,255,0.45)',
                       boxShadow: '0 18px 46px rgba(0,0,0,0.35), 0 0 26px rgba(25,227,255,0.35)',
                       backdropFilter: 'blur(8px) saturate(1.15)',
@@ -2642,8 +2680,8 @@ export default function HUDPanel({
                               display: 'inline-flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              width: 28,
-                              height: 28,
+                              width: 36,
+                              height: 36,
                               borderRadius: 9999,
                               background: 'radial-gradient(72% 72% at 30% 30%, rgba(25,227,255,0.28) 0%, rgba(25,227,255,0.08) 60%, rgba(25,227,255,0.04) 100%)',
                               border: '1px solid rgba(25,227,255,0.5)',
@@ -2651,10 +2689,11 @@ export default function HUDPanel({
                               backdropFilter: 'blur(2px)',
                               cursor: 'pointer',
                               transition: 'transform 120ms ease',
+                              padding: 0,
                             }}
                             onMouseDown={(e) => e.preventDefault()}
                           >
-                            <ElementIcon name={sofiaElement} size={18} glow={true} />
+                            <ElementIcon name={sofiaElement} size={36} glow={true} />
                           </button>
                           {/* SOFIA label */}
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
@@ -2750,10 +2789,11 @@ export default function HUDPanel({
                                     border: `1px solid ${sofiaElement === el ? 'rgba(252,84,175,0.8)' : 'rgba(25,227,255,0.35)'}`,
                                     background: 'radial-gradient(72% 72% at 30% 30%, rgba(25,227,255,0.18) 0%, rgba(25,227,255,0.06) 60%, rgba(25,227,255,0.03) 100%)',
                                     boxShadow: sofiaElement === el ? '0 0 12px rgba(252,84,175,0.6)' : '0 0 8px rgba(25,227,255,0.3)',
-                                    cursor: 'pointer'
+                                    cursor: 'pointer',
+                                    padding: 0
                                   }}
                                 >
-                                  <ElementIcon name={el} size={16} glow={true} />
+                                  <ElementIcon name={el} size={28} glow={true} />
                                 </button>
                               ))}
                             </div>
@@ -2775,45 +2815,43 @@ export default function HUDPanel({
                         >
                           THE DREAMER
                         </div>
-                        {/* Right side empty - content moved below */}
-                      </div>
-                      
-                      {/* THE CODE button moved below THE DREAMER */}
-                      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
-                        <button
-                          type="button"
-                          aria-label="HEARTVERSE Code"
-                          title="HEARTVERSE Code"
-                          onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                          onClick={() => {
-                            try { sfx.play('click', 0.4); } catch {}
-                            setShowHeartverseCode(!showHeartverseCode);
-                          }}
-                          style={{
-                            padding: '8px 16px',
-                            borderRadius: 8,
-                            background: 'linear-gradient(135deg, rgba(252,84,175,0.15), rgba(25,227,255,0.15))',
-                            border: '1px solid rgba(252,84,175,0.4)',
-                            color: '#FC54AF',
-                            fontSize: 12,
-                            fontWeight: 700,
-                            letterSpacing: '0.02em',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease'
-                          }}
-                          onMouseOver={(e) => {
-                            e.target.style.background = 'linear-gradient(135deg, rgba(252,84,175,0.25), rgba(25,227,255,0.25))';
-                            e.target.style.borderColor = 'rgba(252,84,175,0.6)';
-                            e.target.style.transform = 'scale(1.05)';
-                          }}
-                          onMouseOut={(e) => {
-                            e.target.style.background = 'linear-gradient(135deg, rgba(252,84,175,0.15), rgba(25,227,255,0.15))';
-                            e.target.style.borderColor = 'rgba(252,84,175,0.4)';
-                            e.target.style.transform = 'scale(1.0)';
-                          }}
-                        >
-                          THE CODE
-                        </button>
+                        {/* THE CODE button positioned under THE DREAMER */}
+                        <div style={{ position: 'absolute', left: '50%', top: '45px', transform: 'translateX(-50%)' }}>
+                          <button
+                            type="button"
+                            aria-label="HEARTVERSE Code"
+                            title="HEARTVERSE Code"
+                            onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                            onClick={() => {
+                              try { sfx.play('click', 0.4); } catch {}
+                              setShowHeartverseCode(!showHeartverseCode);
+                            }}
+                            style={{
+                              padding: '8px 16px',
+                              borderRadius: 8,
+                              background: 'linear-gradient(135deg, rgba(252,84,175,0.15), rgba(25,227,255,0.15))',
+                              border: '1px solid rgba(252,84,175,0.4)',
+                              color: '#FC54AF',
+                              fontSize: 12,
+                              fontWeight: 700,
+                              letterSpacing: '0.02em',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease'
+                            }}
+                            onMouseOver={(e) => {
+                              e.target.style.background = 'linear-gradient(135deg, rgba(252,84,175,0.25), rgba(25,227,255,0.25))';
+                              e.target.style.borderColor = 'rgba(252,84,175,0.6)';
+                              e.target.style.transform = 'scale(1.05)';
+                            }}
+                            onMouseOut={(e) => {
+                              e.target.style.background = 'linear-gradient(135deg, rgba(252,84,175,0.15), rgba(25,227,255,0.15))';
+                              e.target.style.borderColor = 'rgba(252,84,175,0.4)';
+                              e.target.style.transform = 'scale(1.0)';
+                            }}
+                          >
+                            THE CODE
+                          </button>
+                        </div>
                       </div>
                       {/* Header / Hero */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 2px 8px 2px' }}>
@@ -2825,12 +2863,18 @@ export default function HUDPanel({
                       {/* HEARTVERSE Code Display */}
                       {showHeartverseCode && (
                         <div style={{ 
-                          margin: '6px 0 8px 0',
+                          position: 'absolute',
+                          top: '-120px',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          width: 'calc(100% - 32px)',
+                          maxWidth: '400px',
                           padding: '12px',
                           borderRadius: 12,
-                          background: 'linear-gradient(135deg, rgba(252,84,175,0.1), rgba(25,227,255,0.05))',
-                          border: '1px solid rgba(252,84,175,0.3)',
-                          boxShadow: '0 0 20px rgba(252,84,175,0.15)'
+                          background: 'linear-gradient(135deg, rgba(252,84,175,0.15), rgba(25,227,255,0.08))',
+                          border: '1px solid rgba(252,84,175,0.4)',
+                          boxShadow: '0 0 25px rgba(252,84,175,0.25), 0 8px 32px rgba(0,0,0,0.3)',
+                          zIndex: 100
                         }}>
                           <div style={{ 
                             fontSize: 18, 
@@ -3167,7 +3211,7 @@ export default function HUDPanel({
                       left: '50%',
                       transform: 'translate(-50%, -50%)',
                       width: 'min(90vw, 600px)',
-                      height: 'min(80vh, 500px)',
+                      height: 'min(60vh, 400px)',
                       background: 'radial-gradient(140% 160% at 50% 0%, rgba(252,84,175,0.25), rgba(14,168,208,0.18) 35%, rgba(60,20,45,0.55) 100%)',
                       border: '1px solid rgba(252,84,175,0.5)',
                       borderRadius: 16,
@@ -3210,8 +3254,8 @@ export default function HUDPanel({
                     {/* Header */}
                     <div style={{
                       textAlign: 'center',
-                      marginBottom: 24,
-                      paddingTop: 8
+                      marginBottom: 16,
+                      paddingTop: 6
                     }}>
                       <h2 style={{
                         fontSize: 24,
@@ -3219,12 +3263,12 @@ export default function HUDPanel({
                         color: '#FC54AF',
                         textShadow: '0 0 12px rgba(252,84,175,0.6)',
                         margin: 0,
-                        marginBottom: 8
+                        marginBottom: 6
                       }}>
                         DIGITAL BINDER
                       </h2>
                       <p style={{
-                        fontSize: 14,
+                        fontSize: 13,
                         opacity: 0.8,
                         margin: 0,
                         color: '#fff'
@@ -3519,8 +3563,8 @@ export default function HUDPanel({
                     style={{
                       position: 'fixed',
                       inset: 0,
-                      background: 'rgba(0,0,0,0.8)',
-                      backdropFilter: 'blur(8px)',
+                      background: 'rgba(0,0,0,0.4)',
+                      backdropFilter: 'blur(4px)',
                       zIndex: 2147483648,
                       display: 'flex',
                       alignItems: 'center',
@@ -3532,14 +3576,14 @@ export default function HUDPanel({
                     <div
                       style={{
                         position: 'relative',
-                        maxWidth: '90vw',
-                        maxHeight: '90vh',
+                        width: '320px',
+                        height: '480px',
                         background: 'radial-gradient(140% 160% at 50% 0%, rgba(25,227,255,0.25), rgba(252,84,175,0.18) 35%, rgba(20,60,85,0.55) 100%)',
                         border: '2px solid rgba(25,227,255,0.6)',
-                        borderRadius: 20,
-                        boxShadow: '0 20px 50px rgba(0,0,0,0.5), 0 0 40px rgba(25,227,255,0.4)',
-                        backdropFilter: 'blur(16px) saturate(1.3)',
-                        padding: 0,
+                        borderRadius: 16,
+                        boxShadow: '0 20px 50px rgba(0,0,0,0.3), 0 0 30px rgba(25,227,255,0.4)',
+                        backdropFilter: 'blur(12px) saturate(1.2)',
+                        padding: 20,
                         overflow: 'hidden'
                       }}
                       onClick={(e) => e.stopPropagation()}
@@ -3551,19 +3595,19 @@ export default function HUDPanel({
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                         style={{
                           position: 'absolute',
-                          top: 16,
-                          right: 16,
-                          width: 40,
-                          height: 40,
+                          top: 12,
+                          right: 12,
+                          width: 32,
+                          height: 32,
                           border: 'none',
                           background: 'rgba(0,0,0,0.6)',
-                          borderRadius: 20,
+                          borderRadius: 16,
                           color: '#19E3FF',
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          fontSize: 20,
+                          fontSize: 16,
                           fontWeight: 'bold',
                           zIndex: 10,
                           transition: 'all 0.2s ease',
@@ -3584,34 +3628,35 @@ export default function HUDPanel({
                       {/* Card display area */}
                       <div style={{
                         position: 'relative',
-                        width: 'min(80vw, 400px)',
-                        height: 'min(80vh, 560px)',
+                        width: '100%',
+                        height: '100%',
                         display: 'flex',
+                        flexDirection: 'column',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: '40px'
+                        justifyContent: 'center'
                       }}>
                         {/* Card image with tilt effect */}
                         <div style={{
                           position: 'relative',
-                          width: '100%',
-                          height: '100%',
-                          perspective: '1200px'
+                          width: '240px',
+                          height: '336px',
+                          perspective: '800px',
+                          marginBottom: '16px'
                         }}>
                           <div style={{
                             position: 'relative',
                             width: '100%',
                             height: '100%',
                             transformStyle: 'preserve-3d',
-                            transform: 'rotateX(10deg) rotateY(-10deg)',
+                            transform: 'rotateX(8deg) rotateY(-8deg)',
                             transition: 'transform 0.3s ease',
                             cursor: 'pointer'
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'rotateX(5deg) rotateY(-5deg) scale(1.02)';
+                            e.currentTarget.style.transform = 'rotateX(4deg) rotateY(-4deg) scale(1.02)';
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'rotateX(10deg) rotateY(-10deg) scale(1)';
+                            e.currentTarget.style.transform = 'rotateX(8deg) rotateY(-8deg) scale(1)';
                           }}>
                             <img
                               src={selectedCard.image}
@@ -3619,9 +3664,9 @@ export default function HUDPanel({
                               style={{
                                 width: '100%',
                                 height: '100%',
-                                objectFit: 'contain',
-                                borderRadius: '16px',
-                                filter: 'brightness(1.1) contrast(1.05) saturate(1.2) drop-shadow(0 10px 30px rgba(25,227,255,0.4)) drop-shadow(0 5px 15px rgba(252,84,175,0.3))',
+                                objectFit: 'cover',
+                                borderRadius: '12px',
+                                filter: 'brightness(1.1) contrast(1.05) saturate(1.2) drop-shadow(0 8px 20px rgba(25,227,255,0.4)) drop-shadow(0 4px 12px rgba(252,84,175,0.3))',
                                 transition: 'filter 0.3s ease'
                               }}
                             />
@@ -3634,7 +3679,7 @@ export default function HUDPanel({
                               right: 0,
                               bottom: 0,
                               background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(25,227,255,0.1) 100%)',
-                              borderRadius: '16px',
+                              borderRadius: '12px',
                               pointerEvents: 'none',
                               opacity: 0.6
                             }} />
@@ -3644,59 +3689,53 @@ export default function HUDPanel({
                         {/* Floating particles effect around card */}
                         <div style={{
                           position: 'absolute',
-                          inset: 0,
+                          inset: -10,
                           pointerEvents: 'none',
                           overflow: 'hidden'
                         }}>
-                          {[...Array(8)].map((_, i) => (
+                          {[...Array(6)].map((_, i) => (
                             <div
                               key={i}
                               style={{
                                 position: 'absolute',
-                                width: '4px',
-                                height: '4px',
+                                width: '3px',
+                                height: '3px',
                                 background: i % 2 === 0 ? '#19E3FF' : '#FC54AF',
                                 borderRadius: '50%',
-                                left: `${20 + (i * 10)}%`,
-                                top: `${10 + (i * 8)}%`,
+                                left: `${15 + (i * 12)}%`,
+                                top: `${10 + (i * 10)}%`,
                                 animation: `float ${3 + Math.random() * 2}s ease-in-out infinite ${Math.random() * 2}s`,
                                 filter: 'blur(0.5px)',
-                                opacity: 0.7
+                                opacity: 0.8
                               }}
                             />
                           ))}
                         </div>
                       </div>
                       
-                      {/* Card info overlay */}
-                      <div style={{
-                        position: 'absolute',
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        background: 'linear-gradient(transparent, rgba(0,0,0,0.9))',
-                        color: '#fff',
-                        padding: '20px',
-                        textAlign: 'center'
-                      }}>
-                        <h3 style={{
-                          margin: 0,
-                          fontSize: '24px',
-                          fontWeight: 'bold',
-                          color: '#19E3FF',
-                          textShadow: '0 0 12px rgba(25,227,255,0.6)'
-                        }}>
-                          {selectedCard.title}
-                        </h3>
+                        {/* Card info */}
                         <div style={{
-                          marginTop: '8px',
-                          fontSize: '14px',
-                          opacity: 0.8,
-                          color: '#CFF7FF'
+                          textAlign: 'center',
+                          color: '#fff'
                         }}>
-                          {selectedCard.rarity?.toUpperCase()} • {selectedCard.type?.toUpperCase()}
+                          <h3 style={{
+                            margin: 0,
+                            fontSize: '20px',
+                            fontWeight: 'bold',
+                            color: '#19E3FF',
+                            textShadow: '0 0 12px rgba(25,227,255,0.6)',
+                            marginBottom: '4px'
+                          }}>
+                            {selectedCard.title}
+                          </h3>
+                          <div style={{
+                            fontSize: '12px',
+                            opacity: 0.8,
+                            color: '#CFF7FF'
+                          }}>
+                            {selectedCard.rarity?.toUpperCase()} • {selectedCard.type?.toUpperCase()}
+                          </div>
                         </div>
-                      </div>
                     </div>
                   </div>,
                   document.body
@@ -4565,69 +4604,72 @@ export default function HUDPanel({
                   document.body
                 ) : null}
 
-                {typeof document !== 'undefined' && showLyricsPopover && lyricsPopoverPos ? require('react-dom').createPortal(
-                  <div
-                    role="dialog"
-                    aria-label="Lyrics"
-                    className="lyrics-popover-hud holo-scrollbar-yellow lyrics-modal-enhanced"
-                    ref={lyricsScrollRef}
-                    style={{
-                      position: 'fixed',
-                      left: (lyricsPopoverPos && lyricsPopoverPos.left) || 0,
-                      top: (lyricsPopoverPos && lyricsPopoverPos.top) || 0,
-                      transform: (lyricsPopoverPos && lyricsPopoverPos.width) ? 'none' : 'translateX(-50%)',
-                      // Tighten vertical padding so the bottom sits higher
-                      padding: '10px 14px 14px 14px', borderRadius: 14,
-                      background: 'rgba(3,10,20,0.9)',
-                      border: '1px solid rgba(242,239,29,0.55)',
-                      boxShadow: '0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(242,239,29,0.45)',
-                      backdropFilter: 'blur(8px)',
-                      color: '#F2EF1D',
-                      zIndex: 2147483647,
-                      width: (lyricsPopoverPos && lyricsPopoverPos.width) ? lyricsPopoverPos.width : 'min(98vw, 1400px)',
-                      // Fix height to the blue display area; slightly shorter fallback
-                      height: (lyricsPopoverPos && lyricsPopoverPos.height) ? lyricsPopoverPos.height : '42vh',
-                      overflow: 'auto',
-                      // Fade-in and float animations
-                      animation: 'lyricsModalFadeIn 0.25s ease-out, lyricsModalFloat 6s ease-in-out infinite alternate'
-                    }}
-                    onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowLyricsPopover(false); } }}
-                  >
-                    {/* Obvious yellow close button in the top-right corner */}
-                    <button
-                      aria-label="Close lyrics"
-                      title="Close"
-                      onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 26px rgba(242,239,29,0.95), 0 0 42px rgba(242,239,29,0.65)'; } catch {} }}
-                      onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 18px rgba(242,239,29,0.75), 0 0 32px rgba(242,239,29,0.45)'; } catch {} }}
-                      onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowLyricsPopover(false); }}
+                {typeof document !== 'undefined' && showLyricsPopover && lyricsPopoverPos ? (() => {
+                  const isHome = !currentId;
+                  const currentSong = resolvedSongs.find(s => s.id === active);
+                  return require('react-dom').createPortal(
+                    <div
+                      role="dialog"
+                      aria-label="Lyrics"
+                      className="lyrics-popover-hud holo-scrollbar-yellow lyrics-modal-enhanced"
+                      ref={lyricsScrollRef}
                       style={{
-                        position: 'absolute',
-                        top: 8,
-                        right: 8,
-                        width: 32,
-                        height: 32,
-                        borderRadius: 9999,
-                        background: 'rgba(0,0,0,0.35)',
-                        border: '2px solid rgba(242,239,29,0.85)',
+                        position: 'fixed',
+                        left: (lyricsPopoverPos && lyricsPopoverPos.left) || 0,
+                        top: (lyricsPopoverPos && lyricsPopoverPos.top) || 0,
+                        transform: (lyricsPopoverPos && lyricsPopoverPos.width) ? 'none' : 'translateX(-50%)',
+                        // Tighten vertical padding so the bottom sits higher
+                        padding: '10px 14px 14px 14px', borderRadius: 14,
+                        background: 'rgba(3,10,20,0.9)',
+                        border: '1px solid rgba(242,239,29,0.55)',
+                        boxShadow: '0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(242,239,29,0.45)',
+                        backdropFilter: 'blur(8px)',
                         color: '#F2EF1D',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: '0 0 18px rgba(242,239,29,0.75), 0 0 32px rgba(242,239,29,0.45)',
-                        cursor: 'pointer'
+                        zIndex: 2147483647,
+                        width: (lyricsPopoverPos && lyricsPopoverPos.width) ? lyricsPopoverPos.width : 'min(98vw, 1400px)',
+                        // Fix height to the blue display area; slightly shorter fallback
+                        height: (lyricsPopoverPos && lyricsPopoverPos.height) ? lyricsPopoverPos.height : '42vh',
+                        overflow: 'auto',
+                        // Fade-in and float animations
+                        animation: 'lyricsModalFadeIn 0.25s ease-out, lyricsModalFloat 6s ease-in-out infinite alternate'
                       }}
+                      onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowLyricsPopover(false); } }}
                     >
-                      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
-                        <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                        <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                      </svg>
-                    </button>
-                    {/* Moving glow background */}
-                    <div className="lyrics-glow-bg"></div>
-                    {/* Section header */}
-                    <div className="lyrics-header">
-                      LYRICS — {isHome ? 'CHXNDLER' : (currentSong?.title || 'UNKNOWN')}
-                    </div>
+                      {/* Obvious yellow close button in the top-right corner */}
+                      <button
+                        aria-label="Close lyrics"
+                        title="Close"
+                        onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 26px rgba(242,239,29,0.95), 0 0 42px rgba(242,239,29,0.65)'; } catch {} }}
+                        onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 18px rgba(242,239,29,0.75), 0 0 32px rgba(242,239,29,0.45)'; } catch {} }}
+                        onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowLyricsPopover(false); }}
+                        style={{
+                          position: 'absolute',
+                          top: 8,
+                          right: 8,
+                          width: 32,
+                          height: 32,
+                          borderRadius: 9999,
+                          background: 'rgba(0,0,0,0.35)',
+                          border: '2px solid rgba(242,239,29,0.85)',
+                          color: '#F2EF1D',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          boxShadow: '0 0 18px rgba(242,239,29,0.75), 0 0 32px rgba(242,239,29,0.45)',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+                          <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                          <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                        </svg>
+                      </button>
+                      {/* Moving glow background */}
+                      <div className="lyrics-glow-bg"></div>
+                      {/* Section header */}
+                      <div className="lyrics-header">
+                        LYRICS — {isHome ? 'CHXNDLER' : (currentSong?.title || 'UNKNOWN')}
+                      </div>
                     {lyricsLoading ? (
                       <div style={{ fontSize: 18, opacity: .99, color: '#F2EF1D', textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>Loading…</div>
                     ) : lyricsError ? (
@@ -4636,9 +4678,10 @@ export default function HUDPanel({
                       <div className="lyrics-content-enhanced" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.5, fontSize: 18, color: '#F6F4A9', textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(246,244,169,0.6)' }}>{lyricsContent || 'No lyrics available.'}</div>
                     )}
                     {null}
-                  </div>,
-                  document.body
-                ) : null}
+                    </div>,
+                    document.body
+                  );
+                })() : null}
 
                 {typeof document !== 'undefined' && showBrandPopover && brandPopoverPos ? require('react-dom').createPortal(
                   <div

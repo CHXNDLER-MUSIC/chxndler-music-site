@@ -270,7 +270,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       if (!inWave) setShowWaveformVolumePopover(false);
       // Close lyrics popover when clicking outside waveform container
       try {
-        const wf = document.querySelector('.waveform-container');
+        const wf = document.querySelector('.waveform');
         if (wf && t && !wf.contains(t)) setLyricsOpen(false);
       } catch {}
     };
@@ -1079,10 +1079,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         
         {/* Waveform section moved above controls */}
         <div className="waveform-wrapper">
-          <div className="waveform-container" title={cur.title}>
-            <div 
+          <div 
             className="waveform" 
             aria-label="Audio waveform visualization"
+            title={cur.title}
             onPointerDown={(e) => {
               const a = audioRef.current;
               const d = liveDuration;
@@ -1218,7 +1218,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 );
               })()}
             </svg>
-            </div>
           </div>
         </div>
         
@@ -1892,8 +1891,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           order: -1 !important; /* Move waveform above controls */
         }
         
-        /* Waveform visualization container - slightly wider to accommodate both buttons */
-        .waveform-container{
+        /* Waveform visualization - slightly wider to accommodate both buttons */
+        .waveform{
           position: relative; /* make positioned context for absolute children */
           width: 28vw;
           height: 8vw;
