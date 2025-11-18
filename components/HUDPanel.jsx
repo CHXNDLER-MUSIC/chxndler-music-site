@@ -177,6 +177,18 @@ export default function HUDPanel({
   // Position lyrics popover relative to its anchor; smaller negative means less high
   const LYRICS_POPOVER_Y_OFFSET = -40; // bring it further down compared to before
 
+  // JOIN US popover state (similar to lyrics)
+  const [showJoinUsPopover, setShowJoinUsPopover] = useState(false);
+  const joinUsBtnRef = useRef(null);
+  const [joinUsPopoverPos, setJoinUsPopoverPos] = useState(null);
+  const joinUsScrollRef = useRef(null);
+
+  // WELCOME HOME popover state (similar to join us)
+  const [showWelcomeHomePopover, setShowWelcomeHomePopover] = useState(false);
+  const welcomeHomeBtnRef = useRef(null);
+  const [welcomeHomePopoverPos, setWelcomeHomePopoverPos] = useState(null);
+  const welcomeHomeScrollRef = useRef(null);
+
   // Brand (CHXNDLER) popover state
   const [showBrandPopover, setShowBrandPopover] = useState(false);
   const brandBtnRef = useRef(null);
@@ -197,7 +209,7 @@ export default function HUDPanel({
   const [showApplePopover, setShowApplePopover] = useState(false);
   const [amEmbedUrl, setAmEmbedUrl] = useState(null);
 
-  // HEART coin tiers popout
+  // PROFILE popout
   const [showHeartPopover, setShowHeartPopover] = useState(false);
   const heartBtnRef = useRef(null);
   const [heartPopoverPos, setHeartPopoverPos] = useState(null);
@@ -806,49 +818,13 @@ export default function HUDPanel({
   const [patchHovered, setPatchHovered] = useState(false);
   const products = [
     {
-      id: 'sticker',
-      title: 'STICKER',
-      image: '/store/sticker.png',
-      url: 'https://buy.stripe.com/8x24gA99f9Bj1gR6WX4gg0F',
-      price: '$3',
-      heartcoins: 2,
-      description: "A simple reminder that you're part of something bigger. Remember you're not alone in this story."
-    },
-    {
-      id: 'pin',
-      title: 'PIN',
-      image: '/store/pin.png',
-      url: 'https://buy.stripe.com/cNi00kfxDeVD3oZ5ST4gg0B',
-      price: '$5',
-      heartcoins: 3,
-      description: 'A symbol that you belong here with the people who feel deeply, dream big, and find beauty in being different.'
-    },
-    {
-      id: 'button',
-      title: 'BUTTON',
-      image: '/store/button.png',
-      url: 'https://buy.stripe.com/6oU14oclr8xfbVvbdd4gg0J',
-      price: '$5',
-      heartcoins: 3,
-      description: 'A symbol of unity, curiosity, and courage for those who feel deeply and dream beyond the ordinary.'
-    },
-    {
-      id: 'patch',
-      title: 'PATCH',
-      image: '/store/patch.png',
-      url: 'https://buy.stripe.com/00w5kEgBHdRz1gRgxx4gg0C',
-      price: '$6',
-      heartcoins: 4,
-      description: "Stitch this into your world as a quiet reminder that this isn't just music, it's a community."
-    },
-    {
-      id: 'keychain',
-      title: 'KEYCHAIN',
-      image: '/store/keychain.png',
-      url: 'https://buy.stripe.com/8x214o99faFn0cN5ST4gg0H',
-      price: '$6',
-      heartcoins: 4,
-      description: "A small piece of the HEARTVERSE to carry everywhere. A quiet reminder that you're connected, always."
+      id: 'necklace',
+      title: 'NECKLACE',
+      image: '/store/necklace.png',
+      url: 'https://buy.stripe.com/bJe3cw99f28R5x7epp4gg0K',
+      price: '$18',
+      heartcoins: 12,
+      description: "A symbol of love, connection, and everything this world stands for. It's a keepsake for the people who found home here."
     },
     {
       id: 'pick',
@@ -860,31 +836,58 @@ export default function HUDPanel({
       description: 'A glow in the dark pick made for the dreamers and late night creators who carry music like a heartbeat through the dark.'
     },
     {
-      id: 'necklace',
-      title: 'NECKLACE',
-      image: '/store/necklace.png',
-      url: 'https://buy.stripe.com/bJe3cw99f28R5x7epp4gg0K',
-      price: '$18',
-      heartcoins: 12,
-      description: "A symbol of love, connection, and everything this world stands for. It's a keepsake for the people who found home here."
+      id: 'keychain',
+      title: 'KEYCHAIN',
+      image: '/store/keychain.png',
+      url: 'https://buy.stripe.com/8x214o99faFn0cN5ST4gg0H',
+      price: '$6',
+      heartcoins: 4,
+      description: "A small piece of the HEARTVERSE to carry everywhere. A quiet reminder that you're connected, always."
     },
     {
-      id: 'bracelet',
-      title: 'BRACELET',
-      image: '/store/bracelet.png',
-      url: 'https://buy.stripe.com/aFa8wQ2KR8xf6Bbftt4gg0N',
-      price: '$24',
-      heartcoins: 16,
-      description: 'A HEARTVERSE charm that connects you to the Aliens who feel deeply and walk the world with open hearts.'
+      id: 'patch',
+      title: 'PATCH',
+      image: '/store/patch.png',
+      url: 'https://buy.stripe.com/00w5kEgBHdRz1gRgxx4gg0C',
+      price: '$6',
+      heartcoins: 4,
+      description: "Stitch this into your world as a quiet reminder that this isn't just music, it's a community."
     },
     {
-      id: 'hat',
-      title: 'HAT',
-      image: '/store/hat.png',
-      url: 'https://buy.stripe.com/6oU28s717aFn1gR1CD4gg0I',
+      id: 'button',
+      title: 'BUTTON',
+      image: '/store/button.png',
+      url: 'https://buy.stripe.com/6oU14oclr8xfbVvbdd4gg0J',
+      price: '$5',
+      heartcoins: 3,
+      description: 'A symbol of unity, curiosity, and courage for those who feel deeply and dream beyond the ordinary.'
+    },
+    {
+      id: 'pin',
+      title: 'PIN',
+      image: '/store/pin.png',
+      url: 'https://buy.stripe.com/cNi00kfxDeVD3oZ5ST4gg0B',
+      price: '$5',
+      heartcoins: 3,
+      description: 'A symbol that you belong here with the people who feel deeply, dream big, and find beauty in being different.'
+    },
+    {
+      id: 'sticker',
+      title: 'STICKER',
+      image: '/store/sticker.png',
+      url: 'https://buy.stripe.com/8x24gA99f9Bj1gR6WX4gg0F',
+      price: '$3',
+      heartcoins: 2,
+      description: "A simple reminder that you're part of something bigger. Remember you're not alone in this story."
+    },
+    {
+      id: 'house-party-poster',
+      title: 'HOUSE PARTY POSTER',
+      image: '/store/house-party-poster.png',
+      url: 'https://buy.stripe.com/dRm8wQetz14N5x71CD4gg0L',
       price: '$30',
       heartcoins: 20,
-      description: "A classic you'll wear everywhere. It's lowkey, but it says everything it needs to."
+      description: 'This poster captures the night the HEARTVERSE came alive. Hang it up and remember when you joined the story.'
     },
     {
       id: 'beanie',
@@ -896,13 +899,22 @@ export default function HUDPanel({
       description: "For the ones who wear their hearts out loud and aren't afraid to stand out."
     },
     {
-      id: 'house-party-poster',
-      title: 'HOUSE PARTY POSTER',
-      image: '/store/house-party-poster.png',
-      url: 'https://buy.stripe.com/dRm8wQetz14N5x71CD4gg0L',
+      id: 'hat',
+      title: 'HAT',
+      image: '/store/hat.png',
+      url: 'https://buy.stripe.com/6oU28s717aFn1gR1CD4gg0I',
       price: '$30',
       heartcoins: 20,
-      description: 'This poster captures the night the HEARTVERSE came alive. Hang it up and remember when you joined the story.'
+      description: "A classic you'll wear everywhere. It's lowkey, but it says everything it needs to."
+    },
+    {
+      id: 'bracelet',
+      title: 'BRACELET',
+      image: '/store/bracelet.png',
+      url: 'https://buy.stripe.com/aFa8wQ2KR8xf6Bbftt4gg0N',
+      price: '$24',
+      heartcoins: 16,
+      description: 'A HEARTVERSE charm that connects you to the Aliens who feel deeply and walk the world with open hearts.'
     }
   ];
 
@@ -956,6 +968,75 @@ export default function HUDPanel({
     } finally {
       setLyricsLoading(false);
     }
+  }
+
+  async function openJoinUsPopover(){
+    try { sfx.play('click', 0.4); } catch {}
+    // Anchor position (similar to lyrics)
+    try {
+      const r = joinUsBtnRef.current?.getBoundingClientRect?.();
+      const wrapper = innerRef.current?.parentElement || null; // outer HUD blue display wrapper (padding box)
+      // Position the popover to match the blue display's vertical bounds
+      if (wrapper && typeof window !== 'undefined') {
+        const rect = wrapper.getBoundingClientRect();
+        const cs = window.getComputedStyle(wrapper);
+        const pl = parseFloat(cs.paddingLeft || '0') || 0;
+        const pr = parseFloat(cs.paddingRight || '0') || 0;
+        let leftEdge = rect.left + pl;
+        let rightEdge = rect.right - pr;
+        // Very slightly wider than the blue display on both sides
+        const HORIZONTAL_EXPAND = 12; // px to grow on each side
+        leftEdge = Math.max(8, leftEdge - HORIZONTAL_EXPAND);
+        rightEdge = Math.min((typeof window !== 'undefined' ? window.innerWidth : rightEdge), rightEdge + HORIZONTAL_EXPAND) - 8 + 8;
+        const width = Math.max(0, rightEdge - leftEdge);
+        // Bring the top down more while keeping the bottom aligned to blue display bottom; this also shortens the popover
+        const TOP_INSET = 136; // same as lyrics popup
+        let top = rect.top + TOP_INSET;
+        top = Math.max(8, top);
+        const height = Math.max(100, rect.height - TOP_INSET);
+        setJoinUsPopoverPos({ left: leftEdge, top, width, height });
+      } else if (r) {
+        let top = r.bottom + 8 + LYRICS_POPOVER_Y_OFFSET;
+        top = Math.max(8, top);
+        let height = Math.max(240, Math.min(560, (typeof window !== 'undefined' ? window.innerHeight * 0.46 : 340)));
+        setJoinUsPopoverPos({ left: r.left + r.width/2, top, height });
+      }
+    } catch(e) {
+      console.warn('Failed to position JOIN US popover:', e);
+    }
+    setShowJoinUsPopover(true);
+  }
+
+  async function openWelcomeHomePopover(){
+    try { sfx.play('click', 0.4); } catch {}
+    // Anchor position (similar to join us)
+    try {
+      const r = welcomeHomeBtnRef.current?.getBoundingClientRect?.();
+      const wrapper = innerRef.current?.parentElement || null; // outer HUD blue display wrapper (padding box)
+      // Position the popover to match the blue display's vertical bounds
+      if (wrapper && typeof window !== 'undefined') {
+        const rect = wrapper.getBoundingClientRect();
+        const cs = window.getComputedStyle(wrapper);
+        const pl = parseFloat(cs.paddingLeft || '0') || 0;
+        const pr = parseFloat(cs.paddingRight || '0') || 0;
+        let leftEdge = rect.left + pl;
+        let rightEdge = rect.right - pr;
+        // Very slightly wider than the blue display on both sides
+        const HORIZONTAL_EXPAND = 12; // px to grow on each side
+        leftEdge = Math.max(8, leftEdge - HORIZONTAL_EXPAND);
+        rightEdge = Math.min((typeof window !== 'undefined' ? window.innerWidth : rightEdge), rightEdge + HORIZONTAL_EXPAND) - 8 + 8;
+        const width = Math.max(0, rightEdge - leftEdge);
+        // Bring the top down more while keeping the bottom aligned to blue display bottom; this also shortens the popover
+        const TOP_INSET = 136; // same as lyrics popup
+        let top = rect.top + TOP_INSET;
+        top = Math.max(8, top);
+        let height = Math.max(180, Math.min(320, (typeof window !== 'undefined' ? window.innerHeight * 0.32 : 280)));
+        setWelcomeHomePopoverPos({ left: leftEdge, top, width, height });
+      }
+    } catch(e) {
+      console.warn('Failed to position WELCOME HOME popover:', e);
+    }
+    setShowWelcomeHomePopover(true);
   }
 
   // Recalculate popover alignment to blue display on resize while open
@@ -1074,7 +1155,7 @@ export default function HUDPanel({
     return () => window.removeEventListener('keydown', onKey);
   }, [showApplePopover]);
 
-  // Recalculate HEART coin popover alignment on resize while open
+  // Recalculate PROFILE popover alignment on resize while open
   useEffect(() => {
     if (!showHeartPopover) return;
     const recalc = () => {
@@ -1103,13 +1184,13 @@ export default function HUDPanel({
     return () => window.removeEventListener('resize', recalc);
   }, [showHeartPopover]);
 
-  // Close HEART coin popover on outside click / Escape
+  // Close PROFILE popover on outside click / Escape
   useEffect(() => {
     if (!showHeartPopover) return;
     const onDocDown = (e) => {
       const t = e.target;
       const withinBtn = heartBtnRef.current && t && heartBtnRef.current.contains(t);
-      const dialog = document.querySelector('[aria-label="HEARTVERSE TIERS"]');
+      const dialog = document.querySelector('[aria-label="PROFILE"]');
       const withinDialog = dialog && t && dialog.contains(t);
       if (!withinBtn && !withinDialog) { try { sfx.play('close', 0.4); } catch {}; setShowHeartPopover(false); }
     };
@@ -1124,7 +1205,7 @@ export default function HUDPanel({
     };
   }, [showHeartPopover]);
 
-  // Reset HEART popover UI state when closing
+  // Reset PROFILE popover UI state when closing
   useEffect(() => {
     if (!showHeartPopover) {
       try { setHeartTierDetails(null); } catch {}
@@ -2052,7 +2133,7 @@ export default function HUDPanel({
                   return (
                     <>
                       {/* Waveform positioned above play/pause button */}
-                      <div className="hud-mini-wave flex items-center justify-center" style={{ marginBottom: 8 }}>
+                      <div className="hud-mini-wave flex items-center justify-center" style={{ marginBottom: 8, marginLeft: -8 }}>
                         <div 
                           className="waveform"
                           onClick={handleProgressClick}
@@ -2065,7 +2146,7 @@ export default function HUDPanel({
                           style={{
                             position: 'relative',
                             border: 'none',
-                            width: `calc((100vw - ${(inConsole ? 6 : 8) + (oneLinerRight + 4) + 32}px) * 0.6)`, // 60% of dropdown width
+                            width: `calc((100vw - ${(inConsole ? 6 : 8) + (oneLinerRight + 4) + 32}px) * 0.85)`, // 85% of dropdown width
                             height: 18,
                             borderRadius: 0,
                             background: 'transparent'
@@ -2116,19 +2197,17 @@ export default function HUDPanel({
                               const centerY = 9; // half of 18
                               return (
                                 <>
-                                  {/* Background track as a rounded line */}
-                                  <line x1="0" y1={centerY} x2="100" y2={centerY} stroke={elementColor} strokeWidth="4" opacity="0.45" strokeLinecap="round" />
-                                  {/* Played portion: multi-layer glow for brightness with rounded caps */}
-                                  <line x1="0" y1={centerY} x2={progressX} y2={centerY} stroke={elementColor} strokeWidth="12" opacity="0.16" strokeLinecap="round" />
-                                  <line x1="0" y1={centerY} x2={progressX} y2={centerY} stroke={elementColor} strokeWidth="8" opacity="0.28" strokeLinecap="round" />
-                                  <line x1="0" y1={centerY} x2={progressX} y2={centerY} stroke={elementColor} strokeWidth="4" opacity="0.98" strokeLinecap="round" />
+                                  {/* Background track as a thick rounded line */}
+                                  <line x1="0" y1={centerY} x2="100" y2={centerY} stroke={elementColor} strokeWidth="8" opacity="0.35" strokeLinecap="round" strokeLinejoin="round" />
+                                  {/* Played portion: single clean rounded bar */}
+                                  <line x1="0" y1={centerY} x2={progressX} y2={centerY} stroke={elementColor} strokeWidth="8" opacity="1" strokeLinecap="round" strokeLinejoin="round" />
                                 </>
                               );
                             })()}
                           </svg>
                         </div>
                       </div>
-                      <div className="hud-top-controls" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div className="hud-top-controls" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: -12, marginLeft: -8 }}>
                       <button 
                         onClick={handlePlayPause}
                         className="hud-play-btn-enhanced"
@@ -2191,6 +2270,54 @@ export default function HUDPanel({
                           </svg>
                         </div>
                       )}
+                      {/* JOIN US button positioned below LYRICS */}
+                      <button
+                        ref={joinUsBtnRef}
+                        type="button"
+                        className="join-us-neon"
+                        style={{ position: 'absolute', left: '8px', top: '70px', paddingLeft: '16px', paddingRight: '16px', minWidth: '80px' }}
+                        title="Join Us"
+                        aria-haspopup="dialog"
+                        aria-expanded={showJoinUsPopover}
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          try { sfx.play('click', 0.45); } catch {}; 
+                          try { trackAnalytics('join_us_clicked', { location: 'hud_controls' }); } catch {}; 
+                          if (showJoinUsPopover) { 
+                            try { sfx.play('close', 0.4); } catch {}; 
+                            setShowJoinUsPopover(false); 
+                            return; 
+                          }
+                          openJoinUsPopover(); 
+                        }}
+                        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                      >
+                        JOIN US
+                      </button>
+                      {/* WELCOME HOME button positioned next to JOIN US */}
+                      <button
+                        ref={welcomeHomeBtnRef}
+                        type="button"
+                        className="welcome-home-neon"
+                        style={{ position: 'absolute', left: '100px', top: '70px', paddingLeft: '16px', paddingRight: '16px', minWidth: '80px' }}
+                        title="Welcome Home"
+                        aria-haspopup="dialog"
+                        aria-expanded={showWelcomeHomePopover}
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          try { sfx.play('click', 0.45); } catch {}; 
+                          try { trackAnalytics('welcome_home_clicked', { location: 'hud_controls' }); } catch {}; 
+                          if (showWelcomeHomePopover) { 
+                            try { sfx.play('close', 0.4); } catch {}; 
+                            setShowWelcomeHomePopover(false); 
+                            return; 
+                          }
+                          openWelcomeHomePopover(); 
+                        }}
+                        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                      >
+                        WELCOME HOME
+                      </button>
                       {/* Store (gem) button placed to the right of Lyrics */}
                       <button
                         type="button"
@@ -2399,70 +2526,47 @@ export default function HUDPanel({
                           </a>
                         );
                       })()}
-                      {/* JOIN US button next to YouTube */}
+                      {/* Volume button moved to the right of YouTube */}
                       <button
-                        type="button"
-                        className="join-us-neon"
-                        style={{ marginLeft: '8px' }}
-                        title="Join Us"
-                        onClick={(e) => { e.stopPropagation(); try { sfx.play('click', 0.45); } catch {}; try { trackAnalytics('join_us_clicked', { location: 'hud_controls' }); } catch {}; setLoginOpen(true); }}
+                        className="hud-volume-btn"
+                        style={{ marginTop: 1 }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                        onClick={() => {
+                          try { sfx.play('click', 0.4); } catch {}
+                          setShowHudVolumePopover(v => {
+                            const next = !v;
+                            if (next && hudVolBtnRef.current) {
+                              const r = hudVolBtnRef.current.getBoundingClientRect();
+                              setHudPopoverPos({ left: r.left + r.width/2, top: r.bottom + 8 });
+                            }
+                            if (!next) { try { sfx.play('close', 0.4); } catch {} }
+                            return next;
+                          });
+                        }}
+                        aria-label="Volume"
+                        title="Volume"
+                        ref={hudVolBtnRef}
                       >
-                        JOIN US
+                        {volume === 0 ? (
+                          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+                            <polygon points="4,10 8,10 13,6 13,18 8,14 4,14" fill="currentColor" />
+                            <line x1="15" y1="9" x2="21" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                            <line x1="21" y1="9" x2="15" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                          </svg>
+                        ) : volume < 0.5 ? (
+                          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden>
+                            <path d="M3 9v6h4l5 5V4L7 9H3zm10.5 3c0-1.77-.77-3.29-2-4.3v8.6c1.23-1.01 2-2.53 2-4.3z"/>
+                          </svg>
+                        ) : (
+                          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden>
+                            <path d="M3 9v6h4l5 5V4L7 9H3zm10.5 3c0-1.77-.77-3.29-2-4.3v8.6c1.23-1.01 2-2.53 2-4.3zM19 12c0-3.04-1.72-5.64-4.25-6.92l-.75 1.86C16 8.2 17.5 9.96 17.5 12s-1.5 3.8-3.5 4.06l.75 1.86C17.28 17.64 19 15.04 19 12z"/>
+                          </svg>
+                        )}
                       </button>
                     </div>
                     </>
                   );
                 })()}
-                {/* Volume + Waveform row directly under Play/Pause */}
-                <div className="hud-volume-row" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div 
-                    className="hud-volume"
-                    role="group" 
-                    aria-label="Volume"
-                    ref={hudVolRef}
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}
-                  >
-                    <button
-                      className="hud-volume-btn"
-                      onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                      onClick={() => {
-                        try { sfx.play('click', 0.4); } catch {}
-                        // Only open/close dropdown; do not change volume on click
-                        setShowHudVolumePopover(v => {
-                          const next = !v;
-                          if (next && hudVolBtnRef.current) {
-                            const r = hudVolBtnRef.current.getBoundingClientRect();
-                            setHudPopoverPos({ left: r.left + r.width/2, top: r.bottom + 8 });
-                          }
-                          if (!next) { try { sfx.play('close', 0.4); } catch {} }
-                          return next;
-                        });
-                      }}
-                      aria-label="Volume"
-                      title="Volume"
-                      ref={hudVolBtnRef}
-                    >
-                      {volume === 0 ? (
-                        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
-                          {/* Speaker base */}
-                          <polygon points="4,10 8,10 13,6 13,18 8,14 4,14" fill="currentColor" />
-                          {/* Mute X overlay */}
-                          <line x1="15" y1="9" x2="21" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                          <line x1="21" y1="9" x2="15" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                        </svg>
-                      ) : volume < 0.5 ? (
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden>
-                          <path d="M3 9v6h4l5 5V4L7 9H3zm10.5 3c0-1.77-.77-3.29-2-4.3v8.6c1.23-1.01 2-2.53 2-4.3z"/>
-                        </svg>
-                      ) : (
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden>
-                          <path d="M3 9v6h4l5 5V4L7 9H3zm10.5 3c0-1.77-.77-3.29-2-4.3v8.6c1.23-1.01 2-2.53 2-4.3zM19 12c0-3.04-1.72-5.64-4.25-6.92l-.75 1.86C16 8.2 17.5 9.96 17.5 12s-1.5 3.8-3.5 4.06l.75 1.86C17.28 17.64 19 15.04 19 12z"/>
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                </div>
                 </div>
 
                 {/* Slide Lyrics, Store, and HEART coin to the left (before streaming icons) */}
@@ -2557,7 +2661,7 @@ export default function HUDPanel({
                 {typeof document !== 'undefined' && showHeartPopover && heartPopoverPos ? require('react-dom').createPortal(
                   <div
                     role="dialog"
-                    aria-label="HEARTVERSE TIERS"
+                    aria-label="PROFILE"
                     className="heart-hologram"
                     style={{
                       position: 'fixed',
@@ -2632,7 +2736,7 @@ export default function HUDPanel({
                       </svg>
                     </button>
                     <div style={{ paddingRight: 6, paddingTop: 0, marginTop: -8 }}>
-                      {/* User summary above HEARTVERSE TIERS */}
+                      {/* User summary above PROFILE */}
                       <div
                         style={{
                           position: 'relative',
@@ -2872,7 +2976,7 @@ export default function HUDPanel({
                       {showHeartverseCode && (
                         <div style={{ 
                           position: 'absolute',
-                          bottom: '-120px',
+                          bottom: '20px',
                           left: '50%',
                           transform: 'translateX(-50%)',
                           width: 'calc(100% - 32px)',
@@ -2921,34 +3025,11 @@ export default function HUDPanel({
                               </ul>
                             </div>
 
-                            {/* We Do Not Believe Section */}
-                            <div>
-                              <div style={{ 
-                                fontSize: 16, 
-                                fontWeight: 700, 
-                                color: '#FF4FD8', 
-                                marginBottom: 8,
-                                textShadow: '0 0 8px rgba(255,79,216,0.4)'
-                              }}>
-                                We Do Not Believe
-                              </div>
-                              <ul style={{ margin: 0, paddingLeft: 20, listStyle: 'disc' }}>
-                                <li style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 2, color: '#fff' }}>
-                                  We do not believe you must shrink to be accepted.
-                                </li>
-                                <li style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 2, color: '#fff' }}>
-                                  We do not believe your magic needs to be perfect.
-                                </li>
-                                <li style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 2, color: '#fff' }}>
-                                  We do not believe wonder must fade as you grow.
-                                </li>
-                              </ul>
-                            </div>
                           </div>
                         </div>
                       )}
                       
-                      {/* Tiers: interactive cards or details view */}
+                      {/* PROFILE: interactive cards or details view */}
                       {heartTierDetails ? (
                         <div style={{ marginTop: 8 }}>
                           <button
@@ -2961,7 +3042,7 @@ export default function HUDPanel({
                             }}
                           >
                             <span aria-hidden>←</span>
-                            <span>Back to tiers</span>
+                            <span>Back to profile</span>
                           </button>
                           <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
                             <div
@@ -3291,7 +3372,7 @@ export default function HUDPanel({
                         color: '#fff',
                         lineHeight: 1.4
                       }}>
-                        Earn CHXNDLER cards by purchasing merch and unlocking HEARTVERSE tiers
+                        Earn CHXNDLER cards by purchasing merch and unlocking profile tiers
                       </p>
                     </div>
                     
@@ -3839,7 +3920,7 @@ export default function HUDPanel({
                             cursor: 'pointer'
                           }}
                         >
-                          <option value="all">All Rarities</option>
+                          <option value="all">RARITY</option>
                           <option value="Common">Common</option>
                           <option value="Rare">Rare</option>
                           <option value="Legendary">Legendary</option>
@@ -3861,7 +3942,7 @@ export default function HUDPanel({
                             cursor: 'pointer'
                           }}
                         >
-                          <option value="all">All Types</option>
+                          <option value="all">ELEMENT</option>
                           <option value="HEART">HEART</option>
                           <option value="WATER">WATER</option>
                           <option value="LIGHTNING">LIGHTNING</option>
@@ -4307,8 +4388,8 @@ export default function HUDPanel({
                   >
                     {/* HEART coin indicator in top-right (click to open HEART popout) */}
                     <button
-                      aria-label="HEART Coin tiers"
-                      title="HEART Coin tiers"
+                      aria-label="PROFILE"
+                      title="PROFILE"
                       onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                       onClick={() => { 
                         try { sfx.play('click', 0.4); } catch {}; 
@@ -4484,8 +4565,8 @@ export default function HUDPanel({
                                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                                   <button
                                     type="button"
-                                    aria-label="HEART Coin tiers"
-                                    title="HEART Coin tiers"
+                                    aria-label="PROFILE"
+                                    title="PROFILE"
                                     onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
                                     onClick={() => {
                                       try { sfx.play('click', 0.35); } catch {};
@@ -4684,6 +4765,206 @@ export default function HUDPanel({
                     document.body
                   );
                 })() : null}
+
+                {typeof document !== 'undefined' && showJoinUsPopover && joinUsPopoverPos ? require('react-dom').createPortal(
+                  <div
+                    role="dialog"
+                    aria-label="Join Us"
+                    className="lyrics-popover-hud holo-scrollbar-yellow lyrics-modal-enhanced"
+                    ref={joinUsScrollRef}
+                    style={{
+                      position: 'fixed',
+                      left: (joinUsPopoverPos && joinUsPopoverPos.left) || 0,
+                      top: (joinUsPopoverPos && joinUsPopoverPos.top) || 0,
+                      transform: (joinUsPopoverPos && joinUsPopoverPos.width) ? 'none' : 'translateX(-50%)',
+                      padding: '10px 14px 14px 14px', 
+                      borderRadius: 14,
+                      background: 'rgba(3,10,20,0.9)',
+                      border: '1px solid rgba(252,84,175,0.55)',
+                      boxShadow: '0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(252,84,175,0.45)',
+                      backdropFilter: 'blur(8px)',
+                      color: '#FC54AF',
+                      zIndex: 2147483647,
+                      width: (joinUsPopoverPos && joinUsPopoverPos.width) ? joinUsPopoverPos.width : 'min(98vw, 1400px)',
+                      height: (joinUsPopoverPos && joinUsPopoverPos.height) ? joinUsPopoverPos.height : '42vh',
+                      overflow: 'auto',
+                      animation: 'lyricsModalFadeIn 0.25s ease-out, lyricsModalFloat 6s ease-in-out infinite alternate'
+                    }}
+                    onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowJoinUsPopover(false); } }}
+                  >
+                    {/* Pink close button in the top-right corner */}
+                    <button
+                      aria-label="Close join us"
+                      title="Close"
+                      onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 26px rgba(252,84,175,0.95), 0 0 42px rgba(252,84,175,0.65)'; } catch {} }}
+                      onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 18px rgba(252,84,175,0.75), 0 0 32px rgba(252,84,175,0.45)'; } catch {} }}
+                      onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowJoinUsPopover(false); }}
+                      style={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        width: 32,
+                        height: 32,
+                        borderRadius: 9999,
+                        background: 'rgba(0,0,0,0.35)',
+                        border: '2px solid rgba(252,84,175,0.85)',
+                        color: '#FC54AF',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 0 18px rgba(252,84,175,0.75), 0 0 32px rgba(252,84,175,0.45)',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+                        <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                        <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                    {/* Moving glow background */}
+                    <div className="lyrics-glow-bg"></div>
+                    {/* Section header */}
+                    <div className="lyrics-header" style={{ color: '#FC54AF', textShadow: '0 0 8px rgba(252,84,175,0.6)' }}>
+                      YOU'RE INVITED INTO THE HEARTVERSE ♥
+                    </div>
+                    <div className="lyrics-content-enhanced" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.5, fontSize: 18, color: '#FF8EC7', textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,142,199,0.6)' }}>
+                      JOIN OUR ALIEN COMMUNITY AND GET ACCESS TO NEW RELEASES, EXCLUSIVE CONTENT, AND SPECIAL EVENTS.
+                    </div>
+                    {/* Sign-in options */}
+                    <div className="relative mt-4">
+                      <div className="flex items-start gap-3">
+                        {/* Google sign-in */}
+                        <div className="flex-1">
+                          <button
+                            onClick={() => { try { sfx.play('click', 0.4); } catch {}; /* Add Google sign-in logic here */ }}
+                            className="w-full inline-flex items-center justify-center rounded-lg bg-[#FC54AF] px-4 py-3 text-sm font-semibold text-black hover:brightness-110 transition"
+                          >
+                            Sign in with Google
+                          </button>
+                        </div>
+                        
+                        {/* OR divider */}
+                        <div className="flex items-center text-white/50 pt-1">
+                          <span className="text-xs uppercase font-bold">OR</span>
+                        </div>
+                        
+                        {/* Email sign-in */}
+                        <div className="flex-1 space-y-1">
+                          <label htmlFor="join-email" className="block text-sm font-medium text-white/90">
+                            EMAIL FOR HEART SIGNAL
+                          </label>
+                          <input
+                            id="join-email"
+                            type="email"
+                            placeholder="you@example.com"
+                            className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-[#FC54AF] focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            className="w-full inline-flex items-center justify-center rounded-lg bg-[#FC54AF] px-4 py-3 text-sm font-medium text-black hover:brightness-110 transition"
+                            style={{
+                              boxShadow: '0 0 20px rgba(252,84,175,0.8), 0 0 40px rgba(252,84,175,0.6)'
+                            }}
+                          >
+                            SEND HEART SIGNAL
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>,
+                  document.body
+                ) : null}
+
+                {typeof document !== 'undefined' && showWelcomeHomePopover && welcomeHomePopoverPos ? require('react-dom').createPortal(
+                  <div
+                    role="dialog"
+                    aria-label="Welcome Home"
+                    className="lyrics-popover-hud holo-scrollbar-yellow lyrics-modal-enhanced"
+                    ref={welcomeHomeScrollRef}
+                    style={{
+                      position: 'fixed',
+                      left: (welcomeHomePopoverPos && welcomeHomePopoverPos.left) || 0,
+                      top: (welcomeHomePopoverPos && welcomeHomePopoverPos.top) || 0,
+                      transform: (welcomeHomePopoverPos && welcomeHomePopoverPos.width) ? 'none' : 'translateX(-50%)',
+                      padding: '10px 14px 14px 14px', 
+                      borderRadius: 14,
+                      background: 'rgba(3,10,20,0.9)',
+                      border: '1px solid rgba(242,239,29,0.55)',
+                      boxShadow: '0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(242,239,29,0.45)',
+                      backdropFilter: 'blur(8px)',
+                      color: '#F2EF1D',
+                      zIndex: 2147483647,
+                      width: (welcomeHomePopoverPos && welcomeHomePopoverPos.width) ? welcomeHomePopoverPos.width : 'min(98vw, 1400px)',
+                      height: (welcomeHomePopoverPos && welcomeHomePopoverPos.height) ? welcomeHomePopoverPos.height : '42vh',
+                      overflow: 'auto',
+                      animation: 'lyricsModalFadeIn 0.25s ease-out, lyricsModalFloat 6s ease-in-out infinite alternate'
+                    }}
+                    onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowWelcomeHomePopover(false); } }}
+                  >
+                    {/* Yellow close button in the top-right corner */}
+                    <button
+                      aria-label="Close welcome home"
+                      title="Close"
+                      onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 26px rgba(242,239,29,0.95), 0 0 42px rgba(242,239,29,0.65)'; } catch {} }}
+                      onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 18px rgba(242,239,29,0.75), 0 0 32px rgba(242,239,29,0.45)'; } catch {} }}
+                      onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowWelcomeHomePopover(false); }}
+                      style={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        width: 32,
+                        height: 32,
+                        borderRadius: 9999,
+                        background: 'rgba(0,0,0,0.35)',
+                        border: '2px solid rgba(242,239,29,0.85)',
+                        color: '#F2EF1D',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 0 18px rgba(242,239,29,0.75), 0 0 32px rgba(242,239,29,0.45)',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+                        <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                        <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                    {/* Moving glow background */}
+                    <div className="lyrics-glow-bg"></div>
+                    {/* Section header */}
+                    <div className="lyrics-header" style={{ color: '#F2EF1D', textShadow: '0 0 8px rgba(242,239,29,0.6)' }}>
+                      WELCOME HOME
+                    </div>
+                    <div className="lyrics-content-enhanced" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.5, fontSize: 18, color: '#FFF76A', textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,247,106,0.6)' }}>
+                      Welcome back to the HEARTVERSE.
+                    </div>
+                    {/* Login form */}
+                    <div className="relative space-y-3 mt-4">
+                      <div className="space-y-2">
+                        <label htmlFor="login-contact" className="block text-sm font-medium text-white/90">
+                          Phone Number or Email
+                        </label>
+                        <input
+                          id="login-contact"
+                          type="text"
+                          placeholder="Enter phone number or email"
+                          className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-[#F2EF1D] focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          className="w-full inline-flex items-center justify-center rounded-lg bg-[#F2EF1D]/20 border-2 border-[#F2EF1D]/60 px-4 py-3 text-sm font-medium text-white hover:bg-[#F2EF1D]/30 transition"
+                          style={{
+                            boxShadow: '0 0 20px rgba(242,239,29,0.6), 0 0 40px rgba(242,239,29,0.4), inset 0 0 10px rgba(242,239,29,0.2)'
+                          }}
+                        >
+                          Log In
+                        </button>
+                      </div>
+                    </div>
+                  </div>,
+                  document.body
+                ) : null}
 
                 {typeof document !== 'undefined' && showBrandPopover && brandPopoverPos ? require('react-dom').createPortal(
                   <div

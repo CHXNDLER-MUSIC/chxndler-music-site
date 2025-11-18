@@ -626,15 +626,18 @@ img[src$="/elements/music.png"] {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #FFF76A, #F2EF1D);
-  border: 1px solid rgba(255,255,255,.5);
+  background: linear-gradient(135deg, #FFF76A, #F2EF1D);
+  border: 1px solid rgba(255,255,255,.45);
   color: #000; /* icon color */
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
+  line-height: 0; /* ensures perfect centering for inline SVG */
+  text-decoration: none;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 16px rgba(242,239,29,.55);
+  box-shadow: 0 0 12px rgba(242,239,29,.45);
+  flex-shrink: 0;
 }
 
 /* Hide duplicate streaming buttons rendered after moving into hud-top-controls */
@@ -1441,5 +1444,44 @@ button:hover > .heart-coin-glow,
 }
 
 .join-us-neon:active {
+  transform: scale(0.98);
+}
+
+/* WELCOME HOME button with glowing rim and yellow interior */
+.welcome-home-neon {
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #000;
+  background: radial-gradient(circle at 30% 30%, #FFF76A, #F2EF1D);
+  border: 1px solid rgba(242, 239, 29, 0.55);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  filter: drop-shadow(0 0 8px rgba(242, 239, 29, 0.85)) drop-shadow(0 0 20px rgba(242, 239, 29, 0.55));
+  text-shadow: 0 0 10px rgba(242, 239, 29, 0.95), 0 0 22px rgba(242, 239, 29, 0.6);
+  
+  /* Glowing rim/frame */
+  box-shadow: 
+    0 0 0 1px rgba(242, 239, 29, 0.6),
+    0 0 0 2px rgba(242, 239, 29, 0.4),
+    0 0 12px rgba(242, 239, 29, 0.5),
+    inset 0 0 16px rgba(255, 247, 106, 0.4);
+}
+
+.welcome-home-neon:hover {
+  transform: scale(1.06);
+  box-shadow: 
+    0 0 0 1px rgba(242, 239, 29, 0.8),
+    0 0 0 2px rgba(242, 239, 29, 0.6),
+    0 0 20px rgba(242, 239, 29, 0.7),
+    0 0 35px rgba(242, 239, 29, 0.4),
+    inset 0 0 20px rgba(255, 247, 106, 0.6);
+}
+
+.welcome-home-neon:active {
   transform: scale(0.98);
 }

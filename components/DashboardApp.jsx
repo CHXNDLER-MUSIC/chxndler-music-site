@@ -381,13 +381,7 @@ export default function DashboardApp({ initialSlug } = {}) {
     }
     
 
-    // Focus the selected planet immediately and bring camera closer
-    
-    try {
-      playerStore.getState().setMain(slug, true);
-      playerStore.getState().setPlanetDisplayMode('single');
-      playerStore.getState().setPlanetsVisible(true);
-    } catch {}
+    // Planet focusing will be handled after warp sequence completes
 
     // STEP 2: Stop all music immediately when song is selected
     
@@ -446,23 +440,22 @@ export default function DashboardApp({ initialSlug } = {}) {
     const t = tracks[idx];
     setCurTrack(t);
     setLinks({ spotify: t.spotify || LINKS.spotify, apple: t.apple || LINKS.apple });
-
-    // Switch MediaPlayer channel; MediaPlayer handles audio swap and loading
-    setChannelIdx(idx);
     
     // Set flags for selection sequencing: keep planets visible during warp on homepage
     setPendingTrackPlay(true);
     setHidePlanetsForSelection(false);
     
-    // Let MediaPlayer handle audio element configuration through its index change
-    // Don't manually set src here to avoid race conditions
-    
-    // Trigger warp sequence with new song's sky
+    // Trigger warp sequence with new song's sky FIRST
     setAllowWarp(true);
     // Switch base sky immediately so it loads while lightspeed overlay plays
     setSky(skyFor(t.slug));
     setNextSky(null);
     setFlySignal((n) => n + 1);
+    
+    // Delay MediaPlayer channel change until after warp completes (1.8s + buffer)
+    setTimeout(() => {
+      setChannelIdx(idx);
+    }, 2000); // Wait for warp to complete before switching audio
   }
 
   // Trigger a fly transition only when the channel index actually changes (not on initial mount)
@@ -1755,11 +1748,11 @@ export default function DashboardApp({ initialSlug } = {}) {
                     const nextSlug = t?.slug || '';
                     if (ytSkyStartedSlug && nextSlug !== ytSkyStartedSlug) setYtSkyStartedSlug(null);
                   } catch {}
-                  // Update planet system focus only when not on homepage flow
+                  // Don't update planet system focus during warp to prevent triggering playback
                   try {
-                    if (userSelected || pendingTrackPlay || !homeMode) {
+                    if (!warpActive && (userSelected || pendingTrackPlay || !homeMode)) {
                       playerStore.getState().setMain(t.slug || '');
-                    } else {
+                    } else if (!warpActive) {
                       playerStore.setState({ mainId: null });
                     }
                   } catch {}

@@ -79,7 +79,16 @@ export default function LoginModal({ open, onClose }: Props) {
         className="absolute inset-0 bg-black/85 backdrop-blur-md"
         onClick={onClose}
       />
-      <div className="absolute top-2 left-1/2 transform -translate-x-1/2 mx-4 max-w-sm w-full">
+      <div 
+        className="mx-4 max-w-sm w-full"
+        style={{
+          position: 'absolute',
+          top: '5px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 10000
+        }}
+      >
         <div className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-[#FC54AF]/60 bg-white/5 shadow-[0_0_26px_rgba(56,182,255,0.35)]">
           <div
             className="absolute inset-0 rounded-2xl pointer-events-none"
