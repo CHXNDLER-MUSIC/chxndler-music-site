@@ -5647,26 +5647,36 @@ export default function HUDPanel({
                     role="dialog"
                     aria-label="Soul Sky"
                     ref={soulSkyScrollRef}
+                    className="lyrics-popover-hud holo-scrollbar-yellow lyrics-modal-enhanced"
                     style={{
                       position: 'fixed',
-                      left: 0,
-                      top: 0,
-                      width: '100vw',
-                      height: '100vh',
-                      background: 'linear-gradient(180deg, #000000 0%, #0a0a0f 50%, #000000 100%)',
+                      left: (soulSkyPopoverPos && soulSkyPopoverPos.left) || 0,
+                      top: (soulSkyPopoverPos && soulSkyPopoverPos.top) || 0,
+                      transform: (soulSkyPopoverPos && soulSkyPopoverPos.width) ? 'none' : 'translateX(-50%)',
+                      // Tighten vertical padding so the bottom sits higher
+                      padding: '10px 14px 14px 14px',
+                      borderRadius: 14,
+                      background: 'rgba(0, 0, 20, 0.95)',
+                      backdropFilter: 'blur(8px)',
+                      border: '2px solid rgba(255,255,255,0.4)',
+                      boxShadow: '0 0 30px rgba(255,255,255,0.3), 0 0 50px rgba(255,255,255,0.1)',
+                      color: '#FFFFFF',
                       zIndex: 2147483647,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#FFFFFF'
+                      width: (soulSkyPopoverPos && soulSkyPopoverPos.width) ? soulSkyPopoverPos.width : 'min(98vw, 1400px)',
+                      // Fix height to the blue display area; slightly shorter fallback
+                      height: (soulSkyPopoverPos && soulSkyPopoverPos.height) ? soulSkyPopoverPos.height : '42vh',
+                      overflow: 'auto',
+                      // Fade-in and float animations
+                      animation: 'lyricsModalFadeIn 0.25s ease-out, lyricsModalFloat 6s ease-in-out infinite alternate'
                     }}
                     onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowSoulSkyPopover(false); } }}
                   >
-                    {/* Close button */}
+                    {/* Obvious close button in the top-right corner */}
                     <button
                       aria-label="Close Soul Sky"
                       title="Close"
+                      onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 26px rgba(255,255,255,0.95), 0 0 42px rgba(255,255,255,0.65)'; } catch {} }}
+                      onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 0 16px rgba(255,255,255,0.85), 0 0 32px rgba(255,255,255,0.35)'; } catch {} }}
                       onClick={() => { 
                         try { sfx.play('close', 0.4); } catch {}; 
                         setShowSoulSkyPopover(false);
@@ -5675,86 +5685,37 @@ export default function HUDPanel({
                       }}
                       style={{
                         position: 'absolute',
-                        top: '2rem',
-                        right: '2rem',
-                        width: 40,
-                        height: 40,
-                        borderRadius: '50%',
-                        background: 'rgba(255,255,255,0.1)',
-                        border: '2px solid rgba(255,255,255,0.3)',
+                        top: 10, right: 10,
+                        width: 30, height: 30, borderRadius: 15,
+                        background: 'rgba(255,255,255,0.15)',
+                        border: '2px solid rgba(255,255,255,0.6)',
                         color: '#FFFFFF',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         cursor: 'pointer',
-                        backdropFilter: 'blur(8px)'
-                      }}
-                      onMouseEnter={(e) => { 
-                        try { sfx.play('hover', 0.4); } catch {}; 
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
-                      }}
-                      onMouseLeave={(e) => { 
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                        fontSize: 14,
+                        fontWeight: 600,
+                        transition: 'all 0.2s ease',
+                        zIndex: 10,
+                        boxShadow: '0 0 16px rgba(255,255,255,0.85), 0 0 32px rgba(255,255,255,0.35)',
+                        backdropFilter: 'blur(4px)'
                       }}
                     >
-                      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
-                        <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                        <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                      </svg>
+                      ×
                     </button>
 
-                    {/* Title - appears after clicking stars */}
-                    <div 
-                      style={{
-                        position: 'absolute',
-                        top: '2rem',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        fontSize: '2rem',
-                        fontWeight: 'bold',
-                        letterSpacing: '0.2em',
-                        textShadow: '0 0 20px rgba(255,255,255,0.5)',
-                        opacity: showStarAnimation ? 1 : 0,
-                        transition: 'opacity 1s ease-in-out'
-                      }}
-                    >
-                      SOUL SKY
+                    {/* Moving glow background */}
+                    <div className="lyrics-glow-bg"></div>
+                    {/* Section header */}
+                    <div className="lyrics-header" style={{ color: '#FFFFFF', textShadow: '0 0 8px rgba(255,255,255,0.6)' }}>
+                      SOUL SKY — Question of the Day
                     </div>
 
-                    {/* Question of the day section */}
-                    {!showStarAnimation && (
-                      <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '2rem',
-                        maxWidth: '600px',
-                        width: '90%',
-                        padding: '2rem',
-                        background: 'rgba(255,255,255,0.05)',
-                        borderRadius: '20px',
-                        backdropFilter: 'blur(10px)',
-                        border: '1px solid rgba(255,255,255,0.1)'
-                      }}>
-                        <h2 style={{
-                          fontSize: '1.8rem',
-                          marginBottom: '1rem',
-                          textAlign: 'center',
-                          textShadow: '0 0 10px rgba(255,255,255,0.3)'
-                        }}>
-                          Question of the Day
-                        </h2>
-                        
-                        <p style={{
-                          fontSize: '1.1rem',
-                          textAlign: 'center',
-                          lineHeight: '1.6',
-                          marginBottom: '1.5rem',
-                          opacity: 0.9
-                        }}>
-                          What constellation would you create if you could arrange the stars in the sky, and what story would it tell?
-                        </p>
-
+                    <div className="lyrics-content-enhanced" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.5, fontSize: 16, color: '#E8E8FF', textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(232,232,255,0.6)' }}>
+                      What constellation would you create if you could arrange the stars in the sky, and what story would it tell?
+                      
+                      <div style={{ marginTop: '20px', marginBottom: '20px' }}>
                         <textarea
                           value={questionResponse}
                           onChange={(e) => setQuestionResponse(e.target.value)}
@@ -5762,114 +5723,74 @@ export default function HUDPanel({
                           style={{
                             width: '100%',
                             minHeight: '120px',
-                            padding: '1rem',
-                            background: 'rgba(0,0,0,0.3)',
-                            border: '1px solid rgba(255,255,255,0.2)',
-                            borderRadius: '10px',
-                            color: '#FFFFFF',
-                            fontSize: '1rem',
-                            resize: 'vertical',
-                            fontFamily: 'inherit'
-                          }}
-                        />
-
-                        <button
-                          onClick={() => {
-                            if (questionResponse.trim()) {
-                              try { sfx.play('click', 0.6); } catch {}
-                              setShowStarAnimation(true);
-                            }
-                          }}
-                          style={{
-                            padding: '0.8rem 2rem',
-                            background: questionResponse.trim() ? 
-                              'linear-gradient(45deg, rgba(255,255,255,0.2), rgba(255,255,255,0.3))' : 
-                              'rgba(255,255,255,0.1)',
+                            padding: '12px',
+                            background: 'rgba(0,0,20,0.6)',
                             border: '1px solid rgba(255,255,255,0.3)',
-                            borderRadius: '25px',
+                            borderRadius: '8px',
                             color: '#FFFFFF',
-                            fontSize: '1rem',
-                            fontWeight: 'bold',
-                            cursor: questionResponse.trim() ? 'pointer' : 'not-allowed',
-                            transition: 'all 0.3s ease',
-                            backdropFilter: 'blur(8px)',
-                            opacity: questionResponse.trim() ? 1 : 0.6
-                          }}
-                          onMouseEnter={(e) => {
-                            if (questionResponse.trim()) {
-                              try { sfx.play('hover', 0.3); } catch {}
-                              e.currentTarget.style.transform = 'scale(1.05)';
-                              e.currentTarget.style.boxShadow = '0 0 20px rgba(255,255,255,0.3)';
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'scale(1)';
-                            e.currentTarget.style.boxShadow = 'none';
-                          }}
-                        >
-                          SEND
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Star formation animation */}
-                    {showStarAnimation && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        width: '100px',
-                        height: '100px'
-                      }}>
-                        <div 
-                          style={{
-                            width: '20px',
-                            height: '20px',
-                            background: 'radial-gradient(circle, #FFFFFF 0%, transparent 70%)',
-                            borderRadius: '50%',
-                            position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            animation: 'starBirth 3s ease-out forwards',
-                            boxShadow: '0 0 20px #FFFFFF, 0 0 40px #FFFFFF, 0 0 60px #FFFFFF'
+                            fontSize: '14px',
+                            fontFamily: 'inherit',
+                            resize: 'vertical',
+                            outline: 'none',
+                            boxShadow: '0 0 10px rgba(255,255,255,0.2)',
+                            '::placeholder': { color: 'rgba(255,255,255,0.5)' }
                           }}
                         />
                       </div>
-                    )}
 
-                    <style jsx>{`
-                      @keyframes starBirth {
-                        0% {
-                          width: 2px;
-                          height: 2px;
-                          opacity: 0;
-                          transform: translate(-50%, -50%) scale(0);
-                        }
-                        20% {
-                          opacity: 1;
-                          transform: translate(-50%, -50%) scale(1);
-                        }
-                        40% {
-                          width: 40px;
-                          height: 40px;
-                          box-shadow: 0 0 30px #FFFFFF, 0 0 60px #FFFFFF, 0 0 90px #FFFFFF;
-                        }
-                        60% {
-                          width: 20px;
-                          height: 20px;
-                          box-shadow: 0 0 20px #FFFFFF, 0 0 40px #FFFFFF, 0 0 60px #FFFFFF;
-                        }
-                        100% {
-                          width: 10px;
-                          height: 10px;
-                          opacity: 0.8;
-                          transform: translate(-50%, -200px) scale(0.5);
-                          box-shadow: 0 0 10px #FFFFFF, 0 0 20px #FFFFFF, 0 0 30px #FFFFFF;
-                        }
-                      }
-                    `}</style>
+                      <button
+                        onClick={() => {
+                          if (questionResponse.trim()) {
+                            try { sfx.play('click', 0.5); } catch {}
+                            setShowStarAnimation(true);
+                            // Star animation will appear for a few seconds
+                            setTimeout(() => {
+                              setShowStarAnimation(false);
+                              setQuestionResponse('');
+                            }, 4000);
+                          }
+                        }}
+                        disabled={!questionResponse.trim()}
+                        style={{
+                          padding: '10px 20px',
+                          background: questionResponse.trim() 
+                            ? 'linear-gradient(45deg, rgba(255,255,255,0.2), rgba(255,255,255,0.3))' 
+                            : 'rgba(255,255,255,0.08)',
+                          border: '1px solid rgba(255,255,255,0.4)',
+                          borderRadius: '6px',
+                          color: questionResponse.trim() ? '#FFFFFF' : 'rgba(255,255,255,0.5)',
+                          cursor: questionResponse.trim() ? 'pointer' : 'not-allowed',
+                          transition: 'all 0.3s ease',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          textShadow: questionResponse.trim() ? '0 0 4px rgba(255,255,255,0.8)' : 'none',
+                          boxShadow: questionResponse.trim() ? '0 0 12px rgba(255,255,255,0.3)' : 'none'
+                        }}
+                      >
+                        Cast into the Stars
+                      </button>
+
+                      {/* Star animation overlay */}
+                      {showStarAnimation && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          fontSize: '18px',
+                          fontWeight: 'bold',
+                          color: '#FFFFFF',
+                          textShadow: '0 0 20px rgba(255,255,255,0.8)',
+                          animation: 'starBirth 3s ease-out forwards',
+                          zIndex: 5,
+                          textAlign: 'center'
+                        }}>
+                          ✨ Your constellation shines above ✨
+                        </div>
+                      )}
+                    </div>
+
+                    {null}
                   </div>,
                   document.body
                 ) : null}
