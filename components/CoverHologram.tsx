@@ -700,53 +700,6 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
             </div>
             {hasRealCard && (
               <>
-                {/* Elements button in top-left within the blue border area */}
-                <div className="absolute top-0.5 left-0.5 z-10">
-                  <button
-                    ref={elementBtnRef}
-                    type="button"
-                    className="btn-element"
-                    title="Elements"
-                    aria-label="Elements"
-                    onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
-                    onClick={async () => {
-                      try { sfx.play('click', 0.6); } catch {}
-                      if (showElementsPopover) { setShowElementsPopover(false); return; }
-                      // Position popover under this button
-                      try {
-                        const r = elementBtnRef.current?.getBoundingClientRect();
-                        if (r) setElementsPopoverPos({ left: Math.round(r.left + r.width/2), top: r.bottom + 8 });
-                      } catch {}
-                      // Load content if not already loaded
-                      setElementsLoading(true);
-                      setElementsError(null);
-                      setElementsContent('');
-                      setSelectedElement(null); // Show only intro until a quadrant is clicked
-                      try {
-                        const res = await fetch(`/api/elements?t=${Date.now()}`);
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data?.error || `Failed to load ELEMENTS.md`);
-                        setElementsContent(String(data?.content || ''));
-                      } catch (e: any) {
-                        setElementsError(e?.message || 'Failed to load ELEMENTS.md');
-                      } finally {
-                        setElementsLoading(false);
-                        setShowElementsPopover(true);
-                      }
-                    }}
-                  >
-                    <Image
-                      src="/elements/elementals.png?v=20241027"
-                      alt=""
-                      fill
-                      sizes="36px"
-                      className="btn-element-icon"
-                      aria-hidden
-                    />
-                    <span className="sr-only">Elements</span>
-                  </button>
-                </div>
-
                 {/* Centered Collect Card button */}
                 <div className="absolute top-[5px] left-1/2 transform -translate-x-1/2 z-10">
                   <div className="buttons-row" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -838,6 +791,53 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                             />
                           </div>
                         </div>
+                      </div>
+                      
+                      {/* Elements button */}
+                      <div className="flex justify-center">
+                        <button
+                          ref={elementBtnRef}
+                          type="button"
+                          className="btn-element"
+                          title="Elements"
+                          aria-label="Elements"
+                          onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
+                          onClick={async () => {
+                            try { sfx.play('click', 0.6); } catch {}
+                            if (showElementsPopover) { setShowElementsPopover(false); return; }
+                            // Position popover under this button
+                            try {
+                              const r = elementBtnRef.current?.getBoundingClientRect();
+                              if (r) setElementsPopoverPos({ left: Math.round(r.left + r.width/2), top: r.bottom + 8 });
+                            } catch {}
+                            // Load content if not already loaded
+                            setElementsLoading(true);
+                            setElementsError(null);
+                            setElementsContent('');
+                            setSelectedElement(null); // Show only intro until a quadrant is clicked
+                            try {
+                              const res = await fetch(`/api/elements?t=${Date.now()}`);
+                              const data = await res.json();
+                              if (!res.ok) throw new Error(data?.error || `Failed to load ELEMENTS.md`);
+                              setElementsContent(String(data?.content || ''));
+                            } catch (e: any) {
+                              setElementsError(e?.message || 'Failed to load ELEMENTS.md');
+                            } finally {
+                              setElementsLoading(false);
+                              setShowElementsPopover(true);
+                            }
+                          }}
+                        >
+                          <Image
+                            src="/elements/elementals.png?v=20241027"
+                            alt=""
+                            fill
+                            sizes="36px"
+                            className="btn-element-icon"
+                            aria-hidden
+                          />
+                          <span className="sr-only">Elements</span>
+                        </button>
                       </div>
                     </div>
 

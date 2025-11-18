@@ -1156,64 +1156,205 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                     <feMergeNode in="SourceGraphic"/>
                   </feMerge>
                 </filter>
+                <filter id="cosmicGlow">
+                  <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                  <feMerge> 
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
               </defs>
               <rect width="100%" height="100%" fill="url(#grid)" />
               
-              {/* Generate realistic waveform data */}
+              {/* Cosmic waveform with element-based colors */}
               {(() => {
-                const waveformData = Array.from({ length: 200 }, (_, i) => {
-                  // Use song title as seed for consistent waveform per song
+                // Element-based color system for the Heartverse
+                const elementStyles = {
+                  water: {
+                    primary: "#38B6FF",
+                    glow: "rgba(56,182,255,0.6)",
+                    breathingStrength: 0.8,
+                    wobble: true
+                  },
+                  heart: {
+                    primary: "#FC54AF", 
+                    glow: "rgba(252,84,175,0.8)",
+                    breathingStrength: 1.2,
+                    wobble: false
+                  },
+                  lightning: {
+                    primary: "#F2EF1D",
+                    glow: "rgba(242,239,29,0.7)",
+                    breathingStrength: 0.9,
+                    wobble: false
+                  },
+                  darkness: {
+                    primary: "#8B5A8B",
+                    glow: "rgba(139,90,139,0.5)",
+                    breathingStrength: 0.6,
+                    wobble: false
+                  },
+                  fire: {
+                    primary: "#FC54AF",
+                    glow: "rgba(252,84,175,0.6)", 
+                    breathingStrength: 1.0,
+                    wobble: false
+                  },
+                  earth: {
+                    primary: "#F2EF1D",
+                    glow: "rgba(242,239,29,0.6)",
+                    breathingStrength: 0.7,
+                    wobble: false
+                  },
+                  air: {
+                    primary: "#8BF9FF",
+                    glow: "rgba(139,249,255,0.6)",
+                    breathingStrength: 0.8,
+                    wobble: true
+                  }
+                };
+
+                // Get current song's element style
+                const currentStyle = elementStyles[currentElement] || elementStyles.heart;
+
+                // Generate smooth waveform data
+                const numPoints = 120;
+                const waveformData = Array.from({ length: numPoints }, (_, i) => {
                   const seed = cur.title.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+                  const x = i / (numPoints - 1);
                   
-                  // Create realistic audio frequency components
-                  const bassLine = Math.sin((i + seed) * 0.01) * 0.4;           // Bass frequencies
-                  const melody = Math.sin((i + seed) * 0.05 + 2) * 0.3;         // Mid frequencies  
-                  const percussion = Math.sin((i + seed) * 0.15 + 4) * 0.2;     // High frequencies
-                  const vocals = Math.sin((i + seed) * 0.08 + 1) * 0.25;        // Vocal range
-                  const harmonics = Math.sin((i + seed) * 0.3 + 5) * 0.1;       // Harmonics
+                  // Create flowing cosmic wave components with easing
+                  const wave1 = Math.sin((x * Math.PI * 4 + seed * 0.01) + performance.now() * 0.001) * 0.15;
+                  const wave2 = Math.sin((x * Math.PI * 8 + seed * 0.02) + performance.now() * 0.0008) * 0.08;
+                  const wave3 = Math.sin((x * Math.PI * 12 + seed * 0.03) + performance.now() * 0.0006) * 0.05;
                   
-                  // Create natural audio envelope (songs typically start/end quieter)
-                  const fadeIn = Math.min(1, i / 20);
-                  const fadeOut = Math.min(1, (200 - i) / 30);
-                  const envelope = Math.min(fadeIn, fadeOut);
+                  // Add element-specific wobble for water elements
+                  const wobble = currentStyle.wobble ? Math.sin(x * Math.PI * 16 + performance.now() * 0.002) * 0.03 : 0;
                   
-                  // Add some natural variation like dynamics in music
-                  const dynamics = Math.sin((i / 200) * Math.PI * 3) * 0.3 + 0.7; // Musical dynamics
+                  // Smooth envelope for natural flow
+                  const envelope = Math.sin(x * Math.PI) * 0.8 + 0.2;
                   
-                  // Combine all elements for realistic audio appearance
-                  const amplitude = Math.abs(bassLine + melody + percussion + vocals + harmonics) * envelope * dynamics;
-                  
-                  return Math.max(0.02, Math.min(0.95, amplitude));
+                  const amplitude = (wave1 + wave2 + wave3 + wobble) * envelope;
+                  return { x: x * 800, y: 50 + amplitude * 30 };
                 });
-                
-                // Use live audio time for perfect sync (falls back to state); respect seeking override
+
+                // Use live audio time for progress
                 const d = liveDuration;
                 const aEl = audioRef.current;
                 const liveT = (aEl && isFinite(aEl.currentTime)) ? aEl.currentTime : currentTime;
                 const baseT = (seekPositionRef.current !== null) ? seekPositionRef.current : liveT;
                 const isPaused = !!(aEl ? aEl.paused : !playing);
-                // Apply small lead only when playing and not seeking
                 const displayT = (!seekingRef.current && !isPaused) ? Math.min(d || Infinity, baseT + CURSOR_LEAD_SEC) : baseT;
                 const progress = (d > 0 && isFinite(displayT)) ? Math.max(0, Math.min(1, displayT / d)) : 0;
-                
+
+                // Create smooth path from points
+                const createSmoothPath = (points, endIndex = points.length) => {
+                  if (points.length < 2) return '';
+                  
+                  let path = `M ${points[0].x} ${points[0].y}`;
+                  
+                  for (let i = 1; i < Math.min(endIndex, points.length); i++) {
+                    const prev = points[i - 1];
+                    const curr = points[i];
+                    const next = points[Math.min(i + 1, points.length - 1)];
+                    
+                    // Calculate smooth control points
+                    const cpx1 = prev.x + (curr.x - prev.x) * 0.5;
+                    const cpy1 = prev.y + (curr.y - prev.y) * 0.3;
+                    const cpx2 = curr.x - (next.x - curr.x) * 0.3; 
+                    const cpy2 = curr.y - (next.y - curr.y) * 0.3;
+                    
+                    path += ` C ${cpx1} ${cpy1}, ${cpx2} ${cpy2}, ${curr.x} ${curr.y}`;
+                  }
+                  
+                  return path;
+                };
+
+                // Idle breathing animation for paused state
+                const breathingOffset = isPaused ? 
+                  Math.sin(performance.now() * 0.002) * currentStyle.breathingStrength : 0;
+
+                const playedPoints = Math.floor(progress * waveformData.length);
+                const playedPath = createSmoothPath(waveformData, playedPoints);
+                const fullPath = createSmoothPath(waveformData);
+
                 return (
                   <>
-                    {/* Background track as a single faint line */}
-                    <line
-                      x1="0"
-                      y1="50"
-                      x2="800"
-                      y2="50"
-                      stroke="white"
-                      strokeWidth="1.2"
-                      opacity="0.3"
+                    {/* Subtle background grid removed for cleaner cosmic look */}
+                    
+                    {/* Background waveform - subtle and dim */}
+                    <path
+                      d={fullPath}
+                      stroke={currentStyle.primary}
+                      strokeWidth="1"
+                      opacity="0.2"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                     />
-                    {/* Played portion: multi-layer white glow for brightness */}
-                    <line x1="0" y1="50" x2={`${progress * 800}`} y2="50" stroke="white" strokeWidth="12" opacity="0.2" strokeLinecap="round" filter="url(#glow)" />
-                    <line x1="0" y1="50" x2={`${progress * 800}`} y2="50" stroke="white" strokeWidth="6" opacity="0.5" strokeLinecap="round" />
-                    <line x1="0" y1="50" x2={`${progress * 800}`} y2="50" stroke="white" strokeWidth="2" opacity="1" strokeLinecap="round" />
-                    {/* Progress circle at current position */}
-                    <circle cx={`${progress * 800}`} cy="50" r="4" fill="white" opacity="1" filter="url(#glow)" />
+                    
+                    {/* Played portion - glowing cosmic wave */}
+                    {playedPath && (
+                      <>
+                        {/* Outer glow */}
+                        <path
+                          d={playedPath}
+                          stroke={currentStyle.primary}
+                          strokeWidth="8"
+                          opacity="0.3"
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          filter="url(#cosmicGlow)"
+                          style={{
+                            transform: `translateY(${breathingOffset}px)`,
+                            filter: `drop-shadow(0 0 10px ${currentStyle.glow}) drop-shadow(0 0 20px ${currentStyle.glow})`
+                          }}
+                        />
+                        
+                        {/* Main wave line */}
+                        <path
+                          d={playedPath}
+                          stroke={currentStyle.primary}
+                          strokeWidth="2.5"
+                          opacity="0.9"
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          style={{
+                            transform: `translateY(${breathingOffset}px)`,
+                            filter: `drop-shadow(0 0 6px ${currentStyle.glow})`
+                          }}
+                        />
+                        
+                        {/* Core bright line */}
+                        <path
+                          d={playedPath}
+                          stroke="white"
+                          strokeWidth="1"
+                          opacity="0.8"
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          style={{
+                            transform: `translateY(${breathingOffset}px)`
+                          }}
+                        />
+                      </>
+                    )}
+                    
+                    {/* Progress indicator - subtle cosmic pulse */}
+                    <circle 
+                      cx={progress * 800} 
+                      cy={waveformData[playedPoints]?.y || 50}
+                      r="3" 
+                      fill={currentStyle.primary}
+                      opacity="0.8"
+                      style={{
+                        transform: `translateY(${breathingOffset}px)`,
+                        filter: `drop-shadow(0 0 8px ${currentStyle.glow}) drop-shadow(0 0 16px ${currentStyle.glow})`
+                      }}
+                    />
                   </>
                 );
               })()}
@@ -1484,7 +1625,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                   </svg>
                 </div>
               )}
-              <a href="#" className="join-us-neon">JOIN US</a>
+              <img src="/elements/antennas.png" alt="Antennas" className="antennas-image" />
             </div>
 
             <div className="volume-button-wrap">
@@ -1527,6 +1668,27 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 </span>
               </button>
             </div>
+            
+            {/* Star button */}
+            <button
+              className="star-btn-waveform"
+              title="Star"
+              aria-label="Star"
+              onClick={() => {
+                // Star button functionality can be added here
+                uiClick();
+              }}
+              onMouseEnter={playHover}
+            >
+              <div className="btn-glow"></div>
+              <img 
+                src="/elements/star.png" 
+                alt="Star" 
+                width="16" 
+                height="16"
+                style={{ filter: 'invert(1)' }}
+              />
+            </button>
           </div>
         </div>
       </div>
@@ -1891,7 +2053,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           order: -1 !important; /* Move waveform above controls */
         }
         
-        /* Waveform visualization - slightly wider to accommodate both buttons */
+        /* Waveform visualization - cosmic dark background for glow visibility */
         .waveform{
           position: relative; /* make positioned context for absolute children */
           width: 28vw;
@@ -1903,13 +2065,12 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           display: flex;
           align-items: center;
           justify-content: center;
-          background: rgba(0,0,0,0.3);
-          border-radius: 16px;
-          border: 1px solid rgba(255,255,255,0.25);
-          backdrop-filter: blur(8px);
+          background: rgba(0,0,5,0.85); /* Very dark background for cosmic feel */
+          border-radius: 20px;
+          border: 1px solid rgba(255,255,255,0.15);
+          backdrop-filter: blur(12px);
           overflow: visible;
-          /* Avoid bottom clipping of the blue waveform stroke by not reducing the content height */
-          /* If interior spacing is needed later, prefer symmetric padding and scale the svg accordingly */
+          box-shadow: 0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
         }
         
         /* Spotify button - positioned next to play/pause in controls */
@@ -2065,6 +2226,28 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         }
         .lyrics-link-waveform:hover { box-shadow: 0 6px 22px rgba(242,239,29,0.9); }
         .lyrics-link-waveform:active { }
+        /* Star button next to volume control */
+        .star-btn-waveform {
+          position: relative;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          border: 1px solid rgba(255, 255, 255, 0.5);
+          background: radial-gradient(circle at 30% 30%, #FFD700, #FFA500);
+          color: white;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.25s ease;
+          box-shadow: 0 4px 16px rgba(255,215,0,0.55);
+          flex: 0 0 auto;
+        }
+        .star-btn-waveform:hover { 
+          box-shadow: 0 6px 22px rgba(255,215,0,0.9);
+          transform: scale(1.1);
+        }
+        .star-btn-waveform:active { }
 
         .lyrics-link-unavailable-waveform {
           width: 32px;
@@ -2134,36 +2317,24 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           justify-content: flex-start;
           gap: 8px;
         }
-        .join-us-neon {
+        .antennas-image {
           width: 32px;
           height: 32px;
-          border-radius: 50%;
-          border: 1px solid rgba(56,182,255,0.5);
-          background: radial-gradient(circle at 30% 30%, rgba(56,182,255,0.9), rgba(56,182,255,0.6));
-          color: #000;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          text-decoration: none;
-          font-size: 8px;
-          letter-spacing: 0.08em;
-          font-weight: 800;
-          text-transform: uppercase;
+          object-fit: contain;
           transition: all 0.25s ease;
-          box-shadow: 0 4px 16px rgba(56,182,255,0.55);
           flex: 0 0 auto;
-          text-shadow: none;
-          filter: none;
-          opacity: 1;
+          filter: brightness(0.9);
+          opacity: 0.8;
           margin: 0;
           padding: 0;
           vertical-align: middle;
           align-self: center;
         }
-        .join-us-neon:hover { 
-          box-shadow: 0 6px 22px rgba(56,182,255,0.9); 
+        .antennas-image:hover { 
+          filter: brightness(1.1);
+          opacity: 1;
+          transform: scale(1.05);
         }
-        .join-us-neon:active { }
         
         /* JOIN US inside waveform container (right of waveform) */
         .join-us-waveform {
