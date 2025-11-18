@@ -127,7 +127,7 @@ export default function LoginModal({ open, onClose }: Props) {
           </button>
 
           <h2 className="relative text-xl font-bold tracking-wider text-white drop-shadow mb-1">
-            WELCOME BACK TO THE HEARTVERSE ♥
+            WELCOME BACK TO THE HEARTVERSE &lt;3
           </h2>
           <p className="relative text-sm text-white/80 mb-3">Choose your connection method.</p>
 

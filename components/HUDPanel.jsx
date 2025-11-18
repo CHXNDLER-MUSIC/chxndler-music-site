@@ -63,7 +63,7 @@ function ElementIcon({ name, size = 18, glow = true }) {
     const k = String(key).toLowerCase();
     if (k.includes("chxndler")) return "#19E3FF"; // brand cyan
     if (k.includes("water")) return "#38B6FF";      // cyan
-    if (k.includes("heart")) return "#FC54AF";      // bright pink
+    if (k.includes("heart")) return "#2196F3";      // bright pink
     if (k.includes("lightning") || k.includes("electric")) return "#FFC700"; // deeper yellow
     if (k.includes("earth")) return "#F2EF1D";     // reuse neon yellow
     if (k.includes("air")) return "#8BF9FF";       // light cyan
@@ -1304,6 +1304,40 @@ export default function HUDPanel({
     };
   }, [showHeartCoinPopover]);
 
+  // Listen for openStoreCards event from CoverHologram
+  useEffect(() => {
+    const handleOpenStoreCards = (e) => {
+      try {
+        // If store popover is already open, just switch to CARDS tab
+        if (showStorePopover) {
+          setStoreActiveTab('CARDS');
+        } else {
+          // Otherwise open store popover and set CARDS tab
+          setStoreActiveTab('CARDS');
+          openStorePopover();
+        }
+        
+        // Track the event
+        try {
+          const { songSlug, songTitle, cardSrc } = e.detail || {};
+          track('store_cards_opened_from_collect', { 
+            song_slug: songSlug || 'unknown',
+            payload: { 
+              song_title: songTitle || 'Unknown',
+              card_image: cardSrc,
+              source: 'collect_button'
+            } 
+          });
+        } catch {}
+      } catch (err) {
+        console.warn('Error handling openStoreCards event:', err);
+      }
+    };
+
+    window.addEventListener('openStoreCards', handleOpenStoreCards);
+    return () => window.removeEventListener('openStoreCards', handleOpenStoreCards);
+  }, [showStorePopover]);
+
   // Reset PROFILE popover UI state when closing
   useEffect(() => {
     if (!showHeartPopover) {
@@ -2417,7 +2451,7 @@ export default function HUDPanel({
                         }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                       >
-                        WELCOME HOME
+                        WELCOME BACK TO THE HEARTVERSE {'<3'}
                       </button>
                       {/* STARS button positioned to the right of WELCOME HOME */}
                       <button
@@ -2441,7 +2475,15 @@ export default function HUDPanel({
                         }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                       >
-                        STARS
+                        <img 
+                          src="/elements/star.png" 
+                          alt="Stars" 
+                          style={{ 
+                            width: '20px', 
+                            height: '20px', 
+                            filter: 'invert(1) brightness(0)' 
+                          }} 
+                        />
                       </button>
                       {/* Store (gem) button placed to the right of Lyrics */}
                       <button
@@ -2817,15 +2859,14 @@ export default function HUDPanel({
                         e.stopPropagation();
                         try { sfx.play('click', 0.4); } catch {};
                         try { trackAnalytics('heart_coin_details_clicked', { location: 'profile_header' }); } catch {}
-                        if (showHeartCoinPopover) { setShowHeartCoinPopover(false); return; }
-                        openHeartCoinPopover();
+                        setShowHeartCoinsContent(!showHeartCoinsContent);
                       }}
                       onMouseEnter={(e) => { 
                         try { sfx.play('hover', 0.3); } catch {}; 
-                        try { e.currentTarget.style.borderColor = 'rgba(252,84,175,0.8)'; e.currentTarget.style.transform = 'scale(1.05)'; } catch {} 
+                        try { e.currentTarget.style.borderColor = 'rgba(33,150,243,0.8)'; e.currentTarget.style.transform = 'scale(1.05)'; } catch {} 
                       }}
                       onMouseLeave={(e) => { 
-                        try { e.currentTarget.style.borderColor = 'rgba(252,84,175,0.4)'; e.currentTarget.style.transform = 'scale(1.0)'; } catch {} 
+                        try { e.currentTarget.style.borderColor = 'rgba(33,150,243,0.4)'; e.currentTarget.style.transform = 'scale(1.0)'; } catch {} 
                       }}
                       style={{
                         position: 'absolute',
@@ -2837,7 +2878,7 @@ export default function HUDPanel({
                         background: 'transparent',
                         padding: '6px 10px',
                         borderRadius: 16,
-                        border: '1px solid rgba(252,84,175,0.4)',
+                        border: '1px solid rgba(33,150,243,0.4)',
                         cursor: 'pointer',
                         transition: 'all 0.2s ease'
                       }}
@@ -2847,7 +2888,7 @@ export default function HUDPanel({
                         alt="HEART Coin"
                         width={20}
                         height={20}
-                        style={{ display: 'block', width: 20, height: 20, objectFit: 'contain', filter: 'drop-shadow(0 0 6px rgba(252,84,175,0.45))' }}
+                        style={{ display: 'block', width: 20, height: 20, objectFit: 'contain', filter: 'drop-shadow(0 0 6px rgba(33,150,243,0.45))' }}
                       />
                       <span style={{ fontSize: 13, fontWeight: 800, color: '#d3168c' }}>32</span>
                     </button>
@@ -2890,7 +2931,7 @@ export default function HUDPanel({
                           alignItems: 'center',
                           width: '100%',
                           padding: '4px 2px 10px 2px',
-                          borderBottom: '1px solid rgba(252,84,175,0.25)'
+                          borderBottom: '1px solid rgba(33,150,243,0.25)'
                         }}
                       >
                         {/* Left: Element badge + SOFIA (with picker) */}
@@ -2935,8 +2976,8 @@ export default function HUDPanel({
                                 fontSize: 18,
                                 fontWeight: 900,
                                 letterSpacing: '.02em',
-                                color: '#FC54AF',
-                                textShadow: '0 0 12px rgba(252,84,175,0.35)'
+                                color: '#2196F3',
+                                textShadow: '0 0 12px rgba(33,150,243,0.35)'
                               }}
                             >
                               SOFIA
@@ -2956,27 +2997,27 @@ export default function HUDPanel({
                                 height: 30,
                                 padding: 0,
                                 borderRadius: '50%',
-                                background: 'linear-gradient(135deg, rgba(252,84,175,0.15), rgba(25,227,255,0.15))',
-                                border: '1px solid rgba(252,84,175,0.4)',
+                                background: 'linear-gradient(135deg, rgba(33,150,243,0.15), rgba(25,227,255,0.15))',
+                                border: '1px solid rgba(33,150,243,0.4)',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s ease',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 overflow: 'hidden',
-                                boxShadow: '0 0 12px rgba(252,84,175,0.3), 0 0 24px rgba(252,84,175,0.15), 0 0 36px rgba(25,227,255,0.1)'
+                                boxShadow: '0 0 12px rgba(33,150,243,0.3), 0 0 24px rgba(33,150,243,0.15), 0 0 36px rgba(25,227,255,0.1)'
                               }}
                               onMouseOver={(e) => {
-                                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(252,84,175,0.25), rgba(25,227,255,0.25))';
-                                e.currentTarget.style.borderColor = 'rgba(252,84,175,0.6)';
+                                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(33,150,243,0.25), rgba(25,227,255,0.25))';
+                                e.currentTarget.style.borderColor = 'rgba(33,150,243,0.6)';
                                 e.currentTarget.style.transform = 'scale(1.05)';
-                                e.currentTarget.style.boxShadow = '0 0 18px rgba(252,84,175,0.45), 0 0 36px rgba(252,84,175,0.25), 0 0 48px rgba(25,227,255,0.15)';
+                                e.currentTarget.style.boxShadow = '0 0 18px rgba(33,150,243,0.45), 0 0 36px rgba(33,150,243,0.25), 0 0 48px rgba(25,227,255,0.15)';
                               }}
                               onMouseOut={(e) => {
-                                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(252,84,175,0.15), rgba(25,227,255,0.15))';
-                                e.currentTarget.style.borderColor = 'rgba(252,84,175,0.4)';
+                                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(33,150,243,0.15), rgba(25,227,255,0.15))';
+                                e.currentTarget.style.borderColor = 'rgba(33,150,243,0.4)';
                                 e.currentTarget.style.transform = 'scale(1.0)';
-                                e.currentTarget.style.boxShadow = '0 0 12px rgba(252,84,175,0.3), 0 0 24px rgba(252,84,175,0.15), 0 0 36px rgba(25,227,255,0.1)';
+                                e.currentTarget.style.boxShadow = '0 0 12px rgba(33,150,243,0.3), 0 0 24px rgba(33,150,243,0.15), 0 0 36px rgba(25,227,255,0.1)';
                               }}
                             >
                               <img
@@ -3022,9 +3063,9 @@ export default function HUDPanel({
                                     width: 28,
                                     height: 28,
                                     borderRadius: 9999,
-                                    border: `1px solid ${sofiaElement === el ? 'rgba(252,84,175,0.8)' : 'rgba(25,227,255,0.35)'}`,
+                                    border: `1px solid ${sofiaElement === el ? 'rgba(33,150,243,0.8)' : 'rgba(25,227,255,0.35)'}`,
                                     background: 'radial-gradient(72% 72% at 30% 30%, rgba(25,227,255,0.18) 0%, rgba(25,227,255,0.06) 60%, rgba(25,227,255,0.03) 100%)',
-                                    boxShadow: sofiaElement === el ? '0 0 12px rgba(252,84,175,0.6)' : '0 0 8px rgba(25,227,255,0.3)',
+                                    boxShadow: sofiaElement === el ? '0 0 12px rgba(33,150,243,0.6)' : '0 0 8px rgba(25,227,255,0.3)',
                                     cursor: 'pointer',
                                     padding: 0
                                   }}
@@ -3069,7 +3110,7 @@ export default function HUDPanel({
                           THE DREAMER
                         </div>
                         {/* THE CODE button positioned under THE DREAMER */}
-                        <div style={{ position: 'absolute', left: '50%', top: '55px', transform: 'translateX(-50%)' }}>
+                        <div style={{ position: 'absolute', left: '50%', top: '42px', transform: 'translateX(-50%)' }}>
                           <button
                             type="button"
                             aria-label="HEARTVERSE Code"
@@ -3082,27 +3123,27 @@ export default function HUDPanel({
                             style={{
                               padding: '6px 16px',
                               borderRadius: 8,
-                              background: 'linear-gradient(135deg, rgba(252,84,175,0.15), rgba(25,227,255,0.15))',
-                              border: '1px solid rgba(252,84,175,0.4)',
-                              color: '#FC54AF',
+                              background: '#FFFFFF',
+                              border: '1px solid rgba(255,255,255,0.8)',
+                              color: '#FFFFFF',
                               fontSize: 12,
                               fontWeight: 700,
                               letterSpacing: '0.02em',
                               cursor: 'pointer',
                               transition: 'all 0.2s ease',
-                              boxShadow: '0 0 12px rgba(252,84,175,0.3), 0 0 24px rgba(252,84,175,0.15), 0 0 36px rgba(25,227,255,0.1)'
+                              boxShadow: 'none'
                             }}
                             onMouseOver={(e) => {
-                              e.target.style.background = 'linear-gradient(135deg, rgba(252,84,175,0.25), rgba(25,227,255,0.25))';
-                              e.target.style.borderColor = 'rgba(252,84,175,0.6)';
+                              e.target.style.background = '#FFFFFF';
+                              e.target.style.borderColor = 'rgba(255,255,255,1.0)';
                               e.target.style.transform = 'scale(1.05)';
-                              e.target.style.boxShadow = '0 0 18px rgba(252,84,175,0.45), 0 0 36px rgba(252,84,175,0.25), 0 0 48px rgba(25,227,255,0.15)';
+                              e.target.style.boxShadow = 'none';
                             }}
                             onMouseOut={(e) => {
-                              e.target.style.background = 'linear-gradient(135deg, rgba(252,84,175,0.15), rgba(25,227,255,0.15))';
-                              e.target.style.borderColor = 'rgba(252,84,175,0.4)';
+                              e.target.style.background = '#FFFFFF';
+                              e.target.style.borderColor = 'rgba(255,255,255,0.8)';
                               e.target.style.transform = 'scale(1.0)';
-                              e.target.style.boxShadow = '0 0 12px rgba(252,84,175,0.3), 0 0 24px rgba(252,84,175,0.15), 0 0 36px rgba(25,227,255,0.1)';
+                              e.target.style.boxShadow = 'none';
                             }}
                           >
                             THE CODE
@@ -3110,10 +3151,32 @@ export default function HUDPanel({
                         </div>
                       </div>
                       {/* Header / Hero */}
-                      {!showHeartverseCode && (
+                      {!showHeartverseCode && !showHeartCoinsContent && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 2px 8px 2px' }}>
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <div style={{ fontSize: 14, opacity: 0.8 }}>Choose your path. Earn HEARTS. Unlock deeper access.</div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* HeartCoins Content Display */}
+                      {!showHeartverseCode && showHeartCoinsContent && (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '6px 2px 8px 2px' }}>
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: 14, opacity: 0.9, lineHeight: 1.4, marginBottom: 16 }}>
+                              HeartCoins are the energy of the Heartverse. You earn them by exploring, connecting, and showing up.
+                            </div>
+                            <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 8 }}>Your HeartCoin count</div>
+                            <div style={{ 
+                              fontSize: 32, 
+                              fontWeight: 800, 
+                              color: '#d3168c', 
+                              textShadow: '0 0 16px rgba(211,22,140,0.8), 0 0 32px rgba(211,22,140,0.4)', 
+                              filter: 'drop-shadow(0 0 8px rgba(211,22,140,0.6))',
+                              letterSpacing: '0.02em'
+                            }}>
+                              ♡ {heartCoinsCount}
+                            </div>
                           </div>
                         </div>
                       )}
@@ -3122,26 +3185,26 @@ export default function HUDPanel({
                       {showHeartverseCode && (
                         <div style={{ 
                           position: 'absolute',
-                          bottom: '20px',
+                          bottom: '6px',
                           left: '50%',
                           transform: 'translateX(-50%)',
-                          width: 'calc(100% - 32px)',
+                          width: 'calc(100% - 16px)',
                           maxWidth: '400px',
-                          padding: '12px',
+                          padding: '8px 12px',
                           borderRadius: 12,
-                          background: 'linear-gradient(135deg, rgba(252,84,175,0.15), rgba(25,227,255,0.08))',
-                          border: '1px solid rgba(252,84,175,0.4)',
-                          boxShadow: '0 0 25px rgba(252,84,175,0.25), 0 8px 32px rgba(0,0,0,0.3)',
+                          background: 'linear-gradient(135deg, rgba(33,150,243,0.15), rgba(25,227,255,0.08))',
+                          border: '1px solid rgba(33,150,243,0.4)',
+                          boxShadow: '0 0 25px rgba(33,150,243,0.25), 0 8px 32px rgba(0,0,0,0.3)',
                           zIndex: 100
                         }}>
                           <div style={{ 
                             fontSize: 18, 
                             fontWeight: 800, 
-                            color: '#FC54AF', 
+                            color: '#FFFFFF', 
                             marginBottom: 4,
                             textAlign: 'center',
                             letterSpacing: '0.02em',
-                            textShadow: '0 0 12px rgba(252,84,175,0.5)'
+                            textShadow: '0 0 12px rgba(33,150,243,0.5)'
                           }}>
                             HEARTVERSE CODE
                           </div>
@@ -3158,7 +3221,7 @@ export default function HUDPanel({
                               }}>
                                 We Believe
                               </div>
-                              <ul style={{ margin: 0, paddingLeft: 20, listStyle: 'disc' }}>
+                              <ul style={{ margin: 0, paddingLeft: 8, listStyle: 'disc' }}>
                                 <li style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 2, color: '#fff' }}>
                                   We believe being your truest self is the beginning of freedom.
                                 </li>
@@ -3231,7 +3294,7 @@ export default function HUDPanel({
                             </ul>
                           </div>
                         </div>
-                      ) : !showHeartverseCode ? (
+                      ) : !showHeartverseCode && !showHeartCoinsContent ? (
                         <div
                           style={{
                             marginTop: 4,
@@ -3405,10 +3468,10 @@ export default function HUDPanel({
                                   alt="The Lover"
                                   width={56}
                                   height={56}
-                                  style={{ display: 'block', width: 56, height: 56, objectFit: 'contain', filter: 'drop-shadow(0 0 14px rgba(252,84,175,0.95)) drop-shadow(0 0 28px rgba(252,84,175,0.55))' }}
+                                  style={{ display: 'block', width: 56, height: 56, objectFit: 'contain', filter: 'drop-shadow(0 0 14px rgba(33,150,243,0.95)) drop-shadow(0 0 28px rgba(33,150,243,0.55))' }}
                                 />
                                 <div className="neon-pink" style={{ fontSize: 12, fontWeight: 800, letterSpacing: '.02em', color: '#FF4FD8' }}>The Lover</div>
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: '#FC54AF' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: '#2196F3' }}>
                                   <span className="neon-pink heart-tier-range" style={{ fontSize: 13, fontWeight: 900, letterSpacing: '.02em' }}>25+</span>
                                   <img src="/elements/heart-coin.png" alt="HEART" width={26} height={26} className="heart-tier-icon heart-coin-glow" style={{ display: 'block', width: 26, height: 26, objectFit: 'contain', transform: 'translateY(0.5px) scale(1.08)' }} />
                                 </div>
@@ -3448,9 +3511,9 @@ export default function HUDPanel({
                       transform: 'translateX(-50%)',
                       padding: '16px',
                       borderRadius: 14,
-                      background: 'radial-gradient(140% 160% at 50% 0%, rgba(252,84,175,0.15), rgba(208,14,104,0.10) 35%, rgba(55,6,35,0.85) 100%)',
-                      border: '1px solid rgba(252,84,175,0.45)',
-                      boxShadow: '0 18px 46px rgba(0,0,0,0.35), 0 0 26px rgba(252,84,175,0.35)',
+                      background: 'radial-gradient(140% 160% at 50% 0%, rgba(33,150,243,0.15), rgba(208,14,104,0.10) 35%, rgba(55,6,35,0.85) 100%)',
+                      border: '1px solid rgba(33,150,243,0.45)',
+                      boxShadow: '0 18px 46px rgba(0,0,0,0.35), 0 0 26px rgba(33,150,243,0.35)',
                       backdropFilter: 'blur(8px) saturate(1.15)',
                       color: '#fff',
                       zIndex: 2147483647,
@@ -3475,8 +3538,8 @@ export default function HUDPanel({
                         width: 32,
                         height: 32,
                         borderRadius: '50%',
-                        background: 'linear-gradient(135deg, rgba(252,84,175,0.8), rgba(208,14,104,0.6))',
-                        border: '1px solid rgba(252,84,175,0.6)',
+                        background: 'linear-gradient(135deg, rgba(33,150,243,0.8), rgba(208,14,104,0.6))',
+                        border: '1px solid rgba(33,150,243,0.6)',
                         color: '#fff',
                         display: 'flex',
                         alignItems: 'center',
@@ -3500,10 +3563,10 @@ export default function HUDPanel({
                         width={32}
                         height={32}
                         className="heart-coin-glow"
-                        style={{ display: 'block', width: 32, height: 32, objectFit: 'contain', filter: 'drop-shadow(0 0 8px rgba(252,84,175,0.6))' }}
+                        style={{ display: 'block', width: 32, height: 32, objectFit: 'contain', filter: 'drop-shadow(0 0 8px rgba(33,150,243,0.6))' }}
                       />
                       <div>
-                        <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: '#FC54AF', textShadow: '0 0 10px rgba(252,84,175,0.7)' }}>
+                        <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: '#2196F3', textShadow: '0 0 10px rgba(33,150,243,0.7)' }}>
                           HEART Coins
                         </h3>
                         <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>
@@ -3539,7 +3602,7 @@ export default function HUDPanel({
                             <span style={{ color: 'rgba(255,255,255,0.7)' }}>5-24 HEARTS</span>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ color: '#FC54AF', fontWeight: 800 }}>Lover</span>
+                            <span style={{ color: '#2196F3', fontWeight: 800 }}>Lover</span>
                             <span style={{ color: 'rgba(255,255,255,0.7)' }}>25+ HEARTS</span>
                           </div>
                         </div>
@@ -3562,10 +3625,10 @@ export default function HUDPanel({
                       transform: 'translate(-50%, -50%)',
                       width: 'min(90vw, 600px)',
                       height: 'min(60vh, 400px)',
-                      background: 'radial-gradient(140% 160% at 50% 0%, rgba(252,84,175,0.25), rgba(14,168,208,0.18) 35%, rgba(60,20,45,0.55) 100%)',
-                      border: '1px solid rgba(252,84,175,0.5)',
+                      background: 'radial-gradient(140% 160% at 50% 0%, rgba(33,150,243,0.25), rgba(14,168,208,0.18) 35%, rgba(60,20,45,0.55) 100%)',
+                      border: '1px solid rgba(33,150,243,0.5)',
                       borderRadius: 16,
-                      boxShadow: '0 20px 50px rgba(0,0,0,0.4), 0 0 30px rgba(252,84,175,0.3)',
+                      boxShadow: '0 20px 50px rgba(0,0,0,0.4), 0 0 30px rgba(33,150,243,0.3)',
                       backdropFilter: 'blur(12px) saturate(1.2)',
                       color: '#fff',
                       zIndex: 2147483647,
@@ -3580,6 +3643,14 @@ export default function HUDPanel({
                     <button
                       aria-label="Close Digital Binder"
                       onClick={() => setShowBookPopover(false)}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'scale(1.1)';
+                        e.currentTarget.style.background = 'rgba(252,84,175,0.3)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                      }}
                       style={{
                         position: 'absolute',
                         top: 12,
@@ -3589,13 +3660,15 @@ export default function HUDPanel({
                         border: 'none',
                         background: 'rgba(255,255,255,0.1)',
                         borderRadius: 16,
-                        color: '#fff',
+                        color: '#FC54AF',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         fontSize: 18,
-                        fontWeight: 'bold'
+                        fontWeight: 'bold',
+                        transition: 'all 0.2s ease',
+                        textShadow: '0 0 8px rgba(252,84,175,0.6)'
                       }}
                     >
                       ×
@@ -3604,18 +3677,18 @@ export default function HUDPanel({
                     {/* Header */}
                     <div style={{
                       textAlign: 'center',
-                      marginBottom: 8,
-                      paddingTop: 6
+                      marginBottom: 4,
+                      paddingTop: 2
                     }}>
                       <h2 style={{
                         fontSize: 24,
                         fontWeight: 900,
-                        color: '#FC54AF',
-                        textShadow: '0 0 12px rgba(252,84,175,0.6)',
+                        color: '#2196F3',
+                        textShadow: '0 0 12px rgba(33,150,243,0.6)',
                         margin: 0,
                         marginBottom: 6
                       }}>
-                        DIGITAL BINDER
+                        HEARTVERSE BINDER
                       </h2>
                       <p style={{
                         fontSize: 13,
@@ -3624,7 +3697,7 @@ export default function HUDPanel({
                         marginBottom: 2,
                         color: '#fff'
                       }}>
-                        Your personal collection of HEARTVERSE memories
+                        Your personal archive of Heartverse memories.
                       </p>
                       <p style={{
                         fontSize: 11,
@@ -3633,16 +3706,16 @@ export default function HUDPanel({
                         color: '#fff',
                         lineHeight: 1.4
                       }}>
-                        Earn CHXNDLER cards by purchasing merch and unlocking profile tiers
+                        Collect cards, earn badges, and discover hidden collectibles as you explore this world.
                       </p>
                     </div>
                     
                     {/* Trading Card Album Content */}
                     <div style={{
                       flex: 1,
-                      background: 'linear-gradient(135deg, rgba(255,255,255,0.02), rgba(252,84,175,0.03), rgba(25,227,255,0.02))',
+                      background: 'linear-gradient(135deg, rgba(255,255,255,0.02), rgba(33,150,243,0.03), rgba(25,227,255,0.02))',
                       borderRadius: 12,
-                      padding: '12px',
+                      padding: '8px',
                       position: 'relative',
                       overflow: 'auto'
                     }}>
@@ -3658,57 +3731,9 @@ export default function HUDPanel({
                         pointerEvents: 'none'
                       }} />
                       
-                      {/* FULL COLLECTION Button */}
-                      <div style={{
-                        marginBottom: 4,
-                        textAlign: 'center',
-                        position: 'relative',
-                        zIndex: 1
-                      }}>
-                        <button
-                          aria-label="View Full Collection"
-                          title="View Full Collection"
-                          onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                          onClick={() => {
-                            try { sfx.play('click', 0.4); } catch {}
-                            setShowFullCollection(true);
-                            setCurrentCardIndex(0);
-                          }}
-                          style={{
-                            padding: '8px 16px',
-                            borderRadius: 8,
-                            background: 'linear-gradient(135deg, rgba(252,84,175,0.2), rgba(25,227,255,0.15))',
-                            border: '1px solid rgba(252,84,175,0.5)',
-                            color: '#FC54AF',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            fontSize: 12,
-                            fontWeight: 700,
-                            letterSpacing: '0.5px',
-                            textShadow: '0 0 8px rgba(252,84,175,0.4)',
-                            boxShadow: '0 0 15px rgba(252,84,175,0.6), 0 0 30px rgba(252,84,175,0.3), 0 2px 8px rgba(252,84,175,0.1)',
-                            filter: 'drop-shadow(0 0 8px rgba(252,84,175,0.5))'
-                          }}
-                          onMouseOver={(e) => {
-                            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(252,84,175,0.3), rgba(25,227,255,0.25))';
-                            e.currentTarget.style.borderColor = 'rgba(252,84,175,0.7)';
-                            e.currentTarget.style.transform = 'translateY(-1px)';
-                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(252,84,175,0.2)';
-                          }}
-                          onMouseOut={(e) => {
-                            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(252,84,175,0.2), rgba(25,227,255,0.15))';
-                            e.currentTarget.style.borderColor = 'rgba(252,84,175,0.5)';
-                            e.currentTarget.style.transform = 'translateY(0px)';
-                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(252,84,175,0.1)';
-                          }}
-                        >
-                          FULL COLLECTION
-                        </button>
-                      </div>
-
                       {/* Collection stats */}
                       <div style={{
-                        marginBottom: 8,
+                        marginBottom: 6,
                         textAlign: 'center',
                         position: 'relative',
                         zIndex: 1
@@ -3727,6 +3752,7 @@ export default function HUDPanel({
                           fontSize: 12,
                           opacity: 0.7,
                           margin: 0,
+                          marginBottom: 8,
                           color: '#fff'
                         }}>
                           {(() => {
@@ -3736,12 +3762,60 @@ export default function HUDPanel({
                           })()}
                         </p>
                       </div>
+
+                      {/* FULL COLLECTION Button */}
+                      <div style={{
+                        marginBottom: 6,
+                        textAlign: 'center',
+                        position: 'relative',
+                        zIndex: 1
+                      }}>
+                        <button
+                          aria-label="View Full Collection"
+                          title="View Full Collection"
+                          onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                          onClick={() => {
+                            try { sfx.play('click', 0.4); } catch {}
+                            setShowFullCollection(true);
+                            setCurrentCardIndex(0);
+                          }}
+                          style={{
+                            padding: '8px 16px',
+                            borderRadius: 8,
+                            background: 'linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85))',
+                            border: '1px solid rgba(255,255,255,0.3)',
+                            color: '#FC54AF',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            fontSize: 12,
+                            fontWeight: 700,
+                            letterSpacing: '0.5px',
+                            textShadow: '0 0 8px rgba(252,84,175,0.6)',
+                            boxShadow: '0 0 20px rgba(255,255,255,0.8), 0 0 40px rgba(255,255,255,0.4), 0 2px 8px rgba(255,255,255,0.2)',
+                            filter: 'drop-shadow(0 0 12px rgba(255,255,255,0.7))'
+                          }}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,1), rgba(255,255,255,0.95))';
+                            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.5)';
+                            e.currentTarget.style.transform = 'translateY(-1px)';
+                            e.currentTarget.style.boxShadow = '0 0 25px rgba(255,255,255,0.9), 0 0 50px rgba(255,255,255,0.5), 0 4px 12px rgba(255,255,255,0.3)';
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85))';
+                            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)';
+                            e.currentTarget.style.transform = 'translateY(0px)';
+                            e.currentTarget.style.boxShadow = '0 0 20px rgba(255,255,255,0.8), 0 0 40px rgba(255,255,255,0.4), 0 2px 8px rgba(255,255,255,0.2)';
+                          }}
+                        >
+                          FULL COLLECTION
+                        </button>
+                      </div>
                       
                       {/* Card slots grid */}
                       <div style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(65px, 1fr))',
-                        gap: '8px',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(50px, 1fr))',
+                        gap: '6px',
                         maxWidth: '600px',
                         margin: '0 auto',
                         position: 'relative',
@@ -3757,11 +3831,11 @@ export default function HUDPanel({
                             style={{
                               aspectRatio: '2.5/3.5',
                               background: card ? 
-                                'radial-gradient(circle at 30% 40%, rgba(25,227,255,0.15), rgba(252,84,175,0.08) 60%, rgba(255,212,0,0.06) 100%)' :
-                                'radial-gradient(circle at 30% 40%, rgba(252,84,175,0.08), rgba(25,227,255,0.06) 60%, rgba(255,212,0,0.04) 100%)',
+                                'radial-gradient(circle at 30% 40%, rgba(25,227,255,0.15), rgba(33,150,243,0.08) 60%, rgba(255,212,0,0.06) 100%)' :
+                                'radial-gradient(circle at 30% 40%, rgba(33,150,243,0.08), rgba(25,227,255,0.06) 60%, rgba(255,212,0,0.04) 100%)',
                               border: card ? 
                                 '2px solid rgba(25,227,255,0.6)' :
-                                '2px dashed rgba(252,84,175,0.3)',
+                                '2px dashed rgba(33,150,243,0.3)',
                               borderRadius: '12px',
                               display: 'flex',
                               flexDirection: 'column',
@@ -3777,18 +3851,15 @@ export default function HUDPanel({
                               if (card) {
                                 try { sfx.play('hover', 0.35); } catch {}
                                 e.currentTarget.style.transform = 'scale(1.05)';
-                                e.currentTarget.style.boxShadow = '0 8px 25px rgba(25,227,255,0.4), 0 0 20px rgba(252,84,175,0.3)';
                                 e.currentTarget.style.borderColor = 'rgba(25,227,255,0.8)';
                               } else {
                                 e.currentTarget.style.borderColor = 'rgba(252,84,175,0.6)';
                                 e.currentTarget.style.background = 'radial-gradient(circle at 30% 40%, rgba(252,84,175,0.12), rgba(25,227,255,0.08) 60%, rgba(255,212,0,0.06) 100%)';
-                                e.currentTarget.style.transform = 'translateY(-2px)';
-                                e.currentTarget.style.boxShadow = '0 8px 25px rgba(252,84,175,0.2)';
+                                e.currentTarget.style.transform = 'scale(1.02)';
                               }
                             }}
                             onMouseLeave={(e) => {
-                              e.currentTarget.style.transform = card ? 'scale(1)' : 'translateY(0px)';
-                              e.currentTarget.style.boxShadow = 'none';
+                              e.currentTarget.style.transform = 'scale(1)';
                               e.currentTarget.style.borderColor = card ? 
                                 'rgba(25,227,255,0.6)' :
                                 'rgba(252,84,175,0.3)';
@@ -3869,7 +3940,7 @@ export default function HUDPanel({
                                   <div style={{
                                     width: '32px',
                                     height: '32px',
-                                    border: '2px dashed rgba(252,84,175,0.4)',
+                                    border: '2px dashed rgba(33,150,243,0.4)',
                                     borderRadius: '6px',
                                     display: 'flex',
                                     alignItems: 'center',
@@ -3877,7 +3948,7 @@ export default function HUDPanel({
                                   }}>
                                     <span style={{
                                       fontSize: '18px',
-                                      color: 'rgba(252,84,175,0.5)'
+                                      color: 'rgba(33,150,243,0.5)'
                                     }}>
                                       +
                                     </span>
@@ -3926,7 +3997,7 @@ export default function HUDPanel({
                         position: 'relative',
                         width: '320px',
                         height: '480px',
-                        background: 'radial-gradient(140% 160% at 50% 0%, rgba(25,227,255,0.25), rgba(252,84,175,0.18) 35%, rgba(20,60,85,0.55) 100%)',
+                        background: 'radial-gradient(140% 160% at 50% 0%, rgba(25,227,255,0.25), rgba(33,150,243,0.18) 35%, rgba(20,60,85,0.55) 100%)',
                         border: '2px solid rgba(25,227,255,0.6)',
                         borderRadius: 16,
                         boxShadow: '0 20px 50px rgba(0,0,0,0.3), 0 0 30px rgba(25,227,255,0.4)',
@@ -4014,7 +4085,7 @@ export default function HUDPanel({
                                 height: '100%',
                                 objectFit: 'cover',
                                 borderRadius: '12px',
-                                filter: 'brightness(1.1) contrast(1.05) saturate(1.2) drop-shadow(0 8px 20px rgba(25,227,255,0.4)) drop-shadow(0 4px 12px rgba(252,84,175,0.3))',
+                                filter: 'brightness(1.1) contrast(1.05) saturate(1.2) drop-shadow(0 8px 20px rgba(25,227,255,0.4)) drop-shadow(0 4px 12px rgba(33,150,243,0.3))',
                                 transition: 'filter 0.3s ease'
                               }}
                             />
@@ -4048,7 +4119,7 @@ export default function HUDPanel({
                                 position: 'absolute',
                                 width: '3px',
                                 height: '3px',
-                                background: i % 2 === 0 ? '#19E3FF' : '#FC54AF',
+                                background: i % 2 === 0 ? '#19E3FF' : '#2196F3',
                                 borderRadius: '50%',
                                 left: `${15 + (i * 12)}%`,
                                 top: `${10 + (i * 10)}%`,
@@ -4112,10 +4183,10 @@ export default function HUDPanel({
                       style={{
                         width: 'min(90vw, 500px)',
                         height: 'min(80vh, 600px)',
-                        background: 'radial-gradient(140% 160% at 50% 0%, rgba(252,84,175,0.3), rgba(14,168,208,0.2) 35%, rgba(60,20,45,0.6) 100%)',
-                        border: '1px solid rgba(252,84,175,0.5)',
+                        background: 'radial-gradient(140% 160% at 50% 0%, rgba(33,150,243,0.3), rgba(14,168,208,0.2) 35%, rgba(60,20,45,0.6) 100%)',
+                        border: '1px solid rgba(33,150,243,0.5)',
                         borderRadius: 20,
-                        boxShadow: '0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(252,84,175,0.3)',
+                        boxShadow: '0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(33,150,243,0.3)',
                         backdropFilter: 'blur(12px)',
                         color: '#fff',
                         display: 'flex',
@@ -4134,8 +4205,8 @@ export default function HUDPanel({
                         <h2 style={{
                           fontSize: 24,
                           fontWeight: 900,
-                          color: '#FC54AF',
-                          textShadow: '0 0 12px rgba(252,84,175,0.6)',
+                          color: '#2196F3',
+                          textShadow: '0 0 12px rgba(33,150,243,0.6)',
                           margin: 0
                         }}>
                           FULL COLLECTION
@@ -4178,7 +4249,7 @@ export default function HUDPanel({
                           style={{
                             padding: '6px 10px',
                             borderRadius: 6,
-                            border: '1px solid rgba(252,84,175,0.4)',
+                            border: '1px solid rgba(33,150,243,0.4)',
                             background: 'rgba(0,0,0,0.3)',
                             color: '#fff',
                             fontSize: 12,
@@ -4200,7 +4271,7 @@ export default function HUDPanel({
                           style={{
                             padding: '6px 10px',
                             borderRadius: 6,
-                            border: '1px solid rgba(252,84,175,0.4)',
+                            border: '1px solid rgba(33,150,243,0.4)',
                             background: 'rgba(0,0,0,0.3)',
                             color: '#fff',
                             fontSize: 12,
@@ -4248,7 +4319,7 @@ export default function HUDPanel({
                                   position: 'relative',
                                   aspectRatio: '2.5/3.5',
                                   width: '200px',
-                                  background: 'radial-gradient(circle at 30% 40%, rgba(252,84,175,0.1), rgba(25,227,255,0.08) 60%, rgba(255,212,0,0.06) 100%)',
+                                  background: 'radial-gradient(circle at 30% 40%, rgba(33,150,243,0.1), rgba(25,227,255,0.08) 60%, rgba(255,212,0,0.06) 100%)',
                                   border: `2px solid ${card.rarity === 'Legendary' ? '#FFD700' : card.rarity === 'Rare' ? '#3498DB' : '#95A5A6'}`,
                                   borderRadius: 12,
                                   overflow: 'hidden',
@@ -4294,7 +4365,7 @@ export default function HUDPanel({
                                     fontWeight: 700,
                                     margin: 0,
                                     marginBottom: 4,
-                                    color: '#FC54AF'
+                                    color: '#2196F3'
                                   }}>
                                     {card.name}
                                   </h3>
@@ -4317,8 +4388,8 @@ export default function HUDPanel({
                                       fontSize: 12,
                                       padding: '2px 8px',
                                       borderRadius: 10,
-                                      background: 'rgba(252,84,175,0.2)',
-                                      color: '#FC54AF'
+                                      background: 'rgba(33,150,243,0.2)',
+                                      color: '#2196F3'
                                     }}>
                                       {card.type}
                                     </span>
@@ -4349,9 +4420,9 @@ export default function HUDPanel({
                                       width: 40,
                                       height: 40,
                                       borderRadius: '50%',
-                                      border: '1px solid rgba(252,84,175,0.4)',
-                                      background: 'rgba(252,84,175,0.1)',
-                                      color: '#FC54AF',
+                                      border: '1px solid rgba(33,150,243,0.4)',
+                                      background: 'rgba(33,150,243,0.1)',
+                                      color: '#2196F3',
                                       cursor: filteredCards.length > 1 ? 'pointer' : 'not-allowed',
                                       display: 'flex',
                                       alignItems: 'center',
@@ -4373,9 +4444,9 @@ export default function HUDPanel({
                                       width: 40,
                                       height: 40,
                                       borderRadius: '50%',
-                                      border: '1px solid rgba(252,84,175,0.4)',
-                                      background: 'rgba(252,84,175,0.1)',
-                                      color: '#FC54AF',
+                                      border: '1px solid rgba(33,150,243,0.4)',
+                                      background: 'rgba(33,150,243,0.1)',
+                                      color: '#2196F3',
                                       cursor: filteredCards.length > 1 ? 'pointer' : 'not-allowed',
                                       display: 'flex',
                                       alignItems: 'center',
@@ -4634,8 +4705,8 @@ export default function HUDPanel({
                       transformOrigin: 'top center',
                       padding: '12px 14px 14px 14px', borderRadius: 14,
                       background: 'rgba(20,3,14,0.9)',
-                      border: '1px solid rgba(252,84,175,0.55)',
-                      boxShadow: '0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(252,84,175,0.45)',
+                      border: '1px solid rgba(33,150,243,0.55)',
+                      boxShadow: '0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(33,150,243,0.45)',
                       backdropFilter: 'blur(8px)',
                       color: '#FFD9EF',
                       zIndex: 2147483647,
@@ -4678,8 +4749,8 @@ export default function HUDPanel({
                     <button
                       aria-label="Close store"
                       title="Close store"
-                      onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 26px rgba(252,84,175,0.95), 0 0 42px rgba(252,84,175,0.65)'; } catch {} }}
-                      onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 18px rgba(252,84,175,0.75), 0 0 32px rgba(252,84,175,0.45)'; } catch {} }}
+                      onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 26px rgba(33,150,243,0.95), 0 0 42px rgba(33,150,243,0.65)'; } catch {} }}
+                      onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 18px rgba(33,150,243,0.75), 0 0 32px rgba(33,150,243,0.45)'; } catch {} }}
                       onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowStorePopover(false); }}
                       style={{
                         position: 'absolute',
@@ -4689,12 +4760,12 @@ export default function HUDPanel({
                         height: 32,
                         borderRadius: 9999,
                         background: 'rgba(0,0,0,0.35)',
-                        border: '2px solid rgba(252,84,175,0.85)',
+                        border: '2px solid rgba(33,150,243,0.85)',
                         color: '#FF3EA5',
                         display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: '0 0 18px rgba(252,84,175,0.75), 0 0 32px rgba(252,84,175,0.45)',
+                        boxShadow: '0 0 18px rgba(33,150,243,0.75), 0 0 32px rgba(33,150,243,0.45)',
                         cursor: 'pointer'
                       }}
                     >
@@ -4716,9 +4787,9 @@ export default function HUDPanel({
                         style={{
                           padding: '6px 12px',
                           borderRadius: 6,
-                          border: '1px solid rgba(252,84,175,0.4)',
-                          background: storeActiveTab === 'MERCH' ? 'rgba(252,84,175,0.3)' : 'rgba(0,0,0,0.3)',
-                          color: storeActiveTab === 'MERCH' ? '#FC54AF' : '#fff',
+                          border: '1px solid rgba(33,150,243,0.4)',
+                          background: storeActiveTab === 'MERCH' ? 'rgba(33,150,243,0.3)' : 'rgba(0,0,0,0.3)',
+                          color: storeActiveTab === 'MERCH' ? '#2196F3' : '#fff',
                           cursor: 'pointer',
                           fontSize: 12,
                           fontWeight: 700,
@@ -4733,9 +4804,9 @@ export default function HUDPanel({
                         style={{
                           padding: '6px 12px',
                           borderRadius: 6,
-                          border: '1px solid rgba(252,84,175,0.4)',
-                          background: storeActiveTab === 'CARDS' ? 'rgba(252,84,175,0.3)' : 'rgba(0,0,0,0.3)',
-                          color: storeActiveTab === 'CARDS' ? '#FC54AF' : '#fff',
+                          border: '1px solid rgba(33,150,243,0.4)',
+                          background: storeActiveTab === 'CARDS' ? 'rgba(33,150,243,0.3)' : 'rgba(0,0,0,0.3)',
+                          color: storeActiveTab === 'CARDS' ? '#2196F3' : '#fff',
                           cursor: 'pointer',
                           fontSize: 12,
                           fontWeight: 700,
@@ -4754,7 +4825,7 @@ export default function HUDPanel({
                           {storeActiveTab === 'MERCH' && (
                             <>
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-                                <div style={{ fontWeight: 800, letterSpacing: '0.04em', color: '#FFC1E6', textShadow: '0 0 12px rgba(252,84,175,0.9), 0 0 24px rgba(252,84,175,0.55)' }}>
+                                <div style={{ fontWeight: 800, letterSpacing: '0.04em', color: '#FFC1E6', textShadow: '0 0 12px rgba(33,150,243,0.9), 0 0 24px rgba(33,150,243,0.55)' }}>
                                   The HEARTVERSE Collection
                                 </div>
                               </div>
@@ -4774,7 +4845,7 @@ export default function HUDPanel({
                                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                                     cursor: 'pointer', fontSize: 14, fontWeight: 700,
                                     transition: 'all 0.15s ease',
-                                    boxShadow: '0 4px 12px rgba(252,84,175,0.4)'
+                                    boxShadow: '0 4px 12px rgba(33,150,243,0.4)'
                                   }}
                                   onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.95)'; }}
                                   onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
@@ -4794,7 +4865,7 @@ export default function HUDPanel({
                                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                                     cursor: 'pointer', fontSize: 14, fontWeight: 700,
                                     transition: 'all 0.15s ease',
-                                    boxShadow: '0 4px 12px rgba(252,84,175,0.4)'
+                                    boxShadow: '0 4px 12px rgba(33,150,243,0.4)'
                                   }}
                                   onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.95)'; }}
                                   onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
@@ -4817,7 +4888,7 @@ export default function HUDPanel({
                                     height: 104,
                                     position: 'relative',
                                     borderRadius: 10,
-                                    border: '1px solid rgba(252,84,175,0.35)',
+                                    border: '1px solid rgba(33,150,243,0.35)',
                                     boxShadow: patchHovered ? '0 8px 24px rgba(0,0,0,0.45)' : '0 6px 18px rgba(0,0,0,0.35)',
                                     overflow: 'hidden',
                                     cursor: 'pointer',
@@ -4868,7 +4939,7 @@ export default function HUDPanel({
                                     height: 104,
                                     position: 'relative',
                                     borderRadius: 10,
-                                    border: '1px solid rgba(252,84,175,0.35)',
+                                    border: '1px solid rgba(33,150,243,0.35)',
                                     boxShadow: beanieHovered ? '0 8px 24px rgba(0,0,0,0.45)' : '0 6px 18px rgba(0,0,0,0.35)',
                                     overflow: 'hidden',
                                     cursor: 'pointer',
@@ -4907,7 +4978,7 @@ export default function HUDPanel({
                                   </div>
                                 </div>
                               ) : (
-                                <img src={item.image || 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910'} alt={item.title} style={{ display: 'block', width: 104, height: 104, objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(252,84,175,0.35)', boxShadow: '0 6px 18px rgba(0,0,0,0.35)' }} onError={(e)=>{ try { e.currentTarget.src = 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910'; } catch {} }} />
+                                <img src={item.image || 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910'} alt={item.title} style={{ display: 'block', width: 104, height: 104, objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(33,150,243,0.35)', boxShadow: '0 6px 18px rgba(0,0,0,0.35)' }} onError={(e)=>{ try { e.currentTarget.src = 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910'; } catch {} }} />
                               )}
                               {/* Price directly under the image (show $ price and HEART coins side by side) */}
                               <div style={{ fontSize: 16, fontWeight: 700, color: '#FFB9E1', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
@@ -4944,7 +5015,7 @@ export default function HUDPanel({
                               </div>
                             </div>
                             <div>
-                              <div style={{ fontSize: 18, fontWeight: 800, color: '#FFD9EF', textShadow: '0 0 10px rgba(252,84,175,0.9)' }}>{item.title}</div>
+                              <div style={{ fontSize: 18, fontWeight: 800, color: '#FFD9EF', textShadow: '0 0 10px rgba(33,150,243,0.9)' }}>{item.title}</div>
                               <div style={{ fontSize: 14, opacity: 0.9, marginTop: 4 }}>{item.description}</div>
                               {/* Details only; actions moved to bottom bar */}
                             </div>
@@ -5003,12 +5074,19 @@ export default function HUDPanel({
                                 onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                                 onClick={() => {
                                   try { sfx.play('join', 0.75); } catch {}
-                                  // Switch to CARDS tab to show collection
-                                  setStoreActiveTab('CARDS');
-                                  // Track collection switch
+                                  // Dispatch event to open collection panel
                                   try {
                                     const songSlug = (typeof slug !== 'undefined' && slug) ? slug : (active || 'unknown');
                                     const songTitle = currentSong?.title || track?.title || 'Unknown';
+                                    window.dispatchEvent(new CustomEvent('openCollectionPanel', {
+                                      detail: {
+                                        songSlug,
+                                        songTitle,
+                                        itemId: item.id,
+                                        itemTitle: item.title,
+                                        cardSrc: item.image
+                                      }
+                                    }));
                                     trackAnalytics('store_collection_clicked', { song_slug: String(songSlug || ''), payload: { song_title: songTitle, item_id: item.id, item_title: item.title, location: 'hud_store_collection' } });
                                   } catch {}
                                 }}
@@ -5047,7 +5125,7 @@ export default function HUDPanel({
                           {storeActiveTab === 'CARDS' && (
                             <div style={{
                               flex: 1,
-                              background: 'linear-gradient(135deg, rgba(255,255,255,0.02), rgba(252,84,175,0.03), rgba(25,227,255,0.02))',
+                              background: 'linear-gradient(135deg, rgba(255,255,255,0.02), rgba(33,150,243,0.03), rgba(25,227,255,0.02))',
                               borderRadius: 12,
                               padding: '12px',
                               position: 'relative',
@@ -5062,10 +5140,10 @@ export default function HUDPanel({
                                 <h3 style={{
                                   fontSize: 16,
                                   fontWeight: 700,
-                                  color: '#FC54AF',
+                                  color: '#2196F3',
                                   margin: 0,
                                   marginBottom: 4,
-                                  textShadow: '0 0 8px rgba(252,84,175,0.4)'
+                                  textShadow: '0 0 8px rgba(33,150,243,0.4)'
                                 }}>
                                   CHXNDLER Card Collection
                                 </h3>
@@ -5097,7 +5175,7 @@ export default function HUDPanel({
                                   style={{
                                     padding: '6px 10px',
                                     borderRadius: 6,
-                                    border: '1px solid rgba(252,84,175,0.4)',
+                                    border: '1px solid rgba(33,150,243,0.4)',
                                     background: 'rgba(0,0,0,0.3)',
                                     color: '#fff',
                                     fontSize: 12,
@@ -5119,7 +5197,7 @@ export default function HUDPanel({
                                   style={{
                                     padding: '6px 10px',
                                     borderRadius: 6,
-                                    border: '1px solid rgba(252,84,175,0.4)',
+                                    border: '1px solid rgba(33,150,243,0.4)',
                                     background: 'rgba(0,0,0,0.3)',
                                     color: '#fff',
                                     fontSize: 12,
@@ -5179,7 +5257,7 @@ export default function HUDPanel({
                                               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                                               cursor: 'pointer', fontSize: 14, fontWeight: 700,
                                               transition: 'all 0.15s ease',
-                                              boxShadow: '0 4px 12px rgba(252,84,175,0.4)'
+                                              boxShadow: '0 4px 12px rgba(33,150,243,0.4)'
                                             }}
                                             onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.95)'; }}
                                             onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
@@ -5202,7 +5280,7 @@ export default function HUDPanel({
                                               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                                               cursor: 'pointer', fontSize: 14, fontWeight: 700,
                                               transition: 'all 0.15s ease',
-                                              boxShadow: '0 4px 12px rgba(252,84,175,0.4)'
+                                              boxShadow: '0 4px 12px rgba(33,150,243,0.4)'
                                             }}
                                             onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.95)'; }}
                                             onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
@@ -5220,7 +5298,7 @@ export default function HUDPanel({
                                             borderRadius: 8,
                                             overflow: 'hidden',
                                             boxShadow: card.collected 
-                                              ? '0 0 20px rgba(252,84,175,0.6), 0 0 40px rgba(252,84,175,0.3)' 
+                                              ? '0 0 20px rgba(33,150,243,0.6), 0 0 40px rgba(33,150,243,0.3)' 
                                               : '0 4px 12px rgba(0,0,0,0.5)',
                                             cursor: 'pointer'
                                           }}
@@ -5262,7 +5340,7 @@ export default function HUDPanel({
                                             margin: 0,
                                             fontSize: 14,
                                             fontWeight: 700,
-                                            color: '#FC54AF'
+                                            color: '#2196F3'
                                           }}>
                                             {card.name}
                                           </h4>
@@ -5302,9 +5380,9 @@ export default function HUDPanel({
                                               width: 32,
                                               height: 32,
                                               borderRadius: 16,
-                                              background: 'rgba(252,84,175,0.2)',
-                                              border: '1px solid rgba(252,84,175,0.5)',
-                                              color: '#FC54AF',
+                                              background: 'rgba(33,150,243,0.2)',
+                                              border: '1px solid rgba(33,150,243,0.5)',
+                                              color: '#2196F3',
                                               cursor: 'pointer',
                                               display: 'flex',
                                               alignItems: 'center',
@@ -5324,9 +5402,9 @@ export default function HUDPanel({
                                               width: 32,
                                               height: 32,
                                               borderRadius: 16,
-                                              background: 'rgba(252,84,175,0.2)',
-                                              border: '1px solid rgba(252,84,175,0.5)',
-                                              color: '#FC54AF',
+                                              background: 'rgba(33,150,243,0.2)',
+                                              border: '1px solid rgba(33,150,243,0.5)',
+                                              color: '#2196F3',
                                               cursor: 'pointer',
                                               display: 'flex',
                                               alignItems: 'center',
@@ -5443,10 +5521,10 @@ export default function HUDPanel({
                       padding: '10px 14px 14px 14px', 
                       borderRadius: 14,
                       background: 'rgba(3,10,20,0.9)',
-                      border: '1px solid rgba(252,84,175,0.55)',
-                      boxShadow: '0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(252,84,175,0.45)',
+                      border: '1px solid rgba(33,150,243,0.55)',
+                      boxShadow: '0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(33,150,243,0.45)',
                       backdropFilter: 'blur(8px)',
-                      color: '#FC54AF',
+                      color: '#2196F3',
                       zIndex: 2147483647,
                       width: (joinUsPopoverPos && joinUsPopoverPos.width) ? joinUsPopoverPos.width : 'min(98vw, 1400px)',
                       height: (joinUsPopoverPos && joinUsPopoverPos.height) ? joinUsPopoverPos.height : '42vh',
@@ -5459,8 +5537,8 @@ export default function HUDPanel({
                     <button
                       aria-label="Close join us"
                       title="Close"
-                      onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 26px rgba(252,84,175,0.95), 0 0 42px rgba(252,84,175,0.65)'; } catch {} }}
-                      onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 18px rgba(252,84,175,0.75), 0 0 32px rgba(252,84,175,0.45)'; } catch {} }}
+                      onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 26px rgba(33,150,243,0.95), 0 0 42px rgba(33,150,243,0.65)'; } catch {} }}
+                      onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 18px rgba(33,150,243,0.75), 0 0 32px rgba(33,150,243,0.45)'; } catch {} }}
                       onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowJoinUsPopover(false); }}
                       style={{
                         position: 'absolute',
@@ -5470,12 +5548,12 @@ export default function HUDPanel({
                         height: 32,
                         borderRadius: 9999,
                         background: 'rgba(0,0,0,0.35)',
-                        border: '2px solid rgba(252,84,175,0.85)',
-                        color: '#FC54AF',
+                        border: '2px solid rgba(33,150,243,0.85)',
+                        color: '#2196F3',
                         display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: '0 0 18px rgba(252,84,175,0.75), 0 0 32px rgba(252,84,175,0.45)',
+                        boxShadow: '0 0 18px rgba(33,150,243,0.75), 0 0 32px rgba(33,150,243,0.45)',
                         cursor: 'pointer'
                       }}
                     >
@@ -5487,40 +5565,40 @@ export default function HUDPanel({
                     {/* Moving glow background */}
                     <div className="lyrics-glow-bg"></div>
                     {/* Section header */}
-                    <div className="lyrics-header" style={{ color: '#FC54AF', textShadow: '0 0 8px rgba(252,84,175,0.6)', fontSize: '12px' }}>
+                    <div className="lyrics-header" style={{ color: '#2196F3', textShadow: '0 0 8px rgba(33,150,243,0.6)', fontSize: '12px' }}>
                       YOU'RE INVITED INTO THE HEARTVERSE ♥
                     </div>
-                    <div className="lyrics-content-enhanced" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.5, fontSize: 14, color: '#FF8EC7', textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,142,199,0.6)' }}>
+                    <div className="lyrics-content-enhanced" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.2, fontSize: 14, color: '#2196F3', textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(33,150,243,0.6)', marginTop: '-4px' }}>
                       JOIN OUR ALIEN COMMUNITY AND GET ACCESS TO NEW RELEASES, EXCLUSIVE CONTENT, AND SPECIAL EVENTS.
                     </div>
                     {/* Sign-in options */}
-                    <div className="relative mt-4">
+                    <div className="relative mt-1">
                       <div className="flex flex-col gap-3">
                         {/* Phone and Email side by side */}
                         <div className="flex gap-3">
                           {/* Phone number section */}
-                          <div className="flex-1 space-y-1">
-                            <label htmlFor="join-phone" className="block text-sm font-medium text-white/90">
-                              PHONE FOR HEART ALERTS
+                          <div className="flex-1">
+                            <label htmlFor="join-phone" className="block text-sm font-medium text-white/90 text-center">
+                              PHONE
                             </label>
                             <input
                               id="join-phone"
                               type="tel"
                               placeholder="+1 (555) 123-4567"
-                              className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-[#FC54AF] focus:outline-none"
+                              className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-[#2196F3] focus:outline-none"
                             />
                           </div>
                           
                           {/* Email section */}
-                          <div className="flex-1 space-y-1">
-                            <label htmlFor="join-email" className="block text-sm font-medium text-white/90">
-                              EMAIL FOR HEART SIGNAL
+                          <div className="flex-1">
+                            <label htmlFor="join-email" className="block text-sm font-medium text-white/90 text-center">
+                              EMAIL
                             </label>
                             <input
                               id="join-email"
                               type="email"
                               placeholder="you@example.com"
-                              className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-[#FC54AF] focus:outline-none"
+                              className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-[#2196F3] focus:outline-none"
                             />
                           </div>
                         </div>
@@ -5528,9 +5606,9 @@ export default function HUDPanel({
                         {/* Send Heart Signal button */}
                         <button
                           type="button"
-                          className="w-full inline-flex items-center justify-center rounded-lg bg-[#FC54AF] px-4 py-3 text-sm font-medium text-black hover:brightness-110 transition"
+                          className="w-full inline-flex items-center justify-center rounded-lg bg-[#2196F3] px-4 py-3 text-sm font-medium text-black hover:brightness-110 transition"
                           style={{
-                            boxShadow: '0 0 20px rgba(252,84,175,0.8), 0 0 40px rgba(252,84,175,0.6)'
+                            boxShadow: '0 0 20px rgba(33,150,243,0.8), 0 0 40px rgba(33,150,243,0.6)'
                           }}
                         >
                           SEND HEART SIGNAL
@@ -5540,7 +5618,7 @@ export default function HUDPanel({
                         <div className="w-full">
                           <button
                             onClick={() => { try { sfx.play('click', 0.4); } catch {}; /* Add Google sign-in logic here */ }}
-                            className="w-full inline-flex items-center justify-center rounded-lg bg-[#FC54AF] px-4 py-3 text-sm font-semibold text-black hover:brightness-110 transition"
+                            className="w-full inline-flex items-center justify-center rounded-lg bg-[#2196F3] px-4 py-3 text-sm font-semibold text-black hover:brightness-110 transition"
                           >
                             Sign in with Google
                           </button>
@@ -5555,7 +5633,7 @@ export default function HUDPanel({
                   <div
                     role="dialog"
                     aria-label="Welcome Home"
-                    className="lyrics-popover-hud holo-scrollbar-yellow lyrics-modal-enhanced"
+                    className="lyrics-popover-hud holo-scrollbar-pink lyrics-modal-enhanced"
                     ref={welcomeHomeScrollRef}
                     style={{
                       position: 'fixed',
@@ -5565,10 +5643,10 @@ export default function HUDPanel({
                       padding: '10px 14px 14px 14px', 
                       borderRadius: 14,
                       background: 'rgba(3,10,20,0.9)',
-                      border: '1px solid rgba(242,239,29,0.55)',
-                      boxShadow: '0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(242,239,29,0.45)',
+                      border: '1px solid rgba(255,105,180,0.55)',
+                      boxShadow: '0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(255,105,180,0.45)',
                       backdropFilter: 'blur(8px)',
-                      color: '#F2EF1D',
+                      color: '#FF69B4',
                       zIndex: 2147483647,
                       width: (welcomeHomePopoverPos && welcomeHomePopoverPos.width) ? welcomeHomePopoverPos.width : 'min(98vw, 1400px)',
                       height: (welcomeHomePopoverPos && welcomeHomePopoverPos.height) ? welcomeHomePopoverPos.height : '42vh',
@@ -5577,12 +5655,12 @@ export default function HUDPanel({
                     }}
                     onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowWelcomeHomePopover(false); } }}
                   >
-                    {/* Yellow close button in the top-right corner */}
+                    {/* Pink close button in the top-right corner */}
                     <button
                       aria-label="Close welcome home"
                       title="Close"
-                      onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 26px rgba(242,239,29,0.95), 0 0 42px rgba(242,239,29,0.65)'; } catch {} }}
-                      onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 18px rgba(242,239,29,0.75), 0 0 32px rgba(242,239,29,0.45)'; } catch {} }}
+                      onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 26px rgba(255,105,180,0.95), 0 0 42px rgba(255,105,180,0.65)'; } catch {} }}
+                      onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 18px rgba(255,105,180,0.75), 0 0 32px rgba(255,105,180,0.45)'; } catch {} }}
                       onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowWelcomeHomePopover(false); }}
                       style={{
                         position: 'absolute',
@@ -5592,12 +5670,12 @@ export default function HUDPanel({
                         height: 32,
                         borderRadius: 9999,
                         background: 'rgba(0,0,0,0.35)',
-                        border: '2px solid rgba(242,239,29,0.85)',
-                        color: '#F2EF1D',
+                        border: '2px solid rgba(255,105,180,0.85)',
+                        color: '#FF69B4',
                         display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: '0 0 18px rgba(242,239,29,0.75), 0 0 32px rgba(242,239,29,0.45)',
+                        boxShadow: '0 0 18px rgba(255,105,180,0.75), 0 0 32px rgba(255,105,180,0.45)',
                         cursor: 'pointer'
                       }}
                     >
@@ -5609,10 +5687,10 @@ export default function HUDPanel({
                     {/* Moving glow background */}
                     <div className="lyrics-glow-bg"></div>
                     {/* Section header */}
-                    <div className="lyrics-header" style={{ color: '#F2EF1D', textShadow: '0 0 8px rgba(242,239,29,0.6)' }}>
-                      WELCOME HOME
+                    <div className="lyrics-header" style={{ color: '#FF69B4', textShadow: '0 0 8px rgba(255,105,180,0.6)' }}>
+                      WELCOME BACK TO THE HEARTVERSE {'<3'}
                     </div>
-                    <div className="lyrics-content-enhanced" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.5, fontSize: 18, color: '#FFF76A', textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,247,106,0.6)' }}>
+                    <div className="lyrics-content-enhanced" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.5, fontSize: 18, color: '#FFB6C1', textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,182,193,0.6)' }}>
                       Welcome back to the HEARTVERSE.
                     </div>
                     {/* Login form */}
@@ -5625,13 +5703,13 @@ export default function HUDPanel({
                           id="login-contact"
                           type="text"
                           placeholder="Enter phone number or email"
-                          className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-[#F2EF1D] focus:outline-none"
+                          className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-[#FF69B4] focus:outline-none"
                         />
                         <button
                           type="button"
-                          className="w-full inline-flex items-center justify-center rounded-lg bg-[#F2EF1D]/20 border-2 border-[#F2EF1D]/60 px-4 py-3 text-sm font-medium text-white hover:bg-[#F2EF1D]/30 transition"
+                          className="w-full inline-flex items-center justify-center rounded-lg bg-[#FF69B4]/20 border-2 border-[#FF69B4]/60 px-4 py-3 text-sm font-medium text-white hover:bg-[#FF69B4]/30 transition"
                           style={{
-                            boxShadow: '0 0 20px rgba(242,239,29,0.6), 0 0 40px rgba(242,239,29,0.4), inset 0 0 10px rgba(242,239,29,0.2)'
+                            boxShadow: '0 0 20px rgba(255,105,180,0.6), 0 0 40px rgba(255,105,180,0.4), inset 0 0 10px rgba(255,105,180,0.2)'
                           }}
                         >
                           Log In
@@ -5715,14 +5793,14 @@ export default function HUDPanel({
                     <div className="lyrics-content-enhanced" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.5, fontSize: 16, color: '#E8E8FF', textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(232,232,255,0.6)' }}>
                       What constellation would you create if you could arrange the stars in the sky, and what story would it tell?
                       
-                      <div style={{ marginTop: '20px', marginBottom: '20px' }}>
+                      <div style={{ marginTop: '20px', marginBottom: '8px' }}>
                         <textarea
                           value={questionResponse}
                           onChange={(e) => setQuestionResponse(e.target.value)}
                           placeholder="Share your cosmic vision..."
                           style={{
                             width: '100%',
-                            minHeight: '120px',
+                            minHeight: '150px',
                             padding: '12px',
                             background: 'rgba(0,0,20,0.6)',
                             border: '1px solid rgba(255,255,255,0.3)',
@@ -5752,19 +5830,20 @@ export default function HUDPanel({
                         }}
                         disabled={!questionResponse.trim()}
                         style={{
-                          padding: '10px 20px',
+                          padding: '12px 40px',
+                          width: '100%',
                           background: questionResponse.trim() 
-                            ? 'linear-gradient(45deg, rgba(255,255,255,0.2), rgba(255,255,255,0.3))' 
+                            ? 'linear-gradient(45deg, rgba(255,215,0,0.4), rgba(255,223,0,0.6))' 
                             : 'rgba(255,255,255,0.08)',
-                          border: '1px solid rgba(255,255,255,0.4)',
-                          borderRadius: '6px',
-                          color: questionResponse.trim() ? '#FFFFFF' : 'rgba(255,255,255,0.5)',
+                          border: '1px solid rgba(255,215,0,0.6)',
+                          borderRadius: '8px',
+                          color: questionResponse.trim() ? '#FFD700' : 'rgba(255,255,255,0.5)',
                           cursor: questionResponse.trim() ? 'pointer' : 'not-allowed',
                           transition: 'all 0.3s ease',
-                          fontSize: '14px',
-                          fontWeight: '500',
-                          textShadow: questionResponse.trim() ? '0 0 4px rgba(255,255,255,0.8)' : 'none',
-                          boxShadow: questionResponse.trim() ? '0 0 12px rgba(255,255,255,0.3)' : 'none'
+                          fontSize: '16px',
+                          fontWeight: '600',
+                          textShadow: questionResponse.trim() ? '0 0 8px rgba(255,215,0,1), 0 0 16px rgba(255,223,0,0.8), 0 0 24px rgba(255,215,0,0.6)' : 'none',
+                          boxShadow: questionResponse.trim() ? '0 0 20px rgba(255,215,0,0.6), 0 0 40px rgba(255,223,0,0.4), inset 0 1px rgba(255,255,255,0.2)' : 'none'
                         }}
                       >
                         Cast into the Stars

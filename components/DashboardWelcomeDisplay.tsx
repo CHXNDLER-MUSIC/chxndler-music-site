@@ -25,7 +25,7 @@ export default async function DashboardWelcomeDisplay() {
           mixBlendMode: 'screen'
         }} />
         <div className="relative">
-          <h2 className="text-4xl sm:text-5xl font-extrabold tracking-[0.15em] text-white drop-shadow mb-2">WELCOME HOME</h2>
+          <h2 className="text-4xl sm:text-5xl font-extrabold tracking-[0.15em] text-white drop-shadow mb-2">WELCOME BACK TO THE HEARTVERSE {'<3'}</h2>
           <p className="text-white/80 mb-6">You’re invited into the Heartverse.</p>
           <JoinUsButton className="inline-flex items-center justify-center rounded-xl px-5 py-3 font-semibold text-black bg-[#38B6FF] hover:brightness-110 transition shadow-[0_0_24px_rgba(56,182,255,0.45)]">
             JOIN US
@@ -66,7 +66,7 @@ export default async function DashboardWelcomeDisplay() {
       }} />
       <div className="relative">
         <h2 className="text-4xl sm:text-5xl font-extrabold tracking-[0.12em] text-white drop-shadow mb-2 flex items-center gap-4">
-          WELCOME HOME, {name}
+          WELCOME BACK TO THE HEARTVERSE {'<3'}, {name}
           <BookButton />
         </h2>
         <p className="text-white/80 mb-6">You have {hearts} HeartCoins.</p>

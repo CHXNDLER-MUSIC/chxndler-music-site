@@ -1174,10 +1174,11 @@ button:hover > .heart-coin-glow,
 }
 .neon-pink{ /* Lover */
   text-shadow:
-    0 0 4px rgba(255,79,216,0.95),
-    0 0 10px rgba(255,79,216,0.80),
-    0 0 18px rgba(255,79,216,0.60),
-    0 0 28px rgba(255,79,216,0.50);
+    0 0 6px rgba(255,79,216,1),
+    0 0 12px rgba(255,79,216,0.90),
+    0 0 24px rgba(255,79,216,0.75),
+    0 0 40px rgba(255,79,216,0.60),
+    0 0 60px rgba(255,79,216,0.40);
 }
 
 /* Hologram emoji/icon styling with scanlines and glow */
@@ -1410,7 +1411,7 @@ button:hover > .heart-coin-glow,
 /* Bring HUD controls slightly closer together */
 .controls-row{ gap: 10px; }
 
-/* JOIN US button with glowing rim and pink interior */
+/* JOIN US button with glowing rim and blue interior */
 .join-us-neon {
   padding: 4px 12px;
   border-radius: 8px;
@@ -1419,7 +1420,7 @@ button:hover > .heart-coin-glow,
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #000;
-  background: radial-gradient(circle at 30% 30%, #FF8EC7, #FC54AF);
+  background: radial-gradient(circle at 30% 30%, #4FC3F7, #2196F3);
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1427,27 +1428,62 @@ button:hover > .heart-coin-glow,
   
   /* Glowing rim/frame */
   box-shadow: 
-    0 0 0 1px rgba(252, 84, 175, 0.6),
-    0 0 0 2px rgba(252, 84, 175, 0.4),
-    0 0 12px rgba(252, 84, 175, 0.5),
-    inset 0 0 16px rgba(255, 141, 199, 0.4);
+    0 0 0 1px rgba(33, 150, 243, 0.6),
+    0 0 0 2px rgba(33, 150, 243, 0.4),
+    0 0 12px rgba(33, 150, 243, 0.5),
+    inset 0 0 16px rgba(79, 195, 247, 0.4);
 }
 
 .join-us-neon:hover {
   transform: scale(1.06);
   box-shadow: 
-    0 0 0 1px rgba(252, 84, 175, 0.8),
-    0 0 0 2px rgba(252, 84, 175, 0.6),
-    0 0 20px rgba(252, 84, 175, 0.7),
-    0 0 35px rgba(252, 84, 175, 0.4),
-    inset 0 0 20px rgba(255, 141, 199, 0.6);
+    0 0 0 1px rgba(33, 150, 243, 0.8),
+    0 0 0 2px rgba(33, 150, 243, 0.6),
+    0 0 20px rgba(33, 150, 243, 0.7),
+    0 0 35px rgba(33, 150, 243, 0.4),
+    inset 0 0 20px rgba(79, 195, 247, 0.6);
 }
 
 .join-us-neon:active {
   transform: scale(0.98);
 }
 
-/* WELCOME HOME button with glowing rim and yellow interior */
+/* STARS button with glowing rim and blue interior */
+.stars-neon {
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #000;
+  background: radial-gradient(circle at 30% 30%, #00DCFF, #00BFFF);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  
+  /* Glowing rim/frame */
+  box-shadow: 
+    0 0 0 1px rgba(0, 191, 255, 0.6),
+    0 0 0 2px rgba(0, 191, 255, 0.4),
+    0 0 12px rgba(0, 191, 255, 0.5),
+    inset 0 0 16px rgba(0, 220, 255, 0.4);
+}
+.stars-neon:hover {
+  transform: scale(1.06);
+  box-shadow: 
+    0 0 0 1px rgba(0, 191, 255, 0.8),
+    0 0 0 2px rgba(0, 191, 255, 0.6),
+    0 0 20px rgba(0, 191, 255, 0.7),
+    0 0 35px rgba(0, 191, 255, 0.4),
+    inset 0 0 20px rgba(0, 220, 255, 0.6);
+}
+.stars-neon:active {
+  transform: scale(0.98);
+}
+
+/* WELCOME HOME button with glowing rim and pink interior */
 .welcome-home-neon {
   padding: 4px 12px;
   border-radius: 8px;
@@ -1456,30 +1492,30 @@ button:hover > .heart-coin-glow,
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #000;
-  background: radial-gradient(circle at 30% 30%, #FFF76A, #F2EF1D);
-  border: 1px solid rgba(242, 239, 29, 0.55);
+  background: radial-gradient(circle at 30% 30%, #FFB6C1, #FF69B4);
+  border: 1px solid rgba(255, 105, 180, 0.55);
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
-  filter: drop-shadow(0 0 8px rgba(242, 239, 29, 0.85)) drop-shadow(0 0 20px rgba(242, 239, 29, 0.55));
-  text-shadow: 0 0 10px rgba(242, 239, 29, 0.95), 0 0 22px rgba(242, 239, 29, 0.6);
+  filter: drop-shadow(0 0 8px rgba(255, 105, 180, 0.85)) drop-shadow(0 0 20px rgba(255, 105, 180, 0.55));
+  text-shadow: 0 0 10px rgba(255, 105, 180, 0.95), 0 0 22px rgba(255, 105, 180, 0.6);
   
   /* Glowing rim/frame */
   box-shadow: 
-    0 0 0 1px rgba(242, 239, 29, 0.6),
-    0 0 0 2px rgba(242, 239, 29, 0.4),
-    0 0 12px rgba(242, 239, 29, 0.5),
-    inset 0 0 16px rgba(255, 247, 106, 0.4);
+    0 0 0 1px rgba(255, 105, 180, 0.6),
+    0 0 0 2px rgba(255, 105, 180, 0.4),
+    0 0 12px rgba(255, 105, 180, 0.5),
+    inset 0 0 16px rgba(255, 182, 193, 0.4);
 }
 
 .welcome-home-neon:hover {
   transform: scale(1.06);
   box-shadow: 
-    0 0 0 1px rgba(242, 239, 29, 0.8),
-    0 0 0 2px rgba(242, 239, 29, 0.6),
-    0 0 20px rgba(242, 239, 29, 0.7),
-    0 0 35px rgba(242, 239, 29, 0.4),
-    inset 0 0 20px rgba(255, 247, 106, 0.6);
+    0 0 0 1px rgba(255, 105, 180, 0.8),
+    0 0 0 2px rgba(255, 105, 180, 0.6),
+    0 0 20px rgba(255, 105, 180, 0.7),
+    0 0 35px rgba(255, 105, 180, 0.4),
+    inset 0 0 20px rgba(255, 182, 193, 0.6);
 }
 
 .welcome-home-neon:active {

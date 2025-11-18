@@ -1,19 +1,14 @@
 "use client";
 import React, { useRef, useState } from "react";
-import { BEAM_TOP_RATIO, BEAM_WIDTH_RATIO, BEAM_HEIGHT_RATIO, BEAM_LEFT_OFFSET_RATIO } from "@/lib/joinBeam";
 import { sfx } from "@/lib/sfx";
 
 export default function HoloStarsButton({
   onClick,
-  size = 72,
-  label = "Stars",
-  iconSrc = "/elements/star-icon.svg", // You may need to create this icon
+  label = "STARS",
   isActive = false,
 }: {
   onClick?: () => void;
-  size?: number;
   label?: string;
-  iconSrc?: string;
   isActive?: boolean;
 }) {
   const sfxRef = useRef<HTMLAudioElement | null>(null);
@@ -21,8 +16,6 @@ export default function HoloStarsButton({
   const [showStarAnimation, setShowStarAnimation] = useState(false);
   const [questionResponse, setQuestionResponse] = useState("");
   const [showSoulSky, setShowSoulSky] = useState(false);
-
-  const hubColor = "#00BFFF"; // Neon blue color
 
   function handleActivate() {
     try { 
@@ -59,111 +52,52 @@ export default function HoloStarsButton({
 
   return (
     <>
-      <div className="stars-wrap" style={{ width: size, height: size }}>
-        <div className="beam" aria-hidden />
-        <button
-          type="button"
-          className={`hub ${isActive ? "hub-active" : ""}`}
-          aria-label={label}
-          onClick={handleActivate as any}
-          onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleActivate(); } }}
-          style={{ width: size, height: size }}
-        >
-          <span className="hub-glyph" aria-hidden>
-            <div className="star-icon">⭐</div>
-          </span>
-          <span className="sr-only">{label}</span>
-        </button>
+      <button
+        type="button"
+        className="stars-neon"
+        aria-label={label}
+        onClick={handleActivate}
+        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+      >
+        ⭐ {label}
+      </button>
+      
+      <style jsx>{`
+        .stars-neon {
+          padding: 12px 20px;
+          border-radius: 12px;
+          font-size: 14px;
+          font-weight: 600;
+          color: #FFD700;
+          background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 223, 0, 0.25));
+          border: 1px solid rgba(255, 215, 0, 0.6);
+          transition: all 0.2s ease;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          box-shadow: 
+            0 0 0 1px rgba(255, 215, 0, 0.4),
+            0 4px 16px rgba(255, 215, 0, 0.2),
+            inset 0 0 16px rgba(255, 223, 0, 0.4);
+        }
         
-        <style jsx>{`
-          .stars-wrap{ position: relative; }
-          .beam{ position:absolute; left:-${Math.round(size*BEAM_LEFT_OFFSET_RATIO)}px; top:${Math.round(size*BEAM_TOP_RATIO)}px; width:${Math.round(size*BEAM_WIDTH_RATIO)}px; height:${Math.round(size*BEAM_HEIGHT_RATIO)}px; pointer-events:none; mix-blend-mode:screen;
-            clip-path: polygon(50% 100%, 90% 0, 10% 0);
-            background: linear-gradient(180deg, ${hubColor}12, ${hubColor}22 30%, ${hubColor}08 70%, ${hubColor}00 100%);
-            filter: blur(6px);
-          }
-          .hub{
-            position:relative; display:grid; place-items:center; border-radius:9999px;
-            border:1px solid rgba(0,191,255,.4);
-            background:
-              radial-gradient(120% 100% at 50% -10%, rgba(0,191,255,.12), rgba(0,191,255,0) 42%),
-              linear-gradient(180deg, #0a0a2a, #000 64%);
-            box-shadow:
-              0 16px 30px rgba(0,0,0,.6),
-              0 0 20px ${hubColor}55,
-              0 0 40px ${hubColor}22,
-              inset 0 2px 0 rgba(0,191,255,.35),
-              inset 0 -6px 14px rgba(0,0,0,.7);
-            transition: transform 120ms ease, box-shadow 180ms ease, filter 180ms ease;
-            animation: starsBasePulse 2.6s ease-in-out infinite;
-          }
-          .hub::before{ content:""; position:absolute; inset:-2px; border-radius:9999px; pointer-events:none; box-shadow: 0 0 0 1px rgba(0,191,255,.15) inset, 0 0 0 1px rgba(0,191,255,.1); }
-          .hub::after{ content:""; position:absolute; left:16%; right:16%; top:10%; height:26%; border-radius:9999px; pointer-events:none; background:linear-gradient(180deg, rgba(0,191,255,.55), rgba(0,191,255,0)); filter: blur(1px); opacity:.85; }
-          .hub:active{ transform: scale(.96); }
-          .hub:hover{
-            transform: scale(1.05);
-            box-shadow:
-              0 20px 38px rgba(0,0,0,.65),
-              0 0 26px ${hubColor}CC,
-              0 0 60px ${hubColor}77,
-              inset 0 2px 0 rgba(0,191,255,.4),
-              inset 0 -8px 18px rgba(0,0,0,.7);
-            filter: brightness(1.04) saturate(1.08);
-          }
-          .star-icon{ 
-            font-size: ${Math.round(size*0.5)}px; 
-            filter: saturate(1.1) brightness(1.04) drop-shadow(0 0 6px ${hubColor}) drop-shadow(0 0 14px ${hubColor}); 
-            transition: filter 180ms ease, transform 180ms ease; 
-          }
-          .hub:hover .star-icon{ transform: scale(1.06); filter: saturate(1.18) brightness(1.06) drop-shadow(0 0 10px ${hubColor}) drop-shadow(0 0 22px ${hubColor}) drop-shadow(0 0 36px ${hubColor}); }
-          .hub-active .star-icon{ filter: saturate(1.3) brightness(1.15) drop-shadow(0 0 12px ${hubColor}) drop-shadow(0 0 24px ${hubColor}) drop-shadow(0 0 40px ${hubColor}); }
-          .hub-active {
-            animation: starsActivePulse 2.0s ease-in-out infinite;
-            box-shadow:
-              0 16px 32px rgba(0,0,0,.7),
-              0 0 30px ${hubColor}CC,
-              0 0 60px ${hubColor}88,
-              0 0 100px ${hubColor}44,
-              inset 0 2px 0 rgba(0,191,255,.4),
-              inset 0 -6px 14px rgba(0,0,0,.7);
-            filter: brightness(1.15) saturate(1.25);
-          }
-          
-          @keyframes starsBasePulse {
-            0%, 100% { 
-              filter: brightness(1) saturate(1);
-            }
-            50% { 
-              filter: brightness(1.08) saturate(1.1);
-            }
-          }
-          
-          @keyframes starsActivePulse {
-            0%, 100% { 
-              filter: brightness(1.15) saturate(1.25);
-              box-shadow:
-                0 16px 32px rgba(0,0,0,.7),
-                0 0 30px ${hubColor}CC,
-                0 0 60px ${hubColor}88,
-                0 0 100px ${hubColor}44,
-                inset 0 2px 0 rgba(0,191,255,.4),
-                inset 0 -6px 14px rgba(0,0,0,.7);
-            }
-            50% { 
-              filter: brightness(1.25) saturate(1.4);
-              box-shadow:
-                0 18px 36px rgba(0,0,0,.8),
-                0 0 40px ${hubColor}FF,
-                0 0 80px ${hubColor}BB,
-                0 0 120px ${hubColor}66,
-                inset 0 2px 0 rgba(0,191,255,.45),
-                inset 0 -6px 14px rgba(0,0,0,.7);
-            }
-          }
-        `}</style>
-        <audio ref={sfxRef} src="/audio/star-click.mp3" preload="auto" playsInline />
-      </div>
+        .stars-neon:hover {
+          transform: scale(1.06);
+          box-shadow: 
+            0 0 0 1px rgba(255, 215, 0, 0.8),
+            0 8px 32px rgba(255, 215, 0, 0.4),
+            0 0 40px rgba(255, 215, 0, 0.3),
+            inset 0 0 20px rgba(255, 223, 0, 0.6);
+        }
+        
+        .stars-neon:active {
+          transform: scale(0.98);
+        }
+      `}</style>
+      
+      <audio ref={sfxRef} src="/audio/star.mp3" preload="auto" playsInline />
 
       {/* Black Sky Warp & Modal */}
       {showModal && (

@@ -715,12 +715,27 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                         onClick={(e) => {
                           try { e.preventDefault(); } catch {}
                           try { sfx.play('click', 0.7); } catch {}
-                          setShowCollectionPanel(!showCollectionPanel);
+                          
+                          // Close the card modal
+                          setShowCard(false);
+                          
+                          // Emit custom event to open store with CARDS tab
+                          try {
+                            const storeEvent = new CustomEvent('openStoreCards', {
+                              detail: { 
+                                songSlug: title?.toLowerCase().replace(/\s+/g, '-'),
+                                songTitle: title,
+                                cardSrc: src 
+                              }
+                            });
+                            window.dispatchEvent(storeEvent);
+                          } catch {}
+                          
                           try {
                             track('collect_card_clicked', { 
                               song_slug: title?.toLowerCase().replace(/\s+/g, '-'),
                               card_src: src,
-                              payload: { song_title: title, card_image: src, action: 'panel_opened' } 
+                              payload: { song_title: title, card_image: src, action: 'navigate_to_store' } 
                             });
                           } catch {}
                         }}
@@ -792,9 +807,28 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                           </div>
                         </div>
                       </div>
-                      
-                      {/* Elements button */}
-                      <div className="flex justify-center">
+                    </div>
+
+                    {/* Cost Display - removed per user request */}
+
+                    {/* Affordability Indicator */}
+                    <div className="mb-4">
+                      {userProfile.hearts >= (selectedCardType === 'digital' ? 20 : 30) ? (
+                        <div className="text-sm font-semibold text-green-400 bg-green-400/20 px-3 py-1 rounded border border-green-400/40">
+                          ✓ You can collect this
+                        </div>
+                      ) : (
+                        <div className="text-sm font-semibold text-red-400 bg-red-400/20 px-3 py-1 rounded border border-red-400/40">
+                          ✗ Not enough coins
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Digital vs Physical Selection */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-sm font-semibold text-[#CFF7FF]">Select Card Type:</div>
+                        {/* Elements button */}
                         <button
                           ref={elementBtnRef}
                           type="button"
@@ -839,26 +873,6 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                           <span className="sr-only">Elements</span>
                         </button>
                       </div>
-                    </div>
-
-                    {/* Cost Display - removed per user request */}
-
-                    {/* Affordability Indicator */}
-                    <div className="mb-4">
-                      {userProfile.hearts >= (selectedCardType === 'digital' ? 20 : 30) ? (
-                        <div className="text-sm font-semibold text-green-400 bg-green-400/20 px-3 py-1 rounded border border-green-400/40">
-                          ✓ You can collect this
-                        </div>
-                      ) : (
-                        <div className="text-sm font-semibold text-red-400 bg-red-400/20 px-3 py-1 rounded border border-red-400/40">
-                          ✗ Not enough coins
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Digital vs Physical Selection */}
-                    <div className="space-y-3">
-                      <div className="text-sm font-semibold text-[#CFF7FF] mb-2">Select Card Type:</div>
                       
                       <button
                         type="button"

@@ -134,8 +134,8 @@ export default function JoinAliens({ visible = true } = {}) {
           (status === 'ok'
             ? // Green success state
               'text-green-400 bg-green-500/30 ring-2 ring-green-400 shadow-[0_0_36px_rgba(34,197,94,0.85)] cursor-default'
-            : // Default cyan interactive state — amped glow + soft pulse
-              'text-white bg-[#FC54AF]/25 ring-4 ring-[#FC54AF]/80 shadow-[0_0_42px_rgba(252,84,175,0.85),0_0_90px_rgba(252,84,175,0.45)] hover:shadow-[0_0_60px_rgba(252,84,175,0.95),0_0_120px_rgba(252,84,175,0.55)] hover:scale-[1.03] focus:outline-none focus:ring-4 focus:ring-[#FC54AF] disabled:opacity-70 disabled:cursor-not-allowed pulse-soft')
+            : // Enhanced pink glow state — stronger glow + soft pulse
+              'text-white bg-[#FC54AF]/30 ring-4 ring-[#FC54AF]/90 shadow-[0_0_60px_rgba(252,84,175,1),0_0_120px_rgba(252,84,175,0.7),0_0_180px_rgba(252,84,175,0.4)] hover:shadow-[0_0_80px_rgba(252,84,175,1),0_0_160px_rgba(252,84,175,0.8),0_0_240px_rgba(252,84,175,0.5)] hover:scale-[1.03] focus:outline-none focus:ring-4 focus:ring-[#FC54AF] disabled:opacity-70 disabled:cursor-not-allowed pulse-soft')
         }
         onMouseEnter={() => { try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
       >

@@ -55,11 +55,10 @@ export default async function LyricsPage({ params }: { params: { slug: string } 
           borderRadius: 14,
           boxShadow: '0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(25,227,255,0.35)',
           backdropFilter: 'blur(8px)',
-          fontFamily: '\u0027Orbitron\u0027, InterLocal, sans-serif',
-          textTransform: 'uppercase'
+          fontFamily: '\u0027Orbitron\u0027, InterLocal, sans-serif'
         }}
       >
-        <div className="px-5 py-4 border-b border-cyan-300/30">
+        <div className="px-5 py-4 border-b border-cyan-300/30" style={{ textTransform: 'uppercase' }}>
           <h1 className="text-xl font-bold">Lyrics</h1>
           <div className="opacity-80 text-sm">{slug.replace(/-/g, ' ')}</div>
         </div>
