@@ -59,41 +59,42 @@ export default function HoloStarsButton({
         onClick={handleActivate}
         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
       >
-        ⭐ {label}
+        ⭐
       </button>
       
       <style jsx>{`
         .stars-neon {
-          padding: 12px 20px;
-          border-radius: 12px;
-          font-size: 14px;
-          font-weight: 600;
+          width: 50px;
+          height: 50px;
+          border-radius: 50%;
+          font-size: 24px;
           color: #FFD700;
-          background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 223, 0, 0.25));
-          border: 1px solid rgba(255, 215, 0, 0.6);
+          background: linear-gradient(135deg, #FFD700, #FFA500);
+          border: 2px solid #FFD700;
           transition: all 0.2s ease;
           cursor: pointer;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          gap: 8px;
+          padding: 4px;
           box-shadow: 
-            0 0 0 1px rgba(255, 215, 0, 0.4),
-            0 4px 16px rgba(255, 215, 0, 0.2),
-            inset 0 0 16px rgba(255, 223, 0, 0.4);
+            0 0 0 1px rgba(255, 215, 0, 0.6),
+            0 4px 16px rgba(255, 215, 0, 0.3),
+            0 0 20px rgba(255, 215, 0, 0.2),
+            inset 0 0 16px rgba(255, 223, 0, 0.3);
         }
         
         .stars-neon:hover {
-          transform: scale(1.06);
+          transform: scale(1.1);
           box-shadow: 
-            0 0 0 1px rgba(255, 215, 0, 0.8),
-            0 8px 32px rgba(255, 215, 0, 0.4),
-            0 0 40px rgba(255, 215, 0, 0.3),
-            inset 0 0 20px rgba(255, 223, 0, 0.6);
+            0 0 0 2px rgba(255, 215, 0, 0.8),
+            0 8px 32px rgba(255, 215, 0, 0.5),
+            0 0 40px rgba(255, 215, 0, 0.4),
+            inset 0 0 20px rgba(255, 223, 0, 0.5);
         }
         
         .stars-neon:active {
-          transform: scale(0.98);
+          transform: scale(0.95);
         }
       `}</style>
       
@@ -104,21 +105,22 @@ export default function HoloStarsButton({
         <div className="warp-overlay">
           <div className="warp-background" />
           <div className="modal-container">
-            {showSoulSky && (
-              <div className="soul-sky-header">
-                <h1>SOUL SKY</h1>
-              </div>
-            )}
-            
             {!showStarAnimation && (
               <div className="question-modal">
+                <div className="solsky-header">
+                  <h1>SolSky</h1>
+                  <div className="divider"></div>
+                </div>
                 <h2>Question of the Day</h2>
-                <textarea
-                  value={questionResponse}
-                  onChange={(e) => setQuestionResponse(e.target.value)}
-                  placeholder="Share your thoughts..."
-                  className="response-area"
-                />
+                <div className="cosmic-vision-section">
+                  <label className="cosmic-vision-label">Share your cosmic vision</label>
+                  <textarea
+                    value={questionResponse}
+                    onChange={(e) => setQuestionResponse(e.target.value)}
+                    placeholder="Share your cosmic vision..."
+                    className="response-area"
+                  />
+                </div>
                 <button 
                   onClick={handleSendResponse}
                   className="send-button"
@@ -126,6 +128,12 @@ export default function HoloStarsButton({
                 >
                   Send
                 </button>
+              </div>
+            )}
+
+            {showSoulSky && showStarAnimation && (
+              <div className="soul-sky-header">
+                <h1>SOUL SKY</h1>
               </div>
             )}
 
@@ -185,56 +193,94 @@ export default function HoloStarsButton({
             
             .question-modal {
               background: rgba(0, 0, 0, 0.9);
-              border: 2px solid #00BFFF;
+              border: 2px solid #FFD700;
               border-radius: 1rem;
               padding: 2rem;
               text-align: center;
-              box-shadow: 0 0 50px rgba(0, 191, 255, 0.3);
+              box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
               animation: modalFadeIn 1s ease-out 1s both;
             }
             
-            .question-modal h2 {
-              color: #00BFFF;
-              font-size: clamp(1.5rem, 5vw, 2rem);
+            .solsky-header {
+              margin-bottom: 2rem;
+            }
+            
+            .solsky-header h1 {
+              color: #FFD700;
+              font-size: clamp(1.8rem, 6vw, 2.5rem);
+              margin: 0 0 1rem 0;
+              text-shadow: 0 0 15px #FFD700;
+              font-weight: bold;
+              letter-spacing: 0.1em;
+            }
+            
+            .divider {
+              width: 100%;
+              height: 2px;
+              background: linear-gradient(90deg, transparent, #FFD700, transparent);
               margin-bottom: 1.5rem;
-              text-shadow: 0 0 10px #00BFFF;
+              box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            }
+            
+            .question-modal h2 {
+              color: #FFD700;
+              font-size: clamp(1.3rem, 4vw, 1.6rem);
+              margin-bottom: 1.5rem;
+              text-shadow: 0 0 10px #FFD700;
+            }
+            
+            .cosmic-vision-section {
+              margin-bottom: 1.5rem;
+            }
+            
+            .cosmic-vision-label {
+              display: block;
+              color: #FFD700;
+              font-size: 1rem;
+              margin-bottom: 0.5rem;
+              text-align: left;
+              font-weight: 500;
             }
             
             .response-area {
               width: 100%;
-              min-height: 120px;
+              min-height: 60px;
               background: rgba(0, 0, 0, 0.8);
-              border: 1px solid #00BFFF;
+              border: 1px solid #FFD700;
               border-radius: 0.5rem;
-              color: white;
-              padding: 1rem;
+              color: #FFD700;
+              padding: 0.75rem;
               font-size: 1rem;
-              margin-bottom: 1.5rem;
               resize: vertical;
               font-family: inherit;
             }
             
+            .response-area::placeholder {
+              color: rgba(255, 215, 0, 0.6);
+            }
+            
             .response-area:focus {
               outline: none;
-              box-shadow: 0 0 10px rgba(0, 191, 255, 0.5);
+              box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+              border-color: #FFD700;
             }
             
             .send-button {
-              background: linear-gradient(135deg, #00BFFF, #0080FF);
+              background: linear-gradient(135deg, #FFD700, #FFA500);
               border: none;
-              color: white;
+              color: #000;
               padding: 0.75rem 2rem;
               border-radius: 0.5rem;
               font-size: 1rem;
               font-weight: bold;
               cursor: pointer;
               transition: all 0.3s ease;
-              box-shadow: 0 0 20px rgba(0, 191, 255, 0.3);
+              box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
             }
             
             .send-button:hover:not(:disabled) {
               transform: scale(1.05);
-              box-shadow: 0 0 30px rgba(0, 191, 255, 0.5);
+              box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
             }
             
             .send-button:disabled {

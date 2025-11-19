@@ -28,6 +28,7 @@ import PreloadMedia from "@/components/PreloadMedia";
 import { slugify } from "@/lib/slug";
 import { audioCoordinator } from "@/lib/audio-coordinator";
 import { debugLog } from "@/lib/debug";
+import ProfileBar from "@/components/ProfileBar";
 
 export default function DashboardApp({ initialSlug } = {}) {
   // Global wheel render mode (LUMA vs PLAIN). Must be top-level to obey Hooks rules.
@@ -123,6 +124,10 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [beamTransitioning, setBeamTransitioning] = useState(false); // prevent rapid beam changes
   const [explicitClose, setExplicitClose] = useState(false); // track when explicitly closing without opening another display
   const [safariRefreshKey, setSafariRefreshKey] = useState(0); // Safari refresh mechanism
+  // Track if user has entered the Heartverse (clicked Start button)
+  const [hasEnteredHeartverse, setHasEnteredHeartverse] = useState(!!initialSlug); // true if deep link, false if intro
+  // Profile bar visibility - hidden on intro, shown after entering Heartverse
+  const showProfileBar = hasEnteredHeartverse; // always show when user has entered Heartverse
   // Unified timing constants for display/beam sequencing
   // Keep conservative defaults for overlapping transitions, but tighten a bit for snappier feel
   const BEAM_SWITCH_DELAY_MS = 300; // was 450ms; faster when switching between colors
@@ -1024,11 +1029,22 @@ export default function DashboardApp({ initialSlug } = {}) {
   if (!mounted) {
     // Return a black screen with proper dimensions while loading
     return (
-      <main className="relative min-h-screen overflow-hidden bg-black text-white max-w-screen overflow-x-hidden" style={{ minWidth: '100vw', minHeight: '100vh' }}>
-        <div className="absolute inset-0 bg-black" />
+      <main className="relative min-h-screen overflow-hidden bg-black text-white max-w-screen overflow-x-hidden" style={{ minWidth: '100vw', minHeight: '100vh', paddingTop: showProfileBar ? '64px' : '0' }}>
+        {/* Profile Bar (loading state) */}
+        {showProfileBar && (
+          <ProfileBar 
+            onCodeClick={() => {}}
+            onDigitalBinderClick={() => {}}
+            onBadgesClick={() => {}}
+            onHeartCoinClick={() => {}}
+          />
+        )}
+        
+        <div className="absolute inset-0 bg-black" style={{ top: showProfileBar ? '64px' : '0' }} />
         {/* Ensure cockpit frame preloads immediately alongside lightbeam base */}
         <div 
-          className="fixed inset-0 z-20 pointer-events-none cockpit-bg"
+          className="fixed z-20 pointer-events-none cockpit-bg"
+          style={{ top: showProfileBar ? '64px' : '0', left: 0, right: 0, bottom: 0 }}
           aria-hidden="true" 
         />
         {/* Render the steering wheel video immediately on opening screen */}
@@ -1077,9 +1093,15 @@ export default function DashboardApp({ initialSlug } = {}) {
         </div>
         {/* Show light beam base on initial page too */}
         <div 
-          className="fixed inset-0 z-[100] pointer-events-none lightbeam-base-bg"
+          className="fixed z-[100] pointer-events-none lightbeam-base-bg"
+          style={{ 
+            top: showProfileBar ? '64px' : '0', 
+            left: 0, 
+            right: 0, 
+            bottom: 0, 
+            opacity: 1 
+          }}
           aria-hidden="true" 
-          style={{ opacity: 1 }}
         />
       </main>
     );
@@ -1089,11 +1111,41 @@ export default function DashboardApp({ initialSlug } = {}) {
   const hudHeightFactor = 0.01; // minimal height; bottom stays fixed
   const hudBaseFactor = 0.56;   // original baseline factor used earlier
   const hudYOffset = Math.max(0, Math.round(100 * (hudBaseFactor - hudHeightFactor)));
+  const handleCodeClick = () => {
+    // TODO: Implement Code modal/route
+    console.log('Code button clicked');
+  };
+
+  const handleDigitalBinderClick = () => {
+    // TODO: Implement Digital Binder modal/route
+    console.log('Digital Binder button clicked');
+  };
+
+  const handleBadgesClick = () => {
+    // TODO: Implement Badges modal/route
+    console.log('Badges button clicked');
+  };
+
+  const handleHeartCoinClick = () => {
+    // TODO: Implement HeartCoin info/earn modal
+    console.log('HeartCoin button clicked');
+  };
+
   return (
-    <main className="relative min-h-screen overflow-hidden bg-black text-white max-w-screen overflow-x-hidden" style={{ minWidth: '100vw', minHeight: '100vh' }}>
+    <main className="relative min-h-screen overflow-hidden bg-black text-white max-w-screen overflow-x-hidden" style={{ minWidth: '100vw', minHeight: '100vh', paddingTop: showProfileBar ? '64px' : '0' }}>
+      {/* Profile Bar */}
+      {showProfileBar && (
+        <ProfileBar 
+          onCodeClick={handleCodeClick}
+          onDigitalBinderClick={handleDigitalBinderClick}
+          onBadgesClick={handleBadgesClick}
+          onHeartCoinClick={handleHeartCoinClick}
+        />
+      )}
+      
       <div 
         className="absolute inset-0"
-        style={blurWrapperStyle}
+        style={{ ...blurWrapperStyle, top: showProfileBar ? '64px' : '0' }}
       >
         <PrewarmThree />
         <AmbientSpace 
@@ -1133,6 +1185,9 @@ export default function DashboardApp({ initialSlug } = {}) {
         // Use provided YouTube clip for lightspeed overlay on opening and Start
         lightspeedYoutubeUrl={'https://youtu.be/KFssNa5WvKc'}
         onWarpSfxEnd={() => {
+          // Reveal profile bar after warp animation completes
+          setShowProfileBar(true);
+          
           // After a song is selected, reveal ONLY the selected planet post-warp
           if (userSelected || pendingTrackPlay) {
             try { 
@@ -1439,20 +1494,25 @@ export default function DashboardApp({ initialSlug } = {}) {
 
 
       <div 
-        className="fixed inset-0 z-20 pointer-events-none cockpit-bg"
+        className="fixed z-20 pointer-events-none cockpit-bg"
+        style={{ top: showProfileBar ? '64px' : '0', left: 0, right: 0, bottom: 0 }}
         aria-hidden="true" 
       />
       
       <div 
-        className="fixed inset-0 z-[100] pointer-events-none lightbeam-base-bg"
-        aria-hidden="true" 
+        className="fixed z-[100] pointer-events-none lightbeam-base-bg"
         style={{
+          top: showProfileBar ? '64px' : '0',
+          left: 0,
+          right: 0,
+          bottom: 0,
           // Always keep the light beam base PNG visible, including on first page
           opacity: 1,
           transition: 'opacity 400ms ease-in-out',
           // Dynamically anchor PNG under the blue button when available; otherwise fallback to CSS
           backgroundPosition: beamBaseBgPos || undefined
         }}
+        aria-hidden="true" 
       />
       
       {/* SteeringWheelOverlay inside blur wrapper so wheel gets dimmed */}
