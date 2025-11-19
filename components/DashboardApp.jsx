@@ -1848,11 +1848,11 @@ export default function DashboardApp({ initialSlug } = {}) {
           <div 
             style={{
               position: 'absolute',
-              left: '5%',
-              right: '5%',
+              left: '-5%',
+              right: '-5%',
               bottom: '0px', 
               top: '0%',
-              clipPath: 'polygon(48% 100%, 52% 100%, 10% 0, 90% 0)',
+              clipPath: 'polygon(48% 100%, 52% 100%, 0% 0, 100% 0)',
               backgroundImage: getBeamGradient,
               backgroundSize: '100% 100%, 100% 160px',
               filter: 'blur(4px)',
