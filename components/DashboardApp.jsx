@@ -125,9 +125,10 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [explicitClose, setExplicitClose] = useState(false); // track when explicitly closing without opening another display
   const [safariRefreshKey, setSafariRefreshKey] = useState(0); // Safari refresh mechanism
   // Track if user has entered the Heartverse (clicked Start button)
-  const [hasEnteredHeartverse, setHasEnteredHeartverse] = useState(!!initialSlug); // true if deep link, false if intro
+  // Explicitly start as false for intro screen, true only if there's an initial slug (deep link)
+  const [hasEnteredHeartverse, setHasEnteredHeartverse] = useState(initialSlug ? true : false);
   // Profile bar visibility - hidden on intro, shown after entering Heartverse
-  const showProfileBar = hasEnteredHeartverse; // always show when user has entered Heartverse
+  const showProfileBar = hasEnteredHeartverse;
   // Unified timing constants for display/beam sequencing
   // Keep conservative defaults for overlapping transitions, but tighten a bit for snappier feel
   const BEAM_SWITCH_DELAY_MS = 300; // was 450ms; faster when switching between colors

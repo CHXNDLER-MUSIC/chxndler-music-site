@@ -3,8 +3,11 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ElementIcon } from '@/lib/elementIcons';
-import { supabaseClient } from "@/lib/supabaseClient";
-import SharedModal from '@/components/SharedModal';
+import CodeModal from '@/components/CodeModal';
+import BinderModal from '@/components/BinderModal';
+import BadgesModal from '@/components/BadgesModal';
+import HeartCoinModal from '@/components/HeartCoinModal';
+import { sfx } from '@/lib/sfx';
 
 interface Profile {
   id: string;
@@ -14,10 +17,10 @@ interface Profile {
 }
 
 const ELEMENTS = [
-  { name: 'heart', label: 'Heart', color: '#FF69B4' },
-  { name: 'water', label: 'Water', color: '#00BFFF' },
-  { name: 'lightning', label: 'Lightning', color: '#FFD700' },
-  { name: 'darkness', label: 'Darkness', color: '#9400D3' }
+  { name: 'heart', label: 'Heart', color: '#FF69B4', innerGlow: '#FF1493' },
+  { name: 'water', label: 'Water', color: '#00BFFF', innerGlow: '#0080FF' },
+  { name: 'lightning', label: 'Lightning', color: '#FFD700', innerGlow: '#FFFF00' },
+  { name: 'darkness', label: 'Darkness', color: '#9400D3', innerGlow: '#FFFFFF' }
 ];
 
 interface ProfileBarProps {
@@ -37,18 +40,11 @@ export default function ProfileBar({
   const [loading, setLoading] = useState(true);
   const [elementDropdownOpen, setElementDropdownOpen] = useState(false);
   
-  // Popup states
-  const [codePopupOpen, setCodePopupOpen] = useState(false);
-  const [digitalBinderPopupOpen, setDigitalBinderPopupOpen] = useState(false);
-  const [badgesPopupOpen, setBadgesPopupOpen] = useState(false);
-  const [heartCoinPopupOpen, setHeartCoinPopupOpen] = useState(false);
-
-  // Form states for identical Join Us content
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [formLoading, setFormLoading] = useState(false);
+  // Modal states
+  const [isCodeOpen, setIsCodeOpen] = useState(false);
+  const [isBinderOpen, setIsBinderOpen] = useState(false);
+  const [isBadgesOpen, setIsBadgesOpen] = useState(false);
+  const [isHeartCoinOpen, setIsHeartCoinOpen] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -85,6 +81,9 @@ export default function ProfileBar({
 
   async function updateElement(element: string) {
     try {
+      // Play flip sound when selecting an element
+      sfx.play('flip', 0.8);
+      
       const res = await fetch('/api/profile/element', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -100,152 +99,6 @@ export default function ProfileBar({
     }
   }
 
-  // Identical functions from LoginModal
-  async function signInWithGoogle() {
-    setError(null);
-    setMessage(null);
-    setFormLoading(true);
-    try {
-      const { error } = await supabaseClient.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: window.location.origin + "/auth/callback" },
-      });
-      if (error) throw error;
-    } catch (e: any) {
-      setError(e?.message || "Failed to start sign-in");
-    } finally {
-      setFormLoading(false);
-    }
-  }
-
-  async function signInWithEmail(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setMessage(null);
-    setFormLoading(true);
-    try {
-      const { error } = await supabaseClient.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: window.location.origin + "/auth/callback" },
-      });
-      if (error) throw error;
-      setMessage("Check your email for a magic link.");
-    } catch (e: any) {
-      setError(e?.message || "Failed to send magic link");
-    } finally {
-      setFormLoading(false);
-    }
-  }
-
-  async function signInWithPhone(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setMessage(null);
-    setFormLoading(true);
-    try {
-      const { error } = await supabaseClient.auth.signInWithOtp({
-        phone,
-      });
-      if (error) throw error;
-      setMessage("Check your phone for a verification code.");
-    } catch (e: any) {
-      setError(e?.message || "Failed to send SMS");
-    } finally {
-      setFormLoading(false);
-    }
-  }
-
-  // Identical content from LoginModal
-  const renderJoinUsContent = () => (
-    <>
-      <p className="relative text-sm text-white/80 mb-3">Choose your connection method.</p>
-
-      {error && (
-        <div className="relative mb-2 rounded-md bg-red-50/10 border border-red-200/40 p-2 text-sm text-red-200">
-          {error}
-        </div>
-      )}
-      {message && (
-        <div className="relative mb-2 rounded-md bg-green-50/10 border border-green-200/40 p-2 text-sm text-green-200">
-          {message}
-        </div>
-      )}
-
-      <div className="relative space-y-3">
-        <button
-          onClick={signInWithGoogle}
-          disabled={formLoading}
-          className="w-full inline-flex items-center justify-center rounded-lg bg-[#FC54AF] px-4 py-3 text-sm font-semibold text-black hover:brightness-110 transition disabled:opacity-50"
-        >
-          CONNECT with Google
-        </button>
-
-        <div className="relative flex items-center text-white/50">
-          <div className="flex-grow border-t border-white/20" />
-          <span className="mx-3 text-xs uppercase">or</span>
-          <div className="flex-grow border-t border-white/20" />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Phone Login Section */}
-          <form onSubmit={signInWithPhone} className="space-y-2">
-            <label htmlFor="profile-phone" className="block text-sm font-medium text-white/90">
-              Phone Number
-            </label>
-            <input
-              id="profile-phone"
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+1 (555) 123-4567"
-              required
-              className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-[#38B6FF] focus:outline-none"
-            />
-            <button
-              type="submit"
-              disabled={formLoading || phone.length === 0}
-              className="w-full inline-flex items-center justify-center rounded-lg bg-[#FC54AF]/20 border-2 border-[#FC54AF]/60 px-4 py-3 text-sm font-medium text-white hover:bg-[#FC54AF]/30 transition disabled:opacity-50"
-              style={{
-                boxShadow: formLoading || phone.length === 0 
-                  ? 'none' 
-                  : '0 0 20px rgba(252,84,175,0.6), 0 0 40px rgba(252,84,175,0.4), inset 0 0 10px rgba(252,84,175,0.2)'
-              }}
-            >
-              CONNECT
-            </button>
-          </form>
-
-          {/* Email Login Section */}
-          <form onSubmit={signInWithEmail} className="space-y-2">
-            <label htmlFor="profile-email" className="block text-sm font-medium text-white/90">
-              Email Address
-            </label>
-            <input
-              id="profile-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              required
-              className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-[#38B6FF] focus:outline-none"
-            />
-            <button
-              type="submit"
-              disabled={formLoading || email.length === 0}
-              className="w-full inline-flex items-center justify-center rounded-lg bg-[#FC54AF]/20 border-2 border-[#FC54AF]/60 px-4 py-3 text-sm font-medium text-white hover:bg-[#FC54AF]/30 transition disabled:opacity-50"
-              style={{
-                boxShadow: formLoading || email.length === 0 
-                  ? 'none' 
-                  : '0 0 20px rgba(252,84,175,0.6), 0 0 40px rgba(252,84,175,0.4), inset 0 0 10px rgba(252,84,175,0.2)'
-              }}
-            >
-              CONNECT
-            </button>
-          </form>
-        </div>
-      </div>
-    </>
-  );
 
   if (loading) {
     return (
@@ -265,6 +118,17 @@ export default function ProfileBar({
   const heartCoins = profile?.hearts || 0;
   const currentElementData = ELEMENTS.find(e => e.name === currentElement) || ELEMENTS[0];
 
+  // Get username text color based on selected element
+  const getUsernameColor = (element: string) => {
+    switch (element) {
+      case 'heart': return '#FF69B4'; // Pink
+      case 'water': return '#00BFFF'; // Blue
+      case 'lightning': return '#FFD700'; // Yellow
+      case 'darkness': return '#FFFFFF'; // White
+      default: return '#FFFFFF';
+    }
+  };
+
   return (
     <div className="fixed top-0 left-0 right-0 z-[200] h-16 bg-black/80 backdrop-blur-md border-b border-white/10">
       <div className="flex items-center justify-between h-full px-6">
@@ -273,25 +137,23 @@ export default function ProfileBar({
           {/* Element Selector */}
           <div className="relative">
             <motion.button
-              onClick={() => setElementDropdownOpen(!elementDropdownOpen)}
+              onClick={() => {
+                // Play close sound when opening/closing element selector
+                sfx.play('close', 0.8);
+                setElementDropdownOpen(!elementDropdownOpen);
+              }}
               className="w-10 h-10 rounded-full flex items-center justify-center border border-white/20 bg-black/50 relative overflow-hidden"
               style={{ 
-                boxShadow: `0 0 20px ${currentElementData.color}40, inset 0 0 20px ${currentElementData.color}20`
+                boxShadow: `inset 0 0 15px ${currentElementData.innerGlow}60, inset 0 0 25px ${currentElementData.innerGlow}40`
               }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
               <ElementIcon 
                 name={currentElement} 
-                width={24} 
-                height={24}
-                className="relative z-10"
-              />
-              <div 
-                className="absolute inset-0 rounded-full opacity-30"
-                style={{ 
-                  background: `radial-gradient(circle, ${currentElementData.color}40 0%, transparent 70%)`
-                }}
+                width={32} 
+                height={32}
+                className="relative z-10 w-full h-full object-contain"
               />
             </motion.button>
 
@@ -306,35 +168,29 @@ export default function ProfileBar({
                   />
                   
                   <motion.div
-                    className="absolute top-12 left-0 bg-black/90 backdrop-blur-md border border-white/20 rounded-lg p-4 z-20"
+                    className="absolute top-12 left-0 bg-black/90 backdrop-blur-md border border-white/20 rounded-lg p-3 z-20"
                     initial={{ opacity: 0, scale: 0.9, y: -10 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.9, y: -10 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="flex items-center space-x-3">
                       {ELEMENTS.map((element) => (
                         <motion.button
                           key={element.name}
                           onClick={() => updateElement(element.name)}
-                          className="w-16 h-16 rounded-full flex items-center justify-center border border-white/20 bg-black/50 relative overflow-hidden"
+                          className="w-12 h-12 rounded-full flex items-center justify-center border border-white/20 bg-black/50 relative overflow-hidden"
                           style={{ 
-                            boxShadow: `0 0 20px ${element.color}40, inset 0 0 20px ${element.color}20`
+                            boxShadow: `inset 0 0 15px ${element.innerGlow}60, inset 0 0 25px ${element.innerGlow}40`
                           }}
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.95 }}
                         >
                           <ElementIcon 
                             name={element.name} 
-                            width={32} 
-                            height={32}
-                            className="relative z-10"
-                          />
-                          <div 
-                            className="absolute inset-0 rounded-full opacity-30"
-                            style={{ 
-                              background: `radial-gradient(circle, ${element.color}60 0%, transparent 70%)`
-                            }}
+                            width={40} 
+                            height={40}
+                            className="relative z-10 w-full h-full object-contain"
                           />
                         </motion.button>
                       ))}
@@ -346,14 +202,19 @@ export default function ProfileBar({
           </div>
 
           {/* Username */}
-          <span className="text-white font-medium text-lg">{displayName}</span>
+          <span 
+            className="font-medium text-lg"
+            style={{ color: getUsernameColor(currentElement) }}
+          >
+            {displayName}
+          </span>
 
           {/* Action Buttons */}
           <div className="flex items-center space-x-3">
             {/* Code Button */}
             <button
               onClick={() => {
-                setCodePopupOpen(true);
+                setIsCodeOpen(true);
                 onCodeClick?.();
               }}
               className="px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-300 rounded-lg font-medium transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/20"
@@ -367,7 +228,7 @@ export default function ProfileBar({
             {/* Digital Binder Button */}
             <button
               onClick={() => {
-                setDigitalBinderPopupOpen(true);
+                setIsBinderOpen(true);
                 onDigitalBinderClick?.();
               }}
               className="p-1 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-purple-500/20 w-12 h-10"
@@ -386,7 +247,7 @@ export default function ProfileBar({
             {/* Badges Button */}
             <button
               onClick={() => {
-                setBadgesPopupOpen(true);
+                setIsBadgesOpen(true);
                 onBadgesClick?.();
               }}
               className="p-1 bg-yellow-600/20 hover:bg-yellow-600/30 border border-yellow-500/40 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-yellow-500/20 w-12 h-10"
@@ -409,7 +270,7 @@ export default function ProfileBar({
           {/* HeartCoin Button & Balance */}
           <motion.button
             onClick={() => {
-              setHeartCoinPopupOpen(true);
+              setIsHeartCoinOpen(true);
               onHeartCoinClick?.();
             }}
             className="flex items-center space-x-2 px-2 py-2 bg-pink-600/20 hover:bg-pink-600/30 border border-pink-500/40 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-pink-500/20"
@@ -429,42 +290,22 @@ export default function ProfileBar({
         </div>
       </div>
 
-      {/* Profile Popups - All identical to Join Us popup */}
-      <SharedModal
-        open={codePopupOpen}
-        onClose={() => setCodePopupOpen(false)}
-        title="WELCOME BACK TO THE HEARTVERSE <3"
-        ariaLabel="Sign in"
-      >
-        {renderJoinUsContent()}
-      </SharedModal>
+      {/* Profile Modals - Each uses its own specific modal */}
+      {isCodeOpen && (
+        <CodeModal open={isCodeOpen} onClose={() => setIsCodeOpen(false)} />
+      )}
 
-      <SharedModal
-        open={digitalBinderPopupOpen}
-        onClose={() => setDigitalBinderPopupOpen(false)}
-        title="WELCOME BACK TO THE HEARTVERSE <3"
-        ariaLabel="Sign in"
-      >
-        {renderJoinUsContent()}
-      </SharedModal>
+      {isBinderOpen && (
+        <BinderModal open={isBinderOpen} onClose={() => setIsBinderOpen(false)} />
+      )}
 
-      <SharedModal
-        open={badgesPopupOpen}
-        onClose={() => setBadgesPopupOpen(false)}
-        title="WELCOME BACK TO THE HEARTVERSE <3"
-        ariaLabel="Sign in"
-      >
-        {renderJoinUsContent()}
-      </SharedModal>
+      {isBadgesOpen && (
+        <BadgesModal open={isBadgesOpen} onClose={() => setIsBadgesOpen(false)} />
+      )}
 
-      <SharedModal
-        open={heartCoinPopupOpen}
-        onClose={() => setHeartCoinPopupOpen(false)}
-        title="WELCOME BACK TO THE HEARTVERSE <3"
-        ariaLabel="Sign in"
-      >
-        {renderJoinUsContent()}
-      </SharedModal>
+      {isHeartCoinOpen && (
+        <HeartCoinModal open={isHeartCoinOpen} onClose={() => setIsHeartCoinOpen(false)} />
+      )}
     </div>
   );
 }
