@@ -1185,8 +1185,8 @@ export default function DashboardApp({ initialSlug } = {}) {
         // Use provided YouTube clip for lightspeed overlay on opening and Start
         lightspeedYoutubeUrl={'https://youtu.be/KFssNa5WvKc'}
         onWarpSfxEnd={() => {
-          // Reveal profile bar after warp animation completes
-          setShowProfileBar(true);
+          // Set hasEnteredHeartverse to true after warp animation completes
+          setHasEnteredHeartverse(true);
           
           // After a song is selected, reveal ONLY the selected planet post-warp
           if (userSelected || pendingTrackPlay) {
@@ -1535,6 +1535,8 @@ export default function DashboardApp({ initialSlug } = {}) {
           try { playerStore.getState().setPlanetDisplayMode('all'); playerStore.getState().setPlanetsVisible(true); } catch {}
           try { playerStore.setState({ mainId: null }); } catch {}
           try { setHidePlanetsForSelection(false); } catch {}
+          // User is starting their journey into the Heartverse
+          setHasEnteredHeartverse(true);
           // Defer heavier state churn to next frame to reduce jank
           const kickoff = () => {
             if (!firstStartDone) { welcomeOnStartRef.current = true; setHomeIntroEnabled(true); setWelcomeHasPlayed(false); }
@@ -1589,6 +1591,8 @@ export default function DashboardApp({ initialSlug } = {}) {
           } catch {}
           try { playerStore.setState({ mainId: null }); } catch {}
           try { setHidePlanetsForSelection(false); } catch {}
+          // User is starting their journey into the Heartverse
+          setHasEnteredHeartverse(true);
           // Homepage Start flow (warp to home reveal)
           // Only enable welcome VO on FIRST Start button press per session
           if (!firstStartDone) {

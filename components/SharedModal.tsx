@@ -7,9 +7,10 @@ type Props = {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  ariaLabel?: string;
 };
 
-export default function ProfilePopup({ open, onClose, title, children }: Props) {
+export default function SharedModal({ open, onClose, title, children, ariaLabel }: Props) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -27,7 +28,7 @@ export default function ProfilePopup({ open, onClose, title, children }: Props) 
       className="fixed z-[9999] flex justify-center"
       aria-modal="true"
       role="dialog"
-      aria-label={title}
+      aria-label={ariaLabel || title}
       style={{ 
         top: '10px',
         left: '0',
@@ -70,7 +71,7 @@ export default function ProfilePopup({ open, onClose, title, children }: Props) 
           <h2 className="relative text-xl font-bold tracking-wider text-white drop-shadow mb-1">
             {title}
           </h2>
-
+          
           <div className="relative">
             {children}
           </div>

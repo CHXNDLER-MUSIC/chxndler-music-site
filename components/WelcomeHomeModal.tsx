@@ -9,7 +9,7 @@ type Props = {
   onClose: () => void;
 };
 
-export default function LoginModal({ open, onClose }: Props) {
+export default function WelcomeHomeModal({ open, onClose }: Props) {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState<string | null>(null);
@@ -108,11 +108,11 @@ export default function LoginModal({ open, onClose }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Phone Login Section */}
               <form onSubmit={signInWithPhone} className="space-y-2">
-                <label htmlFor="login-phone" className="block text-sm font-medium text-white/90">
+                <label htmlFor="welcome-phone" className="block text-sm font-medium text-white/90">
                   Phone Number
                 </label>
                 <input
-                  id="login-phone"
+                  id="welcome-phone"
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
@@ -136,11 +136,11 @@ export default function LoginModal({ open, onClose }: Props) {
 
               {/* Email Login Section */}
               <form onSubmit={signInWithEmail} className="space-y-2">
-                <label htmlFor="login-email" className="block text-sm font-medium text-white/90">
+                <label htmlFor="welcome-email" className="block text-sm font-medium text-white/90">
                   Email Address
                 </label>
                 <input
-                  id="login-email"
+                  id="welcome-email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -166,4 +166,3 @@ export default function LoginModal({ open, onClose }: Props) {
     </SharedModal>
   );
 }
-
