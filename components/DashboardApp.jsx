@@ -1048,6 +1048,8 @@ export default function DashboardApp({ initialSlug } = {}) {
                 handleBeamToggle('blue');
               }
             }}
+            onBeamColorChange={handleBeamToggle}
+            hasEnteredHeartverse={hasEnteredHeartverse}
           />
         )}
         
@@ -1161,6 +1163,8 @@ export default function DashboardApp({ initialSlug } = {}) {
               handleBeamToggle('blue');
             }
           }}
+          onBeamColorChange={handleBeamToggle}
+          hasEnteredHeartverse={hasEnteredHeartverse}
         />
       )}
       

@@ -185,11 +185,6 @@ export default function HUDPanel({
   const [joinUsPopoverPos, setJoinUsPopoverPos] = useState(null);
   const joinUsScrollRef = useRef(null);
 
-  // WELCOME HOME popover state (similar to join us)
-  const [showWelcomeHomePopover, setShowWelcomeHomePopover] = useState(false);
-  const welcomeHomeBtnRef = useRef(null);
-  const [welcomeHomePopoverPos, setWelcomeHomePopoverPos] = useState(null);
-  const welcomeHomeScrollRef = useRef(null);
 
   // Brand (CHXNDLER) popover state
   const [showBrandPopover, setShowBrandPopover] = useState(false);
@@ -1048,37 +1043,6 @@ export default function HUDPanel({
     setShowJoinUsPopover(true);
   }
 
-  async function openWelcomeHomePopover(){
-    try { sfx.play('click', 0.4); } catch {}
-    // Anchor position (similar to join us)
-    try {
-      const r = welcomeHomeBtnRef.current?.getBoundingClientRect?.();
-      const wrapper = innerRef.current?.parentElement || null; // outer HUD blue display wrapper (padding box)
-      // Position the popover to match the blue display's vertical bounds
-      if (wrapper && typeof window !== 'undefined') {
-        const rect = wrapper.getBoundingClientRect();
-        const cs = window.getComputedStyle(wrapper);
-        const pl = parseFloat(cs.paddingLeft || '0') || 0;
-        const pr = parseFloat(cs.paddingRight || '0') || 0;
-        let leftEdge = rect.left + pl;
-        let rightEdge = rect.right - pr;
-        // Very slightly wider than the blue display on both sides
-        const HORIZONTAL_EXPAND = 12; // px to grow on each side
-        leftEdge = Math.max(8, leftEdge - HORIZONTAL_EXPAND);
-        rightEdge = Math.min((typeof window !== 'undefined' ? window.innerWidth : rightEdge), rightEdge + HORIZONTAL_EXPAND) - 8 + 8;
-        const width = Math.max(0, rightEdge - leftEdge);
-        // Bring the top down more while keeping the bottom aligned to blue display bottom; this also shortens the popover
-        const TOP_INSET = 136; // same as lyrics popup
-        let top = rect.top + TOP_INSET;
-        top = Math.max(8, top);
-        let height = Math.max(180, Math.min(320, (typeof window !== 'undefined' ? window.innerHeight * 0.32 : 280)));
-        setWelcomeHomePopoverPos({ left: leftEdge, top, width, height });
-      }
-    } catch(e) {
-      console.warn('Failed to position WELCOME HOME popover:', e);
-    }
-    setShowWelcomeHomePopover(true);
-  }
 
   async function openSoulSkyPopover(){
     try { sfx.play('click', 0.4); } catch {}

@@ -703,6 +703,44 @@ export default function SteeringWheelOverlay({
 
 
 
+      {/* "Enter the Heartverse" text above start button - only show before UI is unlocked */}
+      {!hideStartButton && !isUIUnlocked && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: `calc(-2vh + ${vs * 0.35}px + 40px)`, // Positioned higher above the start button
+            left: '50%',
+            transform: 'translate(-50%, 0)',
+            zIndex: 104, // Just below the start button
+            pointerEvents: 'none',
+            textAlign: 'center'
+          }}
+        >
+          <div
+            style={{
+              fontFamily: 'OrbitronLocal, InterLocal, system-ui, sans-serif',
+              fontWeight: 900,
+              fontSize: 'clamp(18px, 4vw, 28px)',
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: '#fff',
+              textShadow: `
+                0 0 10px #19E3FF,
+                0 0 20px #19E3FF,
+                0 0 30px #19E3FF,
+                0 0 40px #19E3FF,
+                2px 2px 4px rgba(0,0,0,0.8)
+              `,
+              filter: 'brightness(1.1) saturate(1.2)',
+              animation: 'heartverseGlow 2.5s ease-in-out infinite',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            Enter the Heartverse
+          </div>
+        </div>
+      )}
+
       {/* Start button positioned directly on top of the wheel */}
       {!hideStartButton && <button
         onClick={handleLaunch}
@@ -1043,6 +1081,28 @@ export default function SteeringWheelOverlay({
         @keyframes beamFlow {
           0% { background-position: 0% 0%, 0% 0px; }
           100% { background-position: 0% 0%, 0% 160px; }
+        }
+
+        /* Enter the Heartverse text glow animation */
+        @keyframes heartverseGlow {
+          0%, 100% {
+            textShadow: 
+              0 0 10px #19E3FF,
+              0 0 20px #19E3FF,
+              0 0 30px #19E3FF,
+              0 0 40px #19E3FF,
+              2px 2px 4px rgba(0,0,0,0.8);
+            filter: brightness(1.1) saturate(1.2);
+          }
+          50% {
+            textShadow: 
+              0 0 15px #19E3FF,
+              0 0 30px #19E3FF,
+              0 0 45px #19E3FF,
+              0 0 60px #19E3FF,
+              2px 2px 6px rgba(0,0,0,0.9);
+            filter: brightness(1.3) saturate(1.4);
+          }
         }
         
         /* 3D Planet System Animations */

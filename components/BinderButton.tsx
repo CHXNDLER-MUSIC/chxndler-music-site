@@ -25,21 +25,21 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
   
   const mockCards = {
     Lightning: [
-      { name: 'Storm Caller', rarity: 'Rare', image: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910' },
-      { name: 'Thunder Strike', rarity: 'Common', image: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910' },
-      { name: 'Lightning Lord', rarity: 'Legendary', image: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910' },
+      { name: 'LIGHTNING', rarity: 'Rare', image: 'https://ik.imagekit.io/CHXNDLER/card/LIGHTNING.png' },
+      { name: 'Thunder Strike', rarity: 'Common', image: 'https://ik.imagekit.io/CHXNDLER/card/LIGHTNING.png' },
+      { name: 'Storm Lord', rarity: 'Legendary', image: 'https://ik.imagekit.io/CHXNDLER/card/LIGHTNING.png' },
     ],
     Darkness: [
-      { name: 'Shadow Walker', rarity: 'Rare', image: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910' },
-      { name: 'Dark Void', rarity: 'Legendary', image: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910' },
+      { name: 'DARKNESS', rarity: 'Rare', image: 'https://ik.imagekit.io/CHXNDLER/card/DARKNESS.png' },
+      { name: 'Shadow Void', rarity: 'Legendary', image: 'https://ik.imagekit.io/CHXNDLER/card/DARKNESS.png' },
     ],
     Water: [
-      { name: 'Ocean Tide', rarity: 'Common', image: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910' },
-      { name: 'Tsunami Force', rarity: 'Legendary', image: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910' },
+      { name: 'WATER', rarity: 'Common', image: 'https://ik.imagekit.io/CHXNDLER/card/WATER.png' },
+      { name: 'Ocean Force', rarity: 'Legendary', image: 'https://ik.imagekit.io/CHXNDLER/card/WATER.png' },
     ],
     Heart: [
+      { name: 'HEART', rarity: 'Rare', image: 'https://ik.imagekit.io/CHXNDLER/card/HEART.png' },
       { name: 'CHXNDLER', rarity: 'Rare', image: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910' },
-      { name: 'Heart Beat', rarity: 'Common', image: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910' },
     ],
   };
 
@@ -213,16 +213,6 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
           
           {/* Header */}
           <div className="flex justify-between items-center mb-3">
-            <div 
-              style={{ 
-                color: '#FF69B4', 
-                textShadow: '0 0 8px rgba(255,105,180,0.6)', 
-                fontSize: '16px',
-                fontWeight: 'bold'
-              }}
-            >
-              DIGITAL CARD BINDER
-            </div>
             <button
               onClick={() => {
                 try { sfx.play('click', 0.6); } catch {}
@@ -246,8 +236,20 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                 e.currentTarget.style.boxShadow = '0 0 8px rgba(255,105,180,0.3)';
               }}
             >
-              {showFullCollection ? 'BACK TO BINDER' : 'VIEW FULL COLLECTION'}
+              {showFullCollection ? 'BACK TO BINDER' : 'FULL COLLECTION'}
             </button>
+            <div 
+              className="absolute left-1/2 transform -translate-x-1/2"
+              style={{ 
+                color: '#FF69B4', 
+                textShadow: '0 0 8px rgba(255,105,180,0.6)', 
+                fontSize: '16px',
+                fontWeight: 'bold'
+              }}
+            >
+              DIGITAL CARD BINDER
+            </div>
+            <div className="w-32"></div>
           </div>
           
           {/* Thin pink neon line */}
@@ -263,13 +265,13 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
             style={{ 
               whiteSpace: 'pre-wrap', 
               lineHeight: 1.2, 
-              fontSize: 14, 
+              fontSize: 11, 
               color: '#FF69B4', 
               textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,105,180,0.6)', 
               marginTop: '-4px' 
             }}
           >
-            ACCESS YOUR COLLECTION OF DIGITAL CARDS, MEMORIES, AND EXCLUSIVE CONTENT FROM THE HEARTVERSE.
+            Earn the cards that reflect your journey as you move through the Heartverse.
           </div>
 
           {/* Collection Progress */}
@@ -279,75 +281,287 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
               color: '#FFB6C1', 
               textShadow: '0 0 4px rgba(255,182,193,0.8)', 
               fontSize: '12px',
-              fontWeight: 'bold'
+              fontWeight: 'bold',
+              marginTop: '-8px'
             }}
           >
             CARDS COLLECTED: 1/5
           </div>
 
-          {/* Binder Content - Card Slots */}
+          {/* Dynamic Content - Binder Slots or Full Collection */}
           <div className="relative mt-1">
-            <div className="grid grid-cols-5 gap-2">
-              {Array.from({ length: 5 }, (_, index) => (
-                <div key={index} className="text-center">
-                  {index === 0 ? (
-                    // First slot - Chxndler Card
-                    <div 
-                      className="w-full h-24 rounded border-2 border-pink-400/80 relative overflow-hidden cursor-pointer transition-all duration-300 hover:scale-110 hover:z-10"
-                      style={{
-                        boxShadow: '0 0 15px rgba(255,105,180,0.5)',
-                      }}
-                      onClick={() => {
-                        try { sfx.play('click', 0.8); } catch {}
-                        setCardOpen(true);
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.boxShadow = '0 0 25px rgba(255,105,180,0.8), 0 0 40px rgba(255,105,180,0.5)';
-                        e.currentTarget.style.transform = 'scale(1.15) translateY(-5px)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.boxShadow = '0 0 15px rgba(255,105,180,0.5)';
-                        e.currentTarget.style.transform = 'scale(1)';
-                      }}
-                    >
-                      <img
-                        src="https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910"
-                        alt="CHXNDLER Card"
-                        className="w-full h-full object-cover rounded"
-                        draggable={false}
-                      />
-                      {/* Holographic effect */}
+            {!showFullCollection ? (
+              // Binder Card Slots
+              <div className="grid grid-cols-5 gap-2">
+                {Array.from({ length: 5 }, (_, index) => (
+                  <div key={index} className="text-center">
+                    {index === 0 ? (
+                      // First slot - Chxndler Card
                       <div 
-                        className="absolute inset-0 opacity-20"
+                        className="w-full h-24 rounded border-2 border-pink-400/80 relative overflow-hidden cursor-pointer transition-all duration-300 hover:scale-110 hover:z-10"
                         style={{
-                          background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%)',
-                          animation: 'shimmer 3s ease-in-out infinite'
+                          boxShadow: '0 0 15px rgba(255,105,180,0.5)',
                         }}
-                      />
-                      {/* Hover overlay with card details */}
-                      <div className="absolute inset-0 bg-black/70 opacity-0 hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center text-white text-xs">
-                        <div className="font-bold mb-1" style={{ textShadow: '0 0 4px rgba(255,255,255,0.8)' }}>
-                          CHXNDLER
-                        </div>
-                        <div className="text-pink-300 mb-1">★ RARE ★</div>
-                        <div className="text-[10px] text-center px-1">
-                          Original Artist Card
+                        onClick={() => {
+                          try { sfx.play('click', 0.8); } catch {}
+                          setCardOpen(true);
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.boxShadow = '0 0 25px rgba(255,105,180,0.8), 0 0 40px rgba(255,105,180,0.5)';
+                          e.currentTarget.style.transform = 'scale(1.15) translateY(-5px)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.boxShadow = '0 0 15px rgba(255,105,180,0.5)';
+                          e.currentTarget.style.transform = 'scale(1)';
+                        }}
+                      >
+                        <img
+                          src="https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910"
+                          alt="CHXNDLER Card"
+                          className="w-full h-full object-cover rounded"
+                          draggable={false}
+                        />
+                        {/* Holographic effect */}
+                        <div 
+                          className="absolute inset-0 opacity-20"
+                          style={{
+                            background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%)',
+                            animation: 'shimmer 3s ease-in-out infinite'
+                          }}
+                        />
+                        {/* Hover overlay with card details */}
+                        <div className="absolute inset-0 bg-black/70 opacity-0 hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center text-white text-xs">
+                          <div className="font-bold mb-1" style={{ textShadow: '0 0 4px rgba(255,255,255,0.8)' }}>
+                            CHXNDLER
+                          </div>
+                          <div className="text-pink-300 mb-1">★ RARE ★</div>
+                          <div className="text-[10px] text-center px-1">
+                            Original Artist Card
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ) : (
-                    // Empty slots
+                    ) : (
+                      // Empty slots
+                      <div 
+                        className="w-full h-24 rounded border-2 border-dashed border-pink-400/40"
+                        style={{
+                          background: 'rgba(255,105,180,0.05)',
+                          boxShadow: 'inset 0 0 10px rgba(255,105,180,0.1)',
+                        }}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              // Full Collection View
+              <>
+                {!selectedElement ? (
+                  // Element Selection
+                  <>
                     <div 
-                      className="w-full h-24 rounded border-2 border-dashed border-pink-400/40"
-                      style={{
-                        background: 'rgba(255,105,180,0.05)',
-                        boxShadow: 'inset 0 0 10px rgba(255,105,180,0.1)',
+                      className="text-center mb-2"
+                      style={{ 
+                        color: '#FFB6C1', 
+                        fontSize: '14px',
+                        textShadow: '0 0 4px rgba(255,182,193,0.6)',
+                        marginTop: '-12px'
                       }}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
+                    >
+                      SELECT AN ELEMENT TO VIEW CARDS
+                    </div>
+                    <div className="grid grid-cols-4 gap-3 justify-center" style={{ marginTop: '-8px' }}>
+                      {elements.map((element) => (
+                        <div
+                          key={element}
+                          className="text-center cursor-pointer group max-w-16"
+                          onClick={() => {
+                            try { sfx.play('click', 0.7); } catch {}
+                            setSelectedElement(element);
+                            setCurrentCardIndex(0);
+                          }}
+                        >
+                          <div 
+                            className="w-full h-28 rounded-lg border-2 border-pink-400/60 hover:border-pink-400/80 relative overflow-hidden transition-all duration-300 group-hover:scale-105"
+                            style={{
+                              boxShadow: '0 0 15px rgba(255,105,180,0.3)',
+                            }}
+                          >
+                            <img
+                              src={`https://ik.imagekit.io/CHXNDLER/card/${element.toUpperCase()}.png`}
+                              alt={`${element} Card`}
+                              className="w-full h-full object-cover rounded-lg"
+                              draggable={false}
+                            />
+                            {/* Holographic effect */}
+                            <div 
+                              className="absolute inset-0 opacity-20"
+                              style={{
+                                background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%)',
+                                animation: 'shimmer 3s ease-in-out infinite'
+                              }}
+                            />
+                            {/* Element name overlay */}
+                            <div 
+                              className="absolute bottom-1 left-1/2 transform -translate-x-1/2"
+                              style={{ 
+                                color: '#FFFFFF', 
+                                textShadow: '0 0 4px rgba(0,0,0,0.8), 0 0 8px rgba(255,255,255,0.6)',
+                                fontSize: '10px',
+                                fontWeight: 'bold'
+                              }}
+                            >
+                              {element.toUpperCase()}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  // Card View with Filters
+                  <>
+                    {/* Back and Filters */}
+                    <div className="flex justify-between items-center mb-4">
+                      <button
+                        onClick={() => {
+                          try { sfx.play('click', 0.6); } catch {}
+                          setSelectedElement(null);
+                          setCurrentCardIndex(0);
+                        }}
+                        className="flex items-center gap-2 text-pink-300 hover:text-pink-200 transition-colors text-xs"
+                        style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                      >
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                          <path d="M19 12H5m7-7l-7 7 7 7"/>
+                        </svg>
+                        Back to Elements
+                      </button>
+                      
+                      <select
+                        value={selectedRarity}
+                        onChange={(e) => {
+                          setSelectedRarity(e.target.value);
+                          setCurrentCardIndex(0);
+                        }}
+                        className="px-2 py-1 rounded border border-pink-400/60 bg-black/40 text-pink-200 text-xs"
+                        style={{ 
+                          boxShadow: '0 0 8px rgba(255,105,180,0.3)',
+                          textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                        }}
+                      >
+                        {rarities.map(rarity => (
+                          <option key={rarity} value={rarity} className="bg-black text-pink-200">
+                            {rarity}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Current Card Display */}
+                    {(() => {
+                      const cards = getFilteredCards();
+                      const currentCard = cards[currentCardIndex];
+                      
+                      if (!currentCard) {
+                        return (
+                          <div 
+                            className="text-center py-8"
+                            style={{ 
+                              color: '#FFB6C1', 
+                              textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                            }}
+                          >
+                            No cards found for the selected filters
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="text-center">
+                          <div className="relative inline-block">
+                            <img
+                              src={currentCard.image}
+                              alt={currentCard.name}
+                              className="w-20 h-auto rounded-lg mx-auto"
+                              style={{
+                                boxShadow: '0 0 15px rgba(255,105,180,0.6), 0 0 30px rgba(255,105,180,0.3)',
+                                border: '2px solid rgba(255,105,180,0.6)',
+                              }}
+                              draggable={false}
+                            />
+                            
+                            {/* Navigation arrows */}
+                            {cards.length > 1 && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    try { sfx.play('click', 0.5); } catch {}
+                                    setCurrentCardIndex(prev => prev > 0 ? prev - 1 : cards.length - 1);
+                                  }}
+                                  className="absolute left-[-30px] top-1/2 transform -translate-y-1/2 w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200"
+                                  style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
+                                >
+                                  <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                                    <path d="M15 18l-6-6 6-6"/>
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    try { sfx.play('click', 0.5); } catch {}
+                                    setCurrentCardIndex(prev => prev < cards.length - 1 ? prev + 1 : 0);
+                                  }}
+                                  className="absolute right-[-30px] top-1/2 transform -translate-y-1/2 w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200"
+                                  style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
+                                >
+                                  <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                                    <path d="M9 18l6-6-6-6"/>
+                                  </svg>
+                                </button>
+                              </>
+                            )}
+                          </div>
+                          
+                          {/* Card Info */}
+                          <div className="mt-3">
+                            <div 
+                              className="text-sm font-bold mb-1"
+                              style={{ 
+                                color: '#FFFFFF', 
+                                textShadow: '0 0 6px rgba(255,255,255,0.8)'
+                              }}
+                            >
+                              {currentCard.name}
+                            </div>
+                            <div 
+                              className="text-xs"
+                              style={{ 
+                                color: currentCard.rarity === 'Legendary' ? '#FFD700' :
+                                       currentCard.rarity === 'Rare' ? '#FF69B4' : '#87CEEB',
+                                textShadow: '0 0 4px currentColor'
+                              }}
+                            >
+                              ★ {currentCard.rarity.toUpperCase()} ★
+                            </div>
+                            {cards.length > 1 && (
+                              <div 
+                                className="text-[10px] mt-1"
+                                style={{ 
+                                  color: '#FFB6C1', 
+                                  textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                                }}
+                              >
+                                {currentCardIndex + 1} of {cards.length}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </>
+                )}
+              </>
+            )}
           </div>
           </div>
         </div>
@@ -372,8 +586,8 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
             className="relative z-10"
             onClick={(e) => e.stopPropagation()}
             style={{
-              maxWidth: 'min(90vw, 400px)',
-              maxHeight: '80vh',
+              maxWidth: 'min(90vw, 280px)',
+              maxHeight: '60vh',
             }}
           >
             {/* Card image */}
@@ -418,256 +632,6 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
         </div>
       )}
 
-      {/* Full Collection Modal */}
-      {fullCollectionOpen && (
-        <div 
-          className="fixed inset-0 z-[2147483649] flex items-center justify-center p-4"
-          onClick={() => {
-            try { sfx.play('close', 0.8); } catch {}
-            setFullCollectionOpen(false);
-            setSelectedElement(null);
-            setCurrentCardIndex(0);
-          }}
-        >
-          <div 
-            className="relative bg-black/80 backdrop-blur-lg rounded-2xl border border-pink-400/60 p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              boxShadow: '0 0 30px rgba(255,105,180,0.5)',
-              background: 'rgba(0,0,0,0.8)',
-            }}
-          >
-            {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-              <h2 
-                className="text-xl font-bold"
-                style={{
-                  color: '#FF69B4',
-                  textShadow: '0 0 10px rgba(255,105,180,0.8)',
-                }}
-              >
-                FULL COLLECTION
-              </h2>
-              <button
-                onClick={() => {
-                  try { sfx.play('close', 0.8); } catch {}
-                  setFullCollectionOpen(false);
-                  setSelectedElement(null);
-                  setCurrentCardIndex(0);
-                }}
-                className="w-8 h-8 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200"
-                style={{ boxShadow: '0 0 10px rgba(255,105,180,0.4)' }}
-              >
-                <svg viewBox="0 0 24 24" width="18" height="18">
-                  <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </button>
-            </div>
-
-            {!selectedElement ? (
-              // Element Selection View
-              <>
-                <div 
-                  className="text-center mb-4"
-                  style={{ 
-                    color: '#FFB6C1', 
-                    fontSize: '14px',
-                    textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                  }}
-                >
-                  SELECT AN ELEMENT TO VIEW CARDS
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {elements.map((element, index) => (
-                    <div
-                      key={element}
-                      className="text-center cursor-pointer group"
-                      onClick={() => {
-                        try { sfx.play('click', 0.7); } catch {}
-                        setSelectedElement(element);
-                        setCurrentCardIndex(0);
-                      }}
-                    >
-                      <div 
-                        className="w-full h-32 rounded-lg border-2 border-pink-400/60 hover:border-pink-400/80 flex flex-col items-center justify-center transition-all duration-300 group-hover:scale-105"
-                        style={{
-                          background: 'linear-gradient(135deg, rgba(255,105,180,0.1) 0%, rgba(255,20,147,0.2) 50%, rgba(199,21,133,0.1) 100%)',
-                          boxShadow: '0 0 15px rgba(255,105,180,0.3)',
-                        }}
-                      >
-                        <div 
-                          className="text-lg mb-2"
-                          style={{
-                            color: element === 'Lightning' ? '#FFD700' : 
-                                   element === 'Darkness' ? '#800080' : 
-                                   element === 'Water' ? '#00BFFF' : '#FF69B4',
-                            textShadow: '0 0 6px currentColor',
-                          }}
-                        >
-                          {element === 'Lightning' ? '⚡' : 
-                           element === 'Darkness' ? '🌙' : 
-                           element === 'Water' ? '🌊' : '💖'}
-                        </div>
-                        <div 
-                          className="font-bold text-sm"
-                          style={{ 
-                            color: '#FFFFFF', 
-                            textShadow: '0 0 4px rgba(255,255,255,0.8)'
-                          }}
-                        >
-                          {element}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              // Card View with Filters
-              <>
-                {/* Back and Filters */}
-                <div className="flex justify-between items-center mb-4">
-                  <button
-                    onClick={() => {
-                      try { sfx.play('click', 0.6); } catch {}
-                      setSelectedElement(null);
-                      setCurrentCardIndex(0);
-                    }}
-                    className="flex items-center gap-2 text-pink-300 hover:text-pink-200 transition-colors"
-                    style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
-                  >
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                      <path d="M19 12H5m7-7l-7 7 7 7"/>
-                    </svg>
-                    Back to Elements
-                  </button>
-                  
-                  <select
-                    value={selectedRarity}
-                    onChange={(e) => {
-                      setSelectedRarity(e.target.value);
-                      setCurrentCardIndex(0);
-                    }}
-                    className="px-3 py-1 rounded border border-pink-400/60 bg-black/40 text-pink-200 text-sm"
-                    style={{ 
-                      boxShadow: '0 0 8px rgba(255,105,180,0.3)',
-                      textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                    }}
-                  >
-                    {rarities.map(rarity => (
-                      <option key={rarity} value={rarity} className="bg-black text-pink-200">
-                        {rarity}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Current Card Display */}
-                {(() => {
-                  const cards = getFilteredCards();
-                  const currentCard = cards[currentCardIndex];
-                  
-                  if (!currentCard) {
-                    return (
-                      <div 
-                        className="text-center py-8"
-                        style={{ 
-                          color: '#FFB6C1', 
-                          textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                        }}
-                      >
-                        No cards found for the selected filters
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div className="text-center">
-                      <div className="relative inline-block">
-                        <img
-                          src={currentCard.image}
-                          alt={currentCard.name}
-                          className="w-64 h-auto rounded-lg mx-auto"
-                          style={{
-                            boxShadow: '0 0 25px rgba(255,105,180,0.6), 0 0 50px rgba(255,105,180,0.3)',
-                            border: '2px solid rgba(255,105,180,0.6)',
-                          }}
-                          draggable={false}
-                        />
-                        
-                        {/* Navigation arrows */}
-                        {cards.length > 1 && (
-                          <>
-                            <button
-                              onClick={() => {
-                                try { sfx.play('click', 0.5); } catch {}
-                                setCurrentCardIndex(prev => prev > 0 ? prev - 1 : cards.length - 1);
-                              }}
-                              className="absolute left-[-60px] top-1/2 transform -translate-y-1/2 w-10 h-10 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200"
-                              style={{ boxShadow: '0 0 10px rgba(255,105,180,0.4)' }}
-                            >
-                              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                                <path d="M15 18l-6-6 6-6"/>
-                              </svg>
-                            </button>
-                            <button
-                              onClick={() => {
-                                try { sfx.play('click', 0.5); } catch {}
-                                setCurrentCardIndex(prev => prev < cards.length - 1 ? prev + 1 : 0);
-                              }}
-                              className="absolute right-[-60px] top-1/2 transform -translate-y-1/2 w-10 h-10 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200"
-                              style={{ boxShadow: '0 0 10px rgba(255,105,180,0.4)' }}
-                            >
-                              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                                <path d="M9 18l6-6-6-6"/>
-                              </svg>
-                            </button>
-                          </>
-                        )}
-                      </div>
-                      
-                      {/* Card Info */}
-                      <div className="mt-4">
-                        <div 
-                          className="text-lg font-bold mb-1"
-                          style={{ 
-                            color: '#FFFFFF', 
-                            textShadow: '0 0 6px rgba(255,255,255,0.8)'
-                          }}
-                        >
-                          {currentCard.name}
-                        </div>
-                        <div 
-                          className="text-sm"
-                          style={{ 
-                            color: currentCard.rarity === 'Legendary' ? '#FFD700' :
-                                   currentCard.rarity === 'Rare' ? '#FF69B4' : '#87CEEB',
-                            textShadow: '0 0 4px currentColor'
-                          }}
-                        >
-                          ★ {currentCard.rarity.toUpperCase()} ★
-                        </div>
-                        {cards.length > 1 && (
-                          <div 
-                            className="text-xs mt-2"
-                            style={{ 
-                              color: '#FFB6C1', 
-                              textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                            }}
-                          >
-                            {currentCardIndex + 1} of {cards.length}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })()}
-              </>
-            )}
-          </div>
-        </div>
-      )}
     </>
   );
 }

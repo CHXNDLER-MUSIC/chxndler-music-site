@@ -35,6 +35,8 @@ interface ProfileBarProps {
   onHeartCoinClick?: () => void;
   onCloseBlueDisplay?: () => void;
   onOpenBlueDisplay?: () => void;
+  onBeamColorChange?: (color: string) => void;
+  hasEnteredHeartverse?: boolean;
 }
 
 export default function ProfileBar({
@@ -43,7 +45,9 @@ export default function ProfileBar({
   onBadgesClick,
   onHeartCoinClick,
   onCloseBlueDisplay,
-  onOpenBlueDisplay
+  onOpenBlueDisplay,
+  onBeamColorChange,
+  hasEnteredHeartverse = false
 }: ProfileBarProps) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -137,6 +141,11 @@ export default function ProfileBar({
       default: return '#FFFFFF';
     }
   };
+
+  // Don't render the profile bar at all until user has entered the Heartverse
+  if (!hasEnteredHeartverse) {
+    return null;
+  }
 
   return (
     <div className="fixed top-0 left-0 right-0 z-[200] h-16 bg-black/80 backdrop-blur-md border-b border-white/10">
@@ -251,6 +260,7 @@ export default function ProfileBar({
             onHoverSound={() => sfx.play('hover', 0.8)}
             onCloseBlueDisplay={onCloseBlueDisplay}
             onOpenBlueDisplay={onOpenBlueDisplay}
+            onBeamColorChange={onBeamColorChange}
           />
 
           {/* Heart Coin Button */}

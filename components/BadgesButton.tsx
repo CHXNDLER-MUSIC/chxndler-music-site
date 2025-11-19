@@ -1,24 +1,66 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import HeartverseButton from "@/components/HeartverseButton";
 import { sfx } from "@/lib/sfx";
+import { Badge, getAllBadges, getRarityColor, getRarityGlow, achievementBadges, streakBadges, elementBadges } from "@/lib/badges";
+import { loadUserProgress, updateStreak, UserProgress } from "@/lib/userProgress";
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   asChild?: boolean;
   onHoverSound?: () => void;
   onCloseBlueDisplay?: () => void;
   onOpenBlueDisplay?: () => void;
+  onBeamColorChange?: (color: string) => void;
 };
 
-export default function BadgesButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, ...rest }: Props) {
+export default function BadgesButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onBeamColorChange, ...rest }: Props) {
   const [open, setOpen] = useState(false);
+  const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
+  const [badges, setBadges] = useState<Badge[]>([]);
+
+  useEffect(() => {
+    // Load user progress and update streak
+    const progress = loadUserProgress();
+    const { updatedProgress, newBadges, streakBroken } = updateStreak(progress);
+    setUserProgress(updatedProgress);
+    
+    // Load all badges and mark unlocked ones
+    const allBadges = getAllBadges();
+    const updatedBadges = allBadges.map(badge => {
+      let unlocked = false;
+      
+      // Check achievement badges
+      if (badge.category === 'achievement' && badge.achievementType) {
+        unlocked = updatedProgress.achievements[badge.achievementType];
+      }
+      
+      // Check streak badges
+      if (badge.category === 'streak' && badge.streakDays) {
+        unlocked = updatedProgress.currentStreak >= badge.streakDays;
+      }
+      
+      // Check element-specific streak badges
+      if (badge.category === 'element_streak' && badge.streakDays && badge.element === updatedProgress.element) {
+        unlocked = updatedProgress.currentStreak >= badge.streakDays;
+      }
+      
+      return {
+        ...badge,
+        unlocked
+      };
+    });
+    
+    setBadges(updatedBadges);
+  }, []);
 
   const handleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
     try { onClick?.(e); } catch {}
     if (!e.defaultPrevented) {
       e.preventDefault();
       try { sfx.play('click', 0.8); } catch {}
+      // Trigger yellow light beam
+      try { onBeamColorChange?.('yellow'); } catch {}
       // Close blue display first
       try { onCloseBlueDisplay?.(); } catch {}
       setOpen(true);
@@ -162,10 +204,24 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
               fontWeight: 'bold'
             }}
           >
-            COLLECT BADGES FROM THE HEARTVERSE ♥
+            COLLECT BADGES FROM THE HEARTVERSE
           </div>
           
-          {/* Thin blue neon line */}
+          {/* Current streak info */}
+          {userProgress && (
+            <div 
+              className="text-center mb-2"
+              style={{ 
+                color: '#FFD700', 
+                fontSize: '12px',
+                textShadow: '0 0 4px rgba(255,215,0,0.5)' 
+              }}
+            >
+              CURRENT STREAK: {userProgress.currentStreak} DAYS | ELEMENT: {userProgress.element.toUpperCase()} | UNLOCKED: {badges.filter(b => b.unlocked).length}/{badges.length}
+            </div>
+          )}
+          
+          {/* Thin yellow neon line */}
           <div 
             className="w-full h-px mb-4"
             style={{
@@ -173,87 +229,157 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
               boxShadow: '0 0 4px rgba(255,215,0,0.6)'
             }}
           />
-          <div 
-            className="text-center mb-4"
-            style={{ 
-              whiteSpace: 'pre-wrap', 
-              lineHeight: 1.2, 
-              fontSize: 14, 
-              color: '#FFD700', 
-              textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,215,0,0.6)', 
-              marginTop: '-4px' 
-            }}
-          >
-            DISCOVER AND UNLOCK EXCLUSIVE BADGES BY EXPLORING THE HEARTVERSE. EACH BADGE REPRESENTS A UNIQUE ACHIEVEMENT.
-          </div>
 
           {/* Badges Display */}
-          <div className="relative mt-1">
-            <div className="grid grid-cols-3 gap-4">
-              {/* Sample badges - you can replace with actual badge data */}
-              <div className="text-center">
+          <div className="relative mt-1 max-h-40 overflow-y-auto">
+            {/* Achievement Badges */}
+            {achievementBadges.length > 0 && (
+              <>
                 <div 
-                  className="w-16 h-16 mx-auto mb-2 rounded-full border-2 border-yellow-400/60 flex items-center justify-center"
-                  style={{
-                    background: 'rgba(255,215,0,0.1)',
-                    boxShadow: '0 0 15px rgba(255,215,0,0.3)',
-                  }}
-                >
-                  <span style={{ fontSize: '24px' }}>🎵</span>
-                </div>
-                <div 
-                  className="text-xs"
+                  className="text-xs mb-2"
                   style={{ 
-                    color: '#FFFFFF', 
-                    textShadow: '0 0 4px rgba(255,255,255,0.7)' 
+                    color: '#FFD700', 
+                    textShadow: '0 0 4px rgba(255,215,0,0.6)',
+                    textAlign: 'center'
                   }}
                 >
-                  FIRST LISTEN
+                  ACHIEVEMENTS
                 </div>
-              </div>
-              
-              <div className="text-center">
-                <div 
-                  className="w-16 h-16 mx-auto mb-2 rounded-full border-2 border-yellow-400/60 flex items-center justify-center"
-                  style={{
-                    background: 'rgba(255,215,0,0.1)',
-                    boxShadow: '0 0 15px rgba(255,215,0,0.3)',
-                  }}
-                >
-                  <span style={{ fontSize: '24px' }}>💫</span>
+                <div className="grid grid-cols-6 gap-2 mb-4">
+                  {achievementBadges.slice(0, 6).map((badge) => (
+                    <div key={badge.id} className="text-center">
+                      <div 
+                        className="w-12 h-12 mx-auto mb-1 rounded-full border flex items-center justify-center"
+                        style={{
+                          borderColor: badge.unlocked ? getRarityColor(badge.rarity) : 'rgba(128,128,128,0.3)',
+                          background: badge.unlocked ? getRarityGlow(badge.rarity) : 'rgba(128,128,128,0.1)',
+                          boxShadow: badge.unlocked ? `0 0 12px ${getRarityGlow(badge.rarity)}` : '0 0 6px rgba(128,128,128,0.2)',
+                        }}
+                        title={`${badge.name}: ${badge.description}`}
+                      >
+                        <span style={{ 
+                          fontSize: '16px', 
+                          opacity: badge.unlocked ? 1 : 0.4,
+                          filter: badge.unlocked ? 'none' : 'grayscale(100%)'
+                        }}>
+                          {badge.emoji}
+                        </span>
+                      </div>
+                      <div 
+                        className="text-xs"
+                        style={{ 
+                          color: badge.unlocked ? '#FFFFFF' : '#666', 
+                          textShadow: badge.unlocked ? '0 0 3px rgba(255,255,255,0.5)' : 'none',
+                          fontSize: '8px'
+                        }}
+                      >
+                        {badge.name.split(' ').slice(0, 2).join(' ')}
+                      </div>
+                    </div>
+                  ))}
                 </div>
+              </>
+            )}
+            
+            {/* Streak Badges */}
+            {userProgress && (
+              <>
                 <div 
-                  className="text-xs"
+                  className="text-xs mb-2"
                   style={{ 
-                    color: '#FFFFFF', 
-                    textShadow: '0 0 4px rgba(255,255,255,0.7)' 
+                    color: '#FFD700', 
+                    textShadow: '0 0 4px rgba(255,215,0,0.6)',
+                    textAlign: 'center'
                   }}
                 >
-                  EXPLORER
+                  GENERAL STREAKS
                 </div>
-              </div>
-              
-              <div className="text-center">
-                <div 
-                  className="w-16 h-16 mx-auto mb-2 rounded-full border-2 border-gray-400/30 flex items-center justify-center"
-                  style={{
-                    background: 'rgba(128,128,128,0.1)',
-                    boxShadow: '0 0 10px rgba(128,128,128,0.2)',
-                  }}
-                >
-                  <span style={{ fontSize: '24px', opacity: 0.5 }}>❓</span>
+                <div className="grid grid-cols-5 gap-2 mb-4">
+                  {streakBadges.map((badge) => {
+                    const unlocked = userProgress.currentStreak >= (badge.streakDays || 0);
+                    return (
+                      <div key={badge.id} className="text-center">
+                        <div 
+                          className="w-12 h-12 mx-auto mb-1 rounded-full border flex items-center justify-center"
+                          style={{
+                            borderColor: unlocked ? getRarityColor(badge.rarity) : 'rgba(128,128,128,0.3)',
+                            background: unlocked ? getRarityGlow(badge.rarity) : 'rgba(128,128,128,0.1)',
+                            boxShadow: unlocked ? `0 0 12px ${getRarityGlow(badge.rarity)}` : '0 0 6px rgba(128,128,128,0.2)',
+                          }}
+                          title={`${badge.name}: ${badge.description}`}
+                        >
+                          <span style={{ 
+                            fontSize: '16px', 
+                            opacity: unlocked ? 1 : 0.4,
+                            filter: unlocked ? 'none' : 'grayscale(100%)'
+                          }}>
+                            {badge.emoji}
+                          </span>
+                        </div>
+                        <div 
+                          className="text-xs"
+                          style={{ 
+                            color: unlocked ? '#FFFFFF' : '#666', 
+                            textShadow: unlocked ? '0 0 3px rgba(255,255,255,0.5)' : 'none',
+                            fontSize: '8px'
+                          }}
+                        >
+                          {badge.streakDays}D
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
+                
+                {/* Element Badges */}
                 <div 
-                  className="text-xs"
+                  className="text-xs mb-2"
                   style={{ 
-                    color: '#888', 
-                    textShadow: '0 0 2px rgba(136,136,136,0.5)' 
+                    color: '#FFD700', 
+                    textShadow: '0 0 4px rgba(255,215,0,0.6)',
+                    textAlign: 'center'
                   }}
                 >
-                  LOCKED
+                  {userProgress.element.toUpperCase()} ELEMENT STREAKS
                 </div>
-              </div>
-            </div>
+                <div className="grid grid-cols-6 gap-2">
+                  {elementBadges[userProgress.element]?.slice(0, 12).map((badge) => {
+                    const unlocked = userProgress.currentStreak >= (badge.streakDays || 0);
+                    return (
+                      <div key={badge.id} className="text-center">
+                        <div 
+                          className="w-10 h-10 mx-auto mb-1 rounded-full border flex items-center justify-center"
+                          style={{
+                            borderColor: unlocked ? getRarityColor(badge.rarity) : 'rgba(128,128,128,0.3)',
+                            background: unlocked ? getRarityGlow(badge.rarity) : 'rgba(128,128,128,0.1)',
+                            boxShadow: unlocked ? `0 0 10px ${getRarityGlow(badge.rarity)}` : '0 0 4px rgba(128,128,128,0.2)',
+                          }}
+                          title={`${badge.name}: ${badge.description} (${badge.streakDays} days)`}
+                        >
+                          <span style={{ 
+                            fontSize: '12px', 
+                            opacity: unlocked ? 1 : 0.4,
+                            filter: unlocked ? 'none' : 'grayscale(100%)'
+                          }}>
+                            {badge.emoji}
+                          </span>
+                        </div>
+                        <div 
+                          className="text-xs"
+                          style={{ 
+                            color: unlocked ? '#FFFFFF' : '#666', 
+                            textShadow: unlocked ? '0 0 3px rgba(255,255,255,0.5)' : 'none',
+                            fontSize: '7px'
+                          }}
+                        >
+                          {badge.streakDays}D
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </div>
           </div>
         </div>

@@ -48,7 +48,7 @@ export default function CodeButton({ asChild = false, children, onClick, onHover
         {...rest}
       >
         <span 
-          className="text-cyan-300 font-bold text-base"
+          className="text-cyan-300 font-bold text-sm"
           style={{
             textShadow: '0 0 8px rgba(0,255,255,0.8), 0 0 15px rgba(0,255,255,0.6), 0 0 20px rgba(0,255,255,0.4)'
           }}
@@ -191,21 +191,21 @@ export default function CodeButton({ asChild = false, children, onClick, onHover
             className="text-left space-y-3"
             style={{ 
               fontSize: 14, 
-              color: '#FFFFFF', 
-              textShadow: '0 0 4px rgba(255,255,255,0.7)', 
+              color: '#00FFFF', 
+              textShadow: '0 0 4px rgba(0,255,255,0.6)', 
             }}
           >
             <div className="flex items-start">
               <span className="mr-3" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.6)' }}>•</span>
-              <span>We believe being your truest self is the beginning of freedom.</span>
+              <span>We believe being your <span style={{ color: '#FFFFFF', textShadow: '0 0 12px rgba(255,255,255,0.9), 0 0 20px rgba(255,255,255,0.7), 0 0 30px rgba(255,255,255,0.5)' }}>truest self</span> is the beginning of freedom.</span>
             </div>
             <div className="flex items-start">
               <span className="mr-3" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.6)' }}>•</span>
-              <span>We believe passion is sacred and should be pursued loudly.</span>
+              <span>We believe <span style={{ color: '#FFFFFF', textShadow: '0 0 12px rgba(255,255,255,0.9), 0 0 20px rgba(255,255,255,0.7), 0 0 30px rgba(255,255,255,0.5)' }}>passion</span> is sacred and should be pursued loudly.</span>
             </div>
             <div className="flex items-start">
               <span className="mr-3" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.6)' }}>•</span>
-              <span>We believe love is the force that connects every soul.</span>
+              <span>We believe <span style={{ color: '#FFFFFF', textShadow: '0 0 12px rgba(255,255,255,0.9), 0 0 20px rgba(255,255,255,0.7), 0 0 30px rgba(255,255,255,0.5)' }}>love</span> is the force that connects every soul.</span>
             </div>
           </div>
           </div>
