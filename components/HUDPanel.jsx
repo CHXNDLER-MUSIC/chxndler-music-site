@@ -2392,29 +2392,7 @@ export default function HUDPanel({
                         }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                       />
-                      {/* WELCOME HOME button positioned next to JOIN US */}
-                      <HeartverseButton
-                        ref={welcomeHomeBtnRef}
-                        variant="welcome-home"
-                        label="WELCOME BACK"
-                        style={{ position: 'absolute', left: '100px', top: '70px', paddingLeft: '16px', paddingRight: '16px', minWidth: '80px' }}
-                        title="Welcome Home"
-                        aria-haspopup="dialog"
-                        aria-expanded={showWelcomeHomePopover}
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          try { sfx.play('click', 0.45); } catch {}; 
-                          try { trackAnalytics('welcome_home_clicked', { location: 'hud_controls' }); } catch {}; 
-                          if (showWelcomeHomePopover) { 
-                            try { sfx.play('close', 0.4); } catch {}; 
-                            setShowWelcomeHomePopover(false); 
-                            return; 
-                          }
-                          openWelcomeHomePopover(); 
-                        }}
-                        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                      />
-                      {/* STARS button positioned to the right of WELCOME HOME */}
+                      {/* STARS button */}
                       <HeartverseButton
                         ref={starsBtnRef}
                         variant="stars"
@@ -5591,96 +5569,6 @@ export default function HUDPanel({
                   document.body
                 ) : null}
 
-                {typeof document !== 'undefined' && showWelcomeHomePopover && welcomeHomePopoverPos ? require('react-dom').createPortal(
-                  <div
-                    role="dialog"
-                    aria-label="Welcome Home"
-                    className="lyrics-popover-hud holo-scrollbar-pink lyrics-modal-enhanced"
-                    ref={welcomeHomeScrollRef}
-                    style={{
-                      position: 'fixed',
-                      left: (welcomeHomePopoverPos && welcomeHomePopoverPos.left) || 0,
-                      top: (welcomeHomePopoverPos && welcomeHomePopoverPos.top) || 0,
-                      transform: (welcomeHomePopoverPos && welcomeHomePopoverPos.width) ? 'none' : 'translateX(-50%)',
-                      padding: '10px 14px 14px 14px', 
-                      borderRadius: 14,
-                      background: 'rgba(3,10,20,0.9)',
-                      border: '1px solid rgba(255,105,180,0.55)',
-                      boxShadow: '0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(255,105,180,0.45)',
-                      backdropFilter: 'blur(8px)',
-                      color: '#FF69B4',
-                      zIndex: 2147483647,
-                      width: (welcomeHomePopoverPos && welcomeHomePopoverPos.width) ? welcomeHomePopoverPos.width : 'min(98vw, 1400px)',
-                      height: (welcomeHomePopoverPos && welcomeHomePopoverPos.height) ? welcomeHomePopoverPos.height : '42vh',
-                      overflow: 'auto',
-                      animation: 'lyricsModalFadeIn 0.25s ease-out, lyricsModalFloat 6s ease-in-out infinite alternate'
-                    }}
-                    onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowWelcomeHomePopover(false); } }}
-                  >
-                    {/* Pink close button in the top-right corner */}
-                    <button
-                      aria-label="Close welcome home"
-                      title="Close"
-                      onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 26px rgba(255,105,180,0.95), 0 0 42px rgba(255,105,180,0.65)'; } catch {} }}
-                      onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 18px rgba(255,105,180,0.75), 0 0 32px rgba(255,105,180,0.45)'; } catch {} }}
-                      onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowWelcomeHomePopover(false); }}
-                      style={{
-                        position: 'absolute',
-                        top: 8,
-                        right: 8,
-                        width: 32,
-                        height: 32,
-                        borderRadius: 9999,
-                        background: 'rgba(0,0,0,0.35)',
-                        border: '2px solid rgba(255,105,180,0.85)',
-                        color: '#FF69B4',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: '0 0 18px rgba(255,105,180,0.75), 0 0 32px rgba(255,105,180,0.45)',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
-                        <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                        <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                      </svg>
-                    </button>
-                    {/* Moving glow background */}
-                    <div className="lyrics-glow-bg"></div>
-                    {/* Section header */}
-                    <div className="lyrics-header" style={{ color: '#FF69B4', textShadow: '0 0 8px rgba(255,105,180,0.6)' }}>
-                      WELCOME BACK TO THE HEARTVERSE {'<3'}
-                    </div>
-                    <div className="lyrics-content-enhanced" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.5, fontSize: 18, color: '#FFB6C1', textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,182,193,0.6)' }}>
-                      Welcome back to the HEARTVERSE.
-                    </div>
-                    {/* Login form */}
-                    <div className="relative space-y-3 mt-4">
-                      <div className="space-y-2">
-                        <label htmlFor="login-contact" className="block text-sm font-medium text-white/90">
-                          Phone Number or Email
-                        </label>
-                        <input
-                          id="login-contact"
-                          type="text"
-                          placeholder="Enter phone number or email"
-                          className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-[#FF69B4] focus:outline-none"
-                        />
-                        <button
-                          type="button"
-                          className="w-full inline-flex items-center justify-center rounded-lg bg-[#FF69B4]/20 border-2 border-[#FF69B4]/60 px-4 py-3 text-sm font-medium text-white hover:bg-[#FF69B4]/30 transition"
-                          style={{
-                            boxShadow: '0 0 20px rgba(255,105,180,0.6), 0 0 40px rgba(255,105,180,0.4), inset 0 0 10px rgba(255,105,180,0.2)'
-                          }}
-                        >
-                          Log In
-                        </button>
-                      </div>
-                    </div>
-                  </div>,
-                  document.body
-                ) : null}
 
                 {typeof document !== 'undefined' && showSoulSkyPopover && soulSkyPopoverPos ? require('react-dom').createPortal(
                   <div

@@ -298,7 +298,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                     {index === 0 ? (
                       // First slot - Chxndler Card
                       <div 
-                        className="w-full h-24 rounded border-2 border-pink-400/80 relative overflow-hidden cursor-pointer transition-all duration-300 hover:scale-110 hover:z-10"
+                        className="w-full h-32 rounded border-2 border-pink-400/80 relative overflow-hidden cursor-pointer transition-all duration-300 hover:scale-110 hover:z-10"
                         style={{
                           boxShadow: '0 0 15px rgba(255,105,180,0.5)',
                         }}
@@ -343,7 +343,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                     ) : (
                       // Empty slots
                       <div 
-                        className="w-full h-24 rounded border-2 border-dashed border-pink-400/40"
+                        className="w-full h-32 rounded border-2 border-dashed border-pink-400/40"
                         style={{
                           background: 'rgba(255,105,180,0.05)',
                           boxShadow: 'inset 0 0 10px rgba(255,105,180,0.1)',
@@ -382,7 +382,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                           }}
                         >
                           <div 
-                            className="w-full h-28 rounded-lg border-2 border-pink-400/60 hover:border-pink-400/80 relative overflow-hidden transition-all duration-300 group-hover:scale-105"
+                            className="w-full h-36 rounded-lg border-2 border-pink-400/60 hover:border-pink-400/80 relative overflow-hidden transition-all duration-300 group-hover:scale-105"
                             style={{
                               boxShadow: '0 0 15px rgba(255,105,180,0.3)',
                             }}
