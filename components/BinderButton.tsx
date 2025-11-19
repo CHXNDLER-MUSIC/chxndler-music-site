@@ -73,7 +73,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
     { name: 'CHXNDLER', element: 'ALL', rarity: 'Common' },
   ];
   
-  const elements = ['ALL', 'LIGHTNING', 'DARKNESS', 'WATER', 'HEART'];
+  const elements = ['LIGHTNING', 'DARKNESS', 'WATER', 'HEART'];
   const rarities = ['All', 'Common', 'Rare'];
   
   const getCardImage = (songName: string, element: string) => {
@@ -139,9 +139,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
     let filteredSongs = songCollection;
     
     // Filter by element
-    if (selectedElement !== 'ALL') {
-      filteredSongs = filteredSongs.filter(song => song.element === selectedElement);
-    }
+    filteredSongs = filteredSongs.filter(song => song.element === selectedElement);
     
     // Filter by rarity
     if (selectedRarity !== 'All') {
@@ -477,11 +475,11 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                     >
                       SELECT AN ELEMENT TO VIEW CARDS
                     </div>
-                    <div className="grid grid-cols-5 gap-3 justify-center" style={{ marginTop: '-8px' }}>
+                    <div className="grid grid-cols-4 gap-3 justify-center" style={{ marginTop: '-8px' }}>
                       {elements.map((element) => (
                         <div
                           key={element}
-                          className="text-center cursor-pointer group max-w-16"
+                          className="text-center cursor-pointer group max-w-24"
                           onClick={() => {
                             try { sfx.play('click', 0.7); } catch {}
                             setSelectedElement(element);
@@ -495,7 +493,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                             }}
                           >
                             <img
-                              src={element === 'ALL' ? 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910' : `https://ik.imagekit.io/CHXNDLER/card/${element.toUpperCase()}.png`}
+                              src={`https://ik.imagekit.io/CHXNDLER/card/${element.toUpperCase()}.png`}
                               alt={`${element} Card`}
                               className="w-full h-full object-cover rounded-lg"
                               draggable={false}
@@ -530,10 +528,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                                 fontWeight: 'bold'
                               }}
                             >
-                              {element === 'ALL' 
-                                ? songCollection.length
-                                : songCollection.filter(song => song.element === element).length
-                              }
+                              {songCollection.filter(song => song.element === element).length}
                             </div>
                           </div>
                         </div>
@@ -545,39 +540,43 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                   <>
                     {/* Back and Filters */}
                     <div className="flex justify-between items-center mb-4">
-                      <button
-                        onClick={() => {
-                          try { sfx.play('click', 0.6); } catch {}
-                          setSelectedElement(null);
-                          setCurrentCardIndex(0);
-                        }}
-                        className="flex items-center gap-2 text-pink-300 hover:text-pink-200 transition-colors text-xs"
-                        style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
-                      >
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                          <path d="M19 12H5m7-7l-7 7 7 7"/>
-                        </svg>
-                        Back to Elements
-                      </button>
+                      <div className="flex items-center gap-4">
+                        <button
+                          onClick={() => {
+                            try { sfx.play('click', 0.6); } catch {}
+                            setSelectedElement(null);
+                            setCurrentCardIndex(0);
+                          }}
+                          className="flex items-center gap-2 text-pink-300 hover:text-pink-200 transition-colors text-xs"
+                          style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                        >
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                            <path d="M19 12H5m7-7l-7 7 7 7"/>
+                          </svg>
+                          Back to Elements
+                        </button>
+                        
+                        <select
+                          value={selectedRarity}
+                          onChange={(e) => {
+                            setSelectedRarity(e.target.value);
+                            setCurrentCardIndex(0);
+                          }}
+                          className="px-2 py-1 rounded border border-pink-400/60 bg-black/40 text-pink-200 text-xs"
+                          style={{ 
+                            boxShadow: '0 0 8px rgba(255,105,180,0.3)',
+                            textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                          }}
+                        >
+                          {rarities.map(rarity => (
+                            <option key={rarity} value={rarity} className="bg-black text-pink-200">
+                              {rarity}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                       
-                      <select
-                        value={selectedRarity}
-                        onChange={(e) => {
-                          setSelectedRarity(e.target.value);
-                          setCurrentCardIndex(0);
-                        }}
-                        className="px-2 py-1 rounded border border-pink-400/60 bg-black/40 text-pink-200 text-xs"
-                        style={{ 
-                          boxShadow: '0 0 8px rgba(255,105,180,0.3)',
-                          textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                        }}
-                      >
-                        {rarities.map(rarity => (
-                          <option key={rarity} value={rarity} className="bg-black text-pink-200">
-                            {rarity}
-                          </option>
-                        ))}
-                      </select>
+                      <div></div>
                     </div>
 
                     {/* Current Card Display */}
@@ -600,17 +599,21 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                       }
 
                       return (
-                        <div className="text-center">
+                        <div className="text-center -mt-20">
                           <div className="relative inline-block">
                             <img
                               src={currentCard.image}
                               alt={currentCard.name}
-                              className="w-20 h-auto rounded-lg mx-auto"
+                              className="w-32 h-auto rounded-lg mx-auto cursor-pointer transition-transform duration-300 hover:scale-110"
                               style={{
                                 boxShadow: '0 0 15px rgba(255,105,180,0.6), 0 0 30px rgba(255,105,180,0.3)',
                                 border: '2px solid rgba(255,105,180,0.6)',
                               }}
                               draggable={false}
+                              onClick={() => {
+                                try { sfx.play('click', 0.8); } catch {}
+                                setCardOpen(true);
+                              }}
                             />
                             
                             {/* Navigation arrows */}
@@ -711,16 +714,6 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
             setCardOpen(false);
           }}
         >
-          {/* Background overlay */}
-          <div 
-            className="absolute bg-black/70 backdrop-blur-sm"
-            style={{
-              top: '0',
-              left: 0,
-              right: 0,
-              bottom: 0
-            }}
-          />
           
           {/* Card container */}
           <div 

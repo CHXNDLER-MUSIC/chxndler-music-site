@@ -1,18 +1,18 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ElementIcon } from '@/lib/elementIcons';
 import CodeModal from '@/components/CodeModal';
 import BinderModal from '@/components/BinderModal';
 import BadgesModal from '@/components/BadgesModal';
-import HeartCoinModal from '@/components/HeartCoinModal';
 import JourneyButton from '@/components/JourneyButton';
 import BadgesButton from '@/components/BadgesButton';
 import BinderButton from '@/components/BinderButton';
-import HeartCoinButton from '@/components/HeartCoinButton';
 import CodeButton from '@/components/CodeButton';
 import { sfx } from '@/lib/sfx';
+import { track as trackAnalytics } from '@/lib/analytics';
+import { createPortal } from 'react-dom';
 
 interface Profile {
   id: string;
@@ -32,7 +32,6 @@ interface ProfileBarProps {
   onCodeClick?: () => void;
   onDigitalBinderClick?: () => void;
   onBadgesClick?: () => void;
-  onHeartCoinClick?: () => void;
   onCloseBlueDisplay?: () => void;
   onOpenBlueDisplay?: () => void;
   onBeamColorChange?: (color: string) => void;
@@ -43,7 +42,6 @@ export default function ProfileBar({
   onCodeClick,
   onDigitalBinderClick, 
   onBadgesClick,
-  onHeartCoinClick,
   onCloseBlueDisplay,
   onOpenBlueDisplay,
   onBeamColorChange,
@@ -57,7 +55,11 @@ export default function ProfileBar({
   const [isCodeOpen, setIsCodeOpen] = useState(false);
   const [isBinderOpen, setIsBinderOpen] = useState(false);
   const [isBadgesOpen, setIsBadgesOpen] = useState(false);
-  const [isHeartCoinOpen, setIsHeartCoinOpen] = useState(false);
+
+  // Heart popover states
+  const [showHeartPopover, setShowHeartPopover] = useState(false);
+  const heartBtnRef = useRef<HTMLButtonElement>(null);
+  const [heartPopoverPos, setHeartPopoverPos] = useState<{left: number, top: number, width?: number, height?: number} | null>(null);
 
   useEffect(() => {
     fetchProfile();
@@ -73,7 +75,7 @@ export default function ProfileBar({
         // Demo user fallback
         setProfile({
           id: 'demo',
-          display_name: 'Demo User',
+          display_name: 'DEMO user',
           hearts: 0,
           element: 'heart'
         });
@@ -83,7 +85,7 @@ export default function ProfileBar({
       // Demo user fallback
       setProfile({
         id: 'demo',
-        display_name: 'Demo User', 
+        display_name: 'DEMO user', 
         hearts: 0,
         element: 'heart'
       });
@@ -112,6 +114,53 @@ export default function ProfileBar({
     }
   }
 
+  const openHeartPopover = () => {
+    try { sfx.play('click', 0.4); } catch {}
+    try {
+      const r = heartBtnRef.current?.getBoundingClientRect?.();
+      if (r && typeof window !== 'undefined') {
+        let top = r.bottom + 8;
+        top = Math.max(8, top);
+        let height = Math.max(240, Math.min(560, window.innerHeight * 0.46));
+        // Position from center of the button
+        let left = r.left + r.width/2;
+        // Account for popover width (around 300px) to prevent overflow
+        left = Math.max(150, Math.min(left, window.innerWidth - 150));
+        setHeartPopoverPos({ left, top, height });
+      }
+    } catch {}
+    setShowHeartPopover(true);
+  };
+
+  // Close heart popover on outside click / Escape
+  useEffect(() => {
+    if (!showHeartPopover) return;
+    const onDocDown = (e: MouseEvent | TouchEvent) => {
+      const t = e.target as Node;
+      const withinBtn = heartBtnRef.current && t && heartBtnRef.current.contains(t);
+      const dialog = document.querySelector('[aria-label="HEART PROFILE"]');
+      const withinDialog = dialog && t && dialog.contains(t);
+      if (!withinBtn && !withinDialog) { 
+        try { sfx.play('close', 0.4); } catch {}; 
+        setShowHeartPopover(false); 
+      }
+    };
+    const onKey = (e: KeyboardEvent) => { 
+      if (e.key === 'Escape') { 
+        try { sfx.play('close', 0.4); } catch {}; 
+        setShowHeartPopover(false); 
+      } 
+    };
+    document.addEventListener('mousedown', onDocDown);
+    document.addEventListener('touchstart', onDocDown, { passive: true });
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocDown);
+      document.removeEventListener('touchstart', onDocDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [showHeartPopover]);
+
 
   if (loading) {
     return (
@@ -127,7 +176,7 @@ export default function ProfileBar({
   }
 
   const currentElement = profile?.element || 'heart';
-  const displayName = profile?.display_name || 'Demo User';
+  const displayName = profile?.display_name || 'DEMO user';
   const heartCoins = profile?.hearts || 0;
   const currentElementData = ELEMENTS.find(e => e.name === currentElement) || ELEMENTS[0];
 
@@ -149,7 +198,7 @@ export default function ProfileBar({
 
   return (
     <div className="fixed top-0 left-0 right-0 z-[200] h-16 bg-black/80 backdrop-blur-md border-b border-white/10">
-      <div className="flex items-center justify-between h-full px-6">
+      <div className="flex items-center justify-between h-full pl-4 pr-6">
         {/* Left Side */}
         <div className="flex items-center space-x-4">
           {/* Element Selector */}
@@ -221,8 +270,18 @@ export default function ProfileBar({
 
           {/* Username */}
           <span 
-            className="font-medium text-lg"
-            style={{ color: getUsernameColor(currentElement) }}
+            className="font-medium text-lg relative"
+            style={{ 
+              color: getUsernameColor(currentElement),
+              textShadow: `
+                0 0 5px ${getUsernameColor(currentElement)},
+                0 0 10px ${getUsernameColor(currentElement)},
+                0 0 15px ${getUsernameColor(currentElement)},
+                0 0 20px ${getUsernameColor(currentElement)},
+                0 0 25px ${getUsernameColor(currentElement)}
+              `,
+              filter: 'brightness(1.2)'
+            }}
           >
             {displayName}
           </span>
@@ -234,26 +293,19 @@ export default function ProfileBar({
               onHoverSound={() => sfx.play('hover', 0.8)}
               onCloseBlueDisplay={onCloseBlueDisplay}
               onOpenBlueDisplay={onOpenBlueDisplay}
+              cumulativeHeartCoins={heartCoins}
               style={{ fontSize: '12px', padding: '4px 8px' }}
             />
           </div>
         </div>
 
         {/* Right Side */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2">
           {/* Code Button */}
           <CodeButton 
             onHoverSound={() => sfx.play('hover', 0.8)}
             onCloseBlueDisplay={onCloseBlueDisplay}
             onOpenBlueDisplay={onOpenBlueDisplay}
-          />
-
-          {/* Heart Coin Button (Duplicate) */}
-          <HeartCoinButton 
-            onHoverSound={() => sfx.play('hover', 0.8)}
-            onCloseBlueDisplay={onCloseBlueDisplay}
-            onOpenBlueDisplay={onOpenBlueDisplay}
-            heartCoins={heartCoins}
           />
 
           {/* Digital Binder Button */}
@@ -268,16 +320,42 @@ export default function ProfileBar({
             onHoverSound={() => sfx.play('hover', 0.8)}
             onCloseBlueDisplay={onCloseBlueDisplay}
             onOpenBlueDisplay={onOpenBlueDisplay}
-            onBeamColorChange={onBeamColorChange}
           />
 
           {/* Heart Coin Button */}
-          <HeartCoinButton 
-            onHoverSound={() => sfx.play('hover', 0.8)}
-            onCloseBlueDisplay={onCloseBlueDisplay}
-            onOpenBlueDisplay={onOpenBlueDisplay}
-            heartCoins={heartCoins}
-          />
+          <motion.button
+            ref={heartBtnRef}
+            onClick={() => {
+              try {
+                trackAnalytics('heart_coin_clicked', { 
+                  song_slug: 'profile_bar', 
+                  payload: { 
+                    song_title: 'Profile Bar', 
+                    location: 'profile_bar_heart_coin' 
+                  } 
+                });
+              } catch {}
+              if (showHeartPopover) { 
+                setShowHeartPopover(false); 
+                return; 
+              }
+              openHeartPopover();
+            }}
+            onMouseEnter={() => sfx.play('hover', 0.8)}
+            className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-black/50 border border-white/20 hover:border-white/40 transition-all duration-200"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            title="Heart Coins & Quests"
+            aria-label="Heart Coins & Quests"
+          >
+            <img 
+              src="/elements/heart-coin.png" 
+              alt="Heart Coins" 
+              className="w-4 h-4"
+            />
+            <span className="text-white text-sm font-medium">{heartCoins}</span>
+          </motion.button>
+
         </div>
       </div>
 
@@ -294,8 +372,119 @@ export default function ProfileBar({
         <BadgesModal open={isBadgesOpen} onClose={() => setIsBadgesOpen(false)} />
       )}
 
-      {isHeartCoinOpen && (
-        <HeartCoinModal open={isHeartCoinOpen} onClose={() => setIsHeartCoinOpen(false)} />
+      {/* Heart Coin Popover */}
+      {typeof window !== 'undefined' && showHeartPopover && heartPopoverPos && createPortal(
+        <div
+          role="dialog"
+          aria-label="HEART PROFILE"
+          className="heart-hologram"
+          style={{
+            position: 'fixed',
+            left: heartPopoverPos.left,
+            top: heartPopoverPos.top,
+            transform: 'translateX(-50%)',
+            padding: '16px',
+            borderRadius: 14,
+            background: 'radial-gradient(140% 160% at 50% 0%, rgba(25,227,255,0.15), rgba(14,168,208,0.10) 35%, rgba(6,40,55,0.85) 100%)',
+            border: '1px solid rgba(25,227,255,0.45)',
+            boxShadow: '0 18px 46px rgba(0,0,0,0.35), 0 0 26px rgba(25,227,255,0.35)',
+            backdropFilter: 'blur(8px) saturate(1.15)',
+            color: '#fff',
+            zIndex: 2147483647,
+            width: 'min(90vw, 400px)',
+            height: heartPopoverPos.height || 'auto',
+            maxHeight: '60vh',
+            overflowY: 'auto',
+            overflowX: 'hidden'
+          }}
+          onKeyDown={(e) => { 
+            if (e.key === 'Escape') { 
+              try { sfx.play('close', 0.4); } catch {}; 
+              setShowHeartPopover(false); 
+            } 
+          }}
+        >
+          {/* Close button */}
+          <button
+            aria-label="Close"
+            title="Close"
+            onClick={() => { 
+              try { sfx.play('close', 0.4); } catch {}; 
+              setShowHeartPopover(false); 
+            }}
+            style={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              width: 32,
+              height: 32,
+              borderRadius: 9999,
+              background: 'rgba(0,0,0,0.35)',
+              border: '2px solid rgba(33,150,243,0.85)',
+              color: '#FF3EA5',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer'
+            }}
+          >
+            ✕
+          </button>
+
+          {/* Header with heart coin count */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, marginTop: 8 }}>
+            <img 
+              src="/elements/heart-coin.png" 
+              alt="Heart Coins" 
+              style={{ width: 32, height: 32 }}
+              className="heart-coin-glow"
+            />
+            <div>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 'bold', color: '#19E3FF' }}>
+                Heart Coins
+              </h3>
+              <p style={{ margin: 0, fontSize: 24, fontWeight: 'bold', color: '#fff' }}>
+                {heartCoins}
+              </p>
+            </div>
+          </div>
+
+          {/* Quest section */}
+          <div style={{ marginTop: 16 }}>
+            <h4 style={{ 
+              margin: '0 0 12px 0', 
+              fontSize: 14, 
+              fontWeight: 'bold', 
+              color: '#19E3FF',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}>
+              Quests & Achievements
+            </h4>
+            <div style={{ 
+              padding: '12px',
+              background: 'rgba(0,0,0,0.2)',
+              borderRadius: 8,
+              border: '1px solid rgba(25,227,255,0.2)'
+            }}>
+              <p style={{ 
+                margin: 0,
+                fontSize: 13,
+                color: 'rgba(255,255,255,0.8)',
+                fontStyle: 'italic'
+              }}>
+                Complete quests to earn more Heart Coins and unlock exclusive rewards!
+              </p>
+              {/* TODO: Add actual quest list component here */}
+              <div style={{ marginTop: 12, fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>
+                • Listen to 5 songs - <span style={{ color: '#19E3FF' }}>+10 Hearts</span><br/>
+                • Share a song - <span style={{ color: '#19E3FF' }}>+5 Hearts</span><br/>
+                • Join the community - <span style={{ color: '#19E3FF' }}>+15 Hearts</span>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
     </div>

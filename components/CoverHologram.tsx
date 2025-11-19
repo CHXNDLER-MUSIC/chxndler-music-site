@@ -9,6 +9,39 @@ import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sfx";
 import HeartCardCheckout from "./HeartCardCheckout";
 import HeartCardSuccess from "./HeartCardSuccess";
+import { ELEMENT_COLORS, type Element } from "@/lib/planets";
+
+// Helper function to determine element from title/slug
+const getTrackElement = (title: string, slug?: string): Element => {
+  const searchStr = (slug || title).toLowerCase();
+  
+  // Darkness songs
+  if (searchStr.includes("alone") || searchStr.includes("cheerleader") || searchStr.includes("little-black-heart") || 
+      searchStr.includes("mr-brightside") || searchStr.includes("paris")) return "darkness";
+  
+  // Heart songs  
+  if (searchStr.includes("always-on-my-mind") || searchStr.includes("baby") || searchStr.includes("be-my-bee") ||
+      searchStr.includes("collide") || searchStr.includes("colors-of-our-home") || searchStr.includes("i-might-fall-in-love") ||
+      searchStr.includes("love-me") || searchStr.includes("somebody-to-love") || searchStr.includes("tienes-un-amigo") ||
+      searchStr.includes("we-re-just-friends")) return "heart";
+  
+  // Lightning songs
+  if (searchStr.includes("american-dream") || searchStr.includes("blue") || searchStr.includes("brain-freeze") ||
+      searchStr.includes("feeling-this") || searchStr.includes("game-boy-heart") || searchStr.includes("home") ||
+      searchStr.includes("house-party") || searchStr.includes("kid-forever") || searchStr.includes("pokemon")) return "lightning";
+  
+  // Water songs
+  if (searchStr.includes("letting-go") || searchStr.includes("ocean-girl")) return "water";
+  
+  // Legacy fallback for unmapped songs
+  if (searchStr.includes("heart") || searchStr.includes("love") || searchStr.includes("friends")) return "heart";
+  if (searchStr.includes("lightning") || searchStr.includes("electric") || searchStr.includes("neon")) return "lightning";
+  if (searchStr.includes("dark") || searchStr.includes("black") || searchStr.includes("midnight")) return "darkness";
+  if (searchStr.includes("ocean") || searchStr.includes("tide") || searchStr.includes("wave") || searchStr.includes("sea")) return "water";
+  
+  // Default fallback
+  return "heart";
+};
 
 // Helper functions for element styling
 const getElementBackground = (element: string | null) => {
@@ -91,6 +124,10 @@ const getPurchaseUrl = (title: string) => {
 };
 
 export default function CoverHologram({ src, title, slug, inline = false, size = 180, onCardOpen }: { src: string; title: string; slug?: string; inline?: boolean; size?: number; onCardOpen?: () => void }) {
+  // Determine the element type for this track to get appropriate neon glow
+  const trackElement = getTrackElement(title, slug);
+  const elementColor = ELEMENT_COLORS[trackElement];
+  
   // Explicit external card image URLs by slug
   const CARD_URLS: Record<string, string> = {
     // Special/back + brand
@@ -1581,7 +1618,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
           background: transparent; /* fill entirely with elementals.png */
           border: 0; /* remove border so image can fill completely */
           padding: 0; /* remove any padding */
-          box-shadow: 0 0 8px rgba(25,227,255,.55); /* further reduced glow to stay within bounds */
+          box-shadow: 0 0 8px ${elementColor}88; /* dynamic element color with 55% opacity */
           transition: transform .12s ease, box-shadow .18s ease, filter .18s ease;
           overflow: hidden; /* contain glow within the circular button */
           z-index: 12;
@@ -1602,8 +1639,8 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
         .btn-element:hover{
           transform: scale(1.12);
           box-shadow:
-            0 0 12px rgba(25,227,255,.95),
-            0 0 20px rgba(25,227,255,.55),
+            0 0 12px ${elementColor}F2, /* 95% opacity */
+            0 0 20px ${elementColor}88, /* 55% opacity */
             inset 0 2px 0 rgba(255,255,255,.7),
             inset 0 -10px 18px rgba(0,0,0,.28);
           filter: saturate(1.08) brightness(1.07);
@@ -1612,10 +1649,10 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
         .btn-element:active{ transform: scale(.98); }
         @keyframes elementGlow {
           0%, 100% {
-            box-shadow: 0 0 12px rgba(25,227,255,.95), 0 0 20px rgba(25,227,255,.55), inset 0 2px 0 rgba(255,255,255,.7), inset 0 -10px 18px rgba(0,0,0,.28);
+            box-shadow: 0 0 12px ${elementColor}F2, 0 0 20px ${elementColor}88, inset 0 2px 0 rgba(255,255,255,.7), inset 0 -10px 18px rgba(0,0,0,.28);
           }
           50% {
-            box-shadow: 0 0 16px rgba(25,227,255,1), 0 0 24px rgba(25,227,255,.7), inset 0 2px 0 rgba(255,255,255,.75), inset 0 -12px 20px rgba(0,0,0,.3);
+            box-shadow: 0 0 16px ${elementColor}FF, 0 0 24px ${elementColor}B2, inset 0 2px 0 rgba(255,255,255,.75), inset 0 -12px 20px rgba(0,0,0,.3);
           }
         }
       `}</style>

@@ -1037,7 +1037,6 @@ export default function DashboardApp({ initialSlug } = {}) {
             onCodeClick={() => {}}
             onDigitalBinderClick={() => {}}
             onBadgesClick={() => {}}
-            onHeartCoinClick={() => {}}
             onCloseBlueDisplay={() => setShowHUD(false)}
             onOpenBlueDisplay={() => {
               // Force open blue display without toggle logic
@@ -1139,10 +1138,6 @@ export default function DashboardApp({ initialSlug } = {}) {
     console.log('Badges button clicked');
   };
 
-  const handleHeartCoinClick = () => {
-    // TODO: Implement HeartCoin info/earn modal
-    console.log('HeartCoin button clicked');
-  };
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white max-w-screen overflow-x-hidden" style={{ minWidth: '100vw', minHeight: '100vh', paddingTop: showProfileBar ? '64px' : '0' }}>
@@ -1152,7 +1147,6 @@ export default function DashboardApp({ initialSlug } = {}) {
           onCodeClick={handleCodeClick}
           onDigitalBinderClick={handleDigitalBinderClick}
           onBadgesClick={handleBadgesClick}
-          onHeartCoinClick={handleHeartCoinClick}
           onCloseBlueDisplay={() => setShowHUD(false)}
           onOpenBlueDisplay={() => {
             // Force open blue display without toggle logic

@@ -8,6 +8,7 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   onHoverSound?: () => void;
   onCloseBlueDisplay?: () => void;
   onOpenBlueDisplay?: () => void;
+  cumulativeHeartCoins?: number;
 };
 
 type TierType = 'wanderer' | 'dreamer' | 'lover';
@@ -18,6 +19,7 @@ interface TierData {
   glowColor: string;
   image: string;
   priceRange: string;
+  backMessage: string;
   benefits: string[];
 }
 
@@ -28,11 +30,11 @@ const tierData: Record<TierType, TierData> = {
     glowColor: 'rgba(0, 255, 255, 0.8)',
     image: '/elements/wanderer.png',
     priceRange: '0 - 4',
+    backMessage: 'You have just arrived, drawn by the signal.',
     benefits: [
-      '• Early access to new releases',
-      '• Exclusive behind-the-scenes content',
-      '• Community forum access',
-      '• Monthly newsletter updates'
+      '♡ Released songs',
+      '♡ Digital CHXNDLER card',
+      '♡ Entry into the Heartverse'
     ]
   },
   dreamer: {
@@ -41,12 +43,11 @@ const tierData: Record<TierType, TierData> = {
     glowColor: 'rgba(255, 215, 0, 0.8)',
     image: '/elements/dreamer.png',
     priceRange: '5 - 24',
+    backMessage: 'You begin to awaken to the magic.',
     benefits: [
-      '• Everything in Wanderer',
-      '• Private Discord channels',
-      '• Exclusive remix stems',
-      '• Virtual meet & greet sessions',
-      '• Limited edition merchandise'
+      '♡ Unreleased songs',
+      '♡ Physical CHXNDLER cards',
+      '♡ Exclusive merch'
     ]
   },
   lover: {
@@ -55,18 +56,22 @@ const tierData: Record<TierType, TierData> = {
     glowColor: 'rgba(255, 105, 180, 0.8)',
     image: '/elements/lover.png',
     priceRange: '25+',
+    backMessage: 'The ones who feel the Heartverse inside them.',
     benefits: [
-      '• Everything in Dreamer',
-      '• One-on-one studio sessions',
-      '• Personal song dedications',
-      '• VIP concert experiences',
-      '• Co-creation opportunities',
-      '• Direct artist communication'
+      '♡ Direct line to CHXNDLER',
+      '♡ Exclusive concerts',
+      '♡ Limited Edition Merch / CHXNDLER cards'
     ]
   }
 };
 
-export default function JourneyButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, ...rest }: Props) {
+function getUserTier(cumulativeHeartCoins: number): TierType {
+  if (cumulativeHeartCoins >= 25) return 'lover';
+  if (cumulativeHeartCoins >= 5) return 'dreamer';
+  return 'wanderer';
+}
+
+export default function JourneyButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, cumulativeHeartCoins = 0, ...rest }: Props) {
   const [open, setOpen] = useState(false);
   const [flippedTier, setFlippedTier] = useState<TierType | null>(null);
 
@@ -111,7 +116,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
         }}
         {...rest}
       >
-        JRN
+        {tierData[getUserTier(cumulativeHeartCoins)].name}
       </button>
       
       {/* Journey Modal - Three Tiers */}
@@ -119,7 +124,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center"
           style={{
-            paddingTop: '150px',
+            paddingTop: '250px',
             background: 'rgba(0, 0, 0, 0.8)',
             backdropFilter: 'blur(5px)'
           }}
@@ -159,16 +164,29 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
             </button>
             
             {/* Header */}
-            <div 
-              className="text-center mb-4"
-              style={{ 
-                color: '#FFFFFF', 
-                fontSize: '20px',
-                fontWeight: 'bold',
-                textShadow: '0 0 10px rgba(255,255,255,0.8)'
-              }}
-            >
-              CHOOSE YOUR JOURNEY
+            <div className="text-center mb-4">
+              <div 
+                style={{ 
+                  color: '#FFFFFF', 
+                  fontSize: '20px',
+                  fontWeight: 'bold',
+                  textShadow: '0 0 12px rgba(255,255,255,1), 0 0 20px rgba(255,255,255,0.8), 0 0 30px rgba(255,255,255,0.6)',
+                  marginBottom: '8px'
+                }}
+              >
+                CHOOSE YOUR JOURNEY
+              </div>
+              <div 
+                style={{ 
+                  color: '#FFFFFF', 
+                  fontSize: '14px',
+                  fontWeight: 'normal',
+                  textShadow: '0 0 8px rgba(255,255,255,0.6), 0 0 15px rgba(255,255,255,0.4)',
+                  opacity: 0.9
+                }}
+              >
+                Choose the path that feels true to your heart right now.
+              </div>
             </div>
             
             {/* Three Tier Buttons */}
@@ -263,31 +281,21 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              fontSize: tier === 'wanderer' ? '16px' : '12px',
-                              color: tier === 'wanderer' ? data.color : '#FFFFFF',
+                              fontSize: '18px',
+                              color: data.color,
                               marginBottom: '6px',
-                              textShadow: tier === 'wanderer' ? `0 0 15px ${data.glowColor}` : 'none'
+                              textShadow: `0 0 15px ${data.glowColor}`,
+                              fontWeight: 'bold'
                             }}
                           >
-                            <img 
-                              src="/elements/heart-coin.png"
-                              alt="Heart Coin"
-                              style={{
-                                width: '16px',
-                                height: '16px',
-                                objectFit: 'contain',
-                                marginRight: '4px',
-                                filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.8))'
-                              }}
-                            />
                             {data.priceRange}
                           </div>
                           <img 
                             src="/elements/heart-coin.png"
                             alt="Heart Coin"
                             style={{
-                              width: '32px',
-                              height: '32px',
+                              width: '48px',
+                              height: '48px',
                               objectFit: 'contain',
                               filter: 'drop-shadow(0 0 12px rgba(255,255,255,0.9))'
                             }}
@@ -307,34 +315,39 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
                           background: 'rgba(0,0,0,0.9)',
                           border: `2px solid ${data.color}`,
                           borderRadius: '15px',
-                          padding: '20px',
+                          padding: '25px 25px 25px 10px',
                           display: 'flex',
                           flexDirection: 'column',
-                          justifyContent: 'flex-start',
+                          justifyContent: 'center',
                           alignItems: 'flex-start',
                           boxShadow: `0 0 30px ${data.glowColor}, inset 0 0 30px rgba(255,255,255,0.1)`
                         }}
                       >
                         <div
                           style={{
-                            fontSize: '18px',
+                            fontSize: '12px',
                             fontWeight: 'bold',
                             color: data.color,
-                            textShadow: `0 0 10px ${data.glowColor}`,
+                            textShadow: `0 0 6px ${data.glowColor}, 0 0 12px ${data.glowColor}`,
+                            marginTop: '8px',
                             marginBottom: '15px',
                             textAlign: 'center',
-                            width: '100%'
+                            width: '100%',
+                            lineHeight: '1.3',
+                            letterSpacing: '1.5px'
                           }}
                         >
-                          {data.name}
+                          {data.backMessage}
                         </div>
                         <div
                           style={{
                             fontSize: '12px',
-                            color: '#FFFFFF',
+                            color: '#F0F8FF',
+                            fontWeight: 'bold',
                             lineHeight: '1.4',
                             textAlign: 'left',
-                            width: '100%'
+                            width: '100%',
+                            textShadow: '0 0 4px rgba(240,248,255,1), 0 0 8px rgba(240,248,255,0.8)'
                           }}
                         >
                           {data.benefits.map((benefit, index) => (

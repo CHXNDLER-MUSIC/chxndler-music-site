@@ -64,3 +64,30 @@ create or replace view analytics.v_events_7d as
 select *
 from analytics.events
 where happened_at >= now() - interval '7 days';
+
+-- Profiles table for Join Us functionality
+create table if not exists profiles (
+  id uuid primary key default gen_random_uuid(),
+  phone text,
+  email text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  metadata jsonb,
+  constraint unique_phone unique (phone),
+  constraint unique_email unique (email)
+);
+
+create index if not exists idx_profiles_phone on profiles (phone);
+create index if not exists idx_profiles_email on profiles (email);
+create index if not exists idx_profiles_created_at on profiles (created_at desc);
+
+-- Enable RLS for profiles
+alter table profiles enable row level security;
+
+-- Allow anonymous users to insert profiles (for sign-ups)
+create policy "allow_insert_profiles_anon"
+  on profiles for insert to anon with check (true);
+
+-- Prevent anonymous users from reading profiles (privacy)
+create policy "deny_select_profiles_anon"
+  on profiles for select to anon using (false);

@@ -7,6 +7,7 @@ import Link from "next/link";
 import LoginModal from "@/components/LoginModal";
 import SharedButton from "@/components/SharedButton";
 import HeartverseButton from "@/components/HeartverseButton";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 // 2D fallback hologram
 // 2D HUD removed per request; 3D only
 // 3D planet system (requires three/r3f/drei installed)
@@ -184,6 +185,10 @@ export default function HUDPanel({
   const joinUsBtnRef = useRef(null);
   const [joinUsPopoverPos, setJoinUsPopoverPos] = useState(null);
   const joinUsScrollRef = useRef(null);
+  const [phoneInput, setPhoneInput] = useState('');
+  const [emailInput, setEmailInput] = useState('');
+  const [isSubmittingProfile, setIsSubmittingProfile] = useState(false);
+  const [profileSubmissionMessage, setProfileSubmissionMessage] = useState('');
 
 
   // Brand (CHXNDLER) popover state
@@ -1043,6 +1048,59 @@ export default function HUDPanel({
     setShowJoinUsPopover(true);
   }
 
+  async function handleSendHeartSignal() {
+    if (isSubmittingProfile) return; // Prevent double submission
+    
+    // Basic validation
+    if (!phoneInput.trim() && !emailInput.trim()) {
+      setProfileSubmissionMessage('Please enter a phone number or email address.');
+      setTimeout(() => setProfileSubmissionMessage(''), 3000);
+      return;
+    }
+
+    setIsSubmittingProfile(true);
+    setProfileSubmissionMessage('Sending heart signal...');
+    
+    try {
+      // Create profile record
+      const { data, error } = await supabaseBrowser
+        .from('profiles')
+        .insert([
+          {
+            phone: phoneInput.trim() || null,
+            email: emailInput.trim() || null,
+            metadata: {
+              source: 'join_us_popover',
+              created_from: 'hud_panel',
+              timestamp: new Date().toISOString()
+            }
+          }
+        ]);
+
+      if (error) {
+        // Handle duplicate phone/email gracefully
+        if (error.code === '23505') { // unique constraint violation
+          setProfileSubmissionMessage('You\'re already connected! Welcome back, alien. 👽');
+        } else {
+          console.error('Supabase error:', error);
+          setProfileSubmissionMessage('Connection failed. Try again in a moment.');
+        }
+      } else {
+        setProfileSubmissionMessage('Heart signal sent! You\'re now connected to the HEARTVERSE. 💙');
+        // Clear form on success
+        setPhoneInput('');
+        setEmailInput('');
+        try { sfx.play('success', 0.6); } catch {}
+      }
+    } catch (error) {
+      console.error('Error creating profile:', error);
+      setProfileSubmissionMessage('Connection error. Please try again.');
+    } finally {
+      setIsSubmittingProfile(false);
+      // Clear message after 4 seconds
+      setTimeout(() => setProfileSubmissionMessage(''), 4000);
+    }
+  }
 
   async function openSoulSkyPopover(){
     try { sfx.play('click', 0.4); } catch {}
@@ -2461,29 +2519,6 @@ export default function HUDPanel({
                           <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 4 4 6.5 4c1.74 0 3.41 1.01 4.22 2.61C11.09 5.01 12.76 4 14.5 4 17 4 19 6 19 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                         </svg>
                       </button>
-                      {/* HEART coin button to the right of Store */}
-                      <button
-                        type="button"
-                        ref={heartBtnRef}
-                        className="heart-coin-btn-waveform-hud"
-                        style={{ marginTop: 1 }}
-                        title="HEART Coin"
-                        aria-label="HEART Coin"
-                        data-id="heart-coin"
-                        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                        onClick={() => {
-                          try { sfx.play('click', 0.4); } catch {}
-                          try {
-                            const songSlug = isHome ? 'homepage' : (slug || active || 'unknown');
-                            const songTitle = isHome ? 'CHXNDLER' : (currentSong?.title || track?.title || 'Unknown');
-                            trackAnalytics('heart_coin_clicked', { song_slug: String(songSlug || ''), payload: { song_title: songTitle, location: isHome ? 'hud_heart_coin_home' : 'hud_heart_coin' } });
-                          } catch {}
-                          if (showHeartPopover) { setShowHeartPopover(false); return; }
-                          openHeartPopover();
-                        }}
-                      >
-                        <img src="/elements/heart-coin.png" alt="HEART Coin" />
-                      </button>
 
                       {/* Streaming: Spotify, Apple, YouTube moved left into top controls */}
                       {(() => {
@@ -2803,15 +2838,16 @@ export default function HUDPanel({
                       }}
                       onMouseEnter={(e) => { 
                         try { sfx.play('hover', 0.3); } catch {}; 
-                        try { e.currentTarget.style.borderColor = 'rgba(33,150,243,0.8)'; e.currentTarget.style.transform = 'scale(1.05)'; } catch {} 
+                        try { e.currentTarget.style.borderColor = 'rgba(33,150,243,0.8)'; e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1.05)'; } catch {} 
                       }}
                       onMouseLeave={(e) => { 
-                        try { e.currentTarget.style.borderColor = 'rgba(33,150,243,0.4)'; e.currentTarget.style.transform = 'scale(1.0)'; } catch {} 
+                        try { e.currentTarget.style.borderColor = 'rgba(33,150,243,0.4)'; e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1.0)'; } catch {} 
                       }}
                       style={{
                         position: 'absolute',
-                        top: 8,
-                        right: 48,
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: 6,
@@ -3116,6 +3152,88 @@ export default function HUDPanel({
                               letterSpacing: '0.02em'
                             }}>
                               ♡ {heartCoinsCount}
+                            </div>
+                          </div>
+                          
+                          {/* Daily Quests Section */}
+                          <div style={{ 
+                            width: '100%', 
+                            padding: '16px 12px',
+                            borderTop: '1px solid rgba(33,150,243,0.3)',
+                            marginTop: '8px'
+                          }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12, textAlign: 'center', opacity: 0.9 }}>
+                              Daily Quests
+                            </div>
+                            
+                            {/* Text a Friend Quest */}
+                            <div style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'space-between',
+                              padding: '8px 12px',
+                              background: 'rgba(33,150,243,0.1)',
+                              borderRadius: '8px',
+                              border: '1px solid rgba(33,150,243,0.2)',
+                              marginBottom: '8px'
+                            }}>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 2 }}>
+                                  Text a Friend
+                                </div>
+                                <div style={{ fontSize: 11, opacity: 0.8 }}>
+                                  Share the Heartverse with someone special
+                                </div>
+                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  try { sfx.play('click', 0.4); } catch {}
+                                  try { trackAnalytics('daily_invite_clicked', { location: 'heartcoins_popup' }); } catch {}
+                                  
+                                  const message = "I thought of you. I think this world could feel like home for you too.\nhttps://chxndler.world";
+                                  
+                                  // Try native share first, fallback to SMS
+                                  if (typeof navigator !== 'undefined' && navigator.share) {
+                                    navigator.share({
+                                      text: message
+                                    }).catch(() => {
+                                      // Fallback to SMS
+                                      window.open(`sms:?body=${encodeURIComponent(message)}`, '_blank');
+                                    });
+                                  } else {
+                                    // Fallback to SMS
+                                    window.open(`sms:?body=${encodeURIComponent(message)}`, '_blank');
+                                  }
+                                  
+                                  // Mark as done
+                                  setDailyInviteDone(true);
+                                }}
+                                onMouseEnter={(e) => { 
+                                  try { sfx.play('hover', 0.3); } catch {} 
+                                  e.currentTarget.style.background = 'rgba(33,150,243,0.8)';
+                                  e.currentTarget.style.transform = 'scale(1.05)';
+                                }}
+                                onMouseLeave={(e) => { 
+                                  e.currentTarget.style.background = dailyInviteDone ? 'rgba(76,175,80,0.6)' : 'rgba(33,150,243,0.6)';
+                                  e.currentTarget.style.transform = 'scale(1.0)';
+                                }}
+                                style={{
+                                  padding: '6px 12px',
+                                  fontSize: 11,
+                                  fontWeight: 600,
+                                  background: dailyInviteDone ? 'rgba(76,175,80,0.6)' : 'rgba(33,150,243,0.6)',
+                                  color: '#FFFFFF',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease',
+                                  textShadow: '0 0 8px rgba(0,0,0,0.5)',
+                                  minWidth: '60px'
+                                }}
+                              >
+                                {dailyInviteDone ? '♡ +5' : 'SHARE'}
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -5477,8 +5595,8 @@ export default function HUDPanel({
                     <button
                       aria-label="Close join us"
                       title="Close"
-                      onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 26px rgba(33,150,243,0.95), 0 0 42px rgba(33,150,243,0.65)'; } catch {} }}
-                      onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 18px rgba(33,150,243,0.75), 0 0 32px rgba(33,150,243,0.45)'; } catch {} }}
+                      onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 26px rgba(0,255,255,0.95), 0 0 42px rgba(0,255,255,0.65)'; } catch {} }}
+                      onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 18px rgba(0,255,255,0.75), 0 0 32px rgba(0,255,255,0.45)'; } catch {} }}
                       onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowJoinUsPopover(false); }}
                       style={{
                         position: 'absolute',
@@ -5488,12 +5606,12 @@ export default function HUDPanel({
                         height: 32,
                         borderRadius: 9999,
                         background: 'rgba(0,0,0,0.35)',
-                        border: '2px solid rgba(33,150,243,0.85)',
-                        color: '#2196F3',
+                        border: '2px solid rgba(0,255,255,0.85)',
+                        color: '#00FFFF',
                         display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: '0 0 18px rgba(33,150,243,0.75), 0 0 32px rgba(33,150,243,0.45)',
+                        boxShadow: '0 0 18px rgba(0,255,255,0.75), 0 0 32px rgba(0,255,255,0.45)',
                         cursor: 'pointer'
                       }}
                     >
@@ -5505,10 +5623,10 @@ export default function HUDPanel({
                     {/* Moving glow background */}
                     <div className="lyrics-glow-bg"></div>
                     {/* Section header */}
-                    <div className="lyrics-header" style={{ color: '#2196F3', textShadow: '0 0 8px rgba(33,150,243,0.6)', fontSize: '12px' }}>
+                    <div className="lyrics-header" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.6)', fontSize: '12px' }}>
                       YOU'RE INVITED INTO THE HEARTVERSE ♥
                     </div>
-                    <div className="lyrics-content-enhanced" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.2, fontSize: 14, color: '#2196F3', textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(33,150,243,0.6)', marginTop: '-4px' }}>
+                    <div className="lyrics-content-enhanced" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.2, fontSize: 14, color: '#00FFFF', textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(0,255,255,0.6)', marginTop: '-4px' }}>
                       CONNECT WITH OTHER ALIENS AND RECEIVE SIGNALS FOR EARLY RELEASES, SECRET TRANSMISSIONS, AND EXCLUSIVE EXPERIENCES.
                     </div>
                     {/* Sign-in options */}
@@ -5525,7 +5643,9 @@ export default function HUDPanel({
                               id="join-phone"
                               type="tel"
                               placeholder="+1 (555) 123-4567"
-                              className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-[#2196F3] focus:outline-none"
+                              value={phoneInput}
+                              onChange={(e) => setPhoneInput(e.target.value)}
+                              className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-[#00FFFF] focus:outline-none"
                             />
                           </div>
                           
@@ -5538,7 +5658,9 @@ export default function HUDPanel({
                               id="join-email"
                               type="email"
                               placeholder="you@example.com"
-                              className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-[#2196F3] focus:outline-none"
+                              value={emailInput}
+                              onChange={(e) => setEmailInput(e.target.value)}
+                              className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-[#00FFFF] focus:outline-none"
                             />
                           </div>
                         </div>
@@ -5546,19 +5668,54 @@ export default function HUDPanel({
                         {/* Send Heart Signal button */}
                         <button
                           type="button"
-                          className="w-full inline-flex items-center justify-center rounded-lg bg-[#2196F3] px-4 py-3 text-sm font-medium text-black hover:brightness-110 transition"
+                          className="w-full inline-flex items-center justify-center rounded-lg bg-transparent px-4 py-3 text-sm font-medium text-[#00FFFF] transition"
                           style={{
-                            boxShadow: '0 0 20px rgba(33,150,243,0.8), 0 0 40px rgba(33,150,243,0.6)'
+                            border: '2px solid #00FFFF',
+                            boxShadow: '0 0 20px rgba(0,255,255,0.8), 0 0 40px rgba(0,255,255,0.6)'
                           }}
+                          onMouseEnter={(e) => {
+                            try { sfx.play('hover', 0.4); } catch {}
+                            e.currentTarget.style.boxShadow = '0 0 30px rgba(0,255,255,1), 0 0 60px rgba(0,255,255,0.8), 0 0 100px rgba(0,255,255,0.6)';
+                            e.currentTarget.style.transform = 'scale(1.02)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.boxShadow = '0 0 20px rgba(0,255,255,0.8), 0 0 40px rgba(0,255,255,0.6)';
+                            e.currentTarget.style.transform = 'scale(1)';
+                          }}
+                          onClick={handleSendHeartSignal}
+                          disabled={isSubmittingProfile}
                         >
-                          SEND HEART SIGNAL
+                          {isSubmittingProfile ? 'SENDING...' : 'SEND HEART SIGNAL'}
                         </button>
+                        
+                        {/* Submission message */}
+                        {profileSubmissionMessage && (
+                          <div className="text-center text-sm mt-2" style={{
+                            color: '#00FFFF',
+                            textShadow: '0 0 8px rgba(0,255,255,0.6)'
+                          }}>
+                            {profileSubmissionMessage}
+                          </div>
+                        )}
                         
                         {/* Google sign-in moved to bottom */}
                         <div className="w-full">
                           <button
                             onClick={() => { try { sfx.play('click', 0.4); } catch {}; /* Add Google sign-in logic here */ }}
-                            className="w-full inline-flex items-center justify-center rounded-lg bg-[#2196F3] px-4 py-3 text-sm font-semibold text-black hover:brightness-110 transition"
+                            className="w-full inline-flex items-center justify-center rounded-lg bg-transparent px-4 py-3 text-sm font-semibold text-[#00FFFF] transition"
+                            style={{
+                              border: '2px solid #00FFFF',
+                              boxShadow: '0 0 20px rgba(0,255,255,0.8), 0 0 40px rgba(0,255,255,0.6)'
+                            }}
+                            onMouseEnter={(e) => {
+                              try { sfx.play('hover', 0.4); } catch {}
+                              e.currentTarget.style.boxShadow = '0 0 30px rgba(0,255,255,1), 0 0 60px rgba(0,255,255,0.8), 0 0 100px rgba(0,255,255,0.6)';
+                              e.currentTarget.style.transform = 'scale(1.02)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.boxShadow = '0 0 20px rgba(0,255,255,0.8), 0 0 40px rgba(0,255,255,0.6)';
+                              e.currentTarget.style.transform = 'scale(1)';
+                            }}
                           >
                             Sign in with Google
                           </button>
