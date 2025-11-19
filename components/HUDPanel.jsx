@@ -2432,7 +2432,7 @@ export default function HUDPanel({
                       <HeartverseButton
                         ref={welcomeHomeBtnRef}
                         variant="welcome-home"
-                        label="WELCOME BACK TO THE HEARTVERSE <3"
+                        label="WELCOME BACK"
                         style={{ position: 'absolute', left: '100px', top: '70px', paddingLeft: '16px', paddingRight: '16px', minWidth: '80px' }}
                         title="Welcome Home"
                         aria-haspopup="dialog"

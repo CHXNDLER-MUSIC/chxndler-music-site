@@ -1556,8 +1556,8 @@ export default function DashboardApp({ initialSlug } = {}) {
           try { playerStore.getState().setPlanetDisplayMode('all'); playerStore.getState().setPlanetsVisible(true); } catch {}
           try { playerStore.setState({ mainId: null }); } catch {}
           try { setHidePlanetsForSelection(false); } catch {}
-          // User is starting their journey into the Heartverse
-          setHasEnteredHeartverse(true);
+          // User is starting their journey into the Heartverse - but don't show ProfileBar until warp completes
+          // setHasEnteredHeartverse(true); // Moved to onWarpSfxEnd to show ProfileBar only after warp
           // Defer heavier state churn to next frame to reduce jank
           const kickoff = () => {
             if (!firstStartDone) { welcomeOnStartRef.current = true; setHomeIntroEnabled(true); setWelcomeHasPlayed(false); }
@@ -1612,8 +1612,8 @@ export default function DashboardApp({ initialSlug } = {}) {
           } catch {}
           try { playerStore.setState({ mainId: null }); } catch {}
           try { setHidePlanetsForSelection(false); } catch {}
-          // User is starting their journey into the Heartverse
-          setHasEnteredHeartverse(true);
+          // User is starting their journey into the Heartverse - but don't show ProfileBar until warp completes
+          // setHasEnteredHeartverse(true); // Moved to onWarpSfxEnd to show ProfileBar only after warp
           // Homepage Start flow (warp to home reveal)
           // Only enable welcome VO on FIRST Start button press per session
           if (!firstStartDone) {

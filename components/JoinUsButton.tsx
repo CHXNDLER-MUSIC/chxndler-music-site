@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import LoginModal from "@/components/LoginModal";
+import JoinUsPopup from "@/components/JoinUsPopup";
 import SharedButton from "@/components/SharedButton";
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -30,7 +30,7 @@ export default function JoinUsButton({ asChild = false, children, onClick, onHov
       >
         {children}
       </SharedButton>
-      <LoginModal open={open} onClose={() => setOpen(false)} />
+      <JoinUsPopup isOpen={open} onClose={() => setOpen(false)} />
     </>
   );
 }

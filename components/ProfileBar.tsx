@@ -7,9 +7,11 @@ import CodeModal from '@/components/CodeModal';
 import BinderModal from '@/components/BinderModal';
 import BadgesModal from '@/components/BadgesModal';
 import HeartCoinModal from '@/components/HeartCoinModal';
-import TestModal from '@/components/TestModal';
 import JourneyButton from '@/components/JourneyButton';
 import BadgesButton from '@/components/BadgesButton';
+import BinderButton from '@/components/BinderButton';
+import HeartCoinButton from '@/components/HeartCoinButton';
+import CodeButton from '@/components/CodeButton';
 import { sfx } from '@/lib/sfx';
 
 interface Profile {
@@ -31,7 +33,6 @@ interface ProfileBarProps {
   onDigitalBinderClick?: () => void;
   onBadgesClick?: () => void;
   onHeartCoinClick?: () => void;
-  onTestClick?: () => void;
   onCloseBlueDisplay?: () => void;
   onOpenBlueDisplay?: () => void;
 }
@@ -41,7 +42,6 @@ export default function ProfileBar({
   onDigitalBinderClick, 
   onBadgesClick,
   onHeartCoinClick,
-  onTestClick,
   onCloseBlueDisplay,
   onOpenBlueDisplay
 }: ProfileBarProps) {
@@ -54,7 +54,6 @@ export default function ProfileBar({
   const [isBinderOpen, setIsBinderOpen] = useState(false);
   const [isBadgesOpen, setIsBadgesOpen] = useState(false);
   const [isHeartCoinOpen, setIsHeartCoinOpen] = useState(false);
-  const [isTestOpen, setIsTestOpen] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -219,97 +218,48 @@ export default function ProfileBar({
             {displayName}
           </span>
 
-          {/* Journey Button */}
-          <JourneyButton 
-            onHoverSound={() => sfx.play('hover', 0.8)}
-            onCloseBlueDisplay={onCloseBlueDisplay}
-            onOpenBlueDisplay={onOpenBlueDisplay}
-            style={{ fontSize: '12px', padding: '4px 8px' }}
-          />
-
           {/* Action Buttons */}
           <div className="flex items-center space-x-3">
-            {/* Code Button */}
-            <button
-              onClick={() => {
-                setIsCodeOpen(true);
-                onCodeClick?.();
-              }}
-              className="px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-300 rounded-lg font-medium transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/20"
-              style={{
-                boxShadow: '0 0 20px rgba(255, 255, 255, 0.3), 0 0 40px rgba(255, 255, 255, 0.15)'
-              }}
-            >
-              CODE
-            </button>
-            
-            {/* Digital Binder Button */}
-            <button
-              onClick={() => {
-                setIsBinderOpen(true);
-                onDigitalBinderClick?.();
-              }}
-              className="p-1 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-purple-500/20 w-12 h-10"
-              style={{
-                boxShadow: '0 0 20px rgba(252, 84, 175, 0.4), 0 0 40px rgba(252, 84, 175, 0.2)'
-              }}
-            >
-              <img
-                src="/elements/binder.png"
-                alt="Digital Binder"
-                className="w-full h-full object-cover rounded"
-                draggable={false}
-              />
-            </button>
-            
-            
-            {/* Test Button */}
-            <button
-              onClick={() => {
-                sfx.play('click', 0.8);
-                setIsTestOpen(true);
-                onTestClick?.();
-              }}
-              className="px-4 py-2 bg-green-600/20 hover:bg-green-600/30 border border-green-500/40 text-green-300 rounded-lg font-medium transition-all duration-200 hover:shadow-lg hover:shadow-green-500/20"
-              style={{
-                boxShadow: '0 0 20px rgba(34, 197, 94, 0.3), 0 0 40px rgba(34, 197, 94, 0.15)'
-              }}
-            >
-              TEST
-            </button>
+            {/* Journey Button */}
+            <JourneyButton 
+              onHoverSound={() => sfx.play('hover', 0.8)}
+              onCloseBlueDisplay={onCloseBlueDisplay}
+              onOpenBlueDisplay={onOpenBlueDisplay}
+              style={{ fontSize: '12px', padding: '4px 8px' }}
+            />
           </div>
         </div>
 
         {/* Right Side */}
         <div className="flex items-center space-x-3">
+          {/* Code Button */}
+          <CodeButton 
+            onHoverSound={() => sfx.play('hover', 0.8)}
+            onCloseBlueDisplay={onCloseBlueDisplay}
+            onOpenBlueDisplay={onOpenBlueDisplay}
+          />
+
+          {/* Digital Binder Button */}
+          <BinderButton 
+            onHoverSound={() => sfx.play('hover', 0.8)}
+            onCloseBlueDisplay={onCloseBlueDisplay}
+            onOpenBlueDisplay={onOpenBlueDisplay}
+          />
+
           {/* Badges Button */}
           <BadgesButton 
             onHoverSound={() => sfx.play('hover', 0.8)}
             onCloseBlueDisplay={onCloseBlueDisplay}
             onOpenBlueDisplay={onOpenBlueDisplay}
-            style={{ fontSize: '12px', padding: '4px 8px' }}
           />
 
-          {/* HeartCoin Button & Balance */}
-          <motion.button
-            onClick={() => {
-              setIsHeartCoinOpen(true);
-              onHeartCoinClick?.();
-            }}
-            className="flex items-center space-x-2 px-2 py-2 bg-pink-600/20 hover:bg-pink-600/30 border border-pink-500/40 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-pink-500/20"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <div className="w-8 h-8 p-0.5">
-              <img
-                src="/elements/heart-coin.png"
-                alt="HeartCoin"
-                className="w-full h-full object-cover rounded-sm"
-                draggable={false}
-              />
-            </div>
-            <span className="text-pink-300 font-medium">{heartCoins}</span>
-          </motion.button>
+          {/* Heart Coin Button */}
+          <HeartCoinButton 
+            onHoverSound={() => sfx.play('hover', 0.8)}
+            onCloseBlueDisplay={onCloseBlueDisplay}
+            onOpenBlueDisplay={onOpenBlueDisplay}
+            heartCoins={heartCoins}
+          />
         </div>
       </div>
 
@@ -330,9 +280,6 @@ export default function ProfileBar({
         <HeartCoinModal open={isHeartCoinOpen} onClose={() => setIsHeartCoinOpen(false)} />
       )}
 
-      {isTestOpen && (
-        <TestModal open={isTestOpen} onClose={() => setIsTestOpen(false)} />
-      )}
     </div>
   );
 }

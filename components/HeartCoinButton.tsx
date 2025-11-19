@@ -9,9 +9,10 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   onHoverSound?: () => void;
   onCloseBlueDisplay?: () => void;
   onOpenBlueDisplay?: () => void;
+  heartCoins?: number;
 };
 
-export default function BadgesButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, ...rest }: Props) {
+export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, heartCoins = 0, ...rest }: Props) {
   const [open, setOpen] = useState(false);
 
   const handleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
@@ -30,26 +31,26 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="p-1 bg-yellow-600/20 hover:bg-yellow-600/30 border border-yellow-500/40 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-yellow-500/20 w-12 h-10"
+        className="p-1 bg-pink-600/20 hover:bg-pink-600/30 border border-pink-500/40 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-pink-500/20 w-12 h-10"
         style={{
-          boxShadow: '0 0 20px rgba(255, 215, 0, 0.4), 0 0 40px rgba(255, 215, 0, 0.2)',
+          boxShadow: '0 0 20px rgba(236, 72, 153, 0.4), 0 0 40px rgba(236, 72, 153, 0.2)',
           transition: 'all 0.3s ease',
           ...rest.style
         }}
         onMouseEnter={(e) => {
           if (onHoverSound) onHoverSound();
-          e.currentTarget.style.boxShadow = '0 0 30px rgba(255, 215, 0, 0.8), 0 0 50px rgba(255, 215, 0, 0.5), 0 0 70px rgba(255, 215, 0, 0.3)';
+          e.currentTarget.style.boxShadow = '0 0 30px rgba(236, 72, 153, 0.8), 0 0 50px rgba(236, 72, 153, 0.5), 0 0 70px rgba(236, 72, 153, 0.3)';
           e.currentTarget.style.transform = 'scale(1.05)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.boxShadow = '0 0 20px rgba(255, 215, 0, 0.4), 0 0 40px rgba(255, 215, 0, 0.2)';
+          e.currentTarget.style.boxShadow = '0 0 20px rgba(236, 72, 153, 0.4), 0 0 40px rgba(236, 72, 153, 0.2)';
           e.currentTarget.style.transform = 'scale(1)';
         }}
         {...rest}
       >
         <img
-          src="/elements/badges.png"
-          alt="Badges"
+          src="/elements/heart-coin.png"
+          alt="Heart Coin"
           className="w-full h-full object-cover rounded"
           draggable={false}
         />
@@ -68,14 +69,14 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
             style={{
               width: 'min(120vw, 700px)',
               height: '200px',
-              background: 'radial-gradient(ellipse 80% 100% at 50% 0%, rgba(255,215,0,0.7) 0%, rgba(255,215,0,0.4) 30%, rgba(255,215,0,0.1) 60%, transparent 100%)',
+              background: 'radial-gradient(ellipse 80% 100% at 50% 0%, rgba(33,150,243,0.7) 0%, rgba(33,150,243,0.4) 30%, rgba(33,150,243,0.1) 60%, transparent 100%)',
               filter: 'blur(100px)'
             }}
           />
         </div>
       )}
       
-      {/* Badges Modal - holographic popup */}
+      {/* Heart Coin Modal - holographic popup */}
       {open && (
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center"
@@ -84,17 +85,17 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
           }}
         >
           <div
-            className="badges-hologram-container"
+            className="heart-coin-hologram-container"
             style={{
               width: 'min(92vw, 700px)',
               height: '35vh',
               padding: '10px 14px 14px 14px',
               borderRadius: 18,
               background: 'rgba(0,0,0,0.6)',
-              border: '1px solid rgba(255,215,0,0.55)',
-              boxShadow: '0 -8px 25px rgba(255,215,0,0.4), 0 -4px 15px rgba(255,215,0,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(255,215,0,0.45)',
+              border: '1px solid rgba(0,255,255,0.55)',
+              boxShadow: '0 -8px 25px rgba(0,255,255,0.4), 0 -4px 15px rgba(0,255,255,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(0,255,255,0.45)',
               backdropFilter: 'blur(12px) saturate(140%)',
-              color: '#FFD700',
+              color: '#00FFFF',
               position: 'relative'
             }}
         >
@@ -107,7 +108,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
               transform: 'translateX(-50%)',
               width: '120%',
               height: '30px',
-              background: 'radial-gradient(ellipse 60% 100% at 50% 0%, rgba(255,215,0,0.6) 0%, rgba(255,215,0,0.3) 40%, transparent 80%)',
+              background: 'radial-gradient(ellipse 60% 100% at 50% 0%, rgba(33,150,243,0.6) 0%, rgba(33,150,243,0.3) 40%, transparent 80%)',
               filter: 'blur(30px)',
               pointerEvents: 'none',
               zIndex: -1
@@ -123,7 +124,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
               transform: 'translateX(-50%)',
               width: '80%',
               height: '20px',
-              background: 'radial-gradient(ellipse 70% 100% at 50% 100%, rgba(255,215,0,0.4) 0%, rgba(255,215,0,0.2) 50%, transparent 100%)',
+              background: 'radial-gradient(ellipse 70% 100% at 50% 100%, rgba(33,150,243,0.4) 0%, rgba(33,150,243,0.2) 50%, transparent 100%)',
               filter: 'blur(25px)',
               pointerEvents: 'none',
               zIndex: -1
@@ -134,15 +135,15 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
             onClick={() => {
               try { sfx.play('close', 0.8); } catch {}
               setOpen(false);
-              // Show blue display when closing badges popup
+              // Show blue display when closing heart coin popup
               try { onOpenBlueDisplay?.(); } catch {}
             }}
-            className="absolute top-2 right-4 text-yellow-400 hover:text-yellow-200 cursor-pointer w-8 h-8 rounded-full border border-yellow-400/80 flex items-center justify-center"
+            className="absolute top-2 right-4 text-cyan-400 hover:text-cyan-200 cursor-pointer w-8 h-8 rounded-full border border-cyan-400/80 flex items-center justify-center"
             style={{ 
               fontSize: '16px',
-              boxShadow: '0 0 15px rgba(255,215,0,0.8), 0 0 25px rgba(255,215,0,0.5), 0 0 35px rgba(255,215,0,0.3)',
-              textShadow: '0 0 8px rgba(255,215,0,0.8), 0 0 15px rgba(255,215,0,0.6)',
-              background: 'rgba(255,215,0,0.1)',
+              boxShadow: '0 0 15px rgba(0,255,255,0.8), 0 0 25px rgba(0,255,255,0.5), 0 0 35px rgba(0,255,255,0.3)',
+              textShadow: '0 0 8px rgba(0,255,255,0.8), 0 0 15px rgba(0,255,255,0.6)',
+              background: 'rgba(0,255,255,0.1)',
               backdropFilter: 'blur(2px)'
             }}
           >
@@ -156,21 +157,21 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
           <div 
             className="text-center mb-3"
             style={{ 
-              color: '#FFD700', 
-              textShadow: '0 0 8px rgba(255,215,0,0.6)', 
+              color: '#00FFFF', 
+              textShadow: '0 0 8px rgba(0,255,255,0.6)', 
               fontSize: '16px',
               fontWeight: 'bold'
             }}
           >
-            COLLECT BADGES FROM THE HEARTVERSE ♥
+            MANAGE YOUR HEART COINS ♥
           </div>
           
           {/* Thin blue neon line */}
           <div 
             className="w-full h-px mb-4"
             style={{
-              background: 'linear-gradient(90deg, transparent, rgba(255,215,0,0.8) 20%, rgba(255,215,0,1) 50%, rgba(255,215,0,0.8) 80%, transparent)',
-              boxShadow: '0 0 4px rgba(255,215,0,0.6)'
+              background: 'linear-gradient(90deg, transparent, rgba(0,255,255,0.8) 20%, rgba(0,255,255,1) 50%, rgba(0,255,255,0.8) 80%, transparent)',
+              boxShadow: '0 0 4px rgba(0,255,255,0.6)'
             }}
           />
           <div 
@@ -179,79 +180,82 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
               whiteSpace: 'pre-wrap', 
               lineHeight: 1.2, 
               fontSize: 14, 
-              color: '#FFD700', 
-              textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,215,0,0.6)', 
+              color: '#00FFFF', 
+              textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(0,255,255,0.6)', 
               marginTop: '-4px' 
             }}
           >
-            DISCOVER AND UNLOCK EXCLUSIVE BADGES BY EXPLORING THE HEARTVERSE. EACH BADGE REPRESENTS A UNIQUE ACHIEVEMENT.
+            EARN AND SPEND HEART COINS IN THE HEARTVERSE. USE THEM FOR EXCLUSIVE CONTENT AND SPECIAL EXPERIENCES.
           </div>
 
-          {/* Badges Display */}
+          {/* Heart Coin Stats */}
           <div className="relative mt-1">
-            <div className="grid grid-cols-3 gap-4">
-              {/* Sample badges - you can replace with actual badge data */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Balance Display */}
               <div className="text-center">
                 <div 
-                  className="w-16 h-16 mx-auto mb-2 rounded-full border-2 border-yellow-400/60 flex items-center justify-center"
+                  className="w-16 h-16 mx-auto mb-2 rounded-full border-2 border-cyan-400/60 overflow-hidden"
                   style={{
-                    background: 'rgba(255,215,0,0.1)',
-                    boxShadow: '0 0 15px rgba(255,215,0,0.3)',
+                    background: 'rgba(0,255,255,0.1)',
+                    boxShadow: '0 0 15px rgba(0,255,255,0.3)',
                   }}
                 >
-                  <span style={{ fontSize: '24px' }}>🎵</span>
+                  <img
+                    src="/elements/heart-coin.png"
+                    alt="Heart Coin"
+                    className="w-full h-full object-cover"
+                    draggable={false}
+                  />
                 </div>
                 <div 
-                  className="text-xs"
+                  className="text-xs mb-1"
                   style={{ 
                     color: '#FFFFFF', 
                     textShadow: '0 0 4px rgba(255,255,255,0.7)' 
                   }}
                 >
-                  FIRST LISTEN
+                  BALANCE
+                </div>
+                <div 
+                  className="text-lg font-bold"
+                  style={{ 
+                    color: '#FF69B4', 
+                    textShadow: '0 0 8px rgba(255,105,180,0.8)' 
+                  }}
+                >
+                  {heartCoins}
                 </div>
               </div>
               
+              {/* Earn More */}
               <div className="text-center">
                 <div 
-                  className="w-16 h-16 mx-auto mb-2 rounded-full border-2 border-yellow-400/60 flex items-center justify-center"
+                  className="w-16 h-16 mx-auto mb-2 rounded-full border-2 border-cyan-400/60 flex items-center justify-center"
                   style={{
-                    background: 'rgba(255,215,0,0.1)',
-                    boxShadow: '0 0 15px rgba(255,215,0,0.3)',
+                    background: 'rgba(0,255,255,0.1)',
+                    boxShadow: '0 0 15px rgba(0,255,255,0.3)',
                   }}
                 >
-                  <span style={{ fontSize: '24px' }}>💫</span>
+                  <span style={{ fontSize: '24px' }}>⭐</span>
                 </div>
                 <div 
-                  className="text-xs"
+                  className="text-xs mb-1"
                   style={{ 
                     color: '#FFFFFF', 
                     textShadow: '0 0 4px rgba(255,255,255,0.7)' 
                   }}
                 >
-                  EXPLORER
+                  EARN MORE
                 </div>
-              </div>
-              
-              <div className="text-center">
-                <div 
-                  className="w-16 h-16 mx-auto mb-2 rounded-full border-2 border-gray-400/30 flex items-center justify-center"
+                <button
+                  className="px-3 py-1 bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300 rounded text-xs transition-all duration-200"
                   style={{
-                    background: 'rgba(128,128,128,0.1)',
-                    boxShadow: '0 0 10px rgba(128,128,128,0.2)',
+                    boxShadow: '0 0 10px rgba(236, 72, 153, 0.3)',
+                    textShadow: '0 0 4px rgba(236, 72, 153, 0.6)'
                   }}
                 >
-                  <span style={{ fontSize: '24px', opacity: 0.5 }}>❓</span>
-                </div>
-                <div 
-                  className="text-xs"
-                  style={{ 
-                    color: '#888', 
-                    textShadow: '0 0 2px rgba(136,136,136,0.5)' 
-                  }}
-                >
-                  LOCKED
-                </div>
+                  EXPLORE
+                </button>
               </div>
             </div>
           </div>
