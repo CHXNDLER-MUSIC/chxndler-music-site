@@ -29,25 +29,12 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
       <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="px-4 py-2 rounded-lg font-medium transition-all duration-200"
+        className="px-4 py-2 bg-cyan-600/20 hover:bg-cyan-600/30 border border-cyan-400/60 text-cyan-300 rounded-lg font-medium transition-all duration-200 hover:shadow-lg hover:shadow-cyan-400/30"
         style={{
-          background: 'transparent',
-          border: '2px solid #00BFFF',
-          color: '#00BFFF',
-          textShadow: '0 0 8px rgba(0,191,255,1), 0 0 15px rgba(0,191,255,0.95), 0 0 25px rgba(0,191,255,0.8)',
-          boxShadow: '0 0 25px rgba(0,191,255,0.5), 0 0 40px rgba(0,191,255,0.3)',
+          boxShadow: '0 0 20px rgba(0, 255, 255, 0.4), 0 0 40px rgba(0, 255, 255, 0.2)',
           fontSize: '12px',
-          fontWeight: 700,
-          letterSpacing: '0.03em',
-          textTransform: 'uppercase',
+          textShadow: '0 0 8px rgba(0, 255, 255, 0.8), 0 0 15px rgba(0, 255, 255, 0.6)',
           ...rest.style
-        }}
-        onMouseEnter={(e) => {
-          if (onHoverSound) onHoverSound();
-          e.currentTarget.style.boxShadow = '0 0 35px rgba(0,191,255,0.7), 0 0 50px rgba(0,191,255,0.4)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.boxShadow = '0 0 25px rgba(0,191,255,0.5), 0 0 40px rgba(0,191,255,0.3)';
         }}
         {...rest}
       >
