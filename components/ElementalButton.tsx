@@ -34,16 +34,7 @@ export default function ElementalButton({ asChild = false, children, onClick, on
   // Handle element selection
   const selectElement = useCallback((element: string) => {
     try { sfx.play('click', 0.6); } catch {}
-    
-    // Display element text
-    const elementTexts = {
-      darkness: "🌑 DARKNESS: Mystery, shadow, and transformation. Growth rises from struggle.",
-      heart: "🩷 HEART: Emotion, vulnerability, and connection. Love and compassion unite us.",
-      lightning: "⚡ LIGHTNING: Energy, passion, and awakening. Sudden clarity strikes.",
-      water: "💧 WATER: Flow, adaptability, and healing. Change moves like tides."
-    };
-    
-    alert(elementTexts[element as keyof typeof elementTexts] || "Unknown element");
+    setSelectedElement(element);
   }, []);
 
   return (
@@ -51,19 +42,16 @@ export default function ElementalButton({ asChild = false, children, onClick, on
       <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="p-1 bg-white/10 hover:bg-white/20 border border-white/30 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-white/20 w-12 h-10"
+        className="p-1 bg-white/10 hover:bg-white/20 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-white/20 w-12 h-10"
         style={{
-          boxShadow: '0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(255, 255, 255, 0.3)',
           transition: 'all 0.3s ease',
           ...rest.style
         }}
         onMouseEnter={(e) => {
           if (onHoverSound) onHoverSound();
-          e.currentTarget.style.boxShadow = '0 0 30px rgba(255, 255, 255, 0.9), 0 0 50px rgba(255, 255, 255, 0.6), 0 0 70px rgba(255, 255, 255, 0.4)';
           e.currentTarget.style.transform = 'scale(1.05)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.boxShadow = '0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(255, 255, 255, 0.3)';
           e.currentTarget.style.transform = 'scale(1)';
         }}
         {...rest}
@@ -209,33 +197,78 @@ export default function ElementalButton({ asChild = false, children, onClick, on
               Every song in the is born from an element — a living force with its own energy and emotion. Each element tells a different truth.
             </div>
             
-            <div 
-              className="text-sm mb-4 space-y-1"
-              style={{ 
-                color: '#E879F9', 
-                textShadow: '0 0 4px rgba(232,121,249,0.6)',
-                lineHeight: '1.6'
-              }}
-            >
-              <div>⚡️ Lightning awakens.</div>
-              <div>🩷 Heart connects.</div>
-              <div>🌑 Darkness transforms.</div>
-              <div>💧 Water heals.</div>
-            </div>
-            
-            <div 
-              className="text-sm mb-4"
-              style={{ 
-                color: '#E879F9', 
-                textShadow: '0 0 4px rgba(232,121,249,0.6)',
-                fontStyle: 'italic'
-              }}
-            >
-              Together, they form the emotional ecosystem of the HEARTVERSE.
-            </div>
+            {!selectedElement ? (
+              <div 
+                className="text-sm mb-4"
+                style={{ 
+                  color: '#E879F9', 
+                  textShadow: '0 0 4px rgba(232,121,249,0.6)',
+                  fontStyle: 'italic'
+                }}
+              >
+                Together, they form the emotional ecosystem of the HEARTVERSE.
+              </div>
+            ) : (
+              <div 
+                className="text-sm mb-4 p-3 rounded-lg border transition-all duration-300"
+                style={{ 
+                  color: selectedElement === 'darkness' ? '#9400D3' :
+                         selectedElement === 'heart' ? '#FF69B4' :
+                         selectedElement === 'water' ? '#00BFFF' :
+                         selectedElement === 'lightning' ? '#FFD700' : '#FFFFFF',
+                  borderColor: selectedElement === 'darkness' ? 'rgba(148,0,211,0.4)' :
+                              selectedElement === 'heart' ? 'rgba(255,105,180,0.4)' :
+                              selectedElement === 'water' ? 'rgba(0,191,255,0.4)' :
+                              selectedElement === 'lightning' ? 'rgba(255,215,0,0.4)' : 'transparent',
+                  background: selectedElement === 'darkness' ? 'rgba(148,0,211,0.1)' :
+                             selectedElement === 'heart' ? 'rgba(255,105,180,0.1)' :
+                             selectedElement === 'water' ? 'rgba(0,191,255,0.1)' :
+                             selectedElement === 'lightning' ? 'rgba(255,215,0,0.1)' : 'transparent',
+                  boxShadow: selectedElement === 'darkness' ? '0 0 15px rgba(148,0,211,0.3)' :
+                            selectedElement === 'heart' ? '0 0 15px rgba(255,105,180,0.3)' :
+                            selectedElement === 'water' ? '0 0 15px rgba(0,191,255,0.3)' :
+                            selectedElement === 'lightning' ? '0 0 15px rgba(255,215,0,0.3)' : 'none',
+                  textShadow: selectedElement === 'darkness' ? '0 0 8px rgba(148,0,211,0.8)' :
+                             selectedElement === 'heart' ? '0 0 8px rgba(255,105,180,0.8)' :
+                             selectedElement === 'water' ? '0 0 8px rgba(0,191,255,0.8)' :
+                             selectedElement === 'lightning' ? '0 0 8px rgba(255,215,0,0.8)' : 'none',
+                  fontWeight: 'bold'
+                }}
+              >
+{selectedElement === 'water' ? (
+                  <>
+                    <div style={{ fontSize: '16px', marginBottom: '8px' }}>💧 WATER</div>
+                    <div style={{ fontSize: '14px', lineHeight: '1.4' }}>
+                      Soft yet powerful, WATER represents flow, adaptability, and emotional depth. It carries themes of change, healing, and trusting life's current. WATER songs move like tides, calm and cleansing, inviting you to release control and let the moment guide you.
+                    </div>
+                  </>
+                ) : selectedElement === 'heart' ? (
+                  <>
+                    <div style={{ fontSize: '16px', marginBottom: '8px' }}>🩷 HEART</div>
+                    <div style={{ fontSize: '14px', lineHeight: '1.4' }}>
+                      HEART embodies emotion, vulnerability, and connection. It symbolizes love, compassion, and the courage to stay open. HEART songs are tender, raw, and real, pulling you into the spaces where feeling becomes truth and connection begins.
+                    </div>
+                  </>
+                ) : selectedElement === 'lightning' ? (
+                  <>
+                    <div style={{ fontSize: '16px', marginBottom: '8px' }}>⚡️ LIGHTNING</div>
+                    <div style={{ fontSize: '14px', lineHeight: '1.4' }}>
+                      LIGHTNING holds energy, passion, and awakening. It represents breakthroughs, inspiration, and sudden clarity. These songs are fast, alive, and electric, striking with intensity and capturing the rush of change when everything shifts at once.
+                    </div>
+                  </>
+                ) : selectedElement === 'darkness' ? (
+                  <>
+                    <div style={{ fontSize: '16px', marginBottom: '8px' }}>🌑 DARKNESS</div>
+                    <div style={{ fontSize: '14px', lineHeight: '1.4' }}>
+                      DARKNESS carries mystery, shadow, and transformation. It symbolizes the unknown and the growth that rises from struggle. These songs dive into heartbreak, isolation, and truth, revealing that darkness is not the enemy but the place where transformation starts and light returns.
+                    </div>
+                  </>
+                ) : ''}
+              </div>
+            )}
             
             {/* Elemental Image with Hover Quadrants */}
-            <div style={{ marginBottom: 16, display: 'grid', placeItems: 'center', position: 'relative' }}>
+            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
               <div style={{ position: 'relative', width: '50%', maxWidth: 200 }}>
                 <img
                   src="/elements/elementals.png"

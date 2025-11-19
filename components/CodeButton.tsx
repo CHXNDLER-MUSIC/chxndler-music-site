@@ -30,19 +30,16 @@ export default function CodeButton({ asChild = false, children, onClick, onHover
       <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="p-1 bg-cyan-400/20 hover:bg-cyan-400/30 border border-cyan-400/60 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-cyan-400/20 w-12 h-10"
+        className="p-1 rounded-lg transition-all duration-200 w-12 h-10"
         style={{
-          boxShadow: '0 0 20px rgba(0, 255, 255, 0.4), 0 0 40px rgba(0, 255, 255, 0.2)',
           transition: 'all 0.3s ease',
           ...rest.style
         }}
         onMouseEnter={(e) => {
           if (onHoverSound) onHoverSound();
-          e.currentTarget.style.boxShadow = '0 0 30px rgba(0, 255, 255, 0.8), 0 0 50px rgba(0, 255, 255, 0.5), 0 0 70px rgba(0, 255, 255, 0.3)';
           e.currentTarget.style.transform = 'scale(1.05)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.boxShadow = '0 0 20px rgba(0, 255, 255, 0.4), 0 0 40px rgba(0, 255, 255, 0.2)';
           e.currentTarget.style.transform = 'scale(1)';
         }}
         {...rest}

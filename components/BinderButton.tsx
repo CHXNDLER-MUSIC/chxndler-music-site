@@ -18,6 +18,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [selectedRarity, setSelectedRarity] = useState<string>('All');
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [selectedCard, setSelectedCard] = useState<{name: string, image: string, rarity: string, element: string} | null>(null);
 
   // Full song collection data structure
   const songCollection = [
@@ -194,19 +195,16 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
       <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="p-1 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-purple-500/20 w-14 h-12"
+        className="p-1 rounded-lg transition-all duration-200 w-14 h-12"
         style={{
-          boxShadow: '0 0 20px rgba(252, 84, 175, 0.4), 0 0 40px rgba(252, 84, 175, 0.2)',
           transition: 'all 0.3s ease',
           ...rest.style
         }}
         onMouseEnter={(e) => {
           if (onHoverSound) onHoverSound();
-          e.currentTarget.style.boxShadow = '0 0 30px rgba(252, 84, 175, 0.8), 0 0 50px rgba(252, 84, 175, 0.5), 0 0 70px rgba(252, 84, 175, 0.3)';
           e.currentTarget.style.transform = 'scale(1.05)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.boxShadow = '0 0 20px rgba(252, 84, 175, 0.4), 0 0 40px rgba(252, 84, 175, 0.2)';
           e.currentTarget.style.transform = 'scale(1)';
         }}
         {...rest}
@@ -412,6 +410,12 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                         }}
                         onClick={() => {
                           try { sfx.play('click', 0.8); } catch {}
+                          setSelectedCard({
+                            name: 'CHXNDLER',
+                            image: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',
+                            rarity: 'Common',
+                            element: 'ALL'
+                          });
                           setCardOpen(true);
                         }}
                         onMouseEnter={(e) => {
@@ -615,6 +619,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                               draggable={false}
                               onClick={() => {
                                 try { sfx.play('click', 0.8); } catch {}
+                                setSelectedCard(currentCard);
                                 setCardOpen(true);
                               }}
                             />
@@ -729,8 +734,8 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
           >
             {/* Card image */}
             <img
-              src="https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910"
-              alt="CHXNDLER Card"
+              src={selectedCard?.image || "https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910"}
+              alt={selectedCard?.name || "CHXNDLER Card"}
               className="w-full h-auto rounded-lg shadow-2xl"
               style={{
                 boxShadow: '0 0 40px rgba(255,105,180,0.8), 0 0 80px rgba(255,105,180,0.5), 0 0 120px rgba(255,105,180,0.3)',

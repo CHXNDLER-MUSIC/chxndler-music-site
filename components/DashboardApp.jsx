@@ -451,17 +451,20 @@ export default function DashboardApp({ initialSlug } = {}) {
     setPendingTrackPlay(true);
     setHidePlanetsForSelection(false);
     
-    // Trigger warp sequence with new song's sky FIRST
-    setAllowWarp(true);
-    // Switch base sky immediately so it loads while lightspeed overlay plays
-    setSky(skyFor(t.slug));
-    setNextSky(null);
-    setFlySignal((n) => n + 1);
+    // Add a brief delay before triggering warp sequence, allowing for anticipation
+    setTimeout(() => {
+      // Trigger warp sequence with new song's sky
+      setAllowWarp(true);
+      // Switch base sky immediately so it loads while lightspeed overlay plays
+      setSky(skyFor(t.slug));
+      setNextSky(null);
+      setFlySignal((n) => n + 1);
+    }, 300); // Small delay before warp starts
     
-    // Delay MediaPlayer channel change until after warp completes (1.8s + buffer)
+    // Delay MediaPlayer channel change until after warp completes (1.8s + buffer + initial delay)
     setTimeout(() => {
       setChannelIdx(idx);
-    }, 2000); // Wait for warp to complete before switching audio
+    }, 2300); // Wait for warp to complete before switching audio (300ms delay + 2000ms warp)
   }
 
   // Trigger a fly transition only when the channel index actually changes (not on initial mount)

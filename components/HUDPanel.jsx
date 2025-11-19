@@ -196,6 +196,21 @@ export default function HUDPanel({
   const [profileName, setProfileName] = useState('');
   const [selectedElement, setSelectedElement] = useState('');
   const [currentProfileId, setCurrentProfileId] = useState(null);
+  
+  // New identical popup state
+  const [showIdenticalPopup, setShowIdenticalPopup] = useState(false);
+  const [identicalPopoverPos, setIdenticalPopoverPos] = useState(null);
+  const identicalScrollRef = useRef(null);
+  
+  // Expose function globally for testing (can be removed later)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.openIdenticalPopup = openIdenticalPopover;
+      window.showIdenticalPopup = () => {
+        openIdenticalPopover();
+      };
+    }
+  }, []);
 
 
   // Brand (CHXNDLER) popover state
@@ -1098,6 +1113,12 @@ export default function HUDPanel({
         } else if (existingProfile.profile_complete || existingProfile.created_at) {
           // Profile exists but no name/element - classic welcome message
           setProfileSubmissionMessage('You\'re already connected! Welcome back, alien. 👽');
+          
+          // After a short delay, close Join Us popover and open welcome popup
+          setTimeout(() => {
+            setShowJoinUsPopover(false);
+            openIdenticalPopover();
+          }, 2000);
         } else {
           // Incomplete profile - guide to completion
           setProfileSubmissionMessage('You\'re already connected! Let\'s complete your alien profile...');
@@ -1210,6 +1231,43 @@ export default function HUDPanel({
     } catch (error) {
       console.error('Exception completing profile:', error);
     }
+  }
+
+  async function openIdenticalPopover(){
+    try { sfx.play('click', 0.4); } catch {}
+    // Anchor position (identical to Join Us popover)
+    try {
+      const r = joinUsBtnRef.current?.getBoundingClientRect?.();
+      const wrapper = innerRef.current?.parentElement || null; // outer HUD blue display wrapper (padding box)
+      // Position the popover to match the blue display's vertical bounds
+      if (wrapper && typeof window !== 'undefined') {
+        const rect = wrapper.getBoundingClientRect();
+        const cs = window.getComputedStyle(wrapper);
+        const pl = parseFloat(cs.paddingLeft || '0') || 0;
+        const pr = parseFloat(cs.paddingRight || '0') || 0;
+        let leftEdge = rect.left + pl;
+        let rightEdge = rect.right - pr;
+        // Very slightly wider than the blue display on both sides
+        const HORIZONTAL_EXPAND = 12; // px to grow on each side
+        leftEdge = Math.max(8, leftEdge - HORIZONTAL_EXPAND);
+        rightEdge = Math.min((typeof window !== 'undefined' ? window.innerWidth : rightEdge), rightEdge + HORIZONTAL_EXPAND) - 8 + 8;
+        const width = Math.max(0, rightEdge - leftEdge);
+        // Bring the top down more while keeping the bottom aligned to blue display bottom; this also shortens the popover
+        const TOP_INSET = 136; // same as lyrics popup
+        let top = rect.top + TOP_INSET;
+        top = Math.max(8, top);
+        const height = Math.max(100, rect.height - TOP_INSET);
+        setIdenticalPopoverPos({ left: leftEdge, top, width, height });
+      } else if (r) {
+        let top = r.bottom + 8 + LYRICS_POPOVER_Y_OFFSET;
+        top = Math.max(8, top);
+        let height = Math.max(240, Math.min(560, (typeof window !== 'undefined' ? window.innerHeight * 0.46 : 340)));
+        setIdenticalPopoverPos({ left: r.left + r.width/2, top, height });
+      }
+    } catch(e) {
+      console.warn('Failed to position identical popover:', e);
+    }
+    setShowIdenticalPopup(true);
   }
 
   async function openSoulSkyPopover(){
@@ -6069,6 +6127,153 @@ export default function HUDPanel({
                           </div>
                         </div>
                       )}
+                    </div>
+                  </div>,
+                  document.body
+                ) : null}
+
+                {/* Identical Popup - Same styling as Welcome Home */}
+                {typeof document !== 'undefined' && showIdenticalPopup && identicalPopoverPos ? require('react-dom').createPortal(
+                  <div
+                    role="dialog"
+                    aria-label="Identical Popup"
+                    className="lyrics-popover-hud holo-scrollbar-yellow lyrics-modal-enhanced"
+                    ref={identicalScrollRef}
+                    style={{
+                      position: 'fixed',
+                      left: (identicalPopoverPos && identicalPopoverPos.left) || 0,
+                      top: (identicalPopoverPos && identicalPopoverPos.top) || 0,
+                      transform: (identicalPopoverPos && identicalPopoverPos.width) ? 'none' : 'translateX(-50%)',
+                      padding: '10px 14px 14px 14px', 
+                      borderRadius: 14,
+                      background: 'rgba(3,10,20,0.9)',
+                      border: '1px solid rgba(33,150,243,0.55)',
+                      boxShadow: '0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(33,150,243,0.45)',
+                      backdropFilter: 'blur(8px)',
+                      color: '#2196F3',
+                      zIndex: 2147483647,
+                      width: (identicalPopoverPos && identicalPopoverPos.width) ? identicalPopoverPos.width : 'min(98vw, 1400px)',
+                      height: (identicalPopoverPos && identicalPopoverPos.height) ? identicalPopoverPos.height : '42vh',
+                      overflow: 'auto',
+                      animation: 'lyricsModalFadeIn 0.25s ease-out, lyricsModalFloat 6s ease-in-out infinite alternate'
+                    }}
+                    onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowIdenticalPopup(false); } }}
+                  >
+                    {/* Pink close button in the top-right corner */}
+                    <button
+                      aria-label="Close identical popup"
+                      title="Close"
+                      onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 26px rgba(0,255,255,0.95), 0 0 42px rgba(0,255,255,0.65)'; } catch {} }}
+                      onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 18px rgba(0,255,255,0.75), 0 0 32px rgba(0,255,255,0.45)'; } catch {} }}
+                      onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowIdenticalPopup(false); }}
+                      style={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        width: 32,
+                        height: 32,
+                        borderRadius: 9999,
+                        background: 'rgba(0,0,0,0.35)',
+                        border: '2px solid rgba(0,255,255,0.85)',
+                        color: '#00FFFF',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 0 18px rgba(0,255,255,0.75), 0 0 32px rgba(0,255,255,0.45)',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+                        <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                        <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                    {/* Moving glow background */}
+                    <div className="lyrics-glow-bg"></div>
+                    {/* Section header */}
+                    <div className="lyrics-header" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.6)', fontSize: '12px' }}>
+                      WELCOME! ♥
+                    </div>
+                    <div className="lyrics-content-enhanced" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.2, fontSize: 14, color: '#00FFFF', textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(0,255,255,0.6)', marginTop: '-4px' }}>
+                      What should we call you?
+                    </div>
+                    {/* Sign-in options - Same structure as original */}
+                    <div className="relative mt-1">
+                      <div className="flex flex-col gap-3">
+                        {/* Name input */}
+                        <div>
+                          <label className="block text-sm font-medium text-white/90 text-center mb-2">
+                            NAME
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Enter your name..."
+                            value={profileName}
+                            onChange={(e) => setProfileName(e.target.value)}
+                            className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-[#00FFFF] focus:outline-none text-center"
+                            autoFocus
+                          />
+                        </div>
+                        
+                        {/* Action button */}
+                        <button
+                          type="button"
+                          className="w-full inline-flex items-center justify-center rounded-lg bg-transparent px-4 py-3 text-sm font-medium text-[#00FFFF] transition"
+                          style={{
+                            border: '2px solid #00FFFF',
+                            boxShadow: '0 0 20px rgba(0,255,255,0.8), 0 0 40px rgba(0,255,255,0.6)'
+                          }}
+                          onMouseEnter={(e) => {
+                            try { sfx.play('hover', 0.4); } catch {}
+                            e.currentTarget.style.boxShadow = '0 0 30px rgba(0,255,255,1), 0 0 60px rgba(0,255,255,0.8), 0 0 100px rgba(0,255,255,0.6)';
+                            e.currentTarget.style.transform = 'scale(1.02)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.boxShadow = '0 0 20px rgba(0,255,255,0.8), 0 0 40px rgba(0,255,255,0.6)';
+                            e.currentTarget.style.transform = 'scale(1)';
+                          }}
+                          onClick={() => {
+                            if (profileName.trim()) {
+                              try { sfx.play('click', 0.6); } catch {}
+                              // Save the name (could update database here)
+                              console.log('Name saved:', profileName);
+                              setShowIdenticalPopup(false);
+                              alert(`Nice to meet you, ${profileName}!`);
+                              // Optionally clear the name for next time
+                              // setProfileName('');
+                            }
+                          }}
+                          disabled={!profileName.trim()}
+                        >
+                          {profileName.trim() ? 'SAVE NAME' : 'ENTER YOUR NAME'}
+                        </button>
+                        
+                        {/* Skip button */}
+                        <div className="w-full">
+                          <button
+                            onClick={() => { 
+                              try { sfx.play('click', 0.4); } catch {}; 
+                              setShowIdenticalPopup(false);
+                            }}
+                            className="w-full inline-flex items-center justify-center rounded-lg bg-transparent px-4 py-3 text-sm font-semibold text-[#00FFFF] transition"
+                            style={{
+                              border: '2px solid rgba(0,255,255,0.3)',
+                              boxShadow: '0 0 10px rgba(0,255,255,0.4), 0 0 20px rgba(0,255,255,0.3)'
+                            }}
+                            onMouseEnter={(e) => {
+                              try { sfx.play('hover', 0.3); } catch {}
+                              e.currentTarget.style.boxShadow = '0 0 20px rgba(0,255,255,0.6), 0 0 40px rgba(0,255,255,0.4)';
+                              e.currentTarget.style.transform = 'scale(1.02)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.boxShadow = '0 0 10px rgba(0,255,255,0.4), 0 0 20px rgba(0,255,255,0.3)';
+                              e.currentTarget.style.transform = 'scale(1)';
+                            }}
+                          >
+                            Skip for now
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>,
                   document.body
