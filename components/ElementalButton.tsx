@@ -42,7 +42,7 @@ export default function ElementalButton({ asChild = false, children, onClick, on
       <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="p-1 bg-white/10 hover:bg-white/20 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-white/20 w-12 h-10"
+        className="p-1 rounded-lg transition-all duration-200 w-12 h-10"
         style={{
           transition: 'all 0.3s ease',
           ...rest.style
@@ -185,13 +185,13 @@ export default function ElementalButton({ asChild = false, children, onClick, on
           />
 
           {/* Content */}
-          <div className="text-center space-y-4">
+          <div className="text-center space-y-2">
             <div 
-              className="text-sm mb-4"
+              className="text-xs mb-2"
               style={{ 
                 color: '#E879F9', 
                 textShadow: '0 0 4px rgba(232,121,249,0.6)',
-                lineHeight: '1.5'
+                lineHeight: '1.4'
               }}
             >
               Every song in the is born from an element — a living force with its own energy and emotion. Each element tells a different truth.
@@ -199,7 +199,7 @@ export default function ElementalButton({ asChild = false, children, onClick, on
             
             {!selectedElement ? (
               <div 
-                className="text-sm mb-4"
+                className="text-xs mb-4"
                 style={{ 
                   color: '#E879F9', 
                   textShadow: '0 0 4px rgba(232,121,249,0.6)',
@@ -268,7 +268,7 @@ export default function ElementalButton({ asChild = false, children, onClick, on
             )}
             
             {/* Elemental Image with Hover Quadrants */}
-            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
+            <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
               <div style={{ position: 'relative', width: '50%', maxWidth: 200 }}>
                 <img
                   src="/elements/elementals.png"
