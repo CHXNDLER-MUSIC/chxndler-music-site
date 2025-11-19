@@ -1039,6 +1039,15 @@ export default function DashboardApp({ initialSlug } = {}) {
             onBadgesClick={() => {}}
             onHeartCoinClick={() => {}}
             onCloseBlueDisplay={() => setShowHUD(false)}
+            onOpenBlueDisplay={() => {
+              // Force open blue display without toggle logic
+              if (!showHUD && beamColor === 'blue') {
+                setBeamEnabled(true);
+                setShowHUD(true);
+              } else if (beamColor !== 'blue') {
+                handleBeamToggle('blue');
+              }
+            }}
           />
         )}
         
@@ -1143,6 +1152,15 @@ export default function DashboardApp({ initialSlug } = {}) {
           onBadgesClick={handleBadgesClick}
           onHeartCoinClick={handleHeartCoinClick}
           onCloseBlueDisplay={() => setShowHUD(false)}
+          onOpenBlueDisplay={() => {
+            // Force open blue display without toggle logic
+            if (!showHUD && beamColor === 'blue') {
+              setBeamEnabled(true);
+              setShowHUD(true);
+            } else if (beamColor !== 'blue') {
+              handleBeamToggle('blue');
+            }
+          }}
         />
       )}
       

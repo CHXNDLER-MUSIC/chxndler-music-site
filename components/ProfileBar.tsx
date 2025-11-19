@@ -9,6 +9,7 @@ import BadgesModal from '@/components/BadgesModal';
 import HeartCoinModal from '@/components/HeartCoinModal';
 import TestModal from '@/components/TestModal';
 import JourneyButton from '@/components/JourneyButton';
+import BadgesButton from '@/components/BadgesButton';
 import { sfx } from '@/lib/sfx';
 
 interface Profile {
@@ -32,6 +33,7 @@ interface ProfileBarProps {
   onHeartCoinClick?: () => void;
   onTestClick?: () => void;
   onCloseBlueDisplay?: () => void;
+  onOpenBlueDisplay?: () => void;
 }
 
 export default function ProfileBar({
@@ -40,7 +42,8 @@ export default function ProfileBar({
   onBadgesClick,
   onHeartCoinClick,
   onTestClick,
-  onCloseBlueDisplay
+  onCloseBlueDisplay,
+  onOpenBlueDisplay
 }: ProfileBarProps) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -220,6 +223,7 @@ export default function ProfileBar({
           <JourneyButton 
             onHoverSound={() => sfx.play('hover', 0.8)}
             onCloseBlueDisplay={onCloseBlueDisplay}
+            onOpenBlueDisplay={onOpenBlueDisplay}
             style={{ fontSize: '12px', padding: '4px 8px' }}
           />
 
@@ -258,24 +262,6 @@ export default function ProfileBar({
               />
             </button>
             
-            {/* Badges Button */}
-            <button
-              onClick={() => {
-                setIsBadgesOpen(true);
-                onBadgesClick?.();
-              }}
-              className="p-1 bg-yellow-600/20 hover:bg-yellow-600/30 border border-yellow-500/40 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-yellow-500/20 w-12 h-10"
-              style={{
-                boxShadow: '0 0 20px rgba(255, 215, 0, 0.4), 0 0 40px rgba(255, 215, 0, 0.2)'
-              }}
-            >
-              <img
-                src="/elements/badges.png"
-                alt="Badges"
-                className="w-full h-full object-cover rounded"
-                draggable={false}
-              />
-            </button>
             
             {/* Test Button */}
             <button
@@ -296,6 +282,14 @@ export default function ProfileBar({
 
         {/* Right Side */}
         <div className="flex items-center space-x-3">
+          {/* Badges Button */}
+          <BadgesButton 
+            onHoverSound={() => sfx.play('hover', 0.8)}
+            onCloseBlueDisplay={onCloseBlueDisplay}
+            onOpenBlueDisplay={onOpenBlueDisplay}
+            style={{ fontSize: '12px', padding: '4px 8px' }}
+          />
+
           {/* HeartCoin Button & Balance */}
           <motion.button
             onClick={() => {

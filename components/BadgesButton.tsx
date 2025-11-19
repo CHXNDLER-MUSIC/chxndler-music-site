@@ -11,7 +11,7 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   onOpenBlueDisplay?: () => void;
 };
 
-export default function JourneyButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, ...rest }: Props) {
+export default function BadgesButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, ...rest }: Props) {
   const [open, setOpen] = useState(false);
 
   const handleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
@@ -51,7 +51,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
         }}
         {...rest}
       >
-        JOURNEY
+        BADGES
       </button>
       
       {/* Hologram base glow - wider and stronger */}
@@ -74,7 +74,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
         </div>
       )}
       
-      {/* Journey Modal - holographic popup */}
+      {/* Badges Modal - holographic popup */}
       {open && (
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center"
@@ -83,7 +83,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
           }}
         >
           <div
-            className="journey-hologram-container"
+            className="badges-hologram-container"
             style={{
               width: 'min(92vw, 700px)',
               height: '35vh',
@@ -133,7 +133,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
             onClick={() => {
               try { sfx.play('close', 0.8); } catch {}
               setOpen(false);
-              // Show blue display when closing journey popup
+              // Show blue display when closing badges popup
               try { onOpenBlueDisplay?.(); } catch {}
             }}
             className="absolute top-2 right-4 text-cyan-400 hover:text-cyan-200 cursor-pointer w-8 h-8 rounded-full border border-cyan-400/80 flex items-center justify-center"
@@ -161,7 +161,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
               fontWeight: 'bold'
             }}
           >
-            START YOUR JOURNEY INTO THE HEARTVERSE ♥
+            COLLECT BADGES FROM THE HEARTVERSE ♥
           </div>
           
           {/* Thin blue neon line */}
@@ -183,65 +183,75 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
               marginTop: '-4px' 
             }}
           >
-            JOIN OUR ALIEN COMMUNITY AND GET ACCESS TO NEW RELEASES, EXCLUSIVE CONTENT, AND SPECIAL EVENTS.
+            DISCOVER AND UNLOCK EXCLUSIVE BADGES BY EXPLORING THE HEARTVERSE. EACH BADGE REPRESENTS A UNIQUE ACHIEVEMENT.
           </div>
 
-          {/* Form */}
+          {/* Badges Display */}
           <div className="relative mt-1">
-            <div className="flex flex-col gap-3">
-              {/* Phone and Email side by side */}
-              <div className="flex gap-3">
-                {/* Phone number section */}
-                <div className="flex-1">
-                  <label htmlFor="journey-phone" className="block text-sm font-medium text-center" style={{ color: '#FFFFFF', textShadow: '0 0 6px rgba(255,255,255,0.8), 0 0 12px rgba(255,255,255,0.6)' }}>
-                    PHONE
-                  </label>
-                  <input
-                    id="journey-phone"
-                    type="tel"
-                    placeholder="+1 (555) 123-4567"
-                    className="block w-full rounded-md border border-white/30 bg-black/20 px-3 py-2 text-sm focus:border-[#00FFFF] focus:outline-none"
-                    style={{
-                      color: '#FFFFFF',
-                      textShadow: '0 0 4px rgba(255,255,255,0.7)',
-                      boxShadow: '0 0 10px rgba(255,255,255,0.2), inset 0 0 8px rgba(255,255,255,0.1)',
-                      border: '1px solid rgba(255,255,255,0.4)'
-                    }}
-                  />
+            <div className="grid grid-cols-3 gap-4">
+              {/* Sample badges - you can replace with actual badge data */}
+              <div className="text-center">
+                <div 
+                  className="w-16 h-16 mx-auto mb-2 rounded-full border-2 border-cyan-400/60 flex items-center justify-center"
+                  style={{
+                    background: 'rgba(0,255,255,0.1)',
+                    boxShadow: '0 0 15px rgba(0,255,255,0.3)',
+                  }}
+                >
+                  <span style={{ fontSize: '24px' }}>🎵</span>
                 </div>
-                
-                {/* Email section */}
-                <div className="flex-1">
-                  <label htmlFor="journey-email" className="block text-sm font-medium text-center" style={{ color: '#FFFFFF', textShadow: '0 0 6px rgba(255,255,255,0.8), 0 0 12px rgba(255,255,255,0.6)' }}>
-                    EMAIL
-                  </label>
-                  <input
-                    id="journey-email"
-                    type="email"
-                    placeholder="your@email.com"
-                    className="block w-full rounded-md border border-white/30 bg-black/20 px-3 py-2 text-sm focus:border-[#00FFFF] focus:outline-none"
-                    style={{
-                      color: '#FFFFFF',
-                      textShadow: '0 0 4px rgba(255,255,255,0.7)',
-                      boxShadow: '0 0 10px rgba(255,255,255,0.2), inset 0 0 8px rgba(255,255,255,0.1)',
-                      border: '1px solid rgba(255,255,255,0.4)',
-                      '::placeholder': { color: 'rgba(255,255,255,0.5)' }
-                    }}
-                  />
+                <div 
+                  className="text-xs"
+                  style={{ 
+                    color: '#FFFFFF', 
+                    textShadow: '0 0 4px rgba(255,255,255,0.7)' 
+                  }}
+                >
+                  FIRST LISTEN
                 </div>
               </div>
               
-              {/* Join button */}
-              <button
-                type="submit"
-                className="w-full mt-2 px-4 py-2 bg-cyan-600/30 hover:bg-cyan-600/40 border border-cyan-500/50 text-cyan-300 rounded-lg font-medium transition-all duration-200"
-                style={{
-                  boxShadow: '0 0 20px rgba(0, 255, 255, 0.3)',
-                  textShadow: '0 0 8px rgba(0,255,255,0.6)'
-                }}
-              >
-                JOIN THE JOURNEY
-              </button>
+              <div className="text-center">
+                <div 
+                  className="w-16 h-16 mx-auto mb-2 rounded-full border-2 border-cyan-400/60 flex items-center justify-center"
+                  style={{
+                    background: 'rgba(0,255,255,0.1)',
+                    boxShadow: '0 0 15px rgba(0,255,255,0.3)',
+                  }}
+                >
+                  <span style={{ fontSize: '24px' }}>💫</span>
+                </div>
+                <div 
+                  className="text-xs"
+                  style={{ 
+                    color: '#FFFFFF', 
+                    textShadow: '0 0 4px rgba(255,255,255,0.7)' 
+                  }}
+                >
+                  EXPLORER
+                </div>
+              </div>
+              
+              <div className="text-center">
+                <div 
+                  className="w-16 h-16 mx-auto mb-2 rounded-full border-2 border-gray-400/30 flex items-center justify-center"
+                  style={{
+                    background: 'rgba(128,128,128,0.1)',
+                    boxShadow: '0 0 10px rgba(128,128,128,0.2)',
+                  }}
+                >
+                  <span style={{ fontSize: '24px', opacity: 0.5 }}>❓</span>
+                </div>
+                <div 
+                  className="text-xs"
+                  style={{ 
+                    color: '#888', 
+                    textShadow: '0 0 2px rgba(136,136,136,0.5)' 
+                  }}
+                >
+                  LOCKED
+                </div>
+              </div>
             </div>
           </div>
           </div>
