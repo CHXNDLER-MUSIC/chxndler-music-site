@@ -33,19 +33,19 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="p-1 bg-pink-600/20 hover:bg-pink-600/30 border border-pink-500/40 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-pink-500/20 w-12 h-10"
+        className="bg-pink-600/20 hover:bg-pink-600/30 border border-white/80 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-white/20 w-14 h-12"
         style={{
-          boxShadow: '0 0 20px rgba(236, 72, 153, 0.4), 0 0 40px rgba(236, 72, 153, 0.2)',
+          boxShadow: '0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(255, 255, 255, 0.3)',
           transition: 'all 0.3s ease',
           ...rest.style
         }}
         onMouseEnter={(e) => {
           if (onHoverSound) onHoverSound();
-          e.currentTarget.style.boxShadow = '0 0 30px rgba(236, 72, 153, 0.8), 0 0 50px rgba(236, 72, 153, 0.5), 0 0 70px rgba(236, 72, 153, 0.3)';
+          e.currentTarget.style.boxShadow = '0 0 30px rgba(255, 255, 255, 0.9), 0 0 50px rgba(255, 255, 255, 0.6), 0 0 70px rgba(255, 255, 255, 0.3)';
           e.currentTarget.style.transform = 'scale(1.05)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.boxShadow = '0 0 20px rgba(236, 72, 153, 0.4), 0 0 40px rgba(236, 72, 153, 0.2)';
+          e.currentTarget.style.boxShadow = '0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(255, 255, 255, 0.3)';
           e.currentTarget.style.transform = 'scale(1)';
         }}
         {...rest}
@@ -64,7 +64,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           className="fixed inset-0 z-[2147483646] flex items-center justify-center"
           style={{
             pointerEvents: 'none',
-            paddingTop: '400px'
+            paddingTop: '200px'
           }}
         >
           <div
@@ -83,7 +83,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center"
           style={{
-            paddingTop: '300px'
+            paddingTop: '100px'
           }}
         >
           <div
@@ -270,7 +270,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         <div 
           className="fixed inset-0 z-[2147483648] flex items-center justify-center"
           style={{
-            paddingTop: '300px'
+            paddingTop: '100px'
           }}
         >
           <div

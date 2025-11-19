@@ -65,11 +65,17 @@ select *
 from analytics.events
 where happened_at >= now() - interval '7 days';
 
+-- Enable UUID extension for profiles table
+create extension if not exists "uuid-ossp";
+
 -- Profiles table for Join Us functionality
 create table if not exists profiles (
-  id uuid primary key default gen_random_uuid(),
+  id uuid primary key default uuid_generate_v4(),
   phone text,
   email text,
+  name text,
+  element text check (element in ('fire', 'water', 'earth', 'air', 'space')),
+  profile_complete boolean default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   metadata jsonb,

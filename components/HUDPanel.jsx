@@ -1082,8 +1082,15 @@ export default function HUDPanel({
         if (error.code === '23505') { // unique constraint violation
           setProfileSubmissionMessage('You\'re already connected! Welcome back, alien. 👽');
         } else {
-          console.error('Supabase error:', error);
-          setProfileSubmissionMessage('Connection failed. Try again in a moment.');
+          console.error('Supabase error details:', {
+            error: error,
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint,
+            fullError: JSON.stringify(error, null, 2)
+          });
+          setProfileSubmissionMessage(`Connection failed: ${error.message || error.details || 'Database error'}`);
         }
       } else {
         setProfileSubmissionMessage('Heart signal sent! You\'re now connected to the HEARTVERSE. 💙');

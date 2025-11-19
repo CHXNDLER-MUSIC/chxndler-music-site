@@ -13,7 +13,7 @@ import { ELEMENT_COLORS, type Element } from "@/lib/planets";
 
 // Helper function to determine element from title/slug
 const getTrackElement = (title: string, slug?: string): Element => {
-  const searchStr = (slug || title).toLowerCase();
+  const searchStr = (slug || title).toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
   
   // Darkness songs
   if (searchStr.includes("alone") || searchStr.includes("cheerleader") || searchStr.includes("little-black-heart") || 

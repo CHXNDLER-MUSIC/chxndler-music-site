@@ -194,7 +194,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
       <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="p-1 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-purple-500/20 w-12 h-10"
+        className="p-1 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-purple-500/20 w-14 h-12"
         style={{
           boxShadow: '0 0 20px rgba(252, 84, 175, 0.4), 0 0 40px rgba(252, 84, 175, 0.2)',
           transition: 'all 0.3s ease',
@@ -215,6 +215,9 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
           src="/elements/binder.png"
           alt="Binder"
           className="w-full h-full object-cover rounded"
+          style={{
+            filter: 'drop-shadow(0 0 8px rgba(252, 84, 175, 0.8)) drop-shadow(0 0 16px rgba(252, 84, 175, 0.4))'
+          }}
           draggable={false}
         />
       </button>
