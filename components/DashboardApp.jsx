@@ -129,6 +129,10 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [hasEnteredHeartverse, setHasEnteredHeartverse] = useState(initialSlug ? true : false);
   // Profile bar visibility - hidden on intro, shown after entering Heartverse
   const showProfileBar = hasEnteredHeartverse;
+  // Saved profile name from HUD signup flow
+  const [savedProfileName, setSavedProfileName] = useState('');
+  // Saved profile element from HUD signup flow
+  const [savedProfileElement, setSavedProfileElement] = useState('');
   // Unified timing constants for display/beam sequencing
   // Keep conservative defaults for overlapping transitions, but tighten a bit for snappier feel
   const BEAM_SWITCH_DELAY_MS = 300; // was 450ms; faster when switching between colors
@@ -1162,6 +1166,8 @@ export default function DashboardApp({ initialSlug } = {}) {
           }}
           onBeamColorChange={handleBeamToggle}
           hasEnteredHeartverse={hasEnteredHeartverse}
+          savedAlienName={savedProfileName}
+          savedAlienElement={savedProfileElement}
         />
       )}
       
@@ -1736,6 +1742,8 @@ export default function DashboardApp({ initialSlug } = {}) {
                   beamOnly={beamOnly}
                   beamEnabled={beamEnabled}
                   joinAlienOpen={joinAlienOpen}
+                  onNameSaved={setSavedProfileName}
+                  onElementSaved={setSavedProfileElement}
                 />
               </div>
               {!showHUD ? (

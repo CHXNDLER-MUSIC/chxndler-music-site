@@ -111,6 +111,8 @@ export default function HUDPanel({
   beamOnly = false,
   beamEnabled = undefined, // optional external control for beam fade (true/false)
   joinAlienOpen = false, // disable cover art interaction when pink display is open
+  onNameSaved, // callback when user saves their name in signup flow
+  onElementSaved, // callback when user saves their element in signup flow
 }) {
   // Temporary kill-switch to disable 3D planets for performance testing
   // Set to true to disable. You can also override at runtime by setting
@@ -189,6 +191,7 @@ export default function HUDPanel({
   const [emailInput, setEmailInput] = useState('');
   const [isSubmittingProfile, setIsSubmittingProfile] = useState(false);
   const [profileSubmissionMessage, setProfileSubmissionMessage] = useState('');
+  const [welcomeBackProfile, setWelcomeBackProfile] = useState(null); // Tracks existing profile for button text
   
   // Profile setup modal state
   const [showProfileSetup, setShowProfileSetup] = useState(false);
@@ -206,6 +209,7 @@ export default function HUDPanel({
   const [showElementPopup, setShowElementPopup] = useState(false);
   const [elementPopoverPos, setElementPopoverPos] = useState(null);
   const elementScrollRef = useRef(null);
+  const [selectedElementData, setSelectedElementData] = useState(null);
   
   // Saved profile state for HUD display
   const [savedProfileName, setSavedProfileName] = useState('');
@@ -1115,13 +1119,15 @@ export default function HUDPanel({
       }
 
       if (existingProfile) {
-        // Profile already exists - show welcome back message
+        // Profile already exists - update button to show welcome back
+        setWelcomeBackProfile(existingProfile);
+        
         if (existingProfile.name && existingProfile.element) {
           // Complete profile with name and element
-          setProfileSubmissionMessage(`Welcome back, ${existingProfile.name}! You're already connected to the HEARTVERSE as a ${existingProfile.element.toUpperCase()} alien. 👽`);
+          setProfileSubmissionMessage(`You're already connected to the HEARTVERSE as a ${existingProfile.element.toUpperCase()} alien. 👽`);
         } else if (existingProfile.profile_complete || existingProfile.created_at) {
           // Profile exists but no name/element - classic welcome message
-          setProfileSubmissionMessage('You\'re already connected! Welcome back, alien. 👽');
+          setProfileSubmissionMessage('You\'re already connected! 👽');
           
           // After a short delay, close Join Us popover and open welcome popup
           setTimeout(() => {
@@ -1130,7 +1136,7 @@ export default function HUDPanel({
           }, 2000);
         } else {
           // Incomplete profile - guide to completion
-          setProfileSubmissionMessage('You\'re already connected! Let\'s complete your alien profile...');
+          setProfileSubmissionMessage('Let\'s complete your alien profile...');
           // Store the existing profile ID for completing the setup
           setCurrentProfileId(existingProfile.id);
           // Clear form
@@ -5860,7 +5866,11 @@ export default function HUDPanel({
                               type="tel"
                               placeholder="+1 (555) 123-4567"
                               value={phoneInput}
-                              onChange={(e) => setPhoneInput(e.target.value)}
+                              onChange={(e) => {
+                                setPhoneInput(e.target.value);
+                                setWelcomeBackProfile(null); // Reset welcome back state when user types
+                                setProfileSubmissionMessage(''); // Clear any previous messages
+                              }}
                               className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-[#00FFFF] focus:outline-none"
                             />
                           </div>
@@ -5875,7 +5885,11 @@ export default function HUDPanel({
                               type="email"
                               placeholder="you@example.com"
                               value={emailInput}
-                              onChange={(e) => setEmailInput(e.target.value)}
+                              onChange={(e) => {
+                                setEmailInput(e.target.value);
+                                setWelcomeBackProfile(null); // Reset welcome back state when user types
+                                setProfileSubmissionMessage(''); // Clear any previous messages
+                              }}
                               className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-[#00FFFF] focus:outline-none"
                             />
                           </div>
@@ -5901,7 +5915,9 @@ export default function HUDPanel({
                           onClick={handleSendHeartSignal}
                           disabled={isSubmittingProfile}
                         >
-                          {isSubmittingProfile ? 'SENDING...' : 'SEND HEART SIGNAL'}
+                          {isSubmittingProfile ? 'SENDING...' : 
+                           welcomeBackProfile?.name ? `WELCOME BACK, ${welcomeBackProfile.name.toUpperCase()}` : 
+                           'SEND HEART SIGNAL'}
                         </button>
                         
                         {/* Submission message */}
@@ -6284,6 +6300,7 @@ export default function HUDPanel({
                               // Save the name (could update database here)
                               console.log('Name saved:', profileName);
                               setSavedProfileName(profileName); // Persist the name
+                              if (onNameSaved) onNameSaved(profileName); // Notify parent component
                               setShowIdenticalPopup(false);
                               // After a brief delay, show element selection
                               setTimeout(() => {
@@ -6375,16 +6392,44 @@ export default function HUDPanel({
                         marginBottom: 20
                       }}>
                         {[
-                          { id: 'fire', emoji: '🔥', name: 'FIRE', color: '#FF4444' },
-                          { id: 'water', emoji: '💧', name: 'WATER', color: '#4444FF' },
-                          { id: 'earth', emoji: '🌍', name: 'EARTH', color: '#44FF44' },
-                          { id: 'air', emoji: '💨', name: 'AIR', color: '#FFFF44' },
-                          { id: 'space', emoji: '⭐', name: 'SPACE', color: '#FF44FF' }
+                          { 
+                            id: 'lightning', 
+                            name: 'LIGHTNING', 
+                            color: '#FFD700', 
+                            icon: '/elements/lightning-icon.png',
+                            emoji: '⚡️',
+                            description: 'Awakens your spark. Energy, passion, and moments that light you up.'
+                          },
+                          { 
+                            id: 'heart', 
+                            name: 'HEART', 
+                            color: '#FF69B4', 
+                            icon: '/elements/heart-icon.png',
+                            emoji: '🩷',
+                            description: 'Connects you to emotion. Love, vulnerability, and the truth of being human.'
+                          },
+                          { 
+                            id: 'water', 
+                            name: 'WATER', 
+                            color: '#00BFFF', 
+                            icon: '/elements/water-icon.png',
+                            emoji: '💧',
+                            description: 'Moves with flow. Healing, softness, and learning to trust the current.'
+                          },
+                          { 
+                            id: 'darkness', 
+                            name: 'DARKNESS', 
+                            color: '#9400D3', 
+                            icon: '/elements/darkness-icon.png',
+                            emoji: '🌑',
+                            description: 'Transforms your world. Depth, mystery, and growth through shadow.'
+                          }
                         ].map((element) => (
                           <button
                             key={element.id}
                             onClick={() => {
                               setSelectedElement(element.id);
+                              setSelectedElementData(element);
                               try { sfx.play('hover', 0.4); } catch {}
                             }}
                             style={{
@@ -6401,16 +6446,69 @@ export default function HUDPanel({
                               display: 'flex',
                               flexDirection: 'column',
                               alignItems: 'center',
-                              gap: 5
+                              gap: 8
                             }}
                           >
-                            <span style={{ fontSize: 24 }}>{element.emoji}</span>
+                            <img 
+                              src={element.icon} 
+                              alt={element.name}
+                              style={{ 
+                                width: 32, 
+                                height: 32, 
+                                filter: selectedElement === element.id ? 
+                                  `drop-shadow(0 0 8px ${element.color})` : 
+                                  'none'
+                              }}
+                              onError={(e) => {
+                                // Fallback to emoji if PNG fails to load
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'block';
+                              }}
+                            />
+                            <span 
+                              style={{ 
+                                fontSize: 24, 
+                                display: 'none' 
+                              }}
+                            >
+                              {element.emoji}
+                            </span>
                             <span>{element.name}</span>
                           </button>
                         ))}
                       </div>
 
-                      {/* Confirm button */}
+                      {/* Element description display */}
+                      {selectedElementData && (
+                        <div style={{
+                          marginTop: 20,
+                          padding: 16,
+                          background: 'rgba(0,0,0,0.4)',
+                          border: `2px solid ${selectedElementData.color}`,
+                          borderRadius: 12,
+                          textAlign: 'center'
+                        }}>
+                          <div style={{
+                            color: selectedElementData.color,
+                            fontSize: 14,
+                            fontWeight: 'bold',
+                            marginBottom: 8,
+                            textShadow: `0 0 8px ${selectedElementData.color}40`
+                          }}>
+                            {selectedElementData.name}
+                          </div>
+                          <div style={{
+                            color: '#FFFFFF',
+                            fontSize: 12,
+                            lineHeight: 1.4,
+                            fontStyle: 'italic'
+                          }}>
+                            {selectedElementData.description}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Complete Profile button */}
                       {selectedElement && (
                         <button
                           type="button"
@@ -6428,15 +6526,45 @@ export default function HUDPanel({
                             e.currentTarget.style.boxShadow = '0 0 20px rgba(0,255,255,0.8), 0 0 40px rgba(0,255,255,0.6)';
                             e.currentTarget.style.transform = 'scale(1)';
                           }}
-                          onClick={() => {
+                          onClick={async () => {
                             try { sfx.play('click', 0.8); } catch {}
-                            console.log('Element selected:', selectedElement);
-                            console.log('Profile complete:', { name: profileName, element: selectedElement });
-                            setShowElementPopup(false);
-                            // Here you could save to database or trigger another popup
+                            
+                            try {
+                              // Save complete profile to database
+                              const { error } = await supabaseBrowser
+                                .from('profiles')
+                                .update({ 
+                                  name: profileName,
+                                  element: selectedElement,
+                                  profile_complete: true 
+                                })
+                                .eq('phone', profilePhone);
+
+                              if (error) {
+                                console.error('Profile completion error:', error);
+                                alert('Failed to complete profile. Please try again.');
+                                return;
+                              }
+
+                              console.log('Profile completed successfully:', { name: profileName, element: selectedElement });
+                              
+                              // Update the parent component with the completed profile
+                              if (onNameSaved) onNameSaved(profileName);
+                              if (onElementSaved) onElementSaved(selectedElement);
+                              
+                              // Close the popup
+                              setShowElementPopup(false);
+                              
+                              // Optional: Show success message or trigger confetti
+                              // You could add a success animation here
+                              
+                            } catch (err) {
+                              console.error('Unexpected error:', err);
+                              alert('An unexpected error occurred. Please try again.');
+                            }
                           }}
                         >
-                          CONFIRM {selectedElement.toUpperCase()} ELEMENT
+                          COMPLETE PROFILE
                         </button>
                       )}
                     </div>

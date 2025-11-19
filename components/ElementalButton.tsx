@@ -42,7 +42,7 @@ export default function ElementalButton({ asChild = false, children, onClick, on
       <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="p-1 rounded-lg transition-all duration-200 w-12 h-10"
+        className="p-1 rounded-lg transition-all duration-200 w-16 h-14"
         style={{
           transition: 'all 0.3s ease',
           ...rest.style

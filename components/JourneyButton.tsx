@@ -92,32 +92,54 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
 
   return (
     <>
-      <button
+      <div style={{
+        background: 'transparent',
+        boxShadow: 'none',
+        filter: 'none',
+        position: 'relative',
+        zIndex: 10
+      }}>
+        <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="px-4 py-2 bg-cyan-600/20 hover:bg-cyan-600/40 border border-cyan-400/60 hover:border-cyan-300/80 text-cyan-300 hover:text-cyan-200 rounded-lg font-medium transition-all duration-200"
+        className="px-10 py-2 text-white font-medium transition-all duration-200 whitespace-nowrap focus:outline-none focus:ring-0"
         style={{
-          boxShadow: '0 0 20px rgba(0, 255, 255, 0.4), 0 0 40px rgba(0, 255, 255, 0.2)',
-          fontSize: '12px',
-          textShadow: '0 0 8px rgba(0, 255, 255, 0.8), 0 0 15px rgba(0, 255, 255, 0.6)',
+          fontSize: '14px',
           transition: 'all 0.3s ease',
-          ...rest.style
+          boxShadow: 'none !important',
+          textShadow: 'none !important',
+          filter: 'none !important',
+          outline: 'none !important',
+          border: 'none !important',
+          background: 'rgba(0,0,0,0) !important',
+          WebkitFilter: 'none !important',
+          MozFilter: 'none !important',
+          ...rest.style,
+          boxShadow: 'none',
+          textShadow: 'none',
+          filter: 'none',
+          outline: 'none',
+          border: 'none',
+          background: 'transparent'
         }}
         onMouseEnter={(e) => {
           if (onHoverSound) onHoverSound();
-          e.currentTarget.style.boxShadow = '0 0 30px rgba(0, 255, 255, 0.8), 0 0 50px rgba(0, 255, 255, 0.5), 0 0 70px rgba(0, 255, 255, 0.3)';
-          e.currentTarget.style.textShadow = '0 0 12px rgba(0, 255, 255, 1), 0 0 20px rgba(0, 255, 255, 0.8), 0 0 30px rgba(0, 255, 255, 0.6)';
           e.currentTarget.style.transform = 'scale(1.05)';
+          e.currentTarget.style.boxShadow = 'none';
+          e.currentTarget.style.textShadow = 'none';
+          e.currentTarget.style.filter = 'none';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.boxShadow = '0 0 20px rgba(0, 255, 255, 0.4), 0 0 40px rgba(0, 255, 255, 0.2)';
-          e.currentTarget.style.textShadow = '0 0 8px rgba(0, 255, 255, 0.8), 0 0 15px rgba(0, 255, 255, 0.6)';
           e.currentTarget.style.transform = 'scale(1)';
+          e.currentTarget.style.boxShadow = 'none';
+          e.currentTarget.style.textShadow = 'none';
+          e.currentTarget.style.filter = 'none';
         }}
         {...rest}
       >
-        {tierData[getUserTier(cumulativeHeartCoins)].name}
-      </button>
+        - {tierData[getUserTier(cumulativeHeartCoins)].name}
+        </button>
+      </div>
       
       {/* Journey Modal - Three Tiers */}
       {open && (

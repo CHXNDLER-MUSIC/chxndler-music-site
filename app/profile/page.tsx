@@ -81,7 +81,15 @@ export default function ProfilePage() {
 
   return (
     <main className="mx-auto max-w-xl p-6">
-      <h1 className="text-2xl font-semibold mb-6">Your Profile</h1>
+      <div className="flex items-center justify-between mb-6">
+        <img 
+          src="/elements/elemental.png" 
+          alt="Elemental Icon" 
+          className="w-8 h-8 object-contain"
+        />
+        <h1 className="text-2xl font-semibold flex-1 text-center">Your Profile</h1>
+        <div className="w-8 h-8"></div>
+      </div>
 
       {loading ? (
         <div className="text-sm text-gray-500">Loading profile…</div>

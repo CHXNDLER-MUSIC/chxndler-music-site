@@ -15,12 +15,16 @@ import { sfx } from '@/lib/sfx';
 import { track as trackAnalytics } from '@/lib/analytics';
 import { createPortal } from 'react-dom';
 import QuestList from '@/components/QuestList';
+import { supabaseBrowser } from '@/lib/supabase-browser';
 
 interface Profile {
   id: string;
-  display_name: string | null;
-  hearts: number | null;
+  name: string | null;
   element: string | null;
+  hearts?: number | null;
+  phone?: string | null;
+  email?: string | null;
+  profile_complete?: boolean | null;
 }
 
 const ELEMENTS = [
@@ -38,6 +42,8 @@ interface ProfileBarProps {
   onOpenBlueDisplay?: () => void;
   onBeamColorChange?: (color: string) => void;
   hasEnteredHeartverse?: boolean;
+  savedAlienName?: string; // Name from HUD signup flow
+  savedAlienElement?: string; // Element from HUD signup flow
 }
 
 export default function ProfileBar({
@@ -47,7 +53,9 @@ export default function ProfileBar({
   onCloseBlueDisplay,
   onOpenBlueDisplay,
   onBeamColorChange,
-  hasEnteredHeartverse = false
+  hasEnteredHeartverse = false,
+  savedAlienName,
+  savedAlienElement
 }: ProfileBarProps) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -70,15 +78,40 @@ export default function ProfileBar({
 
   async function fetchProfile() {
     try {
-      const res = await fetch('/api/profile');
-      if (res.ok) {
-        const data = await res.json();
-        setProfile(data);
-      } else {
+      // Try to fetch the most recent completed profile from Supabase
+      const { data, error } = await supabaseBrowser
+        .from('profiles')
+        .select('*')
+        .eq('profile_complete', true)
+        .order('updated_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error('Supabase profile fetch error:', error);
         // Demo user fallback
         setProfile({
           id: 'demo',
-          display_name: 'DEMO user',
+          name: 'ALIEN',
+          hearts: 0,
+          element: 'heart'
+        });
+      } else if (data && data.length > 0) {
+        // Use the most recent completed profile
+        const profileData = data[0];
+        setProfile({
+          id: profileData.id,
+          name: profileData.name,
+          element: profileData.element,
+          hearts: 0, // Default hearts for now
+          phone: profileData.phone,
+          email: profileData.email,
+          profile_complete: profileData.profile_complete
+        });
+      } else {
+        // No completed profile found, use fallback
+        setProfile({
+          id: 'demo',
+          name: 'ALIEN',
           hearts: 0,
           element: 'heart'
         });
@@ -88,7 +121,7 @@ export default function ProfileBar({
       // Demo user fallback
       setProfile({
         id: 'demo',
-        display_name: 'DEMO user', 
+        name: 'ALIEN',
         hearts: 0,
         element: 'heart'
       });
@@ -206,8 +239,8 @@ export default function ProfileBar({
     );
   }
 
-  const currentElement = profile?.element || 'heart';
-  const displayName = profile?.display_name || 'DEMO user';
+  const currentElement = profile?.element || savedAlienElement || 'heart';
+  const displayName = profile?.name || savedAlienName || 'ALIEN';
   const heartCoins = profile?.hearts || 0;
   const currentElementData = ELEMENTS.find(e => e.name === currentElement) || ELEMENTS[0];
 
@@ -232,72 +265,13 @@ export default function ProfileBar({
       <div className="flex items-center justify-between h-full pl-4 pr-6">
         {/* Left Side */}
         <div className="flex items-center space-x-4">
-          {/* Element Selector */}
-          <div className="relative">
-            <motion.button
-              onClick={() => {
-                // Play close sound when opening/closing element selector
-                sfx.play('close', 0.8);
-                setElementDropdownOpen(!elementDropdownOpen);
-              }}
-              className="w-10 h-10 rounded-full flex items-center justify-center border border-white/20 bg-black/50 relative overflow-hidden"
-              style={{ 
-                boxShadow: `inset 0 0 15px ${currentElementData.innerGlow}60, inset 0 0 25px ${currentElementData.innerGlow}40`
-              }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <ElementIcon 
-                name={currentElement} 
-                width={32} 
-                height={32}
-                className="relative z-10 w-full h-full object-contain"
-              />
-            </motion.button>
-
-            {/* Element Dropdown */}
-            <AnimatePresence>
-              {elementDropdownOpen && (
-                <>
-                  {/* Backdrop */}
-                  <div 
-                    className="fixed inset-0 z-10"
-                    onClick={() => setElementDropdownOpen(false)}
-                  />
-                  
-                  <motion.div
-                    className="absolute top-12 left-0 bg-black/90 backdrop-blur-md border border-white/20 rounded-lg p-3 z-20"
-                    initial={{ opacity: 0, scale: 0.9, y: -10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <div className="flex items-center space-x-3">
-                      {ELEMENTS.map((element) => (
-                        <motion.button
-                          key={element.name}
-                          onClick={() => updateElement(element.name)}
-                          className="w-12 h-12 rounded-full flex items-center justify-center border border-white/20 bg-black/50 relative overflow-hidden"
-                          style={{ 
-                            boxShadow: `inset 0 0 15px ${element.innerGlow}60, inset 0 0 25px ${element.innerGlow}40`
-                          }}
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <ElementIcon 
-                            name={element.name} 
-                            width={40} 
-                            height={40}
-                            className="relative z-10 w-full h-full object-contain"
-                          />
-                        </motion.button>
-                      ))}
-                    </div>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-          </div>
+          {/* Elemental Button */}
+          <ElementalButton 
+            onHoverSound={() => sfx.play('hover', 0.8)}
+            onCloseBlueDisplay={onCloseBlueDisplay}
+            onOpenBlueDisplay={onOpenBlueDisplay}
+            onBeamColorChange={onBeamColorChange}
+          />
 
           {/* Username */}
           <span 
@@ -318,23 +292,15 @@ export default function ProfileBar({
           </span>
 
           {/* Action Buttons */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
             {/* Journey Button */}
             <JourneyButton 
               onHoverSound={() => sfx.play('hover', 0.8)}
               onCloseBlueDisplay={onCloseBlueDisplay}
               onOpenBlueDisplay={onOpenBlueDisplay}
               cumulativeHeartCoins={heartCoins}
-              style={{ fontSize: '12px', padding: '4px 8px' }}
             />
 
-            {/* Elemental Button */}
-            <ElementalButton 
-              onHoverSound={() => sfx.play('hover', 0.8)}
-              onCloseBlueDisplay={onCloseBlueDisplay}
-              onOpenBlueDisplay={onOpenBlueDisplay}
-              onBeamColorChange={onBeamColorChange}
-            />
           </div>
         </div>
 
@@ -381,7 +347,7 @@ export default function ProfileBar({
               openHeartPopover();
             }}
             onMouseEnter={() => sfx.play('hover', 0.8)}
-            className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-black/50 border border-white/20 hover:border-white/40 transition-all duration-200"
+            className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-black/50 transition-all duration-200"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             title="Heart Coins & Quests"
@@ -390,9 +356,17 @@ export default function ProfileBar({
             <img 
               src="/elements/heart-coin.png" 
               alt="Heart Coins" 
-              className="w-4 h-4"
+              className="w-6 h-6"
             />
-            <span className="text-white text-sm font-medium">{heartCoins}</span>
+            <span 
+              className="text-white text-lg font-medium"
+              style={{
+                textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7), 0 0 20px rgba(255,255,255,0.5)',
+                filter: 'brightness(1.3)'
+              }}
+            >
+              {heartCoins}
+            </span>
           </motion.button>
 
         </div>
@@ -417,7 +391,7 @@ export default function ProfileBar({
           className="fixed inset-0 z-[2147483646] flex items-center justify-center"
           style={{
             pointerEvents: 'none',
-            paddingTop: '80px'
+            paddingTop: '40px'
           }}
         >
           <div
@@ -437,7 +411,7 @@ export default function ProfileBar({
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center"
           style={{
-            paddingTop: '80px'
+            paddingTop: '40px'
           }}
         >
           <div
@@ -626,7 +600,7 @@ export default function ProfileBar({
         <div 
           className="fixed inset-0 z-[2147483648] flex items-center justify-center"
           style={{
-            paddingTop: '80px'
+            paddingTop: '40px'
           }}
         >
           <div

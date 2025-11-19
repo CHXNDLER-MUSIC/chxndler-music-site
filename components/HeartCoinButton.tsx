@@ -61,7 +61,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           className="fixed inset-0 z-[2147483646] flex items-center justify-center"
           style={{
             pointerEvents: 'none',
-            paddingTop: '200px'
+            paddingTop: '120px'
           }}
         >
           <div
@@ -80,7 +80,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center"
           style={{
-            paddingTop: '100px'
+            paddingTop: '40px'
           }}
         >
           <div
@@ -267,7 +267,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         <div 
           className="fixed inset-0 z-[2147483648] flex items-center justify-center"
           style={{
-            paddingTop: '100px'
+            paddingTop: '40px'
           }}
         >
           <div
