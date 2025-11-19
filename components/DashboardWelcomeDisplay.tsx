@@ -28,7 +28,7 @@ export default async function DashboardWelcomeDisplay() {
           <h2 className="text-4xl sm:text-5xl font-extrabold tracking-[0.15em] text-white drop-shadow mb-2">WELCOME BACK TO THE HEARTVERSE {'<3'}</h2>
           <p className="mb-6" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0, 255, 255, 0.6)' }}>You're invited into the Heartverse.</p>
           <JoinUsButton className="inline-flex items-center justify-center rounded-xl px-5 py-3 font-semibold text-black bg-[#38B6FF] hover:brightness-110 transition shadow-[0_0_24px_rgba(56,182,255,0.45)]">
-            JOIN US
+            WELCOME HOME
           </JoinUsButton>
         </div>
       </div>

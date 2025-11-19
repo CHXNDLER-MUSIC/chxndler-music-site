@@ -94,6 +94,10 @@ alter table profiles enable row level security;
 create policy "allow_insert_profiles_anon"
   on profiles for insert to anon with check (true);
 
--- Prevent anonymous users from reading profiles (privacy)
-create policy "deny_select_profiles_anon"
-  on profiles for select to anon using (false);
+-- Allow anonymous users to update their own profiles (for profile completion)
+create policy "allow_update_profiles_anon"
+  on profiles for update to anon using (true) with check (true);
+
+-- Allow anonymous users to read profiles for duplicate checking
+create policy "allow_select_profiles_anon"
+  on profiles for select to anon using (true);

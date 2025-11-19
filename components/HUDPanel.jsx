@@ -189,6 +189,13 @@ export default function HUDPanel({
   const [emailInput, setEmailInput] = useState('');
   const [isSubmittingProfile, setIsSubmittingProfile] = useState(false);
   const [profileSubmissionMessage, setProfileSubmissionMessage] = useState('');
+  
+  // Profile setup modal state
+  const [showProfileSetup, setShowProfileSetup] = useState(false);
+  const [profileSetupStep, setProfileSetupStep] = useState(1); // 1: name, 2: element
+  const [profileName, setProfileName] = useState('');
+  const [selectedElement, setSelectedElement] = useState('');
+  const [currentProfileId, setCurrentProfileId] = useState(null);
 
 
   // Brand (CHXNDLER) popover state
@@ -835,7 +842,7 @@ export default function HUDPanel({
       const r = heartCoinRef.current?.getBoundingClientRect?.();
       if (r) {
         let left = r.left + r.width / 2;
-        let top = r.bottom + 8;
+        let top = r.bottom - 200; // Move container higher up by 200px
         top = Math.max(8, top);
         let height = Math.max(200, Math.min(400, (typeof window !== 'undefined' ? window.innerHeight * 0.3 : 300)));
         setHeartCoinPopoverPos({ left, top, height });
@@ -1059,10 +1066,60 @@ export default function HUDPanel({
     }
 
     setIsSubmittingProfile(true);
-    setProfileSubmissionMessage('Sending heart signal...');
+    setProfileSubmissionMessage('Checking connection...');
     
     try {
-      // Create profile record
+      // First, check if profile already exists
+      let existingProfile = null;
+      
+      if (phoneInput.trim()) {
+        const { data: phoneCheck } = await supabaseBrowser
+          .from('profiles')
+          .select('*')
+          .eq('phone', phoneInput.trim())
+          .single();
+        existingProfile = phoneCheck;
+      }
+      
+      if (!existingProfile && emailInput.trim()) {
+        const { data: emailCheck } = await supabaseBrowser
+          .from('profiles')
+          .select('*')
+          .eq('email', emailInput.trim())
+          .single();
+        existingProfile = emailCheck;
+      }
+
+      if (existingProfile) {
+        // Profile already exists - show welcome back message
+        if (existingProfile.name && existingProfile.element) {
+          // Complete profile with name and element
+          setProfileSubmissionMessage(`Welcome back, ${existingProfile.name}! You're already connected to the HEARTVERSE as a ${existingProfile.element.toUpperCase()} alien. 👽`);
+        } else if (existingProfile.profile_complete || existingProfile.created_at) {
+          // Profile exists but no name/element - classic welcome message
+          setProfileSubmissionMessage('You\'re already connected! Welcome back, alien. 👽');
+        } else {
+          // Incomplete profile - guide to completion
+          setProfileSubmissionMessage('You\'re already connected! Let\'s complete your alien profile...');
+          // Store the existing profile ID for completing the setup
+          setCurrentProfileId(existingProfile.id);
+          // Clear form
+          setPhoneInput('');
+          setEmailInput('');
+          
+          // After a short delay, close Join Us popover and open profile setup
+          setTimeout(() => {
+            setShowJoinUsPopover(false);
+            setShowProfileSetup(true);
+            setProfileSetupStep(1);
+          }, 1500);
+        }
+        return;
+      }
+
+      // Profile doesn't exist, create new one
+      setProfileSubmissionMessage('Sending heart signal...');
+      
       const { data, error } = await supabaseBrowser
         .from('profiles')
         .insert([
@@ -1075,7 +1132,8 @@ export default function HUDPanel({
               timestamp: new Date().toISOString()
             }
           }
-        ]);
+        ])
+        .select();
 
       if (error) {
         // Handle duplicate phone/email gracefully
@@ -1093,11 +1151,20 @@ export default function HUDPanel({
           setProfileSubmissionMessage(`Connection failed: ${error.message || error.details || 'Database error'}`);
         }
       } else {
-        setProfileSubmissionMessage('Heart signal sent! You\'re now connected to the HEARTVERSE. 💙');
+        setProfileSubmissionMessage('Heart signal sent! Let\'s complete your alien profile...');
+        // Store the new profile ID for completing the setup
+        setCurrentProfileId(data?.[0]?.id || null);
         // Clear form on success
         setPhoneInput('');
         setEmailInput('');
         try { sfx.play('success', 0.6); } catch {}
+        
+        // After a short delay, close Join Us popover and open profile setup
+        setTimeout(() => {
+          setShowJoinUsPopover(false);
+          setShowProfileSetup(true);
+          setProfileSetupStep(1);
+        }, 1500);
       }
     } catch (error) {
       console.error('Error creating profile:', error);
@@ -1106,6 +1173,42 @@ export default function HUDPanel({
       setIsSubmittingProfile(false);
       // Clear message after 4 seconds
       setTimeout(() => setProfileSubmissionMessage(''), 4000);
+    }
+  }
+
+  async function completeProfile() {
+    if (!currentProfileId || !profileName.trim() || !selectedElement) {
+      return;
+    }
+
+    try {
+      const { error } = await supabaseBrowser
+        .from('profiles')
+        .update({
+          name: profileName.trim(),
+          element: selectedElement,
+          profile_complete: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', currentProfileId);
+
+      if (error) {
+        console.error('Error completing profile:', error);
+        // Could show error message here
+      } else {
+        try { sfx.play('success', 0.8); } catch {}
+        setShowProfileSetup(false);
+        // Reset state
+        setProfileName('');
+        setSelectedElement('');
+        setCurrentProfileId(null);
+        setProfileSetupStep(1);
+        
+        // Show completion message somewhere or trigger celebration
+        console.log('Profile completed successfully!');
+      }
+    } catch (error) {
+      console.error('Exception completing profile:', error);
     }
   }
 
@@ -2439,7 +2542,7 @@ export default function HUDPanel({
                       {/* JOIN US button positioned below LYRICS */}
                       <HeartverseButton
                         ref={joinUsBtnRef}
-                        label="JOIN US"
+                        label="WELCOME HOME"
                         style={{ position: 'absolute', left: '8px', top: '70px', paddingLeft: '16px', paddingRight: '16px', minWidth: '80px' }}
                         title="Join Us"
                         aria-haspopup="dialog"
@@ -4799,8 +4902,10 @@ export default function HUDPanel({
                         openHeartPopover();
                       }}
                       style={{
-                        position: 'absolute', top: 8, right: 52, width: 38, height: 38,
-                        border: 'none', background: 'transparent', padding: 0, cursor: 'pointer'
+                        position: 'absolute', top: 8, right: 52, width: 48, height: 48,
+                        border: '2px solid rgba(255, 255, 255, 0.8)', background: 'transparent', padding: 0, cursor: 'pointer',
+                        borderRadius: '50%',
+                        boxShadow: '0 0 15px rgba(255, 255, 255, 0.9), 0 0 25px rgba(255, 255, 255, 0.7), 0 0 35px rgba(255, 255, 255, 0.5)'
                       }}
                     >
                       <img
@@ -5733,6 +5838,241 @@ export default function HUDPanel({
                   document.body
                 ) : null}
 
+                {/* Profile Setup Modal */}
+                {typeof document !== 'undefined' && showProfileSetup ? require('react-dom').createPortal(
+                  <div
+                    role="dialog"
+                    aria-label="Profile Setup"
+                    style={{
+                      position: 'fixed',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      background: 'rgba(0, 0, 0, 0.8)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 2147483647,
+                      backdropFilter: 'blur(8px)'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div
+                      style={{
+                        position: 'relative',
+                        width: 'min(90vw, 500px)',
+                        background: 'rgba(3,10,20,0.95)',
+                        border: '2px solid #00FFFF',
+                        borderRadius: 16,
+                        boxShadow: '0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(0,255,255,0.4)',
+                        backdropFilter: 'blur(12px)',
+                        padding: 30,
+                        color: '#FFFFFF'
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {/* Close button */}
+                      <button
+                        aria-label="Close profile setup"
+                        onClick={() => setShowProfileSetup(false)}
+                        style={{
+                          position: 'absolute',
+                          top: 15,
+                          right: 15,
+                          width: 32,
+                          height: 32,
+                          border: 'none',
+                          background: 'rgba(0,0,0,0.6)',
+                          borderRadius: 16,
+                          color: '#00FFFF',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 18,
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        ×
+                      </button>
+
+                      {/* Step 1: Name Input */}
+                      {profileSetupStep === 1 && (
+                        <div style={{ textAlign: 'center' }}>
+                          <h2 style={{
+                            fontSize: 24,
+                            fontWeight: 900,
+                            color: '#00FFFF',
+                            textShadow: '0 0 12px rgba(0,255,255,0.6)',
+                            marginBottom: 10
+                          }}>
+                            WELCOME TO THE HEARTVERSE
+                          </h2>
+                          <p style={{
+                            color: '#FFFFFF',
+                            marginBottom: 30,
+                            fontSize: 16,
+                            lineHeight: 1.5
+                          }}>
+                            What shall we call you, alien?
+                          </p>
+                          
+                          <input
+                            type="text"
+                            placeholder="Enter your name"
+                            value={profileName}
+                            onChange={(e) => setProfileName(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '15px',
+                              fontSize: 16,
+                              background: 'rgba(0,0,0,0.3)',
+                              border: '2px solid rgba(0,255,255,0.5)',
+                              borderRadius: 8,
+                              color: '#FFFFFF',
+                              marginBottom: 20,
+                              textAlign: 'center'
+                            }}
+                            onFocus={(e) => e.target.style.border = '2px solid #00FFFF'}
+                            onBlur={(e) => e.target.style.border = '2px solid rgba(0,255,255,0.5)'}
+                          />
+
+                          <button
+                            onClick={() => {
+                              if (profileName.trim()) {
+                                setProfileSetupStep(2);
+                                try { sfx.play('click', 0.4); } catch {}
+                              }
+                            }}
+                            disabled={!profileName.trim()}
+                            style={{
+                              width: '100%',
+                              padding: '15px',
+                              fontSize: 16,
+                              fontWeight: 'bold',
+                              background: profileName.trim() ? 'transparent' : 'rgba(0,0,0,0.5)',
+                              border: `2px solid ${profileName.trim() ? '#00FFFF' : 'rgba(255,255,255,0.3)'}`,
+                              borderRadius: 8,
+                              color: profileName.trim() ? '#00FFFF' : 'rgba(255,255,255,0.5)',
+                              cursor: profileName.trim() ? 'pointer' : 'not-allowed',
+                              boxShadow: profileName.trim() ? '0 0 20px rgba(0,255,255,0.5)' : 'none',
+                              transition: 'all 0.3s ease'
+                            }}
+                          >
+                            CONTINUE
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Step 2: Element Selection */}
+                      {profileSetupStep === 2 && (
+                        <div style={{ textAlign: 'center' }}>
+                          <h2 style={{
+                            fontSize: 24,
+                            fontWeight: 900,
+                            color: '#00FFFF',
+                            textShadow: '0 0 12px rgba(0,255,255,0.6)',
+                            marginBottom: 10
+                          }}>
+                            CHOOSE YOUR ELEMENT
+                          </h2>
+                          <p style={{
+                            color: '#FFFFFF',
+                            marginBottom: 30,
+                            fontSize: 16,
+                            lineHeight: 1.5
+                          }}>
+                            Which cosmic element calls to your soul, {profileName}?
+                          </p>
+
+                          <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
+                            gap: 15,
+                            marginBottom: 30
+                          }}>
+                            {[
+                              { id: 'fire', emoji: '🔥', name: 'FIRE', color: '#FF4444' },
+                              { id: 'water', emoji: '💧', name: 'WATER', color: '#4444FF' },
+                              { id: 'earth', emoji: '🌍', name: 'EARTH', color: '#44FF44' },
+                              { id: 'air', emoji: '💨', name: 'AIR', color: '#FFFF44' },
+                              { id: 'space', emoji: '⭐', name: 'SPACE', color: '#FF44FF' }
+                            ].map((element) => (
+                              <button
+                                key={element.id}
+                                onClick={() => {
+                                  setSelectedElement(element.id);
+                                  try { sfx.play('hover', 0.4); } catch {}
+                                }}
+                                style={{
+                                  padding: '15px 10px',
+                                  background: selectedElement === element.id ? 'rgba(0,255,255,0.2)' : 'rgba(0,0,0,0.3)',
+                                  border: `2px solid ${selectedElement === element.id ? element.color : 'rgba(255,255,255,0.3)'}`,
+                                  borderRadius: 12,
+                                  color: selectedElement === element.id ? element.color : '#FFFFFF',
+                                  cursor: 'pointer',
+                                  fontSize: 12,
+                                  fontWeight: 'bold',
+                                  boxShadow: selectedElement === element.id ? `0 0 20px ${element.color}40` : 'none',
+                                  transition: 'all 0.3s ease',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'center',
+                                  gap: 5
+                                }}
+                              >
+                                <span style={{ fontSize: 24 }}>{element.emoji}</span>
+                                <span>{element.name}</span>
+                              </button>
+                            ))}
+                          </div>
+
+                          <div style={{ display: 'flex', gap: 15 }}>
+                            <button
+                              onClick={() => {
+                                setProfileSetupStep(1);
+                                try { sfx.play('click', 0.3); } catch {}
+                              }}
+                              style={{
+                                flex: 1,
+                                padding: '15px',
+                                fontSize: 14,
+                                background: 'transparent',
+                                border: '2px solid rgba(255,255,255,0.3)',
+                                borderRadius: 8,
+                                color: 'rgba(255,255,255,0.7)',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              BACK
+                            </button>
+                            <button
+                              onClick={completeProfile}
+                              disabled={!selectedElement}
+                              style={{
+                                flex: 2,
+                                padding: '15px',
+                                fontSize: 16,
+                                fontWeight: 'bold',
+                                background: selectedElement ? 'transparent' : 'rgba(0,0,0,0.5)',
+                                border: `2px solid ${selectedElement ? '#00FFFF' : 'rgba(255,255,255,0.3)'}`,
+                                borderRadius: 8,
+                                color: selectedElement ? '#00FFFF' : 'rgba(255,255,255,0.5)',
+                                cursor: selectedElement ? 'pointer' : 'not-allowed',
+                                boxShadow: selectedElement ? '0 0 20px rgba(0,255,255,0.5)' : 'none',
+                                transition: 'all 0.3s ease'
+                              }}
+                            >
+                              COMPLETE PROFILE
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>,
+                  document.body
+                ) : null}
 
                 {typeof document !== 'undefined' && showSoulSkyPopover && soulSkyPopoverPos ? require('react-dom').createPortal(
                   <div
