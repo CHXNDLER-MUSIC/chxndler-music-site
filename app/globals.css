@@ -1095,19 +1095,19 @@ img[src$="/elements/music.png"] {
   letter-spacing: 0.12em;
   font-weight: 900;
   text-transform: uppercase;
-  color: #ff4fd8; /* neon pink text */
+  color: #00FFFF; /* cyan blue text */
   background: rgba(0,0,0,0.35);
-  border: 1px solid rgba(255,79,216,0.55);
+  border: 1px solid rgba(0,255,255,0.55);
   text-decoration: none;
-  filter: drop-shadow(0 0 8px rgba(255,79,216,0.85)) drop-shadow(0 0 20px rgba(255,79,216,0.55));
-  text-shadow: 0 0 10px rgba(255,79,216,0.95), 0 0 22px rgba(255,79,216,0.6);
+  filter: drop-shadow(0 0 8px rgba(0,255,255,0.85)) drop-shadow(0 0 20px rgba(0,255,255,0.55));
+  text-shadow: 0 0 10px rgba(0,255,255,0.95), 0 0 22px rgba(0,255,255,0.6);
   transition: transform 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
   opacity: 0.98;
   z-index: 10; /* above waveform lines */
 }
 .join-us-waveform-hud:hover{
   transform: translateX(-50%) translateY(-1px);
-  filter: drop-shadow(0 0 12px rgba(255,79,216,0.95)) drop-shadow(0 0 28px rgba(255,79,216,0.75));
+  filter: drop-shadow(0 0 12px rgba(0,255,255,0.95)) drop-shadow(0 0 28px rgba(0,255,255,0.75));
   opacity: 1;
 }
 .join-us-waveform-hud:active{ transform: translateX(-50%); }
@@ -1411,7 +1411,7 @@ button:hover > .heart-coin-glow,
 /* Bring HUD controls slightly closer together */
 .controls-row{ gap: 10px; }
 
-/* JOIN US button with glowing rim and blue interior */
+/* JOIN US button with cyan text and transparent background */
 .join-us-neon {
   padding: 4px 12px;
   border-radius: 8px;
@@ -1419,29 +1419,34 @@ button:hover > .heart-coin-glow,
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #000;
-  background: radial-gradient(circle at 30% 30%, #4FC3F7, #2196F3);
-  border: none;
+  color: #00FFFF;
+  background: transparent;
+  border: 1px solid #00FFFF;
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
   
-  /* Glowing rim/frame */
+  /* Subtle cyan blue glow */
   box-shadow: 
-    0 0 0 1px rgba(33, 150, 243, 0.6),
-    0 0 0 2px rgba(33, 150, 243, 0.4),
-    0 0 12px rgba(33, 150, 243, 0.5),
-    inset 0 0 16px rgba(79, 195, 247, 0.4);
+    0 0 8px rgba(0, 255, 255, 0.3),
+    0 0 16px rgba(0, 255, 255, 0.2);
+  
+  /* Cyan text glow */
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
 }
 
 .join-us-neon:hover {
   transform: scale(1.06);
+  color: #00FFFF;
+  background: transparent;
+  border-color: #00FFFF;
+  
+  /* Slightly enhanced glow on hover */
   box-shadow: 
-    0 0 0 1px rgba(33, 150, 243, 0.8),
-    0 0 0 2px rgba(33, 150, 243, 0.6),
-    0 0 20px rgba(33, 150, 243, 0.7),
-    0 0 35px rgba(33, 150, 243, 0.4),
-    inset 0 0 20px rgba(79, 195, 247, 0.6);
+    0 0 12px rgba(0, 255, 255, 0.5),
+    0 0 24px rgba(0, 255, 255, 0.3);
+  
+  text-shadow: 0 0 12px rgba(0, 255, 255, 0.8);
 }
 
 .join-us-neon:active {
@@ -1483,41 +1488,3 @@ button:hover > .heart-coin-glow,
   transform: scale(0.98);
 }
 
-/* WELCOME HOME button with glowing rim and pink interior */
-.welcome-home-neon {
-  padding: 4px 12px;
-  border-radius: 8px;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #000;
-  background: radial-gradient(circle at 30% 30%, #FFB6C1, #FF69B4);
-  border: 1px solid rgba(255, 105, 180, 0.55);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
-  filter: drop-shadow(0 0 8px rgba(255, 105, 180, 0.85)) drop-shadow(0 0 20px rgba(255, 105, 180, 0.55));
-  text-shadow: 0 0 10px rgba(255, 105, 180, 0.95), 0 0 22px rgba(255, 105, 180, 0.6);
-  
-  /* Glowing rim/frame */
-  box-shadow: 
-    0 0 0 1px rgba(255, 105, 180, 0.6),
-    0 0 0 2px rgba(255, 105, 180, 0.4),
-    0 0 12px rgba(255, 105, 180, 0.5),
-    inset 0 0 16px rgba(255, 182, 193, 0.4);
-}
-
-.welcome-home-neon:hover {
-  transform: scale(1.06);
-  box-shadow: 
-    0 0 0 1px rgba(255, 105, 180, 0.8),
-    0 0 0 2px rgba(255, 105, 180, 0.6),
-    0 0 20px rgba(255, 105, 180, 0.7),
-    0 0 35px rgba(255, 105, 180, 0.4),
-    inset 0 0 20px rgba(255, 182, 193, 0.6);
-}
-
-.welcome-home-neon:active {
-  transform: scale(0.98);
-}

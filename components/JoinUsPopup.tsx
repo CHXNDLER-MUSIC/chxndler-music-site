@@ -122,7 +122,7 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
       title="JOIN THE HEARTVERSE 💖"
     >
       <div className="space-y-6">
-        <p className="text-sm text-white/80 text-center">
+        <p className="text-sm text-center" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0, 255, 255, 0.6)' }}>
           Enter your phone number to create your Heartverse profile and start your journey!
         </p>
 
@@ -186,15 +186,16 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
 
         {/* Heart Signal Button */}
         <div className="text-center">
-          <p className="text-xs text-white/60 mb-3">
+          <p className="text-xs mb-3" style={{ color: '#00FFFF', textShadow: '0 0 6px rgba(0, 255, 255, 0.5)' }}>
             Send a heart signal to connect with the Heartverse community
           </p>
           <button
             type="button"
             onClick={sendHeartSignal}
-            className="heart-signal-button mx-auto inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-pink-500 via-red-500 to-pink-600 hover:from-pink-400 hover:via-red-400 hover:to-pink-500 transition-all duration-300 hover:scale-110 shadow-lg hover:shadow-xl"
+            className="heart-signal-button mx-auto inline-flex items-center justify-center w-16 h-16 rounded-full transition-all duration-300 hover:scale-110 shadow-lg hover:shadow-xl"
             style={{
-              boxShadow: '0 0 25px rgba(255,20,147,0.6), 0 0 50px rgba(255,20,147,0.4)'
+              background: 'linear-gradient(135deg, #00FFFF, #00E5FF, #00BFFF)',
+              boxShadow: '0 0 25px rgba(0,255,255,0.6), 0 0 50px rgba(0,255,255,0.4)'
             }}
           >
             <span className="text-2xl text-white drop-shadow-lg">💖</span>
@@ -210,19 +211,19 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
         @keyframes heartPulse {
           0%, 100% { 
             transform: scale(1);
-            box-shadow: 0 0 25px rgba(255,20,147,0.6), 0 0 50px rgba(255,20,147,0.4);
+            box-shadow: 0 0 25px rgba(0,255,255,0.6), 0 0 50px rgba(0,255,255,0.4);
           }
           25% { 
             transform: scale(1.2);
-            box-shadow: 0 0 35px rgba(255,20,147,0.8), 0 0 70px rgba(255,20,147,0.6);
+            box-shadow: 0 0 35px rgba(0,255,255,0.8), 0 0 70px rgba(0,255,255,0.6);
           }
           50% { 
             transform: scale(1.15);
-            box-shadow: 0 0 40px rgba(255,20,147,0.9), 0 0 80px rgba(255,20,147,0.7);
+            box-shadow: 0 0 40px rgba(0,255,255,0.9), 0 0 80px rgba(0,255,255,0.7);
           }
           75% { 
             transform: scale(1.25);
-            box-shadow: 0 0 35px rgba(255,20,147,0.8), 0 0 70px rgba(255,20,147,0.6);
+            box-shadow: 0 0 35px rgba(0,255,255,0.8), 0 0 70px rgba(0,255,255,0.6);
           }
         }
       `}</style>

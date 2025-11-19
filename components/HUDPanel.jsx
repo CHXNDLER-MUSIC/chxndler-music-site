@@ -5509,7 +5509,7 @@ export default function HUDPanel({
                       YOU'RE INVITED INTO THE HEARTVERSE ♥
                     </div>
                     <div className="lyrics-content-enhanced" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.2, fontSize: 14, color: '#2196F3', textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(33,150,243,0.6)', marginTop: '-4px' }}>
-                      JOIN OUR ALIEN COMMUNITY AND GET ACCESS TO NEW RELEASES, EXCLUSIVE CONTENT, AND SPECIAL EVENTS.
+                      CONNECT WITH OTHER ALIENS AND RECEIVE SIGNALS FOR EARLY RELEASES, SECRET TRANSMISSIONS, AND EXCLUSIVE EXPERIENCES.
                     </div>
                     {/* Sign-in options */}
                     <div className="relative mt-1">

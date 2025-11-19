@@ -26,26 +26,28 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
 
   return (
     <div
-      className="fixed z-[9999] flex justify-center"
+      className="fixed inset-0 z-[9999] flex justify-center"
       aria-modal="true"
       role="dialog"
       aria-label={title}
-      style={{ 
-        top: '10px',
-        left: '0',
-        right: '0',
-        bottom: '0'
-      }}
     >
       <div
-        className="absolute inset-0 bg-black/85 backdrop-blur-md"
+        className="absolute bg-black/85 backdrop-blur-md"
+        style={{
+          top: '0',
+          left: '0',
+          right: '0',
+          bottom: '0',
+          height: '100vh',
+          minHeight: '100vh'
+        }}
         onClick={onClose}
       />
       <div 
         className="mx-4 max-w-lg w-full"
         style={{
           position: 'absolute',
-          top: '5px',
+          top: '15px',
           left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 10000

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import HeartverseButton from "@/components/HeartverseButton";
+import QuestList from "@/components/QuestList";
 import { sfx } from "@/lib/sfx";
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -14,6 +15,7 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 
 export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, heartCoins = 0, ...rest }: Props) {
   const [open, setOpen] = useState(false);
+  const [showQuests, setShowQuests] = useState(false);
 
   const handleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
     try { onClick?.(e); } catch {}
@@ -185,7 +187,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               marginTop: '-4px' 
             }}
           >
-            EARN AND SPEND HEART COINS IN THE HEARTVERSE. USE THEM FOR EXCLUSIVE CONTENT AND SPECIAL EXPERIENCES.
+            HeartCoins are the energy of the Heartverse. You earn them by exploring, connecting, and showing up.
           </div>
 
           {/* Heart Coin Stats */}
@@ -227,38 +229,75 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 </div>
               </div>
               
-              {/* Earn More */}
-              <div className="text-center">
-                <div 
-                  className="w-16 h-16 mx-auto mb-2 rounded-full border-2 border-cyan-400/60 flex items-center justify-center"
-                  style={{
-                    background: 'rgba(0,255,255,0.1)',
-                    boxShadow: '0 0 15px rgba(0,255,255,0.3)',
-                  }}
-                >
-                  <span style={{ fontSize: '24px' }}>⭐</span>
-                </div>
-                <div 
-                  className="text-xs mb-1"
-                  style={{ 
-                    color: '#FFFFFF', 
-                    textShadow: '0 0 4px rgba(255,255,255,0.7)' 
-                  }}
-                >
-                  EARN MORE
-                </div>
+              {/* Action Buttons */}
+              <div className="text-center space-y-2">
                 <button
-                  className="px-3 py-1 bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300 rounded text-xs transition-all duration-200"
+                  onClick={() => {
+                    try { sfx.play('click', 0.8); } catch {}
+                    // TODO: Open store popup
+                    console.log("Open store popup");
+                  }}
+                  className="w-full px-3 py-2 bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300 rounded text-xs transition-all duration-200"
                   style={{
                     boxShadow: '0 0 10px rgba(236, 72, 153, 0.3)',
                     textShadow: '0 0 4px rgba(236, 72, 153, 0.6)'
                   }}
                 >
-                  EXPLORE
+                  USE MY HEARTS
+                </button>
+                <button
+                  onClick={() => {
+                    try { sfx.play('click', 0.8); } catch {}
+                    setShowQuests(true);
+                  }}
+                  className="w-full px-3 py-1 bg-cyan-600/30 hover:bg-cyan-600/40 border border-cyan-500/50 text-cyan-300 rounded text-xs transition-all duration-200"
+                  style={{
+                    boxShadow: '0 0 10px rgba(0, 255, 255, 0.3)',
+                    textShadow: '0 0 4px rgba(0, 255, 255, 0.6)'
+                  }}
+                >
+                  EARN MORE HEARTS
                 </button>
               </div>
             </div>
           </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quest List Modal */}
+      {showQuests && (
+        <div 
+          className="fixed inset-0 z-[2147483648] flex items-center justify-center"
+          style={{
+            paddingTop: '300px'
+          }}
+        >
+          <div
+            className="quest-hologram-container"
+            style={{
+              width: 'min(92vw, 800px)',
+              height: '70vh',
+              padding: '10px 14px 14px 14px',
+              borderRadius: 18,
+              background: 'rgba(0,0,0,0.6)',
+              border: '1px solid rgba(0,255,255,0.55)',
+              boxShadow: '0 -8px 25px rgba(0,255,255,0.4), 0 -4px 15px rgba(0,255,255,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(0,255,255,0.45)',
+              backdropFilter: 'blur(12px) saturate(140%)',
+              color: '#00FFFF',
+              position: 'relative',
+              overflow: 'auto'
+            }}
+          >
+            {/* Quest List Content */}
+            <QuestList 
+              onBack={() => setShowQuests(false)}
+              onOpenStore={() => {
+                setShowQuests(false);
+                // TODO: Open store popup
+                console.log("Open store popup from quest list");
+              }}
+            />
           </div>
         </div>
       )}

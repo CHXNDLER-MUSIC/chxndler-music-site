@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import HeartverseButton from "@/components/HeartverseButton";
 import { sfx } from "@/lib/sfx";
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -11,18 +10,79 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   onOpenBlueDisplay?: () => void;
 };
 
+type TierType = 'wanderer' | 'dreamer' | 'lover';
+
+interface TierData {
+  name: string;
+  color: string;
+  glowColor: string;
+  image: string;
+  priceRange: string;
+  benefits: string[];
+}
+
+const tierData: Record<TierType, TierData> = {
+  wanderer: {
+    name: 'WANDERER',
+    color: '#00FFFF',
+    glowColor: 'rgba(0, 255, 255, 0.8)',
+    image: '/elements/wanderer.png',
+    priceRange: '0 - 4',
+    benefits: [
+      '• Early access to new releases',
+      '• Exclusive behind-the-scenes content',
+      '• Community forum access',
+      '• Monthly newsletter updates'
+    ]
+  },
+  dreamer: {
+    name: 'DREAMER', 
+    color: '#FFD700',
+    glowColor: 'rgba(255, 215, 0, 0.8)',
+    image: '/elements/dreamer.png',
+    priceRange: '5 - 24',
+    benefits: [
+      '• Everything in Wanderer',
+      '• Private Discord channels',
+      '• Exclusive remix stems',
+      '• Virtual meet & greet sessions',
+      '• Limited edition merchandise'
+    ]
+  },
+  lover: {
+    name: 'LOVER',
+    color: '#FF69B4',
+    glowColor: 'rgba(255, 105, 180, 0.8)',
+    image: '/elements/lover.png',
+    priceRange: '25+',
+    benefits: [
+      '• Everything in Dreamer',
+      '• One-on-one studio sessions',
+      '• Personal song dedications',
+      '• VIP concert experiences',
+      '• Co-creation opportunities',
+      '• Direct artist communication'
+    ]
+  }
+};
+
 export default function JourneyButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, ...rest }: Props) {
   const [open, setOpen] = useState(false);
+  const [flippedTier, setFlippedTier] = useState<TierType | null>(null);
 
   const handleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
     try { onClick?.(e); } catch {}
     if (!e.defaultPrevented) {
       e.preventDefault();
       try { sfx.play('click', 0.8); } catch {}
-      // Close blue display first
       try { onCloseBlueDisplay?.(); } catch {}
       setOpen(true);
     }
+  };
+
+  const handleTierClick = (tier: TierType) => {
+    try { sfx.play('click', 0.8); } catch {}
+    setFlippedTier(flippedTier === tier ? null : tier);
   };
 
   return (
@@ -51,199 +111,244 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
         }}
         {...rest}
       >
-        JOURNEY
+        JRN
       </button>
       
-      {/* Hologram base glow - wider and stronger */}
-      {open && (
-        <div 
-          className="fixed inset-0 z-[2147483646] flex items-center justify-center"
-          style={{
-            pointerEvents: 'none',
-            paddingTop: '400px'
-          }}
-        >
-          <div
-            style={{
-              width: 'min(120vw, 700px)',
-              height: '200px',
-              background: 'radial-gradient(ellipse 80% 100% at 50% 0%, rgba(33,150,243,0.7) 0%, rgba(33,150,243,0.4) 30%, rgba(33,150,243,0.1) 60%, transparent 100%)',
-              filter: 'blur(100px)'
-            }}
-          />
-        </div>
-      )}
-      
-      {/* Journey Modal - holographic popup */}
+      {/* Journey Modal - Three Tiers */}
       {open && (
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center"
           style={{
-            paddingTop: '300px'
+            paddingTop: '150px',
+            background: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'blur(5px)'
           }}
         >
           <div
-            className="journey-hologram-container"
+            className="journey-container"
             style={{
-              width: 'min(92vw, 700px)',
-              height: '35vh',
-              padding: '10px 14px 14px 14px',
-              borderRadius: 18,
-              background: 'rgba(0,0,0,0.6)',
-              border: '1px solid rgba(0,255,255,0.55)',
-              boxShadow: '0 -8px 25px rgba(0,255,255,0.4), 0 -4px 15px rgba(0,255,255,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(0,255,255,0.45)',
-              backdropFilter: 'blur(12px) saturate(140%)',
-              color: '#00FFFF',
+              width: 'min(90vw, 700px)',
+              height: '50vh',
+              padding: '15px',
+              borderRadius: 15,
+              background: 'rgba(0,0,0,0.7)',
+              border: '2px solid rgba(255,255,255,0.2)',
+              backdropFilter: 'blur(15px)',
               position: 'relative'
             }}
-        >
-          {/* Soft bottom glow pseudo element */}
-          <div 
-            className="absolute"
-            style={{
-              bottom: '-15px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: '120%',
-              height: '30px',
-              background: 'radial-gradient(ellipse 60% 100% at 50% 0%, rgba(33,150,243,0.6) 0%, rgba(33,150,243,0.3) 40%, transparent 80%)',
-              filter: 'blur(30px)',
-              pointerEvents: 'none',
-              zIndex: -1
-            }}
-          />
-          
-          {/* Top bloom glow - simulates hologram light rising through panel */}
-          <div 
-            className="absolute"
-            style={{
-              top: '-10px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: '80%',
-              height: '20px',
-              background: 'radial-gradient(ellipse 70% 100% at 50% 100%, rgba(33,150,243,0.4) 0%, rgba(33,150,243,0.2) 50%, transparent 100%)',
-              filter: 'blur(25px)',
-              pointerEvents: 'none',
-              zIndex: -1
-            }}
-          />
-          {/* Close button */}
-          <button
-            onClick={() => {
-              try { sfx.play('close', 0.8); } catch {}
-              setOpen(false);
-              // Show blue display when closing journey popup
-              try { onOpenBlueDisplay?.(); } catch {}
-            }}
-            className="absolute top-2 right-4 text-cyan-400 hover:text-cyan-200 cursor-pointer w-8 h-8 rounded-full border border-cyan-400/80 flex items-center justify-center"
-            style={{ 
-              fontSize: '16px',
-              boxShadow: '0 0 15px rgba(0,255,255,0.8), 0 0 25px rgba(0,255,255,0.5), 0 0 35px rgba(0,255,255,0.3)',
-              textShadow: '0 0 8px rgba(0,255,255,0.8), 0 0 15px rgba(0,255,255,0.6)',
-              background: 'rgba(0,255,255,0.1)',
-              backdropFilter: 'blur(2px)'
-            }}
           >
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
-              <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-            </svg>
-          </button>
-          
-          {/* Header */}
-          <div 
-            className="text-center mb-3"
-            style={{ 
-              color: '#00FFFF', 
-              textShadow: '0 0 8px rgba(0,255,255,0.6)', 
-              fontSize: '16px',
-              fontWeight: 'bold'
-            }}
-          >
-            START YOUR JOURNEY INTO THE HEARTVERSE ♥
-          </div>
-          
-          {/* Thin blue neon line */}
-          <div 
-            className="w-full h-px mb-4"
-            style={{
-              background: 'linear-gradient(90deg, transparent, rgba(0,255,255,0.8) 20%, rgba(0,255,255,1) 50%, rgba(0,255,255,0.8) 80%, transparent)',
-              boxShadow: '0 0 4px rgba(0,255,255,0.6)'
-            }}
-          />
-          <div 
-            className="text-center mb-4"
-            style={{ 
-              whiteSpace: 'pre-wrap', 
-              lineHeight: 1.2, 
-              fontSize: 14, 
-              color: '#00FFFF', 
-              textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(0,255,255,0.6)', 
-              marginTop: '-4px' 
-            }}
-          >
-            JOIN OUR ALIEN COMMUNITY AND GET ACCESS TO NEW RELEASES, EXCLUSIVE CONTENT, AND SPECIAL EVENTS.
-          </div>
-
-          {/* Form */}
-          <div className="relative mt-1">
-            <div className="flex flex-col gap-3">
-              {/* Phone and Email side by side */}
-              <div className="flex gap-3">
-                {/* Phone number section */}
-                <div className="flex-1">
-                  <label htmlFor="journey-phone" className="block text-sm font-medium text-center" style={{ color: '#FFFFFF', textShadow: '0 0 6px rgba(255,255,255,0.8), 0 0 12px rgba(255,255,255,0.6)' }}>
-                    PHONE
-                  </label>
-                  <input
-                    id="journey-phone"
-                    type="tel"
-                    placeholder="+1 (555) 123-4567"
-                    className="block w-full rounded-md border border-white/30 bg-black/20 px-3 py-2 text-sm focus:border-[#00FFFF] focus:outline-none"
-                    style={{
-                      color: '#FFFFFF',
-                      textShadow: '0 0 4px rgba(255,255,255,0.7)',
-                      boxShadow: '0 0 10px rgba(255,255,255,0.2), inset 0 0 8px rgba(255,255,255,0.1)',
-                      border: '1px solid rgba(255,255,255,0.4)'
-                    }}
-                  />
-                </div>
-                
-                {/* Email section */}
-                <div className="flex-1">
-                  <label htmlFor="journey-email" className="block text-sm font-medium text-center" style={{ color: '#FFFFFF', textShadow: '0 0 6px rgba(255,255,255,0.8), 0 0 12px rgba(255,255,255,0.6)' }}>
-                    EMAIL
-                  </label>
-                  <input
-                    id="journey-email"
-                    type="email"
-                    placeholder="your@email.com"
-                    className="block w-full rounded-md border border-white/30 bg-black/20 px-3 py-2 text-sm focus:border-[#00FFFF] focus:outline-none"
-                    style={{
-                      color: '#FFFFFF',
-                      textShadow: '0 0 4px rgba(255,255,255,0.7)',
-                      boxShadow: '0 0 10px rgba(255,255,255,0.2), inset 0 0 8px rgba(255,255,255,0.1)',
-                      border: '1px solid rgba(255,255,255,0.4)',
-                      '::placeholder': { color: 'rgba(255,255,255,0.5)' }
-                    }}
-                  />
-                </div>
-              </div>
-              
-              {/* Join button */}
-              <button
-                type="submit"
-                className="w-full mt-2 px-4 py-2 bg-cyan-600/30 hover:bg-cyan-600/40 border border-cyan-500/50 text-cyan-300 rounded-lg font-medium transition-all duration-200"
-                style={{
-                  boxShadow: '0 0 20px rgba(0, 255, 255, 0.3)',
-                  textShadow: '0 0 8px rgba(0,255,255,0.6)'
-                }}
-              >
-                JOIN THE JOURNEY
-              </button>
+            {/* Close button */}
+            <button
+              onClick={() => {
+                try { sfx.play('close', 0.8); } catch {}
+                setOpen(false);
+                setFlippedTier(null);
+                try { onOpenBlueDisplay?.(); } catch {}
+              }}
+              className="absolute top-4 right-4 text-white hover:text-gray-300 cursor-pointer w-8 h-8 rounded-full border border-white/40 flex items-center justify-center"
+              style={{ 
+                fontSize: '16px',
+                background: 'rgba(255,255,255,0.1)',
+                backdropFilter: 'blur(2px)'
+              }}
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+                <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+              </svg>
+            </button>
+            
+            {/* Header */}
+            <div 
+              className="text-center mb-4"
+              style={{ 
+                color: '#FFFFFF', 
+                fontSize: '20px',
+                fontWeight: 'bold',
+                textShadow: '0 0 10px rgba(255,255,255,0.8)'
+              }}
+            >
+              CHOOSE YOUR JOURNEY
             </div>
-          </div>
+            
+            {/* Three Tier Buttons */}
+            <div className="flex justify-center gap-6 h-4/5">
+              {(Object.keys(tierData) as TierType[]).map((tier) => {
+                const data = tierData[tier];
+                const isFlipped = flippedTier === tier;
+                
+                return (
+                  <div
+                    key={tier}
+                    className="tier-card"
+                    style={{
+                      width: '160px',
+                      height: '100%',
+                      perspective: '1000px',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => handleTierClick(tier)}
+                  >
+                    <div
+                      className="tier-card-inner"
+                      style={{
+                        position: 'relative',
+                        width: '100%',
+                        height: '100%',
+                        textAlign: 'center',
+                        transition: 'transform 0.8s',
+                        transformStyle: 'preserve-3d',
+                        transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                      }}
+                    >
+                      {/* Front Face - Tier Name */}
+                      <div
+                        className="tier-card-front"
+                        style={{
+                          position: 'absolute',
+                          width: '100%',
+                          height: '100%',
+                          backfaceVisibility: 'hidden',
+                          background: 'rgba(0,0,0,0.8)',
+                          border: `2px solid ${data.color}`,
+                          borderRadius: '15px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '16px',
+                          fontWeight: 'bold',
+                          color: data.color,
+                          textShadow: `0 0 15px ${data.glowColor}`,
+                          boxShadow: `0 0 30px ${data.glowColor}, inset 0 0 30px rgba(255,255,255,0.1)`,
+                          transition: 'all 0.3s ease',
+                          padding: '15px'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isFlipped) {
+                            e.currentTarget.style.transform = 'scale(1.05)';
+                            e.currentTarget.style.boxShadow = `0 0 50px ${data.glowColor}, inset 0 0 50px rgba(255,255,255,0.2)`;
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isFlipped) {
+                            e.currentTarget.style.transform = 'scale(1)';
+                            e.currentTarget.style.boxShadow = `0 0 30px ${data.glowColor}, inset 0 0 30px rgba(255,255,255,0.1)`;
+                          }
+                        }}
+                      >
+                        <img 
+                          src={data.image}
+                          alt={data.name}
+                          style={{
+                            width: '60px',
+                            height: '60px',
+                            objectFit: 'contain',
+                            marginBottom: '10px',
+                            filter: `drop-shadow(0 0 15px ${data.glowColor})`
+                          }}
+                        />
+                        {data.name}
+                        <div 
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginTop: '8px',
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: tier === 'wanderer' ? '16px' : '12px',
+                              color: tier === 'wanderer' ? data.color : '#FFFFFF',
+                              marginBottom: '6px',
+                              textShadow: tier === 'wanderer' ? `0 0 15px ${data.glowColor}` : 'none'
+                            }}
+                          >
+                            <img 
+                              src="/elements/heart-coin.png"
+                              alt="Heart Coin"
+                              style={{
+                                width: '16px',
+                                height: '16px',
+                                objectFit: 'contain',
+                                marginRight: '4px',
+                                filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.8))'
+                              }}
+                            />
+                            {data.priceRange}
+                          </div>
+                          <img 
+                            src="/elements/heart-coin.png"
+                            alt="Heart Coin"
+                            style={{
+                              width: '32px',
+                              height: '32px',
+                              objectFit: 'contain',
+                              filter: 'drop-shadow(0 0 12px rgba(255,255,255,0.9))'
+                            }}
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Back Face - Benefits */}
+                      <div
+                        className="tier-card-back"
+                        style={{
+                          position: 'absolute',
+                          width: '100%',
+                          height: '100%',
+                          backfaceVisibility: 'hidden',
+                          transform: 'rotateY(180deg)',
+                          background: 'rgba(0,0,0,0.9)',
+                          border: `2px solid ${data.color}`,
+                          borderRadius: '15px',
+                          padding: '20px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'flex-start',
+                          alignItems: 'flex-start',
+                          boxShadow: `0 0 30px ${data.glowColor}, inset 0 0 30px rgba(255,255,255,0.1)`
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: '18px',
+                            fontWeight: 'bold',
+                            color: data.color,
+                            textShadow: `0 0 10px ${data.glowColor}`,
+                            marginBottom: '15px',
+                            textAlign: 'center',
+                            width: '100%'
+                          }}
+                        >
+                          {data.name}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: '12px',
+                            color: '#FFFFFF',
+                            lineHeight: '1.4',
+                            textAlign: 'left',
+                            width: '100%'
+                          }}
+                        >
+                          {data.benefits.map((benefit, index) => (
+                            <div key={index} style={{ marginBottom: '8px' }}>
+                              {benefit}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}

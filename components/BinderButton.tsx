@@ -19,35 +19,142 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
   const [selectedRarity, setSelectedRarity] = useState<string>('All');
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
 
-  // Mock card data structure
-  const elements = ['Lightning', 'Darkness', 'Water', 'Heart'];
-  const rarities = ['All', 'Common', 'Rare', 'Legendary'];
+  // Full song collection data structure
+  const songCollection = [
+    { name: 'MR. BRIGHTSIDE', element: 'DARKNESS', rarity: 'Common' },
+    { name: 'CHEERLEADER (ACOUSTIC)', element: 'HEART', rarity: 'Common' },
+    { name: 'I MIGHT FALL IN LOVE WITH YOU (ACOUSTIC)', element: 'HEART', rarity: 'Common' },
+    { name: 'MAKE BELIEVE', element: '', rarity: 'Common' },
+    { name: 'ALONE', element: 'DARKNESS', rarity: 'Common' },
+    { name: 'ALONE (ACOUSTIC)', element: 'DARKNESS', rarity: 'Common' },
+    { name: 'LITTLE BLACK HEART (ACOUSTIC)', element: 'DARKNESS', rarity: 'Common' },
+    { name: 'LITTLE BLACK HEART', element: 'DARKNESS', rarity: 'Common' },
+    { name: 'AMERICAN DREAM', element: 'DARKNESS', rarity: 'Common' },
+    { name: 'PARIS', element: 'DARKNESS', rarity: 'Common' },
+    { name: 'PINK MOON', element: 'DARKNESS', rarity: 'Common' },
+    { name: 'ALWAYS ON MY MIND', element: 'HEART', rarity: 'Common' },
+    { name: 'ALWAYS ON MY MIND (REMIX)', element: 'HEART', rarity: 'Common' },
+    { name: 'BE MY BEE', element: 'HEART', rarity: 'Common' },
+    { name: 'BE MY BEE (ACOUSTIC)', element: 'HEART', rarity: 'Common' },
+    { name: 'CHEERLEADER', element: 'HEART', rarity: 'Common' },
+    { name: 'COLLIDE', element: 'HEART', rarity: 'Common' },
+    { name: 'COLORS OF OUR HOME (BLUMA Game Soundtrack)', element: 'HEART', rarity: 'Common' },
+    { name: 'COLORS OF OUR HOME (ACOUSTIC)', element: 'HEART', rarity: 'Common' },
+    { name: 'COLORS OF OUR HOME', element: 'HEART', rarity: 'Common' },
+    { name: 'I MIGHT FALL IN LOVE WITH YOU', element: 'HEART', rarity: 'Common' },
+    { name: 'LOVE ME', element: 'HEART', rarity: 'Common' },
+    { name: 'LOVE ME (ACOUSTIC)', element: 'HEART', rarity: 'Common' },
+    { name: 'SOMEBODY TO LOVE', element: 'HEART', rarity: 'Common' },
+    { name: 'TIENES UN AMIGO', element: 'HEART', rarity: 'Common' },
+    { name: 'WE\'RE JUST FRIENDS', element: 'HEART', rarity: 'Common' },
+    { name: 'WE\'RE JUST FRIENDS (ACOUSTIC)', element: 'HEART', rarity: 'Common' },
+    { name: 'WE\'RE JUST FRIENDS (DMVRCO REMIX)', element: 'HEART', rarity: 'Common' },
+    { name: 'WE\'RE JUST FRIENDS (mickey jas REMIX)', element: 'HEART', rarity: 'Common' },
+    { name: 'BABY', element: 'HEART', rarity: 'Common' },
+    { name: 'BLUE (ACOUSTIC)', element: 'LIGHTNING', rarity: 'Common' },
+    { name: 'BLUE', element: 'LIGHTNING', rarity: 'Common' },
+    { name: 'BRAIN FREEZE', element: 'LIGHTNING', rarity: 'Common' },
+    { name: 'FEELING THIS', element: 'LIGHTNING', rarity: 'Common' },
+    { name: 'GAME BOY HEART', element: 'LIGHTNING', rarity: 'Common' },
+    { name: 'HOME', element: 'LIGHTNING', rarity: 'Common' },
+    { name: 'HOME (ACOUSTIC)', element: 'LIGHTNING', rarity: 'Common' },
+    { name: 'HOUSE PARTY', element: 'LIGHTNING', rarity: 'Common' },
+    { name: 'HOUSE PARTY (ACOUSTIC)', element: 'LIGHTNING', rarity: 'Common' },
+    { name: 'KID FOREVER', element: 'LIGHTNING', rarity: 'Common' },
+    { name: 'POKÉMON', element: 'LIGHTNING', rarity: 'Common' },
+    { name: 'LETTING GO', element: 'WATER', rarity: 'Common' },
+    { name: 'OCEAN GIRL', element: 'WATER', rarity: 'Common' },
+    { name: 'OCEAN GIRL (ACOUSTIC)', element: 'WATER', rarity: 'Common' },
+    { name: 'OCEAN GIRL (REMIX)', element: 'WATER', rarity: 'Common' },
+    { name: 'WATER', element: 'WATER', rarity: 'Rare' },
+    { name: 'HEART', element: 'HEART', rarity: 'Rare' },
+    { name: 'LIGHTNING', element: 'LIGHTNING', rarity: 'Rare' },
+    { name: 'DARKNESS', element: 'DARKNESS', rarity: 'Rare' },
+    { name: 'CHXNDLER', element: 'ALL', rarity: 'Common' },
+  ];
   
-  const mockCards = {
-    Lightning: [
-      { name: 'LIGHTNING', rarity: 'Rare', image: 'https://ik.imagekit.io/CHXNDLER/card/LIGHTNING.png' },
-      { name: 'Thunder Strike', rarity: 'Common', image: 'https://ik.imagekit.io/CHXNDLER/card/LIGHTNING.png' },
-      { name: 'Storm Lord', rarity: 'Legendary', image: 'https://ik.imagekit.io/CHXNDLER/card/LIGHTNING.png' },
-    ],
-    Darkness: [
-      { name: 'DARKNESS', rarity: 'Rare', image: 'https://ik.imagekit.io/CHXNDLER/card/DARKNESS.png' },
-      { name: 'Shadow Void', rarity: 'Legendary', image: 'https://ik.imagekit.io/CHXNDLER/card/DARKNESS.png' },
-    ],
-    Water: [
-      { name: 'WATER', rarity: 'Common', image: 'https://ik.imagekit.io/CHXNDLER/card/WATER.png' },
-      { name: 'Ocean Force', rarity: 'Legendary', image: 'https://ik.imagekit.io/CHXNDLER/card/WATER.png' },
-    ],
-    Heart: [
-      { name: 'HEART', rarity: 'Rare', image: 'https://ik.imagekit.io/CHXNDLER/card/HEART.png' },
-      { name: 'CHXNDLER', rarity: 'Rare', image: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910' },
-    ],
+  const elements = ['ALL', 'LIGHTNING', 'DARKNESS', 'WATER', 'HEART'];
+  const rarities = ['All', 'Common', 'Rare'];
+  
+  const getCardImage = (songName: string, element: string) => {
+    const songImages: { [key: string]: string } = {
+      'ALWAYS ON MY MIND': 'https://ik.imagekit.io/CHXNDLER/card/HEART.png',
+      'ALWAYS ON MY MIND (REMIX)': 'https://ik.imagekit.io/CHXNDLER/card/always-on-my-mind-remix.png?updatedAt=1762388342107',
+      'ALONE': 'https://ik.imagekit.io/CHXNDLER/card/DARKNESS.png',
+      'ALONE (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/DARKNESS.png',
+      'AMERICAN DREAM': 'https://ik.imagekit.io/CHXNDLER/card/american-dream.png?updatedAt=1762388346126',
+      'BABY': 'https://ik.imagekit.io/CHXNDLER/card/baby.png?updatedAt=1762388345192',
+      'BE MY BEE': 'https://ik.imagekit.io/CHXNDLER/card/be-my-bee.png?updatedAt=1762388342848',
+      'BE MY BEE (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/be-my-bee-acoustic.png?updatedAt=1762388342912',
+      'BLUE (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/BLUE%20(ACOUSTIC).png?updatedAt=1763055066119',
+      'BLUE': 'https://ik.imagekit.io/CHXNDLER/card/blue.png?updatedAt=1762388346777',
+      'BRAIN FREEZE': 'https://ik.imagekit.io/CHXNDLER/card/brain-freeze.png?updatedAt=1762388347224',
+      'CHEERLEADER (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/HEART.png',
+      'CHEERLEADER': 'https://ik.imagekit.io/CHXNDLER/card/cheerleader.png?updatedAt=1762388346177',
+      'COLLIDE': 'https://ik.imagekit.io/CHXNDLER/card/collide.png?updatedAt=1762388347054',
+      'COLORS OF OUR HOME': 'https://ik.imagekit.io/CHXNDLER/card/COLORS%20OF%20OUR%20HOME%20.png?updatedAt=1763055065493',
+      'COLORS OF OUR HOME (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/COLORS%20OF%20OUR%20HOME%20(ACOUSTIC).png?updatedAt=1763055064803',
+      'COLORS OF OUR HOME (BLUMA Game Soundtrack)': 'https://ik.imagekit.io/CHXNDLER/card/colors-of-our-home-bluma.png?updatedAt=1762388344204',
+      'FEELING THIS': 'https://ik.imagekit.io/CHXNDLER/card/feeling-this.png?updatedAt=1762388347289',
+      'GAME BOY HEART': 'https://ik.imagekit.io/CHXNDLER/card/game-boy-heart.png?updatedAt=1762388346348',
+      'HOME': 'https://ik.imagekit.io/CHXNDLER/card/home.png?updatedAt=1762388345590',
+      'HOME (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/home-acoustic.png?updatedAt=1762388344295',
+      'HOUSE PARTY': 'https://ik.imagekit.io/CHXNDLER/card/HOUSE%20PARTY.png?updatedAt=1763055601783',
+      'HOUSE PARTY (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/house-party-acoustic.png?updatedAt=1762388343028',
+      'I MIGHT FALL IN LOVE WITH YOU': 'https://ik.imagekit.io/CHXNDLER/card/i-might-fall-in-love-with-you.png?updatedAt=1762388340663',
+      'I MIGHT FALL IN LOVE WITH YOU (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/I%20MIGHT%20FALL%20IN%20LOVE%20WITH%20YOU%20(ACOUSTIC).png?updatedAt=1763055066309',
+      'KID FOREVER': 'https://ik.imagekit.io/CHXNDLER/card/kid-forever.png?updatedAt=1762388339589',
+      'LETTING GO': 'https://ik.imagekit.io/CHXNDLER/card/letting-go.png?updatedAt=1762388344472',
+      'LITTLE BLACK HEART': 'https://ik.imagekit.io/CHXNDLER/card/little-black-heart.png?updatedAt=1762388346814',
+      'LITTLE BLACK HEART (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/LITTLE%20BLACK%20HEART%20(ACOUSTIC).png?updatedAt=1763055066090',
+      'LOVE ME': 'https://ik.imagekit.io/CHXNDLER/card/love-me.png?updatedAt=1762388339563',
+      'LOVE ME (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/love-me-acoustic.png?updatedAt=1762388330787',
+      'MAKE BELIEVE': 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',
+      'MR. BRIGHTSIDE': 'https://ik.imagekit.io/CHXNDLER/card/mr.brightside.png?updatedAt=1762388346700',
+      'OCEAN GIRL': 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl.png?updatedAt=1762388343942',
+      'OCEAN GIRL (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl-acoustic.png?updatedAt=1762388344386',
+      'OCEAN GIRL (REMIX)': 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl-remix.png?updatedAt=1762388346301',
+      'PARIS': 'https://ik.imagekit.io/CHXNDLER/card/paris.png?updatedAt=1762388344978',
+      'PINK MOON': 'https://ik.imagekit.io/CHXNDLER/card/pink-moon.png?updatedAt=1762388347173',
+      'POKÉMON': 'https://ik.imagekit.io/CHXNDLER/card/pokemon.png?updatedAt=1762388341960',
+      'SOMEBODY TO LOVE': 'https://ik.imagekit.io/CHXNDLER/card/somebody-to-love.png?updatedAt=1762388347148',
+      'TIENES UN AMIGO': 'https://ik.imagekit.io/CHXNDLER/card/tienes-un-amigo.png?updatedAt=1762388343639',
+      'WE\'RE JUST FRIENDS': 'https://ik.imagekit.io/CHXNDLER/card/we\'re-just-friends.png?updatedAt=1762388347233',
+      'WE\'RE JUST FRIENDS (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/we\'re-just-friends-acoustic.png?updatedAt=1762388340285',
+      'WE\'RE JUST FRIENDS (DMVRCO REMIX)': 'https://ik.imagekit.io/CHXNDLER/card/we\'re-just-friends-dmvrco-remix.png?updatedAt=1762388345669',
+      'WE\'RE JUST FRIENDS (mickey jas REMIX)': 'https://ik.imagekit.io/CHXNDLER/card/we\'re-just-friends-mickey-jas-remix.png?updatedAt=1762388346859',
+      'CHXNDLER': 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',
+      'WATER': 'https://ik.imagekit.io/CHXNDLER/card/WATER.png',
+      'HEART': 'https://ik.imagekit.io/CHXNDLER/card/HEART.png',
+      'LIGHTNING': 'https://ik.imagekit.io/CHXNDLER/card/LIGHTNING.png',
+      'DARKNESS': 'https://ik.imagekit.io/CHXNDLER/card/DARKNESS.png',
+    };
+    
+    return songImages[songName] || 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910';
   };
 
   const getFilteredCards = () => {
     if (!selectedElement) return [];
-    const cards = mockCards[selectedElement as keyof typeof mockCards] || [];
-    if (selectedRarity === 'All') return cards;
-    return cards.filter(card => card.rarity === selectedRarity);
+    
+    let filteredSongs = songCollection;
+    
+    // Filter by element
+    if (selectedElement !== 'ALL') {
+      filteredSongs = filteredSongs.filter(song => song.element === selectedElement);
+    }
+    
+    // Filter by rarity
+    if (selectedRarity !== 'All') {
+      filteredSongs = filteredSongs.filter(song => song.rarity === selectedRarity);
+    }
+    
+    // Convert to card format with images
+    return filteredSongs.map(song => ({
+      name: song.name,
+      rarity: song.rarity,
+      element: song.element,
+      image: getCardImage(song.name, song.element)
+    }));
   };
 
   // Arrow key navigation
@@ -285,7 +392,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
               marginTop: '-8px'
             }}
           >
-            CARDS COLLECTED: 1/5
+            CARDS COLLECTED: {songCollection.length}/{songCollection.length}
           </div>
 
           {/* Dynamic Content - Binder Slots or Full Collection */}
@@ -370,7 +477,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                     >
                       SELECT AN ELEMENT TO VIEW CARDS
                     </div>
-                    <div className="grid grid-cols-4 gap-3 justify-center" style={{ marginTop: '-8px' }}>
+                    <div className="grid grid-cols-5 gap-3 justify-center" style={{ marginTop: '-8px' }}>
                       {elements.map((element) => (
                         <div
                           key={element}
@@ -388,7 +495,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                             }}
                           >
                             <img
-                              src={`https://ik.imagekit.io/CHXNDLER/card/${element.toUpperCase()}.png`}
+                              src={element === 'ALL' ? 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910' : `https://ik.imagekit.io/CHXNDLER/card/${element.toUpperCase()}.png`}
                               alt={`${element} Card`}
                               className="w-full h-full object-cover rounded-lg"
                               draggable={false}
@@ -412,6 +519,21 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                               }}
                             >
                               {element.toUpperCase()}
+                            </div>
+                            {/* Show song count for this element */}
+                            <div 
+                              className="absolute top-1 right-1 bg-black/70 rounded px-1 py-0.5"
+                              style={{ 
+                                color: '#FFB6C1', 
+                                textShadow: '0 0 4px rgba(255,182,193,0.6)',
+                                fontSize: '8px',
+                                fontWeight: 'bold'
+                              }}
+                            >
+                              {element === 'ALL' 
+                                ? songCollection.length
+                                : songCollection.filter(song => song.element === element).length
+                              }
                             </div>
                           </div>
                         </div>
@@ -528,21 +650,33 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                               className="text-sm font-bold mb-1"
                               style={{ 
                                 color: '#FFFFFF', 
-                                textShadow: '0 0 6px rgba(255,255,255,0.8)'
+                                textShadow: '0 0 6px rgba(255,255,255,0.8)',
+                                fontSize: '11px'
                               }}
                             >
                               {currentCard.name}
                             </div>
                             <div 
-                              className="text-xs"
+                              className="text-xs mb-1"
                               style={{ 
-                                color: currentCard.rarity === 'Legendary' ? '#FFD700' :
-                                       currentCard.rarity === 'Rare' ? '#FF69B4' : '#87CEEB',
-                                textShadow: '0 0 4px currentColor'
+                                color: currentCard.rarity === 'Rare' ? '#FF69B4' : '#87CEEB',
+                                textShadow: '0 0 4px currentColor',
+                                fontSize: '10px'
                               }}
                             >
                               ★ {currentCard.rarity.toUpperCase()} ★
                             </div>
+                            {currentCard.element && (
+                              <div 
+                                className="text-[9px] mb-1"
+                                style={{ 
+                                  color: '#FFB6C1', 
+                                  textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                                }}
+                              >
+                                Element: {currentCard.element}
+                              </div>
+                            )}
                             {cards.length > 1 && (
                               <div 
                                 className="text-[10px] mt-1"
@@ -571,6 +705,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
       {cardOpen && (
         <div 
           className="fixed inset-0 z-[2147483648] flex items-center justify-center p-4"
+          style={{ paddingTop: '40vh' }}
           onClick={() => {
             try { sfx.play('close', 0.8); } catch {}
             setCardOpen(false);
@@ -578,7 +713,13 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
         >
           {/* Background overlay */}
           <div 
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            className="absolute bg-black/70 backdrop-blur-sm"
+            style={{
+              top: '0',
+              left: 0,
+              right: 0,
+              bottom: 0
+            }}
           />
           
           {/* Card container */}
@@ -586,8 +727,8 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
             className="relative z-10"
             onClick={(e) => e.stopPropagation()}
             style={{
-              maxWidth: 'min(90vw, 280px)',
-              maxHeight: '60vh',
+              maxWidth: 'min(70vw, 200px)',
+              maxHeight: '40vh',
             }}
           >
             {/* Card image */}

@@ -2,7 +2,7 @@
 
 import React from "react";
 
-type ButtonVariant = "join-us" | "stars" | "welcome-home" | "custom";
+type ButtonVariant = "join-us" | "stars" | "custom";
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
@@ -25,8 +25,6 @@ export default function SharedButton({
         return "join-us-neon";
       case "stars":
         return "stars-neon";
-      case "welcome-home":
-        return "welcome-home-neon";
       case "custom":
         return "";
       default:

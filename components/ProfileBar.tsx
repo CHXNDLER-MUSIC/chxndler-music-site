@@ -248,6 +248,14 @@ export default function ProfileBar({
             onOpenBlueDisplay={onOpenBlueDisplay}
           />
 
+          {/* Heart Coin Button (Duplicate) */}
+          <HeartCoinButton 
+            onHoverSound={() => sfx.play('hover', 0.8)}
+            onCloseBlueDisplay={onCloseBlueDisplay}
+            onOpenBlueDisplay={onOpenBlueDisplay}
+            heartCoins={heartCoins}
+          />
+
           {/* Digital Binder Button */}
           <BinderButton 
             onHoverSound={() => sfx.play('hover', 0.8)}

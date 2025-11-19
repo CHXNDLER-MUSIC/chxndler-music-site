@@ -5,7 +5,7 @@ import React from "react";
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   label: string;
   icon?: React.ReactNode;
-  variant?: "primary" | "welcome-home" | "stars" | "journey";
+  variant?: "primary" | "stars" | "journey";
 };
 
 const HeartverseButton = React.forwardRef<HTMLButtonElement, Props>(({ 
@@ -19,8 +19,6 @@ const HeartverseButton = React.forwardRef<HTMLButtonElement, Props>(({
 }, ref) => {
   const getVariantClass = () => {
     switch (variant) {
-      case "welcome-home":
-        return "welcome-home-neon";
       case "stars":
         return "stars-neon";
       case "journey":
