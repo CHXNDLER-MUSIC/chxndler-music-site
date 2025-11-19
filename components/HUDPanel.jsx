@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import LoginModal from "@/components/LoginModal";
+import SharedButton from "@/components/SharedButton";
+import HeartverseButton from "@/components/HeartverseButton";
 // 2D fallback hologram
 // 2D HUD removed per request; 3D only
 // 3D planet system (requires three/r3f/drei installed)
@@ -2406,10 +2408,9 @@ export default function HUDPanel({
                         </div>
                       )}
                       {/* JOIN US button positioned below LYRICS */}
-                      <button
+                      <HeartverseButton
                         ref={joinUsBtnRef}
-                        type="button"
-                        className="join-us-neon"
+                        label="JOIN US"
                         style={{ position: 'absolute', left: '8px', top: '70px', paddingLeft: '16px', paddingRight: '16px', minWidth: '80px' }}
                         title="Join Us"
                         aria-haspopup="dialog"
@@ -2426,14 +2427,12 @@ export default function HUDPanel({
                           openJoinUsPopover(); 
                         }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                      >
-                        JOIN US
-                      </button>
+                      />
                       {/* WELCOME HOME button positioned next to JOIN US */}
-                      <button
+                      <HeartverseButton
                         ref={welcomeHomeBtnRef}
-                        type="button"
-                        className="welcome-home-neon"
+                        variant="welcome-home"
+                        label="WELCOME BACK TO THE HEARTVERSE <3"
                         style={{ position: 'absolute', left: '100px', top: '70px', paddingLeft: '16px', paddingRight: '16px', minWidth: '80px' }}
                         title="Welcome Home"
                         aria-haspopup="dialog"
@@ -2450,14 +2449,23 @@ export default function HUDPanel({
                           openWelcomeHomePopover(); 
                         }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                      >
-                        WELCOME BACK TO THE HEARTVERSE {'<3'}
-                      </button>
+                      />
                       {/* STARS button positioned to the right of WELCOME HOME */}
-                      <button
+                      <HeartverseButton
                         ref={starsBtnRef}
-                        type="button"
-                        className="stars-neon"
+                        variant="stars"
+                        label=""
+                        icon={
+                          <img 
+                            src="/elements/star.png" 
+                            alt="Stars" 
+                            style={{ 
+                              width: '20px', 
+                              height: '20px', 
+                              filter: 'invert(1) brightness(0)' 
+                            }} 
+                          />
+                        }
                         style={{ position: 'absolute', left: '220px', top: '70px', paddingLeft: '16px', paddingRight: '16px', minWidth: '60px' }}
                         title="Stars"
                         aria-haspopup="dialog"
@@ -2474,17 +2482,7 @@ export default function HUDPanel({
                           openSoulSkyPopover(); 
                         }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                      >
-                        <img 
-                          src="/elements/star.png" 
-                          alt="Stars" 
-                          style={{ 
-                            width: '20px', 
-                            height: '20px', 
-                            filter: 'invert(1) brightness(0)' 
-                          }} 
-                        />
-                      </button>
+                      />
                       {/* Store (gem) button placed to the right of Lyrics */}
                       <button
                         type="button"

@@ -1038,6 +1038,7 @@ export default function DashboardApp({ initialSlug } = {}) {
             onDigitalBinderClick={() => {}}
             onBadgesClick={() => {}}
             onHeartCoinClick={() => {}}
+            onCloseBlueDisplay={() => setShowHUD(false)}
           />
         )}
         
@@ -1141,6 +1142,7 @@ export default function DashboardApp({ initialSlug } = {}) {
           onDigitalBinderClick={handleDigitalBinderClick}
           onBadgesClick={handleBadgesClick}
           onHeartCoinClick={handleHeartCoinClick}
+          onCloseBlueDisplay={() => setShowHUD(false)}
         />
       )}
       

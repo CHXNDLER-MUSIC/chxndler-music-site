@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import LoginModal from "@/components/LoginModal";
+import SharedButton from "@/components/SharedButton";
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   asChild?: boolean;
+  onHoverSound?: () => void;
 };
 
-export default function JoinUsButton({ asChild = false, children, onClick, ...rest }: Props) {
+export default function JoinUsButton({ asChild = false, children, onClick, onHoverSound, ...rest }: Props) {
   const [open, setOpen] = useState(false);
 
   const handleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
@@ -18,12 +20,16 @@ export default function JoinUsButton({ asChild = false, children, onClick, ...re
     }
   };
 
-  // We render a button to avoid navigation; styles come from parent via className
   return (
     <>
-      <button type="button" onClick={handleClick} {...rest}>
+      <SharedButton 
+        variant="join-us" 
+        onClick={handleClick} 
+        onHoverSound={onHoverSound}
+        {...rest}
+      >
         {children}
-      </button>
+      </SharedButton>
       <LoginModal open={open} onClose={() => setOpen(false)} />
     </>
   );

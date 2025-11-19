@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
-import SharedModal from "@/components/SharedModal";
+import HeartversePopup from "@/components/HeartversePopup";
 
 type Props = {
   open: boolean;
@@ -71,11 +71,10 @@ export default function HeartCoinModal({ open, onClose }: Props) {
   }
 
   return (
-    <SharedModal 
-      open={open} 
+    <HeartversePopup 
+      isOpen={open} 
       onClose={onClose} 
-      title="WELCOME BACK TO THE HEARTVERSE <3"
-      ariaLabel="Sign in"
+      title="HEARTCOIN"
     >
       <p className="relative text-sm text-white/80 mb-3">Choose your connection method.</p>
 
@@ -163,6 +162,6 @@ export default function HeartCoinModal({ open, onClose }: Props) {
               </form>
             </div>
           </div>
-    </SharedModal>
+    </HeartversePopup>
   );
 }

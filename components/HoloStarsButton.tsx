@@ -1,6 +1,7 @@
 "use client";
 import React, { useRef, useState } from "react";
 import { sfx } from "@/lib/sfx";
+import SharedButton from "@/components/SharedButton";
 
 export default function HoloStarsButton({
   onClick,
@@ -52,18 +53,18 @@ export default function HoloStarsButton({
 
   return (
     <>
-      <button
-        type="button"
-        className="stars-neon"
+      <SharedButton
+        variant="stars"
         aria-label={label}
         onClick={handleActivate}
-        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+        onHoverSound={() => sfx.play('hover', 0.35)}
+        className="custom-stars-style"
       >
         ⭐
-      </button>
+      </SharedButton>
       
       <style jsx>{`
-        .stars-neon {
+        .custom-stars-style {
           width: 50px;
           height: 50px;
           border-radius: 50%;
@@ -84,7 +85,7 @@ export default function HoloStarsButton({
             inset 0 0 16px rgba(255, 223, 0, 0.3);
         }
         
-        .stars-neon:hover {
+        .custom-stars-style:hover {
           transform: scale(1.1);
           box-shadow: 
             0 0 0 2px rgba(255, 215, 0, 0.8),
@@ -93,7 +94,7 @@ export default function HoloStarsButton({
             inset 0 0 20px rgba(255, 223, 0, 0.5);
         }
         
-        .stars-neon:active {
+        .custom-stars-style:active {
           transform: scale(0.95);
         }
       `}</style>

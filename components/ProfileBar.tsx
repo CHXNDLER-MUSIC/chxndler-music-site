@@ -7,6 +7,8 @@ import CodeModal from '@/components/CodeModal';
 import BinderModal from '@/components/BinderModal';
 import BadgesModal from '@/components/BadgesModal';
 import HeartCoinModal from '@/components/HeartCoinModal';
+import TestModal from '@/components/TestModal';
+import JourneyButton from '@/components/JourneyButton';
 import { sfx } from '@/lib/sfx';
 
 interface Profile {
@@ -28,13 +30,17 @@ interface ProfileBarProps {
   onDigitalBinderClick?: () => void;
   onBadgesClick?: () => void;
   onHeartCoinClick?: () => void;
+  onTestClick?: () => void;
+  onCloseBlueDisplay?: () => void;
 }
 
 export default function ProfileBar({
   onCodeClick,
   onDigitalBinderClick, 
   onBadgesClick,
-  onHeartCoinClick
+  onHeartCoinClick,
+  onTestClick,
+  onCloseBlueDisplay
 }: ProfileBarProps) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,6 +51,7 @@ export default function ProfileBar({
   const [isBinderOpen, setIsBinderOpen] = useState(false);
   const [isBadgesOpen, setIsBadgesOpen] = useState(false);
   const [isHeartCoinOpen, setIsHeartCoinOpen] = useState(false);
+  const [isTestOpen, setIsTestOpen] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -209,6 +216,13 @@ export default function ProfileBar({
             {displayName}
           </span>
 
+          {/* Journey Button */}
+          <JourneyButton 
+            onHoverSound={() => sfx.play('hover', 0.8)}
+            onCloseBlueDisplay={onCloseBlueDisplay}
+            style={{ fontSize: '12px', padding: '4px 8px' }}
+          />
+
           {/* Action Buttons */}
           <div className="flex items-center space-x-3">
             {/* Code Button */}
@@ -262,6 +276,21 @@ export default function ProfileBar({
                 draggable={false}
               />
             </button>
+            
+            {/* Test Button */}
+            <button
+              onClick={() => {
+                sfx.play('click', 0.8);
+                setIsTestOpen(true);
+                onTestClick?.();
+              }}
+              className="px-4 py-2 bg-green-600/20 hover:bg-green-600/30 border border-green-500/40 text-green-300 rounded-lg font-medium transition-all duration-200 hover:shadow-lg hover:shadow-green-500/20"
+              style={{
+                boxShadow: '0 0 20px rgba(34, 197, 94, 0.3), 0 0 40px rgba(34, 197, 94, 0.15)'
+              }}
+            >
+              TEST
+            </button>
           </div>
         </div>
 
@@ -305,6 +334,10 @@ export default function ProfileBar({
 
       {isHeartCoinOpen && (
         <HeartCoinModal open={isHeartCoinOpen} onClose={() => setIsHeartCoinOpen(false)} />
+      )}
+
+      {isTestOpen && (
+        <TestModal open={isTestOpen} onClose={() => setIsTestOpen(false)} />
       )}
     </div>
   );
