@@ -281,6 +281,7 @@ export default function ProfileBar({
             onOpenBlueDisplay={onOpenBlueDisplay}
             onBeamColorChange={onBeamColorChange}
             element={currentElement}
+            onElementSelect={updateElement}
           />
 
           {/* Username */}

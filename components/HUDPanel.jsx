@@ -3523,13 +3523,13 @@ export default function HUDPanel({
                               </div>
                               <ul style={{ margin: 0, paddingLeft: 8, listStyle: 'disc' }}>
                                 <li style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 2, color: '#fff' }}>
-                                  We believe being your truest self is the beginning of freedom.
+                                  We believe being your <span style={{ color: '#00FFFF', textShadow: '0 0 4px rgba(0,255,255,0.6)' }}>truest self</span> is the beginning of freedom.
                                 </li>
                                 <li style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 2, color: '#fff' }}>
-                                  We believe passion is sacred and should be pursued loudly.
+                                  We believe <span style={{ color: '#FFFF00', textShadow: '0 0 4px rgba(255,255,0,0.6)' }}>passion</span> is sacred and should be pursued loudly.
                                 </li>
                                 <li style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 2, color: '#fff' }}>
-                                  We believe love is the force that connects every soul.
+                                  We believe <span style={{ color: '#FF69B4', textShadow: '0 0 4px rgba(255,105,180,0.6)' }}>love</span> is the force that connects every soul.
                                 </li>
                               </ul>
                             </div>
@@ -6633,16 +6633,23 @@ export default function HUDPanel({
                           onClick={async () => {
                             try { sfx.play('click', 0.8); } catch {}
                             
+                            // Validate required fields
+                            if (!currentProfileId || !profileName.trim() || !selectedElement) {
+                              alert('Please ensure all profile fields are completed.');
+                              return;
+                            }
+                            
                             try {
                               // Save complete profile to database
                               const { error } = await supabaseBrowser
                                 .from('profiles')
                                 .update({ 
-                                  name: profileName,
+                                  name: profileName.trim(),
                                   element: selectedElement,
-                                  profile_complete: true 
+                                  profile_complete: true,
+                                  updated_at: new Date().toISOString()
                                 })
-                                .eq('phone', profilePhone);
+                                .eq('id', currentProfileId);
 
                               if (error) {
                                 console.error('Profile completion error:', error);
@@ -6652,6 +6659,9 @@ export default function HUDPanel({
 
                               console.log('Profile completed successfully:', { name: profileName, element: selectedElement });
                               
+                              // Play success sound
+                              try { sfx.play('success', 0.8); } catch {}
+                              
                               // Update the HUD display with saved profile info
                               setSavedProfileName(profileName);
                               setSavedProfileElement(selectedElement);
@@ -6660,11 +6670,14 @@ export default function HUDPanel({
                               if (onNameSaved) onNameSaved(profileName);
                               if (onElementSaved) onElementSaved(selectedElement);
                               
-                              // Close the popup
+                              // Close the popup and reset state
                               setShowElementPopup(false);
+                              setProfileName('');
+                              setSelectedElement('');
+                              setCurrentProfileId(null);
                               
                               // Optional: Show success message or trigger confetti
-                              // You could add a success animation here
+                              console.log('Profile setup completed successfully!')
                               
                             } catch (err) {
                               console.error('Unexpected error:', err);

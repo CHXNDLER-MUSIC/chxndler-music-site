@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { sfx } from "@/lib/sfx";
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -10,14 +10,21 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   onOpenBlueDisplay?: () => void;
   onBeamColorChange?: (color: string) => void;
   element?: string | null; // Current user element from profile
+  onElementSelect?: (element: string) => void; // Callback when user selects new element
 };
 
-export default function ElementalButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onBeamColorChange, element, ...rest }: Props) {
+export default function ElementalButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onBeamColorChange, element, onElementSelect, ...rest }: Props) {
   const [open, setOpen] = useState(false);
   const [hoveredElement, setHoveredElement] = useState<string | null>(null);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [committedElement, setCommittedElement] = useState<string | null>(null);
   
+  // Initialize committedElement with the profile element
+  useEffect(() => {
+    if (element && !committedElement) {
+      setCommittedElement(element);
+    }
+  }, [element, committedElement]);
 
   const handleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
     try { onClick?.(e); } catch {}
@@ -43,7 +50,6 @@ export default function ElementalButton({ asChild = false, children, onClick, on
     <>
       <button
         onClick={handleClick} 
-        onMouseEnter={onHoverSound}
         className="p-1 rounded-lg transition-all duration-200 w-12 h-10"
         style={{
           transition: 'all 0.3s ease',
@@ -59,8 +65,8 @@ export default function ElementalButton({ asChild = false, children, onClick, on
         {...rest}
       >
         <img
-          src={element ? `/elements/${element}.png` : "/elements/elementals.png"}
-          alt={element ? element.charAt(0).toUpperCase() + element.slice(1) : "Elementals"}
+          src={committedElement ? `/elements/${committedElement}.png` : (element ? `/elements/${element}.png` : "/elements/elementals.png")}
+          alt={committedElement ? committedElement.charAt(0).toUpperCase() + committedElement.slice(1) : (element ? element.charAt(0).toUpperCase() + element.slice(1) : "Elementals")}
           className="w-full h-full object-cover rounded"
           draggable={false}
         />
@@ -192,8 +198,8 @@ export default function ElementalButton({ asChild = false, children, onClick, on
             <div style={{ width: '40%', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', paddingTop: '10px' }}>
               <div style={{ position: 'relative', width: '100%', maxWidth: 150 }}>
                 <img
-                  src="/elements/elemental.png"
-                  alt="Elemental"
+                  src={committedElement ? `/elements/${committedElement}.png` : (selectedElement ? `/elements/${selectedElement}.png` : "/elements/elemental.png")}
+                  alt={committedElement ? committedElement.charAt(0).toUpperCase() + committedElement.slice(1) : (selectedElement ? selectedElement.charAt(0).toUpperCase() + selectedElement.slice(1) : "Elemental")}
                   style={{ 
                     display: 'block', 
                     width: '100%', 
@@ -447,6 +453,10 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                     try { sfx.play('click', 0.8); } catch {}
                     if (selectedElement) {
                       setCommittedElement(selectedElement);
+                      // Notify parent component to save to profile
+                      if (onElementSelect) {
+                        onElementSelect(selectedElement);
+                      }
                     }
                     setOpen(false);
                     try { onOpenBlueDisplay?.(); } catch {}
