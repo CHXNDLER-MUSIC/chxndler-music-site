@@ -8,7 +8,7 @@ const STORAGE_KEY = 'heartverse_user_progress';
 export const defaultUserProgress: UserProgress = {
   currentStreak: 0,
   longestStreak: 0,
-  element: 'fire', // Default element
+  element: 'heart', // Default element
   achievements: {
     first_listen: false,
     first_soul_sky: false,

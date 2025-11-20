@@ -17,6 +17,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
   const [showFullCollection, setShowFullCollection] = useState(false);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [selectedRarity, setSelectedRarity] = useState<string>('All');
+  const [selectedCardName, setSelectedCardName] = useState<string>('All');
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [selectedCard, setSelectedCard] = useState<{name: string, image: string, rarity: string, element: string} | null>(null);
 
@@ -76,6 +77,72 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
   
   const elements = ['LIGHTNING', 'DARKNESS', 'WATER', 'HEART'];
   const rarities = ['All', 'Common', 'Rare'];
+  
+  const getElementColor = (element: string) => {
+    const elementColors: { [key: string]: string } = {
+      'LIGHTNING': '#FFD700', // Gold
+      'DARKNESS': '#8B0082', // Dark violet
+      'WATER': '#1E90FF', // Dodger blue
+      'HEART': '#FF69B4', // Hot pink
+      'ALL': '#FFFFFF' // White for special cards
+    };
+    return elementColors[element] || '#FFFFFF';
+  };
+
+  const getCardOneLiner = (songName: string) => {
+    const oneLiners: { [key: string]: string } = {
+      'MR. BRIGHTSIDE': 'When love turns to doubt and every glance feels like betrayal.',
+      'CHEERLEADER (ACOUSTIC)': 'Wanting the person you love most to be cheering in the crowd.',
+      'I MIGHT FALL IN LOVE WITH YOU (ACOUSTIC)': 'Falling into warm sweaters, slow mornings, and a love that feels like home.',
+      'MAKE BELIEVE': 'Make believe',
+      'LITTLE BLACK HEART (ACOUSTIC)': 'Are you afraid to live or afraid to die?',
+      'LITTLE BLACK HEART': 'Are you afraid to live or afraid to die?',
+      'ALONE': 'Lost in a sea of strangers under the city\'s glittering glow.',
+      'ALONE (ACOUSTIC)': 'Lost in a sea of strangers under the city\'s glittering glow.',
+      'AMERICAN DREAM': 'The American Dream isn\'t where we live — it\'s where our dreams go to die.',
+      'PARIS': 'A love affair with self-destruction — poison dressed up as romance.',
+      'PINK MOON': 'Lost in the static, the pink moon guides me home.',
+      'ALWAYS ON MY MIND': 'Some voices never fade — they just guide you from within.',
+      'ALWAYS ON MY MIND (REMIX)': 'Some voices never fade — they just guide you from within.',
+      'BE MY BEE': 'You buzzed like love on a first date… but the sting brought you back to Earth.',
+      'BE MY BEE (ACOUSTIC)': 'You buzzed like love on a first date… but the sting brought you back to Earth.',
+      'CHEERLEADER': 'Wanting the person you love most to be cheering in the crowd.',
+      'COLLIDE': 'Two souls crash into each other in a cosmic dance of fate.',
+      'COLORS OF OUR HOME (BLUMA Game Soundtrack)': 'A journey from isolation to connection in a world full of color.',
+      'COLORS OF OUR HOME (ACOUSTIC)': 'A journey from isolation to connection in a world full of color.',
+      'COLORS OF OUR HOME': 'A journey from isolation to connection in a world full of color.',
+      'I MIGHT FALL IN LOVE WITH YOU': 'Falling into warm sweaters, slow mornings, and a love that feels like home.',
+      'LOVE ME': 'If I gave it all away for the dream and never made it — would you still love me?',
+      'LOVE ME (ACOUSTIC)': 'If I gave it all away for the dream and never made it — would you still love me?',
+      'SOMEBODY TO LOVE': 'You want to give real love — not the kind they expect, but the kind you know. Too bad they\'re not the one.',
+      'TIENES UN AMIGO': 'No galaxy too far, no accent too strong — friendship always finds a way.',
+      'WE\'RE JUST FRIENDS': 'Unspoken feelings blur the lines between friendship and something more.',
+      'WE\'RE JUST FRIENDS (ACOUSTIC)': 'Unspoken feelings blur the lines between friendship and something more.',
+      'WE\'RE JUST FRIENDS (DMVRCO REMIX)': 'Unspoken feelings blur the lines between friendship and something more.',
+      'WE\'RE JUST FRIENDS (mickey jas REMIX)': 'Unspoken feelings blur the lines between friendship and something more.',
+      'BABY': 'A chaotic, messy, romantic ride through the magic of a first date.',
+      'BLUE (ACOUSTIC)': 'You were the match to ignite the ash in my heart.',
+      'BLUE': 'You were the match to ignite the ash in my heart.',
+      'BRAIN FREEZE': 'A rush of emotion and chaos from chasing summer highs.',
+      'FEELING THIS': 'When chaos feels like connection, and that\'s enough for tonight.',
+      'GAME BOY HEART': 'A nostalgic escape into an 8-bit dreamworld where your heart lives free.',
+      'HOME': 'A journey through the stars to fill the void—only to find home was within all along',
+      'HOME (ACOUSTIC)': 'A journey through the stars to fill the void—only to find home was within all along',
+      'HOUSE PARTY': 'A crowded room, an unspoken crush, and the quiet realization that we\'re all aliens in disguise.',
+      'HOUSE PARTY (ACOUSTIC)': 'A crowded room, an unspoken crush, and the quiet realization that we\'re all aliens in disguise.',
+      'KID FOREVER': 'Live fearlessly in the land your daydreams call home.',
+      'POKÉMON': 'Some dreams don\'t fade — they evolve with you.',
+      'LETTING GO': 'Letting go of expectations — theirs and yours — to finally be free.',
+      'OCEAN GIRL': 'A love that moves like the sea — you let go and trust to always come back to you.',
+      'OCEAN GIRL (ACOUSTIC)': 'A love that moves like the sea — you let go and trust to always come back to you.',
+      'OCEAN GIRL (REMIX)': 'A love that moves like the sea — you let go and trust to always come back to you.',
+      'WATER': 'These songs carry waves of emotion — not explosive, but steady, like a tide that pulls you out and then leaves you still',
+      'HEART': 'This is the emotional core. These songs don\'t just want — they feel. Love isn\'t clean here — it\'s messy, soft, and intense.',
+      'LIGHTNING': 'Lightning is the electric jolt of feeling alive. These tracks buzz. You move fast, crash hard, and maybe regret nothing.',
+      'DARKNESS': 'Darkness isn\'t evil — it\'s vulnerability in disguise. These songs explore what\'s not said, what we hide, or what we want but don\'t admit.',
+    };
+    return oneLiners[songName] || '';
+  };
   
   const getCardImage = (songName: string, element: string) => {
     const songImages: { [key: string]: string } = {
@@ -147,6 +214,11 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
       filteredSongs = filteredSongs.filter(song => song.rarity === selectedRarity);
     }
     
+    // Filter by card name
+    if (selectedCardName !== 'All') {
+      filteredSongs = filteredSongs.filter(song => song.name === selectedCardName);
+    }
+    
     // Convert to card format with images
     return filteredSongs.map(song => ({
       name: song.name,
@@ -156,13 +228,32 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
     }));
   };
 
+  const getAvailableCardNames = () => {
+    if (!selectedElement) return [];
+    
+    let filteredSongs = songCollection;
+    
+    // Filter by element
+    filteredSongs = filteredSongs.filter(song => song.element === selectedElement);
+    
+    // Filter by rarity if not 'All'
+    if (selectedRarity !== 'All') {
+      filteredSongs = filteredSongs.filter(song => song.rarity === selectedRarity);
+    }
+    
+    // Return unique card names
+    return ['All', ...filteredSongs.map(song => song.name)];
+  };
+
   // Listen for custom event from store cards tab
   useEffect(() => {
     const handleOpenDigitalBinder = () => {
       try { onCloseBlueDisplay?.(); } catch {}
-      setOpen(true);
-      setShowFullCollection(true);
+      // Skip the current display and go directly to the element selection
+      setOpen(false);
+      setShowFullCollection(false);
       setSelectedElement(null);
+      setSelectedCardName('All');
       setCurrentCardIndex(0);
     };
 
@@ -209,7 +300,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
       <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="p-1 rounded-lg transition-all duration-200 w-14 h-12"
+        className="p-1 rounded-lg transition-all duration-200 w-16 h-14"
         style={{
           transition: 'all 0.3s ease',
           ...rest.style
@@ -338,6 +429,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                 try { sfx.play('click', 0.6); } catch {}
                 setShowFullCollection(!showFullCollection);
                 setSelectedElement(null);
+                setSelectedCardName('All');
                 setCurrentCardIndex(0);
               }}
               className="px-3 py-1 text-[10px] font-bold rounded border border-pink-400/60 hover:border-pink-400/80 transition-all duration-200"
@@ -380,18 +472,44 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
               boxShadow: '0 0 4px rgba(255,105,180,0.6)'
             }}
           />
-          <div 
-            className="text-center mb-4"
-            style={{ 
-              whiteSpace: 'pre-wrap', 
-              lineHeight: 1.2, 
-              fontSize: 11, 
-              color: '#FF69B4', 
-              textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,105,180,0.6)', 
-              marginTop: '-4px' 
-            }}
-          >
-            Earn the cards that reflect your journey as you move through the Heartverse.
+          <div className="flex justify-between items-center mb-4">
+            {/* Card Name Filter - moved to the left */}
+            {showFullCollection && selectedElement && (
+              <select
+                value={selectedCardName}
+                onChange={(e) => {
+                  setSelectedCardName(e.target.value);
+                  setCurrentCardIndex(0);
+                }}
+                className="px-1 py-0.5 rounded border border-pink-400/60 bg-black/40 text-pink-200 text-[10px] min-w-24"
+                style={{ 
+                  boxShadow: '0 0 8px rgba(255,105,180,0.3)',
+                  textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                }}
+              >
+                {getAvailableCardNames().map(cardName => (
+                  <option key={cardName} value={cardName} className="bg-black text-pink-200">
+                    {cardName}
+                  </option>
+                ))}
+              </select>
+            )}
+            
+            <div 
+              className="text-center flex-1"
+              style={{ 
+                whiteSpace: 'pre-wrap', 
+                lineHeight: 1.2, 
+                fontSize: 11, 
+                color: '#FF69B4', 
+                textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,105,180,0.6)', 
+                marginTop: '-4px' 
+              }}
+            >
+              Earn the cards that reflect your journey as you move through the Heartverse.
+            </div>
+            
+            <div style={{ width: showFullCollection && selectedElement ? '8rem' : '0' }}></div>
           </div>
 
           {/* Collection Progress */}
@@ -467,14 +585,23 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                         </div>
                       </div>
                     ) : (
-                      // Empty slots
+                      // Empty slots with + sign
                       <div 
-                        className="w-full h-32 rounded border-2 border-dashed border-pink-400/40"
+                        className="w-full h-32 rounded border-2 border-dashed border-pink-400/40 flex items-center justify-center"
                         style={{
                           background: 'rgba(255,105,180,0.05)',
                           boxShadow: 'inset 0 0 10px rgba(255,105,180,0.1)',
                         }}
-                      />
+                      >
+                        <div 
+                          className="text-pink-400/60 text-4xl font-light"
+                          style={{
+                            textShadow: '0 0 8px rgba(255,105,180,0.3)',
+                          }}
+                        >
+                          +
+                        </div>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -504,6 +631,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                           onClick={() => {
                             try { sfx.play('click', 0.7); } catch {}
                             setSelectedElement(element);
+                            setSelectedCardName('All');
                             setCurrentCardIndex(0);
                           }}
                         >
@@ -566,6 +694,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                           onClick={() => {
                             try { sfx.play('click', 0.6); } catch {}
                             setSelectedElement(null);
+                            setSelectedCardName('All');
                             setCurrentCardIndex(0);
                           }}
                           className="flex items-center gap-2 text-pink-300 hover:text-pink-200 transition-colors text-xs"
@@ -581,6 +710,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                           value={selectedRarity}
                           onChange={(e) => {
                             setSelectedRarity(e.target.value);
+                            setSelectedCardName('All');
                             setCurrentCardIndex(0);
                           }}
                           className="px-2 py-1 rounded border border-pink-400/60 bg-black/40 text-pink-200 text-xs"
@@ -620,12 +750,32 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                       }
 
                       return (
-                        <div className="text-center -mt-20">
-                          <div className="relative inline-block">
+                        <div className="flex items-center gap-4 -mt-20">
+                          {/* Navigation arrow - left */}
+                          {cards.length > 1 && (
+                            <button
+                              onClick={() => {
+                                try { sfx.play('click', 0.5); } catch {}
+                                setCurrentCardIndex(prev => prev > 0 ? prev - 1 : cards.length - 1);
+                              }}
+                              className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200"
+                              style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
+                            >
+                              <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                                <path d="M15 18l-6-6 6-6"/>
+                              </svg>
+                            </button>
+                          )}
+                          
+                          {/* Spacer to push card to the right */}
+                          <div className="flex-1"></div>
+                          
+                          {/* Card image - positioned more to the right */}
+                          <div className="relative mr-8">
                             <img
                               src={currentCard.image}
                               alt={currentCard.name}
-                              className="w-32 h-auto rounded-lg mx-auto cursor-pointer transition-transform duration-300 hover:scale-110"
+                              className="w-32 h-auto rounded-lg cursor-pointer transition-transform duration-300 hover:scale-110"
                               style={{
                                 boxShadow: '0 0 15px rgba(255,105,180,0.6), 0 0 30px rgba(255,105,180,0.3)',
                                 border: '2px solid rgba(255,105,180,0.6)',
@@ -637,74 +787,57 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                                 setCardOpen(true);
                               }}
                             />
-                            
-                            {/* Navigation arrows */}
-                            {cards.length > 1 && (
-                              <>
-                                <button
-                                  onClick={() => {
-                                    try { sfx.play('click', 0.5); } catch {}
-                                    setCurrentCardIndex(prev => prev > 0 ? prev - 1 : cards.length - 1);
-                                  }}
-                                  className="absolute left-[-30px] top-1/2 transform -translate-y-1/2 w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200"
-                                  style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
-                                >
-                                  <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-                                    <path d="M15 18l-6-6 6-6"/>
-                                  </svg>
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    try { sfx.play('click', 0.5); } catch {}
-                                    setCurrentCardIndex(prev => prev < cards.length - 1 ? prev + 1 : 0);
-                                  }}
-                                  className="absolute right-[-30px] top-1/2 transform -translate-y-1/2 w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200"
-                                  style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
-                                >
-                                  <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-                                    <path d="M9 18l6-6-6-6"/>
-                                  </svg>
-                                </button>
-                              </>
-                            )}
                           </div>
                           
-                          {/* Card Info */}
-                          <div className="mt-3">
+                          {/* Card Info - positioned to the right of the card */}
+                          <div className="flex flex-col justify-center min-w-0 max-w-48">
                             <div 
-                              className="text-sm font-bold mb-1"
+                              className="text-lg font-bold mb-1"
                               style={{ 
-                                color: '#FFFFFF', 
-                                textShadow: '0 0 6px rgba(255,255,255,0.8)',
-                                fontSize: '11px'
+                                color: getElementColor(currentCard.element), 
+                                textShadow: `0 0 8px ${getElementColor(currentCard.element)}80`,
+                                fontSize: '16px'
                               }}
                             >
                               {currentCard.name}
                             </div>
-                            <div 
-                              className="text-xs mb-1"
-                              style={{ 
-                                color: currentCard.rarity === 'Rare' ? '#FF69B4' : '#87CEEB',
-                                textShadow: '0 0 4px currentColor',
-                                fontSize: '10px'
-                              }}
-                            >
-                              ★ {currentCard.rarity.toUpperCase()} ★
-                            </div>
                             {currentCard.element && (
                               <div 
-                                className="text-[9px] mb-1"
+                                className="text-sm mb-2"
                                 style={{ 
                                   color: '#FFB6C1', 
-                                  textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                                  textShadow: '0 0 4px rgba(255,182,193,0.6)',
+                                  fontSize: '12px'
                                 }}
                               >
                                 Element: {currentCard.element}
                               </div>
                             )}
+                            <div 
+                              className="text-sm mb-2"
+                              style={{ 
+                                color: currentCard.rarity === 'Rare' ? '#FF69B4' : '#87CEEB',
+                                textShadow: '0 0 4px currentColor',
+                                fontSize: '12px'
+                              }}
+                            >
+                              ★ {currentCard.rarity.toUpperCase()} ★
+                            </div>
+                            {getCardOneLiner(currentCard.name) && (
+                              <div 
+                                className="text-xs mb-2 italic leading-relaxed"
+                                style={{ 
+                                  color: '#E6E6FA', 
+                                  textShadow: '0 0 2px rgba(230,230,250,0.6)',
+                                  fontSize: '11px'
+                                }}
+                              >
+                                {getCardOneLiner(currentCard.name)}
+                              </div>
+                            )}
                             {cards.length > 1 && (
                               <div 
-                                className="text-[10px] mt-1"
+                                className="text-[10px]"
                                 style={{ 
                                   color: '#FFB6C1', 
                                   textShadow: '0 0 4px rgba(255,182,193,0.6)'
@@ -714,6 +847,22 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                               </div>
                             )}
                           </div>
+                          
+                          {/* Navigation arrow - right */}
+                          {cards.length > 1 && (
+                            <button
+                              onClick={() => {
+                                try { sfx.play('click', 0.5); } catch {}
+                                setCurrentCardIndex(prev => prev < cards.length - 1 ? prev + 1 : 0);
+                              }}
+                              className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200"
+                              style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
+                            >
+                              <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                                <path d="M9 18l6-6-6-6"/>
+                              </svg>
+                            </button>
+                          )}
                         </div>
                       );
                     })()}

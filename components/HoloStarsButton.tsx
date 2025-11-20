@@ -337,9 +337,9 @@ export default function HoloStarsButton({
             
             .response-area {
               width: 100%;
-              min-height: 60px;
-              height: 60px;
-              max-height: 120px;
+              min-height: 30px;
+              height: 30px;
+              max-height: 60px;
               background: rgba(0, 0, 0, 0.8);
               border: 1px solid #FFFF00;
               border-radius: 0.5rem;

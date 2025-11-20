@@ -85,7 +85,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="rounded-lg transition-all duration-200 w-12 h-10 border-0"
+        className="rounded-lg transition-all duration-200 w-16 h-14 border-0"
         style={{
           transition: 'all 0.3s ease',
           padding: '0 !important',
@@ -104,7 +104,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
         <img
           src="/elements/badges.png"
           alt="Badges"
-          className="w-full h-full object-cover rounded"
+          className="w-full h-full object-contain rounded"
           draggable={false}
         />
       </button>
@@ -247,7 +247,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
               <div 
                 className="absolute inset-0 z-10 flex items-center justify-center"
                 style={{
-                  background: 'rgba(0,0,0,0.95)',
+                  background: 'rgba(0,0,0,0.3)',
                   backdropFilter: 'blur(10px)',
                 }}
                 onClick={closeBadgeModal}
@@ -456,23 +456,23 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                 </div>
                 <div className="grid grid-cols-6 gap-2">
                   {elementBadges[userProgress.element]?.slice(0, 12).map((badge) => {
-                    const unlocked = userProgress.currentStreak >= (badge.streakDays || 0);
+                    const badgeUnlocked = userProgress.currentStreak >= (badge.streakDays || 0);
                     return (
                       <div key={badge.id} className="text-center">
                         <div 
                           className="w-10 h-10 mx-auto mb-1 rounded-full border flex items-center justify-center cursor-pointer transition-transform duration-200 hover:scale-110"
                           style={{
-                            borderColor: unlocked ? getRarityColor(badge.rarity) : 'rgba(128,128,128,0.3)',
-                            background: unlocked ? getRarityGlow(badge.rarity) : 'rgba(128,128,128,0.1)',
-                            boxShadow: unlocked ? `0 0 10px ${getRarityGlow(badge.rarity)}` : '0 0 4px rgba(128,128,128,0.2)',
+                            borderColor: badgeUnlocked ? getRarityColor(badge.rarity) : 'rgba(128,128,128,0.3)',
+                            background: badgeUnlocked ? getRarityGlow(badge.rarity) : 'rgba(128,128,128,0.1)',
+                            boxShadow: badgeUnlocked ? `0 0 10px ${getRarityGlow(badge.rarity)}` : '0 0 4px rgba(128,128,128,0.2)',
                           }}
                           title={`${badge.name}: ${badge.description} (${badge.streakDays} days)`}
-                          onClick={() => handleBadgeClick(badge, unlocked)}
+                          onClick={() => handleBadgeClick(badge, badgeUnlocked)}
                         >
                           <span style={{ 
                             fontSize: '12px', 
-                            opacity: unlocked ? 1 : 0.4,
-                            filter: unlocked ? 'none' : 'grayscale(100%)'
+                            opacity: badgeUnlocked ? 1 : 0.4,
+                            filter: badgeUnlocked ? 'none' : 'grayscale(100%)'
                           }}>
                             {badge.emoji}
                           </span>
@@ -480,8 +480,8 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                         <div 
                           className="text-xs"
                           style={{ 
-                            color: unlocked ? '#FFFFFF' : '#666', 
-                            textShadow: unlocked ? '0 0 3px rgba(255,255,255,0.5)' : 'none',
+                            color: badgeUnlocked ? '#FFFFFF' : '#666', 
+                            textShadow: badgeUnlocked ? '0 0 3px rgba(255,255,255,0.5)' : 'none',
                             fontSize: '7px'
                           }}
                         >

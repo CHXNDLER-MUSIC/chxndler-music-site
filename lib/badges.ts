@@ -5,7 +5,7 @@ export type BadgeCategory = 'achievement' | 'streak' | 'element_streak';
 export type Element = 
   | 'fire' | 'water' | 'earth' | 'air' 
   | 'light' | 'shadow' | 'ice' | 'lightning'
-  | 'nature' | 'spirit' | 'cosmic' | 'void';
+  | 'nature' | 'spirit' | 'cosmic' | 'void' | 'heart';
 
 export type AchievementType = 
   | 'first_listen'
@@ -324,6 +324,20 @@ export const elementBadges: Record<Element, Badge[]> = {
     { id: 'void_180', name: 'HEAT DEATH', description: 'Final state of the universe', emoji: '❄️', category: 'element_streak', element: 'void', streakDays: 180, rarity: 'mythic', unlocked: false },
     { id: 'void_270', name: 'BEFORE TIME', description: 'State preceding existence', emoji: '⏳', category: 'element_streak', element: 'void', streakDays: 270, rarity: 'mythic', unlocked: false },
     { id: 'void_365', name: 'ABSOLUTE VOID', description: 'The eternal emptiness beyond all', emoji: '⚫', category: 'element_streak', element: 'void', streakDays: 365, rarity: 'mythic', unlocked: false }
+  ],
+  heart: [
+    { id: 'heart_1', name: 'HEARTBEAT', description: 'First pulse of emotion', emoji: '💗', category: 'element_streak', element: 'heart', streakDays: 1, rarity: 'common', unlocked: false },
+    { id: 'heart_3', name: 'WARMTH', description: '3 days of loving connection', emoji: '💕', category: 'element_streak', element: 'heart', streakDays: 3, rarity: 'common', unlocked: false },
+    { id: 'heart_7', name: 'COMPASSION', description: 'Week of caring presence', emoji: '💖', category: 'element_streak', element: 'heart', streakDays: 7, rarity: 'rare', unlocked: false },
+    { id: 'heart_14', name: 'EMPATHY', description: 'Understanding others deeply', emoji: '💝', category: 'element_streak', element: 'heart', streakDays: 14, rarity: 'rare', unlocked: false },
+    { id: 'heart_21', name: 'DEVOTION', description: 'Three weeks of unwavering love', emoji: '💘', category: 'element_streak', element: 'heart', streakDays: 21, rarity: 'epic', unlocked: false },
+    { id: 'heart_30', name: 'SOULMATE', description: 'Deep spiritual connection', emoji: '💞', category: 'element_streak', element: 'heart', streakDays: 30, rarity: 'epic', unlocked: false },
+    { id: 'heart_60', name: 'LOVE BEARER', description: 'Spreader of infinite love', emoji: '💓', category: 'element_streak', element: 'heart', streakDays: 60, rarity: 'legendary', unlocked: false },
+    { id: 'heart_90', name: 'HEART GUARDIAN', description: 'Protector of all emotions', emoji: '❤️‍🔥', category: 'element_streak', element: 'heart', streakDays: 90, rarity: 'legendary', unlocked: false },
+    { id: 'heart_120', name: 'UNCONDITIONAL', description: 'Love without boundaries', emoji: '❤️‍🩹', category: 'element_streak', element: 'heart', streakDays: 120, rarity: 'legendary', unlocked: false },
+    { id: 'heart_180', name: 'COSMIC LOVE', description: 'Love that spans the universe', emoji: '💫', category: 'element_streak', element: 'heart', streakDays: 180, rarity: 'mythic', unlocked: false },
+    { id: 'heart_270', name: 'ETERNAL BOND', description: 'Connection beyond time and space', emoji: '♾️', category: 'element_streak', element: 'heart', streakDays: 270, rarity: 'mythic', unlocked: false },
+    { id: 'heart_365', name: 'PURE LOVE', description: 'The essence of all emotion and connection', emoji: '❤️', category: 'element_streak', element: 'heart', streakDays: 365, rarity: 'mythic', unlocked: false }
   ]
 };
 

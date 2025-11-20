@@ -44,7 +44,7 @@ import { sfx } from "@/lib/sfx";
 // Use system font stack to avoid network font fetches during build
 
 // Constants to prevent recreating URLs on every render
-const DEFAULT_COVER = '/elements/logo.png';
+const DEFAULT_COVER = 'https://ik.imagekit.io/CHXNDLER/cover/chxndler.png?updatedAt=1762361376662';
 const DEFAULT_CARD = 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910';
 const FALLBACK_COVER = '/elements/logo.png';
 
@@ -892,6 +892,10 @@ export default function HUDPanel({
   const [patchFlipped, setPatchFlipped] = useState(false);
   const [beanieHovered, setBeanieHovered] = useState(false);
   const [patchHovered, setPatchHovered] = useState(false);
+  
+  // Heart coin store popup state
+  const [showHeartCoinStorePopup, setShowHeartCoinStorePopup] = useState(false);
+  
   const products = [
     {
       id: 'necklace',
@@ -4865,8 +4869,6 @@ export default function HUDPanel({
                       <button
                         onClick={() => {
                           setStoreActiveTab('CARDS');
-                          // Dispatch event to open digital binder in full collection mode
-                          window.dispatchEvent(new CustomEvent('openDigitalBinder'));
                         }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                         style={{
@@ -5024,8 +5026,7 @@ export default function HUDPanel({
                                     onClick={() => {
                                       try { sfx.play('click', 0.35); } catch {};
                                       try { trackAnalytics('heart_coin_clicked', { song_slug: String(active || currentId || 'store'), payload: { song_title: track?.title || 'Unknown', location: 'store_price_icon' } }); } catch {}
-                                      if (showHeartPopover) { setShowHeartPopover(false); return; }
-                                      openHeartPopover();
+                                      setShowHeartCoinStorePopup(true);
                                     }}
                                     style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer', lineHeight: 0 }}
                                   >
@@ -5120,307 +5121,206 @@ export default function HUDPanel({
                           </>
                           )}
                           
-                          {/* CARDS Tab Content */}
-                          {storeActiveTab === 'CARDS' && (
-                            <div style={{
-                              flex: 1,
-                              background: 'linear-gradient(135deg, rgba(255,255,255,0.02), rgba(33,150,243,0.03), rgba(25,227,255,0.02))',
-                              borderRadius: 12,
-                              padding: '12px',
-                              position: 'relative',
-                              overflow: 'auto',
-                              maxHeight: '400px'
-                            }}>
-                              {/* Header */}
-                              <div style={{
-                                textAlign: 'center',
-                                marginBottom: 8
-                              }}>
-                                <h3 style={{
-                                  fontSize: 16,
-                                  fontWeight: 700,
-                                  color: '#2196F3',
-                                  margin: 0,
-                                  marginBottom: 4,
-                                  textShadow: '0 0 8px rgba(33,150,243,0.4)'
-                                }}>
-                                  CHXNDLER Card Collection
-                                </h3>
-                                <p style={{
-                                  fontSize: 12,
-                                  opacity: 0.7,
-                                  margin: 0,
-                                  color: '#fff',
-                                  marginBottom: 8
-                                }}>
-                                  Earn CHXNDLER cards by purchasing merch and unlocking profile tiers
-                                </p>
-                              </div>
-                              
-                              {/* View Full Collection Button */}
-                              <div style={{
-                                textAlign: 'center',
-                                marginBottom: 16
-                              }}>
-                                <button
-                                  onClick={() => {
-                                    try { 
-                                      sfx.play('click', 0.6); 
-                                      // Close store popup
-                                      setShowStorePopover(false);
-                                      // Trigger binder button click to open full collection
-                                      const event = new CustomEvent('openDigitalBinder');
-                                      window.dispatchEvent(event);
-                                    } catch {} 
-                                  }}
-                                  onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                                  style={{
-                                    padding: '8px 16px',
-                                    borderRadius: 8,
-                                    border: '1px solid rgba(252,84,175,0.6)',
-                                    background: 'rgba(252,84,175,0.1)',
-                                    color: '#FC54AF',
-                                    fontSize: 12,
-                                    fontWeight: 700,
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s ease',
-                                    textShadow: '0 0 8px rgba(252,84,175,0.4)',
-                                    boxShadow: '0 0 12px rgba(252,84,175,0.3)'
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    try { sfx.play('hover', 0.35); } catch {}
-                                    e.currentTarget.style.background = 'rgba(252,84,175,0.2)';
-                                    e.currentTarget.style.boxShadow = '0 0 16px rgba(252,84,175,0.5)';
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = 'rgba(252,84,175,0.1)';
-                                    e.currentTarget.style.boxShadow = '0 0 12px rgba(252,84,175,0.3)';
-                                  }}
-                                >
-                                  VIEW FULL COLLECTION
-                                </button>
-                              </div>
-                              
-                              {/* Filters */}
-                              <div style={{
-                                display: 'flex',
-                                gap: 12,
-                                padding: '0 20px 20px 20px',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                              }}>
-                                <select
-                                  value={selectedRarity}
-                                  onChange={(e) => {
-                                    setSelectedRarity(e.target.value);
-                                    setCurrentCardIndex(0);
-                                  }}
-                                  style={{
-                                    padding: '6px 10px',
-                                    borderRadius: 6,
-                                    border: '1px solid rgba(33,150,243,0.4)',
-                                    background: 'rgba(0,0,0,0.3)',
-                                    color: '#fff',
-                                    fontSize: 12,
-                                    cursor: 'pointer'
-                                  }}
-                                >
-                                  <option value="all">RARITY</option>
-                                  <option value="Common">Common</option>
-                                  <option value="Rare">Rare</option>
-                                  <option value="Legendary">Legendary</option>
-                                </select>
-                                
-                                <select
-                                  value={selectedType}
-                                  onChange={(e) => {
-                                    setSelectedType(e.target.value);
-                                    setCurrentCardIndex(0);
-                                  }}
-                                  style={{
-                                    padding: '6px 10px',
-                                    borderRadius: 6,
-                                    border: '1px solid rgba(33,150,243,0.4)',
-                                    background: 'rgba(0,0,0,0.3)',
-                                    color: '#fff',
-                                    fontSize: 12,
-                                    cursor: 'pointer'
-                                  }}
-                                >
-                                  <option value="all">ELEMENT</option>
-                                  <option value="HEART">HEART</option>
-                                  <option value="WATER">WATER</option>
-                                  <option value="LIGHTNING">LIGHTNING</option>
-                                  <option value="DARKNESS">DARKNESS</option>
-                                </select>
-                                
-                                <span style={{
-                                  fontSize: 12,
-                                  opacity: 0.7,
-                                  marginLeft: 'auto'
-                                }}>
-                                  {currentCardIndex + 1} of {filteredCards.length}
-                                </span>
-                              </div>
-
-                              {/* Card Display */}
-                              {filteredCards.length > 0 && (
-                                <div style={{
-                                  flex: 1,
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  padding: '0 20px 20px 20px'
-                                }}>
-                                  {(() => {
-                                    const card = filteredCards[currentCardIndex];
-                                    return (
-                                      <div style={{
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        gap: 16,
-                                        maxWidth: '100%'
-                                      }}>
-                                        {/* Navigation arrows above card image */}
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 8 }}>
-                                        </div>
-                                        {/* Card Image */}
-                                        <div
-                                          style={{
-                                            position: 'relative',
-                                            width: 120,
-                                            height: 168,
-                                            borderRadius: 8,
-                                            overflow: 'hidden',
-                                            boxShadow: card.collected 
-                                              ? '0 0 20px rgba(33,150,243,0.6), 0 0 40px rgba(33,150,243,0.3)' 
-                                              : '0 4px 12px rgba(0,0,0,0.5)',
-                                            cursor: 'pointer'
-                                          }}
-                                          onClick={() => {
-                                            setSelectedCard(card);
-                                            setShowCardPopup(true);
-                                          }}
-                                        >
-                                          <img
-                                            src={card.image}
-                                            alt={card.name}
-                                            style={{
-                                              width: '100%',
-                                              height: '100%',
-                                              objectFit: 'cover',
-                                              filter: card.collected ? 'none' : 'grayscale(100%) brightness(0.3)',
-                                              transition: 'filter 0.3s ease'
-                                            }}
-                                          />
-                                          {!card.collected && (
-                                            <div style={{
-                                              position: 'absolute',
-                                              top: '50%',
-                                              left: '50%',
-                                              transform: 'translate(-50%, -50%)',
-                                              color: '#fff',
-                                              fontSize: 12,
-                                              fontWeight: 700,
-                                              textShadow: '0 0 8px rgba(0,0,0,0.8)'
-                                            }}>
-                                              LOCKED
-                                            </div>
-                                          )}
-                                        </div>
-                                        
-                                        {/* Card Info */}
-                                        <div style={{ textAlign: 'center', maxWidth: '100%' }}>
-                                          <h4 style={{
-                                            margin: 0,
-                                            fontSize: 14,
-                                            fontWeight: 700,
-                                            color: '#2196F3'
-                                          }}>
-                                            {card.name}
-                                          </h4>
-                                          <div style={{ 
-                                            display: 'flex', 
-                                            alignItems: 'center', 
-                                            justifyContent: 'center', 
-                                            gap: 8, 
-                                            marginTop: 4 
-                                          }}>
-                                            <span style={{ fontSize: 11, opacity: 0.8 }}>
-                                              {card.rarity}
-                                            </span>
-                                            <ElementIcon name={card.type} size={14} />
-                                          </div>
-                                          <p style={{
-                                            margin: '8px 0 0 0',
-                                            fontSize: 11,
-                                            opacity: 0.7,
-                                            lineHeight: 1.4,
-                                            maxWidth: 200,
-                                            wordWrap: 'break-word'
-                                          }}>
-                                            {card.description}
-                                          </p>
-                                        </div>
-                                        
-                                        {/* Navigation */}
-                                        <div style={{ 
-                                          display: 'flex', 
-                                          gap: 12, 
-                                          alignItems: 'center' 
-                                        }}>
-                                          <button
-                                            onClick={() => setCurrentCardIndex((i) => (i - 1 + filteredCards.length) % filteredCards.length)}
-                                            style={{
-                                              width: 32,
-                                              height: 32,
-                                              borderRadius: 16,
-                                              background: 'rgba(33,150,243,0.2)',
-                                              border: '1px solid rgba(33,150,243,0.5)',
-                                              color: '#2196F3',
-                                              cursor: 'pointer',
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              justifyContent: 'center'
-                                            }}
-                                          >
-                                            ‹
-                                          </button>
-                                          
-                                          <span style={{ fontSize: 12, opacity: 0.7 }}>
-                                            {filteredCards.indexOf(card) + 1} of {filteredCards.length}
-                                          </span>
-                                          
-                                          <button
-                                            onClick={() => setCurrentCardIndex((i) => (i + 1) % filteredCards.length)}
-                                            style={{
-                                              width: 32,
-                                              height: 32,
-                                              borderRadius: 16,
-                                              background: 'rgba(33,150,243,0.2)',
-                                              border: '1px solid rgba(33,150,243,0.5)',
-                                              color: '#2196F3',
-                                              cursor: 'pointer',
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              justifyContent: 'center'
-                                            }}
-                                          >
-                                            ›
-                                          </button>
-                                        </div>
-                                      </div>
-                                    );
-                                  })()}
-                                </div>
-                              )}
-                            </div>
-                          )}
                         </div>
                       );
                     })()}
+                  </div>,
+                  document.body
+                ) : null}
+
+                {/* Heart Coin Store Popup */}
+                {typeof document !== 'undefined' && showHeartCoinStorePopup && showStorePopover ? createPortal(
+                  <div
+                    role="dialog"
+                    aria-label="Heart Coin Information"
+                    style={{
+                      position: 'fixed',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      width: 'min(90vw, 400px)',
+                      padding: '20px',
+                      borderRadius: 18,
+                      background: 'rgba(0,0,0,0.85)',
+                      border: '1px solid rgba(255,105,180,0.55)',
+                      boxShadow: '0 -8px 25px rgba(255,105,180,0.4), 0 -4px 15px rgba(255,105,180,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(255,105,180,0.45)',
+                      backdropFilter: 'blur(12px) saturate(140%)',
+                      color: '#FF69B4',
+                      zIndex: 2147483648,
+                      animation: 'fadeIn 0.3s ease-out'
+                    }}
+                    onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowHeartCoinStorePopup(false); } }}
+                  >
+                    {/* Close button */}
+                    <button
+                      onClick={() => {
+                        try { sfx.play('close', 0.4); } catch {}
+                        setShowHeartCoinStorePopup(false);
+                      }}
+                      className="absolute top-3 right-3 text-pink-400 hover:text-pink-200 cursor-pointer w-8 h-8 rounded-full border border-pink-400/80 flex items-center justify-center"
+                      style={{ 
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        fontSize: '16px',
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        border: '1px solid rgba(255,105,180,0.8)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: 'rgba(255,105,180,0.1)',
+                        color: '#FF69B4',
+                        cursor: 'pointer',
+                        boxShadow: '0 0 15px rgba(255,105,180,0.8)',
+                        textShadow: '0 0 8px rgba(255,105,180,0.8)',
+                        backdropFilter: 'blur(2px)'
+                      }}
+                    >
+                      ×
+                    </button>
+
+                    {/* Header */}
+                    <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                      <div 
+                        style={{ 
+                          fontSize: '18px',
+                          fontWeight: 'bold',
+                          marginBottom: '8px',
+                          color: '#FF69B4', 
+                          textShadow: '0 0 8px rgba(255,105,180,0.6)' 
+                        }}
+                      >
+                        HEART COINS
+                      </div>
+                      
+                      {/* Thin pink neon line */}
+                      <div 
+                        style={{
+                          width: '100%',
+                          height: '1px',
+                          background: 'linear-gradient(90deg, transparent, rgba(255,105,180,0.8) 20%, rgba(255,105,180,1) 50%, rgba(255,105,180,0.8) 80%, transparent)',
+                          boxShadow: '0 0 4px rgba(255,105,180,0.6)',
+                          marginBottom: '16px'
+                        }}
+                      />
+                    </div>
+
+                    {/* User Info Section */}
+                    <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                      {/* Element Icon */}
+                      <div style={{ marginBottom: '12px' }}>
+                        <img
+                          src={`/elements/${(() => {
+                            try {
+                              const userProgress = JSON.parse(localStorage.getItem('heartverse_user_progress') || '{}');
+                              return userProgress.element || 'heart';
+                            } catch {
+                              return 'heart';
+                            }
+                          })()}.png`}
+                          alt="Your Element"
+                          style={{
+                            width: '48px',
+                            height: '48px',
+                            filter: 'drop-shadow(0 0 8px rgba(255,105,180,0.8))'
+                          }}
+                        />
+                      </div>
+                      
+                      {/* User Name */}
+                      <div 
+                        style={{
+                          fontSize: '16px',
+                          fontWeight: 'bold',
+                          color: '#FFB6C1',
+                          textShadow: '0 0 4px rgba(255,182,193,0.6)',
+                          marginBottom: '16px'
+                        }}
+                      >
+                        {(() => {
+                          try {
+                            return localStorage.getItem('heartverse_username') || 'Wanderer';
+                          } catch {
+                            return 'Wanderer';
+                          }
+                        })()}
+                      </div>
+                    </div>
+
+                    {/* Heart Coin Balance */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', gap: '12px' }}>
+                      <img
+                        src="/elements/heart-coin.png"
+                        alt="Heart Coin"
+                        style={{
+                          width: '40px',
+                          height: '40px',
+                          filter: 'drop-shadow(0 0 8px rgba(255,105,180,0.8))'
+                        }}
+                      />
+                      <div 
+                        style={{
+                          fontSize: '24px',
+                          fontWeight: 'bold',
+                          color: '#FFFFFF',
+                          textShadow: '0 0 8px rgba(255,255,255,0.8)'
+                        }}
+                      >
+                        {heartCoinsCount}
+                      </div>
+                    </div>
+
+                    {/* Current Item Info */}
+                    <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                      <div 
+                        style={{
+                          fontSize: '14px',
+                          color: '#FFB6C1',
+                          marginBottom: '8px'
+                        }}
+                      >
+                        Current Item Price:
+                      </div>
+                      <div 
+                        style={{
+                          fontSize: '18px',
+                          fontWeight: 'bold',
+                          color: '#FF69B4',
+                          textShadow: '0 0 6px rgba(255,105,180,0.8)'
+                        }}
+                      >
+                        {(() => {
+                          const item = products[Math.max(0, Math.min(products.length - 1, storeIndex))] || products[0];
+                          return `${item.heartcoins} Heart Coins`;
+                        })()}
+                      </div>
+                    </div>
+
+                    {/* Purchase Status */}
+                    <div style={{ textAlign: 'center' }}>
+                      {(() => {
+                        const item = products[Math.max(0, Math.min(products.length - 1, storeIndex))] || products[0];
+                        const canAfford = heartCoinsCount >= item.heartcoins;
+                        return (
+                          <div 
+                            style={{
+                              padding: '12px',
+                              borderRadius: '8px',
+                              background: canAfford ? 'rgba(0,255,0,0.1)' : 'rgba(255,0,0,0.1)',
+                              border: `1px solid ${canAfford ? 'rgba(0,255,0,0.4)' : 'rgba(255,0,0,0.4)'}`,
+                              color: canAfford ? '#90EE90' : '#FF6B6B'
+                            }}
+                          >
+                            {canAfford ? 
+                              '✓ You can purchase this item!' : 
+                              `✗ You need ${item.heartcoins - heartCoinsCount} more Heart Coins`
+                            }
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </div>,
                   document.body
                 ) : null}
@@ -6338,7 +6238,7 @@ export default function HUDPanel({
                           placeholder="Share your cosmic vision..."
                           style={{
                             width: '100%',
-                            minHeight: '5rem',
+                            minHeight: '2.5rem',
                             padding: '12px',
                             background: 'rgba(0,0,20,0.6)',
                             border: '1px solid rgba(255,255,255,0.3)',
