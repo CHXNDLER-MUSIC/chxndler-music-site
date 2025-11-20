@@ -7,6 +7,8 @@ import { AdditiveBlending, Group as ThreeGroup, SRGBColorSpace, Vector3 } from "
 import { playerStore } from "@/store/usePlayerStore";
 import Planet from "@/components/holo/Planet";
 import HeartPlanet from "@/components/holo/HeartPlanet";
+import ElementalPlanet from "@/components/holo/ElementalPlanet";
+import ElementalOrbitSystem from "@/components/holo/ElementalOrbitSystem";
 import { computePlanetLayout } from "@/lib/planetLayout";
 import { buildPlanetSongs } from "@/lib/planets";
 import { getEntriesByRing, getPlanetEntry } from "@/lib/planetRegistry";
@@ -184,14 +186,78 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         <InvalidateOnState />
         <ZoomOnChange focusId={actualShouldShowAll ? null : focusId} />
 
-        {/* Heart planet at the center - only show when displaying all planets */}
-        {actualShouldShowAll && <HeartPlanet />}
-        
         {/* Very shallow tilt for near-horizontal horizon line */}
         {/* Render the full system: satellites first, focus planet last; previous main becomes a moon */}
         {/* Enlarge full-system view when showing all planets */}
         <group scale={actualShouldShowAll ? 1.45 : 1}>
         <SystemGroup>
+          {/* Heart planet at the center - only show when displaying all planets */}
+          {actualShouldShowAll && <HeartPlanet />}
+          
+          {/* Four large elemental planets around the Core Heart - only show when displaying all planets */}
+          {actualShouldShowAll && (
+            <>
+              <ElementalPlanet 
+                element="heart" 
+                position={[-15, 10, 0]} 
+                size={12} 
+                glowIntensity={1.5}
+              />
+              <ElementalPlanet 
+                element="water" 
+                position={[15, 10, 0]} 
+                size={12} 
+                glowIntensity={1.5}
+              />
+              <ElementalPlanet 
+                element="lightning" 
+                position={[15, -10, 0]} 
+                size={12} 
+                glowIntensity={1.5}
+              />
+              <ElementalPlanet 
+                element="darkness" 
+                position={[-15, -10, 0]} 
+                size={12} 
+                glowIntensity={1.5}
+              />
+            </>
+          )}
+          
+          {/* Song planets orbiting around each elemental planet - only show when displaying all planets */}
+          {actualShouldShowAll && songs.length > 0 && (
+            <>
+              <ElementalOrbitSystem
+                elementalPosition={[-15, 10, 0]}
+                element="heart"
+                songs={songs}
+                mainId={mainId}
+                hoverId={hoverId}
+              />
+              <ElementalOrbitSystem
+                elementalPosition={[15, 10, 0]}
+                element="water"
+                songs={songs}
+                mainId={mainId}
+                hoverId={hoverId}
+              />
+              <ElementalOrbitSystem
+                elementalPosition={[15, -10, 0]}
+                element="lightning"
+                songs={songs}
+                mainId={mainId}
+                hoverId={hoverId}
+              />
+              <ElementalOrbitSystem
+                elementalPosition={[-15, -10, 0]}
+                element="darkness"
+                songs={songs}
+                mainId={mainId}
+                hoverId={hoverId}
+              />
+            </>
+          )}
+          
           {/* Orbit guides when showing all planets */}
           {(actualShouldShowAll || shouldShowSingle) ? <OrbitGuides /> : null}
           
@@ -204,61 +270,9 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
             }
             
             if (actualShouldShowAll) {
-              // Homepage mode: Show ALL song planets using proper Planet components
-              
-              if (songs.length === 0) {
-                // Force load songs if not available
-                try {
-                  const { holoSongs } = buildPlanetSongs();
-                  if (holoSongs.length > 0) {
-                    playerStore.getState().initSongs(holoSongs as any);
-                    // Use the emergency loaded songs for this render
-                    const layout = computePlanetLayout(holoSongs);
-                    
-                    return holoSongs.map((song) => {
-                      const planetLayout = layout[song.id];
-                      if (!planetLayout) return null;
-                      
-                      return (
-                        <Planet
-                          key={song.id}
-                          song={song}
-                          isMain={mainId === song.id}
-                          isHover={hoverId === song.id}
-                          isMoon={false}
-                          isMuted={false}
-                          ringBaseOverride={planetLayout.orbitRadius}
-                        />
-                      );
-                    });
-                  }
-                } catch (e) {
-                  console.error("🌍 PlanetSystem: Emergency song load failed:", e);
-                }
-                return null;
-              }
-              
-              // Render actual Planet components with proper layout
-              const layout = computePlanetLayout(songs);
-              
-              const renderedPlanets = songs.map((song) => {
-                const planetLayout = layout[song.id];
-                if (!planetLayout) return null;
-                
-                return (
-                  <Planet
-                    key={song.id}
-                    song={song}
-                    isMain={mainId === song.id}
-                    isHover={hoverId === song.id}
-                    isMoon={false}
-                    isMuted={false}
-                    ringBaseOverride={planetLayout.orbitRadius}
-                  />
-                );
-              });
-              
-              return renderedPlanets;
+              // Homepage mode: Songs are now rendered through ElementalOrbitSystem components
+              // No need to render individual planets here since they orbit around elemental planets
+              return null;
             }
             
             if (shouldShowSingle && focusId) {

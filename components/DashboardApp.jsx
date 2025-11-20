@@ -1317,6 +1317,17 @@ export default function DashboardApp({ initialSlug } = {}) {
             } catch {}
             // Clear one-time flag to avoid repeats on later Starts
             try { welcomeOnStartRef.current = false; } catch {}
+            
+            // Check if we should open signal pop-out instead of blue display (stream mode)
+            if (typeof window !== 'undefined' && window.__CHX_PENDING_SIGNAL_OPEN) {
+              // Open signal pop-out (pink beam/display) after a short delay
+              setTimeout(() => {
+                handleBeamToggle('pink');
+              }, 500);
+              // Clear the flag
+              delete window.__CHX_PENDING_SIGNAL_OPEN;
+            }
+            
             setPendingOverlayReveal(false);
           }
         }}
@@ -1576,6 +1587,9 @@ export default function DashboardApp({ initialSlug } = {}) {
           // No need to call triggerHudPower since beam system manages everything
         }}
         onLaunch={() => {
+          // Check if stream mode is active
+          const isStreamMode = process.env.NEXT_PUBLIC_STREAM_ACTIVE === '1' || process.env.NEXT_PUBLIC_STREAM_ACTIVE?.toLowerCase() === 'true';
+          
           // Ensure SFX are enabled immediately within the user gesture
           try { 
             sfx.setEnabled(true); 
@@ -1627,10 +1641,24 @@ export default function DashboardApp({ initialSlug } = {}) {
           } catch {}
           setIsPlaying(false);
           try { playerStore.setState({ mainId: null }); } catch {}
-          setShowHUD(false);
-          setShowOverlayUI(false);
-          setBeamEnabled(false);
-          setPendingHomePower(true);
+          
+          // Stream mode: open signal pop-out instead of blue display
+          if (isStreamMode) {
+            setShowHUD(false);
+            setShowOverlayUI(false);
+            setBeamEnabled(false);
+            // Set up to open signal pop-out after warp
+            setPendingHomePower(false); // Don't trigger blue display
+            // Signal that we should open pink display after warp
+            window.__CHX_PENDING_SIGNAL_OPEN = true;
+          } else {
+            // Normal mode: prepare for blue display
+            setShowHUD(false);
+            setShowOverlayUI(false);
+            setBeamEnabled(false);
+            setPendingHomePower(true);
+          }
+          
           setAllowWarp(true);
           setSky(SPACE_SKY);
           setNextSky(null);
@@ -1720,6 +1748,7 @@ export default function DashboardApp({ initialSlug } = {}) {
                   joinAlienOpen={joinAlienOpen}
                   onNameSaved={setSavedProfileName}
                   onElementSaved={setSavedProfileElement}
+                  onCloseBlueDisplay={() => setShowHUD(false)}
                 />
               </div>
               {!showHUD ? (

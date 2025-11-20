@@ -115,6 +115,7 @@ export default function HUDPanel({
   joinAlienOpen = false, // disable cover art interaction when pink display is open
   onNameSaved, // callback when user saves their name in signup flow
   onElementSaved, // callback when user saves their element in signup flow
+  onCloseBlueDisplay, // callback to close the blue display
 }) {
   // Temporary kill-switch to disable 3D planets for performance testing
   // Set to true to disable. You can also override at runtime by setting
@@ -2507,6 +2508,8 @@ export default function HUDPanel({
                           setShowHeartCoinPopover(false);
                           setShowIdenticalPopup(false);
                           setShowElementPopup(false);
+                          // Close blue display when opening welcome home modal
+                          try { onCloseBlueDisplay?.(); } catch {}
                           // Open welcome home modal instead of navigating
                           setShowWelcomeHomeModal(true);
                         }}

@@ -102,7 +102,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
         <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="pl-2 pr-3 py-2 font-medium transition-all duration-200 whitespace-nowrap focus:outline-none focus:ring-0"
+        className="font-medium transition-all duration-200 whitespace-nowrap focus:outline-none focus:ring-0 h-12 flex items-center justify-center px-3"
         style={{
           fontSize: '14px',
           color: '#00FFFF',

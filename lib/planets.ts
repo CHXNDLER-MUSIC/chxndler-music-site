@@ -1097,38 +1097,58 @@ export function buildPlanetSongs(): { hudSongs: HudSong[]; holoSongs: HoloSong[]
   };
   // Explicit song→element mapping (by title); favors precise control over heuristics
   const PAIRS: Array<[string, Element]> = [
-    ["ALONE", "darkness"],
-    ["MR. BRIGHTSIDE", "darkness"],
+    // HEART ELEMENT SONGS
     ["ALWAYS ON MY MIND", "heart"],
+    ["ALWAYS ON MY MIND (ACOUSTIC)", "heart"],
+    ["ALWAYS ON MY MIND (REMIX)", "heart"],
     ["BABY", "heart"],
     ["BE MY BEE", "heart"],
     ["BE MY BEE (ACOUSTIC)", "heart"],
-    ["BRAIN FREEZE", "lightning"],
-    ["HOME", "lightning"],
+    ["COLLIDE", "heart"],
+    ["COLORS OF OUR HOME", "heart"],
+    ["COLORS OF OUR HOME (ACOUSTIC)", "heart"],
+    ["COLORS OF OUR HOME (BLUMA Game Soundtrack)", "heart"],
+    ["I MIGHT FALL IN LOVE WITH YOU", "heart"],
+    ["I MIGHT FALL IN LOVE WITH YOU (ACOUSTIC)", "heart"],
+    ["LOVE ME", "heart"],
+    ["LOVE ME (ACOUSTIC)", "heart"],
+    ["PINK MOON", "heart"],
+    ["SOMEBODY TO LOVE", "heart"],
+    ["TIENES UN AMIGO", "heart"],
+    ["WE'RE JUST FRIENDS", "heart"],
+    ["WE'RE JUST FRIENDS (ACOUSTIC)", "heart"],
+    ["WE'RE JUST FRIENDS (DMVRCO REMIX)", "heart"],
+    ["WE'RE JUST FRIENDS (mickey jas REMIX)", "heart"],
+    
+    // WATER ELEMENT SONGS
     ["LETTING GO", "water"],
     ["OCEAN GIRL", "water"],
     ["OCEAN GIRL (ACOUSTIC)", "water"],
     ["OCEAN GIRL (REMIX)", "water"],
-    ["LITTLE BLACK HEART", "darkness"],
-    ["COLORS OF OUR HOME", "heart"],
-    ["WE'RE JUST FRIENDS", "heart"],
-    ["WE'RE JUST FRIENDS (DMVRCO REMIX)", "heart"],
-    ["GAME BOY HEART", "lightning"],
-    ["KID FOREVER", "lightning"],
-    ["COLLIDE", "heart"],
-    ["I MIGHT FALL IN LOVE WITH YOU", "heart"],
-    ["SOMEBODY TO LOVE", "heart"],
-    ["TIENES UN AMIGO", "heart"],
-    ["WE'RE JUST FRIENDS (mickey jas REMIX)", "heart"],
-    ["PARIS", "darkness"],
-    ["BELIEVE IN ME", "heart"],
-    ["LOVE", "heart"],
-    ["WE'RE JUST FRIENDS (ACOUSTIC)", "heart"],
+    
+    // LIGHTNING ELEMENT SONGS
+    ["AMERICAN DREAM", "lightning"],
+    ["BLUE", "lightning"],
+    ["BLUE (ACOUSTIC)", "lightning"],
+    ["BRAIN FREEZE", "lightning"],
     ["FEELING THIS", "lightning"],
+    ["GAME BOY HEART", "lightning"],
+    ["HOME", "lightning"],
     ["HOME (ACOUSTIC)", "lightning"],
     ["HOUSE PARTY", "lightning"],
     ["HOUSE PARTY (ACOUSTIC)", "lightning"],
+    ["KID FOREVER", "lightning"],
     ["POKÉMON", "lightning"],
+    
+    // DARKNESS ELEMENT SONGS
+    ["ALONE", "darkness"],
+    ["LITTLE BLACK HEART", "darkness"],
+    ["MR. BRIGHTSIDE", "darkness"],
+    ["PARIS", "darkness"],
+    
+    // Legacy mappings (keeping for compatibility)
+    ["BELIEVE IN ME", "heart"],
+    ["LOVE", "heart"],
   ];
   // Build a map by slug; include some alternates for common cover variants
   const TITLE_ELEMENT_MAP: Record<string, Element> = {};

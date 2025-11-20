@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
-import HeartversePopup from "@/components/HeartversePopup";
 
 type Props = {
   open: boolean;
@@ -11,10 +10,37 @@ type Props = {
 
 export default function WelcomeHomeModal({ open, onClose }: Props) {
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  async function createProfile(userEmail: string) {
+    try {
+      const response = await fetch('/api/profiles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: userEmail,
+          journey: 'wanderer',
+          heart_coins_current: 0,
+          heart_coins_total: 0,
+          profile_complete: false
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create profile');
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      console.error('Profile creation failed:', error);
+      throw error;
+    }
+  }
 
   async function signInWithGoogle() {
     setError(null);
@@ -41,30 +67,23 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
     try {
       const { error } = await supabaseClient.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: window.location.origin + "/auth/callback" },
+        options: { 
+          emailRedirectTo: window.location.origin + "/auth/callback",
+          shouldCreateUser: true 
+        },
       });
       if (error) throw error;
-      setMessage("Check your email for a magic link.");
+      
+      // Create profile after sending magic link
+      try {
+        await createProfile(email);
+        setMessage("Check your email for a magic link. Your profile has been created in the Heartverse!");
+      } catch (profileError: any) {
+        console.warn('Profile creation warning:', profileError);
+        setMessage("Check your email for a magic link.");
+      }
     } catch (e: any) {
       setError(e?.message || "Failed to send magic link");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function signInWithPhone(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setMessage(null);
-    setLoading(true);
-    try {
-      const { error } = await supabaseClient.auth.signInWithOtp({
-        phone,
-      });
-      if (error) throw error;
-      setMessage("Check your phone for a verification code.");
-    } catch (e: any) {
-      setError(e?.message || "Failed to send SMS");
     } finally {
       setLoading(false);
     }
@@ -203,71 +222,45 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
 
         <div className="relative space-y-3">
 
-          <div className="grid grid-cols-2 gap-4">
-            {/* Phone Login Section */}
-            <form onSubmit={signInWithPhone} className="space-y-2">
-              <label htmlFor="welcome-phone" className="block text-sm font-medium text-center" style={{ color: '#00FFFF', textShadow: '0 0 4px rgba(0,255,255,0.6)' }}>
-                Phone
-              </label>
-              <input
-                id="welcome-phone"
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+1 (555) 123-4567"
-                required
-                className="block w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none"
-                style={{
-                  border: '1px solid rgba(0,255,255,0.4)',
-                  background: 'rgba(0,0,0,0.3)',
-                  color: '#00FFFF',
-                  textShadow: '0 0 4px rgba(0,255,255,0.6)',
-                  backdropFilter: 'blur(4px)'
-                }}
-              />
-            </form>
-
-            {/* Email Login Section */}
-            <form onSubmit={signInWithEmail} className="space-y-2">
-              <label htmlFor="welcome-email" className="block text-sm font-medium text-center" style={{ color: '#00FFFF', textShadow: '0 0 4px rgba(0,255,255,0.6)' }}>
-                Email
-              </label>
-              <input
-                id="welcome-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                required
-                className="block w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none"
-                style={{
-                  border: '1px solid rgba(0,255,255,0.4)',
-                  background: 'rgba(0,0,0,0.3)',
-                  color: '#00FFFF',
-                  textShadow: '0 0 4px rgba(0,255,255,0.6)',
-                  backdropFilter: 'blur(4px)'
-                }}
-              />
-            </form>
-          </div>
+          {/* Email Login Section */}
+          <form onSubmit={signInWithEmail} className="space-y-2">
+            <label htmlFor="welcome-email" className="block text-sm font-medium text-center" style={{ color: '#00FFFF', textShadow: '0 0 4px rgba(0,255,255,0.6)' }}>
+              Email
+            </label>
+            <input
+              id="welcome-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              required
+              disabled={loading}
+              className="block w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none disabled:opacity-50"
+              style={{
+                border: '1px solid rgba(0,255,255,0.4)',
+                background: 'rgba(0,0,0,0.3)',
+                color: '#00FFFF',
+                textShadow: '0 0 4px rgba(0,255,255,0.6)',
+                backdropFilter: 'blur(4px)'
+              }}
+            />
+          </form>
           
           {/* Single Send Heart Signal Button */}
           <button
             onClick={() => {
-              if (phone.length > 0) {
-                signInWithPhone(new Event('submit') as any);
-              } else if (email.length > 0) {
+              if (email.length > 0) {
                 signInWithEmail(new Event('submit') as any);
               }
             }}
-            disabled={loading || (phone.length === 0 && email.length === 0)}
+            disabled={loading || email.length === 0}
             className="w-full inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-medium transition disabled:opacity-50 mt-4"
             style={{
               background: 'rgba(0,255,255,0.15)',
               border: '1px solid rgba(0,255,255,0.5)',
               color: '#00FFFF',
               textShadow: '0 0 8px rgba(0,255,255,0.8), 0 0 16px rgba(0,255,255,0.6), 0 0 24px rgba(0,255,255,0.4)',
-              boxShadow: loading || (phone.length === 0 && email.length === 0)
+              boxShadow: loading || email.length === 0
                 ? 'none' 
                 : '0 0 15px rgba(0,255,255,0.4), 0 0 25px rgba(0,255,255,0.2)'
             }}

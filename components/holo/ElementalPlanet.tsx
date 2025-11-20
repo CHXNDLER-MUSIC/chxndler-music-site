@@ -7,7 +7,7 @@ import { type Element, ELEMENT_COLORS } from "@/lib/planets";
 
 interface ElementalPlanetProps {
   element: Element;
-  position: Vector3;
+  position: [number, number, number];
   size?: number;
   glowIntensity?: number;
 }
@@ -47,9 +47,9 @@ export default function ElementalPlanet({
         };
       case 'darkness':
         return {
-          color: '#1a0033',
-          glowColor: '#6B2C91',
-          emissive: '#330055',
+          color: '#E8E8E8',
+          glowColor: '#C0C0C0',
+          emissive: '#1A1A1A',
           shader: 'darkness',
         };
       default:

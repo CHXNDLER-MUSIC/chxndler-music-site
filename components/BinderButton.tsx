@@ -21,11 +21,8 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [selectedCard, setSelectedCard] = useState<{name: string, image: string, rarity: string, element: string} | null>(null);
   const [preselectedCard, setPreselectedCard] = useState<string | null>(null);
-  
-  // Demo owned cards - in production this would come from user data/API
-  const [ownedCards] = useState<Set<string>>(new Set([
-    'LIGHTNING', 'HEART', 'OCEAN GIRL', 'BLUE', 'HOME', 'CHEERLEADER'
-  ]));
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [ownedCards, setOwnedCards] = useState<Set<string>>(new Set(['CHXNDLER'])); // Everyone has CHXNDLER by default
 
   // Full song collection data structure
   const songCollection = [
@@ -266,6 +263,48 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
     return ['All', ...filteredSongs.map(song => song.name)];
   };
 
+  // Check authentication and fetch user's owned cards
+  useEffect(() => {
+    let mounted = true;
+    
+    async function checkAuthAndFetchCards() {
+      try {
+        // Check authentication by calling profile API
+        const profileRes = await fetch("/api/profile", { method: "GET", cache: "no-store" });
+        
+        if (!mounted) return;
+        
+        if (profileRes.status === 200) {
+          setIsAuthenticated(true);
+          
+          // TODO: When user cards API is available, fetch actual owned cards
+          // For now, simulate with the demo cards plus CHXNDLER
+          const demoOwnedCards = new Set([
+            'CHXNDLER', // Always owned
+            'LIGHTNING', 'HEART', 'OCEAN GIRL', 'BLUE', 'HOME', 'CHEERLEADER'
+          ]);
+          setOwnedCards(demoOwnedCards);
+          
+        } else if (profileRes.status === 401) {
+          setIsAuthenticated(false);
+          // Keep only CHXNDLER for unauthenticated users
+          setOwnedCards(new Set(['CHXNDLER']));
+        } else {
+          setIsAuthenticated(false);
+          setOwnedCards(new Set(['CHXNDLER']));
+        }
+      } catch {
+        if (mounted) {
+          setIsAuthenticated(false);
+          setOwnedCards(new Set(['CHXNDLER']));
+        }
+      }
+    }
+    
+    checkAuthAndFetchCards();
+    return () => { mounted = false; };
+  }, []);
+
   // Listen for custom event from store cards tab
   useEffect(() => {
     const handleOpenDigitalBinder = () => {
@@ -321,16 +360,9 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
       <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="p-0 rounded-lg transition-all duration-200"
+        className="p-1 rounded-lg transition-all duration-200 w-14 h-12"
         style={{
           transition: 'all 0.3s ease',
-          width: '80px !important',
-          height: '48px !important',
-          minWidth: '80px !important',
-          minHeight: '48px !important',
-          maxWidth: '80px !important',
-          maxHeight: '48px !important',
-          flexShrink: '0 !important',
           ...rest.style
         }}
         onMouseEnter={(e) => {
@@ -345,16 +377,8 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
         <img
           src="/elements/binder.png"
           alt="Binder"
-          className="rounded"
+          className="w-full h-full object-cover rounded"
           style={{
-            width: '80px !important',
-            height: '48px !important',
-            minWidth: '80px !important',
-            minHeight: '48px !important',
-            maxWidth: '80px !important',
-            maxHeight: '48px !important',
-            objectFit: 'cover',
-            flexShrink: '0',
             filter: 'drop-shadow(0 0 8px rgba(252, 84, 175, 0.8)) drop-shadow(0 0 16px rgba(252, 84, 175, 0.4))'
           }}
           draggable={false}
@@ -562,7 +586,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
               marginTop: '-8px'
             }}
           >
-            CARDS COLLECTED: {songCollection.length}/{songCollection.length}
+            CARDS COLLECTED: {ownedCards.size}/{songCollection.length}
           </div>
 
           {/* Dynamic Content - Binder Slots or Full Collection */}

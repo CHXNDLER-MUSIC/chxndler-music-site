@@ -85,16 +85,9 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="p-0 rounded-lg transition-all duration-200 border-0"
+        className="p-1 rounded-lg transition-all duration-200 w-16 h-12"
         style={{
           transition: 'all 0.3s ease',
-          width: '80px !important',
-          height: '48px !important',
-          minWidth: '80px !important',
-          minHeight: '48px !important',
-          maxWidth: '80px !important',
-          maxHeight: '48px !important',
-          flexShrink: '0 !important',
           ...rest.style
         }}
         onMouseEnter={(e) => {
@@ -109,16 +102,8 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
         <img
           src="/elements/badges.png"
           alt="Badges"
-          className="rounded"
+          className="w-full h-full object-contain rounded"
           style={{
-            width: '80px !important',
-            height: '48px !important',
-            minWidth: '80px !important',
-            minHeight: '48px !important',
-            maxWidth: '80px !important',
-            maxHeight: '48px !important',
-            objectFit: 'contain',
-            flexShrink: '0'
           }}
           draggable={false}
         />
@@ -368,7 +353,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                     textAlign: 'center'
                   }}
                 >
-                  ACHIEVEMENTS
+                  🏆 ACHIEVEMENTS
                 </div>
                 <div className="grid grid-cols-6 gap-2 mb-4">
                   {achievementBadges.slice(0, 6).map((badge) => (
@@ -418,7 +403,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                     textAlign: 'center'
                   }}
                 >
-                  GENERAL STREAKS
+                  🔥 STREAKS
                 </div>
                 <div className="grid grid-cols-5 gap-2 mb-4">
                   {streakBadges.map((badge) => {
@@ -467,7 +452,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                     textAlign: 'center'
                   }}
                 >
-                  {userProgress.element.toUpperCase()} ELEMENT STREAKS
+                  ✨ {userProgress.element.toUpperCase()} ELEMENT STREAKS
                 </div>
                 <div className="grid grid-cols-6 gap-2">
                   {elementBadges[userProgress.element]?.slice(0, 12).map((badge) => {

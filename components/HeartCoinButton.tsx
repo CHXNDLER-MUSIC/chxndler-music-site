@@ -51,6 +51,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       try { sfx.play('click', 0.8); } catch {}
       setHeartCoins(prev => prev + 1);
       setDailyQuests(prev => ({ ...prev, journalEntry: true }));
+      
+      // Close heart coin display and open sky display
+      setOpen(false);
+      try { onOpenBlueDisplay?.(); } catch {}
     }
   };
 
@@ -118,12 +122,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="rounded-lg transition-all duration-200"
+        className="p-1 rounded-lg transition-all duration-200 w-14 h-12"
         style={{
           transition: 'all 0.3s ease',
-          padding: '4px',
-          width: '56px',
-          height: '48px',
           ...rest.style
         }}
         onMouseEnter={(e) => {
@@ -138,10 +139,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         <img
           src="/elements/heart-coin.png"
           alt="Heart Coins"
-          className="rounded"
+          className="w-full h-full object-cover rounded"
           style={{
-            width: '48px',
-            height: '40px',
             objectFit: 'cover'
           }}
           draggable={false}

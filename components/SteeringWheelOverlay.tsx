@@ -648,7 +648,7 @@ export default function SteeringWheelOverlay({
           return (
             <div style={{ pointerEvents: showUI && !isDimmingOverlayActive && isUIUnlocked ? 'auto' : 'none' }}>
               {/* Signal button for Twitch stream */}
-              <HoloJoinButton size={joinSize} hubColor="#FC54AF" onClick={handleSignalToggle} label="Live Stream" iconSrc="/elements/antennas.png" />
+              <HoloJoinButton size={joinSize} hubColor="#FC54AF" onClick={handleSignalToggle} label="Live Stream" iconSrc="/elements/antennas.png" isActive={joinAlienOpen} />
             </div>
           );
         })()}
@@ -665,7 +665,7 @@ export default function SteeringWheelOverlay({
               position: "fixed",
               // Bottom of pink display should touch the light beam top
               // Use global CSS var so we can tune per-device
-              bottom: 'calc(var(--display-touch-top) - var(--pink-bottom-nudge, 16px))',
+              bottom: 'calc(var(--display-touch-top) - var(--pink-bottom-nudge, 60px))',
               // Center horizontally in the viewport (always centered)
               left: '50%',
               transform: 'translateX(-50%)',
@@ -680,7 +680,7 @@ export default function SteeringWheelOverlay({
             <div
               style={{
                 // Fixed width so the pink display stays the same size across viewports
-                width: 'var(--pink-display-width)',
+                width: 'calc(var(--pink-display-width, 320px) + 180px)',
                 borderRadius: 'var(--display-border-radius)',
                 padding: '12px',
                 color: '#fff',

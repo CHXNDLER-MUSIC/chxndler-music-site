@@ -291,13 +291,13 @@ export default function ProfileBar({
           />
         </div>
 
-        {/* Main Grid Layout */}
-        <div className="grid grid-cols-3 items-center h-full pl-24 pr-6">
+        {/* Main Flex Layout */}
+        <div className="flex items-center justify-between h-full pl-20 sm:pl-24 pr-4 sm:pr-6 min-w-0">
           {/* Left Side */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 min-w-0 overflow-hidden flex-1">
             {/* Username */}
             <span 
-              className="font-medium text-lg relative"
+              className="font-medium text-lg relative truncate flex-shrink min-w-0"
               style={{ 
                 color: getUsernameColor(currentElement),
                 textShadow: `
@@ -323,7 +323,7 @@ export default function ProfileBar({
           </div>
 
           {/* Center - Code Button */}
-          <div className="flex justify-center">
+          <div className="flex-shrink-0">
             <CodeButton 
               onHoverSound={() => sfx.play('hover', 0.8)}
               onCloseBlueDisplay={onCloseBlueDisplay}
@@ -332,7 +332,7 @@ export default function ProfileBar({
           </div>
 
           {/* Right Side */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0" style={{minWidth: '200px'}}>
             {/* Badges Button */}
             <div className="-mr-1">
               <BadgesButton 
