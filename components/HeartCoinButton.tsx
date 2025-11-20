@@ -50,19 +50,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const handleJournalEntry = () => {
     if (!dailyQuests.journalEntry) {
       try { sfx.play('click', 0.8); } catch {}
-      // Open the sky modal instead of awarding coins immediately
-      setShowSkyModal(true);
-    }
-  };
-
-  const handleSkyModalClose = () => {
-    setShowSkyModal(false);
-    // Award the coin and mark as complete when they finish the sky experience
-    if (!dailyQuests.journalEntry) {
       setHeartCoins(prev => prev + 1);
       setDailyQuests(prev => ({ ...prev, journalEntry: true }));
     }
   };
+
 
   const handleInviteFriend = () => {
     if (!dailyQuests.friendInvited) {
@@ -335,7 +327,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   1. Tap the Element of the Day
                 </div>
                 <div className="text-[10px]" style={{ color: '#FFB6C1', opacity: 0.8 }}>
-                  Touch the glowing planet to receive one HeartCoin.
+                  Touch the glowing planet to receive one HEART coin.
                 </div>
               </div>
               <div className="flex items-center space-x-2">
@@ -353,8 +345,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     }}
                   />
                 </button>
-                <span className="text-xs" style={{ color: dailyQuests.elementTapped ? '#666' : '#90EE90' }}>
-                  {dailyQuests.elementTapped ? '✓ +1' : '+1 HeartCoin'}
+                <span className="text-sm flex items-center" style={{ color: dailyQuests.elementTapped ? '#666' : '#90EE90', textShadow: dailyQuests.elementTapped ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' }}>
+                  {dailyQuests.elementTapped ? '✓ +1' : '+1'}
+                  <img src="/elements/heart-coin.png" alt="HeartCoin" className="w-6 h-6 ml-1" />
                 </span>
               </div>
             </div>
@@ -366,7 +359,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   2. Journal Entry of the Day
                 </div>
                 <div className="text-[10px]" style={{ color: '#FFB6C1', opacity: 0.8 }}>
-                  Answer today's journal prompt to earn one HeartCoin.
+                  Answer today's journal prompt to earn one HEART coin.
                 </div>
               </div>
               <div className="flex items-center space-x-2">
@@ -381,8 +374,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 >
                   {dailyQuests.journalEntry ? 'COMPLETED' : 'OPEN JOURNAL'}
                 </button>
-                <span className="text-xs" style={{ color: dailyQuests.journalEntry ? '#666' : '#90EE90' }}>
-                  {dailyQuests.journalEntry ? '✓ +1' : '+1 HeartCoin'}
+                <span className="text-sm flex items-center" style={{ color: dailyQuests.journalEntry ? '#666' : '#90EE90', textShadow: dailyQuests.journalEntry ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' }}>
+                  {dailyQuests.journalEntry ? '✓ +1' : '+1'}
+                  <img src="/elements/heart-coin.png" alt="HeartCoin" className="w-6 h-6 ml-1" />
                 </span>
               </div>
             </div>
@@ -407,7 +401,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   1. Invite a Friend
                 </div>
                 <div className="text-[10px]" style={{ color: '#FFB6C1', opacity: 0.8 }}>
-                  Share the Heartverse with someone you love. When they join, you both earn HeartCoins.
+                  Share the Heartverse with someone you love. When they join, you both earn HEART coins.
                 </div>
               </div>
               <div className="flex items-center space-x-2">
@@ -432,10 +426,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             <div className="flex items-center justify-between mb-2 p-2 rounded border border-pink-400/30 bg-pink-400/10 relative">
               <div>
                 <div className="text-xs font-bold" style={{ color: '#FFB6C1' }}>
-                  2. Attend a Live Show
+                  2. Attend a Livestream or Live Show
                 </div>
                 <div className="text-[10px]" style={{ color: '#FFB6C1', opacity: 0.8 }}>
-                  Check in at a CHXNDLER show to receive bonus HeartCoins.
+                  Check in at a CHXNDLER show to receive bonus HEART coins.
                 </div>
               </div>
               <div className="flex items-center space-x-2">
@@ -450,8 +444,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 >
                   {dailyQuests.checkedIn ? 'CHECKED IN' : 'CHECK IN'}
                 </button>
-                <span className="text-xs" style={{ color: dailyQuests.checkedIn ? '#666' : '#90EE90' }}>
-                  {dailyQuests.checkedIn ? '✓ +5' : '+5 HeartCoins'}
+                <span className="text-sm flex items-center" style={{ color: dailyQuests.checkedIn ? '#666' : '#90EE90', textShadow: dailyQuests.checkedIn ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' }}>
+                  {dailyQuests.checkedIn ? '✓ +1-5' : '+1-5'} 
+                  <img src="/elements/heart-coin.png" alt="HeartCoin" className="w-6 h-6 ml-1" />
                 </span>
               </div>
 

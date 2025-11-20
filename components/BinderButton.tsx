@@ -21,6 +21,11 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [selectedCard, setSelectedCard] = useState<{name: string, image: string, rarity: string, element: string} | null>(null);
   const [preselectedCard, setPreselectedCard] = useState<string | null>(null);
+  
+  // Demo owned cards - in production this would come from user data/API
+  const [ownedCards] = useState<Set<string>>(new Set([
+    'LIGHTNING', 'HEART', 'OCEAN GIRL', 'BLUE', 'HOME', 'CHEERLEADER'
+  ]));
 
   // Full song collection data structure
   const songCollection = [
@@ -88,6 +93,10 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
       'ALL': '#FFFFFF' // White for special cards
     };
     return elementColors[element] || '#FFFFFF';
+  };
+
+  const isCardOwned = (cardName: string) => {
+    return ownedCards.has(cardName);
   };
 
   const getCardOneLiner = (songName: string) => {
@@ -647,7 +656,8 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                             try { sfx.play('click', 0.7); } catch {}
                             setSelectedElement(element);
                             setSelectedCardName('All');
-                            // Reset to index 0 when selecting a new element - preselected card will be moved to first position automatically
+                            // Set the element's representative card as preselected (e.g., "LIGHTNING" card for LIGHTNING element)
+                            setPreselectedCard(element.toUpperCase());
                             setCurrentCardIndex(0);
                           }}
                         >
@@ -809,6 +819,93 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                           
                           {/* Card Info - positioned to the right of the card */}
                           <div className="flex flex-col justify-center min-w-0 max-w-48">
+                            {/* Show COLLECTED indicator or Purchase options */}
+                            {isCardOwned(currentCard.name) ? (
+                              <div className="mb-3">
+                                <div 
+                                  className="inline-block px-3 py-1 rounded-full border-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20"
+                                  style={{
+                                    borderColor: '#10B981',
+                                    boxShadow: '0 0 15px rgba(16,185,129,0.4), 0 0 30px rgba(16,185,129,0.2)',
+                                  }}
+                                >
+                                  <span 
+                                    className="text-green-300 text-xs font-bold tracking-wider"
+                                    style={{ 
+                                      textShadow: '0 0 8px rgba(16,185,129,0.8), 0 0 16px rgba(16,185,129,0.4)',
+                                      fontSize: '11px'
+                                    }}
+                                  >
+                                    ✓ COLLECTED
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex gap-2 mb-3">
+                                {/* Digital option */}
+                                <button
+                                  onClick={() => {
+                                    try { sfx.play('click', 0.6); } catch {}
+                                    // Add digital purchase logic here
+                                  }}
+                                  className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200"
+                                  style={{
+                                    boxShadow: '0 0 8px rgba(255,105,180,0.2)',
+                                  }}
+                                >
+                                  <img
+                                    src="/elements/heart-coin.png"
+                                    alt="Heart Coin"
+                                    className="w-3 h-3"
+                                    draggable={false}
+                                  />
+                                  <span 
+                                    className="text-yellow-300 text-xs font-bold"
+                                    style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
+                                  >
+                                    20
+                                  </span>
+                                  <span 
+                                    className="text-pink-200 text-xs font-medium"
+                                    style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                                  >
+                                    DIGITAL
+                                  </span>
+                                </button>
+                                
+                                {/* Physical option */}
+                                <button
+                                  onClick={() => {
+                                    try { sfx.play('click', 0.6); } catch {}
+                                    // Add physical purchase logic here
+                                  }}
+                                  className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200"
+                                  style={{
+                                    boxShadow: '0 0 8px rgba(255,105,180,0.2)',
+                                  }}
+                                >
+                                  <img
+                                    src="/elements/heart-coin.png"
+                                    alt="Heart Coin"
+                                    className="w-3 h-3"
+                                    draggable={false}
+                                  />
+                                  <span 
+                                    className="text-yellow-300 text-xs font-bold"
+                                    style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
+                                  >
+                                    30
+                                  </span>
+                                  <span 
+                                    className="text-pink-200 text-xs font-medium"
+                                    style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                                  >
+                                    PHYSICAL
+                                  </span>
+                                </button>
+                              </div>
+                            )}
+                            
                             <div 
                               className="text-lg font-bold mb-1"
                               style={{ 
