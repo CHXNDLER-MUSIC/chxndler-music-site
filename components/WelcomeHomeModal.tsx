@@ -120,7 +120,7 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
         className="fixed inset-0 flex items-center justify-center"
         style={{
           zIndex: 2147483648,
-          marginTop: '-320px'
+          marginTop: '-200px'
         }}
       >
         <div
