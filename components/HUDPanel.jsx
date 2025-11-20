@@ -279,7 +279,7 @@ export default function HUDPanel({
   // HeartCoins functionality state
   const [showHeartCoinsContent, setShowHeartCoinsContent] = useState(false);
   const [showQuestModal, setShowQuestModal] = useState(false);
-  const [heartCoinsCount, setHeartCoinsCount] = useState(32); // Example count
+  const [heartCoinsCount, setHeartCoinsCount] = useState(0); // Fetched from database
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [showWelcomeHomeModal, setShowWelcomeHomeModal] = useState(false);
   const [checkInPhrase, setCheckInPhrase] = useState('');
@@ -790,6 +790,33 @@ export default function HUDPanel({
       setCurrentCardIndex(0);
     }
   }, [filteredCards.length, currentCardIndex]);
+
+  // Fetch heart coins from database
+  useEffect(() => {
+    async function fetchHeartCoins() {
+      try {
+        const { data, error } = await supabaseBrowser
+          .from('profiles')
+          .select('heart_coins_current')
+          .eq('profile_complete', true)
+          .order('updated_at', { ascending: false })
+          .limit(1);
+
+        if (error) {
+          console.error('Failed to fetch heart coins:', error);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          setHeartCoinsCount(data[0].heart_coins_current || 0);
+        }
+      } catch (error) {
+        console.error('Error fetching heart coins:', error);
+      }
+    }
+
+    fetchHeartCoins();
+  }, []);
 
   // Position heart popover similar to lyrics popover
   const HEART_POPOVER_Y_OFFSET = -40;

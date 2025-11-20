@@ -362,6 +362,10 @@ export default function ProfileBar({
                 onCloseBlueDisplay={onCloseBlueDisplay}
                 onOpenBlueDisplay={onOpenBlueDisplay}
                 onOpenJournal={onOpenJournal}
+                heartCoins={heartCoins}
+                onHeartCoinsChange={(newAmount) => {
+                  setProfile(prev => prev ? { ...prev, hearts: newAmount } : null);
+                }}
               />
               
               {/* Heart Coin Count */}

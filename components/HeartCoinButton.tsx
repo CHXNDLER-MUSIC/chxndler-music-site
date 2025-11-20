@@ -9,17 +9,44 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   onCloseBlueDisplay?: () => void;
   onOpenBlueDisplay?: () => void;
   onOpenJournal?: () => void;
+  heartCoins?: number;
+  onHeartCoinsChange?: (newAmount: number) => void;
 };
 
-export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onOpenJournal, ...rest }: Props) {
+export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onOpenJournal, heartCoins: externalHeartCoins = 0, onHeartCoinsChange, ...rest }: Props) {
   const [open, setOpen] = useState(false);
-  const [heartCoins, setHeartCoins] = useState(0);
+  const [heartCoins, setHeartCoins] = useState(externalHeartCoins);
   const [dailyQuests, setDailyQuests] = useState({
     elementTapped: false,
     journalEntry: false,
     friendInvited: false,
     checkedIn: false
   });
+
+  // Update local state when external heartCoins change
+  useEffect(() => {
+    setHeartCoins(externalHeartCoins);
+  }, [externalHeartCoins]);
+
+  // Helper function to update heart coins
+  const updateHeartCoins = async (newAmount: number) => {
+    setHeartCoins(newAmount);
+    onHeartCoinsChange?.(newAmount);
+    
+    // Update database
+    try {
+      const { data: { user } } = await import('@/lib/supabase-browser').then(m => m.supabaseBrowser.auth.getUser());
+      if (user) {
+        await fetch('/api/heart-coins/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: newAmount })
+        });
+      }
+    } catch (error) {
+      console.error('Failed to update heart coins in database:', error);
+    }
+  };
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [secretPhrase, setSecretPhrase] = useState("");
   const [checkInMessage, setCheckInMessage] = useState("");
@@ -42,7 +69,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const handleElementTap = () => {
     if (!dailyQuests.elementTapped) {
       try { sfx.play('click', 0.8); } catch {}
-      setHeartCoins(prev => prev + 1);
+      updateHeartCoins(heartCoins + 1);
       setDailyQuests(prev => ({ ...prev, elementTapped: true }));
       
       // Close heart coin display and open blue display
@@ -54,7 +81,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const handleJournalEntry = () => {
     if (!dailyQuests.journalEntry) {
       try { sfx.play('click', 0.8); } catch {}
-      setHeartCoins(prev => prev + 1);
+      updateHeartCoins(heartCoins + 1);
       setDailyQuests(prev => ({ ...prev, journalEntry: true }));
       
       // Close heart coin display and open journal
@@ -77,19 +104,19 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           text: 'I thought of you. I think this world could feel like home for you too.',
           url: 'https://chxndler.world/'
         }).then(() => {
-          setHeartCoins(prev => prev + 1);
+          updateHeartCoins(heartCoins + 1);
           setDailyQuests(prev => ({ ...prev, friendInvited: true }));
         }).catch(console.error);
       } else {
         // Fallback for browsers that don't support Web Share API
         navigator.clipboard.writeText(text).then(() => {
-          setHeartCoins(prev => prev + 1);
+          updateHeartCoins(heartCoins + 1);
           setDailyQuests(prev => ({ ...prev, friendInvited: true }));
           alert("Invite message copied to clipboard! You can now paste it in your messaging app.");
         }).catch(() => {
           // Manual fallback
           prompt("Copy this message to share:", text);
-          setHeartCoins(prev => prev + 1);
+          updateHeartCoins(heartCoins + 1);
           setDailyQuests(prev => ({ ...prev, friendInvited: true }));
         });
       }
@@ -100,7 +127,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const handleCheckIn = () => {
     if (secretPhrase.toLowerCase().trim() === "heartverse") {
       try { sfx.play('click', 0.8); } catch {}
-      setHeartCoins(prev => prev + 5);
+      updateHeartCoins(heartCoins + 5);
       setDailyQuests(prev => ({ ...prev, checkedIn: true }));
       setCheckInMessage("Welcome to the show. You've checked in!");
       setShowCheckInSuccess(true);

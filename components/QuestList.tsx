@@ -123,7 +123,7 @@ export default function QuestList({ onBack, onOpenStore }: Props) {
     if (questStatus.inviteFriend || loading) return;
     
     try { sfx.play('click', 0.8); } catch {}
-    const message = "I found a community of Aliens who accept you for who you are and lead with love. I thought of you. I think this world could feel like home for you too. https://www.chxndler-music.com/";
+    const message = "I thought of you. I think this world could feel like home for you too. https://chxndler.world/";
     
     const handleShare = async () => {
       setLoading(true);

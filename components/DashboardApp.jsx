@@ -30,6 +30,7 @@ import { audioCoordinator } from "@/lib/audio-coordinator";
 import { debugLog } from "@/lib/debug";
 import ProfileBar from "@/components/ProfileBar";
 import NameInputModal from "@/components/NameInputModal";
+import HoloStarsButton from "@/components/HoloStarsButton";
 
 export default function DashboardApp({ initialSlug } = {}) {
   // Global wheel render mode (LUMA vs PLAIN). Must be top-level to obey Hooks rules.
@@ -97,6 +98,7 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [flySignal, setFlySignal] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [showHUD, setShowHUD] = useState(false);
+  const [showStarsModal, setShowStarsModal] = useState(false);
   const [warpActive, setWarpActive] = useState(false);
   const [nextSky, setNextSky] = useState(null);
   const [beamOnly, setBeamOnly] = useState(true);
@@ -832,11 +834,10 @@ export default function DashboardApp({ initialSlug } = {}) {
     }
   }, [beamColor, showHUD, joinAlienOpen, beamTransitioning, explicitClose]);
 
-  // Handle opening journal: opens blue display and sets flag to open journal
+  // Handle opening journal: opens standalone stars modal
   const handleOpenJournal = React.useCallback(() => {
-    setShouldOpenJournal(true);
-    handleBeamToggle('blue');
-  }, [handleBeamToggle]);
+    setShowStarsModal(true);
+  }, []);
 
   // Spacebar and Pause key toggle (works even when 3D is active)
   React.useEffect(() => {
@@ -2018,6 +2019,16 @@ export default function DashboardApp({ initialSlug } = {}) {
         onClose={() => setShowNameModal(false)}
         onSubmit={handleNameSubmit}
       />
+
+      {/* Stars Modal triggered by journal button */}
+      {showStarsModal && (
+        <HoloStarsButton 
+          onClick={() => setShowStarsModal(false)}
+          label="JOURNAL"
+          isActive={true}
+          autoOpen={true}
+        />
+      )}
 
     </main>
   );

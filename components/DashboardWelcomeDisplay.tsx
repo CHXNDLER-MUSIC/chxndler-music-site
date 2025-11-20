@@ -1,4 +1,6 @@
-import { cookies } from 'next/headers';
+"use client";
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import JoinUsButton from '@/components/JoinUsButton';
 import BookButton from '@/components/BookButton';
@@ -10,9 +12,48 @@ type Profile = {
   hearts: number | null;
 };
 
-export default async function DashboardWelcomeDisplay() {
-  const cookieStore = cookies();
-  const token = cookieStore.get('sb-access-token')?.value || '';
+type Props = {
+  onBeamColorChange?: (color: 'blue' | 'yellow' | 'pink' | 'off') => void;
+};
+
+export default function DashboardWelcomeDisplay({ onBeamColorChange }: Props) {
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [token, setToken] = useState<string>('');
+
+  useEffect(() => {
+    // Get token from cookies client-side
+    const getToken = () => {
+      const cookies = document.cookie.split(';');
+      const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('sb-access-token='));
+      return tokenCookie ? decodeURIComponent(tokenCookie.split('=')[1]) : '';
+    };
+
+    const accessToken = getToken();
+    setToken(accessToken);
+
+    // Fetch profile if token exists
+    if (accessToken) {
+      fetch('/api/profile', {
+        credentials: 'include'
+      })
+        .then(res => res.ok ? res.json() : null)
+        .then(data => setProfile(data))
+        .catch(() => setProfile(null))
+        .finally(() => setIsLoading(false));
+    } else {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="relative rounded-3xl p-6 sm:p-8 backdrop-blur-md border border-white/15 bg-white/5 mx-auto max-w-2xl glow cockpit-glow">
+        <div className="text-center text-white">Loading...</div>
+      </div>
+    );
+  }
 
   // Logged out view: do not call /api/profile
   if (!token) {
@@ -33,7 +74,10 @@ export default async function DashboardWelcomeDisplay() {
           <WelcomeHomeForm />
           
           <div className="mt-6">
-            <JoinUsButton className="inline-flex items-center justify-center rounded-xl px-24 py-4 font-semibold text-black bg-[#38B6FF] hover:brightness-110 transition shadow-[0_0_24px_rgba(56,182,255,0.45)] welcome-home-button min-w-[320px]">
+            <JoinUsButton 
+              className="inline-flex items-center justify-center rounded-xl px-24 py-4 font-semibold text-black bg-[#38B6FF] hover:brightness-110 transition shadow-[0_0_24px_rgba(56,182,255,0.45)] welcome-home-button min-w-[320px]"
+              onBeamColorChange={onBeamColorChange}
+            >
               WELCOME HOME
             </JoinUsButton>
           </div>
@@ -42,23 +86,7 @@ export default async function DashboardWelcomeDisplay() {
     );
   }
 
-  // Logged in view: ensure profile exists via server-side call to /api/profile
-  let profile: Profile | null = null;
-  try {
-    const cookieHeader = cookieStore
-      .getAll()
-      .map((c) => `${c.name}=${encodeURIComponent(c.value)}`)
-      .join('; ');
-    const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL ?? ''}/api/profile` || '/api/profile', {
-      headers: { Cookie: cookieHeader },
-      // Ensure we don't revalidate too aggressively; this is user-specific
-      cache: 'no-store',
-    });
-    if (res.ok) {
-      profile = (await res.json()) as Profile;
-    }
-  } catch {}
-
+  // Logged in view
   const name = profile?.display_name ?? 'Pilot';
   const hearts = profile?.hearts ?? 0;
 

@@ -69,8 +69,7 @@ export async function GET(req: Request) {
     await admin.from('profiles').upsert({
       id: data.user.id,
       email: email,
-      display_name: displayName,
-      avatar_url: meta.avatar_url ?? null,
+      name: displayName,
       journey: 'wanderer',
       heart_coins_current: 0,
       heart_coins_total: 0,

@@ -214,6 +214,23 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
             )}
           </button>
         </div>
+
+        {/* Dollar sign button at bottom right corner */}
+        <button
+          type="button"
+          className="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-600 hover:from-yellow-300 hover:to-yellow-500 text-black font-bold text-xl flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg hover:shadow-xl"
+          style={{
+            boxShadow: '0 0 15px rgba(255, 215, 0, 0.5)',
+            border: '2px solid rgba(255, 215, 0, 0.8)'
+          }}
+          onClick={() => {
+            // Add your dollar button functionality here
+            console.log('Dollar button clicked');
+          }}
+          aria-label="Dollar action"
+        >
+          $
+        </button>
       </div>
 
       <style jsx>{`
