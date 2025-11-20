@@ -3303,10 +3303,32 @@ export default function HUDPanel({
                             e.target.style.transform = 'translateX(-50%) scale(1.0)';
                           }}
                         >
-                          THE DREAMER
+                          {savedProfileName ? savedProfileName : 'THE DREAMER'}
                         </div>
+                        {/* Element display positioned under the name */}
+                        {savedProfileElement && (
+                          <div style={{
+                            position: 'absolute',
+                            left: '50%',
+                            top: '32px',
+                            transform: 'translateX(-50%)',
+                            fontSize: 10,
+                            fontWeight: 700,
+                            color: savedProfileElement === 'water' ? '#0099FF' : 
+                                   savedProfileElement === 'lightning' ? '#00FFFF' : 
+                                   savedProfileElement === 'darkness' ? '#FFFFFF' : 
+                                   savedProfileElement === 'heart' ? '#FF69B4' : '#00FFFF',
+                            textShadow: `0 0 8px ${savedProfileElement === 'water' ? '#0099FF' : 
+                                                    savedProfileElement === 'lightning' ? '#00FFFF' : 
+                                                    savedProfileElement === 'darkness' ? '#FFFFFF' : 
+                                                    savedProfileElement === 'heart' ? '#FF69B4' : '#00FFFF'}`,
+                            letterSpacing: '1px'
+                          }}>
+                            {savedProfileElement.toUpperCase()} ALIEN
+                          </div>
+                        )}
                         {/* THE CODE button positioned under THE DREAMER */}
-                        <div style={{ position: 'absolute', left: '50%', top: '42px', transform: 'translateX(-50%)' }}>
+                        <div style={{ position: 'absolute', left: '50%', top: savedProfileElement ? '52px' : '42px', transform: 'translateX(-50%)' }}>
                           <button
                             type="button"
                             aria-label="HEARTVERSE Code"
@@ -4092,14 +4114,14 @@ export default function HUDPanel({
                       {/* Card slots grid */}
                       <div style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(50px, 1fr))',
-                        gap: '6px',
-                        maxWidth: '600px',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(70px, 1fr))',
+                        gap: '8px',
+                        maxWidth: '700px',
                         margin: '0 auto',
                         position: 'relative',
                         zIndex: 1,
                         '@media (max-width: 768px)': {
-                          gridTemplateColumns: 'repeat(auto-fit, minmax(50px, 1fr))',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(60px, 1fr))',
                           gap: '6px'
                         }
                       }}>
@@ -4459,7 +4481,7 @@ export default function HUDPanel({
                   >
                     <div
                       style={{
-                        width: 'min(90vw, 500px)',
+                        width: 'min(90vw, 700px)',
                         height: 'min(80vh, 600px)',
                         background: 'radial-gradient(140% 160% at 50% 0%, rgba(33,150,243,0.3), rgba(14,168,208,0.2) 35%, rgba(60,20,45,0.6) 100%)',
                         border: '1px solid rgba(33,150,243,0.5)',
@@ -6107,17 +6129,18 @@ export default function HUDPanel({
                           </p>
 
                           <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
-                            gap: 15,
-                            marginBottom: 30
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            gap: '20px',
+                            marginBottom: 30,
+                            flexWrap: 'wrap'
                           }}>
                             {[
-                              { id: 'fire', emoji: '🔥', name: 'FIRE', color: '#FF4444' },
-                              { id: 'water', emoji: '💧', name: 'WATER', color: '#4444FF' },
-                              { id: 'earth', emoji: '🌍', name: 'EARTH', color: '#44FF44' },
-                              { id: 'air', emoji: '💨', name: 'AIR', color: '#FFFF44' },
-                              { id: 'space', emoji: '⭐', name: 'SPACE', color: '#FF44FF' }
+                              { id: 'water', icon: '/water.png', name: 'WATER', color: '#0099FF' },
+                              { id: 'lightning', icon: '/lightning.png', name: 'LIGHTNING', color: '#00FFFF' },
+                              { id: 'darkness', icon: '/darkness.png', name: 'DARKNESS', color: '#FFFFFF' },
+                              { id: 'heart', icon: '/heart.png', name: 'HEART', color: '#FF69B4' }
                             ].map((element) => (
                               <button
                                 key={element.id}
@@ -6126,24 +6149,64 @@ export default function HUDPanel({
                                   try { sfx.play('hover', 0.4); } catch {}
                                 }}
                                 style={{
-                                  padding: '15px 10px',
-                                  background: selectedElement === element.id ? 'rgba(0,255,255,0.2)' : 'rgba(0,0,0,0.3)',
-                                  border: `2px solid ${selectedElement === element.id ? element.color : 'rgba(255,255,255,0.3)'}`,
-                                  borderRadius: 12,
-                                  color: selectedElement === element.id ? element.color : '#FFFFFF',
+                                  position: 'relative',
+                                  width: '80px',
+                                  height: '80px',
+                                  padding: '0',
+                                  background: 'transparent',
+                                  border: 'none',
                                   cursor: 'pointer',
-                                  fontSize: 12,
-                                  fontWeight: 'bold',
-                                  boxShadow: selectedElement === element.id ? `0 0 20px ${element.color}40` : 'none',
-                                  transition: 'all 0.3s ease',
+                                  transition: 'all 0.3s ease'
+                                }}
+                              >
+                                {/* Star background */}
+                                <div style={{
+                                  position: 'absolute',
+                                  top: '0',
+                                  left: '0',
+                                  width: '100%',
+                                  height: '100%',
+                                  background: selectedElement === element.id ? 
+                                    `radial-gradient(circle, ${element.color}20, ${element.color}10)` : 
+                                    'rgba(0,0,0,0.4)',
+                                  border: `3px solid ${element.color}`,
+                                  clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)',
+                                  boxShadow: selectedElement === element.id ? 
+                                    `0 0 25px ${element.color}, 0 0 40px ${element.color}60, inset 0 0 20px ${element.color}30` : 
+                                    `0 0 15px ${element.color}80, inset 0 0 10px ${element.color}20`,
+                                  transition: 'all 0.3s ease'
+                                }} />
+                                
+                                {/* Content on top */}
+                                <div style={{
+                                  position: 'relative',
+                                  zIndex: 1,
+                                  width: '100%',
+                                  height: '100%',
                                   display: 'flex',
                                   flexDirection: 'column',
                                   alignItems: 'center',
-                                  gap: 5
-                                }}
-                              >
-                                <span style={{ fontSize: 24 }}>{element.emoji}</span>
-                                <span>{element.name}</span>
+                                  justifyContent: 'center',
+                                  gap: 3,
+                                  color: selectedElement === element.id ? element.color : '#FFFFFF',
+                                  textShadow: selectedElement === element.id ? 
+                                    `0 0 10px ${element.color}` : 
+                                    `0 0 5px ${element.color}60`
+                                }}>
+                                  <img src={element.icon} alt={element.name} style={{ 
+                                    width: '32px', 
+                                    height: '32px',
+                                    filter: selectedElement === element.id ? 
+                                      `drop-shadow(0 0 8px ${element.color}) brightness(1.2)` : 
+                                      `drop-shadow(0 0 4px ${element.color}60)`
+                                  }} />
+                                  <span style={{ 
+                                    fontSize: '8px', 
+                                    textAlign: 'center',
+                                    fontWeight: '900',
+                                    letterSpacing: '0.5px'
+                                  }}>{element.name}</span>
+                                </div>
                               </button>
                             ))}
                           </div>
@@ -6386,43 +6449,45 @@ export default function HUDPanel({
                     {/* Element selection */}
                     <div className="relative mt-3">
                       <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
-                        gap: 15,
-                        marginBottom: 20
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        gap: '20px',
+                        marginBottom: 20,
+                        flexWrap: 'wrap'
                       }}>
                         {[
                           { 
+                            id: 'water', 
+                            name: 'WATER', 
+                            color: '#0099FF', 
+                            icon: '/water.png',
+                            emoji: '💧',
+                            description: 'Water = emotional truth and authenticity'
+                          },
+                          { 
                             id: 'lightning', 
                             name: 'LIGHTNING', 
-                            color: '#FFD700', 
-                            icon: '/elements/lightning-icon.png',
+                            color: '#00FFFF', 
+                            icon: '/lightning.png',
                             emoji: '⚡️',
-                            description: 'Awakens your spark. Energy, passion, and moments that light you up.'
+                            description: 'Lightning = passion and courage'
+                          },
+                          { 
+                            id: 'darkness', 
+                            name: 'DARKNESS', 
+                            color: '#FFFFFF', 
+                            icon: '/darkness.png',
+                            emoji: '🌑',
+                            description: 'Darkness = honesty about pain, imperfection, and inner worlds'
                           },
                           { 
                             id: 'heart', 
                             name: 'HEART', 
                             color: '#FF69B4', 
-                            icon: '/elements/heart-icon.png',
+                            icon: '/heart.png',
                             emoji: '🩷',
-                            description: 'Connects you to emotion. Love, vulnerability, and the truth of being human.'
-                          },
-                          { 
-                            id: 'water', 
-                            name: 'WATER', 
-                            color: '#00BFFF', 
-                            icon: '/elements/water-icon.png',
-                            emoji: '💧',
-                            description: 'Moves with flow. Healing, softness, and learning to trust the current.'
-                          },
-                          { 
-                            id: 'darkness', 
-                            name: 'DARKNESS', 
-                            color: '#9400D3', 
-                            icon: '/elements/darkness-icon.png',
-                            emoji: '🌑',
-                            description: 'Transforms your world. Depth, mystery, and growth through shadow.'
+                            description: 'Heart = love and connection'
                           }
                         ].map((element) => (
                           <button
@@ -6433,47 +6498,86 @@ export default function HUDPanel({
                               try { sfx.play('hover', 0.4); } catch {}
                             }}
                             style={{
-                              padding: '15px 10px',
-                              background: selectedElement === element.id ? 'rgba(0,255,255,0.2)' : 'rgba(0,0,0,0.3)',
-                              border: `2px solid ${selectedElement === element.id ? element.color : 'rgba(255,255,255,0.3)'}`,
-                              borderRadius: 12,
-                              color: selectedElement === element.id ? element.color : '#FFFFFF',
+                              position: 'relative',
+                              width: '70px',
+                              height: '70px',
+                              padding: '0',
+                              background: 'transparent',
+                              border: 'none',
                               cursor: 'pointer',
-                              fontSize: 12,
-                              fontWeight: 'bold',
-                              boxShadow: selectedElement === element.id ? `0 0 20px ${element.color}40` : 'none',
-                              transition: 'all 0.3s ease',
+                              transition: 'all 0.3s ease'
+                            }}
+                          >
+                            {/* Star background */}
+                            <div style={{
+                              position: 'absolute',
+                              top: '0',
+                              left: '0',
+                              width: '100%',
+                              height: '100%',
+                              background: selectedElement === element.id ? 
+                                `radial-gradient(circle, ${element.color}20, ${element.color}10)` : 
+                                'rgba(0,0,0,0.4)',
+                              border: `3px solid ${element.color}`,
+                              clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)',
+                              boxShadow: selectedElement === element.id ? 
+                                `0 0 25px ${element.color}, 0 0 40px ${element.color}60, inset 0 0 20px ${element.color}30` : 
+                                `0 0 15px ${element.color}80, inset 0 0 10px ${element.color}20`,
+                              transition: 'all 0.3s ease'
+                            }} />
+                            
+                            {/* Content on top */}
+                            <div style={{
+                              position: 'relative',
+                              zIndex: 1,
+                              width: '100%',
+                              height: '100%',
                               display: 'flex',
                               flexDirection: 'column',
                               alignItems: 'center',
-                              gap: 8
-                            }}
-                          >
-                            <img 
-                              src={element.icon} 
-                              alt={element.name}
-                              style={{ 
-                                width: 32, 
-                                height: 32, 
-                                filter: selectedElement === element.id ? 
-                                  `drop-shadow(0 0 8px ${element.color})` : 
-                                  'none'
-                              }}
-                              onError={(e) => {
-                                // Fallback to emoji if PNG fails to load
-                                e.target.style.display = 'none';
-                                e.target.nextSibling.style.display = 'block';
-                              }}
-                            />
-                            <span 
-                              style={{ 
-                                fontSize: 24, 
-                                display: 'none' 
-                              }}
-                            >
-                              {element.emoji}
-                            </span>
-                            <span>{element.name}</span>
+                              justifyContent: 'center',
+                              gap: 2,
+                              color: selectedElement === element.id ? element.color : '#FFFFFF',
+                              textShadow: selectedElement === element.id ? 
+                                `0 0 10px ${element.color}` : 
+                                `0 0 5px ${element.color}60`
+                            }}>
+                              <img 
+                                src={element.icon} 
+                                alt={element.name}
+                                style={{ 
+                                  width: 28, 
+                                  height: 28, 
+                                  filter: selectedElement === element.id ? 
+                                    `drop-shadow(0 0 8px ${element.color}) brightness(1.2)` : 
+                                    `drop-shadow(0 0 4px ${element.color}60)`
+                                }}
+                                onError={(e) => {
+                                  // Fallback to emoji if PNG fails to load
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'block';
+                                }}
+                              />
+                              <span 
+                                style={{ 
+                                  fontSize: 20, 
+                                  display: 'none',
+                                  filter: selectedElement === element.id ? 
+                                    `drop-shadow(0 0 8px ${element.color})` : 
+                                    `drop-shadow(0 0 4px ${element.color}60)`
+                                }}
+                              >
+                                {element.emoji}
+                              </span>
+                              <span style={{ 
+                                fontSize: '7px', 
+                                textAlign: 'center',
+                                fontWeight: '900',
+                                letterSpacing: '0.5px'
+                              }}>
+                                {element.name}
+                              </span>
+                            </div>
                           </button>
                         ))}
                       </div>
@@ -6547,6 +6651,10 @@ export default function HUDPanel({
                               }
 
                               console.log('Profile completed successfully:', { name: profileName, element: selectedElement });
+                              
+                              // Update the HUD display with saved profile info
+                              setSavedProfileName(profileName);
+                              setSavedProfileElement(selectedElement);
                               
                               // Update the parent component with the completed profile
                               if (onNameSaved) onNameSaved(profileName);

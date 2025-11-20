@@ -44,6 +44,7 @@ interface ProfileBarProps {
   hasEnteredHeartverse?: boolean;
   savedAlienName?: string; // Name from HUD signup flow
   savedAlienElement?: string; // Element from HUD signup flow
+  profileRefreshTrigger?: number; // Increment this to trigger profile refresh
 }
 
 export default function ProfileBar({
@@ -55,7 +56,8 @@ export default function ProfileBar({
   onBeamColorChange,
   hasEnteredHeartverse = false,
   savedAlienName,
-  savedAlienElement
+  savedAlienElement,
+  profileRefreshTrigger = 0
 }: ProfileBarProps) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,6 +77,13 @@ export default function ProfileBar({
   useEffect(() => {
     fetchProfile();
   }, []);
+
+  // Refetch profile when profileRefreshTrigger changes
+  useEffect(() => {
+    if (profileRefreshTrigger > 0) {
+      fetchProfile();
+    }
+  }, [profileRefreshTrigger]);
 
   async function fetchProfile() {
     try {
@@ -264,13 +273,14 @@ export default function ProfileBar({
     <div className="fixed top-0 left-0 right-0 z-[200] h-16 bg-black/80 backdrop-blur-md border-b border-white/10">
       <div className="flex items-center justify-between h-full pl-4 pr-6">
         {/* Left Side */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-1">
           {/* Elemental Button */}
           <ElementalButton 
             onHoverSound={() => sfx.play('hover', 0.8)}
             onCloseBlueDisplay={onCloseBlueDisplay}
             onOpenBlueDisplay={onOpenBlueDisplay}
             onBeamColorChange={onBeamColorChange}
+            element={currentElement}
           />
 
           {/* Username */}
@@ -292,7 +302,7 @@ export default function ProfileBar({
           </span>
 
           {/* Action Buttons */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-0">
             {/* Journey Button */}
             <JourneyButton 
               onHoverSound={() => sfx.play('hover', 0.8)}
@@ -301,18 +311,17 @@ export default function ProfileBar({
               cumulativeHeartCoins={heartCoins}
             />
 
+            {/* Code Button */}
+            <CodeButton 
+              onHoverSound={() => sfx.play('hover', 0.8)}
+              onCloseBlueDisplay={onCloseBlueDisplay}
+              onOpenBlueDisplay={onOpenBlueDisplay}
+            />
           </div>
         </div>
 
         {/* Right Side */}
         <div className="flex items-center space-x-2">
-          {/* Code Button */}
-          <CodeButton 
-            onHoverSound={() => sfx.play('hover', 0.8)}
-            onCloseBlueDisplay={onCloseBlueDisplay}
-            onOpenBlueDisplay={onOpenBlueDisplay}
-          />
-
           {/* Digital Binder Button */}
           <BinderButton 
             onHoverSound={() => sfx.play('hover', 0.8)}

@@ -69,9 +69,9 @@ export default function HoloStarsButton({
           height: 50px;
           border-radius: 50%;
           font-size: 24px;
-          color: #FFD700;
-          background: linear-gradient(135deg, #FFD700, #FFA500);
-          border: 2px solid #FFD700;
+          color: #FFFF00;
+          background: transparent;
+          border: 2px solid #FFFF00;
           transition: all 0.2s ease;
           cursor: pointer;
           display: inline-flex;
@@ -79,19 +79,19 @@ export default function HoloStarsButton({
           justify-content: center;
           padding: 4px;
           box-shadow: 
-            0 0 0 1px rgba(255, 215, 0, 0.6),
-            0 4px 16px rgba(255, 215, 0, 0.3),
-            0 0 20px rgba(255, 215, 0, 0.2),
-            inset 0 0 16px rgba(255, 223, 0, 0.3);
+            0 0 0 1px rgba(255, 255, 0, 0.8),
+            0 4px 16px rgba(255, 255, 0, 0.6),
+            0 0 30px rgba(255, 255, 0, 0.4),
+            inset 0 0 16px rgba(255, 255, 0, 0.3);
         }
         
         .custom-stars-style:hover {
           transform: scale(1.1);
           box-shadow: 
-            0 0 0 2px rgba(255, 215, 0, 0.8),
-            0 8px 32px rgba(255, 215, 0, 0.5),
-            0 0 40px rgba(255, 215, 0, 0.4),
-            inset 0 0 20px rgba(255, 223, 0, 0.5);
+            0 0 0 2px rgba(255, 255, 0, 1),
+            0 8px 32px rgba(255, 255, 0, 0.8),
+            0 0 50px rgba(255, 255, 0, 0.6),
+            inset 0 0 20px rgba(255, 255, 0, 0.5);
         }
         
         .custom-stars-style:active {

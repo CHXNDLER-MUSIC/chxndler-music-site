@@ -75,6 +75,9 @@ create table if not exists profiles (
   email text,
   name text,
   element text check (element in ('fire', 'water', 'earth', 'air', 'space')),
+  journey text check (journey in ('wanderer', 'dreamer', 'lover')) default 'wanderer',
+  heart_coins_current integer default 0,
+  heart_coins_total integer default 0,
   profile_complete boolean default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -101,3 +104,47 @@ create policy "allow_update_profiles_anon"
 -- Allow anonymous users to read profiles for duplicate checking
 create policy "allow_select_profiles_anon"
   on profiles for select to anon using (true);
+
+-- Migration: Add new columns to existing profiles table
+alter table profiles 
+add column if not exists journey text check (journey in ('wanderer', 'dreamer', 'lover')) default 'wanderer',
+add column if not exists heart_coins_current integer default 0,
+add column if not exists heart_coins_total integer default 0;
+
+-- Migrate existing hearts column to new structure
+update profiles 
+set heart_coins_current = coalesce(hearts, 0),
+    heart_coins_total = coalesce(hearts, 0)
+where hearts is not null;
+
+-- Create indexes for journey and heart coins
+create index if not exists idx_profiles_journey on profiles (journey);
+create index if not exists idx_profiles_heart_coins_total on profiles (heart_coins_total desc);
+
+-- Function to update journey based on heart coins
+create or replace function update_profile_journey()
+returns trigger
+language plpgsql
+as $$
+begin
+  -- Update journey based on heart_coins_total
+  if NEW.heart_coins_total >= 25 then
+    NEW.journey = 'lover';
+  elsif NEW.heart_coins_total >= 5 then
+    NEW.journey = 'dreamer';
+  else
+    NEW.journey = 'wanderer';
+  end if;
+  
+  NEW.updated_at = now();
+  
+  return NEW;
+end;
+$$;
+
+-- Trigger to automatically update journey when heart_coins_total changes
+drop trigger if exists trigger_update_journey on profiles;
+create trigger trigger_update_journey
+  before update of heart_coins_total on profiles
+  for each row
+  execute function update_profile_journey();

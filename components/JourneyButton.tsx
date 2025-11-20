@@ -102,12 +102,13 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
         <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="px-10 py-2 text-white font-medium transition-all duration-200 whitespace-nowrap focus:outline-none focus:ring-0"
+        className="pl-2 pr-3 py-2 font-medium transition-all duration-200 whitespace-nowrap focus:outline-none focus:ring-0"
         style={{
           fontSize: '14px',
+          color: '#00FFFF',
+          textShadow: '0 0 10px #00FFFF, 0 0 20px #00FFFF, 0 0 30px #00FFFF',
           transition: 'all 0.3s ease',
           boxShadow: 'none !important',
-          textShadow: 'none !important',
           filter: 'none !important',
           outline: 'none !important',
           border: 'none !important',
@@ -116,7 +117,6 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
           MozFilter: 'none !important',
           ...rest.style,
           boxShadow: 'none',
-          textShadow: 'none',
           filter: 'none',
           outline: 'none',
           border: 'none',
@@ -126,18 +126,18 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
           if (onHoverSound) onHoverSound();
           e.currentTarget.style.transform = 'scale(1.05)';
           e.currentTarget.style.boxShadow = 'none';
-          e.currentTarget.style.textShadow = 'none';
+          e.currentTarget.style.textShadow = '0 0 15px #00FFFF, 0 0 25px #00FFFF, 0 0 35px #00FFFF';
           e.currentTarget.style.filter = 'none';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'scale(1)';
           e.currentTarget.style.boxShadow = 'none';
-          e.currentTarget.style.textShadow = 'none';
+          e.currentTarget.style.textShadow = '0 0 10px #00FFFF, 0 0 20px #00FFFF, 0 0 30px #00FFFF';
           e.currentTarget.style.filter = 'none';
         }}
         {...rest}
       >
-        - {tierData[getUserTier(cumulativeHeartCoins)].name}
+        {tierData[getUserTier(cumulativeHeartCoins)].name}
         </button>
       </div>
       
@@ -196,7 +196,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
                   marginBottom: '8px'
                 }}
               >
-                CHOOSE YOUR JOURNEY
+                WANDERER
               </div>
               <div 
                 style={{ 
