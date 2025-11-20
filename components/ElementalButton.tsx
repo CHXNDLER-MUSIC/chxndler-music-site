@@ -97,15 +97,15 @@ export default function ElementalButton({ asChild = false, children, onClick, on
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center"
           style={{
-            paddingTop: '300px'
+            paddingTop: '100px'
           }}
         >
           <div
             className="elementals-hologram-container"
             style={{
               width: 'min(92vw, 700px)',
-              height: '40vh',
-              padding: '10px 14px 14px 14px',
+              height: '65vh',
+              padding: '8px 12px 12px 12px',
               borderRadius: 18,
               background: 'rgba(0,0,0,0.6)',
               border: '1px solid rgba(147,51,234,0.55)',
@@ -115,7 +115,7 @@ export default function ElementalButton({ asChild = false, children, onClick, on
               position: 'relative',
               display: 'flex',
               flexDirection: 'column',
-              overflow: 'hidden'
+              overflow: 'visible'
             }}
         >
           {/* Soft bottom glow pseudo element */}
@@ -175,15 +175,15 @@ export default function ElementalButton({ asChild = false, children, onClick, on
           
           {/* Header */}
           <div 
-            className="text-center mb-4"
+            className="text-center mb-2"
             style={{ 
               color: '#9333EA', 
               textShadow: '0 0 8px rgba(147,51,234,0.6)', 
-              fontSize: '18px',
+              fontSize: '16px',
               fontWeight: 'bold'
             }}
           >
-            THE ELEMENTS OF THE HEARTVERSE
+*** TESTING UPDATE *** THE ELEMENTS OF THE HEARTVERSE
           </div>
           
           {/* Thin purple neon line */}
@@ -222,7 +222,7 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                   borderColor: 'rgba(147,51,234,0.4)',
                   background: 'rgba(147,51,234,0.1)',
                   boxShadow: '0 0 15px rgba(147,51,234,0.3)',
-                  marginBottom: '16px'
+                  marginBottom: '8px'
                 }}
               >
                 {/* Darkness - Top Left */}
@@ -323,7 +323,7 @@ export default function ElementalButton({ asChild = false, children, onClick, on
               </div>
               
               {/* COMMIT Button */}
-              <div className="text-center mt-2 flex-shrink-0">
+              <div className="text-center mt-2 flex-shrink-0" style={{ backgroundColor: 'red', padding: '10px', border: '2px solid yellow' }}>
                 <button
                   onClick={() => {
                     try { sfx.play('click', 0.8); } catch {}
@@ -341,7 +341,8 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                   style={{
                     boxShadow: '0 0 20px rgba(255, 255, 255, 0.4), 0 0 40px rgba(255, 255, 255, 0.2)',
                     textShadow: '0 0 8px rgba(255, 255, 255, 0.8)',
-                    fontSize: '14px'
+                    fontSize: '14px',
+                    backgroundColor: 'lime !important'
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.boxShadow = '0 0 30px rgba(255, 255, 255, 0.7), 0 0 50px rgba(255, 255, 255, 0.4)';

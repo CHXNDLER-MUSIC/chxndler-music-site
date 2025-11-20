@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 type Props = {
@@ -91,12 +92,15 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
 
   if (!open) return null;
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <>
       {/* Hologram base glow - wider and stronger */}
       <div 
-        className="fixed inset-0 z-[2147483646] flex items-center justify-center"
+        className="fixed inset-0 flex items-center justify-center"
         style={{
+          zIndex: 2147483648,
           pointerEvents: 'none',
           paddingTop: '200px'
         }}
@@ -113,8 +117,9 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
       
       {/* Welcome Modal - holographic popup */}
       <div 
-        className="fixed inset-0 z-[2147483647] flex items-center justify-center"
+        className="fixed inset-0 flex items-center justify-center"
         style={{
+          zIndex: 2147483648,
           marginTop: '-320px'
         }}
       >
@@ -270,6 +275,7 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
         </div>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
