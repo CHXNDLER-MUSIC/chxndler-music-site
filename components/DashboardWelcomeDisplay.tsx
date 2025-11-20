@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import Link from 'next/link';
 import JoinUsButton from '@/components/JoinUsButton';
 import BookButton from '@/components/BookButton';
+import WelcomeHomeForm from '@/components/WelcomeHomeForm';
 
 type Profile = {
   id: string;
@@ -25,11 +26,17 @@ export default async function DashboardWelcomeDisplay() {
           mixBlendMode: 'screen'
         }} />
         <div className="relative">
-          <h2 className="text-4xl sm:text-5xl font-extrabold tracking-[0.15em] text-white drop-shadow mb-2">WELCOME BACK TO THE HEARTVERSE {'<3'}</h2>
+          <h2 className="text-4xl sm:text-5xl font-extrabold tracking-[0.15em] text-white drop-shadow mb-2">WELCOME TO THE HEARTVERSE {'<3'}</h2>
           <p className="mb-6" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0, 255, 255, 0.6)' }}>You're invited into the Heartverse.</p>
-          <JoinUsButton className="inline-flex items-center justify-center rounded-xl px-24 py-4 font-semibold text-black bg-[#38B6FF] hover:brightness-110 transition shadow-[0_0_24px_rgba(56,182,255,0.45)] welcome-home-button min-w-[320px]">
-            WELCOME HOME
-          </JoinUsButton>
+          
+          {/* Email, Phone, and Heart Signal Form */}
+          <WelcomeHomeForm />
+          
+          <div className="mt-6">
+            <JoinUsButton className="inline-flex items-center justify-center rounded-xl px-24 py-4 font-semibold text-black bg-[#38B6FF] hover:brightness-110 transition shadow-[0_0_24px_rgba(56,182,255,0.45)] welcome-home-button min-w-[320px]">
+              WELCOME HOME
+            </JoinUsButton>
+          </div>
         </div>
       </div>
     );

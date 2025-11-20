@@ -91,7 +91,7 @@ export default function ProfileBar({
       // Try to fetch the most recent completed profile from Supabase
       const { data, error } = await supabaseBrowser
         .from('profiles')
-        .select('*')
+        .select('*, heart_coins_current, heart_coins_total')
         .eq('profile_complete', true)
         .order('updated_at', { ascending: false })
         .limit(1);
@@ -112,7 +112,7 @@ export default function ProfileBar({
           id: profileData.id,
           name: profileData.name,
           element: profileData.element,
-          hearts: 0, // Default hearts for now
+          hearts: profileData.heart_coins_current || 0, // Use actual heart coin count
           phone: profileData.phone,
           email: profileData.email,
           profile_complete: profileData.profile_complete
@@ -271,7 +271,13 @@ export default function ProfileBar({
   }
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[200] h-16 bg-black/80 backdrop-blur-md border-b border-white/10">
+    <div 
+      className="fixed top-0 left-0 right-0 z-[200] h-16 bg-black/80 backdrop-blur-md border-b border-white/10 transition-opacity duration-500 ease-in-out"
+      style={{
+        opacity: hasEnteredHeartverse ? 1 : 0,
+        pointerEvents: hasEnteredHeartverse ? 'auto' : 'none'
+      }}
+    >
       <div className="relative h-full">
         {/* Elemental Button - Top Left */}
         <div className="absolute top-2 left-4 z-10">
@@ -327,8 +333,8 @@ export default function ProfileBar({
 
           {/* Right Side */}
           <div className="flex items-center space-x-2">
-            {/* Heart Coin Button */}
-            <HeartCoinButton 
+            {/* Badges Button */}
+            <BadgesButton 
               onHoverSound={() => sfx.play('hover', 0.8)}
               onCloseBlueDisplay={onCloseBlueDisplay}
               onOpenBlueDisplay={onOpenBlueDisplay}
@@ -341,12 +347,34 @@ export default function ProfileBar({
               onOpenBlueDisplay={onOpenBlueDisplay}
             />
 
-            {/* Badges Button */}
-            <BadgesButton 
-              onHoverSound={() => sfx.play('hover', 0.8)}
-              onCloseBlueDisplay={onCloseBlueDisplay}
-              onOpenBlueDisplay={onOpenBlueDisplay}
-            />
+            {/* Heart Coin Button with Count */}
+            <div className="flex items-center space-x-1">
+              <HeartCoinButton 
+                onHoverSound={() => sfx.play('hover', 0.8)}
+                onCloseBlueDisplay={onCloseBlueDisplay}
+                onOpenBlueDisplay={onOpenBlueDisplay}
+              />
+              
+              {/* Heart Coin Count */}
+              <span 
+                className="font-bold text-lg"
+                style={{ 
+                  color: '#FFFFFF',
+                  textShadow: `
+                    0 0 5px #FFFFFF,
+                    0 0 10px #FFFFFF,
+                    0 0 15px #FFFFFF,
+                    0 0 20px #FFFFFF,
+                    0 0 25px #FFFFFF,
+                    0 0 30px #FFFFFF
+                  `,
+                  filter: 'brightness(1.5)',
+                  letterSpacing: '0.05em'
+                }}
+              >
+                {heartCoins}
+              </span>
+            </div>
 
           </div>
         </div>

@@ -1556,30 +1556,6 @@ export default function DashboardApp({ initialSlug } = {}) {
         closeAllSignal={uiCloseSignal}
         suspendUI={warpActive}
         hideStartButton={false}
-        onLaunch={() => {
-          // Minimal immediate work for snappy tap
-          try { sfx.setEnabled(true); (window).__CHX_UI_UNLOCKED = true; (window).__CHX_SHOW_DIMMING_OVERLAY = false; } catch {}
-          try { window.dispatchEvent(new CustomEvent('ambient:prime')); } catch {}
-          try { playerStore.getState().setPlanetDisplayMode('all'); playerStore.getState().setPlanetsVisible(true); } catch {}
-          try { playerStore.setState({ mainId: null }); } catch {}
-          try { setHidePlanetsForSelection(false); } catch {}
-          // User is starting their journey into the Heartverse - but don't show ProfileBar until warp completes
-          // setHasEnteredHeartverse(true); // Moved to onWarpSfxEnd to show ProfileBar only after warp
-          // Defer heavier state churn to next frame to reduce jank
-          const kickoff = () => {
-            if (!firstStartDone) { welcomeOnStartRef.current = true; setHomeIntroEnabled(true); setWelcomeHasPlayed(false); }
-            else { welcomeOnStartRef.current = false; setHomeIntroEnabled(false); try { setIsFirstLoad(false); } catch {} }
-            setPendingOverlayReveal(true); setUiUnlocked(true); setShowDimmingOverlay(false); setLandingRevealReady(true);
-            setUserSelected(false); setHomeMode(false); startButtonWarpRef.current = true;
-            try { const a = document.querySelector('audio[data-audio-player="1"]'); if (a) { a.pause(); try { a.currentTime = 0; } catch {}; try { a.muted = true; } catch {}; try { a.removeAttribute('src'); } catch {}; try { a.load(); } catch {} } } catch {}
-            setIsPlaying(false);
-            setCurTrack(null); setChannelIdx(0); setPendingTrackPlay(false); setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
-            setShowHUD(false); setShowOverlayUI(false); setBeamEnabled(false); setPendingHomePower(true);
-            setAllowWarp(true); setSky(SPACE_SKY); setNextSky(null); setAmbientSuspended(true);
-            setFlySignal((n) => n + 1);
-          };
-          if (typeof window !== 'undefined' && 'requestAnimationFrame' in window) window.requestAnimationFrame(kickoff); else setTimeout(kickoff, 0);
-        }}
         onPowerToggle={() => { 
           // Manual power toggle should not start new welcome audio, but don't interrupt if it's already playing
           if (!welcomeOnStartRef.current) {

@@ -2,7 +2,7 @@
 
 import React, { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Group, Vector3 } from "three";
+import { Group, Vector3, Object3D } from "three";
 import HeartPlanet from "./HeartPlanet";
 import ElementalPlanet from "./ElementalPlanet";
 import SongPlanet from "./SongPlanet";
@@ -19,17 +19,50 @@ export default function HeartverseSolarSystem({
   onSongClick = () => {} 
 }: HeartverseSolarSystemProps) {
   const systemRef = useRef<Group>(null);
+  const orbitRefs = useRef<{ [key: string]: Group }>({});
   
-  // Use provided songs or generate from buildPlanetSongs
+  // Define song mapping with explicit element assignments
+  const songMapping = useMemo(() => {
+    return {
+      heart: [
+        "I MIGHT FALL IN LOVE WITH YOU",
+        "HOME", 
+        "BE MY BEE",
+        "SOMEBODY TO LOVE",
+        "WE'RE JUST FRIENDS"
+      ],
+      water: [
+        "OCEAN GIRL",
+        "LETTING GO", 
+        "KID FOREVER"
+      ],
+      lightning: [
+        "ALIEN (HOUSE PARTY)",
+        "LITTLE BLACK HEART"
+      ],
+      darkness: [
+        "TIENES UN AMIGO"
+      ]
+    };
+  }, []);
+
+  // Create songs array from mapping
   const songs = useMemo(() => {
     if (propSongs) return propSongs;
-    const { holoSongs } = buildPlanetSongs();
-    return holoSongs.map(song => ({
-      id: song.id,
-      title: song.title,
-      element: song.planet.element || 'heart' as Element
-    }));
-  }, [propSongs]);
+    
+    const allSongs: Array<{ id: string; title: string; element: Element }> = [];
+    Object.entries(songMapping).forEach(([element, titles]) => {
+      titles.forEach((title, index) => {
+        allSongs.push({
+          id: `${element}-${index}`,
+          title,
+          element: element as Element
+        });
+      });
+    });
+    
+    return allSongs;
+  }, [propSongs, songMapping]);
 
   // Group songs by element type
   const songsByElement = useMemo(() => {
@@ -51,15 +84,13 @@ export default function HeartverseSolarSystem({
     return groups;
   }, [songs]);
 
-  // Define elemental planet positions (four corners around center) - responsive
+  // Define elemental planet positions (four corners around center)
   const elementalPlanetPositions = useMemo(() => {
-    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
-    const distance = isMobile ? 45 : 60; // Closer on mobile for better visibility
     return {
-      heart: new Vector3(-distance * 0.7, 0, -distance * 0.7),     // Top left
-      water: new Vector3(distance * 0.7, 0, -distance * 0.7),      // Top right  
-      lightning: new Vector3(distance * 0.7, 0, distance * 0.7),   // Bottom right
-      darkness: new Vector3(-distance * 0.7, 0, distance * 0.7),   // Bottom left
+      heart: new Vector3(-15, 10, 0),      // Top left
+      water: new Vector3(15, 10, 0),       // Top right  
+      lightning: new Vector3(15, -10, 0),  // Bottom right
+      darkness: new Vector3(-15, -10, 0),  // Bottom left
     };
   }, []);
 
@@ -70,35 +101,47 @@ export default function HeartverseSolarSystem({
     );
   }, [songsByElement, elementalPlanetPositions]);
 
-  // System rotation animation
+  // Generate randomized orbit parameters for each song
+  const orbitParameters = useMemo(() => {
+    const params: { [songId: string]: { radius: number; speed: number; yOffset: number; initialRotation: number } } = {};
+    
+    Object.entries(songsByElement).forEach(([element, elementSongs]) => {
+      const songCount = elementSongs.length;
+      const baseRadius = songCount > 3 ? 5 : 4; // Adjust base radius based on song count
+      
+      elementSongs.forEach((song, index) => {
+        // Create deterministic "random" values using song id as seed
+        const seed = song.id.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+        const random1 = (Math.sin(seed * 0.1) + 1) / 2;
+        const random2 = (Math.sin(seed * 0.2) + 1) / 2;
+        const random3 = (Math.sin(seed * 0.3) + 1) / 2;
+        const random4 = (Math.sin(seed * 0.4) + 1) / 2;
+        
+        params[song.id] = {
+          radius: baseRadius + (random1 * 3), // 3-7 units radius variation
+          speed: 0.2 + (random2 * 0.8), // 0.2-1.0 rotation speed
+          yOffset: (random3 - 0.5) * 4, // -2 to +2 vertical offset
+          initialRotation: random4 * Math.PI * 2 // Random starting angle
+        };
+      });
+    });
+    
+    return params;
+  }, [songsByElement]);
+
+  // System rotation animation and orbit animations
   useFrame((_, delta) => {
     if (systemRef.current) {
       systemRef.current.rotation.y += delta * 0.05; // Slow system rotation
     }
-  });
 
-  // Calculate orbit positions for song planets around their elemental planet
-  const getSongOrbitPositions = (element: Element, songs: typeof songsByElement[Element]) => {
-    const positions: Vector3[] = [];
-    const basePosition = elementalPlanetPositions[element as keyof typeof elementalPlanetPositions];
-    if (!basePosition) return positions;
-
-    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
-    const orbitRadius = isMobile ? 12 : 15; // Closer orbits on mobile
-    const verticalSpread = isMobile ? 6 : 8; // Less vertical variation on mobile
-    
-    songs.forEach((_, index) => {
-      const angle = (index / songs.length) * Math.PI * 2;
-      // Add some orbital variation for more natural look
-      const radiusVariation = orbitRadius + (Math.sin(index * 2.3) * 3);
-      const x = basePosition.x + Math.cos(angle) * radiusVariation;
-      const z = basePosition.z + Math.sin(angle) * radiusVariation;
-      const y = basePosition.y + (Math.sin(index * 1.7) * verticalSpread * 0.5);
-      positions.push(new Vector3(x, y, z));
+    // Animate each orbit group
+    Object.entries(orbitRefs.current).forEach(([songId, orbitGroup]) => {
+      if (orbitGroup && orbitParameters[songId]) {
+        orbitGroup.rotation.y += delta * orbitParameters[songId].speed;
+      }
     });
-
-    return positions;
-  };
+  });
 
   return (
     <group ref={systemRef}>
@@ -123,22 +166,33 @@ export default function HeartverseSolarSystem({
       {Object.entries(songsByElement).map(([element, elementSongs]) => {
         if (elementSongs.length === 0) return null;
         
-        const orbitPositions = getSongOrbitPositions(element as Element, elementSongs);
+        const elementalPosition = elementalPlanetPositions[element as keyof typeof elementalPlanetPositions];
+        if (!elementalPosition) return null;
         
-        return elementSongs.map((song, index) => {
-          const position = orbitPositions[index];
-          if (!position) return null;
+        return elementSongs.map((song) => {
+          const params = orbitParameters[song.id];
+          if (!params) return null;
           
           return (
-            <SongPlanet
-              key={song.id}
-              songId={song.id}
-              title={song.title}
-              element={song.element || 'heart'}
-              position={position}
-              size={2} // Much smaller than elemental planets
-              onClick={() => onSongClick(song.id)}
-            />
+            <group 
+              key={`${song.id}-orbit`}
+              position={[elementalPosition.x, elementalPosition.y + params.yOffset, elementalPosition.z]}
+              rotation={[0, params.initialRotation, 0]}
+              ref={(ref) => {
+                if (ref) orbitRefs.current[song.id] = ref;
+              }}
+            >
+              <group position={[params.radius, 0, 0]}>
+                <SongPlanet
+                  songId={song.id}
+                  title={song.title}
+                  element={song.element || 'heart'}
+                  position={new Vector3(0, 0, 0)}
+                  size={1.5} // Small planets
+                  onClick={() => onSongClick(song.id)}
+                />
+              </group>
+            </group>
           );
         });
       })}

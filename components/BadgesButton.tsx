@@ -134,7 +134,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center"
           style={{
-            paddingTop: '200px'
+            paddingTop: '280px'
           }}
         >
           <div
@@ -241,7 +241,107 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
           />
 
           {/* Badges Display */}
-          <div className="relative mt-1 max-h-40 overflow-y-auto">
+          <div className="relative mt-1 max-h-40 overflow-y-auto overflow-x-hidden" style={{ contain: 'layout style paint' }}>
+            {/* Maximized Badge Overlay within badges display */}
+            {maximizedBadge && (
+              <div 
+                className="absolute inset-0 z-10 flex items-center justify-center"
+                style={{
+                  background: 'rgba(0,0,0,0.95)',
+                  backdropFilter: 'blur(10px)',
+                }}
+                onClick={closeBadgeModal}
+              >
+                <div
+                  className="relative"
+                  style={{
+                    width: 'min(85%, 300px)',
+                    height: 'min(80%, 160px)',
+                    padding: '0.5rem',
+                    borderRadius: 12,
+                    background: 'rgba(0,0,0,0.9)',
+                    border: `2px solid ${getRarityColor(maximizedBadge.rarity)}`,
+                    boxShadow: `
+                      0 0 20px ${getRarityGlow(maximizedBadge.rarity)},
+                      0 0 40px ${getRarityGlow(maximizedBadge.rarity)}
+                    `,
+                    backdropFilter: 'blur(20px) saturate(150%)',
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* Close button */}
+                  <button
+                    onClick={closeBadgeModal}
+                    className="absolute top-1 right-1 text-white hover:text-gray-300 transition-colors duration-200"
+                    style={{ 
+                      fontSize: '14px',
+                      width: '18px',
+                      height: '18px',
+                      borderRadius: '50%',
+                      border: '1px solid rgba(255,255,255,0.3)',
+                      background: 'rgba(0,0,0,0.5)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    ×
+                  </button>
+                  
+                  {/* Badge content */}
+                  <div className="text-center h-full flex flex-col items-center justify-center">
+                    {/* Large badge emoji */}
+                    <div 
+                      className="mb-2"
+                      style={{
+                        fontSize: '32px',
+                        filter: `drop-shadow(0 0 10px ${getRarityGlow(maximizedBadge.rarity)})`
+                      }}
+                    >
+                      {maximizedBadge.emoji}
+                    </div>
+                    
+                    {/* Badge name */}
+                    <h2 
+                      className="text-sm font-bold mb-1"
+                      style={{
+                        color: getRarityColor(maximizedBadge.rarity),
+                        textShadow: `0 0 10px ${getRarityGlow(maximizedBadge.rarity)}`,
+                        textAlign: 'center'
+                      }}
+                    >
+                      {maximizedBadge.name}
+                    </h2>
+                    
+                    {/* Badge description */}
+                    <p 
+                      className="text-xs text-center text-white mb-2"
+                      style={{
+                        textShadow: '0 0 6px rgba(255,255,255,0.5)',
+                        lineHeight: '1.3',
+                        maxWidth: '250px'
+                      }}
+                    >
+                      {maximizedBadge.description}
+                    </p>
+                    
+                    {/* Badge details */}
+                    <div className="text-center">
+                      {(maximizedBadge.rarity !== 'common' || maximizedBadge.streakDays) && (
+                        <div 
+                          className="text-xs text-gray-300"
+                          style={{ textShadow: '0 0 4px rgba(255,255,255,0.3)' }}
+                        >
+                          {maximizedBadge.rarity !== 'common' && maximizedBadge.rarity.toUpperCase()}
+                          {maximizedBadge.rarity !== 'common' && maximizedBadge.streakDays && ' • '}
+                          {maximizedBadge.streakDays && `${maximizedBadge.streakDays}D`}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             {/* Achievement Badges */}
             {achievementBadges.length > 0 && (
               <>
@@ -394,124 +494,6 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
               </>
             )}
           </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Maximized Badge Modal */}
-      {maximizedBadge && (
-        <div 
-          className="fixed inset-0 z-[2147483648] flex justify-center"
-          style={{
-            background: 'rgba(0,0,0,0.9)',
-            backdropFilter: 'blur(20px)',
-            paddingTop: '200px'
-          }}
-          onClick={closeBadgeModal}
-        >
-          <div
-            className="relative"
-            style={{
-              width: 'min(90vw, 650px)',
-              height: 'min(30vh, 280px)',
-              padding: '1rem',
-              borderRadius: 24,
-              background: 'rgba(0,0,0,0.9)',
-              border: `2px solid ${getRarityColor(maximizedBadge.rarity)}`,
-              boxShadow: `
-                0 0 40px ${getRarityGlow(maximizedBadge.rarity)},
-                0 0 80px ${getRarityGlow(maximizedBadge.rarity)},
-                0 0 120px ${getRarityGlow(maximizedBadge.rarity)},
-                0 20px 40px rgba(0,0,0,0.6)
-              `,
-              backdropFilter: 'blur(20px) saturate(150%)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close button */}
-            <button
-              onClick={closeBadgeModal}
-              className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors duration-200"
-              style={{ 
-                fontSize: '24px',
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                border: '1px solid rgba(255,255,255,0.3)',
-                background: 'rgba(0,0,0,0.5)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              ×
-            </button>
-            
-            {/* Badge content */}
-            <div className="text-center h-full flex flex-col items-center justify-center">
-              {/* Large badge emoji */}
-              <div 
-                className="mb-6"
-                style={{
-                  fontSize: 'min(15vw, 120px)',
-                  filter: `drop-shadow(0 0 20px ${getRarityGlow(maximizedBadge.rarity)})`
-                }}
-              >
-                {maximizedBadge.emoji}
-              </div>
-              
-              {/* Badge name */}
-              <h2 
-                className="text-2xl md:text-3xl font-bold mb-4"
-                style={{
-                  color: getRarityColor(maximizedBadge.rarity),
-                  textShadow: `0 0 20px ${getRarityGlow(maximizedBadge.rarity)}`,
-                  textAlign: 'center'
-                }}
-              >
-                {maximizedBadge.name}
-              </h2>
-              
-              {/* Badge description */}
-              <p 
-                className="text-lg md:text-xl text-center text-white mb-6"
-                style={{
-                  textShadow: '0 0 10px rgba(255,255,255,0.5)',
-                  lineHeight: '1.6',
-                  maxWidth: '300px'
-                }}
-              >
-                {maximizedBadge.description}
-              </p>
-              
-              {/* Badge details */}
-              <div className="text-center">
-                <div 
-                  className="text-sm text-gray-300 mb-2"
-                  style={{ textShadow: '0 0 8px rgba(255,255,255,0.3)' }}
-                >
-                  RARITY: {maximizedBadge.rarity.toUpperCase()}
-                </div>
-                
-                {maximizedBadge.streakDays && (
-                  <div 
-                    className="text-sm text-gray-300"
-                    style={{ textShadow: '0 0 8px rgba(255,255,255,0.3)' }}
-                  >
-                    REQUIRES: {maximizedBadge.streakDays} DAY STREAK
-                  </div>
-                )}
-                
-                {maximizedBadge.category && (
-                  <div 
-                    className="text-xs text-gray-400 mt-2"
-                    style={{ textShadow: '0 0 6px rgba(255,255,255,0.2)' }}
-                  >
-                    CATEGORY: {maximizedBadge.category.replace('_', ' ').toUpperCase()}
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         </div>
       )}

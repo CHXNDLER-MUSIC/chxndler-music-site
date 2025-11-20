@@ -10,19 +10,23 @@ export default function OG() {
     (
       <div
         style={{
-          // Allowed styles only (Satori-safe)
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           width: "100%",
           height: "100%",
-          color: "white",
           backgroundColor: "#0b0b1f",
-          fontSize: 64,
-          fontWeight: 700,
         }}
       >
-        CHXNDLER — SPACESHIP
+        <img
+          src="https://ik.imagekit.io/CHXNDLER/cover/chxndler.png?updatedAt=1762361376662"
+          alt="CHXNDLER Cover Art"
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+          }}
+        />
       </div>
     ),
     size

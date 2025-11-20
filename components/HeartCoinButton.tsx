@@ -164,7 +164,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             style={{
               width: 'min(120vw, 700px)',
               height: '200px',
-              background: 'radial-gradient(ellipse 80% 100% at 50% 0%, rgba(255,105,180,0.7) 0%, rgba(255,105,180,0.4) 30%, rgba(255,105,180,0.1) 60%, transparent 100%)',
+              background: 'radial-gradient(ellipse 80% 100% at 50% 0%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.4) 30%, rgba(255,255,255,0.1) 60%, transparent 100%)',
               filter: 'blur(100px)'
             }}
           />
@@ -176,14 +176,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center"
           style={{
-            paddingTop: '150px'
+            paddingTop: '240px'
           }}
         >
           <div
             className="heartcoin-hologram-container"
             style={{
-              width: 'min(92vw, 700px)',
-              height: '60vh',
+              width: 'min(85vw, 500px)',
+              height: '50vh',
               padding: '10px 14px 14px 14px',
               borderRadius: 18,
               background: 'rgba(0,0,0,0.6)',
@@ -250,7 +250,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           </button>
           
           {/* Header */}
-          <div className="text-center mb-3">
+          <div className="text-center mb-3 mt-8">
             <div 
               className="text-lg font-bold mb-2"
               style={{ 
@@ -261,56 +261,60 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             >
               HEART COINS
             </div>
+            
+            {/* Thin pink neon line */}
             <div 
-              className="text-sm mb-3"
-              style={{ 
-                color: '#FFB6C1', 
-                textShadow: '0 0 4px rgba(255,182,193,0.8)', 
-                fontSize: '12px',
-                lineHeight: 1.2
+              className="w-full h-px mb-4"
+              style={{
+                background: 'linear-gradient(90deg, transparent, rgba(255,105,180,0.8) 20%, rgba(255,105,180,1) 50%, rgba(255,105,180,0.8) 80%, transparent)',
+                boxShadow: '0 0 4px rgba(255,105,180,0.6)'
               }}
-            >
-              Heart coins are the energy of the Heartverse. You earn them by exploring, connecting and showing up.
-            </div>
-          </div>
-          
-          {/* Heart Coin Balance */}
-          <div className="flex items-center justify-center mb-4 space-x-3">
-            <img
-              src="/elements/heart-coin.png"
-              alt="Heart Coin"
-              className="w-8 h-8"
             />
-            <div>
+            
+            <div className="flex items-center justify-between mb-3">
+              {/* Heart Coin Balance - Left Side */}
+              <div className="flex items-center space-x-3">
+                <img
+                  src="/elements/heart-coin.png"
+                  alt="Heart Coin"
+                  className="w-10 h-10"
+                />
+                <div>
+                  <div 
+                    className="text-xs"
+                    style={{ 
+                      color: '#FFB6C1', 
+                      textShadow: '0 0 4px rgba(255,182,193,0.6)' 
+                    }}
+                  >
+                    Balance
+                  </div>
+                  <div 
+                    className="text-xl font-bold"
+                    style={{ 
+                      color: '#FFFFFF', 
+                      textShadow: '0 0 8px rgba(255,255,255,0.8)' 
+                    }}
+                  >
+                    {heartCoins}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Description Text - Right Side */}
               <div 
-                className="text-xs"
+                className="text-base text-right flex-1 ml-4"
                 style={{ 
                   color: '#FFB6C1', 
-                  textShadow: '0 0 4px rgba(255,182,193,0.6)' 
+                  textShadow: '0 0 4px rgba(255,182,193,0.8)', 
+                  fontSize: '14px',
+                  lineHeight: 1.3
                 }}
               >
-                Balance
-              </div>
-              <div 
-                className="text-lg font-bold"
-                style={{ 
-                  color: '#FFFFFF', 
-                  textShadow: '0 0 8px rgba(255,255,255,0.8)' 
-                }}
-              >
-                {heartCoins}
+                Heart coins are the energy of the Heartverse. You earn them by exploring, connecting and showing up.
               </div>
             </div>
           </div>
-
-          {/* Thin pink neon line */}
-          <div 
-            className="w-full h-px mb-4"
-            style={{
-              background: 'linear-gradient(90deg, transparent, rgba(255,105,180,0.8) 20%, rgba(255,105,180,1) 50%, rgba(255,105,180,0.8) 80%, transparent)',
-              boxShadow: '0 0 4px rgba(255,105,180,0.6)'
-            }}
-          />
 
           {/* Section 1 - Daily Quests */}
           <div className="mb-4">
@@ -425,7 +429,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             </div>
 
             {/* Attend Live Show */}
-            <div className="flex items-center justify-between mb-2 p-2 rounded border border-pink-400/30 bg-pink-400/10">
+            <div className="flex items-center justify-between mb-2 p-2 rounded border border-pink-400/30 bg-pink-400/10 relative">
               <div>
                 <div className="text-xs font-bold" style={{ color: '#FFB6C1' }}>
                   2. Attend a Live Show
@@ -450,6 +454,80 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   {dailyQuests.checkedIn ? '✓ +5' : '+5 HeartCoins'}
                 </span>
               </div>
+
+              {/* Inline Check-in Modal */}
+              {showCheckInModal && (
+                <div 
+                  className="absolute top-full left-0 right-0 mt-2 z-10"
+                  style={{
+                    background: 'rgba(0,0,0,0.9)',
+                    border: '1px solid rgba(255,105,180,0.6)',
+                    borderRadius: '8px',
+                    padding: '16px',
+                    boxShadow: '0 0 25px rgba(255,105,180,0.4)',
+                    backdropFilter: 'blur(10px)'
+                  }}
+                >
+                  <div className="text-center mb-3">
+                    <div 
+                      className="text-sm font-bold mb-2"
+                      style={{ 
+                        color: '#FF69B4', 
+                        textShadow: '0 0 8px rgba(255,105,180,0.6)' 
+                      }}
+                    >
+                      Secret Phrase
+                    </div>
+                    <div 
+                      className="text-xs mb-3"
+                      style={{ color: '#FFB6C1' }}
+                    >
+                      Enter the secret phrase from the show:
+                    </div>
+                  </div>
+                  
+                  <input
+                    type="text"
+                    value={secretPhrase}
+                    onChange={(e) => setSecretPhrase(e.target.value)}
+                    className="w-full p-2 mb-3 bg-black/60 border border-pink-400/40 rounded text-white text-sm"
+                    placeholder="Enter secret phrase..."
+                    style={{
+                      boxShadow: '0 0 10px rgba(255,105,180,0.3)'
+                    }}
+                  />
+                  
+                  {checkInMessage && (
+                    <div 
+                      className="text-center text-xs mb-3"
+                      style={{ 
+                        color: checkInMessage.includes('Welcome') ? '#90EE90' : '#FF6B6B' 
+                      }}
+                    >
+                      {checkInMessage}
+                    </div>
+                  )}
+                  
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={handleCheckIn}
+                      className="flex-1 py-1.5 px-3 bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300 rounded transition-colors text-xs"
+                    >
+                      Submit
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowCheckInModal(false);
+                        setSecretPhrase("");
+                        setCheckInMessage("");
+                      }}
+                      className="flex-1 py-1.5 px-3 bg-gray-600/30 hover:bg-gray-600/40 border border-gray-500/50 text-gray-300 rounded transition-colors text-xs"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           
@@ -473,81 +551,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         </div>
       )}
 
-      {/* Check-in Modal */}
-      {showCheckInModal && (
-        <div 
-          className="fixed inset-0 z-[2147483648] flex items-center justify-center p-4"
-          onClick={() => setShowCheckInModal(false)}
-        >
-          <div 
-            className="bg-black/80 border border-pink-400/60 rounded-lg p-6 max-w-sm w-full"
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              boxShadow: '0 0 25px rgba(255,105,180,0.4)',
-              backdropFilter: 'blur(10px)'
-            }}
-          >
-            <div className="text-center mb-4">
-              <div 
-                className="text-lg font-bold mb-2"
-                style={{ 
-                  color: '#FF69B4', 
-                  textShadow: '0 0 8px rgba(255,105,180,0.6)' 
-                }}
-              >
-                Secret Phrase
-              </div>
-              <div 
-                className="text-sm mb-4"
-                style={{ color: '#FFB6C1' }}
-              >
-                Enter the secret phrase from the show:
-              </div>
-            </div>
-            
-            <input
-              type="text"
-              value={secretPhrase}
-              onChange={(e) => setSecretPhrase(e.target.value)}
-              className="w-full p-2 mb-4 bg-black/60 border border-pink-400/40 rounded text-white"
-              placeholder="Enter secret phrase..."
-              style={{
-                boxShadow: '0 0 10px rgba(255,105,180,0.3)'
-              }}
-            />
-            
-            {checkInMessage && (
-              <div 
-                className="text-center text-sm mb-4"
-                style={{ 
-                  color: checkInMessage.includes('Welcome') ? '#90EE90' : '#FF6B6B' 
-                }}
-              >
-                {checkInMessage}
-              </div>
-            )}
-            
-            <div className="flex space-x-2">
-              <button
-                onClick={handleCheckIn}
-                className="flex-1 py-2 px-4 bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300 rounded transition-colors"
-              >
-                Submit
-              </button>
-              <button
-                onClick={() => {
-                  setShowCheckInModal(false);
-                  setSecretPhrase("");
-                  setCheckInMessage("");
-                }}
-                className="flex-1 py-2 px-4 bg-gray-600/30 hover:bg-gray-600/40 border border-gray-500/50 text-gray-300 rounded transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Sky Modal (Journal Entry Experience) */}
       {showSkyModal && (
