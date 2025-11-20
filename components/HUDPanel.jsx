@@ -2245,8 +2245,8 @@ export default function HUDPanel({
                 fontWeight: 700,
                 letterSpacing: '0.03em',
                 textTransform: 'uppercase',
-                // Slightly smaller font to further reduce width
-                fontSize: 14,
+                // Smaller font to make text pop out less
+                fontSize: 11,
                 lineHeight: 1,
                 // Tighter, stronger glow close to the letters
                 textShadow: '0 0 6px rgba(242,239,29,1), 0 0 10px rgba(242,239,29,0.95), 0 0 16px rgba(242,239,29,0.8)',

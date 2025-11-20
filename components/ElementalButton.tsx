@@ -198,7 +198,7 @@ export default function ElementalButton({ asChild = false, children, onClick, on
 
           {/* Explore text across whole display */}
           <div 
-            className="text-center mb-6"
+            className="text-center mb-3"
             style={{ 
               color: '#FFFFFF', 
               fontSize: '14px',
@@ -321,6 +321,40 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                   />
                 </button>
               </div>
+              
+              {/* COMMIT Button */}
+              <div className="text-center mt-2 flex-shrink-0">
+                <button
+                  onClick={() => {
+                    try { sfx.play('click', 0.8); } catch {}
+                    if (selectedElement) {
+                      setCommittedElement(selectedElement);
+                      // Notify parent component to save to profile
+                      if (onElementSelect) {
+                        onElementSelect(selectedElement);
+                      }
+                    }
+                    setOpen(false);
+                    try { onOpenBlueDisplay?.(); } catch {}
+                  }}
+                  className="px-8 py-3 bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold rounded-lg transition-all duration-200 hover:scale-105"
+                  style={{
+                    boxShadow: '0 0 20px rgba(255, 255, 255, 0.4), 0 0 40px rgba(255, 255, 255, 0.2)',
+                    textShadow: '0 0 8px rgba(255, 255, 255, 0.8)',
+                    fontSize: '14px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = '0 0 30px rgba(255, 255, 255, 0.7), 0 0 50px rgba(255, 255, 255, 0.4)';
+                    e.currentTarget.style.textShadow = '0 0 12px rgba(255, 255, 255, 1), 0 0 20px rgba(255, 255, 255, 0.8)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = '0 0 20px rgba(255, 255, 255, 0.4), 0 0 40px rgba(255, 255, 255, 0.2)';
+                    e.currentTarget.style.textShadow = '0 0 8px rgba(255, 255, 255, 0.8)';
+                  }}
+                >
+                  COMMIT
+                </button>
+              </div>
             </div>
 
             {/* Right Side - Content */}
@@ -405,33 +439,31 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                     minHeight: 0
                   }}
                 >
-                  {selectedElement !== 'lightning' && (
-                    <div 
-                      style={{ 
-                        color: selectedElement === 'darkness' ? '#FFFFFF' :
-                               selectedElement === 'heart' ? '#FF69B4' :
-                               selectedElement === 'water' ? '#00BFFF' :
-                               selectedElement === 'lightning' ? '#FFD700' : '#FFFFFF',
-                        fontWeight: 'bold',
-                        fontSize: '18px',
-                        marginBottom: '8px',
-                        textShadow: selectedElement === 'darkness' ? '0 0 10px rgba(255,255,255,1)' :
-                                   selectedElement === 'heart' ? '0 0 10px rgba(255,105,180,1)' :
-                                   selectedElement === 'water' ? '0 0 10px rgba(0,191,255,1)' :
-                                   selectedElement === 'lightning' ? '0 0 10px rgba(255,215,0,1)' : 'none'
-                      }}
-                    >
-                      {selectedElement === 'heart' ? 'Heart = love and connection' : 
-                       selectedElement === 'lightning' ? 'Lightning = passion and courage' :
-                       selectedElement === 'water' ? 'Water = emotional truth and authenticity' :
-                       selectedElement === 'darkness' ? 'Darkness = honesty about pain, imperfection, and inner worlds' : `SELECTED: ${selectedElement.toUpperCase()}`}
-                    </div>
-                  )}
                   <div 
                     style={{ 
-                      color: selectedElement === 'lightning' ? '#FFFF00' : 'rgba(255,255,255,0.9)',
+                      color: selectedElement === 'darkness' ? '#FFFFFF' :
+                             selectedElement === 'heart' ? '#FF69B4' :
+                             selectedElement === 'water' ? '#00BFFF' :
+                             selectedElement === 'lightning' ? '#FFD700' : '#FFFFFF',
+                      fontWeight: 'bold',
+                      fontSize: '14px',
+                      marginBottom: '8px',
+                      textShadow: selectedElement === 'darkness' ? '0 0 10px rgba(255,255,255,1)' :
+                                 selectedElement === 'heart' ? '0 0 10px rgba(255,105,180,1)' :
+                                 selectedElement === 'water' ? '0 0 10px rgba(0,191,255,1)' :
+                                 selectedElement === 'lightning' ? '0 0 10px rgba(255,215,0,1)' : 'none'
+                    }}
+                  >
+                    {selectedElement === 'heart' ? 'Heart = love and connection' : 
+                     selectedElement === 'lightning' ? 'Lightning = passion and courage' :
+                     selectedElement === 'water' ? 'Water = emotional truth and authenticity' :
+                     selectedElement === 'darkness' ? 'Darkness = honesty about pain, imperfection, and inner worlds' : `SELECTED: ${selectedElement.toUpperCase()}`}
+                  </div>
+                  <div 
+                    style={{ 
+                      color: 'rgba(255,255,255,0.9)',
                       fontSize: '11px',
-                      textShadow: selectedElement === 'lightning' ? '0 0 10px #FFFF00, 0 0 20px #FFFF00, 0 0 30px #FFFF00' : 'none',
+                      textShadow: 'none',
                       wordWrap: 'break-word',
                       overflowWrap: 'break-word',
                       lineHeight: '1.3',
@@ -443,6 +475,8 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                       'LIGHTNING holds energy, passion, and awakening. It represents breakthroughs, inspiration, and sudden clarity. These songs are fast, alive, and electric, striking with intensity and capturing the rush of change when everything shifts at once.' :
                       selectedElement === 'heart' ? 
                       'HEART embodies emotion, vulnerability, and connection. It symbolizes love, compassion, and the courage to stay open. HEART songs are tender, raw, and real, pulling you into the spaces where feeling becomes truth and connection begins.' :
+                      selectedElement === 'water' ?
+                      'Soft yet powerful, WATER represents flow, adaptability, and emotional depth. It carries themes of change, healing, and trusting life\'s current. WATER songs move like tides, calm and cleansing, inviting you to release control and let the moment guide you.' :
                       selectedElement === 'darkness' ?
                       'DARKNESS carries mystery, shadow, and transformation. It symbolizes the unknown and the growth that rises from struggle. These songs dive into heartbreak, isolation, and truth, revealing that darkness is not the enemy but the place where transformation starts and light returns.' :
                       `You have chosen the path of ${selectedElement}. This element will guide your journey through the Heartverse.`
@@ -450,50 +484,6 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                   </div>
                 </div>
               )}
-              
-              {/* COMMIT Button */}
-              <div className="text-center mt-2 flex-shrink-0">
-                <button
-                  onClick={() => {
-                    try { sfx.play('click', 0.8); } catch {}
-                    if (selectedElement) {
-                      setCommittedElement(selectedElement);
-                      // Notify parent component to save to profile
-                      if (onElementSelect) {
-                        onElementSelect(selectedElement);
-                      }
-                    }
-                    setOpen(false);
-                    try { onOpenBlueDisplay?.(); } catch {}
-                  }}
-                  className="px-8 py-3 bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold rounded-lg transition-all duration-200 hover:scale-105"
-                  style={{
-                    boxShadow: '0 0 20px rgba(255, 255, 255, 0.4), 0 0 40px rgba(255, 255, 255, 0.2)',
-                    textShadow: '0 0 8px rgba(255, 255, 255, 0.8)',
-                    fontSize: '14px'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.boxShadow = '0 0 30px rgba(255, 255, 255, 0.7), 0 0 50px rgba(255, 255, 255, 0.4)';
-                    e.currentTarget.style.textShadow = '0 0 12px rgba(255, 255, 255, 1), 0 0 20px rgba(255, 255, 255, 0.8)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.boxShadow = '0 0 20px rgba(255, 255, 255, 0.4), 0 0 40px rgba(255, 255, 255, 0.2)';
-                    e.currentTarget.style.textShadow = '0 0 8px rgba(255, 255, 255, 0.8)';
-                  }}
-                >
-                  COMMIT
-                </button>
-                
-                <div 
-                  className="text-xs mt-3"
-                  style={{ 
-                    color: 'rgba(255,255,255,0.7)', 
-                    fontStyle: 'italic' 
-                  }}
-                >
-                  Master your elemental affinity to unlock unique abilities
-                </div>
-              </div>
             </div>
           </div>
           </div>
