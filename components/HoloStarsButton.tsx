@@ -158,9 +158,9 @@ export default function HoloStarsButton({
                   ×
                 </button>
                 <div className="solsky-header">
-                  <div className="daily-intention">Today's intention: Find peace in the present moment</div>
+                  <div className="daily-intention">Intention: Find peace in the present moment</div>
                   <h1>SolSky</h1>
-                  <h2>DAILY REFLECTION</h2>
+                  <h2>Reflection: Share your cosmic vision</h2>
                 </div>
                 <div className="cosmic-vision-section">
                   <label className="cosmic-vision-label">Share your cosmic vision</label>

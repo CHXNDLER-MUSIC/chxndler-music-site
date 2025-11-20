@@ -280,7 +280,7 @@ export default function ProfileBar({
     >
       <div className="relative h-full">
         {/* Elemental Button - Top Left */}
-        <div className="absolute top-2 left-4 z-10">
+        <div className="absolute top-2 left-1 z-10">
           <ElementalButton 
             onHoverSound={() => sfx.play('hover', 0.8)}
             onCloseBlueDisplay={onCloseBlueDisplay}
@@ -292,12 +292,12 @@ export default function ProfileBar({
         </div>
 
         {/* Main Flex Layout */}
-        <div className="flex items-center justify-between h-full pl-20 sm:pl-24 pr-4 sm:pr-6 min-w-0">
+        <div className="flex items-center justify-between h-full pl-12 sm:pl-16 pr-0 sm:pr-2 min-w-0">
           {/* Left Side */}
-          <div className="flex items-center space-x-2 min-w-0 overflow-hidden flex-1">
+          <div className="flex items-center min-w-0 overflow-hidden flex-1">
             {/* Username */}
             <span 
-              className="font-medium text-lg relative truncate flex-shrink min-w-0"
+              className="font-medium text-lg relative flex-shrink-0 ml-2"
               style={{ 
                 color: getUsernameColor(currentElement),
                 textShadow: `
@@ -314,16 +314,18 @@ export default function ProfileBar({
             </span>
 
             {/* Journey Button */}
-            <JourneyButton 
-              onHoverSound={() => sfx.play('hover', 0.8)}
-              onCloseBlueDisplay={onCloseBlueDisplay}
-              onOpenBlueDisplay={onOpenBlueDisplay}
-              cumulativeHeartCoins={heartCoins}
-            />
+            <div className="ml-8">
+              <JourneyButton 
+                onHoverSound={() => sfx.play('hover', 0.8)}
+                onCloseBlueDisplay={onCloseBlueDisplay}
+                onOpenBlueDisplay={onOpenBlueDisplay}
+                cumulativeHeartCoins={heartCoins}
+              />
+            </div>
           </div>
 
           {/* Center - Code Button */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 -mr-6">
             <CodeButton 
               onHoverSound={() => sfx.play('hover', 0.8)}
               onCloseBlueDisplay={onCloseBlueDisplay}
@@ -332,7 +334,7 @@ export default function ProfileBar({
           </div>
 
           {/* Right Side */}
-          <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0" style={{minWidth: '200px'}}>
+          <div className="flex items-center space-x-0.5 sm:space-x-1 flex-shrink-0 mr-16" style={{minWidth: '200px'}}>
             {/* Badges Button */}
             <div className="-mr-1">
               <BadgesButton 
@@ -343,14 +345,16 @@ export default function ProfileBar({
             </div>
 
             {/* Digital Binder Button */}
-            <BinderButton 
-              onHoverSound={() => sfx.play('hover', 0.8)}
-              onCloseBlueDisplay={onCloseBlueDisplay}
-              onOpenBlueDisplay={onOpenBlueDisplay}
-            />
+            <div className="-ml-1">
+              <BinderButton 
+                onHoverSound={() => sfx.play('hover', 0.8)}
+                onCloseBlueDisplay={onCloseBlueDisplay}
+                onOpenBlueDisplay={onOpenBlueDisplay}
+              />
+            </div>
 
             {/* Heart Coin Button with Count */}
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center space-x-0.5 ml-6">
               <HeartCoinButton 
                 onHoverSound={() => sfx.play('hover', 0.8)}
                 onCloseBlueDisplay={onCloseBlueDisplay}

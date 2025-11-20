@@ -494,7 +494,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                         <span className="text-cyan-200 font-bold">{stats?.controlButtons.find(b=>b.button==='Play/Pause')?.count || 0}</span>
                       </div>
                       <div className="w-full px-6 py-4 flex items-center justify-between">
-                        <span className="text-white font-medium">chxndler</span>
+                        <span className="text-white font-medium text-sm">chxndler</span>
                         <span className="text-cyan-200 font-bold">{(() => { const fallback = stats?.controlButtons.find(b=>b.button==='CHXNDLER')?.count || 0; return (metrics?.brandClicks ?? fallback); })()}</span>
                       </div>
                       <div className="w-full px-6 py-4 flex items-center justify-between">
