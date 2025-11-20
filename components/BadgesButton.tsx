@@ -88,8 +88,13 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
         className="p-0 rounded-lg transition-all duration-200 border-0"
         style={{
           transition: 'all 0.3s ease',
-          width: '80px',
-          height: '48px',
+          width: '80px !important',
+          height: '48px !important',
+          minWidth: '80px !important',
+          minHeight: '48px !important',
+          maxWidth: '80px !important',
+          maxHeight: '48px !important',
+          flexShrink: '0 !important',
           ...rest.style
         }}
         onMouseEnter={(e) => {
@@ -106,9 +111,14 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
           alt="Badges"
           className="rounded"
           style={{
-            width: '80px',
-            height: '48px',
-            objectFit: 'contain'
+            width: '80px !important',
+            height: '48px !important',
+            minWidth: '80px !important',
+            minHeight: '48px !important',
+            maxWidth: '80px !important',
+            maxHeight: '48px !important',
+            objectFit: 'contain',
+            flexShrink: '0'
           }}
           draggable={false}
         />

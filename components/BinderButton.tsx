@@ -324,8 +324,13 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
         className="p-0 rounded-lg transition-all duration-200"
         style={{
           transition: 'all 0.3s ease',
-          width: '80px',
-          height: '48px',
+          width: '80px !important',
+          height: '48px !important',
+          minWidth: '80px !important',
+          minHeight: '48px !important',
+          maxWidth: '80px !important',
+          maxHeight: '48px !important',
+          flexShrink: '0 !important',
           ...rest.style
         }}
         onMouseEnter={(e) => {
@@ -342,9 +347,14 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
           alt="Binder"
           className="rounded"
           style={{
-            width: '80px',
-            height: '48px',
+            width: '80px !important',
+            height: '48px !important',
+            minWidth: '80px !important',
+            minHeight: '48px !important',
+            maxWidth: '80px !important',
+            maxHeight: '48px !important',
             objectFit: 'cover',
+            flexShrink: '0',
             filter: 'drop-shadow(0 0 8px rgba(252, 84, 175, 0.8)) drop-shadow(0 0 16px rgba(252, 84, 175, 0.4))'
           }}
           draggable={false}

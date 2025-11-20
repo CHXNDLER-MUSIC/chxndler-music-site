@@ -96,7 +96,7 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
       <div 
         className="fixed inset-0 z-[2147483647] flex items-center justify-center"
         style={{
-          paddingBottom: '80px'
+          marginTop: '-320px'
         }}
       >
         <div

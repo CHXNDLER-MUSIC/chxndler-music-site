@@ -2499,6 +2499,14 @@ export default function HUDPanel({
                           e.stopPropagation(); 
                           try { sfx.play('click', 0.45); } catch {}; 
                           try { trackAnalytics('welcome_home_clicked', { location: 'hud_controls' }); } catch {}; 
+                          // Close any open HUD popovers when opening welcome home modal
+                          setShowHudVolumePopover(false);
+                          setShowLyricsPopover(false);
+                          setShowApplePopover(false);
+                          setShowHeartPopover(false);
+                          setShowHeartCoinPopover(false);
+                          setShowIdenticalPopup(false);
+                          setShowElementPopup(false);
                           // Open welcome home modal instead of navigating
                           setShowWelcomeHomeModal(true);
                         }}
