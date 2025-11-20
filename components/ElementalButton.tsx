@@ -78,7 +78,7 @@ export default function ElementalButton({ asChild = false, children, onClick, on
           className="fixed inset-0 z-[2147483646] flex items-center justify-center"
           style={{
             pointerEvents: 'none',
-            paddingTop: '400px'
+            paddingTop: '265px'
           }}
         >
           <div
@@ -97,15 +97,15 @@ export default function ElementalButton({ asChild = false, children, onClick, on
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center"
           style={{
-            paddingTop: '100px'
+            paddingTop: '265px'
           }}
         >
           <div
             className="elementals-hologram-container"
             style={{
               width: 'min(92vw, 700px)',
-              height: '65vh',
-              padding: '8px 12px 12px 12px',
+              height: '40vh',
+              padding: '8px 12px 0px 12px',
               borderRadius: 18,
               background: 'rgba(0,0,0,0.6)',
               border: '1px solid rgba(147,51,234,0.55)',
@@ -183,7 +183,7 @@ export default function ElementalButton({ asChild = false, children, onClick, on
               fontWeight: 'bold'
             }}
           >
-*** TESTING UPDATE *** THE ELEMENTS OF THE HEARTVERSE
+THE ELEMENTS OF THE HEARTVERSE
           </div>
           
           {/* Thin purple neon line */}
@@ -212,9 +212,9 @@ export default function ElementalButton({ asChild = false, children, onClick, on
           </div>
 
           {/* Content */}
-          <div className="flex gap-4 flex-1 min-h-0">
+          <div className="flex gap-4" style={{marginBottom: '0px', paddingBottom: '0px', height: 'calc(100% - 80px)'}}>
             {/* Four Elements Box */}
-            <div style={{ width: '40%', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '10px' }}>
+            <div style={{ width: '40%', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '0px', paddingBottom: '0px', marginBottom: '0px', height: '100%' }}>
               
               <div 
                 className="grid grid-cols-2 gap-2 p-3 rounded-lg border"
@@ -321,9 +321,12 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                   />
                 </button>
               </div>
-              
-              {/* COMMIT Button */}
-              <div className="text-center mt-2 flex-shrink-0" style={{ backgroundColor: 'red', padding: '10px', border: '2px solid yellow' }}>
+
+              {/* Small gap before commit button */}
+              <div style={{height: '12px'}}></div>
+
+              {/* COMMIT Button - Bottom of container */}
+              <div className="w-full flex-shrink-0" style={{marginBottom: '11px'}}>
                 <button
                   onClick={() => {
                     try { sfx.play('click', 0.8); } catch {}
@@ -337,12 +340,12 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                     setOpen(false);
                     try { onOpenBlueDisplay?.(); } catch {}
                   }}
-                  className="px-8 py-3 bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold rounded-lg transition-all duration-200 hover:scale-105"
+                  className="w-full py-2 bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold rounded-lg transition-all duration-200 hover:scale-105"
                   style={{
                     boxShadow: '0 0 20px rgba(255, 255, 255, 0.4), 0 0 40px rgba(255, 255, 255, 0.2)',
                     textShadow: '0 0 8px rgba(255, 255, 255, 0.8)',
-                    fontSize: '14px',
-                    backgroundColor: 'lime !important'
+                    fontSize: '12px',
+                    marginBottom: '0px'
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.boxShadow = '0 0 30px rgba(255, 255, 255, 0.7), 0 0 50px rgba(255, 255, 255, 0.4)';
@@ -356,10 +359,11 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                   COMMIT
                 </button>
               </div>
+              
             </div>
 
             {/* Right Side - Content */}
-            <div style={{ width: '60%', display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+            <div style={{ width: '60%', display: 'flex', flexDirection: 'column', height: '100%' }}>
               {/* Element Info Display */}
               {hoveredElement && (
                 <div 
@@ -423,7 +427,7 @@ export default function ElementalButton({ asChild = false, children, onClick, on
               {/* Selected Element Display */}
               {selectedElement && (
                 <div 
-                  className="text-center p-3 rounded-lg border-2 mb-3 flex-1 overflow-auto"
+                  className="text-center p-2 rounded-lg border-2 mb-2 overflow-auto flex-1"
                   style={{ 
                     borderColor: selectedElement === 'darkness' ? 'rgba(255,255,255,0.6)' :
                                 selectedElement === 'heart' ? 'rgba(255,105,180,0.6)' :

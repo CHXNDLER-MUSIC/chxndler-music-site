@@ -125,9 +125,10 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [explicitClose, setExplicitClose] = useState(false); // track when explicitly closing without opening another display
   const [safariRefreshKey, setSafariRefreshKey] = useState(0); // Safari refresh mechanism
   // Track if user has entered the Heartverse (clicked Start button)
-  // Explicitly start as false for intro screen, true only if there's an initial slug (deep link)
-  const [hasEnteredHeartverse, setHasEnteredHeartverse] = useState(initialSlug ? true : false);
-  // Profile bar visibility - hidden on intro, shown after entering Heartverse
+  // Always start as false for intro screen, even with initial slug
+  // ProfileBar should not be visible until user explicitly starts or warp completes
+  const [hasEnteredHeartverse, setHasEnteredHeartverse] = useState(false);
+  // Profile bar visibility - completely hidden on intro, shown only after entering Heartverse
   const showProfileBar = hasEnteredHeartverse;
   // Saved profile name from HUD signup flow
   const [savedProfileName, setSavedProfileName] = useState('');
