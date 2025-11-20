@@ -409,7 +409,7 @@ export default function QuestList({ onBack, onOpenStore }: Props) {
               <button
                 onClick={handleJournalOpen}
                 disabled={questStatus.journalEntry || loading}
-                className={`px-4 py-2 rounded text-sm transition-all duration-200 ${
+                className={`w-20 h-20 rounded-full text-xs transition-all duration-200 flex items-center justify-center ${
                   questStatus.journalEntry
                     ? 'bg-green-600/30 border border-green-500/50 text-green-300 cursor-not-allowed'
                     : 'bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300'

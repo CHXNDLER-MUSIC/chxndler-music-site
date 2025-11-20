@@ -415,7 +415,8 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                                    selectedElement === 'lightning' ? '0 0 10px rgba(255,215,0,1)' : 'none'
                       }}
                     >
-                      {selectedElement === 'heart' ? 'Heart = love and connection' : `SELECTED: ${selectedElement.toUpperCase()}`}
+                      {selectedElement === 'heart' ? 'Heart = love and connection' : 
+                       selectedElement === 'darkness' ? '' : `SELECTED: ${selectedElement.toUpperCase()}`}
                     </div>
                   )}
                   <div 
@@ -429,6 +430,8 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                       'LIGHTNING holds energy, passion, and awakening. It represents breakthroughs, inspiration, and sudden clarity. These songs are fast, alive, and electric, striking with intensity and capturing the rush of change when everything shifts at once.' :
                       selectedElement === 'heart' ? 
                       'HEART embodies emotion, vulnerability, and connection. It symbolizes love, compassion, and the courage to stay open. HEART songs are tender, raw, and real, pulling you into the spaces where feeling becomes truth and connection begins.' :
+                      selectedElement === 'darkness' ?
+                      'DARKNESS carries mystery, shadow, and transformation. It symbolizes the unknown and the growth that rises from struggle. These songs dive into heartbreak, isolation, and truth, revealing that darkness is not the enemy but the place where transformation starts and light returns.' :
                       `You have chosen the path of ${selectedElement}. This element will guide your journey through the Heartverse.`
                     }
                   </div>

@@ -85,11 +85,11 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="rounded-lg transition-all duration-200 w-12 h-10 p-0 border-0"
+        className="rounded-lg transition-all duration-200 w-12 h-10 border-0"
         style={{
           transition: 'all 0.3s ease',
-          padding: '0',
-          margin: '0',
+          padding: '0 !important',
+          margin: '0 !important',
           ...rest.style
         }}
         onMouseEnter={(e) => {
@@ -115,7 +115,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
           className="fixed inset-0 z-[2147483646] flex items-center justify-center"
           style={{
             pointerEvents: 'none',
-            paddingTop: '80px'
+            paddingTop: '200px'
           }}
         >
           <div
@@ -405,7 +405,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
           style={{
             background: 'rgba(0,0,0,0.9)',
             backdropFilter: 'blur(20px)',
-            paddingTop: '80px'
+            paddingTop: '200px'
           }}
           onClick={closeBadgeModal}
         >

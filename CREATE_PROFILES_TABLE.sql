@@ -6,17 +6,25 @@ begin;
 -- Create table
 create table if not exists public.profiles (
   id uuid primary key default auth.uid(),
+  email text,
+  phone text,
   display_name text,
   avatar_url text,
-  phone text,
-  hearts integer not null default 0,
+  selected_element text, -- heart, water, lightning, darkness
+  journey_tag text,      -- wanderer, dreamer, lover
+  heartcoin_balance integer not null default 0,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
 
--- Backfill: older deployments may not have the hearts and phone columns yet
-alter table public.profiles add column if not exists hearts integer not null default 0;
-alter table public.profiles add column if not exists phone text;
+-- Backfill: older deployments may not have the new columns yet
+alter table public.profiles add column if not exists email text;
+alter table public.profiles add column if not exists selected_element text;
+alter table public.profiles add column if not exists journey_tag text;
+alter table public.profiles add column if not exists heartcoin_balance integer not null default 0;
+-- Migrate existing hearts column to heartcoin_balance if needed
+update public.profiles set heartcoin_balance = hearts where heartcoin_balance = 0 and hearts > 0;
+alter table public.profiles drop column if exists hearts;
 
 -- Enable Row Level Security
 alter table public.profiles enable row level security;

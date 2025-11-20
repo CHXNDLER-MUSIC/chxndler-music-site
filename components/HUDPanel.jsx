@@ -1,6 +1,7 @@
 /* @refresh skip */
 "use client";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -2788,7 +2789,7 @@ export default function HUDPanel({
                 })()}
                 {/* Streaming controls render in hud-top-controls above */}
 
-                {typeof document !== 'undefined' && showHudVolumePopover && hudPopoverPos ? require('react-dom').createPortal(
+                {typeof document !== 'undefined' && showHudVolumePopover && hudPopoverPos ? createPortal(
                   <div
                     role="dialog"
                     aria-label="Adjust volume"
@@ -2849,7 +2850,7 @@ export default function HUDPanel({
                   document.body
                 ) : null}
 
-                {typeof document !== 'undefined' && showHeartPopover && heartPopoverPos ? require('react-dom').createPortal(
+                {typeof document !== 'undefined' && showHeartPopover && heartPopoverPos ? createPortal(
                   <div
                     role="dialog"
                     aria-label="PROFILE"
@@ -3585,7 +3586,7 @@ export default function HUDPanel({
                 {/* END heart popover */}
                 
                 {/* Heart Coin Details Popover */}
-                {typeof document !== 'undefined' && showHeartCoinPopover && heartCoinPopoverPos ? require('react-dom').createPortal(
+                {typeof document !== 'undefined' && showHeartCoinPopover && heartCoinPopoverPos ? createPortal(
                   <div
                     role="dialog"
                     aria-label="HEART COIN DETAILS"
@@ -3700,7 +3701,7 @@ export default function HUDPanel({
                 {/* END Heart Coin Details popover */}
                 
                 {/* Digital Binder Popover */}
-                {typeof document !== 'undefined' && showBookPopover ? require('react-dom').createPortal(
+                {typeof document !== 'undefined' && showBookPopover ? createPortal(
                   <div
                     role="dialog"
                     aria-label="Digital Binder"
@@ -4061,7 +4062,7 @@ export default function HUDPanel({
                 {/* END Digital Binder popover */}
                 
                 {/* Card Popup Modal */}
-                {typeof document !== 'undefined' && showCardPopup && selectedCard ? require('react-dom').createPortal(
+                {typeof document !== 'undefined' && showCardPopup && selectedCard ? createPortal(
                   <div
                     role="dialog"
                     aria-label="Card Details"
@@ -4248,7 +4249,7 @@ export default function HUDPanel({
                 {/* END Card Popup Modal */}
 
                 {/* Full Collection Modal */}
-                {typeof document !== 'undefined' && showFullCollection ? require('react-dom').createPortal(
+                {typeof document !== 'undefined' && showFullCollection ? createPortal(
                   <div
                     role="dialog"
                     aria-label="Full Card Collection"
@@ -4567,7 +4568,7 @@ export default function HUDPanel({
                 ) : null}
                 {/* END Full Collection Modal */}
 
-                {typeof document !== 'undefined' && showApplePopover && amEmbedUrl ? require('react-dom').createPortal(
+                {typeof document !== 'undefined' && showApplePopover && amEmbedUrl ? createPortal(
                   <div
                     role="dialog"
                     aria-label="Apple Music Player"
@@ -4636,7 +4637,7 @@ export default function HUDPanel({
                   document.body
                 ) : null}
 
-                {typeof document !== 'undefined' && showSpotifyPopover && spEmbedUrl ? require('react-dom').createPortal(
+                {typeof document !== 'undefined' && showSpotifyPopover && spEmbedUrl ? createPortal(
                   <div
                     role="dialog"
                     aria-label="Spotify Player"
@@ -4705,7 +4706,7 @@ export default function HUDPanel({
                   document.body
                 ) : null}
 
-                {typeof document !== 'undefined' && showYouTubePopover && ytEmbedUrl ? require('react-dom').createPortal(
+                {typeof document !== 'undefined' && showYouTubePopover && ytEmbedUrl ? createPortal(
                   <div
                     role="dialog"
                     aria-label="YouTube Player"
@@ -4777,7 +4778,7 @@ export default function HUDPanel({
                   document.body
                 ) : null}
 
-                {typeof document !== 'undefined' && showStorePopover && storePopoverPos ? require('react-dom').createPortal(
+                {typeof document !== 'undefined' && showStorePopover && storePopoverPos ? createPortal(
                   <div
                     role="dialog"
                     aria-label="Storefront"
@@ -5427,7 +5428,7 @@ export default function HUDPanel({
                 {typeof document !== 'undefined' && showLyricsPopover && lyricsPopoverPos ? (() => {
                   const isHome = !currentId;
                   const currentSong = resolvedSongs.find(s => s.id === active);
-                  return require('react-dom').createPortal(
+                  return createPortal(
                     <div
                       role="dialog"
                       aria-label="Lyrics"
@@ -5505,7 +5506,7 @@ export default function HUDPanel({
 
 
                 {/* Profile Setup Modal */}
-                {typeof document !== 'undefined' && showProfileSetup ? require('react-dom').createPortal(
+                {typeof document !== 'undefined' && showProfileSetup ? createPortal(
                   <div
                     role="dialog"
                     aria-label="Profile Setup"
@@ -5782,7 +5783,7 @@ export default function HUDPanel({
                 ) : null}
 
                 {/* Identical Popup - Same styling as Welcome Home */}
-                {typeof document !== 'undefined' && showIdenticalPopup && identicalPopoverPos ? require('react-dom').createPortal(
+                {typeof document !== 'undefined' && showIdenticalPopup && identicalPopoverPos ? createPortal(
                   <div
                     role="dialog"
                     aria-label="Identical Popup"
@@ -5906,7 +5907,7 @@ export default function HUDPanel({
                 ) : null}
 
                 {/* Element Selection Popup - Identical styling */}
-                {typeof document !== 'undefined' && showElementPopup && elementPopoverPos ? require('react-dom').createPortal(
+                {typeof document !== 'undefined' && showElementPopup && elementPopoverPos ? createPortal(
                   <div
                     role="dialog"
                     aria-label="Element Selection"
@@ -6217,7 +6218,7 @@ export default function HUDPanel({
                   document.body
                 ) : null}
 
-                {typeof document !== 'undefined' && showSoulSkyPopover && soulSkyPopoverPos ? require('react-dom').createPortal(
+                {typeof document !== 'undefined' && showSoulSkyPopover && soulSkyPopoverPos ? createPortal(
                   <div
                     role="dialog"
                     aria-label="Soul Sky"
@@ -6286,34 +6287,58 @@ export default function HUDPanel({
                     <div className="lyrics-header" style={{ color: '#FFFFFF', textShadow: '0 0 8px rgba(255,255,255,0.6)' }}>
                       SOUL SKY
                     </div>
-                    <div style={{ 
-                      width: '100%', 
-                      height: '1px', 
-                      background: 'rgba(255,255,255,0.3)', 
-                      margin: '10px 0',
-                      boxShadow: '0 0 5px rgba(255,255,255,0.5)'
-                    }}></div>
-                    <div style={{ 
-                      color: '#FFFFFF', 
-                      textShadow: '0 0 8px rgba(255,255,255,0.6)',
-                      fontSize: '16px',
-                      marginBottom: '15px',
-                      textAlign: 'center'
-                    }}>
-                      Question of the Day
+                    <div style={{ marginBottom: '20px' }}>
+                      <div style={{ 
+                        color: '#FFFFFF', 
+                        textShadow: '0 0 8px rgba(255,255,255,0.6)',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        marginBottom: '8px',
+                        textAlign: 'left'
+                      }}>
+                        INTENTION:
+                      </div>
+                      <div className="lyrics-content-enhanced" style={{ 
+                        whiteSpace: 'pre-wrap', 
+                        lineHeight: 1.4, 
+                        fontSize: 14, 
+                        color: '#E8E8FF', 
+                        textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(232,232,255,0.6)',
+                        fontStyle: 'italic',
+                        marginBottom: '15px'
+                      }}>
+                        "The universe is not only stranger than we imagine, it is stranger than we can imagine." - J.B.S. Haldane
+                      </div>
+                      
+                      <div style={{ 
+                        color: '#FFFFFF', 
+                        textShadow: '0 0 8px rgba(255,255,255,0.6)',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        marginBottom: '8px',
+                        textAlign: 'left'
+                      }}>
+                        REFLECTION:
+                      </div>
+                      <div className="lyrics-content-enhanced" style={{ 
+                        whiteSpace: 'pre-wrap', 
+                        lineHeight: 1.4, 
+                        fontSize: 14, 
+                        color: '#E8E8FF', 
+                        textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(232,232,255,0.6)'
+                      }}>
+                        What constellation would you create if you could arrange the stars in the sky, and what story would it tell?
+                      </div>
                     </div>
 
-                    <div className="lyrics-content-enhanced" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.5, fontSize: 16, color: '#E8E8FF', textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(232,232,255,0.6)' }}>
-                      What constellation would you create if you could arrange the stars in the sky, and what story would it tell?
-                      
-                      <div style={{ marginTop: '20px', marginBottom: '8px' }}>
-                        <textarea
+                    <div style={{ marginTop: '20px', marginBottom: '8px' }}>
+                      <textarea
                           value={questionResponse}
                           onChange={(e) => setQuestionResponse(e.target.value)}
                           placeholder="Share your cosmic vision..."
                           style={{
                             width: '100%',
-                            minHeight: '33.33vh',
+                            minHeight: '5rem',
                             padding: '12px',
                             background: 'rgba(0,0,20,0.6)',
                             border: '1px solid rgba(255,255,255,0.3)',
@@ -6327,9 +6352,10 @@ export default function HUDPanel({
                             '::placeholder': { color: 'rgba(255,255,255,0.5)' }
                           }}
                         />
-                      </div>
+                    </div>
 
-                      <button
+                    <div style={{ position: 'relative' }}>
+                    <button
                         className="cast-stars-button"
                         onClick={() => {
                           if (questionResponse.trim()) {
@@ -6384,13 +6410,11 @@ export default function HUDPanel({
                         </div>
                       )}
                     </div>
-
-                    {null}
                   </div>,
                   document.body
                 ) : null}
 
-                {typeof document !== 'undefined' && showBrandPopover && brandPopoverPos ? require('react-dom').createPortal(
+                {typeof document !== 'undefined' && showBrandPopover && brandPopoverPos ? createPortal(
                   <div
                     role="dialog"
                     aria-label="CHXNDLER"
@@ -6400,7 +6424,6 @@ export default function HUDPanel({
                       left: (brandPopoverPos && brandPopoverPos.left) || 0,
                       top: (brandPopoverPos && brandPopoverPos.top) || 0,
                       transform: (brandPopoverPos && brandPopoverPos.width) ? 'none' : 'translateX(-50%)',
-                      // Tighter top and bottom padding to pull content higher and tighten bottom
                       padding: '8px 14px 10px 14px', borderRadius: 14,
                       background: 'rgba(3,10,20,0.9)',
                       border: '1px solid rgba(242,239,29,0.55)',
