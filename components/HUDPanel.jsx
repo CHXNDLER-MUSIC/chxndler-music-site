@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import LoginModal from "@/components/LoginModal";
+import WelcomeHomeModal from "@/components/WelcomeHomeModal";
 import SharedButton from "@/components/SharedButton";
 import HeartverseButton from "@/components/HeartverseButton";
 import { supabaseBrowser } from "@/lib/supabase-browser";
@@ -159,7 +160,7 @@ export default function HUDPanel({
   const [planetBottom, setPlanetBottom] = useState(56);
   // Vertical offset to raise/lower the Store (Gem) popover relative to its anchor
   // Move it slightly lower (less negative) per request
-  const STORE_POPOVER_Y_OFFSET = -190; // move popover down slightly
+  const STORE_POPOVER_Y_OFFSET = -210; // move popover up slightly
   // Dynamic spacing for song selector so it doesn't overlap the cover
   const coverRef = useRef(null);
   const [oneLinerRight, setOneLinerRight] = useState(inConsole ? 108 : 140);
@@ -182,13 +183,8 @@ export default function HUDPanel({
   // Position lyrics popover relative to its anchor; smaller negative means less high
   const LYRICS_POPOVER_Y_OFFSET = -40; // bring it further down compared to before
 
-  // JOIN US popover state (similar to lyrics)
-  const [showJoinUsPopover, setShowJoinUsPopover] = useState(false);
+  // Welcome Home button ref
   const joinUsBtnRef = useRef(null);
-  const [joinUsPopoverPos, setJoinUsPopoverPos] = useState(null);
-  const joinUsScrollRef = useRef(null);
-  const [phoneInput, setPhoneInput] = useState('');
-  const [emailInput, setEmailInput] = useState('');
   const [isSubmittingProfile, setIsSubmittingProfile] = useState(false);
   const [profileSubmissionMessage, setProfileSubmissionMessage] = useState('');
   const [welcomeBackProfile, setWelcomeBackProfile] = useState(null); // Tracks existing profile for button text
@@ -279,6 +275,7 @@ export default function HUDPanel({
   const [showQuestModal, setShowQuestModal] = useState(false);
   const [heartCoinsCount, setHeartCoinsCount] = useState(32); // Example count
   const [showCheckInModal, setShowCheckInModal] = useState(false);
+  const [showWelcomeHomeModal, setShowWelcomeHomeModal] = useState(false);
   const [checkInPhrase, setCheckInPhrase] = useState('');
   const [dailyElementTapped, setDailyElementTapped] = useState(false);
   const [dailyJournalDone, setDailyJournalDone] = useState(false);
@@ -290,6 +287,7 @@ export default function HUDPanel({
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [selectedRarity, setSelectedRarity] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
+  const [cardNameFilter, setCardNameFilter] = useState('');
   // Collection view mode: 'elements' shows the 4 element cards, 'filtered' shows filtered collection
   const [collectionViewMode, setCollectionViewMode] = useState('elements');
   
@@ -776,7 +774,8 @@ export default function HUDPanel({
   const filteredCards = allCards.filter(card => {
     const rarityMatch = selectedRarity === 'all' || card.rarity === selectedRarity;
     const typeMatch = selectedType === 'all' || card.type === selectedType;
-    return rarityMatch && typeMatch;
+    const nameMatch = cardNameFilter === '' || card.name.toLowerCase().includes(cardNameFilter.toLowerCase());
+    return rarityMatch && typeMatch && nameMatch;
   });
 
   // Reset card index if out of bounds when filters change
@@ -1046,171 +1045,7 @@ export default function HUDPanel({
     }
   }
 
-  async function openJoinUsPopover(){
-    try { sfx.play('click', 0.4); } catch {}
-    // Anchor position (similar to lyrics)
-    try {
-      const r = joinUsBtnRef.current?.getBoundingClientRect?.();
-      const wrapper = innerRef.current?.parentElement || null; // outer HUD blue display wrapper (padding box)
-      // Position the popover to match the blue display's vertical bounds
-      if (wrapper && typeof window !== 'undefined') {
-        const rect = wrapper.getBoundingClientRect();
-        const cs = window.getComputedStyle(wrapper);
-        const pl = parseFloat(cs.paddingLeft || '0') || 0;
-        const pr = parseFloat(cs.paddingRight || '0') || 0;
-        let leftEdge = rect.left + pl;
-        let rightEdge = rect.right - pr;
-        // Very slightly wider than the blue display on both sides
-        const HORIZONTAL_EXPAND = 12; // px to grow on each side
-        leftEdge = Math.max(8, leftEdge - HORIZONTAL_EXPAND);
-        rightEdge = Math.min((typeof window !== 'undefined' ? window.innerWidth : rightEdge), rightEdge + HORIZONTAL_EXPAND) - 8 + 8;
-        const width = Math.max(0, rightEdge - leftEdge);
-        // Bring the top down more while keeping the bottom aligned to blue display bottom; this also shortens the popover
-        const TOP_INSET = 136; // same as lyrics popup
-        let top = rect.top + TOP_INSET;
-        top = Math.max(8, top);
-        const height = Math.max(100, rect.height - TOP_INSET);
-        setJoinUsPopoverPos({ left: leftEdge, top, width, height });
-      } else if (r) {
-        let top = r.bottom + 8 + LYRICS_POPOVER_Y_OFFSET;
-        top = Math.max(8, top);
-        let height = Math.max(240, Math.min(560, (typeof window !== 'undefined' ? window.innerHeight * 0.46 : 340)));
-        setJoinUsPopoverPos({ left: r.left + r.width/2, top, height });
-      }
-    } catch(e) {
-      console.warn('Failed to position JOIN US popover:', e);
-    }
-    setShowJoinUsPopover(true);
-  }
 
-  async function handleSendHeartSignal() {
-    if (isSubmittingProfile) return; // Prevent double submission
-    
-    // Basic validation
-    if (!phoneInput.trim() && !emailInput.trim()) {
-      setProfileSubmissionMessage('Please enter a phone number or email address.');
-      setTimeout(() => setProfileSubmissionMessage(''), 3000);
-      return;
-    }
-
-    setIsSubmittingProfile(true);
-    setProfileSubmissionMessage('Checking connection...');
-    
-    try {
-      // First, check if profile already exists
-      let existingProfile = null;
-      
-      if (phoneInput.trim()) {
-        const { data: phoneCheck } = await supabaseBrowser
-          .from('profiles')
-          .select('*')
-          .eq('phone', phoneInput.trim())
-          .single();
-        existingProfile = phoneCheck;
-      }
-      
-      if (!existingProfile && emailInput.trim()) {
-        const { data: emailCheck } = await supabaseBrowser
-          .from('profiles')
-          .select('*')
-          .eq('email', emailInput.trim())
-          .single();
-        existingProfile = emailCheck;
-      }
-
-      if (existingProfile) {
-        // Profile already exists - update button to show welcome back
-        setWelcomeBackProfile(existingProfile);
-        
-        if (existingProfile.name && existingProfile.element) {
-          // Complete profile with name and element
-          setProfileSubmissionMessage(`You're already connected to the HEARTVERSE as a ${existingProfile.element.toUpperCase()} alien. 👽`);
-        } else if (existingProfile.profile_complete || existingProfile.created_at) {
-          // Profile exists but no name/element - classic welcome message
-          setProfileSubmissionMessage('You\'re already connected! 👽');
-          
-          // After a short delay, close Join Us popover and open welcome popup
-          setTimeout(() => {
-            setShowJoinUsPopover(false);
-            openIdenticalPopover();
-          }, 2000);
-        } else {
-          // Incomplete profile - guide to completion
-          setProfileSubmissionMessage('Let\'s complete your alien profile...');
-          // Store the existing profile ID for completing the setup
-          setCurrentProfileId(existingProfile.id);
-          // Clear form
-          setPhoneInput('');
-          setEmailInput('');
-          
-          // After a short delay, close Join Us popover and open profile setup
-          setTimeout(() => {
-            setShowJoinUsPopover(false);
-            setShowProfileSetup(true);
-            setProfileSetupStep(1);
-          }, 1500);
-        }
-        return;
-      }
-
-      // Profile doesn't exist, create new one
-      setProfileSubmissionMessage('Sending heart signal...');
-      
-      const { data, error } = await supabaseBrowser
-        .from('profiles')
-        .insert([
-          {
-            phone: phoneInput.trim() || null,
-            email: emailInput.trim() || null,
-            metadata: {
-              source: 'join_us_popover',
-              created_from: 'hud_panel',
-              timestamp: new Date().toISOString()
-            }
-          }
-        ])
-        .select();
-
-      if (error) {
-        // Handle duplicate phone/email gracefully
-        if (error.code === '23505') { // unique constraint violation
-          setProfileSubmissionMessage('You\'re already connected! Welcome back, alien. 👽');
-        } else {
-          console.error('Supabase error details:', {
-            error: error,
-            message: error.message,
-            code: error.code,
-            details: error.details,
-            hint: error.hint,
-            fullError: JSON.stringify(error, null, 2)
-          });
-          setProfileSubmissionMessage(`Connection failed: ${error.message || error.details || 'Database error'}`);
-        }
-      } else {
-        setProfileSubmissionMessage('Heart signal sent! Let\'s complete your alien profile...');
-        // Store the new profile ID for completing the setup
-        setCurrentProfileId(data?.[0]?.id || null);
-        // Clear form on success
-        setPhoneInput('');
-        setEmailInput('');
-        try { sfx.play('success', 0.6); } catch {}
-        
-        // After a short delay, close Join Us popover and open profile setup
-        setTimeout(() => {
-          setShowJoinUsPopover(false);
-          setShowProfileSetup(true);
-          setProfileSetupStep(1);
-        }, 1500);
-      }
-    } catch (error) {
-      console.error('Error creating profile:', error);
-      setProfileSubmissionMessage('Connection error. Please try again.');
-    } finally {
-      setIsSubmittingProfile(false);
-      // Clear message after 4 seconds
-      setTimeout(() => setProfileSubmissionMessage(''), 4000);
-    }
-  }
 
   async function completeProfile() {
     if (!currentProfileId || !profileName.trim() || !selectedElement) {
@@ -2649,24 +2484,18 @@ export default function HUDPanel({
                           </svg>
                         </div>
                       )}
-                      {/* JOIN US button positioned below LYRICS */}
+                      {/* WELCOME HOME button positioned below LYRICS */}
                       <HeartverseButton
                         ref={joinUsBtnRef}
                         label="WELCOME HOME"
-                        style={{ position: 'absolute', left: '8px', top: '70px', paddingLeft: '16px', paddingRight: '16px', minWidth: '80px' }}
-                        title="Join Us"
-                        aria-haspopup="dialog"
-                        aria-expanded={showJoinUsPopover}
+                        style={{ position: 'absolute', left: '8px', top: '70px', paddingLeft: '32px', paddingRight: '32px', minWidth: '180px' }}
+                        title="Welcome Home"
                         onClick={(e) => { 
                           e.stopPropagation(); 
                           try { sfx.play('click', 0.45); } catch {}; 
-                          try { trackAnalytics('join_us_clicked', { location: 'hud_controls' }); } catch {}; 
-                          if (showJoinUsPopover) { 
-                            try { sfx.play('close', 0.4); } catch {}; 
-                            setShowJoinUsPopover(false); 
-                            return; 
-                          }
-                          openJoinUsPopover(); 
+                          try { trackAnalytics('welcome_home_clicked', { location: 'hud_controls' }); } catch {}; 
+                          // Open welcome home modal instead of navigating
+                          setShowWelcomeHomeModal(true);
                         }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                       />
@@ -3045,49 +2874,6 @@ export default function HUDPanel({
                     }}
                     onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowHeartPopover(false); } }}
                   >
-                    {/* Heart coin + 32 moved to left of X button */}
-                    <button
-                      ref={heartCoinRef}
-                      aria-label="View HEART Coin details"
-                      title="View HEART Coin details"
-                      onClick={(e) => { 
-                        e.stopPropagation();
-                        try { sfx.play('click', 0.4); } catch {};
-                        try { trackAnalytics('heart_coin_details_clicked', { location: 'profile_header' }); } catch {}
-                        setShowHeartCoinsContent(!showHeartCoinsContent);
-                      }}
-                      onMouseEnter={(e) => { 
-                        try { sfx.play('hover', 0.3); } catch {}; 
-                        try { e.currentTarget.style.borderColor = 'rgba(33,150,243,0.8)'; e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1.05)'; } catch {} 
-                      }}
-                      onMouseLeave={(e) => { 
-                        try { e.currentTarget.style.borderColor = 'rgba(33,150,243,0.4)'; e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1.0)'; } catch {} 
-                      }}
-                      style={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        background: 'transparent',
-                        padding: '6px 10px',
-                        borderRadius: 16,
-                        border: '1px solid rgba(33,150,243,0.4)',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
-                      <img
-                        src="/elements/heart-coin.png"
-                        alt="HEART Coin"
-                        width={20}
-                        height={20}
-                        style={{ display: 'block', width: 20, height: 20, objectFit: 'contain', filter: 'drop-shadow(0 0 6px rgba(33,150,243,0.45))' }}
-                      />
-                      <span style={{ fontSize: 13, fontWeight: 800, color: '#d3168c' }}>32</span>
-                    </button>
                     
                     {/* Close button in the top-right corner (pink accent) */}
                     <button
@@ -3523,13 +3309,13 @@ export default function HUDPanel({
                               </div>
                               <ul style={{ margin: 0, paddingLeft: 8, listStyle: 'disc' }}>
                                 <li style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 2, color: '#fff' }}>
-                                  We believe being your <span style={{ color: '#00FFFF', textShadow: '0 0 4px rgba(0,255,255,0.6)' }}>truest self</span> is the beginning of freedom.
+                                  We believe being your <span style={{ color: '#00FFFF', textShadow: '0 0 10px #00FFFF, 0 0 20px #00FFFF, 0 0 30px #00FFFF' }}>truest self</span> is the beginning of freedom.
                                 </li>
                                 <li style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 2, color: '#fff' }}>
-                                  We believe <span style={{ color: '#FFFF00', textShadow: '0 0 4px rgba(255,255,0,0.6)' }}>passion</span> is sacred and should be pursued loudly.
+                                  We believe <span style={{ color: '#FFFF00', textShadow: '0 0 10px #FFFF00, 0 0 20px #FFFF00, 0 0 30px #FFFF00' }}>passion</span> is sacred and should be pursued loudly.
                                 </li>
                                 <li style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 2, color: '#fff' }}>
-                                  We believe <span style={{ color: '#FF69B4', textShadow: '0 0 4px rgba(255,105,180,0.6)' }}>love</span> is the force that connects every soul.
+                                  We believe <span style={{ color: '#FF1493', textShadow: '0 0 10px #FF1493, 0 0 20px #FF1493, 0 0 30px #FF1493' }}>love</span> is the force that connects every soul.
                                 </li>
                               </ul>
                             </div>
@@ -5022,31 +4808,6 @@ export default function HUDPanel({
                       if (e.key === 'ArrowLeft') { setStoreIndex((i) => (i - 1 + products.length) % products.length); try { sfx.play('close', 0.45); } catch {} }
                     }}
                   >
-                    {/* HEART coin indicator in top-right (click to open HEART popout) */}
-                    <button
-                      aria-label="PROFILE"
-                      title="PROFILE"
-                      onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                      onClick={() => { 
-                        try { sfx.play('click', 0.4); } catch {}; 
-                        try { trackAnalytics('heart_coin_clicked', { song_slug: String(active || currentId || 'store'), payload: { song_title: track?.title || 'Unknown', location: 'store_header_icon' } }); } catch {}
-                        if (showHeartPopover) { setShowHeartPopover(false); return; }
-                        openHeartPopover();
-                      }}
-                      style={{
-                        position: 'absolute', top: 8, right: 52, width: 48, height: 48,
-                        border: '2px solid rgba(255, 255, 255, 0.8)', background: 'transparent', padding: 0, cursor: 'pointer',
-                        borderRadius: '50%',
-                        boxShadow: '0 0 15px rgba(255, 255, 255, 0.9), 0 0 25px rgba(255, 255, 255, 0.7), 0 0 35px rgba(255, 255, 255, 0.5)'
-                      }}
-                    >
-                      <img
-                        src="/elements/heart-coin.png"
-                        alt=""
-                        className="heart-coin-glow"
-                        style={{ display: 'block', width: '100%', height: '100%', objectFit: 'contain' }}
-                      />
-                    </button>
                     {/* Pink close button in the top-right corner */}
                     <button
                       aria-label="Close store"
@@ -5101,7 +4862,11 @@ export default function HUDPanel({
                         MERCH
                       </button>
                       <button
-                        onClick={() => setStoreActiveTab('CARDS')}
+                        onClick={() => {
+                          setStoreActiveTab('CARDS');
+                          // Dispatch event to open digital binder in full collection mode
+                          window.dispatchEvent(new CustomEvent('openDigitalBinder'));
+                        }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                         style={{
                           padding: '6px 12px',
@@ -5135,46 +4900,6 @@ export default function HUDPanel({
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
                               {/* Navigation arrows above product image */}
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 8 }}>
-                                <button
-                                  aria-label="Previous item"
-                                  className="store-arrow-btn"
-                                  onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                                  onClick={() => { setStoreIndex((i) => (i - 1 + products.length) % products.length); try { sfx.play('click', 0.35); } catch {} }}
-                                  style={{
-                                    width: 28, height: 28, borderRadius: 999,
-                                    background: 'linear-gradient(135deg,#ff76c8,#ff3ea5)',
-                                    border: '1px solid rgba(255,255,255,0.5)', color: '#fff',
-                                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                    cursor: 'pointer', fontSize: 14, fontWeight: 700,
-                                    transition: 'all 0.15s ease',
-                                    boxShadow: '0 4px 12px rgba(33,150,243,0.4)'
-                                  }}
-                                  onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.95)'; }}
-                                  onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-                                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-                                >
-                                  ←
-                                </button>
-                                <button
-                                  aria-label="Next item"
-                                  className="store-arrow-btn"
-                                  onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                                  onClick={() => { setStoreIndex((i) => (i + 1) % products.length); try { sfx.play('click', 0.35); } catch {} }}
-                                  style={{
-                                    width: 28, height: 28, borderRadius: 999,
-                                    background: 'linear-gradient(135deg,#ff76c8,#ff3ea5)',
-                                    border: '1px solid rgba(255,255,255,0.5)', color: '#fff',
-                                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                    cursor: 'pointer', fontSize: 14, fontWeight: 700,
-                                    transition: 'all 0.15s ease',
-                                    boxShadow: '0 4px 12px rgba(33,150,243,0.4)'
-                                  }}
-                                  onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.95)'; }}
-                                  onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-                                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-                                >
-                                  →
-                                </button>
                               </div>
                               {/* Product image. For PATCH and BEANIE, allow front/back flip like the card animation */}
                               {item.id === 'patch' ? (
@@ -5319,11 +5044,8 @@ export default function HUDPanel({
                             <div>
                               <div style={{ fontSize: 18, fontWeight: 800, color: '#FFD9EF', textShadow: '0 0 10px rgba(33,150,243,0.9)' }}>{item.title}</div>
                               <div style={{ fontSize: 14, opacity: 0.9, marginTop: 4 }}>{item.description}</div>
-                              {/* Details only; actions moved to bottom bar */}
-                            </div>
-                          </div>
-                          {/* Bottom controls: arrows with Add to Collection centered */}
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 4 }}>
+                              {/* Controls moved directly under description */}
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 8 }}>
                             <button
                               aria-label="Previous item"
                               className="store-arrow-btn"
@@ -5331,44 +5053,15 @@ export default function HUDPanel({
                               onClick={() => { setStoreIndex((i) => (i - 1 + products.length) % products.length); try { sfx.play('click', 0.35); } catch {} }}
                               style={{
                                 width: 36, height: 36, borderRadius: 999,
-                                background: 'linear-gradient(135deg,#ff76c8,#ff3ea5)',
-                                border: '1px solid rgba(255,255,255,0.5)', color: '#fff',
+                                background: 'transparent',
+                                border: '2px solid #ff3ea5', color: '#ff3ea5',
                                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                boxShadow: '0 4px 16px rgba(255, 62, 165, 0.45)'
+                                boxShadow: '0 0 15px rgba(255, 62, 165, 0.6)'
                               }}
                             >
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M15 6l-6 6 6 6"/></svg>
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
                             </button>
                             <div style={{ display: 'flex', gap: 6 }}>
-                              {item.url ? (
-                                <a
-                                  className="store-purchase-btn"
-                                  href={item.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  data-id="store-item"
-                                  data-item-id={item.id}
-                                  onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                                  onClick={() => {
-                                    try { sfx.play('join', 0.75); } catch {}
-                                    // Track merch purchase click with song context
-                                    try {
-                                      const songSlug = (typeof slug !== 'undefined' && slug) ? slug : (active || 'unknown');
-                                      const songTitle = currentSong?.title || track?.title || 'Unknown';
-                                      trackAnalytics('store_purchase_clicked', { song_slug: String(songSlug || ''), payload: { song_title: songTitle, item_id: item.id, item_title: item.title, location: 'hud_store_purchase' } });
-                                    } catch {}
-                                  }}
-                                  style={{
-                                    padding: '6px 10px', borderRadius: 999,
-                                    background: 'linear-gradient(135deg,#ff3ea5,#ff76c8)',
-                                    border: '1px solid rgba(255,255,255,0.6)', color: '#fff', fontWeight: 700,
-                                    boxShadow: '0 6px 18px rgba(255, 62, 165, 0.45)', textDecoration: 'none',
-                                    fontSize: 12
-                                  }}
-                                >
-                                  Purchase
-                                </a>
-                              ) : null}
                               <button
                                 className="store-add-btn"
                                 data-id="store-collection"
@@ -5394,9 +5087,9 @@ export default function HUDPanel({
                                 }}
                                 style={{
                                   padding: '6px 10px', borderRadius: 999,
-                                  background: 'linear-gradient(135deg,#19E3FF,#38B6FF)',
+                                  background: 'linear-gradient(135deg,#ff3ea5,#ff76c8)',
                                   border: '1px solid rgba(255,255,255,0.6)', color: '#fff', fontWeight: 700,
-                                  boxShadow: '0 6px 18px rgba(25, 227, 255, 0.45)', cursor: 'pointer',
+                                  boxShadow: '0 6px 18px rgba(255, 62, 165, 0.45)', cursor: 'pointer',
                                   fontSize: 12
                                 }}
                               >
@@ -5410,17 +5103,20 @@ export default function HUDPanel({
                               onClick={() => { setStoreIndex((i) => (i + 1) % products.length); try { sfx.play('click', 0.35); } catch {} }}
                               style={{
                                 width: 36, height: 36, borderRadius: 999,
-                                background: 'linear-gradient(135deg,#ff76c8,#ff3ea5)',
-                                border: '1px solid rgba(255,255,255,0.5)', color: '#fff',
+                                background: 'transparent',
+                                border: '2px solid #ff3ea5', color: '#ff3ea5',
                                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                boxShadow: '0 4px 16px rgba(255, 62, 165, 0.45)'
+                                boxShadow: '0 0 15px rgba(255, 62, 165, 0.6)'
                               }}
                             >
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M9 6l6 6-6 6"/></svg>
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6"/></svg>
                             </button>
                           </div>
+                          {/* Missing closing divs for the nested structure */}
+                          </div>
+                          </div>
                           {/* Removed helper hint per request */}
-                            </>
+                          </>
                           )}
                           
                           {/* CARDS Tab Content */}
@@ -5458,6 +5154,50 @@ export default function HUDPanel({
                                 }}>
                                   Earn CHXNDLER cards by purchasing merch and unlocking profile tiers
                                 </p>
+                              </div>
+                              
+                              {/* View Full Collection Button */}
+                              <div style={{
+                                textAlign: 'center',
+                                marginBottom: 16
+                              }}>
+                                <button
+                                  onClick={() => {
+                                    try { 
+                                      sfx.play('click', 0.6); 
+                                      // Close store popup
+                                      setShowStorePopover(false);
+                                      // Trigger binder button click to open full collection
+                                      const event = new CustomEvent('openDigitalBinder');
+                                      window.dispatchEvent(event);
+                                    } catch {} 
+                                  }}
+                                  onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                                  style={{
+                                    padding: '8px 16px',
+                                    borderRadius: 8,
+                                    border: '1px solid rgba(252,84,175,0.6)',
+                                    background: 'rgba(252,84,175,0.1)',
+                                    color: '#FC54AF',
+                                    fontSize: 12,
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    textShadow: '0 0 8px rgba(252,84,175,0.4)',
+                                    boxShadow: '0 0 12px rgba(252,84,175,0.3)'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    try { sfx.play('hover', 0.35); } catch {}
+                                    e.currentTarget.style.background = 'rgba(252,84,175,0.2)';
+                                    e.currentTarget.style.boxShadow = '0 0 16px rgba(252,84,175,0.5)';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'rgba(252,84,175,0.1)';
+                                    e.currentTarget.style.boxShadow = '0 0 12px rgba(252,84,175,0.3)';
+                                  }}
+                                >
+                                  VIEW FULL COLLECTION
+                                </button>
                               </div>
                               
                               {/* Filters */}
@@ -5544,52 +5284,6 @@ export default function HUDPanel({
                                       }}>
                                         {/* Navigation arrows above card image */}
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 8 }}>
-                                          <button
-                                            aria-label="Previous card"
-                                            className="store-arrow-btn"
-                                            onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                                            onClick={() => {
-                                              setCurrentCardIndex((i) => (i - 1 + filteredCards.length) % filteredCards.length);
-                                              try { sfx.play('click', 0.35); } catch {}
-                                            }}
-                                            style={{
-                                              width: 28, height: 28, borderRadius: 999,
-                                              background: 'linear-gradient(135deg,#ff76c8,#ff3ea5)',
-                                              border: '1px solid rgba(255,255,255,0.5)', color: '#fff',
-                                              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                              cursor: 'pointer', fontSize: 14, fontWeight: 700,
-                                              transition: 'all 0.15s ease',
-                                              boxShadow: '0 4px 12px rgba(33,150,243,0.4)'
-                                            }}
-                                            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.95)'; }}
-                                            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-                                            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-                                          >
-                                            ←
-                                          </button>
-                                          <button
-                                            aria-label="Next card"
-                                            className="store-arrow-btn"
-                                            onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                                            onClick={() => {
-                                              setCurrentCardIndex((i) => (i + 1) % filteredCards.length);
-                                              try { sfx.play('click', 0.35); } catch {}
-                                            }}
-                                            style={{
-                                              width: 28, height: 28, borderRadius: 999,
-                                              background: 'linear-gradient(135deg,#ff76c8,#ff3ea5)',
-                                              border: '1px solid rgba(255,255,255,0.5)', color: '#fff',
-                                              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                              cursor: 'pointer', fontSize: 14, fontWeight: 700,
-                                              transition: 'all 0.15s ease',
-                                              boxShadow: '0 4px 12px rgba(33,150,243,0.4)'
-                                            }}
-                                            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.95)'; }}
-                                            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-                                            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-                                          >
-                                            →
-                                          </button>
                                         </div>
                                         {/* Card Image */}
                                         <div
@@ -5809,176 +5503,6 @@ export default function HUDPanel({
                   );
                 })() : null}
 
-                {typeof document !== 'undefined' && showJoinUsPopover && joinUsPopoverPos ? require('react-dom').createPortal(
-                  <div
-                    role="dialog"
-                    aria-label="Join Us"
-                    className="lyrics-popover-hud holo-scrollbar-yellow lyrics-modal-enhanced"
-                    ref={joinUsScrollRef}
-                    style={{
-                      position: 'fixed',
-                      left: (joinUsPopoverPos && joinUsPopoverPos.left) || 0,
-                      top: (joinUsPopoverPos && joinUsPopoverPos.top) || 0,
-                      transform: (joinUsPopoverPos && joinUsPopoverPos.width) ? 'none' : 'translateX(-50%)',
-                      padding: '10px 14px 14px 14px', 
-                      borderRadius: 14,
-                      background: 'rgba(3,10,20,0.9)',
-                      border: '1px solid rgba(33,150,243,0.55)',
-                      boxShadow: '0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(33,150,243,0.45)',
-                      backdropFilter: 'blur(8px)',
-                      color: '#2196F3',
-                      zIndex: 2147483647,
-                      width: (joinUsPopoverPos && joinUsPopoverPos.width) ? joinUsPopoverPos.width : 'min(98vw, 1400px)',
-                      height: (joinUsPopoverPos && joinUsPopoverPos.height) ? joinUsPopoverPos.height : '42vh',
-                      overflow: 'auto',
-                      animation: 'lyricsModalFadeIn 0.25s ease-out, lyricsModalFloat 6s ease-in-out infinite alternate'
-                    }}
-                    onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowJoinUsPopover(false); } }}
-                  >
-                    {/* Pink close button in the top-right corner */}
-                    <button
-                      aria-label="Close join us"
-                      title="Close"
-                      onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 26px rgba(0,255,255,0.95), 0 0 42px rgba(0,255,255,0.65)'; } catch {} }}
-                      onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1.0)'; e.currentTarget.style.boxShadow = '0 0 18px rgba(0,255,255,0.75), 0 0 32px rgba(0,255,255,0.45)'; } catch {} }}
-                      onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowJoinUsPopover(false); }}
-                      style={{
-                        position: 'absolute',
-                        top: 8,
-                        right: 8,
-                        width: 32,
-                        height: 32,
-                        borderRadius: 9999,
-                        background: 'rgba(0,0,0,0.35)',
-                        border: '2px solid rgba(0,255,255,0.85)',
-                        color: '#00FFFF',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: '0 0 18px rgba(0,255,255,0.75), 0 0 32px rgba(0,255,255,0.45)',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
-                        <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                        <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                      </svg>
-                    </button>
-                    {/* Moving glow background */}
-                    <div className="lyrics-glow-bg"></div>
-                    {/* Section header */}
-                    <div className="lyrics-header" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.6)', fontSize: '12px' }}>
-                      YOU'RE INVITED INTO THE HEARTVERSE ♥
-                    </div>
-                    <div className="lyrics-content-enhanced" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.2, fontSize: 14, color: '#00FFFF', textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(0,255,255,0.6)', marginTop: '-4px' }}>
-                      CONNECT WITH OTHER ALIENS AND RECEIVE SIGNALS FOR EARLY RELEASES, SECRET TRANSMISSIONS, AND EXCLUSIVE EXPERIENCES.
-                    </div>
-                    {/* Sign-in options */}
-                    <div className="relative mt-1">
-                      <div className="flex flex-col gap-3">
-                        {/* Phone and Email side by side */}
-                        <div className="flex gap-3">
-                          {/* Phone number section */}
-                          <div className="flex-1">
-                            <label htmlFor="join-phone" className="block text-sm font-medium text-white/90 text-center">
-                              PHONE
-                            </label>
-                            <input
-                              id="join-phone"
-                              type="tel"
-                              placeholder="+1 (555) 123-4567"
-                              value={phoneInput}
-                              onChange={(e) => {
-                                setPhoneInput(e.target.value);
-                                setWelcomeBackProfile(null); // Reset welcome back state when user types
-                                setProfileSubmissionMessage(''); // Clear any previous messages
-                              }}
-                              className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-[#00FFFF] focus:outline-none"
-                            />
-                          </div>
-                          
-                          {/* Email section */}
-                          <div className="flex-1">
-                            <label htmlFor="join-email" className="block text-sm font-medium text-white/90 text-center">
-                              EMAIL
-                            </label>
-                            <input
-                              id="join-email"
-                              type="email"
-                              placeholder="you@example.com"
-                              value={emailInput}
-                              onChange={(e) => {
-                                setEmailInput(e.target.value);
-                                setWelcomeBackProfile(null); // Reset welcome back state when user types
-                                setProfileSubmissionMessage(''); // Clear any previous messages
-                              }}
-                              className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-[#00FFFF] focus:outline-none"
-                            />
-                          </div>
-                        </div>
-                        
-                        {/* Send Heart Signal button */}
-                        <button
-                          type="button"
-                          className="w-full inline-flex items-center justify-center rounded-lg bg-transparent px-4 py-3 text-sm font-medium text-[#00FFFF] transition"
-                          style={{
-                            border: '2px solid #00FFFF',
-                            boxShadow: '0 0 20px rgba(0,255,255,0.8), 0 0 40px rgba(0,255,255,0.6)'
-                          }}
-                          onMouseEnter={(e) => {
-                            try { sfx.play('hover', 0.4); } catch {}
-                            e.currentTarget.style.boxShadow = '0 0 30px rgba(0,255,255,1), 0 0 60px rgba(0,255,255,0.8), 0 0 100px rgba(0,255,255,0.6)';
-                            e.currentTarget.style.transform = 'scale(1.02)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.boxShadow = '0 0 20px rgba(0,255,255,0.8), 0 0 40px rgba(0,255,255,0.6)';
-                            e.currentTarget.style.transform = 'scale(1)';
-                          }}
-                          onClick={handleSendHeartSignal}
-                          disabled={isSubmittingProfile}
-                        >
-                          {isSubmittingProfile ? 'SENDING...' : 
-                           welcomeBackProfile?.name ? `WELCOME BACK, ${welcomeBackProfile.name.toUpperCase()}` : 
-                           'SEND HEART SIGNAL'}
-                        </button>
-                        
-                        {/* Submission message */}
-                        {profileSubmissionMessage && (
-                          <div className="text-center text-sm mt-2" style={{
-                            color: '#00FFFF',
-                            textShadow: '0 0 8px rgba(0,255,255,0.6)'
-                          }}>
-                            {profileSubmissionMessage}
-                          </div>
-                        )}
-                        
-                        {/* Google sign-in moved to bottom */}
-                        <div className="w-full">
-                          <button
-                            onClick={() => { try { sfx.play('click', 0.4); } catch {}; /* Add Google sign-in logic here */ }}
-                            className="w-full inline-flex items-center justify-center rounded-lg bg-transparent px-4 py-3 text-sm font-semibold text-[#00FFFF] transition"
-                            style={{
-                              border: '2px solid #00FFFF',
-                              boxShadow: '0 0 20px rgba(0,255,255,0.8), 0 0 40px rgba(0,255,255,0.6)'
-                            }}
-                            onMouseEnter={(e) => {
-                              try { sfx.play('hover', 0.4); } catch {}
-                              e.currentTarget.style.boxShadow = '0 0 30px rgba(0,255,255,1), 0 0 60px rgba(0,255,255,0.8), 0 0 100px rgba(0,255,255,0.6)';
-                              e.currentTarget.style.transform = 'scale(1.02)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.boxShadow = '0 0 20px rgba(0,255,255,0.8), 0 0 40px rgba(0,255,255,0.6)';
-                              e.currentTarget.style.transform = 'scale(1)';
-                            }}
-                          >
-                            Sign in with Google
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>,
-                  document.body
-                ) : null}
 
                 {/* Profile Setup Modal */}
                 {typeof document !== 'undefined' && showProfileSetup ? require('react-dom').createPortal(
@@ -6726,8 +6250,8 @@ export default function HUDPanel({
                     <button
                       aria-label="Close Soul Sky"
                       title="Close"
-                      onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 26px rgba(255,255,255,0.95), 0 0 42px rgba(255,255,255,0.65)'; } catch {} }}
-                      onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 0 16px rgba(255,255,255,0.85), 0 0 32px rgba(255,255,255,0.35)'; } catch {} }}
+                      onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 26px rgba(255,255,0,0.95), 0 0 42px rgba(255,255,0,0.65)'; } catch {} }}
+                      onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 0 16px rgba(255,255,0,0.85), 0 0 32px rgba(255,255,0,0.35)'; } catch {} }}
                       onClick={() => { 
                         try { sfx.play('close', 0.4); } catch {}; 
                         setShowSoulSkyPopover(false);
@@ -6738,9 +6262,9 @@ export default function HUDPanel({
                         position: 'absolute',
                         top: 10, right: 10,
                         width: 30, height: 30, borderRadius: 15,
-                        background: 'rgba(255,255,255,0.15)',
-                        border: '2px solid rgba(255,255,255,0.6)',
-                        color: '#FFFFFF',
+                        background: 'rgba(255,255,0,0.15)',
+                        border: '2px solid rgba(255,255,0,0.6)',
+                        color: '#FFFF00',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -6749,7 +6273,7 @@ export default function HUDPanel({
                         fontWeight: 600,
                         transition: 'all 0.2s ease',
                         zIndex: 10,
-                        boxShadow: '0 0 16px rgba(255,255,255,0.85), 0 0 32px rgba(255,255,255,0.35)',
+                        boxShadow: '0 0 16px rgba(255,255,0,0.85), 0 0 32px rgba(255,255,0,0.35)',
                         backdropFilter: 'blur(4px)'
                       }}
                     >
@@ -6760,7 +6284,23 @@ export default function HUDPanel({
                     <div className="lyrics-glow-bg"></div>
                     {/* Section header */}
                     <div className="lyrics-header" style={{ color: '#FFFFFF', textShadow: '0 0 8px rgba(255,255,255,0.6)' }}>
-                      SOUL SKY — Question of the Day
+                      SOUL SKY
+                    </div>
+                    <div style={{ 
+                      width: '100%', 
+                      height: '1px', 
+                      background: 'rgba(255,255,255,0.3)', 
+                      margin: '10px 0',
+                      boxShadow: '0 0 5px rgba(255,255,255,0.5)'
+                    }}></div>
+                    <div style={{ 
+                      color: '#FFFFFF', 
+                      textShadow: '0 0 8px rgba(255,255,255,0.6)',
+                      fontSize: '16px',
+                      marginBottom: '15px',
+                      textAlign: 'center'
+                    }}>
+                      Question of the Day
                     </div>
 
                     <div className="lyrics-content-enhanced" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.5, fontSize: 16, color: '#E8E8FF', textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(232,232,255,0.6)' }}>
@@ -6773,7 +6313,7 @@ export default function HUDPanel({
                           placeholder="Share your cosmic vision..."
                           style={{
                             width: '100%',
-                            minHeight: '150px',
+                            minHeight: '33.33vh',
                             padding: '12px',
                             background: 'rgba(0,0,20,0.6)',
                             border: '1px solid rgba(255,255,255,0.3)',
@@ -6790,9 +6330,14 @@ export default function HUDPanel({
                       </div>
 
                       <button
+                        className="cast-stars-button"
                         onClick={() => {
                           if (questionResponse.trim()) {
-                            try { sfx.play('click', 0.5); } catch {}
+                            try { 
+                              const audio = new Audio('/audio/star.mp3');
+                              audio.volume = 0.7;
+                              audio.play().catch(() => {});
+                            } catch {}
                             setShowStarAnimation(true);
                             // Star animation will appear for a few seconds
                             setTimeout(() => {
@@ -6805,9 +6350,7 @@ export default function HUDPanel({
                         style={{
                           padding: '12px 40px',
                           width: '100%',
-                          background: questionResponse.trim() 
-                            ? 'linear-gradient(45deg, rgba(255,215,0,0.4), rgba(255,223,0,0.6))' 
-                            : 'rgba(255,255,255,0.08)',
+                          background: 'transparent',
                           border: '1px solid rgba(255,215,0,0.6)',
                           borderRadius: '8px',
                           color: questionResponse.trim() ? '#FFD700' : 'rgba(255,255,255,0.5)',
@@ -7015,6 +6558,7 @@ export default function HUDPanel({
       </div>
 
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+      <WelcomeHomeModal open={showWelcomeHomeModal} onClose={() => setShowWelcomeHomeModal(false)} />
     </motion.section>
   );
 }

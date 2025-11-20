@@ -18,6 +18,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
   const [open, setOpen] = useState(false);
   const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
   const [badges, setBadges] = useState<Badge[]>([]);
+  const [maximizedBadge, setMaximizedBadge] = useState<Badge | null>(null);
 
   useEffect(() => {
     // Load user progress and update streak
@@ -67,14 +68,28 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
     }
   };
 
+  const handleBadgeClick = (badge: Badge, unlocked: boolean) => {
+    if (unlocked) {
+      try { sfx.play('click', 0.8); } catch {}
+      setMaximizedBadge(badge);
+    }
+  };
+
+  const closeBadgeModal = () => {
+    try { sfx.play('close', 0.8); } catch {}
+    setMaximizedBadge(null);
+  };
+
   return (
     <>
       <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="rounded-lg transition-all duration-200 w-12 h-10"
+        className="rounded-lg transition-all duration-200 w-12 h-10 p-0 border-0"
         style={{
           transition: 'all 0.3s ease',
+          padding: '0',
+          margin: '0',
           ...rest.style
         }}
         onMouseEnter={(e) => {
@@ -100,7 +115,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
           className="fixed inset-0 z-[2147483646] flex items-center justify-center"
           style={{
             pointerEvents: 'none',
-            paddingTop: '400px'
+            paddingTop: '200px'
           }}
         >
           <div
@@ -119,7 +134,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center"
           style={{
-            paddingTop: '300px'
+            paddingTop: '100px'
           }}
         >
           <div
@@ -246,13 +261,14 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                   {achievementBadges.slice(0, 6).map((badge) => (
                     <div key={badge.id} className="text-center">
                       <div 
-                        className="w-12 h-12 mx-auto mb-1 rounded-full border flex items-center justify-center"
+                        className="w-12 h-12 mx-auto mb-1 rounded-full border flex items-center justify-center cursor-pointer transition-transform duration-200 hover:scale-110"
                         style={{
                           borderColor: badge.unlocked ? getRarityColor(badge.rarity) : 'rgba(128,128,128,0.3)',
                           background: badge.unlocked ? getRarityGlow(badge.rarity) : 'rgba(128,128,128,0.1)',
                           boxShadow: badge.unlocked ? `0 0 12px ${getRarityGlow(badge.rarity)}` : '0 0 6px rgba(128,128,128,0.2)',
                         }}
                         title={`${badge.name}: ${badge.description}`}
+                        onClick={() => handleBadgeClick(badge, badge.unlocked)}
                       >
                         <span style={{ 
                           fontSize: '16px', 
@@ -297,13 +313,14 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                     return (
                       <div key={badge.id} className="text-center">
                         <div 
-                          className="w-12 h-12 mx-auto mb-1 rounded-full border flex items-center justify-center"
+                          className="w-12 h-12 mx-auto mb-1 rounded-full border flex items-center justify-center cursor-pointer transition-transform duration-200 hover:scale-110"
                           style={{
                             borderColor: unlocked ? getRarityColor(badge.rarity) : 'rgba(128,128,128,0.3)',
                             background: unlocked ? getRarityGlow(badge.rarity) : 'rgba(128,128,128,0.1)',
                             boxShadow: unlocked ? `0 0 12px ${getRarityGlow(badge.rarity)}` : '0 0 6px rgba(128,128,128,0.2)',
                           }}
                           title={`${badge.name}: ${badge.description}`}
+                          onClick={() => handleBadgeClick(badge, unlocked)}
                         >
                           <span style={{ 
                             fontSize: '16px', 
@@ -345,13 +362,14 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                     return (
                       <div key={badge.id} className="text-center">
                         <div 
-                          className="w-10 h-10 mx-auto mb-1 rounded-full border flex items-center justify-center"
+                          className="w-10 h-10 mx-auto mb-1 rounded-full border flex items-center justify-center cursor-pointer transition-transform duration-200 hover:scale-110"
                           style={{
                             borderColor: unlocked ? getRarityColor(badge.rarity) : 'rgba(128,128,128,0.3)',
                             background: unlocked ? getRarityGlow(badge.rarity) : 'rgba(128,128,128,0.1)',
                             boxShadow: unlocked ? `0 0 10px ${getRarityGlow(badge.rarity)}` : '0 0 4px rgba(128,128,128,0.2)',
                           }}
                           title={`${badge.name}: ${badge.description} (${badge.streakDays} days)`}
+                          onClick={() => handleBadgeClick(badge, unlocked)}
                         >
                           <span style={{ 
                             fontSize: '12px', 
@@ -378,6 +396,123 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
               </>
             )}
           </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Maximized Badge Modal */}
+      {maximizedBadge && (
+        <div 
+          className="fixed inset-0 z-[2147483648] flex items-center justify-center"
+          style={{
+            background: 'rgba(0,0,0,0.8)',
+            backdropFilter: 'blur(20px)'
+          }}
+          onClick={closeBadgeModal}
+        >
+          <div
+            className="relative"
+            style={{
+              width: 'min(90vw, 400px)',
+              height: 'min(80vh, 500px)',
+              padding: '2rem',
+              borderRadius: 24,
+              background: 'rgba(0,0,0,0.9)',
+              border: `2px solid ${getRarityColor(maximizedBadge.rarity)}`,
+              boxShadow: `
+                0 0 40px ${getRarityGlow(maximizedBadge.rarity)},
+                0 0 80px ${getRarityGlow(maximizedBadge.rarity)},
+                0 0 120px ${getRarityGlow(maximizedBadge.rarity)},
+                0 20px 40px rgba(0,0,0,0.6)
+              `,
+              backdropFilter: 'blur(20px) saturate(150%)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={closeBadgeModal}
+              className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors duration-200"
+              style={{ 
+                fontSize: '24px',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                border: '1px solid rgba(255,255,255,0.3)',
+                background: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              ×
+            </button>
+            
+            {/* Badge content */}
+            <div className="text-center h-full flex flex-col items-center justify-center">
+              {/* Large badge emoji */}
+              <div 
+                className="mb-6"
+                style={{
+                  fontSize: 'min(15vw, 120px)',
+                  filter: `drop-shadow(0 0 20px ${getRarityGlow(maximizedBadge.rarity)})`
+                }}
+              >
+                {maximizedBadge.emoji}
+              </div>
+              
+              {/* Badge name */}
+              <h2 
+                className="text-2xl md:text-3xl font-bold mb-4"
+                style={{
+                  color: getRarityColor(maximizedBadge.rarity),
+                  textShadow: `0 0 20px ${getRarityGlow(maximizedBadge.rarity)}`,
+                  textAlign: 'center'
+                }}
+              >
+                {maximizedBadge.name}
+              </h2>
+              
+              {/* Badge description */}
+              <p 
+                className="text-lg md:text-xl text-center text-white mb-6"
+                style={{
+                  textShadow: '0 0 10px rgba(255,255,255,0.5)',
+                  lineHeight: '1.6',
+                  maxWidth: '300px'
+                }}
+              >
+                {maximizedBadge.description}
+              </p>
+              
+              {/* Badge details */}
+              <div className="text-center">
+                <div 
+                  className="text-sm text-gray-300 mb-2"
+                  style={{ textShadow: '0 0 8px rgba(255,255,255,0.3)' }}
+                >
+                  RARITY: {maximizedBadge.rarity.toUpperCase()}
+                </div>
+                
+                {maximizedBadge.streakDays && (
+                  <div 
+                    className="text-sm text-gray-300"
+                    style={{ textShadow: '0 0 8px rgba(255,255,255,0.3)' }}
+                  >
+                    REQUIRES: {maximizedBadge.streakDays} DAY STREAK
+                  </div>
+                )}
+                
+                {maximizedBadge.category && (
+                  <div 
+                    className="text-xs text-gray-400 mt-2"
+                    style={{ textShadow: '0 0 6px rgba(255,255,255,0.2)' }}
+                  >
+                    CATEGORY: {maximizedBadge.category.replace('_', ' ').toUpperCase()}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

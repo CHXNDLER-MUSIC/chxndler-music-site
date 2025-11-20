@@ -4,7 +4,6 @@ import { track } from "@/lib/analytics";
 import HoloHubMenu from "@/components/HoloHubMenu";
 import LumaKeyVideo from "@/components/LumaKeyVideo";
 import HoloJoinButton from "@/components/HoloJoinButton";
-import AuthJoinCta from "@/components/AuthJoinCta";
 import JoinAliens from "@/components/JoinAliens";
 import { LINKS } from "@/config/cockpit";
 
@@ -125,7 +124,7 @@ export default function SteeringWheelOverlay({
     // Do not toggle main track audio on Start. Playback is controlled via song selection.
   }
 
-  const handleJoinAlienToggle = useCallback(() => {
+  const handleSignalToggle = useCallback(() => {
     if (!showUI || !isUIUnlocked) return;
     
     // Play button sound
@@ -134,18 +133,27 @@ export default function SteeringWheelOverlay({
       if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
     } catch {}
     
-    // Let parent handleBeamToggle manage all display coordination
-    if (joinAlienOpen && activeBeamColor === 'pink') {
-      // Currently showing pink - close it
+    // Toggle pink display instead of opening new window
+    if (joinAlienOpen || activeBeamColor === 'pink') {
+      // If pink display is open, close it
+      onJoinToggle?.(false);
       onBeamColorChange?.('off');
+      // Reset local state after beam turns off to avoid blue flash
+      setTimeout(() => {
+        suppressNextBeamNotifyRef.current = true;
+        setActiveBeamColor('blue');
+      }, 100);
     } else {
-      // Open pink display (parent will close others first)
+      // Open pink display with Twitch embed
+      setActiveBeamColor('pink');
       onBeamColorChange?.('pink');
+      onJoinToggle?.(true);
     }
     
-    // Explicit analytics event for Join Aliens button
-    try { track('join_aliens_click', { payload: { button_type: joinAlienOpen ? 'close_form' : 'open_form' } }); } catch {}
-  }, [joinAlienOpen, activeBeamColor, onBeamColorChange, showUI, isUIUnlocked]);
+    // Explicit analytics event for Signal button
+    try { track('signal_click', { payload: { button_type: 'twitch_embed' } }); } catch {}
+    try { track('twitch_embed_clicked', { location: 'signal_button' }); } catch {}
+  }, [showUI, isUIUnlocked, joinAlienOpen, activeBeamColor, onJoinToggle, onBeamColorChange]);
 
   // Helper function to get responsive values
   const getResponsiveValue = (config: any) => {
@@ -621,7 +629,7 @@ export default function SteeringWheelOverlay({
         })()}
       </div>
 
-      {/* Join Alien Button - positioned to the right of power button */}
+      {/* Signal Button - positioned to the right of power button */}
       <div
         style={{
           position: "absolute",
@@ -639,8 +647,8 @@ export default function SteeringWheelOverlay({
           const joinSize: number = 72; // Fixed size to match yellow and blue buttons
           return (
             <div style={{ pointerEvents: showUI && !isDimmingOverlayActive && isUIUnlocked ? 'auto' : 'none' }}>
-              {/* Auth-aware CTA using existing HoloJoinButton styling */}
-              <AuthJoinCta size={joinSize} hubColor="#FC54AF" onClick={handleJoinAlienToggle} isActive={joinAlienOpen} />
+              {/* Signal button for Twitch stream */}
+              <HoloJoinButton size={joinSize} hubColor="#FC54AF" onClick={handleSignalToggle} label="Live Stream" iconSrc="/elements/antennas.png" />
             </div>
           );
         })()}

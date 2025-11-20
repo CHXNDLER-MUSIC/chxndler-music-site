@@ -1,8 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { supabaseClient } from "@/lib/supabaseClient";
-import HeartversePopup from "@/components/HeartversePopup";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import BookButton from '@/components/BookButton';
+
+type Profile = {
+  id: string;
+  display_name: string | null;
+  hearts: number | null;
+};
 
 type Props = {
   open: boolean;
@@ -10,158 +16,126 @@ type Props = {
 };
 
 export default function WelcomeHomeModal({ open, onClose }: Props) {
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  async function signInWithGoogle() {
-    setError(null);
-    setMessage(null);
-    setLoading(true);
-    try {
-      const { error } = await supabaseClient.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: window.location.origin + "/auth/callback" },
-      });
-      if (error) throw error;
-    } catch (e: any) {
-      setError(e?.message || "Failed to start sign-in");
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
     }
-  }
+    if (open) {
+      window.addEventListener("keydown", onKey);
+    }
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
 
-  async function signInWithEmail(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setMessage(null);
-    setLoading(true);
-    try {
-      const { error } = await supabaseClient.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: window.location.origin + "/auth/callback" },
-      });
-      if (error) throw error;
-      setMessage("Check your email for a magic link.");
-    } catch (e: any) {
-      setError(e?.message || "Failed to send magic link");
-    } finally {
-      setLoading(false);
-    }
-  }
+  useEffect(() => {
+    if (open) {
+      // Fetch profile when modal opens
+      const fetchProfile = async () => {
+        try {
+          const res = await fetch('/api/profile');
+          if (res.ok) {
+            const data = await res.json();
+            setProfile(data);
+          }
+        } catch (error) {
+          console.log('Profile fetch failed:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
 
-  async function signInWithPhone(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setMessage(null);
-    setLoading(true);
-    try {
-      const { error } = await supabaseClient.auth.signInWithOtp({
-        phone,
-      });
-      if (error) throw error;
-      setMessage("Check your phone for a verification code.");
-    } catch (e: any) {
-      setError(e?.message || "Failed to send SMS");
-    } finally {
-      setLoading(false);
+      fetchProfile();
     }
-  }
+  }, [open]);
+
+  if (!open) return null;
+
+  const name = profile?.display_name ?? 'Pilot';
+  const hearts = profile?.hearts ?? 0;
+  const isLoggedIn = !!profile;
 
   return (
-    <HeartversePopup 
-      isOpen={open} 
-      onClose={onClose} 
-      title="WELCOME BACK TO THE HEARTVERSE <3"
+    <div
+      className="fixed z-[9999] flex justify-center items-center"
+      aria-modal="true"
+      role="dialog"
+      aria-label="Welcome Home"
+      style={{ 
+        top: '0',
+        left: '0',
+        right: '0',
+        bottom: '0'
+      }}
     >
-      <p className="relative text-sm text-white/80 mb-3">Choose your connection method.</p>
+      <div
+        className="absolute inset-0 bg-black/85 backdrop-blur-md"
+        onClick={onClose}
+      />
+      <div 
+        className="mx-4 max-w-2xl w-full relative"
+        style={{
+          zIndex: 10000
+        }}
+      >
+        <div className="relative rounded-3xl p-6 sm:p-8 backdrop-blur-md border border-white/15 bg-white/5 glow cockpit-glow" style={{
+          boxShadow:
+            '0 0 40px rgba(252,84,175,0.25), 0 0 90px rgba(56,182,255,0.25), inset 0 0 28px rgba(242,239,29,0.12)'
+        }}>
+          <div className="absolute inset-0 rounded-3xl pointer-events-none" style={{
+            background: 'linear-gradient(135deg, rgba(252,84,175,.18), rgba(56,182,255,.18))',
+            mixBlendMode: 'screen'
+          }} />
 
-          {error && (
-            <div className="relative mb-2 rounded-md bg-red-50/10 border border-red-200/40 p-2 text-sm text-red-200">
-              {error}
-            </div>
-          )}
-          {message && (
-            <div className="relative mb-2 rounded-md bg-green-50/10 border border-green-200/40 p-2 text-sm text-green-200">
-              {message}
-            </div>
-          )}
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={onClose}
+            className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white/80 border border-white/20 hover:bg-white/15 z-10"
+          >
+            ×
+          </button>
 
-          <div className="relative space-y-3">
-            <button
-              onClick={signInWithGoogle}
-              disabled={loading}
-              className="w-full inline-flex items-center justify-center rounded-lg bg-[#FC54AF] px-4 py-3 text-sm font-semibold text-black hover:brightness-110 transition disabled:opacity-50"
-            >
-              CONNECT with Google
-            </button>
-
-            <div className="relative flex items-center text-white/50">
-              <div className="flex-grow border-t border-white/20" />
-              <span className="mx-3 text-xs uppercase">or</span>
-              <div className="flex-grow border-t border-white/20" />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Phone Login Section */}
-              <form onSubmit={signInWithPhone} className="space-y-2">
-                <label htmlFor="welcome-phone" className="block text-sm font-medium text-white/90">
-                  Phone Number
-                </label>
-                <input
-                  id="welcome-phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+1 (555) 123-4567"
-                  required
-                  className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-[#38B6FF] focus:outline-none"
-                />
-                <button
-                  type="submit"
-                  disabled={loading || phone.length === 0}
-                  className="w-full inline-flex items-center justify-center rounded-lg bg-[#FC54AF]/20 border-2 border-[#FC54AF]/60 px-4 py-3 text-sm font-medium text-white hover:bg-[#FC54AF]/30 transition disabled:opacity-50"
-                  style={{
-                    boxShadow: loading || phone.length === 0 
-                      ? 'none' 
-                      : '0 0 20px rgba(252,84,175,0.6), 0 0 40px rgba(252,84,175,0.4), inset 0 0 10px rgba(252,84,175,0.2)'
-                  }}
+          <div className="relative">
+            {loading ? (
+              <div className="text-center">
+                <h2 className="text-4xl sm:text-5xl font-extrabold tracking-[0.15em] text-white drop-shadow mb-2">LOADING...</h2>
+                <p style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0, 255, 255, 0.6)' }}>
+                  Connecting to the Heartverse...
+                </p>
+              </div>
+            ) : !isLoggedIn ? (
+              <>
+                <h2 className="text-4xl sm:text-5xl font-extrabold tracking-[0.15em] text-white drop-shadow mb-2">WELCOME BACK TO THE HEARTVERSE {'<3'}</h2>
+                <p className="mb-6" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0, 255, 255, 0.6)' }}>You're invited into the Heartverse.</p>
+                <Link 
+                  href="/login" 
+                  className="inline-flex items-center justify-center rounded-xl px-24 py-4 font-semibold text-black bg-[#38B6FF] hover:brightness-110 transition shadow-[0_0_24px_rgba(56,182,255,0.45)] welcome-home-button min-w-[320px]"
+                  onClick={onClose}
                 >
-                  CONNECT
-                </button>
-              </form>
-
-              {/* Email Login Section */}
-              <form onSubmit={signInWithEmail} className="space-y-2">
-                <label htmlFor="welcome-email" className="block text-sm font-medium text-white/90">
-                  Email Address
-                </label>
-                <input
-                  id="welcome-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  required
-                  className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-[#38B6FF] focus:outline-none"
-                />
-                <button
-                  type="submit"
-                  disabled={loading || email.length === 0}
-                  className="w-full inline-flex items-center justify-center rounded-lg bg-[#FC54AF]/20 border-2 border-[#FC54AF]/60 px-4 py-3 text-sm font-medium text-white hover:bg-[#FC54AF]/30 transition disabled:opacity-50"
-                  style={{
-                    boxShadow: loading || email.length === 0 
-                      ? 'none' 
-                      : '0 0 20px rgba(252,84,175,0.6), 0 0 40px rgba(252,84,175,0.4), inset 0 0 10px rgba(252,84,175,0.2)'
-                  }}
+                  WELCOME HOME
+                </Link>
+              </>
+            ) : (
+              <>
+                <h2 className="text-4xl sm:text-5xl font-extrabold tracking-[0.12em] text-white drop-shadow mb-2 flex items-center gap-4 flex-wrap">
+                  WELCOME BACK TO THE HEARTVERSE {'<3'}, {name}
+                  <BookButton />
+                </h2>
+                <p className="text-white/80 mb-6">You have {hearts} HeartCoins.</p>
+                <Link 
+                  href="/dashboard" 
+                  className="inline-flex items-center justify-center rounded-xl px-5 py-3 font-semibold text-black bg-[#FC54AF] hover:brightness-110 transition shadow-[0_0_24px_rgba(252,84,175,0.45)]"
+                  onClick={onClose}
                 >
-                  CONNECT
-                </button>
-              </form>
-            </div>
+                  ENTER THE HEARTVERSE
+                </Link>
+              </>
+            )}
           </div>
-    </HeartversePopup>
+        </div>
+      </div>
+    </div>
   );
 }

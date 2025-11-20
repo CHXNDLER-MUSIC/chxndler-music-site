@@ -50,7 +50,7 @@ export default function ElementalButton({ asChild = false, children, onClick, on
     <>
       <button
         onClick={handleClick} 
-        className="p-1 rounded-lg transition-all duration-200 w-12 h-10"
+        className="p-1 rounded-lg transition-all duration-200 w-14 h-12"
         style={{
           transition: 'all 0.3s ease',
           ...rest.style
@@ -67,7 +67,7 @@ export default function ElementalButton({ asChild = false, children, onClick, on
         <img
           src={committedElement ? `/elements/${committedElement}.png` : (element ? `/elements/${element}.png` : "/elements/elementals.png")}
           alt={committedElement ? committedElement.charAt(0).toUpperCase() + committedElement.slice(1) : (element ? element.charAt(0).toUpperCase() + element.slice(1) : "Elementals")}
-          className="w-full h-full object-cover rounded"
+          className="w-full h-full object-contain rounded"
           draggable={false}
         />
       </button>
@@ -194,26 +194,18 @@ export default function ElementalButton({ asChild = false, children, onClick, on
 
           {/* Content */}
           <div className="flex gap-4 h-full">
-            {/* Left Side - Elemental Image */}
-            <div style={{ width: '40%', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', paddingTop: '10px' }}>
-              <div style={{ position: 'relative', width: '100%', maxWidth: 150 }}>
-                <img
-                  src={committedElement ? `/elements/${committedElement}.png` : (selectedElement ? `/elements/${selectedElement}.png` : "/elements/elemental.png")}
-                  alt={committedElement ? committedElement.charAt(0).toUpperCase() + committedElement.slice(1) : (selectedElement ? selectedElement.charAt(0).toUpperCase() + selectedElement.slice(1) : "Elemental")}
-                  style={{ 
-                    display: 'block', 
-                    width: '100%', 
-                    height: 'auto', 
-                    background: 'transparent',
-                    filter: hoveredElement === 'darkness' ? 'drop-shadow(10px 10px 20px #9400D3)' :
-                           hoveredElement === 'heart' ? 'drop-shadow(-10px 10px 20px #FF69B4)' :
-                           hoveredElement === 'water' ? 'drop-shadow(10px -10px 20px #00BFFF)' :
-                           hoveredElement === 'lightning' ? 'drop-shadow(-10px -10px 20px #FFD700)' : 'none',
-                    transition: 'filter 0.3s ease'
-                  }}
-                />
-                
-                {/* Quadrant overlay buttons */}
+            {/* Four Elements Box */}
+            <div style={{ width: '40%', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '10px' }}>
+              <div 
+                className="grid grid-cols-2 gap-2 p-3 rounded-lg border"
+                style={{
+                  borderColor: 'rgba(147,51,234,0.4)',
+                  background: 'rgba(147,51,234,0.1)',
+                  boxShadow: '0 0 15px rgba(147,51,234,0.3)',
+                  marginBottom: '16px'
+                }}
+              >
+                {/* Darkness - Top Left */}
                 <button 
                   aria-label="Darkness" 
                   title="Darkness" 
@@ -222,25 +214,22 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                     e.stopPropagation();
                     selectElement('darkness');
                   }} 
-                  onMouseEnter={() => {
-                    setHoveredElement('darkness');
-                    try { sfx.play('hover', 0.25); } catch {}
-                  }}
-                  onMouseLeave={() => setHoveredElement(null)}
+                  className="w-16 h-16 rounded-lg border-2 transition-all duration-300 flex items-center justify-center"
                   style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '50%',
-                    height: '50%',
-                    background: hoveredElement !== 'darkness' && hoveredElement ? 'rgba(148,0,211,0.3)' : 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'background 0.3s ease',
-                    clipPath: 'polygon(0 0, 100% 0, 0 100%)'
+                    borderColor: selectedElement === 'darkness' ? 'rgba(148,0,211,0.8)' : 'rgba(148,0,211,0.3)',
+                    background: selectedElement === 'darkness' ? 'rgba(148,0,211,0.2)' : 'rgba(148,0,211,0.05)',
+                    boxShadow: selectedElement === 'darkness' ? '0 0 20px rgba(148,0,211,0.6)' : 'none'
                   }}
-                  data-element="darkness"
-                />
+                >
+                  <img
+                    src="/elements/darkness.png"
+                    alt="Darkness"
+                    className="w-12 h-12 object-contain"
+                    draggable={false}
+                  />
+                </button>
+
+                {/* Heart - Top Right */}
                 <button 
                   aria-label="Heart" 
                   title="Heart" 
@@ -249,25 +238,22 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                     e.stopPropagation();
                     selectElement('heart');
                   }} 
-                  onMouseEnter={() => {
-                    setHoveredElement('heart');
-                    try { sfx.play('hover', 0.25); } catch {}
-                  }}
-                  onMouseLeave={() => setHoveredElement(null)}
+                  className="w-16 h-16 rounded-lg border-2 transition-all duration-300 flex items-center justify-center"
                   style={{
-                    position: 'absolute',
-                    top: 0,
-                    right: 0,
-                    width: '50%',
-                    height: '50%',
-                    background: hoveredElement !== 'heart' && hoveredElement ? 'rgba(255,105,180,0.3)' : 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'background 0.3s ease',
-                    clipPath: 'polygon(100% 0, 100% 100%, 0 0)'
+                    borderColor: selectedElement === 'heart' ? 'rgba(255,105,180,0.8)' : 'rgba(255,105,180,0.3)',
+                    background: selectedElement === 'heart' ? 'rgba(255,105,180,0.2)' : 'rgba(255,105,180,0.05)',
+                    boxShadow: selectedElement === 'heart' ? '0 0 20px rgba(255,105,180,0.6)' : 'none'
                   }}
-                  data-element="heart"
-                />
+                >
+                  <img
+                    src="/elements/heart.png"
+                    alt="Heart"
+                    className="w-12 h-12 object-contain"
+                    draggable={false}
+                  />
+                </button>
+
+                {/* Water - Bottom Left */}
                 <button 
                   aria-label="Water" 
                   title="Water" 
@@ -276,25 +262,22 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                     e.stopPropagation();
                     selectElement('water');
                   }} 
-                  onMouseEnter={() => {
-                    setHoveredElement('water');
-                    try { sfx.play('hover', 0.25); } catch {}
-                  }}
-                  onMouseLeave={() => setHoveredElement(null)}
+                  className="w-16 h-16 rounded-lg border-2 transition-all duration-300 flex items-center justify-center"
                   style={{
-                    position: 'absolute',
-                    bottom: 0,
-                    left: 0,
-                    width: '50%',
-                    height: '50%',
-                    background: hoveredElement !== 'water' && hoveredElement ? 'rgba(0,191,255,0.3)' : 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'background 0.3s ease',
-                    clipPath: 'polygon(0 100%, 100% 100%, 0 0)'
+                    borderColor: selectedElement === 'water' ? 'rgba(0,191,255,0.8)' : 'rgba(0,191,255,0.3)',
+                    background: selectedElement === 'water' ? 'rgba(0,191,255,0.2)' : 'rgba(0,191,255,0.05)',
+                    boxShadow: selectedElement === 'water' ? '0 0 20px rgba(0,191,255,0.6)' : 'none'
                   }}
-                  data-element="water"
-                />
+                >
+                  <img
+                    src="/elements/water.png"
+                    alt="Water"
+                    className="w-12 h-12 object-contain"
+                    draggable={false}
+                  />
+                </button>
+
+                {/* Lightning - Bottom Right */}
                 <button 
                   aria-label="Lightning" 
                   title="Lightning" 
@@ -303,25 +286,20 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                     e.stopPropagation();
                     selectElement('lightning');
                   }} 
-                  onMouseEnter={() => {
-                    setHoveredElement('lightning');
-                    try { sfx.play('hover', 0.25); } catch {}
-                  }}
-                  onMouseLeave={() => setHoveredElement(null)}
+                  className="w-16 h-16 rounded-lg border-2 transition-all duration-300 flex items-center justify-center"
                   style={{
-                    position: 'absolute',
-                    bottom: 0,
-                    right: 0,
-                    width: '50%',
-                    height: '50%',
-                    background: hoveredElement !== 'lightning' && hoveredElement ? 'rgba(255,215,0,0.3)' : 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'background 0.3s ease',
-                    clipPath: 'polygon(100% 100%, 100% 0, 0 100%)'
+                    borderColor: selectedElement === 'lightning' ? 'rgba(255,215,0,0.8)' : 'rgba(255,215,0,0.3)',
+                    background: selectedElement === 'lightning' ? 'rgba(255,215,0,0.2)' : 'rgba(255,215,0,0.05)',
+                    boxShadow: selectedElement === 'lightning' ? '0 0 20px rgba(255,215,0,0.6)' : 'none'
                   }}
-                  data-element="lightning"
-                />
+                >
+                  <img
+                    src="/elements/lightning.png"
+                    alt="Lightning"
+                    className="w-12 h-12 object-contain"
+                    draggable={false}
+                  />
+                </button>
               </div>
             </div>
 
@@ -377,9 +355,9 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                     }}
                   >
                     {hoveredElement === 'darkness' ? 'Mystery & Transformation' :
-                     hoveredElement === 'heart' ? 'Emotion & Connection' :
+                     hoveredElement === 'heart' ? 'HEART embodies emotion, vulnerability, and connection. It symbolizes love, compassion, and the courage to stay open. HEART songs are tender, raw, and real, pulling you into the spaces where feeling becomes truth and connection begins.' :
                      hoveredElement === 'water' ? 'Flow & Adaptation' :
-                     hoveredElement === 'lightning' ? 'Energy & Speed' : ''}
+                     hoveredElement === 'lightning' ? 'LIGHTNING holds energy, passion, and awakening. It represents breakthroughs, inspiration, and sudden clarity. These songs are fast, alive, and electric, striking with intensity and capturing the rush of change when everything shifts at once.' : ''}
                   </div>
                 </div>
               )}
@@ -389,13 +367,16 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                 <div 
                   className="text-center p-3"
                   style={{ 
-                    color: 'rgba(255,255,255,0.7)', 
+                    color: '#FFFFFF', 
                     fontSize: '14px',
-                    fontStyle: 'italic',
+                    fontWeight: 'bold',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px',
+                    textShadow: '0 0 10px #FFFFFF, 0 0 20px #FFFFFF, 0 0 30px #FFFFFF',
                     marginBottom: '16px'
                   }}
                 >
-                  Hover over the elemental quadrants to explore each element's power
+                  explore each element's power
                 </div>
               )}
               
@@ -418,30 +399,38 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                               selectedElement === 'lightning' ? '0 0 20px rgba(255,215,0,0.4)' : 'none'
                   }}
                 >
+                  {selectedElement !== 'lightning' && (
+                    <div 
+                      style={{ 
+                        color: selectedElement === 'darkness' ? '#9400D3' :
+                               selectedElement === 'heart' ? '#FF69B4' :
+                               selectedElement === 'water' ? '#00BFFF' :
+                               selectedElement === 'lightning' ? '#FFD700' : '#FFFFFF',
+                        fontWeight: 'bold',
+                        fontSize: '18px',
+                        marginBottom: '8px',
+                        textShadow: selectedElement === 'darkness' ? '0 0 10px rgba(148,0,211,1)' :
+                                   selectedElement === 'heart' ? '0 0 10px rgba(255,105,180,1)' :
+                                   selectedElement === 'water' ? '0 0 10px rgba(0,191,255,1)' :
+                                   selectedElement === 'lightning' ? '0 0 10px rgba(255,215,0,1)' : 'none'
+                      }}
+                    >
+                      {selectedElement === 'heart' ? 'Heart = love and connection' : `SELECTED: ${selectedElement.toUpperCase()}`}
+                    </div>
+                  )}
                   <div 
                     style={{ 
-                      color: selectedElement === 'darkness' ? '#9400D3' :
-                             selectedElement === 'heart' ? '#FF69B4' :
-                             selectedElement === 'water' ? '#00BFFF' :
-                             selectedElement === 'lightning' ? '#FFD700' : '#FFFFFF',
-                      fontWeight: 'bold',
-                      fontSize: '18px',
-                      marginBottom: '8px',
-                      textShadow: selectedElement === 'darkness' ? '0 0 10px rgba(148,0,211,1)' :
-                                 selectedElement === 'heart' ? '0 0 10px rgba(255,105,180,1)' :
-                                 selectedElement === 'water' ? '0 0 10px rgba(0,191,255,1)' :
-                                 selectedElement === 'lightning' ? '0 0 10px rgba(255,215,0,1)' : 'none'
+                      color: selectedElement === 'lightning' ? '#FFFF00' : 'rgba(255,255,255,0.9)',
+                      fontSize: '12px',
+                      textShadow: selectedElement === 'lightning' ? '0 0 10px #FFFF00, 0 0 20px #FFFF00, 0 0 30px #FFFF00' : 'none'
                     }}
                   >
-                    SELECTED: {selectedElement.toUpperCase()}
-                  </div>
-                  <div 
-                    style={{ 
-                      color: 'rgba(255,255,255,0.9)',
-                      fontSize: '12px'
-                    }}
-                  >
-                    You have chosen the path of {selectedElement}. This element will guide your journey through the Heartverse.
+                    {selectedElement === 'lightning' ? 
+                      'LIGHTNING holds energy, passion, and awakening. It represents breakthroughs, inspiration, and sudden clarity. These songs are fast, alive, and electric, striking with intensity and capturing the rush of change when everything shifts at once.' :
+                      selectedElement === 'heart' ? 
+                      'HEART embodies emotion, vulnerability, and connection. It symbolizes love, compassion, and the courage to stay open. HEART songs are tender, raw, and real, pulling you into the spaces where feeling becomes truth and connection begins.' :
+                      `You have chosen the path of ${selectedElement}. This element will guide your journey through the Heartverse.`
+                    }
                   </div>
                 </div>
               )}

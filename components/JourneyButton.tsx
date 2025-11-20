@@ -189,10 +189,10 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
             <div className="text-center mb-4">
               <div 
                 style={{ 
-                  color: '#FFFFFF', 
+                  color: '#00FFFF', 
                   fontSize: '20px',
                   fontWeight: 'bold',
-                  textShadow: '0 0 12px rgba(255,255,255,1), 0 0 20px rgba(255,255,255,0.8), 0 0 30px rgba(255,255,255,0.6)',
+                  textShadow: '0 0 12px #00FFFF, 0 0 20px #00FFFF, 0 0 30px #00FFFF',
                   marginBottom: '8px'
                 }}
               >

@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { sfx } from "@/lib/sfx";
+import SoulStareModal from "./SoulStareModal";
+import { hasAnsweredToday, getTodaysQuestion } from "@/lib/dailyQuestions";
 
 type Props = {
   onBack: () => void;
@@ -24,11 +26,12 @@ function useQuestStatus() {
     liveShow: false
   });
   const [todaysElement, setTodaysElement] = useState({ name: "dreamer", color: "pink" });
+  const [todaysQuestion, setTodaysQuestion] = useState(getTodaysQuestion());
   
   useEffect(() => {
     const today = new Date().toDateString();
     const elementDone = localStorage.getItem(`quest_element_${today}`) === 'true';
-    const journalDone = localStorage.getItem(`quest_journal_${today}`) === 'true';
+    const journalDone = localStorage.getItem(`quest_journal_${today}`) === 'true' || hasAnsweredToday();
     const inviteDone = localStorage.getItem(`quest_invite_${today}`) === 'true';
     const liveshowDone = localStorage.getItem(`quest_liveshow_${today}`) === 'true';
     
@@ -64,7 +67,15 @@ export default function QuestList({ onBack, onOpenStore }: Props) {
   const [secretPhrase, setSecretPhrase] = useState("");
   const [checkInMessage, setCheckInMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showSoulStare, setShowSoulStare] = useState(false);
+  const [showWelcomeMessage, setShowWelcomeMessage] = useState(true);
+  const [celebrationMessage, setCelebrationMessage] = useState("");
   const { questStatus, setQuestStatus, todaysElement } = useQuestStatus();
+
+  const showCelebration = (message: string) => {
+    setCelebrationMessage(message);
+    setTimeout(() => setCelebrationMessage(""), 3000);
+  };
 
   const handleElementTap = async () => {
     if (questStatus.elementOfDay || loading) return;
@@ -84,6 +95,7 @@ export default function QuestList({ onBack, onOpenStore }: Props) {
         // Save to localStorage to persist across sessions for today
         const today = new Date().toDateString();
         localStorage.setItem(`quest_element_${today}`, 'true');
+        showCelebration(`✨ Element touched! Your ${todaysElement.name} energy is awakened! +1 HeartCoin earned.`);
       }
     } catch (error) {
       console.error('Failed to award heart coin:', error);
@@ -92,30 +104,19 @@ export default function QuestList({ onBack, onOpenStore }: Props) {
     }
   };
 
-  const handleJournalOpen = async () => {
+  const handleJournalOpen = () => {
     if (questStatus.journalEntry || loading) return;
     
     try { sfx.play('click', 0.8); } catch {}
-    setLoading(true);
-    
-    try {
-      const response = await fetch('/api/heart-coins/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ heartCoinsToAdd: 1 })
-      });
-      
-      if (response.ok) {
-        setQuestStatus(prev => ({ ...prev, journalEntry: true }));
-        // Save to localStorage to persist across sessions for today
-        const today = new Date().toDateString();
-        localStorage.setItem(`quest_journal_${today}`, 'true');
-      }
-    } catch (error) {
-      console.error('Failed to award heart coin:', error);
-    } finally {
-      setLoading(false);
-    }
+    setShowSoulStare(true);
+  };
+
+  const handleSoulStareComplete = () => {
+    setQuestStatus(prev => ({ ...prev, journalEntry: true }));
+    // Save to localStorage to persist across sessions for today
+    const today = new Date().toDateString();
+    localStorage.setItem(`quest_journal_${today}`, 'true');
+    showCelebration("🌟 Soul reflection complete! Your inner wisdom has been honored. +1 HeartCoin earned.");
   };
 
   const handleInviteFriend = async () => {
@@ -138,6 +139,7 @@ export default function QuestList({ onBack, onOpenStore }: Props) {
           // Save to localStorage to persist across sessions for today
           const today = new Date().toDateString();
           localStorage.setItem(`quest_invite_${today}`, 'true');
+          showCelebration("💕 Love shared! You've planted a seed of connection. +1 HeartCoin earned.");
         }
       } catch (error) {
         console.error('Failed to award heart coin:', error);
@@ -188,6 +190,7 @@ export default function QuestList({ onBack, onOpenStore }: Props) {
           // Save to localStorage to persist across sessions for today
           const today = new Date().toDateString();
           localStorage.setItem(`quest_liveshow_${today}`, 'true');
+          showCelebration("🎵 Live show magic! You're part of something special tonight. +5 HeartCoins earned!");
         }
       } catch (error) {
         console.error('Failed to award heart coins:', error);
@@ -197,6 +200,11 @@ export default function QuestList({ onBack, onOpenStore }: Props) {
       }
     }
   };
+
+  // Calculate quest progress
+  const completedQuests = Object.values(questStatus).filter(Boolean).length;
+  const totalQuests = Object.keys(questStatus).length;
+  const progressPercent = Math.round((completedQuests / totalQuests) * 100);
 
   return (
     <div className="space-y-4">
@@ -208,6 +216,109 @@ export default function QuestList({ onBack, onOpenStore }: Props) {
       >
         ← Back to Heart Coins
       </button>
+
+      {/* Welcome/Progress Message */}
+      {showWelcomeMessage && (
+        <div 
+          className="text-center mb-6 p-3 border border-pink-500/30 rounded-lg"
+          style={{ 
+            background: 'rgba(255,105,180,0.1)',
+            boxShadow: '0 0 15px rgba(255,105,180,0.3)'
+          }}
+          onClick={() => setShowWelcomeMessage(false)}
+        >
+          <div 
+            className="text-sm font-bold mb-2"
+            style={{ 
+              color: '#FF69B4',
+              textShadow: '0 0 8px rgba(255,105,180,0.8)'
+            }}
+          >
+            💫 Heart Quest Progress: {completedQuests}/{totalQuests} ({progressPercent}%)
+          </div>
+          <div 
+            className="text-xs"
+            style={{ 
+              color: '#FFFFFF',
+              textShadow: '0 0 4px rgba(255,255,255,0.6)'
+            }}
+          >
+            {completedQuests === 0 
+              ? "Start your journey! Each quest brings you closer to expanding your heart energy."
+              : completedQuests === totalQuests
+                ? "🌟 Amazing! You've completed all quests today. Your heart shines bright!"
+                : `You're doing great! ${totalQuests - completedQuests} quests remaining to unlock your full heart potential.`
+            }
+          </div>
+          <div 
+            className="mt-2 text-xs opacity-75"
+            style={{ color: '#00FFFF' }}
+          >
+            (Click to dismiss)
+          </div>
+        </div>
+      )}
+
+      {/* Celebration Message */}
+      {celebrationMessage && (
+        <div 
+          className="text-center mb-6 p-4 border border-yellow-500/50 rounded-lg animate-pulse"
+          style={{ 
+            background: 'radial-gradient(ellipse at center, rgba(255,215,0,0.2) 0%, rgba(255,105,180,0.1) 70%, transparent 100%)',
+            boxShadow: '0 0 25px rgba(255,215,0,0.4)',
+            animation: 'pulse 1s ease-in-out infinite alternate'
+          }}
+        >
+          <div 
+            className="text-sm font-bold"
+            style={{ 
+              color: '#FFD700',
+              textShadow: '0 0 12px rgba(255,215,0,0.8)'
+            }}
+          >
+            {celebrationMessage}
+          </div>
+        </div>
+      )}
+
+      {/* Today's Daily Question Display */}
+      <div 
+        className="mb-6 p-4 border rounded-lg"
+        style={{ 
+          background: `rgba(${todaysQuestion.color === '#8B5CF6' ? '139, 92, 246' : 
+                         todaysQuestion.color === '#EC4899' ? '236, 72, 153' :
+                         todaysQuestion.color === '#06B6D4' ? '6, 182, 212' :
+                         '16, 185, 129'}, 0.1)`,
+          border: `1px solid rgba(${todaysQuestion.color === '#8B5CF6' ? '139, 92, 246' : 
+                         todaysQuestion.color === '#EC4899' ? '236, 72, 153' :
+                         todaysQuestion.color === '#06B6D4' ? '6, 182, 212' :
+                         '16, 185, 129'}, 0.4)`,
+          boxShadow: `0 0 15px rgba(${todaysQuestion.color === '#8B5CF6' ? '139, 92, 246' : 
+                         todaysQuestion.color === '#EC4899' ? '236, 72, 153' :
+                         todaysQuestion.color === '#06B6D4' ? '6, 182, 212' :
+                         '16, 185, 129'}, 0.3)`
+        }}
+      >
+        <h3 
+          className="text-sm font-bold mb-2 text-center uppercase tracking-wider"
+          style={{ 
+            color: todaysQuestion.color,
+            textShadow: `0 0 8px ${todaysQuestion.glowColor}`
+          }}
+        >
+          🌟 Today's {todaysQuestion.category.toUpperCase()} Question
+        </h3>
+        <div 
+          className="text-center text-base font-medium px-2"
+          style={{ 
+            color: '#FFFFFF',
+            textShadow: '0 0 4px rgba(255,255,255,0.6)',
+            lineHeight: '1.4'
+          }}
+        >
+          "{todaysQuestion.question}"
+        </div>
+      </div>
 
       {/* Daily Quests Section */}
       <div className="mb-6">
@@ -291,8 +402,8 @@ export default function QuestList({ onBack, onOpenStore }: Props) {
         >
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <h4 className="text-white font-semibold mb-1">2. Journal Entry of the Day</h4>
-              <p className="text-white/80 text-sm mb-2">Answer today's journal prompt to earn one HeartCoin.</p>
+              <h4 className="text-white font-semibold mb-1">2. Soul Stare - Daily Reflection</h4>
+              <p className="text-white/80 text-sm mb-2">Answer today's introspective question to earn one HeartCoin.</p>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -312,7 +423,7 @@ export default function QuestList({ onBack, onOpenStore }: Props) {
                     : '0 0 4px rgba(252,84,175,0.6)'
                 }}
               >
-                {questStatus.journalEntry ? '✓ COMPLETE' : 'OPEN JOURNAL'}
+                {questStatus.journalEntry ? '✓ COMPLETE' : 'SOUL STARE'}
               </button>
               <div 
                 className={`font-bold text-sm ${
@@ -491,6 +602,13 @@ export default function QuestList({ onBack, onOpenStore }: Props) {
           </div>
         </div>
       </div>
+      
+      {/* Soul Stare Modal */}
+      <SoulStareModal
+        isOpen={showSoulStare}
+        onClose={() => setShowSoulStare(false)}
+        onComplete={handleSoulStareComplete}
+      />
     </div>
   );
 }

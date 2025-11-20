@@ -1469,7 +1469,7 @@ button:hover > .heart-coin-glow,
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #000;
-  background: radial-gradient(circle at 30% 30%, #00DCFF, #00BFFF);
+  background: radial-gradient(circle at 30% 30%, #FFD700, #FFA500);
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1528,5 +1528,115 @@ button:hover > .heart-coin-glow,
 }
 .journey-neon:active {
   transform: scale(0.98);
+}
+
+/* Enhanced Welcome Home Button Styles */
+.welcome-home-button {
+  position: relative;
+  animation: welcome-pulse 2.5s ease-in-out infinite;
+  box-shadow: 
+    0 0 35px rgba(56, 182, 255, 0.8),
+    0 0 60px rgba(56, 182, 255, 0.6),
+    0 0 90px rgba(56, 182, 255, 0.4),
+    inset 0 0 20px rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.welcome-home-button::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 16px;
+  background: linear-gradient(45deg, rgba(56, 182, 255, 0.3), rgba(25, 227, 255, 0.3), rgba(56, 182, 255, 0.3));
+  z-index: -1;
+  filter: blur(8px);
+  opacity: 0.8;
+  animation: welcome-border-pulse 2.5s ease-in-out infinite;
+}
+
+.welcome-home-button:hover {
+  animation: welcome-hover-pulse 1.2s ease-in-out infinite;
+  transform: scale(1.08);
+  box-shadow: 
+    0 0 50px rgba(56, 182, 255, 1),
+    0 0 90px rgba(56, 182, 255, 0.8),
+    0 0 130px rgba(56, 182, 255, 0.6),
+    0 0 170px rgba(56, 182, 255, 0.4),
+    inset 0 0 30px rgba(255, 255, 255, 0.2);
+}
+
+.welcome-home-button:hover::before {
+  animation: welcome-border-hover-pulse 1.2s ease-in-out infinite;
+  filter: blur(12px);
+  opacity: 1;
+}
+
+@keyframes welcome-pulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 35px rgba(56, 182, 255, 0.8),
+      0 0 60px rgba(56, 182, 255, 0.6),
+      0 0 90px rgba(56, 182, 255, 0.4),
+      inset 0 0 20px rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 0 45px rgba(56, 182, 255, 1),
+      0 0 80px rgba(56, 182, 255, 0.8),
+      0 0 120px rgba(56, 182, 255, 0.6),
+      inset 0 0 25px rgba(255, 255, 255, 0.15);
+  }
+}
+
+@keyframes welcome-border-pulse {
+  0%, 100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes welcome-hover-pulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 50px rgba(56, 182, 255, 1),
+      0 0 90px rgba(56, 182, 255, 0.8),
+      0 0 130px rgba(56, 182, 255, 0.6),
+      0 0 170px rgba(56, 182, 255, 0.4),
+      inset 0 0 30px rgba(255, 255, 255, 0.2);
+  }
+  50% {
+    box-shadow: 
+      0 0 70px rgba(56, 182, 255, 1),
+      0 0 120px rgba(56, 182, 255, 1),
+      0 0 160px rgba(56, 182, 255, 0.8),
+      0 0 200px rgba(56, 182, 255, 0.6),
+      inset 0 0 40px rgba(255, 255, 255, 0.3);
+  }
+}
+
+@keyframes welcome-border-hover-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+/* Cast into Stars Button Glow Effects */
+.cast-stars-button:not(:disabled):hover {
+  box-shadow: 0 0 30px rgba(255,215,0,0.8), 0 0 60px rgba(255,223,0,0.6), inset 0 1px rgba(255,255,255,0.3) !important;
+  text-shadow: 0 0 12px rgba(255,215,0,1), 0 0 24px rgba(255,223,0,0.9), 0 0 36px rgba(255,215,0,0.7) !important;
+}
+
+.cast-stars-button:not(:disabled):active {
+  box-shadow: 0 0 40px rgba(255,215,0,1), 0 0 80px rgba(255,223,0,0.8), inset 0 1px rgba(255,255,255,0.4) !important;
+  text-shadow: 0 0 16px rgba(255,215,0,1), 0 0 32px rgba(255,223,0,1), 0 0 48px rgba(255,215,0,0.8) !important;
 }
 

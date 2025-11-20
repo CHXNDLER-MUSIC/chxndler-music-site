@@ -156,6 +156,20 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
     }));
   };
 
+  // Listen for custom event from store cards tab
+  useEffect(() => {
+    const handleOpenDigitalBinder = () => {
+      try { onCloseBlueDisplay?.(); } catch {}
+      setOpen(true);
+      setShowFullCollection(true);
+      setSelectedElement(null);
+      setCurrentCardIndex(0);
+    };
+
+    window.addEventListener('openDigitalBinder', handleOpenDigitalBinder);
+    return () => window.removeEventListener('openDigitalBinder', handleOpenDigitalBinder);
+  }, [onCloseBlueDisplay]);
+
   // Arrow key navigation
   useEffect(() => {
     if (!showFullCollection || !selectedElement) return;

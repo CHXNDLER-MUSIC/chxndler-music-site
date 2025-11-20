@@ -17,6 +17,7 @@ export default function HoloStarsButton({
   const [showStarAnimation, setShowStarAnimation] = useState(false);
   const [questionResponse, setQuestionResponse] = useState("");
   const [showSoulSky, setShowSoulSky] = useState(false);
+  const [showSoulStarText, setShowSoulStarText] = useState(false);
 
   function handleActivate() {
     try { 
@@ -43,6 +44,11 @@ export default function HoloStarsButton({
     setShowStarAnimation(true);
     setQuestionResponse("");
     
+    // Show soul star text in button after a delay
+    setTimeout(() => {
+      setShowSoulStarText(true);
+    }, 2000);
+    
     // Hide modal after animation
     setTimeout(() => {
       setShowModal(false);
@@ -58,9 +64,9 @@ export default function HoloStarsButton({
         aria-label={label}
         onClick={handleActivate}
         onHoverSound={() => sfx.play('hover', 0.35)}
-        className="custom-stars-style"
+        className={`custom-stars-style ${showSoulStarText ? 'soul-star-text' : ''}`}
       >
-        ⭐
+        {showSoulStarText ? "Your soul star shines above." : "⭐"}
       </SharedButton>
       
       <style jsx>{`
@@ -71,27 +77,63 @@ export default function HoloStarsButton({
           font-size: 24px;
           color: #FFFF00;
           background: transparent;
-          border: 2px solid #FFFF00;
+          border: 2px solid transparent;
           transition: all 0.2s ease;
           cursor: pointer;
           display: inline-flex;
           align-items: center;
           justify-content: center;
           padding: 4px;
+          text-shadow: 
+            0 0 10px #FFFF00,
+            0 0 20px #FFFF00,
+            0 0 30px #FFFF00,
+            0 0 40px #FFFF00;
           box-shadow: 
-            0 0 0 1px rgba(255, 255, 0, 0.8),
-            0 4px 16px rgba(255, 255, 0, 0.6),
-            0 0 30px rgba(255, 255, 0, 0.4),
-            inset 0 0 16px rgba(255, 255, 0, 0.3);
+            0 0 20px rgba(255, 255, 0, 0.6),
+            0 0 40px rgba(255, 255, 0, 0.4),
+            0 0 60px rgba(255, 255, 0, 0.2);
+        }
+        
+        .soul-star-text {
+          width: auto;
+          min-width: 200px;
+          height: auto;
+          border-radius: 25px;
+          font-size: 0.8rem;
+          padding: 0.75rem 1.5rem;
+          white-space: nowrap;
+          text-align: center;
+          animation: soulStarGlow 2s ease-in-out infinite alternate;
+        }
+        
+        @media (max-width: 768px) {
+          .soul-star-text {
+            min-width: 150px;
+            font-size: 0.7rem;
+            padding: 0.5rem 1rem;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          .soul-star-text {
+            min-width: 120px;
+            font-size: 0.6rem;
+            padding: 0.4rem 0.8rem;
+          }
         }
         
         .custom-stars-style:hover {
           transform: scale(1.1);
+          text-shadow: 
+            0 0 15px #FFFF00,
+            0 0 25px #FFFF00,
+            0 0 35px #FFFF00,
+            0 0 50px #FFFF00;
           box-shadow: 
-            0 0 0 2px rgba(255, 255, 0, 1),
-            0 8px 32px rgba(255, 255, 0, 0.8),
+            0 0 30px rgba(255, 255, 0, 0.8),
             0 0 50px rgba(255, 255, 0, 0.6),
-            inset 0 0 20px rgba(255, 255, 0, 0.5);
+            0 0 80px rgba(255, 255, 0, 0.4);
         }
         
         .custom-stars-style:active {
@@ -108,11 +150,18 @@ export default function HoloStarsButton({
           <div className="modal-container">
             {!showStarAnimation && (
               <div className="question-modal">
+                <button 
+                  className="close-button"
+                  onClick={() => setShowModal(false)}
+                  aria-label="Close"
+                >
+                  ×
+                </button>
                 <div className="solsky-header">
                   <h1>SolSky</h1>
                   <div className="divider"></div>
+                  <h2>Question of the Day</h2>
                 </div>
-                <h2>Question of the Day</h2>
                 <div className="cosmic-vision-section">
                   <label className="cosmic-vision-label">Share your cosmic vision</label>
                   <textarea
@@ -184,8 +233,8 @@ export default function HoloStarsButton({
             
             .soul-sky-header h1 {
               font-size: clamp(2rem, 8vw, 4rem);
-              color: #00BFFF;
-              text-shadow: 0 0 20px #00BFFF, 0 0 40px #00BFFF;
+              color: #FFFF00;
+              text-shadow: 0 0 20px #FFFF00, 0 0 40px #FFFF00;
               font-weight: bold;
               letter-spacing: 0.2em;
               margin: 0;
@@ -200,6 +249,39 @@ export default function HoloStarsButton({
               text-align: center;
               box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
               animation: modalFadeIn 1s ease-out 1s both;
+              position: relative;
+            }
+            
+            .close-button {
+              position: absolute;
+              top: 1rem;
+              right: 1rem;
+              background: transparent;
+              border: none;
+              color: #FFFF00;
+              font-size: 2rem;
+              cursor: pointer;
+              width: 40px;
+              height: 40px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              border-radius: 50%;
+              transition: all 0.2s ease;
+              text-shadow: 
+                0 0 10px #FFFF00,
+                0 0 20px #FFFF00,
+                0 0 30px #FFFF00;
+              z-index: 10;
+            }
+            
+            .close-button:hover {
+              transform: scale(1.1);
+              text-shadow: 
+                0 0 15px #FFFF00,
+                0 0 25px #FFFF00,
+                0 0 35px #FFFF00,
+                0 0 45px #FFFF00;
             }
             
             .solsky-header {
@@ -245,7 +327,8 @@ export default function HoloStarsButton({
             
             .response-area {
               width: 100%;
-              min-height: 60px;
+              min-height: 40px;
+              height: 40px;
               background: rgba(0, 0, 0, 0.8);
               border: 1px solid #FFD700;
               border-radius: 0.5rem;
@@ -323,10 +406,10 @@ export default function HoloStarsButton({
             
             @keyframes soulSkyGlow {
               0% {
-                text-shadow: 0 0 20px #00BFFF, 0 0 40px #00BFFF;
+                text-shadow: 0 0 20px #FFFF00, 0 0 40px #FFFF00;
               }
               100% {
-                text-shadow: 0 0 30px #00BFFF, 0 0 60px #00BFFF, 0 0 80px #00BFFF;
+                text-shadow: 0 0 30px #FFFF00, 0 0 60px #FFFF00, 0 0 80px #FFFF00;
               }
             }
             
@@ -353,6 +436,29 @@ export default function HoloStarsButton({
                 transform: scale(0.3) rotate(360deg) translateY(-200px) translateX(100px);
                 opacity: 0.2;
                 filter: brightness(2) drop-shadow(0 0 10px #FFD700);
+              }
+            }
+            
+            @keyframes soulStarGlow {
+              0% {
+                text-shadow: 
+                  0 0 10px #FFFF00,
+                  0 0 20px #FFFF00,
+                  0 0 30px #FFFF00;
+                box-shadow: 
+                  0 0 20px rgba(255, 255, 0, 0.6),
+                  0 0 40px rgba(255, 255, 0, 0.4);
+              }
+              100% {
+                text-shadow: 
+                  0 0 15px #FFFF00,
+                  0 0 30px #FFFF00,
+                  0 0 45px #FFFF00,
+                  0 0 60px #FFFF00;
+                box-shadow: 
+                  0 0 30px rgba(255, 255, 0, 0.8),
+                  0 0 60px rgba(255, 255, 0, 0.6),
+                  0 0 80px rgba(255, 255, 0, 0.4);
               }
             }
           `}</style>

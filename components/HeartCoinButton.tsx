@@ -16,6 +16,7 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, heartCoins = 0, ...rest }: Props) {
   const [open, setOpen] = useState(false);
   const [showQuests, setShowQuests] = useState(false);
+  const [showEarnMoreFeedback, setShowEarnMoreFeedback] = useState(false);
 
   const handleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
     try { onClick?.(e); } catch {}
@@ -33,9 +34,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="rounded-lg transition-all duration-200 w-14 h-12"
+        className="transition-all duration-200 p-0 border-0"
         style={{
           transition: 'all 0.3s ease',
+          width: '240px',
+          height: '240px',
+          background: 'transparent',
           ...rest.style
         }}
         onMouseEnter={(e) => {
@@ -50,7 +54,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         <img
           src="/elements/heart-coin.png"
           alt="Heart Coin"
-          className="w-16 h-16 object-cover rounded"
+          className="w-full h-full"
+          style={{
+            width: '240px',
+            height: '240px'
+          }}
           draggable={false}
         />
       </button>
@@ -80,7 +88,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center"
           style={{
-            paddingTop: '40px'
+            paddingTop: '20px'
+          }}
+          onClick={() => {
+            try { sfx.play('close', 0.8); } catch {}
+            setOpen(false);
+            setShowQuests(false);
+            // Show blue display when closing heart coin popup
+            try { onOpenBlueDisplay?.(); } catch {}
           }}
         >
           <div
@@ -97,6 +112,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               color: '#00FFFF',
               position: 'relative'
             }}
+            onClick={(e) => e.stopPropagation()}
         >
           {/* Soft bottom glow pseudo element */}
           <div 
@@ -173,131 +189,112 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               boxShadow: '0 0 4px rgba(0,255,255,0.6)'
             }}
           />
-          <div 
-            className="text-center mb-4"
-            style={{ 
-              whiteSpace: 'pre-wrap', 
-              lineHeight: 1.2, 
-              fontSize: 14, 
-              color: '#00FFFF', 
-              textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(0,255,255,0.6)', 
-              marginTop: '-4px' 
-            }}
-          >
-            HeartCoins are the energy of the Heartverse. You earn them by exploring, connecting, and showing up.
-          </div>
+
+          {/* Earn More Hearts Feedback */}
+          {showEarnMoreFeedback && (
+            <div 
+              className="text-center mb-4 animate-pulse"
+              style={{ 
+                color: '#00FFFF', 
+                textShadow: '0 0 12px rgba(0,255,255,0.8)', 
+                fontSize: '14px',
+                fontWeight: 'bold',
+                animation: 'pulse 0.8s ease-in-out infinite alternate'
+              }}
+            >
+              ✨ Your journey to more hearts begins now! ✨
+              <div 
+                className="mt-2 text-xs"
+                style={{ 
+                  color: '#FF69B4',
+                  textShadow: '0 0 8px rgba(255,105,180,0.6)'
+                }}
+              >
+                Complete daily quests, connect with others, and let your heart shine!
+              </div>
+            </div>
+          )}
 
           {/* Heart Coin Stats */}
           <div className="relative mt-1">
-            <div className="grid grid-cols-2 gap-4">
-              {/* Balance Display */}
-              <div className="text-center">
-                <div 
-                  className="w-16 h-16 mx-auto mb-2 rounded-full border-2 border-cyan-400/60 overflow-hidden"
-                  style={{
-                    background: 'rgba(0,255,255,0.1)',
-                    boxShadow: '0 0 15px rgba(0,255,255,0.3)',
-                  }}
-                >
-                  <img
-                    src="/elements/heart-coin.png"
-                    alt="Heart Coin"
-                    className="w-full h-full object-cover"
-                    draggable={false}
-                  />
+            {!showQuests ? (
+              <div className="grid grid-cols-2 gap-4">
+                {/* Balance Display */}
+                <div className="text-center">
+                  <div 
+                    className="mx-auto mb-2"
+                    style={{
+                      width: '64px',
+                      height: '64px'
+                    }}
+                  >
+                    <img
+                      src="/elements/heart-coin.png"
+                      alt="Heart Coin"
+                      className="object-contain"
+                      style={{
+                        width: '64px',
+                        height: '64px'
+                      }}
+                      draggable={false}
+                    />
+                  </div>
+                  <div 
+                    className="text-xs mb-1"
+                    style={{ 
+                      color: '#FFFFFF', 
+                      textShadow: '0 0 4px rgba(255,255,255,0.7)' 
+                    }}
+                  >
+                    BALANCE
+                  </div>
+                  <div 
+                    className="text-lg font-bold"
+                    style={{ 
+                      color: '#FF69B4', 
+                      textShadow: '0 0 8px rgba(255,105,180,0.8)' 
+                    }}
+                  >
+                    {heartCoins}
+                  </div>
                 </div>
-                <div 
-                  className="text-xs mb-1"
-                  style={{ 
-                    color: '#FFFFFF', 
-                    textShadow: '0 0 4px rgba(255,255,255,0.7)' 
-                  }}
-                >
-                  BALANCE
-                </div>
-                <div 
-                  className="text-lg font-bold"
-                  style={{ 
-                    color: '#FF69B4', 
-                    textShadow: '0 0 8px rgba(255,105,180,0.8)' 
-                  }}
-                >
-                  {heartCoins}
+                
+                {/* Action Buttons */}
+                <div className="text-center space-y-2">
+                  <button
+                    onClick={() => {
+                      try { sfx.play('click', 0.8); } catch {}
+                      // TODO: Open store popup
+                      console.log("Open store popup");
+                    }}
+                    className="w-full px-3 py-2 bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300 rounded text-xs transition-all duration-200"
+                    style={{
+                      boxShadow: '0 0 10px rgba(236, 72, 153, 0.3)',
+                      textShadow: '0 0 4px rgba(236, 72, 153, 0.6)'
+                    }}
+                  >
+                    USE MY HEARTS
+                  </button>
                 </div>
               </div>
-              
-              {/* Action Buttons */}
-              <div className="text-center space-y-2">
-                <button
-                  onClick={() => {
-                    try { sfx.play('click', 0.8); } catch {}
+            ) : (
+              /* Quest List embedded in Heart Coin display */
+              <div className="w-full">
+                <QuestList 
+                  onBack={() => setShowQuests(false)}
+                  onOpenStore={() => {
+                    setShowQuests(false);
                     // TODO: Open store popup
-                    console.log("Open store popup");
+                    console.log("Open store popup from quest list");
                   }}
-                  className="w-full px-3 py-2 bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300 rounded text-xs transition-all duration-200"
-                  style={{
-                    boxShadow: '0 0 10px rgba(236, 72, 153, 0.3)',
-                    textShadow: '0 0 4px rgba(236, 72, 153, 0.6)'
-                  }}
-                >
-                  USE MY HEARTS
-                </button>
-                <button
-                  onClick={() => {
-                    try { sfx.play('click', 0.8); } catch {}
-                    setShowQuests(true);
-                  }}
-                  className="w-full px-3 py-1 bg-cyan-600/30 hover:bg-cyan-600/40 border border-cyan-500/50 text-cyan-300 rounded text-xs transition-all duration-200"
-                  style={{
-                    boxShadow: '0 0 10px rgba(0, 255, 255, 0.3)',
-                    textShadow: '0 0 4px rgba(0, 255, 255, 0.6)'
-                  }}
-                >
-                  EARN MORE HEARTS
-                </button>
+                />
               </div>
-            </div>
+            )}
           </div>
           </div>
         </div>
       )}
 
-      {/* Quest List Modal */}
-      {showQuests && (
-        <div 
-          className="fixed inset-0 z-[2147483648] flex items-center justify-center"
-          style={{
-            paddingTop: '40px'
-          }}
-        >
-          <div
-            className="quest-hologram-container"
-            style={{
-              width: 'min(92vw, 800px)',
-              height: '70vh',
-              padding: '10px 14px 14px 14px',
-              borderRadius: 18,
-              background: 'rgba(0,0,0,0.6)',
-              border: '1px solid rgba(0,255,255,0.55)',
-              boxShadow: '0 -8px 25px rgba(0,255,255,0.4), 0 -4px 15px rgba(0,255,255,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(0,255,255,0.45)',
-              backdropFilter: 'blur(12px) saturate(140%)',
-              color: '#00FFFF',
-              position: 'relative',
-              overflow: 'auto'
-            }}
-          >
-            {/* Quest List Content */}
-            <QuestList 
-              onBack={() => setShowQuests(false)}
-              onOpenStore={() => {
-                setShowQuests(false);
-                // TODO: Open store popup
-                console.log("Open store popup from quest list");
-              }}
-            />
-          </div>
-        </div>
-      )}
     </>
   );
 }

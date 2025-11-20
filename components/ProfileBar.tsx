@@ -271,10 +271,9 @@ export default function ProfileBar({
 
   return (
     <div className="fixed top-0 left-0 right-0 z-[200] h-16 bg-black/80 backdrop-blur-md border-b border-white/10">
-      <div className="flex items-center justify-between h-full pl-4 pr-6">
-        {/* Left Side */}
-        <div className="flex items-center space-x-1">
-          {/* Elemental Button */}
+      <div className="relative h-full">
+        {/* Elemental Button - Top Left */}
+        <div className="absolute top-2 left-4 z-10">
           <ElementalButton 
             onHoverSound={() => sfx.play('hover', 0.8)}
             onCloseBlueDisplay={onCloseBlueDisplay}
@@ -283,27 +282,30 @@ export default function ProfileBar({
             element={currentElement}
             onElementSelect={updateElement}
           />
+        </div>
 
-          {/* Username */}
-          <span 
-            className="font-medium text-lg relative"
-            style={{ 
-              color: getUsernameColor(currentElement),
-              textShadow: `
-                0 0 5px ${getUsernameColor(currentElement)},
-                0 0 10px ${getUsernameColor(currentElement)},
-                0 0 15px ${getUsernameColor(currentElement)},
-                0 0 20px ${getUsernameColor(currentElement)},
-                0 0 25px ${getUsernameColor(currentElement)}
-              `,
-              filter: 'brightness(1.2)'
-            }}
-          >
-            {displayName}
-          </span>
+        {/* Main Grid Layout */}
+        <div className="grid grid-cols-3 items-center h-full pl-24 pr-6">
+          {/* Left Side */}
+          <div className="flex items-center space-x-2">
+            {/* Username */}
+            <span 
+              className="font-medium text-lg relative"
+              style={{ 
+                color: getUsernameColor(currentElement),
+                textShadow: `
+                  0 0 5px ${getUsernameColor(currentElement)},
+                  0 0 10px ${getUsernameColor(currentElement)},
+                  0 0 15px ${getUsernameColor(currentElement)},
+                  0 0 20px ${getUsernameColor(currentElement)},
+                  0 0 25px ${getUsernameColor(currentElement)}
+                `,
+                filter: 'brightness(1.2)'
+              }}
+            >
+              {displayName}
+            </span>
 
-          {/* Action Buttons */}
-          <div className="flex items-center space-x-0">
             {/* Journey Button */}
             <JourneyButton 
               onHoverSound={() => sfx.play('hover', 0.8)}
@@ -311,74 +313,76 @@ export default function ProfileBar({
               onOpenBlueDisplay={onOpenBlueDisplay}
               cumulativeHeartCoins={heartCoins}
             />
+          </div>
 
-            {/* Code Button */}
+          {/* Center - Code Button */}
+          <div className="flex justify-center">
             <CodeButton 
               onHoverSound={() => sfx.play('hover', 0.8)}
               onCloseBlueDisplay={onCloseBlueDisplay}
               onOpenBlueDisplay={onOpenBlueDisplay}
             />
           </div>
-        </div>
 
-        {/* Right Side */}
-        <div className="flex items-center space-x-2">
-          {/* Digital Binder Button */}
-          <BinderButton 
-            onHoverSound={() => sfx.play('hover', 0.8)}
-            onCloseBlueDisplay={onCloseBlueDisplay}
-            onOpenBlueDisplay={onOpenBlueDisplay}
-          />
-
-          {/* Badges Button */}
-          <BadgesButton 
-            onHoverSound={() => sfx.play('hover', 0.8)}
-            onCloseBlueDisplay={onCloseBlueDisplay}
-            onOpenBlueDisplay={onOpenBlueDisplay}
-          />
-
-          {/* Heart Coin Button */}
-          <motion.button
-            ref={heartBtnRef}
-            onClick={() => {
-              try {
-                trackAnalytics('heart_coin_clicked', { 
-                  song_slug: 'profile_bar', 
-                  payload: { 
-                    song_title: 'Profile Bar', 
-                    location: 'profile_bar_heart_coin' 
-                  } 
-                });
-              } catch {}
-              if (showHeartPopover) { 
-                setShowHeartPopover(false); 
-                return; 
-              }
-              openHeartPopover();
-            }}
-            onMouseEnter={() => sfx.play('hover', 0.8)}
-            className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-black/50 transition-all duration-200"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            title="Heart Coins & Quests"
-            aria-label="Heart Coins & Quests"
-          >
-            <img 
-              src="/elements/heart-coin.png" 
-              alt="Heart Coins" 
-              className="w-6 h-6"
+          {/* Right Side */}
+          <div className="flex items-center space-x-2">
+            {/* Digital Binder Button */}
+            <BinderButton 
+              onHoverSound={() => sfx.play('hover', 0.8)}
+              onCloseBlueDisplay={onCloseBlueDisplay}
+              onOpenBlueDisplay={onOpenBlueDisplay}
             />
-            <span 
-              className="text-white text-lg font-medium"
-              style={{
-                textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7), 0 0 20px rgba(255,255,255,0.5)',
-                filter: 'brightness(1.3)'
-              }}
-            >
-              {heartCoins}
-            </span>
-          </motion.button>
 
+            {/* Badges Button */}
+            <BadgesButton 
+              onHoverSound={() => sfx.play('hover', 0.8)}
+              onCloseBlueDisplay={onCloseBlueDisplay}
+              onOpenBlueDisplay={onOpenBlueDisplay}
+            />
+
+            {/* Heart Coin Button */}
+            <motion.button
+              ref={heartBtnRef}
+              onClick={() => {
+                try {
+                  trackAnalytics('heart_coin_clicked', { 
+                    song_slug: 'profile_bar', 
+                    payload: { 
+                      song_title: 'Profile Bar', 
+                      location: 'profile_bar_heart_coin' 
+                    } 
+                  });
+                } catch {}
+                if (showHeartPopover) { 
+                  setShowHeartPopover(false); 
+                  return; 
+                }
+                openHeartPopover();
+              }}
+              onMouseEnter={() => sfx.play('hover', 0.8)}
+              className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-black/50 transition-all duration-200"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title="Heart Coins & Quests"
+              aria-label="Heart Coins & Quests"
+            >
+              <img 
+                src="/elements/heart-coin.png" 
+                alt="Heart Coins" 
+                className="w-12 h-12"
+              />
+              <span 
+                className="text-white text-lg font-medium"
+                style={{
+                  textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7), 0 0 20px rgba(255,255,255,0.5)',
+                  filter: 'brightness(1.3)'
+                }}
+              >
+                {heartCoins}
+              </span>
+            </motion.button>
+
+          </div>
         </div>
       </div>
 
@@ -532,9 +536,9 @@ export default function ProfileBar({
           <div className="relative mt-1">
             <div className="grid grid-cols-2 gap-4">
               {/* Balance Display */}
-              <div className="text-center">
+              <div className="text-left">
                 <div 
-                  className="w-16 h-16 mx-auto mb-2 rounded-full border-2 border-cyan-400/60 overflow-hidden"
+                  className="w-16 h-16 mb-2 rounded-full border-2 border-cyan-400/60 overflow-hidden"
                   style={{
                     background: 'rgba(0,255,255,0.1)',
                     boxShadow: '0 0 15px rgba(0,255,255,0.3)',
@@ -582,20 +586,6 @@ export default function ProfileBar({
                   }}
                 >
                   USE MY HEARTS
-                </button>
-                <button
-                  onClick={() => {
-                    try { sfx.play('click', 0.8); } catch {}
-                    console.log('EARN MORE HEARTS button clicked, setting showQuests to true');
-                    setShowQuests(true);
-                  }}
-                  className="w-full px-3 py-1 bg-cyan-600/30 hover:bg-cyan-600/40 border border-cyan-500/50 text-cyan-300 rounded text-xs transition-all duration-200"
-                  style={{
-                    boxShadow: '0 0 10px rgba(0, 255, 255, 0.3)',
-                    textShadow: '0 0 4px rgba(0, 255, 255, 0.6)'
-                  }}
-                >
-                  EARN MORE HEARTS
                 </button>
               </div>
             </div>

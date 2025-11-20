@@ -194,15 +194,15 @@ export default function CodeButton({ asChild = false, children, onClick, onHover
           >
             <div className="flex items-start">
               <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>•</span>
-              <span>We believe being your <span style={{ color: '#00FFFF !important', textShadow: '0 0 12px rgba(0,255,255,0.9), 0 0 20px rgba(0,255,255,0.7), 0 0 30px rgba(0,255,255,0.5)' }}>truest self</span> is the beginning of freedom.</span>
+              <span>We believe being your <span style={{ color: '#00FFFF !important', textShadow: '0 0 8px rgba(0,255,255,0.9), 0 0 15px rgba(0,255,255,0.7)' }}>truest self</span> is the beginning of freedom.</span>
             </div>
             <div className="flex items-start">
               <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>•</span>
-              <span>We believe <span style={{ color: '#FFFF00 !important', textShadow: '0 0 12px rgba(255,255,0,0.9), 0 0 20px rgba(255,255,0,0.7), 0 0 30px rgba(255,255,0,0.5)' }}>passion</span> is sacred and should be pursued loudly.</span>
+              <span>We believe <span style={{ color: '#FFFF00 !important', textShadow: '0 0 8px rgba(255,255,0,0.9), 0 0 15px rgba(255,255,0,0.7)' }}>passion</span> is sacred and should be pursued loudly.</span>
             </div>
             <div className="flex items-start">
               <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>•</span>
-              <span>We believe <span style={{ color: '#FF69B4 !important', textShadow: '0 0 12px rgba(255,105,180,0.9), 0 0 20px rgba(255,105,180,0.7), 0 0 30px rgba(255,105,180,0.5)' }}>love</span> is the force that connects every soul.</span>
+              <span>We believe <span style={{ color: '#FF69B4 !important', textShadow: '0 0 8px rgba(255,105,180,0.9), 0 0 15px rgba(255,105,180,0.7)' }}>love</span> is the force that connects every soul.</span>
             </div>
           </div>
           </div>
