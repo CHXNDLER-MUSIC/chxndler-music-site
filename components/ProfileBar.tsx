@@ -9,6 +9,7 @@ import BadgesModal from '@/components/BadgesModal';
 import JourneyButton from '@/components/JourneyButton';
 import BadgesButton from '@/components/BadgesButton';
 import BinderButton from '@/components/BinderButton';
+import HeartCoinButton from '@/components/HeartCoinButton';
 import CodeButton from '@/components/CodeButton';
 import ElementalButton from '@/components/ElementalButton';
 import { sfx } from '@/lib/sfx';
@@ -326,6 +327,13 @@ export default function ProfileBar({
 
           {/* Right Side */}
           <div className="flex items-center space-x-2">
+            {/* Heart Coin Button */}
+            <HeartCoinButton 
+              onHoverSound={() => sfx.play('hover', 0.8)}
+              onCloseBlueDisplay={onCloseBlueDisplay}
+              onOpenBlueDisplay={onOpenBlueDisplay}
+            />
+
             {/* Digital Binder Button */}
             <BinderButton 
               onHoverSound={() => sfx.play('hover', 0.8)}
@@ -339,48 +347,6 @@ export default function ProfileBar({
               onCloseBlueDisplay={onCloseBlueDisplay}
               onOpenBlueDisplay={onOpenBlueDisplay}
             />
-
-            {/* Heart Coin Button */}
-            <motion.button
-              ref={heartBtnRef}
-              onClick={() => {
-                try {
-                  trackAnalytics('heart_coin_clicked', { 
-                    song_slug: 'profile_bar', 
-                    payload: { 
-                      song_title: 'Profile Bar', 
-                      location: 'profile_bar_heart_coin' 
-                    } 
-                  });
-                } catch {}
-                if (showHeartPopover) { 
-                  setShowHeartPopover(false); 
-                  return; 
-                }
-                openHeartPopover();
-              }}
-              onMouseEnter={() => sfx.play('hover', 0.8)}
-              className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-black/50 transition-all duration-200"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              title="Heart Coins & Quests"
-              aria-label="Heart Coins & Quests"
-            >
-              <img 
-                src="/elements/heart-coin.png" 
-                alt="Heart Coins" 
-                className="w-12 h-12"
-              />
-              <span 
-                className="text-white text-lg font-medium"
-                style={{
-                  textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7), 0 0 20px rgba(255,255,255,0.5)',
-                  filter: 'brightness(1.3)'
-                }}
-              >
-                {heartCoins}
-              </span>
-            </motion.button>
 
           </div>
         </div>

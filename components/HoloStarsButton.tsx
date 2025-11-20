@@ -158,9 +158,9 @@ export default function HoloStarsButton({
                   ×
                 </button>
                 <div className="solsky-header">
+                  <div className="daily-intention">Today's intention: Find peace in the present moment</div>
                   <h1>SolSky</h1>
-                  <div className="divider"></div>
-                  <h2>Question of the Day</h2>
+                  <h2>DAILY REFLECTION</h2>
                 </div>
                 <div className="cosmic-vision-section">
                   <label className="cosmic-vision-label">Share your cosmic vision</label>
@@ -288,11 +288,21 @@ export default function HoloStarsButton({
               margin-bottom: 2rem;
             }
             
+            .daily-intention {
+              color: #FFFF00;
+              font-size: clamp(0.9rem, 3vw, 1.1rem);
+              margin-bottom: 1rem;
+              text-align: center;
+              font-style: italic;
+              text-shadow: 0 0 8px #FFFF00;
+              letter-spacing: 0.02em;
+            }
+            
             .solsky-header h1 {
-              color: #FFD700;
+              color: #FFFF00;
               font-size: clamp(1.8rem, 6vw, 2.5rem);
               margin: 0 0 1rem 0;
-              text-shadow: 0 0 15px #FFD700;
+              text-shadow: 0 0 15px #FFFF00;
               font-weight: bold;
               letter-spacing: 0.1em;
             }
@@ -306,10 +316,10 @@ export default function HoloStarsButton({
             }
             
             .question-modal h2 {
-              color: #FFD700;
+              color: #FFFF00;
               font-size: clamp(1.3rem, 4vw, 1.6rem);
               margin-bottom: 1.5rem;
-              text-shadow: 0 0 10px #FFD700;
+              text-shadow: 0 0 10px #FFFF00;
             }
             
             .cosmic-vision-section {
@@ -318,7 +328,7 @@ export default function HoloStarsButton({
             
             .cosmic-vision-label {
               display: block;
-              color: #FFD700;
+              color: #FFFF00;
               font-size: 1rem;
               margin-bottom: 0.5rem;
               text-align: left;
@@ -327,12 +337,13 @@ export default function HoloStarsButton({
             
             .response-area {
               width: 100%;
-              min-height: 40px;
-              height: 40px;
+              min-height: 60px;
+              height: 60px;
+              max-height: 120px;
               background: rgba(0, 0, 0, 0.8);
-              border: 1px solid #FFD700;
+              border: 1px solid #FFFF00;
               border-radius: 0.5rem;
-              color: #FFD700;
+              color: #FFFF00;
               padding: 0.75rem;
               font-size: 1rem;
               resize: vertical;
@@ -340,13 +351,13 @@ export default function HoloStarsButton({
             }
             
             .response-area::placeholder {
-              color: rgba(255, 215, 0, 0.6);
+              color: rgba(255, 255, 0, 0.6);
             }
             
             .response-area:focus {
               outline: none;
-              box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
-              border-color: #FFD700;
+              box-shadow: 0 0 15px rgba(255, 255, 0, 0.5);
+              border-color: #FFFF00;
             }
             
             .send-button {

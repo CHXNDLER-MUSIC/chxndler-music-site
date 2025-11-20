@@ -30,28 +30,14 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
       aria-modal="true"
       role="dialog"
       aria-label={title}
+      style={{ paddingTop: '65vh' }}
     >
       <div
-        className="absolute bg-black/85 backdrop-blur-md"
-        style={{
-          top: '0',
-          left: '0',
-          right: '0',
-          bottom: '0',
-          height: '100vh',
-          minHeight: '100vh'
-        }}
+        className="absolute inset-0 bg-black/85 backdrop-blur-md"
         onClick={onClose}
       />
       <div 
-        className="mx-4 max-w-lg w-full"
-        style={{
-          position: 'absolute',
-          top: '15px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 10000
-        }}
+        className="mx-4 max-w-lg w-full relative z-[10000]"
       >
         <div className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-[#FC54AF]/60 bg-white/5 shadow-[0_0_26px_rgba(56,182,255,0.35)]">
           <div
@@ -71,11 +57,11 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
             ×
           </button>
 
-          <div className="relative text-xl font-bold tracking-wider text-white drop-shadow mb-1">
+          <h2 className="relative text-xl font-bold tracking-wider text-white drop-shadow mb-1">
             {icon && <span className="popup-icon">{icon}</span>}
             {title}
             {headerContent && <div className="header-content">{headerContent}</div>}
-          </div>
+          </h2>
           
           <div className="relative">
             {children}

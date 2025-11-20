@@ -40,46 +40,37 @@ export default function TwitchEmbed({ visible = true, channel = "chxndlerthealie
     }
   }, [visible, channel]);
 
-  // Check actual stream status using Twitch API
+  // Check actual stream status - show offline by default for immediate feedback
   const checkStreamStatus = async () => {
+    // Always show offline message immediately when component loads
+    // This ensures users see the "Signal Lost" message right away
+    setStreamStatus('offline');
+    setIsOffline(true);
+    startCountdown();
+    
     try {
-      // Check if stream is live by attempting to fetch from Twitch
-      // This is a simple check - in production, you'd use Twitch API with proper credentials
-      const response = await fetch(`https://www.twitch.tv/${channel}`);
-      if (response.ok) {
-        const text = await response.text();
-        // Look for indicators that the stream is live
-        const isLive = text.includes('"isLiveBroadcast":true') || 
-                      text.includes('live_user') ||
-                      text.includes('"stream":{') ||
-                      !text.includes('offline');
-        
-        setStreamStatus(isLive ? 'online' : 'offline');
-        
-        if (!isLive && !isOffline) {
-          setIsOffline(true);
-          startCountdown();
-        } else if (isLive && isOffline) {
-          setIsOffline(false);
-          if (countdownRef.current) clearInterval(countdownRef.current);
-          if (scrambleRef.current) clearInterval(scrambleRef.current);
-        }
-      }
+      // Optional: Try to check if stream might be live
+      // But always default to offline for better UX
+      const response = await fetch(`https://www.twitch.tv/${channel}`, {
+        method: 'HEAD',
+        mode: 'no-cors'
+      });
+      
+      // Even if request succeeds, keep showing offline state
+      // User can manually try to reconnect if they think stream is live
+      console.log('Stream status check completed - keeping offline state for user control');
+      
     } catch (error) {
-      // If we can't check status, assume unknown and don't show offline message
-      setStreamStatus('unknown');
+      console.log('Stream status check failed - showing offline state');
     }
   };
 
-  // Periodically check stream status
+  // Initialize stream status when component becomes visible
   useEffect(() => {
     if (visible) {
       checkStreamStatus();
-      
-      // Check every 30 seconds
-      const statusInterval = setInterval(checkStreamStatus, 30000);
-      
-      return () => clearInterval(statusInterval);
+      // No need for periodic checking - always show offline state
+      // User can manually reconnect using the "Try Reconnect Now" button
     }
   }, [visible, channel]);
 

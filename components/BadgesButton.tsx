@@ -115,7 +115,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
           className="fixed inset-0 z-[2147483646] flex items-center justify-center"
           style={{
             pointerEvents: 'none',
-            paddingTop: '200px'
+            paddingTop: '80px'
           }}
         >
           <div
@@ -134,7 +134,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center"
           style={{
-            paddingTop: '100px'
+            paddingTop: '200px'
           }}
         >
           <div
@@ -188,8 +188,6 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
             onClick={() => {
               try { sfx.play('close', 0.8); } catch {}
               setOpen(false);
-              // Show blue display when closing badges popup
-              try { onOpenBlueDisplay?.(); } catch {}
             }}
             className="absolute top-2 right-4 text-yellow-400 hover:text-yellow-200 cursor-pointer w-8 h-8 rounded-full border border-yellow-400/80 flex items-center justify-center"
             style={{ 
@@ -403,19 +401,20 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       {/* Maximized Badge Modal */}
       {maximizedBadge && (
         <div 
-          className="fixed inset-0 z-[2147483648] flex items-center justify-center"
+          className="fixed inset-0 z-[2147483648] flex justify-center"
           style={{
-            background: 'rgba(0,0,0,0.8)',
-            backdropFilter: 'blur(20px)'
+            background: 'rgba(0,0,0,0.9)',
+            backdropFilter: 'blur(20px)',
+            paddingTop: '80px'
           }}
           onClick={closeBadgeModal}
         >
           <div
             className="relative"
             style={{
-              width: 'min(90vw, 400px)',
-              height: 'min(80vh, 500px)',
-              padding: '2rem',
+              width: 'min(90vw, 650px)',
+              height: 'min(30vh, 280px)',
+              padding: '1rem',
               borderRadius: 24,
               background: 'rgba(0,0,0,0.9)',
               border: `2px solid ${getRarityColor(maximizedBadge.rarity)}`,
