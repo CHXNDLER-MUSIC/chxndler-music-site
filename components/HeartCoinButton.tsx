@@ -118,9 +118,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="p-1 rounded-lg transition-all duration-200 w-14 h-12"
+        className="rounded-lg transition-all duration-200"
         style={{
           transition: 'all 0.3s ease',
+          padding: '4px',
+          width: '56px',
+          height: '48px',
           ...rest.style
         }}
         onMouseEnter={(e) => {
@@ -135,9 +138,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         <img
           src="/elements/heart-coin.png"
           alt="Heart Coins"
-          className="w-full h-full object-cover rounded"
+          className="rounded"
           style={{
-            filter: 'drop-shadow(0 0 8px rgba(255, 105, 180, 0.8)) drop-shadow(0 0 16px rgba(255, 105, 180, 0.4))'
+            width: '48px',
+            height: '40px',
+            objectFit: 'cover'
           }}
           draggable={false}
         />

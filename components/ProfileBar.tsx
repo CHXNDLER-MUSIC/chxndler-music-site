@@ -334,11 +334,13 @@ export default function ProfileBar({
           {/* Right Side */}
           <div className="flex items-center space-x-2">
             {/* Badges Button */}
-            <BadgesButton 
-              onHoverSound={() => sfx.play('hover', 0.8)}
-              onCloseBlueDisplay={onCloseBlueDisplay}
-              onOpenBlueDisplay={onOpenBlueDisplay}
-            />
+            <div className="-mr-1">
+              <BadgesButton 
+                onHoverSound={() => sfx.play('hover', 0.8)}
+                onCloseBlueDisplay={onCloseBlueDisplay}
+                onOpenBlueDisplay={onOpenBlueDisplay}
+              />
+            </div>
 
             {/* Digital Binder Button */}
             <BinderButton 

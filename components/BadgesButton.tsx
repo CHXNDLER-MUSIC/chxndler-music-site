@@ -85,9 +85,11 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="p-1 rounded-lg transition-all duration-200 w-14 h-12 border-0"
+        className="p-0 rounded-lg transition-all duration-200 border-0"
         style={{
           transition: 'all 0.3s ease',
+          width: '80px',
+          height: '48px',
           ...rest.style
         }}
         onMouseEnter={(e) => {
@@ -102,7 +104,12 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
         <img
           src="/elements/badges.png"
           alt="Badges"
-          className="w-full h-full object-contain rounded"
+          className="rounded"
+          style={{
+            width: '80px',
+            height: '48px',
+            objectFit: 'contain'
+          }}
           draggable={false}
         />
       </button>
