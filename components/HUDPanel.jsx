@@ -44,9 +44,9 @@ import { sfx } from "@/lib/sfx";
 // Use system font stack to avoid network font fetches during build
 
 // Constants to prevent recreating URLs on every render
-const DEFAULT_COVER = 'https://ik.imagekit.io/CHXNDLER/cover/chxndler.png?updatedAt=1762361376662';
+const DEFAULT_COVER = '/elements/logo.png';
 const DEFAULT_CARD = 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910';
-const FALLBACK_COVER = 'https://ik.imagekit.io/CHXNDLER/cover/chxndler.png?updatedAt=1762361376662';
+const FALLBACK_COVER = '/elements/logo.png';
 
 function ElementIcon({ name, size = 18, glow = true }) {
   if (!name) return null;
@@ -3310,7 +3310,7 @@ export default function HUDPanel({
                               </div>
                               <ul style={{ margin: 0, paddingLeft: 8, listStyle: 'disc' }}>
                                 <li style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 2, color: '#fff' }}>
-                                  We believe being your <span style={{ color: '#00FFFF', textShadow: '0 0 10px #00FFFF, 0 0 20px #00FFFF, 0 0 30px #00FFFF' }}>truest self</span> is the beginning of freedom.
+                                  We believe being your <span style={{ color: '#00FFFF !important', textShadow: '0 0 10px #00FFFF, 0 0 20px #00FFFF, 0 0 30px #00FFFF', fontWeight: 'inherit !important', WebkitTextFillColor: '#00FFFF !important', textFillColor: '#00FFFF !important' }}>truest self</span> is the beginning of freedom.
                                 </li>
                                 <li style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 2, color: '#fff' }}>
                                   We believe <span style={{ color: '#FFFF00', textShadow: '0 0 10px #FFFF00, 0 0 20px #FFFF00, 0 0 30px #FFFF00' }}>passion</span> is sacred and should be pursued loudly.

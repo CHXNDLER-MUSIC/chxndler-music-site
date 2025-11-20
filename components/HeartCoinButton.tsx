@@ -71,15 +71,15 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       if (navigator.share) {
         navigator.share({
           title: 'Join the Heartverse',
-          text: 'I found a community of Aliens who accept you for who you are and lead with love. I thought of you. I think this world could feel like home for you too.',
-          url: 'https://www.chxndler-music.com/'
+          text: 'I thought of you. I think this world could feel like home for you too.',
+          url: 'https://chxndler.world'
         }).then(() => {
           setHeartCoins(prev => prev + 1);
           setDailyQuests(prev => ({ ...prev, friendInvited: true }));
         }).catch(console.error);
       } else {
         // Fallback for browsers that don't support Web Share API
-        const text = "I found a community of Aliens who accept you for who you are and lead with love. I thought of you. I think this world could feel like home for you too. https://www.chxndler-music.com/";
+        const text = "I thought of you. I think this world could feel like home for you too. https://chxndler.world";
         navigator.clipboard.writeText(text).then(() => {
           setHeartCoins(prev => prev + 1);
           setDailyQuests(prev => ({ ...prev, friendInvited: true }));
@@ -157,7 +157,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           className="fixed inset-0 z-[2147483646] flex items-center justify-center"
           style={{
             pointerEvents: 'none',
-            paddingTop: '400px'
+            paddingTop: '250px'
           }}
         >
           <div
@@ -176,7 +176,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center"
           style={{
-            paddingTop: '300px'
+            paddingTop: '150px'
           }}
         >
           <div

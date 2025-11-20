@@ -194,7 +194,7 @@ export default function CodeButton({ asChild = false, children, onClick, onHover
           >
             <div className="flex items-start">
               <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>•</span>
-              <span>We believe being your <span style={{ color: '#00FFFF !important', textShadow: '0 0 8px rgba(0,255,255,0.9), 0 0 15px rgba(0,255,255,0.7)' }}>truest self</span> is the beginning of freedom.</span>
+              <span>We believe being your <span style={{ color: '#00FFFF !important', textShadow: '0 0 8px rgba(0,255,255,0.9), 0 0 15px rgba(0,255,255,0.7)', fontWeight: 'inherit !important', WebkitTextFillColor: '#00FFFF !important', textFillColor: '#00FFFF !important' }}>truest self</span> is the beginning of freedom.</span>
             </div>
             <div className="flex items-start">
               <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>•</span>
