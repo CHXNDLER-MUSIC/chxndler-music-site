@@ -8,9 +8,10 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   onHoverSound?: () => void;
   onCloseBlueDisplay?: () => void;
   onOpenBlueDisplay?: () => void;
+  onOpenJournal?: () => void;
 };
 
-export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, ...rest }: Props) {
+export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onOpenJournal, ...rest }: Props) {
   const [open, setOpen] = useState(false);
   const [heartCoins, setHeartCoins] = useState(0);
   const [dailyQuests, setDailyQuests] = useState({
@@ -43,6 +44,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       try { sfx.play('click', 0.8); } catch {}
       setHeartCoins(prev => prev + 1);
       setDailyQuests(prev => ({ ...prev, elementTapped: true }));
+      
+      // Close heart coin display and open blue display
+      setOpen(false);
+      try { onOpenBlueDisplay?.(); } catch {}
     }
   };
 
@@ -52,9 +57,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       setHeartCoins(prev => prev + 1);
       setDailyQuests(prev => ({ ...prev, journalEntry: true }));
       
-      // Close heart coin display and open sky display
+      // Close heart coin display and open journal
       setOpen(false);
-      try { onOpenBlueDisplay?.(); } catch {}
+      try { onOpenJournal?.(); } catch {}
     }
   };
 
@@ -64,22 +69,23 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     if (!dailyQuests.friendInvited) {
       try { sfx.play('click', 0.8); } catch {}
       
+      const text = "I thought of you. I think this world could feel like home for you too. https://chxndler.world/";
+      
       if (navigator.share) {
         navigator.share({
           title: 'Join the Heartverse',
           text: 'I thought of you. I think this world could feel like home for you too.',
-          url: 'https://chxndler.world'
+          url: 'https://chxndler.world/'
         }).then(() => {
           setHeartCoins(prev => prev + 1);
           setDailyQuests(prev => ({ ...prev, friendInvited: true }));
         }).catch(console.error);
       } else {
         // Fallback for browsers that don't support Web Share API
-        const text = "I thought of you. I think this world could feel like home for you too. https://chxndler.world";
         navigator.clipboard.writeText(text).then(() => {
           setHeartCoins(prev => prev + 1);
           setDailyQuests(prev => ({ ...prev, friendInvited: true }));
-          alert("Invite message copied to clipboard!");
+          alert("Invite message copied to clipboard! You can now paste it in your messaging app.");
         }).catch(() => {
           // Manual fallback
           prompt("Copy this message to share:", text);
@@ -89,6 +95,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       }
     }
   };
+
 
   const handleCheckIn = () => {
     if (secretPhrase.toLowerCase().trim() === "heartverse") {
@@ -426,93 +433,62 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               </div>
             </div>
 
+
             {/* Attend Live Show */}
             <div className="flex items-center justify-between mb-2 p-2 rounded border border-pink-400/30 bg-pink-400/10 relative">
-              <div>
-                <div className="text-xs font-bold" style={{ color: '#FFB6C1' }}>
-                  2. Attend a Livestream or Live Show
-                </div>
-                <div className="text-[10px]" style={{ color: '#FFB6C1', opacity: 0.8 }}>
-                  Check in at a CHXNDLER show to receive bonus HEART coins.
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => setShowCheckInModal(true)}
-                  disabled={dailyQuests.checkedIn}
-                  className="px-2 py-1 text-xs rounded border border-pink-400/60 hover:border-pink-400/80 transition-colors"
-                  style={{
-                    background: dailyQuests.checkedIn ? 'rgba(100,100,100,0.3)' : 'rgba(255,105,180,0.1)',
-                    color: dailyQuests.checkedIn ? '#666' : '#FFB6C1',
-                  }}
-                >
-                  {dailyQuests.checkedIn ? 'CHECKED IN' : 'CHECK IN'}
-                </button>
-                <span className="text-sm flex items-center" style={{ color: dailyQuests.checkedIn ? '#666' : '#90EE90', textShadow: dailyQuests.checkedIn ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' }}>
-                  {dailyQuests.checkedIn ? '✓ +1-5' : '+1-5'} 
-                  <img src="/elements/heart-coin.png" alt="HeartCoin" className="w-6 h-6 ml-1" />
-                </span>
-              </div>
-
-              {/* Inline Check-in Modal */}
-              {showCheckInModal && (
-                <div 
-                  className="absolute top-full left-0 right-0 mt-2 z-10"
-                  style={{
-                    background: 'rgba(0,0,0,0.9)',
-                    border: '1px solid rgba(255,105,180,0.6)',
-                    borderRadius: '8px',
-                    padding: '16px',
-                    boxShadow: '0 0 25px rgba(255,105,180,0.4)',
-                    backdropFilter: 'blur(10px)'
-                  }}
-                >
-                  <div className="text-center mb-3">
-                    <div 
-                      className="text-sm font-bold mb-2"
-                      style={{ 
-                        color: '#FF69B4', 
-                        textShadow: '0 0 8px rgba(255,105,180,0.6)' 
-                      }}
-                    >
+              <div className="flex-1">
+                {showCheckInModal ? (
+                  <div>
+                    <div className="text-xs font-bold mb-2" style={{ color: '#FFB6C1' }}>
                       Secret Phrase
                     </div>
-                    <div 
-                      className="text-xs mb-3"
-                      style={{ color: '#FFB6C1' }}
-                    >
+                    <div className="text-[10px] mb-2" style={{ color: '#FFB6C1', opacity: 0.8 }}>
                       Enter the secret phrase from the show:
                     </div>
-                  </div>
-                  
-                  <input
-                    type="text"
-                    value={secretPhrase}
-                    onChange={(e) => setSecretPhrase(e.target.value)}
-                    className="w-full p-2 mb-3 bg-black/60 border border-pink-400/40 rounded text-white text-sm"
-                    placeholder="Enter secret phrase..."
-                    style={{
-                      boxShadow: '0 0 10px rgba(255,105,180,0.3)'
-                    }}
-                  />
-                  
-                  {checkInMessage && (
-                    <div 
-                      className="text-center text-xs mb-3"
-                      style={{ 
-                        color: checkInMessage.includes('Welcome') ? '#90EE90' : '#FF6B6B' 
+                    <input
+                      type="text"
+                      value={secretPhrase}
+                      onChange={(e) => setSecretPhrase(e.target.value)}
+                      className="w-full p-2 bg-black/60 border border-pink-400/40 rounded text-white text-xs"
+                      placeholder="Enter secret phrase..."
+                      style={{
+                        boxShadow: '0 0 10px rgba(255,105,180,0.3)'
                       }}
-                    >
-                      {checkInMessage}
+                    />
+                    {checkInMessage && (
+                      <div 
+                        className="text-center text-xs mt-2"
+                        style={{ 
+                          color: checkInMessage.includes('Welcome') ? '#90EE90' : '#FF6B6B' 
+                        }}
+                      >
+                        {checkInMessage}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <div className="text-xs font-bold" style={{ color: '#FFB6C1' }}>
+                      2. Attend a Livestream or Live Show
                     </div>
-                  )}
-                  
-                  <div className="flex space-x-2">
+                    <div className="text-[10px]" style={{ color: '#FFB6C1', opacity: 0.8 }}>
+                      Check in at a CHXNDLER show to receive bonus HEART coins.
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center space-x-2">
+                {showCheckInModal && !dailyQuests.checkedIn ? (
+                  <div className="flex flex-col space-y-2">
                     <button
                       onClick={handleCheckIn}
-                      className="flex-1 py-1.5 px-3 bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300 rounded transition-colors text-xs"
+                      className="px-2 py-1 text-xs rounded border border-pink-400/60 hover:border-pink-400/80 transition-colors"
+                      style={{
+                        background: 'rgba(255,105,180,0.1)',
+                        color: '#FFB6C1',
+                      }}
                     >
-                      Submit
+                      SUBMIT
                     </button>
                     <button
                       onClick={() => {
@@ -520,13 +496,34 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         setSecretPhrase("");
                         setCheckInMessage("");
                       }}
-                      className="flex-1 py-1.5 px-3 bg-gray-600/30 hover:bg-gray-600/40 border border-gray-500/50 text-gray-300 rounded transition-colors text-xs"
+                      className="px-2 py-1 text-xs rounded border border-gray-400/60 hover:border-gray-400/80 transition-colors"
+                      style={{
+                        background: 'rgba(100,100,100,0.1)',
+                        color: '#999',
+                      }}
                     >
-                      Cancel
+                      CANCEL
                     </button>
                   </div>
-                </div>
-              )}
+                ) : (
+                  <button
+                    onClick={() => setShowCheckInModal(true)}
+                    disabled={dailyQuests.checkedIn}
+                    className="px-2 py-1 text-xs rounded border border-pink-400/60 hover:border-pink-400/80 transition-colors"
+                    style={{
+                      background: dailyQuests.checkedIn ? 'rgba(100,100,100,0.3)' : 'rgba(255,105,180,0.1)',
+                      color: dailyQuests.checkedIn ? '#666' : '#FFB6C1',
+                    }}
+                  >
+                    {dailyQuests.checkedIn ? 'CHECKED IN' : 'CHECK IN'}
+                  </button>
+                )}
+                <span className="text-sm flex items-center" style={{ color: dailyQuests.checkedIn ? '#666' : '#90EE90', textShadow: dailyQuests.checkedIn ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' }}>
+                  {dailyQuests.checkedIn ? '✓ +1-5' : '+1-5'} 
+                  <img src="/elements/heart-coin.png" alt="HeartCoin" className="w-6 h-6 ml-1" />
+                </span>
+              </div>
+
             </div>
           </div>
           

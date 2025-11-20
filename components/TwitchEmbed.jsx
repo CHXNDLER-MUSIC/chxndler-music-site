@@ -205,14 +205,14 @@ export default function TwitchEmbed({ visible = true, channel = "chxndlerthealie
             <h2 
               className="text-4xl md:text-6xl font-bold tracking-wider mb-4"
               style={{
-                color: '#FF073A',
+                color: '#FC54AF',
                 textShadow: `
-                  0 0 5px #FF073A,
-                  0 0 10px #FF073A,
-                  0 0 15px #FF073A,
-                  0 0 20px #FF073A,
-                  0 0 35px #FF073A,
-                  0 0 40px #FF073A
+                  0 0 5px #FC54AF,
+                  0 0 10px #FC54AF,
+                  0 0 15px #FC54AF,
+                  0 0 20px #FC54AF,
+                  0 0 35px #FC54AF,
+                  0 0 40px #FC54AF
                 `,
                 animation: 'neonFlicker 2s infinite alternate'
               }}

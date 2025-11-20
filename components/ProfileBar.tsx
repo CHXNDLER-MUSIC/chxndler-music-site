@@ -41,6 +41,7 @@ interface ProfileBarProps {
   onBadgesClick?: () => void;
   onCloseBlueDisplay?: () => void;
   onOpenBlueDisplay?: () => void;
+  onOpenJournal?: () => void;
   onBeamColorChange?: (color: string) => void;
   hasEnteredHeartverse?: boolean;
   savedAlienName?: string; // Name from HUD signup flow
@@ -54,6 +55,7 @@ export default function ProfileBar({
   onBadgesClick,
   onCloseBlueDisplay,
   onOpenBlueDisplay,
+  onOpenJournal,
   onBeamColorChange,
   hasEnteredHeartverse = false,
   savedAlienName,
@@ -359,6 +361,7 @@ export default function ProfileBar({
                 onHoverSound={() => sfx.play('hover', 0.8)}
                 onCloseBlueDisplay={onCloseBlueDisplay}
                 onOpenBlueDisplay={onOpenBlueDisplay}
+                onOpenJournal={onOpenJournal}
               />
               
               {/* Heart Coin Count */}

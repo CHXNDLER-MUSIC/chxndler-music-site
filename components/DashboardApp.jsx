@@ -29,6 +29,7 @@ import { slugify } from "@/lib/slug";
 import { audioCoordinator } from "@/lib/audio-coordinator";
 import { debugLog } from "@/lib/debug";
 import ProfileBar from "@/components/ProfileBar";
+import NameInputModal from "@/components/NameInputModal";
 
 export default function DashboardApp({ initialSlug } = {}) {
   // Global wheel render mode (LUMA vs PLAIN). Must be top-level to obey Hooks rules.
@@ -56,6 +57,20 @@ export default function DashboardApp({ initialSlug } = {}) {
       setWheelPlain(false);
     }
     setIsHydrated(true);
+  }, []);
+
+  // Check for new user query parameter and show name modal
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('new_user') === 'true') {
+        setShowNameModal(true);
+        // Clean up the URL parameter
+        const url = new URL(window.location);
+        url.searchParams.delete('new_user');
+        window.history.replaceState({}, document.title, url.pathname);
+      }
+    }
   }, []);
   useEffect(() => {
     const onKey = (e) => {
@@ -123,6 +138,7 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [showDimmingOverlay, setShowDimmingOverlay] = useState(true); // show dimming overlay on initial load
   const [beamTransitioning, setBeamTransitioning] = useState(false); // prevent rapid beam changes
   const [explicitClose, setExplicitClose] = useState(false); // track when explicitly closing without opening another display
+  const [shouldOpenJournal, setShouldOpenJournal] = useState(false); // track when journal should be opened
   const [safariRefreshKey, setSafariRefreshKey] = useState(0); // Safari refresh mechanism
   // Track if user has entered the Heartverse (clicked Start button)
   // Always start as false for intro screen, even with initial slug
@@ -134,6 +150,8 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [savedProfileName, setSavedProfileName] = useState('');
   // Saved profile element from HUD signup flow
   const [savedProfileElement, setSavedProfileElement] = useState('');
+  // Name input modal for new users
+  const [showNameModal, setShowNameModal] = useState(false);
   // Unified timing constants for display/beam sequencing
   // Keep conservative defaults for overlapping transitions, but tighten a bit for snappier feel
   const BEAM_SWITCH_DELAY_MS = 300; // was 450ms; faster when switching between colors
@@ -380,6 +398,30 @@ export default function DashboardApp({ initialSlug } = {}) {
       }, 150); // Reduced to match faster HUD fade-in timing for consistency
     }
   }, [powerBusy, beamEnabled, showHUD, uiUnlocked]);
+
+  // Handle name submission for new users
+  const handleNameSubmit = async (name) => {
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ display_name: name }),
+      });
+      
+      if (response.ok) {
+        setSavedProfileName(name);
+        setShowNameModal(false);
+      } else {
+        throw new Error('Failed to update profile');
+      }
+    } catch (error) {
+      console.error('Error updating profile name:', error);
+      // Still close modal on error to not block user
+      setShowNameModal(false);
+    }
+  };
 
   function onSongChange(id){
     // In-app song change without spotlight/beam/route reloads
@@ -790,6 +832,12 @@ export default function DashboardApp({ initialSlug } = {}) {
     }
   }, [beamColor, showHUD, joinAlienOpen, beamTransitioning, explicitClose]);
 
+  // Handle opening journal: opens blue display and sets flag to open journal
+  const handleOpenJournal = React.useCallback(() => {
+    setShouldOpenJournal(true);
+    handleBeamToggle('blue');
+  }, [handleBeamToggle]);
+
   // Spacebar and Pause key toggle (works even when 3D is active)
   React.useEffect(() => {
     const handleKeyDown = (e) => {
@@ -1055,6 +1103,7 @@ export default function DashboardApp({ initialSlug } = {}) {
                 handleBeamToggle('blue');
               }
             }}
+            onOpenJournal={handleOpenJournal}
             onBeamColorChange={handleBeamToggle}
             hasEnteredHeartverse={hasEnteredHeartverse}
           />
@@ -1165,6 +1214,7 @@ export default function DashboardApp({ initialSlug } = {}) {
               handleBeamToggle('blue');
             }
           }}
+          onOpenJournal={handleOpenJournal}
           onBeamColorChange={handleBeamToggle}
           hasEnteredHeartverse={hasEnteredHeartverse}
           savedAlienName={savedProfileName}
@@ -1750,6 +1800,9 @@ export default function DashboardApp({ initialSlug } = {}) {
                   onNameSaved={setSavedProfileName}
                   onElementSaved={setSavedProfileElement}
                   onCloseBlueDisplay={() => setShowHUD(false)}
+                  onOpenBlueDisplay={() => handleBeamToggle('blue')}
+                  shouldOpenJournal={shouldOpenJournal}
+                  onJournalOpened={() => setShouldOpenJournal(false)}
                 />
               </div>
               {!showHUD ? (
@@ -1959,6 +2012,12 @@ export default function DashboardApp({ initialSlug } = {}) {
         <PreloadMedia maxImage={8} maxAudio={3} maxVideo={2} />
       ) : null}
 
+      {/* Name Input Modal for new users */}
+      <NameInputModal 
+        open={showNameModal}
+        onClose={() => setShowNameModal(false)}
+        onSubmit={handleNameSubmit}
+      />
 
     </main>
   );

@@ -7,6 +7,7 @@ export default function WelcomeHomeForm() {
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [heartSignalSent, setHeartSignalSent] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -57,12 +58,14 @@ export default function WelcomeHomeForm() {
       
       if (result.success) {
         setMessage(result.message || "💖 Heart signal sent to the Heartverse!");
+        setHeartSignalSent(true);
       } else {
         setMessage("Failed to send heart signal");
       }
 
       setTimeout(() => {
         setMessage(null);
+        setHeartSignalSent(false);
       }, 3000);
 
     } catch (e) {
@@ -70,6 +73,7 @@ export default function WelcomeHomeForm() {
       setMessage("Failed to send heart signal");
       setTimeout(() => {
         setMessage(null);
+        setHeartSignalSent(false);
       }, 3000);
     }
   }
@@ -173,13 +177,23 @@ export default function WelcomeHomeForm() {
           <button
             type="button"
             onClick={sendHeartSignal}
-            className="heart-signal-btn inline-flex items-center justify-center w-16 h-16 rounded-full transition-all duration-300 hover:scale-110 shadow-lg hover:shadow-xl"
+            className="heart-signal-btn inline-flex items-center justify-center rounded-full transition-all duration-300 hover:scale-110 shadow-lg hover:shadow-xl"
             style={{
               background: 'linear-gradient(135deg, #00FFFF, #00E5FF, #00BFFF)',
-              boxShadow: '0 0 25px rgba(0,255,255,0.6), 0 0 50px rgba(0,255,255,0.4)'
+              boxShadow: '0 0 25px rgba(0,255,255,0.6), 0 0 50px rgba(0,255,255,0.4)',
+              width: heartSignalSent ? 'auto' : '4rem',
+              height: heartSignalSent ? 'auto' : '4rem',
+              padding: heartSignalSent ? '0.75rem 1.5rem' : '0',
+              minWidth: heartSignalSent ? '200px' : '4rem',
             }}
           >
-            <span className="text-2xl text-white drop-shadow-lg">💖</span>
+            {heartSignalSent ? (
+              <span className="text-sm font-semibold text-white drop-shadow-lg whitespace-nowrap">
+                Heart signal sent to the Heartverse!
+              </span>
+            ) : (
+              <span className="text-2xl text-white drop-shadow-lg">💖</span>
+            )}
           </button>
         </div>
       </div>

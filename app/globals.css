@@ -1640,3 +1640,15 @@ button:hover > .heart-coin-glow,
   text-shadow: 0 0 16px rgba(255,215,0,1), 0 0 32px rgba(255,223,0,1), 0 0 48px rgba(255,215,0,0.8) !important;
 }
 
+/* Yellow beam pulse animation */
+@keyframes beamPulse {
+  0%, 100% { 
+    opacity: 0.6; 
+    filter: blur(4px) brightness(1); 
+  }
+  50% { 
+    opacity: 1; 
+    filter: blur(6px) brightness(1.3); 
+  }
+}
+

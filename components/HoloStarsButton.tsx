@@ -5,7 +5,7 @@ import SharedButton from "@/components/SharedButton";
 
 export default function HoloStarsButton({
   onClick,
-  label = "STARS",
+  label = "JOURNAL",
   isActive = false,
 }: {
   onClick?: () => void;
@@ -77,7 +77,7 @@ export default function HoloStarsButton({
           font-size: 24px;
           color: #FFFF00;
           background: transparent;
-          border: 2px solid transparent;
+          border: none;
           transition: all 0.2s ease;
           cursor: pointer;
           display: inline-flex;

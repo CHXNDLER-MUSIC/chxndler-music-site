@@ -665,7 +665,7 @@ export default function SteeringWheelOverlay({
               position: "fixed",
               // Bottom of pink display should touch the light beam top
               // Use global CSS var so we can tune per-device
-              bottom: 'calc(var(--display-touch-top) - var(--pink-bottom-nudge, 60px))',
+              bottom: 'calc(var(--display-touch-top) - var(--pink-bottom-nudge, 40px))',
               // Center horizontally in the viewport (always centered)
               left: '50%',
               transform: 'translateX(-50%)',
@@ -680,14 +680,13 @@ export default function SteeringWheelOverlay({
             <div
               style={{
                 // Fixed width so the pink display stays the same size across viewports
-                width: 'calc(var(--pink-display-width, 320px) + 180px)',
+                width: 'calc(var(--pink-display-width, 320px) + 120px)',
                 borderRadius: 'var(--display-border-radius)',
                 padding: '12px',
                 color: '#fff',
                 background: `
                   linear-gradient(180deg, #FC54AF44, #FC54AF26),
-                  radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
-                  linear-gradient(180deg, rgba(0,0,0,.65), rgba(0,0,0,.55))
+                  radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%)
                 `,
                 border: '1px solid #FC54AF66',
                 boxShadow: `

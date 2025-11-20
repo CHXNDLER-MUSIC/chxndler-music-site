@@ -28,8 +28,19 @@ export async function GET(req: Request) {
   const accessToken = data.session.access_token;
   const refreshToken = data.session.refresh_token;
 
+  // Check if this is a new user (profile doesn't exist yet)
+  let isNewUser = false;
+  try {
+    const admin = getSupabaseAdmin();
+    const { data: existingProfile } = await admin.from('profiles').select('id').eq('id', data.user.id).single();
+    isNewUser = !existingProfile;
+  } catch {
+    isNewUser = true;
+  }
+
   // Set auth cookies so our API routes can read them
-  const res = NextResponse.redirect(new URL('/dashboard', req.url));
+  const redirectUrl = isNewUser ? '/?new_user=true' : '/dashboard';
+  const res = NextResponse.redirect(new URL(redirectUrl, req.url));
   // Mirror cookie names expected by our API route
   const secure = process.env.NODE_ENV === 'production';
   res.cookies.set('sb-access-token', accessToken, {
@@ -57,8 +68,13 @@ export async function GET(req: Request) {
     const displayName = name || emailPrefix || 'Wanderer';
     await admin.from('profiles').upsert({
       id: data.user.id,
+      email: email,
       display_name: displayName,
       avatar_url: meta.avatar_url ?? null,
+      journey: 'wanderer',
+      heart_coins_current: 0,
+      heart_coins_total: 0,
+      profile_complete: false,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'id' });
   } catch {

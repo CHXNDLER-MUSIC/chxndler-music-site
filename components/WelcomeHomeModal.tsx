@@ -15,33 +15,6 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function createProfile(userEmail: string) {
-    try {
-      const response = await fetch('/api/profiles', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: userEmail,
-          journey: 'wanderer',
-          heart_coins_current: 0,
-          heart_coins_total: 0,
-          profile_complete: false
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create profile');
-      }
-
-      return await response.json();
-    } catch (error: any) {
-      console.error('Profile creation failed:', error);
-      throw error;
-    }
-  }
 
   async function signInWithGoogle() {
     setError(null);
@@ -75,16 +48,18 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
       });
       if (error) throw error;
       
-      // Create profile after sending magic link
+      // Play join aliens audio
       try {
-        await createProfile(email);
-        setMessage("Check your email for a magic link. Your profile has been created in the Heartverse!");
-      } catch (profileError: any) {
-        console.warn('Profile creation warning:', profileError);
-        setMessage("Check your email for a magic link.");
+        const audio = new Audio('/join-aliens.mp3');
+        audio.volume = 0.7;
+        await audio.play();
+      } catch (audioError) {
+        console.log('Audio playback failed:', audioError);
       }
+      
+      setMessage("Your signal is received. Check your email to step inside.");
     } catch (e: any) {
-      setError(e?.message || "Failed to send magic link");
+      setError(e?.message || "Failed to send heart signal");
     } finally {
       setLoading(false);
     }
@@ -120,7 +95,7 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
         className="fixed inset-0 flex items-center justify-center"
         style={{
           zIndex: 2147483648,
-          marginTop: '-200px'
+          marginTop: '-120px'
         }}
       >
         <div
@@ -219,11 +194,6 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
             {error}
           </div>
         )}
-        {message && (
-          <div className="relative mb-2 rounded-md bg-green-50/10 border border-green-200/40 p-2 text-sm text-green-200">
-            {message}
-          </div>
-        )}
 
         <div className="relative space-y-3">
 
@@ -254,13 +224,19 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
           {/* Single Send Heart Signal Button */}
           <button
             onClick={() => {
-              if (email.length > 0) {
+              if (email.length > 0 && !message) {
                 signInWithEmail(new Event('submit') as any);
               }
             }}
             disabled={loading || email.length === 0}
             className="w-full inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-medium transition disabled:opacity-50 mt-4"
-            style={{
+            style={message ? {
+              background: 'rgba(255,255,255,0.15)',
+              border: '1px solid rgba(255,255,255,0.5)',
+              color: '#FFFFFF',
+              textShadow: '0 0 8px rgba(255,255,255,0.8), 0 0 16px rgba(255,255,255,0.6), 0 0 24px rgba(255,255,255,0.4)',
+              boxShadow: '0 0 15px rgba(255,255,255,0.4), 0 0 25px rgba(255,255,255,0.2)'
+            } : {
               background: 'rgba(0,255,255,0.15)',
               border: '1px solid rgba(0,255,255,0.5)',
               color: '#00FFFF',
@@ -270,7 +246,7 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
                 : '0 0 15px rgba(0,255,255,0.4), 0 0 25px rgba(0,255,255,0.2)'
             }}
           >
-            SEND HEART SIGNAL
+            {message ? "Heart signal sent to the Heartverse!" : "SEND HEART SIGNAL"}
           </button>
         </div>
         </div>

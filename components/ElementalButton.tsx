@@ -19,12 +19,12 @@ export default function ElementalButton({ asChild = false, children, onClick, on
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [committedElement, setCommittedElement] = useState<string | null>(null);
   
-  // Initialize committedElement with the profile element
+  // Initialize and sync committedElement with the profile element
   useEffect(() => {
-    if (element && !committedElement) {
+    if (element) {
       setCommittedElement(element);
     }
-  }, [element, committedElement]);
+  }, [element]);
 
   const handleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
     try { onClick?.(e); } catch {}

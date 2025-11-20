@@ -8,6 +8,7 @@ export default function JoinAliens({ visible = true } = {}) {
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [heartSignalSent, setHeartSignalSent] = useState(false);
   
   // Countdown state
   const [timeRemaining, setTimeRemaining] = useState(0);
@@ -163,6 +164,7 @@ export default function JoinAliens({ visible = true } = {}) {
       
       if (result.success) {
         setMessage(result.message || "💖 Heart signal sent to the Heartverse!");
+        setHeartSignalSent(true);
         setPhone(""); // Clear phone after successful send
         try { sfx.play('success', 0.7); } catch {}
       } else {
@@ -173,6 +175,7 @@ export default function JoinAliens({ visible = true } = {}) {
       setTimeout(() => {
         setMessage(null);
         setError(null);
+        setHeartSignalSent(false);
       }, 3000);
 
     } catch (e) {
@@ -181,6 +184,7 @@ export default function JoinAliens({ visible = true } = {}) {
       try { sfx.play('error', 0.5); } catch {}
       setTimeout(() => {
         setError(null);
+        setHeartSignalSent(false);
       }, 3000);
     } finally {
       setLoading(false);
@@ -216,14 +220,14 @@ export default function JoinAliens({ visible = true } = {}) {
         <div style={{ marginBottom: '16px' }}>
           <h2 
             style={{
-              color: '#FF073A',
+              color: '#FC54AF',
               textShadow: `
-                0 0 5px #FF073A,
-                0 0 10px #FF073A,
-                0 0 15px #FF073A,
-                0 0 20px #FF073A,
-                0 0 35px #FF073A,
-                0 0 40px #FF073A
+                0 0 5px #FC54AF,
+                0 0 10px #FC54AF,
+                0 0 15px #FC54AF,
+                0 0 20px #FC54AF,
+                0 0 35px #FC54AF,
+                0 0 40px #FC54AF
               `,
               animation: 'neonFlicker 2s infinite alternate',
               fontSize: 'clamp(18px, 4vw, 28px)',
@@ -412,6 +416,8 @@ export default function JoinAliens({ visible = true } = {}) {
             />
             Sending...
           </div>
+        ) : heartSignalSent ? (
+          "Heart signal sent to the Heartverse!"
         ) : (
           "Send Heart Signal"
         )}

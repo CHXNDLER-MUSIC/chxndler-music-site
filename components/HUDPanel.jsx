@@ -116,6 +116,9 @@ export default function HUDPanel({
   onNameSaved, // callback when user saves their name in signup flow
   onElementSaved, // callback when user saves their element in signup flow
   onCloseBlueDisplay, // callback to close the blue display
+  onOpenBlueDisplay, // callback to open the blue display
+  shouldOpenJournal = false, // flag to automatically open journal
+  onJournalOpened, // callback when journal is opened
 }) {
   // Temporary kill-switch to disable 3D planets for performance testing
   // Set to true to disable. You can also override at runtime by setting
@@ -239,6 +242,7 @@ export default function HUDPanel({
   const [soulSkyPopoverPos, setSoulSkyPopoverPos] = useState(null);
   const [questionResponse, setQuestionResponse] = useState('');
   const [showStarAnimation, setShowStarAnimation] = useState(false);
+  const [showBeamEffect, setShowBeamEffect] = useState(false);
   const soulSkyScrollRef = useRef(null);
   const brandLastScrollAtRef = useRef(0);
   // Lift the CHXNDLER popover higher above its anchor
@@ -1582,6 +1586,17 @@ export default function HUDPanel({
     el.addEventListener('scroll', onScroll, { passive: true });
     return () => { try { el.removeEventListener('scroll', onScroll); } catch {} };
   }, [showBrandPopover]);
+
+  // Auto-open journal when shouldOpenJournal is true
+  useEffect(() => {
+    if (shouldOpenJournal && !showSoulSkyPopover) {
+      try {
+        openSoulSkyPopover();
+        onJournalOpened?.();
+      } catch {}
+    }
+  }, [shouldOpenJournal, showSoulSkyPopover, onJournalOpened]);
+
   const [animationTime, setAnimationTime] = useState(0);
   // Volume popover (HUD waveform controls)
   const [showHudVolumePopover, setShowHudVolumePopover] = useState(false);
@@ -2523,7 +2538,7 @@ export default function HUDPanel({
                         icon={
                           <img 
                             src="/elements/star.png" 
-                            alt="Stars" 
+                            alt="Journal" 
                             style={{ 
                               width: '20px', 
                               height: '20px', 
@@ -6172,6 +6187,7 @@ export default function HUDPanel({
                         try { sfx.play('close', 0.4); } catch {}; 
                         setShowSoulSkyPopover(false);
                         setShowStarAnimation(false);
+                        setShowBeamEffect(false);
                         setQuestionResponse('');
                       }}
                       style={{
@@ -6199,50 +6215,29 @@ export default function HUDPanel({
                     {/* Moving glow background */}
                     <div className="lyrics-glow-bg"></div>
                     {/* Section header */}
-                    <div className="lyrics-header" style={{ color: '#FFFFFF', textShadow: '0 0 8px rgba(255,255,255,0.6)' }}>
-                      SOUL SKY
+                    <div className="lyrics-header" style={{ color: '#FFFF00', textShadow: '0 0 8px rgba(255,255,0,0.6)', fontSize: '12px' }}>
+                      SOUL STAR
                     </div>
                     <div style={{ marginBottom: '20px' }}>
-                      <div style={{ 
-                        color: '#FFFFFF', 
-                        textShadow: '0 0 8px rgba(255,255,255,0.6)',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        marginBottom: '8px',
-                        textAlign: 'left'
-                      }}>
-                        INTENTION:
-                      </div>
                       <div className="lyrics-content-enhanced" style={{ 
                         whiteSpace: 'pre-wrap', 
                         lineHeight: 1.4, 
-                        fontSize: 14, 
-                        color: '#E8E8FF', 
-                        textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(232,232,255,0.6)',
-                        fontStyle: 'italic',
+                        fontSize: 12, 
+                        color: '#FFFF00', 
+                        textShadow: '0 0 2px rgba(255,255,0,0.8), 0 0 8px rgba(255,255,0,0.6)',
                         marginBottom: '15px'
                       }}>
-                        "The universe is not only stranger than we imagine, it is stranger than we can imagine." - J.B.S. Haldane
+                        <span style={{ fontWeight: 'bold', fontStyle: 'normal' }}>INTENTION:</span> <span style={{ fontStyle: 'italic', fontWeight: 'normal' }}>"The universe is not only stranger than we imagine, it is stranger than we can imagine." - J.B.S. Haldane</span>
                       </div>
                       
-                      <div style={{ 
-                        color: '#FFFFFF', 
-                        textShadow: '0 0 8px rgba(255,255,255,0.6)',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        marginBottom: '8px',
-                        textAlign: 'left'
-                      }}>
-                        REFLECTION:
-                      </div>
                       <div className="lyrics-content-enhanced" style={{ 
                         whiteSpace: 'pre-wrap', 
                         lineHeight: 1.4, 
-                        fontSize: 14, 
-                        color: '#E8E8FF', 
-                        textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(232,232,255,0.6)'
+                        fontSize: 12, 
+                        color: '#FFFF00', 
+                        textShadow: '0 0 2px rgba(255,255,0,0.8), 0 0 8px rgba(255,255,0,0.6)'
                       }}>
-                        What constellation would you create if you could arrange the stars in the sky, and what story would it tell?
+                        <span style={{ fontWeight: 'bold', fontStyle: 'normal' }}>REFLECTION:</span> <span style={{ fontStyle: 'italic', fontWeight: 'normal' }}>What constellation would you create if you could arrange the stars in the sky, and what story would it tell?</span>
                       </div>
                     </div>
 
@@ -6256,15 +6251,15 @@ export default function HUDPanel({
                             minHeight: '1.5rem',
                             padding: '8px',
                             background: 'rgba(0,0,20,0.6)',
-                            border: '1px solid rgba(255,255,255,0.3)',
+                            border: '1px solid rgba(255,255,0,0.6)',
                             borderRadius: '8px',
-                            color: '#FFFFFF',
+                            color: '#FFFF00',
                             fontSize: '13px',
                             fontFamily: 'inherit',
                             resize: 'vertical',
                             outline: 'none',
-                            boxShadow: '0 0 10px rgba(255,255,255,0.2)',
-                            '::placeholder': { color: 'rgba(255,255,255,0.5)' }
+                            boxShadow: '0 0 10px rgba(255,255,0,0.3)',
+                            '::placeholder': { color: 'rgba(255,255,0,0.7)' }
                           }}
                         />
                     </div>
@@ -6275,14 +6270,16 @@ export default function HUDPanel({
                         onClick={() => {
                           if (questionResponse.trim()) {
                             try { 
-                              const audio = new Audio('/audio/star.mp3');
+                              const audio = new Audio('/audio/join-alien.mp3');
                               audio.volume = 0.7;
                               audio.play().catch(() => {});
                             } catch {}
                             setShowStarAnimation(true);
+                            setShowBeamEffect(true);
                             // Star animation will appear for a few seconds
                             setTimeout(() => {
                               setShowStarAnimation(false);
+                              setShowBeamEffect(false);
                               setQuestionResponse('');
                             }, 4000);
                           }
@@ -6305,6 +6302,25 @@ export default function HUDPanel({
                       >
                         Cast into the Stars
                       </button>
+
+                      {/* Yellow beam effect */}
+                      {showBeamEffect && (
+                        <div style={{
+                          position: 'absolute',
+                          left: '50%',
+                          top: '-200px',
+                          width: '100px',
+                          height: '150px',
+                          transform: 'translateX(-50%)',
+                          clipPath: 'polygon(45% 100%, 95% 0%, 5% 0%)',
+                          background: 'linear-gradient(180deg, rgba(255,255,0,0.3), rgba(255,255,0,0.1) 30%, rgba(255,255,0,0.05) 70%, rgba(255,255,0,0) 100%)',
+                          filter: 'blur(4px)',
+                          mixBlendMode: 'screen',
+                          animation: 'beamPulse 2s ease-in-out infinite',
+                          zIndex: 4,
+                          pointerEvents: 'none'
+                        }} />
+                      )}
 
                       {/* Star animation overlay */}
                       {showStarAnimation && (
@@ -6496,7 +6512,11 @@ export default function HUDPanel({
       </div>
 
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
-      <WelcomeHomeModal open={showWelcomeHomeModal} onClose={() => setShowWelcomeHomeModal(false)} />
+      <WelcomeHomeModal open={showWelcomeHomeModal} onClose={() => {
+        setShowWelcomeHomeModal(false);
+        // Open the blue display (power button) when closing the welcome modal
+        try { onOpenBlueDisplay?.(); } catch {}
+      }} />
     </motion.section>
   );
 }
