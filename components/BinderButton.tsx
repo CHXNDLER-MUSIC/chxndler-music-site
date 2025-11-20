@@ -321,9 +321,11 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
       <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="rounded-lg transition-all duration-200 w-16 h-14 border-0"
+        className="p-0 rounded-lg transition-all duration-200 border-0"
         style={{
           transition: 'all 0.3s ease',
+          width: '80px',
+          height: '72px',
           ...rest.style
         }}
         onMouseEnter={(e) => {
@@ -338,8 +340,12 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
         <img
           src="/elements/binder.png"
           alt="Binder"
-          className="w-full h-full object-contain rounded"
+          className="rounded"
           style={{
+            width: '120%',
+            height: '120%',
+            objectFit: 'contain',
+            transform: 'scale(1.2)',
             filter: 'drop-shadow(0 0 8px rgba(252, 84, 175, 0.8)) drop-shadow(0 0 16px rgba(252, 84, 175, 0.4))'
           }}
           draggable={false}

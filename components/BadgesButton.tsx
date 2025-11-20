@@ -85,11 +85,9 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="rounded-lg transition-all duration-200 w-20 h-18 border-0"
+        className="p-1 rounded-lg transition-all duration-200 w-14 h-12 border-0"
         style={{
           transition: 'all 0.3s ease',
-          padding: '0 !important',
-          margin: '0 !important',
           ...rest.style
         }}
         onMouseEnter={(e) => {

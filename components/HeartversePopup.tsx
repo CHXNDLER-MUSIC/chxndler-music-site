@@ -26,11 +26,11 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex justify-center"
+      className="fixed inset-0 z-[9999] flex justify-center items-center"
       aria-modal="true"
       role="dialog"
       aria-label={title}
-      style={{ paddingTop: '65vh' }}
+      style={{ paddingBottom: '25vh' }}
     >
       <div
         className="absolute inset-0 bg-black/85 backdrop-blur-md"
