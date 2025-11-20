@@ -6,14 +6,20 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
 
+  // Log for debugging
+  console.log('Auth callback - URL params:', Object.fromEntries(url.searchParams.entries()));
+  console.log('Auth callback - Code present:', !!code);
+
   if (!code) {
-    return NextResponse.redirect(new URL('/login', req.url));
+    console.log('Auth callback - No code present, redirecting to home');
+    return NextResponse.redirect(new URL('/', req.url));
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
   if (!supabaseUrl || !anonKey) {
-    return NextResponse.redirect(new URL('/login?error=missing-env', req.url));
+    console.log('Auth callback - Missing environment variables');
+    return NextResponse.redirect(new URL('/?error=missing-env', req.url));
   }
 
   const supabase = createClient(supabaseUrl, anonKey, {
@@ -22,7 +28,8 @@ export async function GET(req: Request) {
 
   const { data, error } = await supabase.auth.exchangeCodeForSession({ authCode: code });
   if (error || !data.session || !data.user) {
-    return NextResponse.redirect(new URL('/login?error=exchange_failed', req.url));
+    console.log('Auth callback - Exchange failed:', error);
+    return NextResponse.redirect(new URL('/?error=exchange_failed', req.url));
   }
 
   const accessToken = data.session.access_token;
@@ -39,8 +46,9 @@ export async function GET(req: Request) {
   }
 
   // Set auth cookies so our API routes can read them
-  const redirectUrl = isNewUser ? '/?new_user=true' : '/dashboard';
+  const redirectUrl = isNewUser ? '/?new_user=true' : '/';
   const res = NextResponse.redirect(new URL(redirectUrl, req.url));
+  console.log('Auth callback - Redirecting to:', redirectUrl);
   // Mirror cookie names expected by our API route
   const secure = process.env.NODE_ENV === 'production';
   res.cookies.set('sb-access-token', accessToken, {
@@ -61,23 +69,24 @@ export async function GET(req: Request) {
   // Ensure a profile row exists (use admin client to bypass RLS for insert)
   try {
     const admin = getSupabaseAdmin();
-    const meta = (data.user as any)?.user_metadata || {};
-    const name: string | undefined = meta.full_name || meta.name || undefined;
     const email: string | undefined = (data.user as any)?.email || undefined;
-    const emailPrefix = email ? email.split('@')[0] : undefined;
-    const displayName = name || emailPrefix || 'Wanderer';
-    await admin.from('profiles').upsert({
+    
+    console.log('Auth callback - Creating profile for user:', data.user.id, 'email:', email);
+    
+    // Try the simplest possible insert first - just id and email
+    const { data: profileData, error: profileError } = await admin.from('profiles').upsert({
       id: data.user.id,
       email: email,
-      name: displayName,
-      journey: 'wanderer',
-      heart_coins_current: 0,
-      heart_coins_total: 0,
-      profile_complete: false,
-      updated_at: new Date().toISOString(),
     }, { onConflict: 'id' });
-  } catch {
-    // Swallow errors; redirect proceeds regardless. Consider logging in real app.
+    
+    if (profileError) {
+      console.error('Auth callback - Profile creation error:', profileError);
+    } else {
+      console.log('Auth callback - Profile created/updated successfully:', profileData);
+    }
+  } catch (error) {
+    console.error('Auth callback - Profile creation failed:', error);
+    // Continue with redirect even if profile creation fails
   }
 
   return res;

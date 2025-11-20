@@ -1,8 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { supabaseClient } from "@/lib/supabaseClient";
 import HeartversePopup from "@/components/HeartversePopup";
+
+type BadgeCategory = {
+  id: string;
+  name: string;
+  emoji: string;
+  badges: Array<{
+    name: string;
+    description?: string;
+  }>;
+};
 
 type Props = {
   open: boolean;
@@ -10,64 +19,151 @@ type Props = {
 };
 
 export default function BadgesModal({ open, onClose }: Props) {
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  async function signInWithGoogle() {
-    setError(null);
-    setMessage(null);
-    setLoading(true);
-    try {
-      const { error } = await supabaseClient.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: window.location.origin + "/auth/callback" },
-      });
-      if (error) throw error;
-    } catch (e: any) {
-      setError(e?.message || "Failed to start sign-in");
-    } finally {
-      setLoading(false);
+  const badgeCategories: BadgeCategory[] = [
+    {
+      id: "soul-star",
+      name: "⭐️ SOUL STAR",
+      emoji: "⭐️",
+      badges: [
+        { name: "Soul Star", description: "First reflection" },
+        { name: "Soul Ember", description: "3 reflections" },
+        { name: "Soul Flame", description: "7 reflections" },
+        { name: "Soul Bloom", description: "14 reflections" },
+        { name: "Soul Rise", description: "30 reflections" },
+        { name: "Soul Eclipse", description: "50 reflections" },
+        { name: "Eternal Soul", description: "100 reflections" },
+      ]
+    },
+    {
+      id: "achievements",
+      name: "🏆 ACHIEVEMENTS",
+      emoji: "🏆",
+      badges: [
+        { name: "First Listen" },
+        { name: "Digital Collector", description: "Collect 5 cards" },
+        { name: "Cosmic Archivist", description: "Collect 15 cards" },
+        { name: "Starbinder", description: "Collect 25 cards" },
+        { name: "Master Collector", description: "Collect all cards" },
+        { name: "Live Witness", description: "Watch 1 livestream" },
+        { name: "Stream Seeker", description: "Watch 3" },
+        { name: "Signal Streamer", description: "Watch 10" },
+        { name: "Cosmic Broadcaster", description: "Watch 25" },
+        { name: "Merch Supporter", description: "Buy your first merch item" },
+        { name: "Cosmic Donor", description: "Make a donation" },
+      ]
+    },
+    {
+      id: "elemental-streak",
+      name: "💠 ELEMENTAL STREAK BADGES",
+      emoji: "💠",
+      badges: [
+        { name: "❤️ HEART" },
+        { name: "Ember Glow", description: "3 days" },
+        { name: "Gentle Bloom", description: "7 days" },
+        { name: "Warm Pulse", description: "14 days" },
+        { name: "Heart Radiance", description: "30 days" },
+        { name: "Deep Devotion", description: "50 days" },
+        { name: "Eternal Love", description: "100 days" },
+        { name: "💧 WATER" },
+        { name: "Rising Ripple", description: "3 days" },
+        { name: "Steady Flow", description: "7 days" },
+        { name: "Shifting Tide", description: "14 days" },
+        { name: "Ocean Surge", description: "30 days" },
+        { name: "Silver Depth", description: "50 days" },
+        { name: "Endless Drift", description: "100 days" },
+        { name: "⚡ LIGHTNING" },
+        { name: "First Spark", description: "3 days" },
+        { name: "Bright Flash", description: "7 days" },
+        { name: "Quick Charge", description: "14 days" },
+        { name: "Raging Storm", description: "30 days" },
+        { name: "Sky Ascend", description: "50 days" },
+        { name: "Ever Storm", description: "100 days" },
+        { name: "🌑 DARKNESS" },
+        { name: "Fading Shadow", description: "3 days" },
+        { name: "Silent Veil", description: "7 days" },
+        { name: "Solar Eclipse", description: "14 days" },
+        { name: "Falling Dusk", description: "30 days" },
+        { name: "Black Midnight", description: "50 days" },
+        { name: "Ever Night", description: "100 days" },
+      ]
+    },
+    {
+      id: "listening",
+      name: "🎵 LISTENING BADGES",
+      emoji: "🎵",
+      badges: [
+        { name: "Deep Listener", description: "10 unique tracks" },
+        { name: "Song Voyager", description: "25 unique tracks" },
+        { name: "Track Devotee", description: "25 repeats" },
+        { name: "Track Obsession", description: "100 repeats" },
+        { name: "Complete Discography", description: "All songs" },
+      ]
+    },
+    {
+      id: "heartcoin",
+      name: "HEARTCOIN BADGES",
+      emoji: "💰",
+      badges: [
+        { name: "First HeartCoin" },
+        { name: "Treasure Finder", description: "10 HC" },
+        { name: "Heartflow", description: "50 HC" },
+        { name: "Cosmic Prosperity", description: "100 HC" },
+      ]
+    },
+    {
+      id: "community",
+      name: "🌐 COMMUNITY",
+      emoji: "🌐",
+      badges: [
+        { name: "Portal Opener", description: "Invite 1 friend" },
+        { name: "Constellation Builder", description: "Invite 5 friends" },
+        { name: "Galactic Signal", description: "Invite 20 friends" },
+        { name: "Starlight Supporter", description: "Follow on Spotify/Apple, TikTok, YouTube, IG" },
+      ]
     }
-  }
+  ];
 
-  async function signInWithEmail(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setMessage(null);
-    setLoading(true);
-    try {
-      const { error } = await supabaseClient.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: window.location.origin + "/auth/callback" },
-      });
-      if (error) throw error;
-      setMessage("Check your email for a magic link.");
-    } catch (e: any) {
-      setError(e?.message || "Failed to send magic link");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function signInWithPhone(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setMessage(null);
-    setLoading(true);
-    try {
-      const { error } = await supabaseClient.auth.signInWithOtp({
-        phone,
-      });
-      if (error) throw error;
-      setMessage("Check your phone for a verification code.");
-    } catch (e: any) {
-      setError(e?.message || "Failed to send SMS");
-    } finally {
-      setLoading(false);
-    }
+  if (selectedCategory) {
+    const category = badgeCategories.find(cat => cat.id === selectedCategory);
+    if (!category) return null;
+    
+    return (
+      <HeartversePopup 
+        isOpen={open} 
+        onClose={onClose} 
+        title={category.name}
+      >
+        <div className="relative space-y-3">
+          <button
+            onClick={() => setSelectedCategory(null)}
+            className="mb-4 text-[#38B6FF] hover:text-[#38B6FF]/80 transition text-sm"
+          >
+            ← Back to Categories
+          </button>
+          
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {category.badges.map((badge, index) => (
+              <div 
+                key={index}
+                className="relative p-3 rounded-lg bg-black/30 border border-white/20 hover:border-white/40 transition"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium text-white text-sm">{badge.name}</div>
+                    {badge.description && (
+                      <div className="text-white/60 text-xs mt-1">{badge.description}</div>
+                    )}
+                  </div>
+                  <div className="text-white/40 text-xs">Locked</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </HeartversePopup>
+    );
   }
 
   return (
@@ -76,92 +172,22 @@ export default function BadgesModal({ open, onClose }: Props) {
       onClose={onClose} 
       title="BADGES"
     >
-      <p className="relative text-sm text-white/80 mb-3">Choose your connection method.</p>
-
-          {error && (
-            <div className="relative mb-2 rounded-md bg-red-50/10 border border-red-200/40 p-2 text-sm text-red-200">
-              {error}
+      <p className="relative text-sm text-white/80 mb-4">Choose a category to explore your badges.</p>
+      
+      <div className="relative flex justify-center items-center space-x-4 overflow-x-auto px-2">
+        {badgeCategories.map((category) => (
+          <button
+            key={category.id}
+            onClick={() => setSelectedCategory(category.id)}
+            className="relative flex-shrink-0 w-16 h-16 rounded-full bg-black/30 border border-white/20 hover:border-[#FC54AF]/60 hover:bg-[#FC54AF]/10 transition group flex items-center justify-center"
+            title={`${category.name} - ${category.badges.length} badges`}
+          >
+            <div className="text-2xl group-hover:scale-110 transition-transform">
+              {category.emoji}
             </div>
-          )}
-          {message && (
-            <div className="relative mb-2 rounded-md bg-green-50/10 border border-green-200/40 p-2 text-sm text-green-200">
-              {message}
-            </div>
-          )}
-
-          <div className="relative space-y-3">
-            <button
-              onClick={signInWithGoogle}
-              disabled={loading}
-              className="w-full inline-flex items-center justify-center rounded-lg bg-[#FC54AF] px-4 py-3 text-sm font-semibold text-black hover:brightness-110 transition disabled:opacity-50"
-            >
-              CONNECT with Google
-            </button>
-
-            <div className="relative flex items-center text-white/50">
-              <div className="flex-grow border-t border-white/20" />
-              <span className="mx-3 text-xs uppercase">or</span>
-              <div className="flex-grow border-t border-white/20" />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Phone Login Section */}
-              <form onSubmit={signInWithPhone} className="space-y-2">
-                <label htmlFor="login-phone" className="block text-sm font-medium text-white/90">
-                  Phone Number
-                </label>
-                <input
-                  id="login-phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+1 (555) 123-4567"
-                  required
-                  className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-[#38B6FF] focus:outline-none"
-                />
-                <button
-                  type="submit"
-                  disabled={loading || phone.length === 0}
-                  className="w-full inline-flex items-center justify-center rounded-lg bg-[#FC54AF]/20 border-2 border-[#FC54AF]/60 px-4 py-3 text-sm font-medium text-white hover:bg-[#FC54AF]/30 transition disabled:opacity-50"
-                  style={{
-                    boxShadow: loading || phone.length === 0 
-                      ? 'none' 
-                      : '0 0 20px rgba(252,84,175,0.6), 0 0 40px rgba(252,84,175,0.4), inset 0 0 10px rgba(252,84,175,0.2)'
-                  }}
-                >
-                  CONNECT
-                </button>
-              </form>
-
-              {/* Email Login Section */}
-              <form onSubmit={signInWithEmail} className="space-y-2">
-                <label htmlFor="login-email" className="block text-sm font-medium text-white/90">
-                  Email Address
-                </label>
-                <input
-                  id="login-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  required
-                  className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-[#38B6FF] focus:outline-none"
-                />
-                <button
-                  type="submit"
-                  disabled={loading || email.length === 0}
-                  className="w-full inline-flex items-center justify-center rounded-lg bg-[#FC54AF]/20 border-2 border-[#FC54AF]/60 px-4 py-3 text-sm font-medium text-white hover:bg-[#FC54AF]/30 transition disabled:opacity-50"
-                  style={{
-                    boxShadow: loading || email.length === 0 
-                      ? 'none' 
-                      : '0 0 20px rgba(252,84,175,0.6), 0 0 40px rgba(252,84,175,0.4), inset 0 0 10px rgba(252,84,175,0.2)'
-                  }}
-                >
-                  CONNECT
-                </button>
-              </form>
-            </div>
-          </div>
+          </button>
+        ))}
+      </div>
     </HeartversePopup>
   );
 }

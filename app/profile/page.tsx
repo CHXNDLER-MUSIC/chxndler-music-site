@@ -83,8 +83,8 @@ export default function ProfilePage() {
     <main className="mx-auto max-w-xl p-6">
       <div className="flex items-center justify-between mb-6">
         <img 
-          src="/elements/elemental.png" 
-          alt="Elemental Icon" 
+          src="/elements/start.png" 
+          alt="Element Icon" 
           className="w-8 h-8 object-contain"
         />
         <h1 className="text-2xl font-semibold flex-1 text-center">Your Profile</h1>
