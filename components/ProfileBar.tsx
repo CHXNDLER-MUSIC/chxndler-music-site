@@ -336,7 +336,7 @@ export default function ProfileBar({
           {/* Right Side */}
           <div className="flex items-center space-x-0.5 sm:space-x-1 flex-shrink-0 mr-0">
             {/* Badges Button */}
-            <div className="ml-3">
+            <div className="ml-2">
               <BadgesButton 
                 onHoverSound={() => sfx.play('hover', 0.8)}
                 onCloseBlueDisplay={onCloseBlueDisplay}
@@ -501,12 +501,13 @@ export default function ProfileBar({
           
           {/* Header */}
           <div 
-            className="text-center mb-3"
+            className="text-center mb-2"
             style={{ 
               color: '#00FFFF', 
               textShadow: '0 0 8px rgba(0,255,255,0.6)', 
               fontSize: '16px',
-              fontWeight: 'bold'
+              fontWeight: 'bold',
+              flexShrink: 0
             }}
           >
             MANAGE YOUR HEART COINS ♥
@@ -514,45 +515,46 @@ export default function ProfileBar({
           
           {/* Thin blue neon line */}
           <div 
-            className="w-full h-px mb-4"
+            className="w-full h-px mb-2"
             style={{
               background: 'linear-gradient(90deg, transparent, rgba(0,255,255,0.8) 20%, rgba(0,255,255,1) 50%, rgba(0,255,255,0.8) 80%, transparent)',
-              boxShadow: '0 0 4px rgba(0,255,255,0.6)'
+              boxShadow: '0 0 4px rgba(0,255,255,0.6)',
+              flexShrink: 0
             }}
           />
           <div 
-            className="text-center mb-4"
+            className="text-center mb-3"
             style={{ 
               whiteSpace: 'pre-wrap' as const, 
-              lineHeight: 1.2, 
-              fontSize: 14, 
+              lineHeight: 1.1, 
+              fontSize: 12, 
               color: '#00FFFF', 
-              textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(0,255,255,0.6)', 
-              marginTop: '-4px' 
+              textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(0,255,255,0.6)',
+              flexShrink: 0
             }}
           >
             HeartCoins are the energy of the Heartverse. You earn them by exploring, connecting, and showing up.
           </div>
 
           {/* Heart Coin Stats */}
-          <div className="relative mt-1">
-            <div className="grid grid-cols-2 gap-4">
-              {/* Balance Display */}
-              <div className="text-left">
-                <div 
-                  className="w-16 h-16 mb-2 rounded-full border-2 border-cyan-400/60 overflow-hidden"
-                  style={{
-                    background: 'rgba(0,255,255,0.1)',
-                    boxShadow: '0 0 15px rgba(0,255,255,0.3)',
-                  }}
-                >
-                  <img
-                    src="/elements/heart-coin.png"
-                    alt="Heart Coin"
-                    className="w-full h-full object-cover"
-                    draggable={false}
-                  />
-                </div>
+          <div className="flex-1 flex items-center justify-between">
+            {/* Balance Display */}
+            <div className="flex items-center space-x-3">
+              <div 
+                className="w-12 h-12 rounded-full border-2 border-cyan-400/60 overflow-hidden"
+                style={{
+                  background: 'rgba(0,255,255,0.1)',
+                  boxShadow: '0 0 15px rgba(0,255,255,0.3)',
+                }}
+              >
+                <img
+                  src="/elements/heart-coin.png"
+                  alt="Heart Coin"
+                  className="w-full h-full object-cover"
+                  draggable={false}
+                />
+              </div>
+              <div>
                 <div 
                   className="text-xs mb-1"
                   style={{ 
@@ -572,25 +574,23 @@ export default function ProfileBar({
                   {heartCoins}
                 </div>
               </div>
-              
-              {/* Action Buttons */}
-              <div className="text-center space-y-2">
-                <button
-                  onClick={() => {
-                    try { sfx.play('click', 0.8); } catch {}
-                    // TODO: Open store popup
-                    console.log("Open store popup");
-                  }}
-                  className="w-full px-3 py-2 bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300 rounded text-xs transition-all duration-200"
-                  style={{
-                    boxShadow: '0 0 10px rgba(236, 72, 153, 0.3)',
-                    textShadow: '0 0 4px rgba(236, 72, 153, 0.6)'
-                  }}
-                >
-                  USE MY HEARTS
-                </button>
-              </div>
             </div>
+            
+            {/* Action Button */}
+            <button
+              onClick={() => {
+                try { sfx.play('click', 0.8); } catch {}
+                // TODO: Open store popup
+                console.log("Open store popup");
+              }}
+              className="px-4 py-2 bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300 rounded text-sm transition-all duration-200"
+              style={{
+                boxShadow: '0 0 10px rgba(236, 72, 153, 0.3)',
+                textShadow: '0 0 4px rgba(236, 72, 153, 0.6)'
+              }}
+            >
+              USE MY HEARTS
+            </button>
           </div>
           </div>
         </div>,

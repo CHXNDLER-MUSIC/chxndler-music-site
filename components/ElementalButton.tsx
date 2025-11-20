@@ -112,7 +112,10 @@ export default function ElementalButton({ asChild = false, children, onClick, on
               boxShadow: '0 -8px 25px rgba(147,51,234,0.4), 0 -4px 15px rgba(147,51,234,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(147,51,234,0.45)',
               backdropFilter: 'blur(12px) saturate(140%)',
               color: '#9333EA',
-              position: 'relative'
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden'
             }}
         >
           {/* Soft bottom glow pseudo element */}
@@ -209,7 +212,7 @@ export default function ElementalButton({ asChild = false, children, onClick, on
           </div>
 
           {/* Content */}
-          <div className="flex gap-4 h-full">
+          <div className="flex gap-4 flex-1 min-h-0">
             {/* Four Elements Box */}
             <div style={{ width: '40%', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '10px' }}>
               
@@ -321,7 +324,7 @@ export default function ElementalButton({ asChild = false, children, onClick, on
             </div>
 
             {/* Right Side - Content */}
-            <div style={{ width: '60%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
+            <div style={{ width: '60%', display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
               {/* Element Info Display */}
               {hoveredElement && (
                 <div 
@@ -368,7 +371,10 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                              hoveredElement === 'heart' ? '#FFB4D6' :
                              hoveredElement === 'water' ? '#87CEEB' :
                              hoveredElement === 'lightning' ? '#FFED4A' : '#FFFFFF',
-                      fontSize: '12px'
+                      fontSize: '12px',
+                      wordWrap: 'break-word',
+                      overflowWrap: 'break-word',
+                      lineHeight: '1.3'
                     }}
                   >
                     {hoveredElement === 'darkness' ? 'Mystery & Transformation' :
@@ -382,7 +388,7 @@ export default function ElementalButton({ asChild = false, children, onClick, on
               {/* Selected Element Display */}
               {selectedElement && (
                 <div 
-                  className="text-center p-4 rounded-lg border-2 mb-4"
+                  className="text-center p-3 rounded-lg border-2 mb-3 flex-1 overflow-auto"
                   style={{ 
                     borderColor: selectedElement === 'darkness' ? 'rgba(255,255,255,0.6)' :
                                 selectedElement === 'heart' ? 'rgba(255,105,180,0.6)' :
@@ -395,7 +401,8 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                     boxShadow: selectedElement === 'darkness' ? '0 0 20px rgba(255,255,255,0.4)' :
                               selectedElement === 'heart' ? '0 0 20px rgba(255,105,180,0.4)' :
                               selectedElement === 'water' ? '0 0 20px rgba(0,191,255,0.4)' :
-                              selectedElement === 'lightning' ? '0 0 20px rgba(255,215,0,0.4)' : 'none'
+                              selectedElement === 'lightning' ? '0 0 20px rgba(255,215,0,0.4)' : 'none',
+                    minHeight: 0
                   }}
                 >
                   {selectedElement !== 'lightning' && (
@@ -423,8 +430,13 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                   <div 
                     style={{ 
                       color: selectedElement === 'lightning' ? '#FFFF00' : 'rgba(255,255,255,0.9)',
-                      fontSize: '12px',
-                      textShadow: selectedElement === 'lightning' ? '0 0 10px #FFFF00, 0 0 20px #FFFF00, 0 0 30px #FFFF00' : 'none'
+                      fontSize: '11px',
+                      textShadow: selectedElement === 'lightning' ? '0 0 10px #FFFF00, 0 0 20px #FFFF00, 0 0 30px #FFFF00' : 'none',
+                      wordWrap: 'break-word',
+                      overflowWrap: 'break-word',
+                      lineHeight: '1.3',
+                      maxHeight: '100px',
+                      overflow: 'auto'
                     }}
                   >
                     {selectedElement === 'lightning' ? 
@@ -440,7 +452,7 @@ export default function ElementalButton({ asChild = false, children, onClick, on
               )}
               
               {/* COMMIT Button */}
-              <div className="text-center mt-auto">
+              <div className="text-center mt-2 flex-shrink-0">
                 <button
                   onClick={() => {
                     try { sfx.play('click', 0.8); } catch {}
