@@ -4855,9 +4855,9 @@ export default function HUDPanel({
                         style={{
                           padding: '6px 12px',
                           borderRadius: 6,
-                          border: '1px solid rgba(33,150,243,0.4)',
-                          background: storeActiveTab === 'MERCH' ? 'rgba(33,150,243,0.3)' : 'rgba(0,0,0,0.3)',
-                          color: storeActiveTab === 'MERCH' ? '#2196F3' : '#fff',
+                          border: '1px solid rgba(252,84,175,0.4)',
+                          background: storeActiveTab === 'MERCH' ? 'rgba(252,84,175,0.3)' : 'rgba(0,0,0,0.3)',
+                          color: storeActiveTab === 'MERCH' ? '#FC54AF' : '#fff',
                           cursor: 'pointer',
                           fontSize: 12,
                           fontWeight: 700,
@@ -4869,14 +4869,18 @@ export default function HUDPanel({
                       <button
                         onClick={() => {
                           setStoreActiveTab('CARDS');
+                          // Dispatch event to open digital binder full collection
+                          try {
+                            window.dispatchEvent(new Event('openDigitalBinder'));
+                          } catch {}
                         }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                         style={{
                           padding: '6px 12px',
                           borderRadius: 6,
-                          border: '1px solid rgba(33,150,243,0.4)',
-                          background: storeActiveTab === 'CARDS' ? 'rgba(33,150,243,0.3)' : 'rgba(0,0,0,0.3)',
-                          color: storeActiveTab === 'CARDS' ? '#2196F3' : '#fff',
+                          border: '1px solid rgba(252,84,175,0.4)',
+                          background: storeActiveTab === 'CARDS' ? 'rgba(252,84,175,0.3)' : 'rgba(0,0,0,0.3)',
+                          color: storeActiveTab === 'CARDS' ? '#FC54AF' : '#fff',
                           cursor: 'pointer',
                           fontSize: 12,
                           fontWeight: 700,
@@ -6238,13 +6242,13 @@ export default function HUDPanel({
                           placeholder="Share your cosmic vision..."
                           style={{
                             width: '100%',
-                            minHeight: '2.5rem',
-                            padding: '12px',
+                            minHeight: '1.5rem',
+                            padding: '8px',
                             background: 'rgba(0,0,20,0.6)',
                             border: '1px solid rgba(255,255,255,0.3)',
                             borderRadius: '8px',
                             color: '#FFFFFF',
-                            fontSize: '14px',
+                            fontSize: '13px',
                             fontFamily: 'inherit',
                             resize: 'vertical',
                             outline: 'none',

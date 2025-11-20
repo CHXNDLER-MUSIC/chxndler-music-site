@@ -20,6 +20,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
   const [selectedCardName, setSelectedCardName] = useState<string>('All');
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [selectedCard, setSelectedCard] = useState<{name: string, image: string, rarity: string, element: string} | null>(null);
+  const [preselectedCard, setPreselectedCard] = useState<string | null>(null);
 
   // Full song collection data structure
   const songCollection = [
@@ -220,12 +221,23 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
     }
     
     // Convert to card format with images
-    return filteredSongs.map(song => ({
+    let cards = filteredSongs.map(song => ({
       name: song.name,
       rarity: song.rarity,
       element: song.element,
       image: getCardImage(song.name, song.element)
     }));
+    
+    // Move preselected card to first position if it exists in the filtered results
+    if (preselectedCard) {
+      const preselectedIndex = cards.findIndex(card => card.name === preselectedCard);
+      if (preselectedIndex > 0) {
+        const preselectedCardObj = cards.splice(preselectedIndex, 1)[0];
+        cards.unshift(preselectedCardObj);
+      }
+    }
+    
+    return cards;
   };
 
   const getAvailableCardNames = () => {
@@ -249,11 +261,11 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
   useEffect(() => {
     const handleOpenDigitalBinder = () => {
       try { onCloseBlueDisplay?.(); } catch {}
-      // Skip the current display and go directly to the element selection
-      setOpen(false);
-      setShowFullCollection(false);
+      setOpen(true);
+      setShowFullCollection(true);
       setSelectedElement(null);
       setSelectedCardName('All');
+      setPreselectedCard(null);
       setCurrentCardIndex(0);
     };
 
@@ -300,7 +312,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
       <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="p-1 rounded-lg transition-all duration-200 w-16 h-14"
+        className="rounded-lg transition-all duration-200 w-16 h-14 border-0"
         style={{
           transition: 'all 0.3s ease',
           ...rest.style
@@ -317,7 +329,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
         <img
           src="/elements/binder.png"
           alt="Binder"
-          className="w-full h-full object-cover rounded"
+          className="w-full h-full object-contain rounded"
           style={{
             filter: 'drop-shadow(0 0 8px rgba(252, 84, 175, 0.8)) drop-shadow(0 0 16px rgba(252, 84, 175, 0.4))'
           }}
@@ -430,6 +442,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                 setShowFullCollection(!showFullCollection);
                 setSelectedElement(null);
                 setSelectedCardName('All');
+                setPreselectedCard(null);
                 setCurrentCardIndex(0);
               }}
               className="px-3 py-1 text-[10px] font-bold rounded border border-pink-400/60 hover:border-pink-400/80 transition-all duration-200"
@@ -455,7 +468,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
               style={{ 
                 color: '#FF69B4', 
                 textShadow: '0 0 8px rgba(255,105,180,0.6)', 
-                fontSize: '16px',
+                fontSize: '12px',
                 fontWeight: 'bold'
               }}
             >
@@ -495,19 +508,21 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
               </select>
             )}
             
-            <div 
-              className="text-center flex-1"
-              style={{ 
-                whiteSpace: 'pre-wrap', 
-                lineHeight: 1.2, 
-                fontSize: 11, 
-                color: '#FF69B4', 
-                textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,105,180,0.6)', 
-                marginTop: '-4px' 
-              }}
-            >
-              Earn the cards that reflect your journey as you move through the Heartverse.
-            </div>
+            {!selectedElement && (
+              <div 
+                className="text-center flex-1"
+                style={{ 
+                  whiteSpace: 'pre-wrap', 
+                  lineHeight: 1.2, 
+                  fontSize: 9, 
+                  color: '#FF69B4', 
+                  textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,105,180,0.6)', 
+                  marginTop: '-4px' 
+                }}
+              >
+                Earn the cards that reflect your journey as you move through the Heartverse.
+              </div>
+            )}
             
             <div style={{ width: showFullCollection && selectedElement ? '8rem' : '0' }}></div>
           </div>
@@ -518,7 +533,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
             style={{ 
               color: '#FFB6C1', 
               textShadow: '0 0 4px rgba(255,182,193,0.8)', 
-              fontSize: '12px',
+              fontSize: '10px',
               fontWeight: 'bold',
               marginTop: '-8px'
             }}
@@ -632,6 +647,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                             try { sfx.play('click', 0.7); } catch {}
                             setSelectedElement(element);
                             setSelectedCardName('All');
+                            // Reset to index 0 when selecting a new element - preselected card will be moved to first position automatically
                             setCurrentCardIndex(0);
                           }}
                         >
@@ -695,6 +711,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                             try { sfx.play('click', 0.6); } catch {}
                             setSelectedElement(null);
                             setSelectedCardName('All');
+                            setPreselectedCard(null);
                             setCurrentCardIndex(0);
                           }}
                           className="flex items-center gap-2 text-pink-300 hover:text-pink-200 transition-colors text-xs"
@@ -783,6 +800,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                               draggable={false}
                               onClick={() => {
                                 try { sfx.play('click', 0.8); } catch {}
+                                setPreselectedCard(currentCard.name);
                                 setSelectedCard(currentCard);
                                 setCardOpen(true);
                               }}

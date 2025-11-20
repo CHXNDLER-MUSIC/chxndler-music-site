@@ -706,15 +706,15 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             
             .response-area {
               width: 100%;
-              min-height: 30px;
-              height: 30px;
-              max-height: 60px;
+              min-height: 20px;
+              height: 20px;
+              max-height: 40px;
               background: rgba(0, 0, 0, 0.8);
               border: 1px solid #FFFF00;
               border-radius: 0.5rem;
               color: #FFFF00;
-              padding: 0.75rem;
-              font-size: 1rem;
+              padding: 0.5rem;
+              font-size: 0.9rem;
               resize: vertical;
               font-family: inherit;
             }

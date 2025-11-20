@@ -192,10 +192,27 @@ export default function ElementalButton({ asChild = false, children, onClick, on
             }}
           />
 
+
+          {/* Explore text across whole display */}
+          <div 
+            className="text-center mb-6"
+            style={{ 
+              color: '#FFFFFF', 
+              fontSize: '14px',
+              fontWeight: 'bold',
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+              textShadow: '0 0 10px #FFFFFF, 0 0 20px #FFFFFF, 0 0 30px #FFFFFF'
+            }}
+          >
+            explore each element's power
+          </div>
+
           {/* Content */}
           <div className="flex gap-4 h-full">
             {/* Four Elements Box */}
             <div style={{ width: '40%', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '10px' }}>
+              
               <div 
                 className="grid grid-cols-2 gap-2 p-3 rounded-lg border"
                 style={{
@@ -216,9 +233,9 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                   }} 
                   className="w-16 h-16 rounded-lg border-2 transition-all duration-300 flex items-center justify-center"
                   style={{
-                    borderColor: selectedElement === 'darkness' ? 'rgba(148,0,211,0.8)' : 'rgba(148,0,211,0.3)',
-                    background: selectedElement === 'darkness' ? 'rgba(148,0,211,0.2)' : 'rgba(148,0,211,0.05)',
-                    boxShadow: selectedElement === 'darkness' ? '0 0 20px rgba(148,0,211,0.6)' : 'none'
+                    borderColor: selectedElement === 'darkness' ? 'rgba(255,255,255,0.8)' : 'rgba(148,0,211,0.3)',
+                    background: selectedElement === 'darkness' ? 'rgba(255,255,255,0.2)' : 'rgba(148,0,211,0.05)',
+                    boxShadow: selectedElement === 'darkness' ? '0 0 20px rgba(255,255,255,0.6)' : 'none'
                   }}
                 >
                   <img
@@ -310,15 +327,15 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                 <div 
                   className="text-center p-3 rounded-lg border transition-all duration-300"
                   style={{ 
-                    borderColor: hoveredElement === 'darkness' ? 'rgba(148,0,211,0.4)' :
+                    borderColor: hoveredElement === 'darkness' ? 'rgba(255,255,255,0.4)' :
                                 hoveredElement === 'heart' ? 'rgba(255,105,180,0.4)' :
                                 hoveredElement === 'water' ? 'rgba(0,191,255,0.4)' :
                                 hoveredElement === 'lightning' ? 'rgba(255,215,0,0.4)' : 'transparent',
-                    background: hoveredElement === 'darkness' ? 'rgba(148,0,211,0.1)' :
+                    background: hoveredElement === 'darkness' ? 'rgba(255,255,255,0.1)' :
                                hoveredElement === 'heart' ? 'rgba(255,105,180,0.1)' :
                                hoveredElement === 'water' ? 'rgba(0,191,255,0.1)' :
                                hoveredElement === 'lightning' ? 'rgba(255,215,0,0.1)' : 'transparent',
-                    boxShadow: hoveredElement === 'darkness' ? '0 0 15px rgba(148,0,211,0.3)' :
+                    boxShadow: hoveredElement === 'darkness' ? '0 0 15px rgba(255,255,255,0.3)' :
                               hoveredElement === 'heart' ? '0 0 15px rgba(255,105,180,0.3)' :
                               hoveredElement === 'water' ? '0 0 15px rgba(0,191,255,0.3)' :
                               hoveredElement === 'lightning' ? '0 0 15px rgba(255,215,0,0.3)' : 'none',
@@ -327,14 +344,14 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                 >
                   <div 
                     style={{ 
-                      color: hoveredElement === 'darkness' ? '#9400D3' :
+                      color: hoveredElement === 'darkness' ? '#FFFFFF' :
                              hoveredElement === 'heart' ? '#FF69B4' :
                              hoveredElement === 'water' ? '#00BFFF' :
                              hoveredElement === 'lightning' ? '#FFD700' : '#FFFFFF',
                       fontWeight: 'bold',
                       marginBottom: '8px',
                       fontSize: '16px',
-                      textShadow: hoveredElement === 'darkness' ? '0 0 8px rgba(148,0,211,0.8)' :
+                      textShadow: hoveredElement === 'darkness' ? '0 0 8px rgba(255,255,255,0.8)' :
                                  hoveredElement === 'heart' ? '0 0 8px rgba(255,105,180,0.8)' :
                                  hoveredElement === 'water' ? '0 0 8px rgba(0,191,255,0.8)' :
                                  hoveredElement === 'lightning' ? '0 0 8px rgba(255,215,0,0.8)' : 'none'
@@ -362,38 +379,20 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                 </div>
               )}
               
-              {/* Default message when no element is hovered */}
-              {!hoveredElement && (
-                <div 
-                  className="text-center p-3"
-                  style={{ 
-                    color: '#FFFFFF', 
-                    fontSize: '14px',
-                    fontWeight: 'bold',
-                    textTransform: 'uppercase',
-                    letterSpacing: '1px',
-                    textShadow: '0 0 10px #FFFFFF, 0 0 20px #FFFFFF, 0 0 30px #FFFFFF',
-                    marginBottom: '16px'
-                  }}
-                >
-                  explore each element's power
-                </div>
-              )}
-              
               {/* Selected Element Display */}
               {selectedElement && (
                 <div 
                   className="text-center p-4 rounded-lg border-2 mb-4"
                   style={{ 
-                    borderColor: selectedElement === 'darkness' ? 'rgba(148,0,211,0.6)' :
+                    borderColor: selectedElement === 'darkness' ? 'rgba(255,255,255,0.6)' :
                                 selectedElement === 'heart' ? 'rgba(255,105,180,0.6)' :
                                 selectedElement === 'water' ? 'rgba(0,191,255,0.6)' :
                                 selectedElement === 'lightning' ? 'rgba(255,215,0,0.6)' : 'transparent',
-                    background: selectedElement === 'darkness' ? 'rgba(148,0,211,0.15)' :
+                    background: selectedElement === 'darkness' ? 'rgba(255,255,255,0.15)' :
                                selectedElement === 'heart' ? 'rgba(255,105,180,0.15)' :
                                selectedElement === 'water' ? 'rgba(0,191,255,0.15)' :
                                selectedElement === 'lightning' ? 'rgba(255,215,0,0.15)' : 'transparent',
-                    boxShadow: selectedElement === 'darkness' ? '0 0 20px rgba(148,0,211,0.4)' :
+                    boxShadow: selectedElement === 'darkness' ? '0 0 20px rgba(255,255,255,0.4)' :
                               selectedElement === 'heart' ? '0 0 20px rgba(255,105,180,0.4)' :
                               selectedElement === 'water' ? '0 0 20px rgba(0,191,255,0.4)' :
                               selectedElement === 'lightning' ? '0 0 20px rgba(255,215,0,0.4)' : 'none'
@@ -402,21 +401,23 @@ export default function ElementalButton({ asChild = false, children, onClick, on
                   {selectedElement !== 'lightning' && (
                     <div 
                       style={{ 
-                        color: selectedElement === 'darkness' ? '#9400D3' :
+                        color: selectedElement === 'darkness' ? '#FFFFFF' :
                                selectedElement === 'heart' ? '#FF69B4' :
                                selectedElement === 'water' ? '#00BFFF' :
                                selectedElement === 'lightning' ? '#FFD700' : '#FFFFFF',
                         fontWeight: 'bold',
                         fontSize: '18px',
                         marginBottom: '8px',
-                        textShadow: selectedElement === 'darkness' ? '0 0 10px rgba(148,0,211,1)' :
+                        textShadow: selectedElement === 'darkness' ? '0 0 10px rgba(255,255,255,1)' :
                                    selectedElement === 'heart' ? '0 0 10px rgba(255,105,180,1)' :
                                    selectedElement === 'water' ? '0 0 10px rgba(0,191,255,1)' :
                                    selectedElement === 'lightning' ? '0 0 10px rgba(255,215,0,1)' : 'none'
                       }}
                     >
                       {selectedElement === 'heart' ? 'Heart = love and connection' : 
-                       selectedElement === 'darkness' ? '' : `SELECTED: ${selectedElement.toUpperCase()}`}
+                       selectedElement === 'lightning' ? 'Lightning = passion and courage' :
+                       selectedElement === 'water' ? 'Water = emotional truth and authenticity' :
+                       selectedElement === 'darkness' ? 'Darkness = honesty about pain, imperfection, and inner worlds' : `SELECTED: ${selectedElement.toUpperCase()}`}
                     </div>
                   )}
                   <div 
