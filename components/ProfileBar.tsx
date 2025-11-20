@@ -292,7 +292,7 @@ export default function ProfileBar({
         </div>
 
         {/* Main Flex Layout */}
-        <div className="flex items-center justify-between h-full pl-12 sm:pl-16 pr-0 sm:pr-2 min-w-0">
+        <div className="flex items-center justify-between h-full pl-12 sm:pl-16 pr-2 min-w-0">
           {/* Left Side */}
           <div className="flex items-center min-w-0 overflow-hidden flex-1">
             {/* Username */}
@@ -314,7 +314,7 @@ export default function ProfileBar({
             </span>
 
             {/* Journey Button */}
-            <div className="ml-8">
+            <div className="ml-12">
               <JourneyButton 
                 onHoverSound={() => sfx.play('hover', 0.8)}
                 onCloseBlueDisplay={onCloseBlueDisplay}
@@ -325,7 +325,7 @@ export default function ProfileBar({
           </div>
 
           {/* Center - Code Button */}
-          <div className="flex-shrink-0 -mr-6">
+          <div className="flex-shrink-0 -mr-3">
             <CodeButton 
               onHoverSound={() => sfx.play('hover', 0.8)}
               onCloseBlueDisplay={onCloseBlueDisplay}
@@ -334,9 +334,9 @@ export default function ProfileBar({
           </div>
 
           {/* Right Side */}
-          <div className="flex items-center space-x-0.5 sm:space-x-1 flex-shrink-0 mr-16" style={{minWidth: '200px'}}>
+          <div className="flex items-center space-x-0.5 sm:space-x-1 flex-shrink-0 mr-0">
             {/* Badges Button */}
-            <div className="-mr-1">
+            <div className="ml-3">
               <BadgesButton 
                 onHoverSound={() => sfx.play('hover', 0.8)}
                 onCloseBlueDisplay={onCloseBlueDisplay}
@@ -345,7 +345,7 @@ export default function ProfileBar({
             </div>
 
             {/* Digital Binder Button */}
-            <div className="-ml-1">
+            <div className="-ml-6">
               <BinderButton 
                 onHoverSound={() => sfx.play('hover', 0.8)}
                 onCloseBlueDisplay={onCloseBlueDisplay}
@@ -354,7 +354,7 @@ export default function ProfileBar({
             </div>
 
             {/* Heart Coin Button with Count */}
-            <div className="flex items-center space-x-0.5 ml-6">
+            <div className="flex items-center space-x-0.5 -ml-16">
               <HeartCoinButton 
                 onHoverSound={() => sfx.play('hover', 0.8)}
                 onCloseBlueDisplay={onCloseBlueDisplay}
@@ -432,7 +432,7 @@ export default function ProfileBar({
             className="heart-coin-hologram-container"
             style={{
               width: 'min(92vw, 700px)',
-              height: '35vh',
+              height: '28vh',
               padding: '10px 14px 14px 14px',
               borderRadius: 18,
               background: 'rgba(0,0,0,0.6)',
@@ -440,7 +440,9 @@ export default function ProfileBar({
               boxShadow: '0 -8px 25px rgba(0,255,255,0.4), 0 -4px 15px rgba(0,255,255,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(0,255,255,0.45)',
               backdropFilter: 'blur(12px) saturate(140%)',
               color: '#00FFFF',
-              position: 'relative'
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column'
             }}
         >
           {/* Soft bottom glow pseudo element */}
