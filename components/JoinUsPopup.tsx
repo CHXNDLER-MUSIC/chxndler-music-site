@@ -19,11 +19,7 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [heartSignalSent, setHeartSignalSent] = useState(false);
-  const [showTipPopup, setShowTipPopup] = useState(false);
-  const [selectedTipAmount, setSelectedTipAmount] = useState<number | null>(null);
-  const [customAmount, setCustomAmount] = useState("");
-  const [showCustomInput, setShowCustomInput] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<"venmo" | "credit" | null>(null);
+  const [showVenmoPopup, setShowVenmoPopup] = useState(false);
 
   async function createProfileWithPhone(e: React.FormEvent) {
     e.preventDefault();
@@ -68,14 +64,19 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
     setIsSigningUp(true);
 
     try {
+      console.log('🚀 Starting email signup for:', email);
+      console.log('🚀 Redirect URL will be:', window.location.origin + '/auth/callback');
+
       // Sign up with email and redirect to auth callback for name prompt
-      const { error: signUpError } = await supabaseClient.auth.signUp({
+      const { data, error: signUpError } = await supabaseClient.auth.signUp({
         email,
         password: 'temppassword123', // Temporary password
         options: { 
           emailRedirectTo: window.location.origin + '/auth/callback',
         }
       });
+
+      console.log('🚀 Signup response:', { data, error: signUpError });
 
       if (signUpError) throw signUpError;
 
@@ -344,7 +345,7 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
             border: '2px solid rgba(255, 215, 0, 0.8)'
           }}
           onClick={() => {
-            setShowTipPopup(true);
+            setShowVenmoPopup(true);
             try {
               sfx.play('card-ding', 0.7);
             } catch {}
@@ -381,236 +382,65 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
       `}</style>
     </HeartversePopup>
 
-    {/* Tip Popup */}
-    {showTipPopup && (
+    {/* Simple Venmo Popup */}
+    {showVenmoPopup && (
       <HeartversePopup 
-        isOpen={showTipPopup} 
-        onClose={() => {
-          setShowTipPopup(false);
-          setSelectedTipAmount(null);
-          setCustomAmount("");
-          setShowCustomInput(false);
-          setSelectedPaymentMethod(null);
-        }} 
-        title="TIP CHXNLDER THE ALIEN 💸"
+        isOpen={showVenmoPopup} 
+        onClose={() => setShowVenmoPopup(false)} 
+        title="SEND $1 TO @CHXNDLERTHEALIEN 💸"
         positioning="higher"
       >
-        <div className="space-y-6">
-          <p className="text-sm text-center" style={{ color: '#00FF00', textShadow: '0 0 10px rgba(0, 255, 0, 0.8)' }}>
-            Show some love with a tip! Choose your amount and payment method.
+        <div className="space-y-6 text-center">
+          <p className="text-sm" style={{ color: '#3D95CE', textShadow: '0 0 10px rgba(61, 149, 206, 0.8)' }}>
+            Click the button below to open Venmo and send $1 to @chxndlerthealien
           </p>
 
-          {/* Tip Amount Selection */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-center" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0, 255, 255, 0.6)' }}>
-              Select Tip Amount
-            </h3>
-            
-            <div className="grid grid-cols-3 gap-3">
-              <button
-                onClick={() => {
-                  setSelectedTipAmount(1);
-                  setShowCustomInput(false);
-                  setCustomAmount("");
-                }}
-                className={`tip-button ${selectedTipAmount === 1 ? 'selected' : ''}`}
-              >
-                $1
-              </button>
-              <button
-                onClick={() => {
-                  setSelectedTipAmount(3);
-                  setShowCustomInput(false);
-                  setCustomAmount("");
-                }}
-                className={`tip-button ${selectedTipAmount === 3 ? 'selected' : ''}`}
-              >
-                $3
-              </button>
-              <button
-                onClick={() => {
-                  setSelectedTipAmount(null);
-                  setShowCustomInput(true);
-                  setCustomAmount("");
-                }}
-                className={`tip-button ${showCustomInput ? 'selected' : ''}`}
-              >
-                CUSTOM
-              </button>
-            </div>
-
-            {showCustomInput && (
-              <div className="space-y-2">
-                <label className="block text-sm font-medium" style={{ color: '#00FF00' }}>
-                  Custom Amount
-                </label>
-                <input
-                  type="number"
-                  value={customAmount}
-                  onChange={(e) => {
-                    setCustomAmount(e.target.value);
-                  }}
-                  placeholder="Enter custom amount..."
-                  min="1"
-                  step="0.01"
-                  className="w-full rounded-lg border-2 bg-black/40 px-4 py-3 text-white placeholder-white/50 focus:outline-none custom-amount-input"
-                  autoFocus
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Payment Method Selection */}
-          {(selectedTipAmount || customAmount) && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-center" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0, 255, 255, 0.6)' }}>
-                Payment Method
-              </h3>
+          <button
+            onClick={() => {
+              // Direct Venmo links
+              const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=1&note=${encodeURIComponent('Thanks for the music!')}`;
+              const webVenmoUrl = `https://venmo.com/u/chxndlerthealien?txn=pay&amount=1&note=${encodeURIComponent('Thanks for the music!')}`;
               
-              <div className="grid grid-cols-1 gap-3">
-                <button
-                  onClick={() => setSelectedPaymentMethod("venmo")}
-                  className={`payment-button venmo-button ${selectedPaymentMethod === "venmo" ? 'selected' : ''}`}
-                >
-                  <span className="text-2xl mr-3">📱</span>
-                  Venmo (@CHXNLDER-THE-ALIEN)
-                </button>
-                <button
-                  onClick={() => setSelectedPaymentMethod("credit")}
-                  className={`payment-button credit-button ${selectedPaymentMethod === "credit" ? 'selected' : ''}`}
-                >
-                  <span className="text-2xl mr-3">💳</span>
-                  Credit Card
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Proceed Button */}
-          {selectedPaymentMethod && (selectedTipAmount || customAmount) && (
-            <button
-              onClick={() => {
-                const amount = selectedTipAmount || parseFloat(customAmount);
-                if (selectedPaymentMethod === "venmo") {
-                  // Open Venmo with pre-filled amount
-                  window.open(`https://venmo.com/u/CHXNLDER-THE-ALIEN?txn=pay&amount=${amount}&note=Tip for CHXNLDER THE ALIEN`, '_blank');
-                } else {
-                  // Handle credit card payment (placeholder for now)
-                  alert(`Credit card payment for $${amount} coming soon!`);
-                }
-              }}
-              className="w-full proceed-button"
-            >
-              {selectedPaymentMethod === "venmo" ? "Open Venmo" : "Pay with Card"} - ${selectedTipAmount || customAmount}
-            </button>
-          )}
+              // Try to open Venmo app first
+              window.open(venmoUrl, '_blank');
+              
+              // Fallback to web after short delay if app doesn't open
+              setTimeout(() => {
+                window.open(webVenmoUrl, '_blank');
+              }, 1500);
+              
+              // Close the popup
+              setShowVenmoPopup(false);
+            }}
+            className="w-full venmo-send-button"
+          >
+            <span className="text-2xl mr-3">📱</span>
+            Open Venmo & Send $1
+          </button>
         </div>
 
         <style jsx>{`
-          .tip-button {
-            padding: 1rem 2rem;
-            border-radius: 12px;
-            font-size: 1.5rem;
+          .venmo-send-button {
+            padding: 1.5rem 2rem;
+            border-radius: 16px;
+            font-size: 1.3rem;
             font-weight: bold;
-            background: transparent;
-            border: 2px solid #00FF00;
-            color: #00FF00;
+            background: linear-gradient(135deg, #3D95CE, #5BA8D8);
+            border: 2px solid #3D95CE;
+            color: white;
             cursor: pointer;
             transition: all 0.3s ease;
-            text-shadow: 0 0 8px rgba(0, 255, 0, 0.6);
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
-          }
-
-          .tip-button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 25px rgba(0, 255, 0, 0.5);
-            text-shadow: 0 0 12px rgba(0, 255, 0, 0.8);
-          }
-
-          .tip-button.selected {
-            background: rgba(0, 255, 0, 0.2);
-            box-shadow: 0 0 30px rgba(0, 255, 0, 0.7);
-            text-shadow: 0 0 15px rgba(0, 255, 0, 1);
-          }
-
-          .custom-amount-input {
-            border-color: #00FF00;
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
-          }
-
-          .custom-amount-input:focus {
-            border-color: #00FFFF;
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
-          }
-
-          .payment-button {
-            padding: 1rem 1.5rem;
-            border-radius: 12px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            background: transparent;
-            border: 2px solid;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            text-shadow: 0 0 8px rgba(61, 149, 206, 0.6);
+            box-shadow: 0 0 25px rgba(61, 149, 206, 0.5);
             display: flex;
             align-items: center;
             justify-content: center;
           }
 
-          .venmo-button {
-            border-color: #3D95CE;
-            color: #3D95CE;
-            text-shadow: 0 0 8px rgba(61, 149, 206, 0.6);
-            box-shadow: 0 0 15px rgba(61, 149, 206, 0.3);
-          }
-
-          .venmo-button:hover {
-            transform: scale(1.02);
-            box-shadow: 0 0 25px rgba(61, 149, 206, 0.5);
-            text-shadow: 0 0 12px rgba(61, 149, 206, 0.8);
-          }
-
-          .venmo-button.selected {
-            background: rgba(61, 149, 206, 0.2);
-            box-shadow: 0 0 30px rgba(61, 149, 206, 0.7);
-          }
-
-          .credit-button {
-            border-color: #FFD700;
-            color: #FFD700;
-            text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
-          }
-
-          .credit-button:hover {
-            transform: scale(1.02);
-            box-shadow: 0 0 25px rgba(255, 215, 0, 0.5);
-            text-shadow: 0 0 12px rgba(255, 215, 0, 0.8);
-          }
-
-          .credit-button.selected {
-            background: rgba(255, 215, 0, 0.2);
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.7);
-          }
-
-          .proceed-button {
-            padding: 1rem 2rem;
-            border-radius: 12px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            background: linear-gradient(135deg, #FF1493, #FF69B4);
-            border: 2px solid #FF1493;
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-shadow: 0 0 8px rgba(255, 20, 147, 0.6);
-            box-shadow: 0 0 25px rgba(255, 20, 147, 0.5);
-          }
-
-          .proceed-button:hover {
+          .venmo-send-button:hover {
             transform: scale(1.05);
-            box-shadow: 0 0 35px rgba(255, 20, 147, 0.7);
-            text-shadow: 0 0 12px rgba(255, 20, 147, 0.8);
+            box-shadow: 0 0 35px rgba(61, 149, 206, 0.7);
+            text-shadow: 0 0 12px rgba(61, 149, 206, 0.8);
           }
         `}</style>
       </HeartversePopup>

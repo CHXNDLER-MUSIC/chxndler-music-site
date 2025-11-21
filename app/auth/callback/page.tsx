@@ -10,37 +10,13 @@ export default function AuthCallbackPage() {
   const handleSuccessfulAuth = async (session: any) => {
     console.log('🎉 AUTH SUCCESS! User:', session.user.id, 'Email:', session.user.email);
     
-    // Check if this is coming from an email confirmation link
-    // With auto-detect flow, check both URL params and hash params
-    const urlSearchParams = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const authType = hashParams.get("type");
     
-    const urlType = urlSearchParams.get('type');
-    const hashType = hashParams.get('type');
-    const type = urlType || hashType;
-    
-    const isFromEmailLink = type === 'magiclink' || type === 'signup' || type === 'recovery';
-    
-    console.log('🔍 Auth type check:', {
-      urlType,
-      hashType,
-      finalType: type,
-      isFromEmailLink,
-      hasTokenInHash: !!hashParams.get('access_token'),
-      userEmail: session.user.email,
-      fullUrl: window.location.href
-    });
-    
-    if (isFromEmailLink) {
-      console.log('🎯 EMAIL CONFIRMATION DETECTED! Redirecting with email_confirmed=1');
-      console.log('🔔 This should trigger the name prompt modal');
-      console.log('🔗 About to redirect to: /?email_confirmed=1');
-      // This is from clicking email confirmation link - show name prompt
-      router.replace('/?email_confirmed=1');
+    if (authType === "signup") {
+      router.push("/?finish_profile=1");
     } else {
-      console.log('🎯 General auth success, redirecting with basic welcome flag');
-      // This is from OAuth or other flow - basic welcome
-      router.replace('/?welcome=1');
+      router.push("/?welcome=1");
     }
   };
 
