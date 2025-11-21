@@ -26,10 +26,12 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   onCloseBlueDisplay?: () => void;
   onOpenBlueDisplay?: () => void;
   onBeamColorChange?: (color: string) => void;
+  isActive?: boolean;
 };
 
-export default function BadgesButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onBeamColorChange, ...rest }: Props) {
-  const [open, setOpen] = useState(false);
+export default function BadgesButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onBeamColorChange, isActive = false, ...rest }: Props) {
+  // Remove internal open state - now controlled by parent
+  // const [open, setOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const [elementFilter, setElementFilter] = useState<string | null>(null);
@@ -213,7 +215,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       try { onBeamColorChange?.('yellow'); } catch {}
       // Close blue display first
       try { onCloseBlueDisplay?.(); } catch {}
-      setOpen(true);
+      // Panel open/close is now handled by parent
     }
   };
 
@@ -222,9 +224,10 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="p-1 rounded-lg transition-all duration-200 w-20 h-16"
+        className={`p-1 rounded-lg transition-all duration-200 w-20 h-16 ${isActive ? 'ring-2 ring-pink-400/60 bg-pink-500/20' : ''}`}
         style={{
           transition: 'all 0.3s ease',
+          boxShadow: isActive ? '0 0 15px rgba(255,105,180,0.6)' : 'none',
           ...rest.style
         }}
         onMouseEnter={(e) => {
@@ -247,7 +250,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       </button>
       
       {/* Hologram base glow */}
-      {open && (
+      {isActive && (
         <div 
           className="fixed inset-0 z-[2147483646] flex items-center justify-center"
           style={{
@@ -267,7 +270,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       )}
       
       {/* Badges Modal */}
-      {open && (
+      {isActive && (
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center"
           style={{
@@ -325,7 +328,8 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
             <button
               onClick={() => {
                 try { sfx.play('close', 0.8); } catch {}
-                setOpen(false);
+                // Panel close is now handled by parent via onClick
+                onClick?.({} as any);
                 setSelectedCategory(null);
                 setSelectedBadge(null);
                 setElementFilter(null);

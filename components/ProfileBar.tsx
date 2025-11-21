@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useUIState } from '@/lib/use-ui-state';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ElementIcon } from '@/lib/elementIcons';
+import { ActivePanel } from '@/types/ActivePanel';
 import CodeModal from '@/components/CodeModal';
 import BinderModal from '@/components/BinderModal';
 import BadgesModal from '@/components/BadgesModal';
@@ -74,10 +75,19 @@ export default function ProfileBar({
     return null;
   }
   
-  // Modal states
-  const [isCodeOpen, setIsCodeOpen] = useState(false);
-  const [isBinderOpen, setIsBinderOpen] = useState(false);
-  const [isBadgesOpen, setIsBadgesOpen] = useState(false);
+  // Single active panel state
+  const [activePanel, setActivePanel] = useState<ActivePanel>(null);
+
+  // Panel toggle function
+  const togglePanel = (panelKey: ActivePanel) => {
+    if (activePanel === panelKey) {
+      // Same panel clicked, close it
+      setActivePanel(null);
+    } else {
+      // Different panel clicked, open it
+      setActivePanel(panelKey);
+    }
+  };
 
   // Heart popover states
   const [showHeartPopover, setShowHeartPopover] = useState(false);
@@ -238,6 +248,8 @@ export default function ProfileBar({
             onBeamColorChange={onBeamColorChange}
             element={currentElement}
             onElementSelect={updateElement}
+            isActive={activePanel === 'element'}
+            onClick={() => togglePanel('element')}
           />
         </div>
 
@@ -270,6 +282,8 @@ export default function ProfileBar({
                 onCloseBlueDisplay={onCloseBlueDisplay}
                 onOpenBlueDisplay={onOpenBlueDisplay}
                 cumulativeHeartCoins={heartCoins}
+                isActive={activePanel === 'journey'}
+                onClick={() => togglePanel('journey')}
               />
             </div>
           </div>
@@ -280,6 +294,8 @@ export default function ProfileBar({
               onHoverSound={() => sfx.play('hover', 0.8)}
               onCloseBlueDisplay={onCloseBlueDisplay}
               onOpenBlueDisplay={onOpenBlueDisplay}
+              isActive={activePanel === 'code'}
+              onClick={() => togglePanel('code')}
             />
           </div>
 
@@ -291,6 +307,8 @@ export default function ProfileBar({
                 onHoverSound={() => sfx.play('hover', 0.8)}
                 onCloseBlueDisplay={onCloseBlueDisplay}
                 onOpenBlueDisplay={onOpenBlueDisplay}
+                isActive={activePanel === 'badges'}
+                onClick={() => togglePanel('badges')}
               />
             </div>
 
@@ -300,6 +318,8 @@ export default function ProfileBar({
                 onHoverSound={() => sfx.play('hover', 0.8)}
                 onCloseBlueDisplay={onCloseBlueDisplay}
                 onOpenBlueDisplay={onOpenBlueDisplay}
+                isActive={activePanel === 'binder'}
+                onClick={() => togglePanel('binder')}
               />
             </div>
 
@@ -311,6 +331,8 @@ export default function ProfileBar({
                 onOpenBlueDisplay={onOpenBlueDisplay}
                 onOpenJournal={onOpenJournal}
                 heartCoins={heartCoins}
+                isActive={activePanel === 'heartcoins'}
+                onClick={() => togglePanel('heartcoins')}
                 onHeartCoinsChange={(newAmount) => {
                   // Update through ProfileContext
                   updateProfile({ heartcoin_balance: newAmount });
@@ -342,17 +364,17 @@ export default function ProfileBar({
         </div>
       </div>
 
-      {/* Profile Modals - Each uses its own specific modal */}
-      {isCodeOpen && (
-        <CodeModal open={isCodeOpen} onClose={() => setIsCodeOpen(false)} />
+      {/* Panel Modals - Conditional rendering based on activePanel */}
+      {activePanel === 'code' && (
+        <CodeModal open={true} onClose={() => setActivePanel(null)} />
       )}
 
-      {isBinderOpen && (
-        <BinderModal open={isBinderOpen} onClose={() => setIsBinderOpen(false)} />
+      {activePanel === 'binder' && (
+        <BinderModal open={true} onClose={() => setActivePanel(null)} />
       )}
 
-      {isBadgesOpen && (
-        <BadgesModal open={isBadgesOpen} onClose={() => setIsBadgesOpen(false)} />
+      {activePanel === 'badges' && (
+        <BadgesModal open={true} onClose={() => setActivePanel(null)} />
       )}
 
       {/* Hologram base glow - wider and stronger */}
