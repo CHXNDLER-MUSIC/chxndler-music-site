@@ -109,7 +109,7 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
         className="fixed inset-0 flex items-center justify-center"
         style={{
           zIndex: 2147483648,
-          marginTop: '-120px'
+          marginTop: '-160px'
         }}
       >
         <div
@@ -213,9 +213,6 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
 
           {/* Email Login Section */}
           <form onSubmit={signInWithEmail} className="space-y-2">
-            <label htmlFor="welcome-email" className="block text-sm font-medium text-center" style={{ color: '#00FFFF', textShadow: '0 0 4px rgba(0,255,255,0.6)' }}>
-              Email
-            </label>
             <input
               id="welcome-email"
               type="email"

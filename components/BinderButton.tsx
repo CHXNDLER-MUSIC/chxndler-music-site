@@ -558,7 +558,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
 
           {/* Song filter positioned directly below back button */}
           {selectedElement && (
-            <div className="flex flex-col items-center gap-3 mb-4">
+            <div className="flex items-center justify-center gap-3 mb-4">
               {/* Card Name Filter */}
               <select
                 value={selectedCardName}
@@ -579,7 +579,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                 ))}
               </select>
               
-              {/* Rarity Filter - directly below card list filter */}
+              {/* Rarity Filter - to the right of song filter */}
               <select
                 value={selectedRarity}
                 onChange={(e) => {
@@ -601,6 +601,106 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
               </select>
             </div>
           )}
+
+          {/* Card image positioned below filters */}
+          {selectedElement && (() => {
+            const cards = getFilteredCards();
+            const currentCard = cards[currentCardIndex];
+            
+            if (!currentCard) {
+              return null;
+            }
+
+            return (
+              <div className="flex flex-col items-center mb-4">
+                <div className="flex flex-col items-center">
+                  <img
+                    src={currentCard.image}
+                    alt={currentCard.name}
+                    className="w-32 h-auto rounded-lg cursor-pointer transition-transform duration-300 hover:scale-110"
+                    style={{
+                      boxShadow: '0 0 15px rgba(255,105,180,0.6), 0 0 30px rgba(255,105,180,0.3)',
+                      border: '2px solid rgba(255,105,180,0.6)',
+                    }}
+                    draggable={false}
+                    onClick={() => {
+                      try { sfx.play('click', 0.8); } catch {}
+                      setPreselectedCard(currentCard.name);
+                      setSelectedCard(currentCard);
+                      setCardOpen(true);
+                    }}
+                  />
+                  
+                  {/* Purchase buttons below the card image */}
+                  {!isCardOwned(currentCard.name) && (
+                    <div className="flex gap-2 mt-3">
+                      {/* Digital option */}
+                      <button
+                        onClick={() => {
+                          try { sfx.play('click', 0.6); } catch {}
+                          // Add digital purchase logic here
+                        }}
+                        className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200"
+                        style={{
+                          boxShadow: '0 0 8px rgba(255,105,180,0.2)',
+                        }}
+                      >
+                        <img
+                          src="/elements/heart-coin.png"
+                          alt="Heart Coin"
+                          className="w-3 h-3"
+                          draggable={false}
+                        />
+                        <span 
+                          className="text-yellow-300 text-xs font-bold"
+                          style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
+                        >
+                          20
+                        </span>
+                        <span 
+                          className="text-pink-200 text-xs font-medium"
+                          style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                        >
+                          DIGITAL
+                        </span>
+                      </button>
+                      
+                      {/* Physical option */}
+                      <button
+                        onClick={() => {
+                          try { sfx.play('click', 0.6); } catch {}
+                          // Add physical purchase logic here
+                        }}
+                        className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200"
+                        style={{
+                          boxShadow: '0 0 8px rgba(255,105,180,0.2)',
+                        }}
+                      >
+                        <img
+                          src="/elements/heart-coin.png"
+                          alt="Heart Coin"
+                          className="w-3 h-3"
+                          draggable={false}
+                        />
+                        <span 
+                          className="text-yellow-300 text-xs font-bold"
+                          style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
+                        >
+                          30
+                        </span>
+                        <span 
+                          className="text-pink-200 text-xs font-medium"
+                          style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                        >
+                          PHYSICAL
+                        </span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="flex justify-between items-center mb-4">            
             {!selectedElement && (
@@ -796,9 +896,9 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                     </div>
                   </>
                 ) : (
-                  // Card View with Filters
+                  // Card View with Navigation and Info
                   <>
-                    {/* Current Card Display */}
+                    {/* Navigation and Card Info */}
                     {(() => {
                       const cards = getFilteredCards();
                       const currentCard = cards[currentCardIndex];
@@ -818,7 +918,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                       }
 
                       return (
-                        <div className="flex items-center gap-4 -mt-4">
+                        <div className="flex items-center justify-center gap-4">
                           {/* Navigation arrow - left */}
                           {cards.length > 1 && (
                             <button
@@ -835,50 +935,11 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                             </button>
                           )}
                           
-                          {/* Spacer to push card to the right */}
-                          <div className="flex-1"></div>
-                          
-                          {/* Card image - positioned more to the right */}
-                          <div className="relative mr-8">
-                            <img
-                              src={currentCard.image}
-                              alt={currentCard.name}
-                              className="w-32 h-auto rounded-lg cursor-pointer transition-transform duration-300 hover:scale-110"
-                              style={{
-                                boxShadow: '0 0 15px rgba(255,105,180,0.6), 0 0 30px rgba(255,105,180,0.3)',
-                                border: '2px solid rgba(255,105,180,0.6)',
-                              }}
-                              draggable={false}
-                              onClick={() => {
-                                try { sfx.play('click', 0.8); } catch {}
-                                setPreselectedCard(currentCard.name);
-                                setSelectedCard(currentCard);
-                                setCardOpen(true);
-                              }}
-                            />
-                          </div>
-                          
-                          {/* Navigation arrow - right, positioned right after the card */}
-                          {cards.length > 1 && (
-                            <button
-                              onClick={() => {
-                                try { sfx.play('click', 0.5); } catch {}
-                                setCurrentCardIndex(prev => prev < cards.length - 1 ? prev + 1 : 0);
-                              }}
-                              className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200 mr-4"
-                              style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
-                            >
-                              <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-                                <path d="M9 18l6-6-6-6"/>
-                              </svg>
-                            </button>
-                          )}
-                          
-                          {/* Card Info - positioned to the right of the card */}
-                          <div className="flex flex-col justify-start min-w-0 max-w-48">
-                            {/* Show COLLECTED indicator or Purchase options - moved higher */}
-                            {isCardOwned(currentCard.name) ? (
-                              <div className="mb-4">
+                          {/* Card Info - centered */}
+                          <div className="flex flex-col items-center text-center">
+                            {/* Show COLLECTED indicator */}
+                            {isCardOwned(currentCard.name) && (
+                              <div className="mb-2">
                                 <div 
                                   className="inline-block px-3 py-1 rounded-full border-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20"
                                   style={{
@@ -896,70 +957,6 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                                     ✓ COLLECTED
                                   </span>
                                 </div>
-                              </div>
-                            ) : (
-                              <div className="flex gap-2 mb-6 -mt-16">
-                                {/* Digital option */}
-                                <button
-                                  onClick={() => {
-                                    try { sfx.play('click', 0.6); } catch {}
-                                    // Add digital purchase logic here
-                                  }}
-                                  className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200"
-                                  style={{
-                                    boxShadow: '0 0 8px rgba(255,105,180,0.2)',
-                                  }}
-                                >
-                                  <img
-                                    src="/elements/heart-coin.png"
-                                    alt="Heart Coin"
-                                    className="w-3 h-3"
-                                    draggable={false}
-                                  />
-                                  <span 
-                                    className="text-yellow-300 text-xs font-bold"
-                                    style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
-                                  >
-                                    20
-                                  </span>
-                                  <span 
-                                    className="text-pink-200 text-xs font-medium"
-                                    style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
-                                  >
-                                    DIGITAL
-                                  </span>
-                                </button>
-                                
-                                {/* Physical option */}
-                                <button
-                                  onClick={() => {
-                                    try { sfx.play('click', 0.6); } catch {}
-                                    // Add physical purchase logic here
-                                  }}
-                                  className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200"
-                                  style={{
-                                    boxShadow: '0 0 8px rgba(255,105,180,0.2)',
-                                  }}
-                                >
-                                  <img
-                                    src="/elements/heart-coin.png"
-                                    alt="Heart Coin"
-                                    className="w-3 h-3"
-                                    draggable={false}
-                                  />
-                                  <span 
-                                    className="text-yellow-300 text-xs font-bold"
-                                    style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
-                                  >
-                                    30
-                                  </span>
-                                  <span 
-                                    className="text-pink-200 text-xs font-medium"
-                                    style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
-                                  >
-                                    PHYSICAL
-                                  </span>
-                                </button>
                               </div>
                             )}
                             
@@ -997,7 +994,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                             </div>
                             {getCardOneLiner(currentCard.name) && (
                               <div 
-                                className="text-xs mb-2 italic leading-relaxed"
+                                className="text-xs mb-2 italic leading-relaxed max-w-64"
                                 style={{ 
                                   color: '#E6E6FA', 
                                   textShadow: '0 0 2px rgba(230,230,250,0.6)',
@@ -1019,6 +1016,22 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                               </div>
                             )}
                           </div>
+                          
+                          {/* Navigation arrow - right */}
+                          {cards.length > 1 && (
+                            <button
+                              onClick={() => {
+                                try { sfx.play('click', 0.5); } catch {}
+                                setCurrentCardIndex(prev => prev < cards.length - 1 ? prev + 1 : 0);
+                              }}
+                              className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200"
+                              style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
+                            >
+                              <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                                <path d="M9 18l6-6-6-6"/>
+                              </svg>
+                            </button>
+                          )}
                         </div>
                       );
                     })()}

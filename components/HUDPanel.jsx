@@ -792,24 +792,20 @@ export default function HUDPanel({
     }
   }, [filteredCards.length, currentCardIndex]);
 
-  // Fetch heart coins from database
+  // Fetch heart coins from API
   useEffect(() => {
     async function fetchHeartCoins() {
       try {
-        const { data, error } = await supabaseBrowser
-          .from('profiles')
-          .select('heart_coins_current')
-          .eq('profile_complete', true)
-          .order('updated_at', { ascending: false })
-          .limit(1);
+        const response = await fetch('/api/heart-coins');
+        const result = await response.json();
 
-        if (error) {
-          console.error('Failed to fetch heart coins:', error);
+        if (!response.ok) {
+          console.error('Failed to fetch heart coins:', result.error || 'Unknown error');
           return;
         }
 
-        if (data && data.length > 0) {
-          setHeartCoinsCount(data[0].heart_coins_current || 0);
+        if (result.success && result.heartCoins) {
+          setHeartCoinsCount(result.heartCoins.current || 0);
         }
       } catch (error) {
         console.error('Error fetching heart coins:', error);
@@ -850,6 +846,14 @@ export default function HUDPanel({
       if (typeof window !== 'undefined') {
         const hasSeen = window.localStorage.getItem(WELCOME_MODAL_LS_KEY) === 'true';
         setHasSeenWelcomeModal(hasSeen);
+        
+        // Show welcome modal automatically on first visit
+        if (!hasSeen) {
+          // Add a small delay to ensure the component is fully mounted
+          setTimeout(() => {
+            setShowWelcomeHomeModal(true);
+          }, 1000);
+        }
       }
     } catch {}
   }, []);
@@ -2283,10 +2287,11 @@ export default function HUDPanel({
                 alignItems: 'center',
                 justifyContent: 'center',
                 textAlign: 'center',
-                // Let width size to content; tighten padding to narrow button
+                // Make button width match cover art container width (92px)
+                width: 92,
                 boxSizing: 'border-box',
-                // Tighter horizontal padding to reduce width
-                padding: '0 3px 0 3px',
+                // Center text with minimal padding since width is fixed
+                padding: '0 4px 0 4px',
                 // Adjust vertical alignment to match the Music dropdown height
                 marginTop: -3,
                 // Add a small space below the button so it doesn't attach to the cover
@@ -2564,10 +2569,8 @@ export default function HUDPanel({
                           setShowElementPopup(false);
                           // Close blue display when opening welcome home modal
                           try { onCloseBlueDisplay?.(); } catch {}
-                          // Only open welcome home modal if user hasn't seen it before
-                          if (!hasSeenWelcomeModal) {
-                            setShowWelcomeHomeModal(true);
-                          }
+                          // Always show welcome home modal when button is clicked
+                          setShowWelcomeHomeModal(true);
                         }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                       />

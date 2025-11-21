@@ -29,8 +29,9 @@ import { slugify } from "@/lib/slug";
 import { audioCoordinator } from "@/lib/audio-coordinator";
 import { debugLog } from "@/lib/debug";
 import ProfileBar from "@/components/ProfileBar";
-import NameInputModal from "@/components/NameInputModal";
+import WhatShouldWeCallYouModal from "@/components/WhatShouldWeCallYouModal";
 import HoloStarsButton from "@/components/HoloStarsButton";
+import VenmoButton from "@/components/VenmoButton";
 
 export default function DashboardApp({ initialSlug } = {}) {
   // Global wheel render mode (LUMA vs PLAIN). Must be top-level to obey Hooks rules.
@@ -62,16 +63,46 @@ export default function DashboardApp({ initialSlug } = {}) {
 
   // Check for new user query parameter and show name modal
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('new_user') === 'true') {
-        setShowNameModal(true);
-        // Clean up the URL parameter
-        const url = new URL(window.location);
-        url.searchParams.delete('new_user');
-        window.history.replaceState({}, document.title, url.pathname);
+    const checkUserAndShowOnboarding = async () => {
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const isWelcome = urlParams.get('welcome') === '1';
+        
+        console.log('🔍 Checking for welcome parameter:', urlParams.get('welcome'));
+        console.log('🔍 All URL params:', Object.fromEntries(urlParams.entries()));
+        
+        // Check if user is authenticated and needs onboarding
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        
+        if (user) {
+          console.log('🔍 User is authenticated:', user.id);
+          
+          // Check user profile for display_name
+          const { data: profile } = await supabaseClient
+            .from('profiles')
+            .select('display_name')
+            .eq('id', user.id)
+            .single();
+            
+          console.log('🔍 User profile:', profile);
+          
+          // Show onboarding modal if welcome=1 OR display_name is null
+          if (isWelcome || !profile?.display_name) {
+            console.log('✅ Showing onboarding modal - welcome:', isWelcome, 'display_name:', profile?.display_name);
+            setShowNameModal(true);
+          }
+        }
+        
+        // Clean up the URL parameter if present
+        if (isWelcome) {
+          const url = new URL(window.location);
+          url.searchParams.delete('welcome');
+          window.history.replaceState({}, document.title, url.pathname);
+        }
       }
-    }
+    };
+    
+    checkUserAndShowOnboarding();
   }, []);
   useEffect(() => {
     const onKey = (e) => {
@@ -154,6 +185,11 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [savedProfileElement, setSavedProfileElement] = useState('');
   // Name input modal for new users
   const [showNameModal, setShowNameModal] = useState(false);
+  
+  // Debug logging for modal state changes
+  useEffect(() => {
+    console.log('🎯 showNameModal state changed to:', showNameModal);
+  }, [showNameModal]);
   // Unified timing constants for display/beam sequencing
   // Keep conservative defaults for overlapping transitions, but tighten a bit for snappier feel
   const BEAM_SWITCH_DELAY_MS = 300; // was 450ms; faster when switching between colors
@@ -401,29 +437,6 @@ export default function DashboardApp({ initialSlug } = {}) {
     }
   }, [powerBusy, beamEnabled, showHUD, uiUnlocked]);
 
-  // Handle name submission for new users
-  const handleNameSubmit = async (name) => {
-    try {
-      const response = await fetch('/api/profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ display_name: name }),
-      });
-      
-      if (response.ok) {
-        setSavedProfileName(name);
-        setShowNameModal(false);
-      } else {
-        throw new Error('Failed to update profile');
-      }
-    } catch (error) {
-      console.error('Error updating profile name:', error);
-      // Still close modal on error to not block user
-      setShowNameModal(false);
-    }
-  };
 
   function onSongChange(id){
     // In-app song change without spotlight/beam/route reloads
@@ -834,9 +847,9 @@ export default function DashboardApp({ initialSlug } = {}) {
     }
   }, [beamColor, showHUD, joinAlienOpen, beamTransitioning, explicitClose]);
 
-  // Handle opening journal: opens standalone stars modal
+  // Handle opening journal: opens star pop-out in HUD
   const handleOpenJournal = React.useCallback(() => {
-    setShowStarsModal(true);
+    setShouldOpenJournal(true);
   }, []);
 
   // Spacebar and Pause key toggle (works even when 3D is active)
@@ -2013,11 +2026,10 @@ export default function DashboardApp({ initialSlug } = {}) {
         <PreloadMedia maxImage={8} maxAudio={3} maxVideo={2} />
       ) : null}
 
-      {/* Name Input Modal for new users */}
-      <NameInputModal 
+      {/* What Should We Call You Modal for new users */}
+      <WhatShouldWeCallYouModal 
         open={showNameModal}
         onClose={() => setShowNameModal(false)}
-        onSubmit={handleNameSubmit}
       />
 
       {/* Stars Modal triggered by journal button */}
@@ -2029,6 +2041,15 @@ export default function DashboardApp({ initialSlug } = {}) {
           autoOpen={true}
         />
       )}
+
+      {/* Venmo $1 Button */}
+      <div className="fixed bottom-6 left-4 z-50 pointer-events-auto">
+        <VenmoButton 
+          amount={1} 
+          note="Thanks for the music!" 
+          recipient="chxndler-music" 
+        />
+      </div>
 
     </main>
   );
