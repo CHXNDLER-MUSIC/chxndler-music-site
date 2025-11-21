@@ -812,17 +812,23 @@ export default function HUDPanel({
         // Fetch heart coins directly from Supabase
         const { data: profile, error: profileError } = await supabaseClient
           .from('profiles')
-          .select('heart_coins_current')
+          .select('heartcoin_balance')
           .eq('id', session.user.id)
           .single();
 
         if (profileError) {
+          // If profile doesn't exist yet, handle gracefully
+          if (profileError.code === 'PGRST116') {
+            console.log('💰 No profile found yet, setting heart coins to 0');
+            setHeartCoinsCount(0);
+            return;
+          }
           console.error('Profile error:', profileError);
           return;
         }
 
-        console.log('💰 Heart coins fetched:', profile?.heart_coins_current || 0);
-        setHeartCoinsCount(profile?.heart_coins_current || 0);
+        console.log('💰 Heart coins fetched:', profile?.heartcoin_balance || 0);
+        setHeartCoinsCount(profile?.heartcoin_balance || 0);
         
       } catch (error) {
         console.error('Error fetching heart coins:', error);

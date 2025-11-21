@@ -17,8 +17,16 @@ export default function NamePromptOnLogin() {
   useEffect(() => {
     const checkUserProfile = async () => {
       try {
-        // Check if this is a welcome redirect from email link
-        const isWelcome = searchParams.get('welcome') === '1';
+        // Check if this is an email confirmation redirect (only then show name prompt)
+        const isEmailConfirmed = searchParams.get('email_confirmed') === '1';
+        const isGeneralWelcome = searchParams.get('welcome') === '1';
+        
+        console.log('🔍 NamePromptOnLogin - URL params check:', {
+          currentUrl: window.location.href,
+          isEmailConfirmed,
+          isGeneralWelcome,
+          allParams: Object.fromEntries(searchParams)
+        });
         
         // Get current session
         const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
@@ -30,60 +38,55 @@ export default function NamePromptOnLogin() {
 
         // If no session, user is not logged in
         if (!session?.user) {
+          console.log('🚫 No session found, not showing name prompt');
           return;
         }
 
-        // If this is a welcome redirect, show the name prompt immediately
-        if (isWelcome) {
-          console.log('🎯 Welcome redirect detected, showing name prompt');
+        console.log('✅ Session found for user:', session.user.email);
+
+        // Only show name prompt for email confirmation, not general welcome
+        if (isEmailConfirmed) {
+          console.log('🎯 EMAIL CONFIRMED DETECTED! Opening name prompt modal');
+          console.log('🔔 About to call openNamePrompt()');
           openNamePrompt();
           return;
         }
+        
+        // For general welcome (OAuth, etc.), don't auto-show name prompt
+        if (isGeneralWelcome) {
+          console.log('🎯 General welcome redirect - checking profile without auto-prompting');
+          // Continue to profile check below, but don't auto-show prompt
+        }
 
-        // Otherwise, check if user needs to set display name
-        // Query user profile
-        const { data: profile, error: profileError } = await supabaseClient
-          .from('profiles')
-          .select('id, display_name')
-          .eq('id', session.user.id)
-          .single();
+        // Only check profile and auto-prompt if this is not a first-time signup
+        // (we want users to only see the name prompt after confirming their email)
+        if (!isGeneralWelcome || isEmailConfirmed) {
+          // Query user profile
+          const { data: profile, error: profileError } = await supabaseClient
+            .from('profiles')
+            .select('id, display_name')
+            .eq('id', session.user.id)
+            .single();
 
-        if (profileError) {
-          // If profile doesn't exist yet, create it and show name prompt
-          if (profileError.code === 'PGRST116') {
-            console.log('📝 Profile not found, creating new profile and showing name prompt');
-            try {
-              const { error: insertError } = await supabaseClient
-                .from('profiles')
-                .insert({
-                  id: session.user.id,
-                  email: session.user.email,
-                  display_name: null,
-                  heartcoin_balance: 0,
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString()
-                });
-
-              if (insertError) {
-                console.error('Error creating profile:', insertError);
-                return;
-              }
-
+          if (profileError) {
+            // If profile doesn't exist yet, only show name prompt if email is confirmed
+            if (profileError.code === 'PGRST116' && isEmailConfirmed) {
+              console.log('📝 Profile not found after email confirmation, showing name prompt');
               openNamePrompt();
               return;
-            } catch (createError) {
-              console.error('Failed to create profile:', createError);
-              return;
             }
+            
+            if (profileError.code !== 'PGRST116') {
+              console.error('Error fetching profile:', profileError);
+            }
+            return;
           }
-          
-          console.error('Error fetching profile:', profileError);
-          return;
-        }
 
-        // If display_name is null or blank, open name prompt
-        if (!profile?.display_name || profile.display_name.trim() === '') {
-          openNamePrompt();
+          // If display_name is null or blank, only prompt if email is confirmed
+          if ((!profile?.display_name || profile.display_name.trim() === '') && isEmailConfirmed) {
+            console.log('📝 No display name after email confirmation, showing name prompt');
+            openNamePrompt();
+          }
         }
 
       } catch (error) {

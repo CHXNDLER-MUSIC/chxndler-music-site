@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
         inviter_id: null, // Anonymous invitation from welcome modal
         recipient_email: email,
         status: 'sent',
-        heart_link: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.chxndler-music.com'}/auth/callback`,
+        heart_link: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://chxndler.world'}/auth/callback`,
         personal_message: `Welcome to the Heartverse! You've received a heart signal.`,
         created_at: new Date().toISOString()
       })

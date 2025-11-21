@@ -277,7 +277,7 @@ export default function ProfileBar({
     );
   }
 
-  const currentElement = profile?.element || savedAlienElement || 'heart';
+  const currentElement = profile?.element || savedAlienElement || null;
   const displayName = profile?.name || savedAlienName || 'ALIEN';
   const heartCoins = profile?.hearts || 0;
   const currentElementData = ELEMENTS.find(e => e.name === currentElement) || ELEMENTS[0];

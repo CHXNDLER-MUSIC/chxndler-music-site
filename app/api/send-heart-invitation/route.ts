@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     const invitationToken = crypto.randomUUID();
     
     // Generate the heart link with invitation token
-    const heartLink = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.chxndler-music.com'}/join?invitation=${invitationToken}&from=${encodeURIComponent(inviterName)}`;
+    const heartLink = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://chxndler.world'}/join?invitation=${invitationToken}&from=${encodeURIComponent(inviterName)}`;
     
     // Store the invitation in database for tracking
     await admin
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
         <div class="footer">
             <p>
                 Welcome to the Heartverse - where music meets magic<br>
-                <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.chxndler-music.com'}" style="color: #ff69b4;">chxndler-music.com</a>
+                <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://chxndler.world'}" style="color: #ff69b4;">chxndler.world</a>
             </p>
         </div>
     </div>

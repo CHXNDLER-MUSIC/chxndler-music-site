@@ -13,6 +13,7 @@ export const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
+    // Let Supabase auto-detect the best flow type
   },
 });
 

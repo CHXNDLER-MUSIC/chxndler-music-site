@@ -28,6 +28,7 @@ import PreloadMedia from "@/components/PreloadMedia";
 import { slugify } from "@/lib/slug";
 import { audioCoordinator } from "@/lib/audio-coordinator";
 import { debugLog } from "@/lib/debug";
+import WelcomeHomeModal from "@/components/WelcomeHomeModal";
 import ProfileBar from "@/components/ProfileBar";
 import HoloStarsButton from "@/components/HoloStarsButton";
 import VenmoButton from "@/components/VenmoButton";
@@ -90,6 +91,7 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [mounted, setMounted] = useState(false);
   const [showHUD, setShowHUD] = useState(false);
   const [showStarsModal, setShowStarsModal] = useState(false);
+  const [showWelcomeHomeModal, setShowWelcomeHomeModal] = useState(false);
   const [warpActive, setWarpActive] = useState(false);
   const [nextSky, setNextSky] = useState(null);
   const [beamOnly, setBeamOnly] = useState(true);
@@ -664,6 +666,44 @@ export default function DashboardApp({ initialSlug } = {}) {
     }
   }, [showHUD, beamEnabled, showOverlayUI, curTrack?.slug, isPlaying]);
 
+  // Handle welcome home modal close - trigger warp effect and proceed to home
+  const handleWelcomeHomeClose = React.useCallback(() => {
+    setShowWelcomeHomeModal(false);
+    
+    // Now trigger the warp effect that was skipped on first start
+    welcomeOnStartRef.current = true;
+    setHomeIntroEnabled(true);
+    setPendingOverlayReveal(true);
+    setUiUnlocked(true);
+    setShowDimmingOverlay(false);
+    setLandingRevealReady(true);
+    
+    // Prepare warp to homepage (same logic as original onLaunch)
+    setUserSelected(false);
+    setHomeMode(false);
+    startButtonWarpRef.current = true;
+    
+    // Stop any playing main track audio
+    try {
+      const a = document.querySelector('audio[data-audio-player="1"]');
+      if (a) { a.pause(); try { a.currentTime = 0; } catch {}; try { a.muted = true; } catch {}; try { a.removeAttribute('src'); } catch {}; try { a.load(); } catch {} }
+    } catch {}
+    setIsPlaying(false);
+    try { playerStore.setState({ mainId: null }); } catch {}
+    
+    // Prepare for blue display after warp
+    setShowHUD(false);
+    setShowOverlayUI(false);
+    setBeamEnabled(false);
+    setPendingHomePower(true);
+    
+    setAllowWarp(true);
+    setSky(SPACE_SKY);
+    setNextSky(null);
+    setFlySignal((n) => n + 1);
+    setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
+  }, []);
+  
   // Handle beam color control with strict mutual exclusion between displays
   const handleBeamToggle = React.useCallback((color) => {
     // Allow immediate OFF even during transitions; otherwise guard
@@ -1634,9 +1674,10 @@ export default function DashboardApp({ initialSlug } = {}) {
           // Homepage Start flow (warp to home reveal)
           // Only enable welcome VO on FIRST Start button press per session
           if (!firstStartDone) {
-            welcomeOnStartRef.current = true;
-            setHomeIntroEnabled(true);
-            
+            // On first start, show welcome home modal instead of triggering warp
+            setShowWelcomeHomeModal(true);
+            setFirstStartDone(true); // Mark as first start done
+            return; // Exit early, don't trigger warp effect yet
           } else {
             welcomeOnStartRef.current = false;
             setHomeIntroEnabled(false);
@@ -1991,6 +2032,12 @@ export default function DashboardApp({ initialSlug } = {}) {
           autoOpen={true}
         />
       )}
+      
+      {/* Welcome Home Modal triggered on first start */}
+      <WelcomeHomeModal 
+        open={showWelcomeHomeModal} 
+        onClose={handleWelcomeHomeClose} 
+      />
 
       {/* Venmo $1 Button */}
       <div className="fixed bottom-6 left-4 z-50 pointer-events-auto">

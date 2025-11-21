@@ -534,9 +534,9 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
             }}
           />
 
-          {/* Back button positioned directly below pink line */}
+          {/* Back button and filters positioned in same row */}
           {selectedElement && (
-            <div className="flex justify-start items-center mb-4">
+            <div className="flex justify-between items-center mb-4">
               <button
                 onClick={() => {
                   try { sfx.play('click', 0.6); } catch {}
@@ -553,56 +553,54 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                 </svg>
                 Back to Elements
               </button>
-            </div>
-          )}
-
-          {/* Song filter positioned directly below back button */}
-          {selectedElement && (
-            <div className="flex items-center justify-center gap-3 mb-4">
-              {/* Card Name Filter */}
-              <select
-                value={selectedCardName}
-                onChange={(e) => {
-                  setSelectedCardName(e.target.value);
-                  setCurrentCardIndex(0);
-                }}
-                className="px-2 py-1 rounded border border-pink-400/60 bg-black/40 text-pink-200 text-sm"
-                style={{ 
-                  boxShadow: '0 0 8px rgba(255,105,180,0.3)',
-                  textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                }}
-              >
-                {getAvailableCardNames().map(cardName => (
-                  <option key={cardName} value={cardName} className="bg-black text-pink-200">
-                    {cardName}
-                  </option>
-                ))}
-              </select>
               
-              {/* Rarity Filter - to the right of song filter */}
-              <select
-                value={selectedRarity}
-                onChange={(e) => {
-                  setSelectedRarity(e.target.value);
-                  setSelectedCardName('All');
-                  setCurrentCardIndex(0);
-                }}
-                className="px-2 py-1 rounded border border-pink-400/60 bg-black/40 text-pink-200 text-sm"
-                style={{ 
-                  boxShadow: '0 0 8px rgba(255,105,180,0.3)',
-                  textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                }}
-              >
-                {rarities.map(rarity => (
-                  <option key={rarity} value={rarity} className="bg-black text-pink-200">
-                    {rarity}
-                  </option>
-                ))}
-              </select>
+              {/* Filters positioned to the right of back button */}
+              <div className="flex items-center gap-3">
+                {/* Card Name Filter */}
+                <select
+                  value={selectedCardName}
+                  onChange={(e) => {
+                    setSelectedCardName(e.target.value);
+                    setCurrentCardIndex(0);
+                  }}
+                  className="px-2 py-1 rounded border border-pink-400/60 bg-black/40 text-pink-200 text-sm"
+                  style={{ 
+                    boxShadow: '0 0 8px rgba(255,105,180,0.3)',
+                    textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                  }}
+                >
+                  {getAvailableCardNames().map(cardName => (
+                    <option key={cardName} value={cardName} className="bg-black text-pink-200">
+                      {cardName}
+                    </option>
+                  ))}
+                </select>
+                
+                {/* Rarity Filter - to the right of song filter */}
+                <select
+                  value={selectedRarity}
+                  onChange={(e) => {
+                    setSelectedRarity(e.target.value);
+                    setSelectedCardName('All');
+                    setCurrentCardIndex(0);
+                  }}
+                  className="px-2 py-1 rounded border border-pink-400/60 bg-black/40 text-pink-200 text-sm"
+                  style={{ 
+                    boxShadow: '0 0 8px rgba(255,105,180,0.3)',
+                    textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                  }}
+                >
+                  {rarities.map(rarity => (
+                    <option key={rarity} value={rarity} className="bg-black text-pink-200">
+                      {rarity}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           )}
 
-          {/* Card image positioned below filters */}
+          {/* Card layout with image on left side */}
           {selectedElement && (() => {
             const cards = getFilteredCards();
             const currentCard = cards[currentCardIndex];
@@ -612,12 +610,29 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
             }
 
             return (
-              <div className="flex flex-col items-center mb-4">
-                <div className="flex flex-col items-center">
+              <div className="flex items-start gap-4 mb-4">
+                {/* Left navigation arrow */}
+                {cards.length > 1 && (
+                  <button
+                    onClick={() => {
+                      try { sfx.play('click', 0.5); } catch {}
+                      setCurrentCardIndex(prev => prev > 0 ? prev - 1 : cards.length - 1);
+                    }}
+                    className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200 self-center"
+                    style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
+                  >
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                      <path d="M15 18l-6-6 6-6"/>
+                    </svg>
+                  </button>
+                )}
+                
+                {/* Card image in the center */}
+                <div className="flex-shrink-0">
                   <img
                     src={currentCard.image}
                     alt={currentCard.name}
-                    className="w-32 h-auto rounded-lg cursor-pointer transition-transform duration-300 hover:scale-110"
+                    className="w-24 h-auto rounded-lg cursor-pointer transition-transform duration-300 hover:scale-110"
                     style={{
                       boxShadow: '0 0 15px rgba(255,105,180,0.6), 0 0 30px rgba(255,105,180,0.3)',
                       border: '2px solid rgba(255,105,180,0.6)',
@@ -633,14 +648,14 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                   
                   {/* Purchase buttons below the card image */}
                   {!isCardOwned(currentCard.name) && (
-                    <div className="flex gap-2 mt-3">
+                    <div className="flex flex-row gap-1 mt-2">
                       {/* Digital option */}
                       <button
                         onClick={() => {
                           try { sfx.play('click', 0.6); } catch {}
                           // Add digital purchase logic here
                         }}
-                        className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200"
+                        className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
                         style={{
                           boxShadow: '0 0 8px rgba(255,105,180,0.2)',
                         }}
@@ -652,13 +667,13 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                           draggable={false}
                         />
                         <span 
-                          className="text-yellow-300 text-xs font-bold"
+                          className="text-yellow-300 font-bold"
                           style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
                         >
                           20
                         </span>
                         <span 
-                          className="text-pink-200 text-xs font-medium"
+                          className="text-pink-200 font-medium"
                           style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
                         >
                           DIGITAL
@@ -671,7 +686,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                           try { sfx.play('click', 0.6); } catch {}
                           // Add physical purchase logic here
                         }}
-                        className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200"
+                        className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
                         style={{
                           boxShadow: '0 0 8px rgba(255,105,180,0.2)',
                         }}
@@ -683,13 +698,13 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                           draggable={false}
                         />
                         <span 
-                          className="text-yellow-300 text-xs font-bold"
+                          className="text-yellow-300 font-bold"
                           style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
                         >
                           30
                         </span>
                         <span 
-                          className="text-pink-200 text-xs font-medium"
+                          className="text-pink-200 font-medium"
                           style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
                         >
                           PHYSICAL
@@ -698,6 +713,119 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                     </div>
                   )}
                 </div>
+                
+                {/* Card info on the right */}
+                <div className="flex-1 min-w-0">
+                  {(() => {
+                    const cards = getFilteredCards();
+                    const currentCard = cards[currentCardIndex];
+                    
+                    if (!currentCard) {
+                      return null;
+                    }
+
+                    return (
+                      <div className="flex flex-col justify-start">
+                        {/* Show COLLECTED indicator */}
+                        {isCardOwned(currentCard.name) && (
+                          <div className="mb-2">
+                            <div 
+                              className="inline-block px-3 py-1 rounded-full border-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20"
+                              style={{
+                                borderColor: '#10B981',
+                                boxShadow: '0 0 15px rgba(16,185,129,0.4), 0 0 30px rgba(16,185,129,0.2)',
+                              }}
+                            >
+                              <span 
+                                className="text-green-300 text-xs font-bold tracking-wider"
+                                style={{ 
+                                  textShadow: '0 0 8px rgba(16,185,129,0.8), 0 0 16px rgba(16,185,129,0.4)',
+                                  fontSize: '11px'
+                                }}
+                              >
+                                ✓ COLLECTED
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div 
+                          className="text-lg font-bold mb-1"
+                          style={{ 
+                            color: getElementColor(currentCard.element), 
+                            textShadow: `0 0 8px ${getElementColor(currentCard.element)}80`,
+                            fontSize: '16px'
+                          }}
+                        >
+                          {currentCard.name}
+                        </div>
+                        {currentCard.element && (
+                          <div 
+                            className="text-sm mb-2"
+                            style={{ 
+                              color: '#FFB6C1', 
+                              textShadow: '0 0 4px rgba(255,182,193,0.6)',
+                              fontSize: '12px'
+                            }}
+                          >
+                            Element: {currentCard.element}
+                          </div>
+                        )}
+                        <div 
+                          className="text-sm mb-2"
+                          style={{ 
+                            color: currentCard.rarity === 'Rare' ? '#FF69B4' : '#87CEEB',
+                            textShadow: '0 0 4px currentColor',
+                            fontSize: '12px'
+                          }}
+                        >
+                          ★ {currentCard.rarity.toUpperCase()} ★
+                        </div>
+                        {getCardOneLiner(currentCard.name) && (
+                          <div 
+                            className="text-xs mb-2 italic leading-relaxed"
+                            style={{ 
+                              color: '#E6E6FA', 
+                              textShadow: '0 0 2px rgba(230,230,250,0.6)',
+                              fontSize: '11px'
+                            }}
+                          >
+                            {getCardOneLiner(currentCard.name)}
+                          </div>
+                        )}
+                        
+                        {/* Card count info */}
+                        {cards.length > 1 && (
+                          <div 
+                            className="text-[10px] mt-2"
+                            style={{ 
+                              color: '#FFB6C1', 
+                              textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                            }}
+                          >
+                            {currentCardIndex + 1} of {cards.length}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+                
+                {/* Right navigation arrow */}
+                {cards.length > 1 && (
+                  <button
+                    onClick={() => {
+                      try { sfx.play('click', 0.5); } catch {}
+                      setCurrentCardIndex(prev => prev < cards.length - 1 ? prev + 1 : 0);
+                    }}
+                    className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200 self-center"
+                    style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
+                  >
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                      <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                  </button>
+                )}
               </div>
             );
           })()}
@@ -895,148 +1023,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                       ))}
                     </div>
                   </>
-                ) : (
-                  // Card View with Navigation and Info
-                  <>
-                    {/* Navigation and Card Info */}
-                    {(() => {
-                      const cards = getFilteredCards();
-                      const currentCard = cards[currentCardIndex];
-                      
-                      if (!currentCard) {
-                        return (
-                          <div 
-                            className="text-center py-8"
-                            style={{ 
-                              color: '#FFB6C1', 
-                              textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                            }}
-                          >
-                            No cards found for the selected filters
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <div className="flex items-center justify-center gap-4">
-                          {/* Navigation arrow - left */}
-                          {cards.length > 1 && (
-                            <button
-                              onClick={() => {
-                                try { sfx.play('click', 0.5); } catch {}
-                                setCurrentCardIndex(prev => prev > 0 ? prev - 1 : cards.length - 1);
-                              }}
-                              className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200"
-                              style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
-                            >
-                              <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-                                <path d="M15 18l-6-6 6-6"/>
-                              </svg>
-                            </button>
-                          )}
-                          
-                          {/* Card Info - centered */}
-                          <div className="flex flex-col items-center text-center">
-                            {/* Show COLLECTED indicator */}
-                            {isCardOwned(currentCard.name) && (
-                              <div className="mb-2">
-                                <div 
-                                  className="inline-block px-3 py-1 rounded-full border-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20"
-                                  style={{
-                                    borderColor: '#10B981',
-                                    boxShadow: '0 0 15px rgba(16,185,129,0.4), 0 0 30px rgba(16,185,129,0.2)',
-                                  }}
-                                >
-                                  <span 
-                                    className="text-green-300 text-xs font-bold tracking-wider"
-                                    style={{ 
-                                      textShadow: '0 0 8px rgba(16,185,129,0.8), 0 0 16px rgba(16,185,129,0.4)',
-                                      fontSize: '11px'
-                                    }}
-                                  >
-                                    ✓ COLLECTED
-                                  </span>
-                                </div>
-                              </div>
-                            )}
-                            
-                            <div 
-                              className="text-lg font-bold mb-1"
-                              style={{ 
-                                color: getElementColor(currentCard.element), 
-                                textShadow: `0 0 8px ${getElementColor(currentCard.element)}80`,
-                                fontSize: '16px'
-                              }}
-                            >
-                              {currentCard.name}
-                            </div>
-                            {currentCard.element && (
-                              <div 
-                                className="text-sm mb-2"
-                                style={{ 
-                                  color: '#FFB6C1', 
-                                  textShadow: '0 0 4px rgba(255,182,193,0.6)',
-                                  fontSize: '12px'
-                                }}
-                              >
-                                Element: {currentCard.element}
-                              </div>
-                            )}
-                            <div 
-                              className="text-sm mb-2"
-                              style={{ 
-                                color: currentCard.rarity === 'Rare' ? '#FF69B4' : '#87CEEB',
-                                textShadow: '0 0 4px currentColor',
-                                fontSize: '12px'
-                              }}
-                            >
-                              ★ {currentCard.rarity.toUpperCase()} ★
-                            </div>
-                            {getCardOneLiner(currentCard.name) && (
-                              <div 
-                                className="text-xs mb-2 italic leading-relaxed max-w-64"
-                                style={{ 
-                                  color: '#E6E6FA', 
-                                  textShadow: '0 0 2px rgba(230,230,250,0.6)',
-                                  fontSize: '11px'
-                                }}
-                              >
-                                {getCardOneLiner(currentCard.name)}
-                              </div>
-                            )}
-                            {cards.length > 1 && (
-                              <div 
-                                className="text-[10px]"
-                                style={{ 
-                                  color: '#FFB6C1', 
-                                  textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                                }}
-                              >
-                                {currentCardIndex + 1} of {cards.length}
-                              </div>
-                            )}
-                          </div>
-                          
-                          {/* Navigation arrow - right */}
-                          {cards.length > 1 && (
-                            <button
-                              onClick={() => {
-                                try { sfx.play('click', 0.5); } catch {}
-                                setCurrentCardIndex(prev => prev < cards.length - 1 ? prev + 1 : 0);
-                              }}
-                              className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200"
-                              style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
-                            >
-                              <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-                                <path d="M9 18l6-6-6-6"/>
-                              </svg>
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })()}
-                  </>
-                )}
+                ) : null}
               </>
             )}
           </div>

@@ -14,13 +14,13 @@ import WhatShouldWeCallYouModal from "@/components/WhatShouldWeCallYouModal";
 import WhatElementAreYouModal from "@/components/WhatElementAreYouModal";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://chxndler-music.com"),
+  metadataBase: new URL("https://chxndler.world"),
   title: "CHXNDLER — SPACESHIP",
   description: "Pilot the cockpit, switch channels, and drift through space.",
   openGraph: {
     title: "CHXNDLER — SPACESHIP",
     description: "Pilot the cockpit, switch channels, and drift through space.",
-    url: "https://chxndler-music.com",
+    url: "https://chxndler.world",
     siteName: "CHXNDLER",
     type: "website",
     images: [

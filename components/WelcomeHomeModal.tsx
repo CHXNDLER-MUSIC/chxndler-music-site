@@ -24,7 +24,13 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
     try {
       const { error } = await supabaseClient.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: window.location.origin + "/auth/callback" },
+        options: { 
+          redirectTo: window.location.origin + "/auth/callback",
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent'
+          }
+        },
       });
       if (error) throw error;
     } catch (e: any) {

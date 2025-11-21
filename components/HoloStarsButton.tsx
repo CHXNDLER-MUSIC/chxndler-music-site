@@ -91,7 +91,7 @@ export default function HoloStarsButton({
           height: 50px;
           border-radius: 50%;
           font-size: 24px;
-          color: inherit;
+          color: inherit !important;
           background: transparent !important;
           border: none;
           transition: all 0.2s ease;
@@ -109,6 +109,12 @@ export default function HoloStarsButton({
           height: 100%;
           object-fit: contain;
           border-radius: 50%;
+          filter: none !important;
+          opacity: 1 !important;
+          border: 2px solid #FFFF00;
+          box-sizing: border-box;
+          background: none !important;
+          color: initial !important;
         }
         
         .soul-star-text {
