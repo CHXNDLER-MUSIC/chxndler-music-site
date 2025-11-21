@@ -18,6 +18,7 @@ import { track as trackAnalytics } from '@/lib/analytics';
 import { createPortal } from 'react-dom';
 import QuestList from '@/components/QuestList';
 import { supabaseBrowser } from '@/lib/supabase-browser';
+import { useProfile } from '@/contexts/ProfileContext';
 
 interface Profile {
   id: string;
@@ -63,14 +64,15 @@ export default function ProfileBar({
 }: ProfileBarProps) {
   // Use global UI state for profile bar visibility
   const { hasEnteredHeartverse } = useUIState();
+  // Use ProfileContext for profile data
+  const { profile: contextProfile, loading, updateProfile } = useProfile();
+  const [elementDropdownOpen, setElementDropdownOpen] = useState(false);
+  
   // IMPORTANT: Do not render anything until the user has entered
   // Guard before any loading UI to prevent initial flash on first load
   if (!hasEnteredHeartverse) {
     return null;
   }
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [elementDropdownOpen, setElementDropdownOpen] = useState(false);
   
   // Modal states
   const [isCodeOpen, setIsCodeOpen] = useState(false);
@@ -83,95 +85,16 @@ export default function ProfileBar({
   const heartBtnRef = useRef<HTMLButtonElement>(null);
   const [heartPopoverPos, setHeartPopoverPos] = useState<{left: number, top: number, width?: number, height?: number} | null>(null);
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  // Refetch profile when profileRefreshTrigger changes
-  useEffect(() => {
-    if (profileRefreshTrigger > 0) {
-      fetchProfile();
-    }
-  }, [profileRefreshTrigger]);
-
-  async function fetchProfile() {
-    try {
-      // First try to get the current authenticated user's profile
-      const { data: user } = await supabaseBrowser.auth.getUser();
-      
-      if (user?.user) {
-        // Fetch the authenticated user's profile specifically
-        const { data: userProfile, error: userError } = await supabaseBrowser
-          .from('profiles')
-          .select('*, heartcoin_balance, heartcoin_total')
-          .eq('id', user.user.id)
-          .single();
-
-        if (!userError && userProfile) {
-          setProfile({
-            id: userProfile.id,
-            name: userProfile.name || userProfile.display_name,
-            element: userProfile.element,
-            hearts: userProfile.heartcoin_balance || 0,
-            phone: userProfile.phone,
-            email: userProfile.email,
-            profile_complete: userProfile.profile_complete
-          });
-          return;
-        }
-      }
-
-      // Fallback: Try to fetch the most recent completed profile from Supabase
-      const { data, error } = await supabaseBrowser
-        .from('profiles')
-        .select('*, heartcoin_balance, heartcoin_total')
-        .eq('profile_complete', true)
-        .order('updated_at', { ascending: false })
-        .limit(1);
-
-      if (error) {
-        console.error('Supabase profile fetch error:', error);
-        // Demo user fallback
-        setProfile({
-          id: 'demo',
-          name: 'ALIEN',
-          hearts: 0,
-          element: 'heart'
-        });
-      } else if (data && data.length > 0) {
-        // Use the most recent completed profile
-        const profileData = data[0];
-        setProfile({
-          id: profileData.id,
-          name: profileData.name || profileData.display_name,
-          element: profileData.element,
-          hearts: profileData.heartcoin_balance || 0,
-          phone: profileData.phone,
-          email: profileData.email,
-          profile_complete: profileData.profile_complete
-        });
-      } else {
-        // No completed profile found, use fallback
-        setProfile({
-          id: 'demo',
-          name: 'ALIEN',
-          hearts: 0,
-          element: 'heart'
-        });
-      }
-    } catch (error) {
-      console.error('Failed to fetch profile:', error);
-      // Demo user fallback
-      setProfile({
-        id: 'demo',
-        name: 'ALIEN',
-        hearts: 0,
-        element: 'heart'
-      });
-    } finally {
-      setLoading(false);
-    }
-  }
+  // Element mapping for icons
+  const getElementIcon = (element: string | null) => {
+    const iconMap: Record<string, string> = {
+      'heart': '/elements/heart.png',
+      'water': '/elements/water.png', 
+      'lightning': '/elements/lightning.png',
+      'darkness': '/elements/darkness.png'
+    };
+    return iconMap[element || 'heart'] || iconMap['heart'];
+  };
 
   async function updateElement(element: string) {
     try {
@@ -186,7 +109,7 @@ export default function ProfileBar({
       });
       
       if (res.ok) {
-        setProfile(prev => prev ? { ...prev, element } : null);
+        // Element update is handled by the ProfileContext
         setElementDropdownOpen(false);
       }
     } catch (error) {
@@ -283,9 +206,9 @@ export default function ProfileBar({
     );
   }
 
-  const currentElement = profile?.element || savedAlienElement || null;
-  const displayName = profile?.name || savedAlienName || 'ALIEN';
-  const heartCoins = profile?.hearts || 0;
+  const currentElement = contextProfile?.element || savedAlienElement || 'heart';
+  const displayName = contextProfile?.display_name || savedAlienName || 'ALIEN';
+  const heartCoins = contextProfile?.heartcoin_balance || 0;
   const currentElementData = ELEMENTS.find(e => e.name === currentElement) || ELEMENTS[0];
 
   // Get username text color based on selected element
@@ -389,7 +312,8 @@ export default function ProfileBar({
                 onOpenJournal={onOpenJournal}
                 heartCoins={heartCoins}
                 onHeartCoinsChange={(newAmount) => {
-                  setProfile(prev => prev ? { ...prev, hearts: newAmount } : null);
+                  // Update through ProfileContext
+                  updateProfile({ heartcoin_balance: newAmount });
                 }}
               />
               

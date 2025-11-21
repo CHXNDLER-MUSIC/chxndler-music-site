@@ -12,35 +12,35 @@ import LazyLoadEnhancer from "@/components/LazyLoadEnhancer";
 import NamePromptOnLogin from "@/components/NamePromptOnLogin";
 import WhatShouldWeCallYouModal from "@/components/WhatShouldWeCallYouModal";
 import WhatElementAreYouModal from "@/components/WhatElementAreYouModal";
+import { ProfileProvider } from "@/contexts/ProfileContext";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://chxndler.world"),
-  title: "CHXNDLER — SPACESHIP",
-  description: "Pilot the cockpit, switch channels, and drift through space.",
+  title: "CHXNDLER",
+  description: "Welcome to the Heartverse.",
   openGraph: {
-    title: "CHXNDLER — SPACESHIP",
-    description: "Pilot the cockpit, switch channels, and drift through space.",
+    title: "CHXNDLER",
+    description: "Welcome to the Heartverse.",
     url: "https://chxndler.world",
     siteName: "CHXNDLER",
-    type: "website",
     images: [
       {
-        url: "/logo/CHXNDLER_Logo.png",
-        width: 458,
-        height: 596,
+        url: "https://ik.imagekit.io/CHXNDLER/cover/logo.png",
+        width: 1200,
+        height: 630,
         alt: "CHXNDLER Logo",
       },
     ],
+    type: "website",
   },
   twitter: {
-    card: "summary",
-    title: "CHXNDLER — SPACESHIP",
-    description: "Pilot the cockpit, switch channels, and drift through space.",
-    images: ["/logo/CHXNDLER_Logo.png"],
-    creator: "@chxndler",
+    card: "summary_large_image",
+    title: "CHXNDLER",
+    description: "Welcome to the Heartverse.",
+    images: ["https://ik.imagekit.io/CHXNDLER/cover/logo.png"],
   },
   icons: {
-    icon: "/logo/CHXNDLER_Logo.png",
+    icon: "/elements/logo.png",
   },
 };
 
@@ -53,8 +53,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <link rel="icon" href="/logo/CHXNDLER_Logo.png" sizes="any" />
-        <link rel="icon" href="/logo/CHXNDLER_Logo.png" type="image/png" />
+        <link rel="icon" href="/elements/logo.png" sizes="any" />
+        <link rel="icon" href="/elements/logo.png" type="image/png" />
         {/* Fonts: Orbitron (lyrics page) and Exo 2 (lyrics popover) */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -100,20 +100,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         ) : null}
       </head>
       <body className="font-sans">
-        <AudioProvider>
-          {!analyticsOff && (
-            <Suspense fallback={null}>
-              <PageViewTracker />
-            </Suspense>
-          )}
-          {!analyticsOff && <ClickTracker />}
-          {!analyticsOff && <AnalyticsWidget />}
-          <LazyLoadEnhancer />
-          <NamePromptOnLogin />
-          <WhatShouldWeCallYouModal />
-          <WhatElementAreYouModal />
-          {children}
-        </AudioProvider>
+        <ProfileProvider>
+          <AudioProvider>
+            {!analyticsOff && (
+              <Suspense fallback={null}>
+                <PageViewTracker />
+              </Suspense>
+            )}
+            {!analyticsOff && <ClickTracker />}
+            {!analyticsOff && <AnalyticsWidget />}
+            <LazyLoadEnhancer />
+            <NamePromptOnLogin />
+            <WhatShouldWeCallYouModal />
+            <WhatElementAreYouModal />
+            {children}
+          </AudioProvider>
+        </ProfileProvider>
         {mpId && !analyticsOff ? (
           <noscript>
             <img height="1" width="1" style={{ display: "none" }} src={`https://www.facebook.com/tr?id=${mpId}&noscript=1`} alt="" />

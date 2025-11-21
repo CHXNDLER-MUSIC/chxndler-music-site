@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useUIStore } from "@/store/useUIStore";
+import { useProfile } from "@/contexts/ProfileContext";
 import type { Element } from "@/lib/planets";
 import { ELEMENT_COLORS } from "@/lib/planets";
 
@@ -16,6 +17,7 @@ const ELEMENTS: { key: Element; name: string; description: string; icon: string 
 
 export default function WhatElementAreYouModal() {
   const { showElementSelection, closeElementSelection, triggerProfileRefresh } = useUIStore();
+  const { updateProfile } = useProfile();
   const [selectedElement, setSelectedElement] = useState<Element | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,22 +35,26 @@ export default function WhatElementAreYouModal() {
         throw new Error("Not authenticated");
       }
 
-      // Update profile with selected element and award 1 heart coin
+      // Update profile with selected element
       const { error } = await supabaseClient
         .from('profiles')
-        .update({ 
+        .update({
           element: selectedElement,
-          heartcoin_balance: 1,
-          heartcoin_total: 1,
-          profile_complete: true
+          updated_at: new Date().toISOString(),
         })
         .eq('id', user.id);
 
       if (error) throw error;
       
-      console.log('🎉 Profile completed! Awarded 1 heart coin for completing onboarding');
+      // Update the profile context with the new element
+      updateProfile({ 
+        element: selectedElement,
+        updated_at: new Date().toISOString(),
+      });
+      
+      console.log('🎉 Profile completed! Element selected:', selectedElement);
       closeElementSelection();
-      // Trigger profile refresh to update the UI with new element and heart coins
+      // Trigger profile refresh to update the UI with new element
       triggerProfileRefresh();
     } catch (e: any) {
       setError(e?.message || "Failed to save element selection");

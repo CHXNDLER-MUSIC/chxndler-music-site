@@ -2375,16 +2375,22 @@ export default function HUDPanel({
               }}
               data-id="brand"
             >
-              <img 
-                src="/elements/logo.png" 
-                alt="CHXNDLER" 
+              <span
                 style={{
+                  fontSize: 'clamp(0.8rem, 2vw, 1.2rem)',
+                  fontWeight: 'bold',
+                  color: '#f2ef1d',
+                  textShadow: '0 0 6px rgba(242,239,29,0.8)',
+                  letterSpacing: '0.1em',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   width: '100%',
-                  height: '100%',
-                  objectFit: 'contain',
-                  filter: 'drop-shadow(0 0 6px rgba(242,239,29,0.8))'
+                  height: '100%'
                 }}
-              />
+              >
+                CHXNDLER
+              </span>
             </button>
             {(() => {
               // On homepage (no currentId), always show the CHXNDLER brand cover

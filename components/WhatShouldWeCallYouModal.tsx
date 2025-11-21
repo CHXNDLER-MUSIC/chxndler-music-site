@@ -4,9 +4,11 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useUIStore } from "@/store/useUIStore";
+import { useProfile } from "@/contexts/ProfileContext";
 
 export default function WhatShouldWeCallYouModal() {
   const { showNamePrompt, closeNamePrompt, openElementSelection } = useUIStore();
+  const { updateProfile } = useProfile();
   const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,10 +28,19 @@ export default function WhatShouldWeCallYouModal() {
 
       const { error } = await supabaseClient
         .from('profiles')
-        .update({ display_name: displayName.trim() })
+        .update({
+          display_name: displayName.trim(),
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', user.id);
 
       if (error) throw error;
+      
+      // Update the profile context with the new display name
+      updateProfile({ 
+        display_name: displayName.trim(),
+        updated_at: new Date().toISOString(),
+      });
       
       closeNamePrompt();
       // Open element selection immediately after name is saved
