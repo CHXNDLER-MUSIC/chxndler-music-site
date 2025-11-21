@@ -15,17 +15,21 @@ export default function NamePromptOnLogin() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
+    console.log('🚀🚀🚀 NamePromptOnLogin useEffect triggered!');
+    
     const checkUserProfile = async () => {
       try {
         // Check if this is an email confirmation redirect (only then show name prompt)
         const isEmailConfirmed = searchParams.get('email_confirmed') === '1';
         const isGeneralWelcome = searchParams.get('welcome') === '1';
         
+        console.log('🚀 NamePromptOnLogin - Component executing!');
         console.log('🔍 NamePromptOnLogin - URL params check:', {
           currentUrl: window.location.href,
           isEmailConfirmed,
           isGeneralWelcome,
-          allParams: Object.fromEntries(searchParams)
+          allParams: Object.fromEntries(searchParams),
+          searchParamsString: searchParams.toString()
         });
         
         // Get current session
@@ -39,6 +43,7 @@ export default function NamePromptOnLogin() {
         // If no session, user is not logged in
         if (!session?.user) {
           console.log('🚫 No session found, not showing name prompt');
+          console.log('🔍 Session details:', { session, sessionError });
           return;
         }
 
@@ -90,7 +95,8 @@ export default function NamePromptOnLogin() {
         }
 
       } catch (error) {
-        console.error('Unexpected error in NamePromptOnLogin:', error);
+        console.error('❌ Unexpected error in NamePromptOnLogin:', error);
+        console.error('❌ Error details:', { error, searchParams: searchParams.toString() });
       }
     };
 

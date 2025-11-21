@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
+import { useUIState } from '@/lib/use-ui-state';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ElementIcon } from '@/lib/elementIcons';
 import CodeModal from '@/components/CodeModal';
@@ -62,6 +63,8 @@ export default function ProfileBar({
   savedAlienElement,
   profileRefreshTrigger = 0
 }: ProfileBarProps) {
+  // Use global UI state for profile bar visibility
+  const { hasEnteredHeartverse } = useUIState();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [elementDropdownOpen, setElementDropdownOpen] = useState(false);
@@ -293,7 +296,7 @@ export default function ProfileBar({
     }
   };
 
-  // Don't render the profile bar at all until user has entered the Heartverse
+  // ❗ IMPORTANT: Do not render anything until the user has started
   if (!hasEnteredHeartverse) {
     return null;
   }
@@ -301,10 +304,6 @@ export default function ProfileBar({
   return (
     <div 
       className="fixed top-0 left-0 right-0 z-[200] h-16 bg-black/80 backdrop-blur-md border-b border-white/10 transition-opacity duration-500 ease-in-out"
-      style={{
-        opacity: hasEnteredHeartverse ? 1 : 0,
-        pointerEvents: hasEnteredHeartverse ? 'auto' : 'none'
-      }}
     >
       <div className="relative h-full">
         {/* Elemental Button - Top Left */}

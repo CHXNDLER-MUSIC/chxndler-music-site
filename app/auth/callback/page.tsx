@@ -34,6 +34,7 @@ export default function AuthCallbackPage() {
     if (isFromEmailLink) {
       console.log('🎯 EMAIL CONFIRMATION DETECTED! Redirecting with email_confirmed=1');
       console.log('🔔 This should trigger the name prompt modal');
+      console.log('🔗 About to redirect to: /?email_confirmed=1');
       // This is from clicking email confirmation link - show name prompt
       router.replace('/?email_confirmed=1');
     } else {

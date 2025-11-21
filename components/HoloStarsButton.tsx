@@ -81,7 +81,7 @@ export default function HoloStarsButton({
         {showSoulStarText ? (
           "Your soul star shines above."
         ) : (
-          <img src="/star.png" alt="Star" className="star-image" />
+          <img src="/elements/stars.png" alt="Stars" className="star-image" />
         )}
       </SharedButton>
       
@@ -99,22 +99,24 @@ export default function HoloStarsButton({
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 0;
+          padding: 0 !important;
           text-shadow: none;
           box-shadow: none;
+          overflow: hidden;
         }
         
         .star-image {
           width: 100%;
           height: 100%;
-          object-fit: contain;
+          object-fit: cover;
           border-radius: 50%;
-          filter: none !important;
+          filter: drop-shadow(0 0 8px #FFFF00) drop-shadow(0 0 16px #FFFF00) drop-shadow(0 0 24px #FFD700) !important;
           opacity: 1 !important;
           border: 2px solid #FFFF00;
           box-sizing: border-box;
           background: none !important;
           color: initial !important;
+          transition: filter 0.3s ease;
         }
         
         .soul-star-text {
@@ -149,6 +151,12 @@ export default function HoloStarsButton({
           transform: scale(1.1);
           text-shadow: none;
           box-shadow: none;
+        }
+        
+        .custom-stars-style:hover .star-image {
+          filter: drop-shadow(0 0 12px #FFFF00) drop-shadow(0 0 24px #FFFF00) drop-shadow(0 0 36px #FFD700) drop-shadow(0 0 48px rgba(255, 255, 0, 0.8)) !important;
+          border-color: #FFD700;
+          border-width: 3px;
         }
         
         .custom-stars-style:active {

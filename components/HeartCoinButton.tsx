@@ -51,6 +51,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [secretPhrase, setSecretPhrase] = useState("");
   const [checkInMessage, setCheckInMessage] = useState("");
   const [showCheckInSuccess, setShowCheckInSuccess] = useState(false);
+  const [isSubmittingPhrase, setIsSubmittingPhrase] = useState(false);
+  const [statusType, setStatusType] = useState<'idle' | 'success' | 'error'>('idle');
 
   // Get today's element (rotate daily)
   const getTodaysElement = () => {
@@ -122,20 +124,61 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   };
 
 
-  const handleCheckIn = () => {
-    if (secretPhrase.toLowerCase().trim() === "heartverse") {
-      try { sfx.play('click', 0.8); } catch {}
-      updateHeartCoins(heartCoins + 5);
-      setDailyQuests(prev => ({ ...prev, checkedIn: true }));
-      setCheckInMessage("Welcome to the show. You've checked in!");
-      setShowCheckInSuccess(true);
-      setShowCheckInModal(false);
-      setSecretPhrase("");
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => setShowCheckInSuccess(false), 3000);
-    } else {
-      setCheckInMessage("Incorrect phrase. Try again!");
+  const determineContext = () => {
+    // You can extend this logic based on your app's routing or state
+    // For now, defaulting to 'global' - you can customize this based on your needs
+    return 'global';
+  };
+
+  const handleCheckIn = async () => {
+    if (!secretPhrase.trim()) return;
+
+    setIsSubmittingPhrase(true);
+    setStatusType('idle');
+    setCheckInMessage('');
+
+    try {
+      const context = determineContext();
+      const res = await fetch('/api/redeem-secret-phrase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context, phrase: secretPhrase }),
+      });
+
+      const data = await res.json();
+
+      if (data.status === 'success') {
+        try { sfx.play('click', 0.8); } catch {}
+        setStatusType('success');
+        setCheckInMessage(data.message || 'Signal accepted. You earned your reward.');
+        setDailyQuests(prev => ({ ...prev, checkedIn: true }));
+        setShowCheckInSuccess(true);
+        setShowCheckInModal(false);
+        setSecretPhrase('');
+        
+        // Update local heart coins if new balance is provided
+        if (data.newHeartcoinBalance !== undefined) {
+          setHeartCoins(data.newHeartcoinBalance);
+          onHeartCoinsChange?.(data.newHeartcoinBalance);
+        } else if (data.rewardHeartCoins) {
+          // Fallback: add to current amount
+          const newAmount = heartCoins + data.rewardHeartCoins;
+          setHeartCoins(newAmount);
+          onHeartCoinsChange?.(newAmount);
+        }
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => setShowCheckInSuccess(false), 3000);
+      } else {
+        setStatusType('error');
+        setCheckInMessage(data.message || 'That signal is not active right now.');
+      }
+    } catch (err) {
+      console.error('Check-in error:', err);
+      setStatusType('error');
+      setCheckInMessage('Something glitched in the Heartverse. Try again in a moment.');
+    } finally {
+      setIsSubmittingPhrase(false);
     }
   };
 
@@ -480,11 +523,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         boxShadow: '0 0 10px rgba(255,105,180,0.3)'
                       }}
                     />
-                    {checkInMessage && (
+                    {statusType !== 'idle' && checkInMessage && (
                       <div 
-                        className="text-center text-xs mt-2"
+                        className="text-center text-xs mt-2 p-2 rounded border"
                         style={{ 
-                          color: checkInMessage.includes('Welcome') ? '#90EE90' : '#FF6B6B' 
+                          color: statusType === 'success' ? '#90EE90' : '#FF6B6B',
+                          borderColor: statusType === 'success' ? 'rgba(144,238,144,0.4)' : 'rgba(255,107,107,0.4)',
+                          backgroundColor: statusType === 'success' ? 'rgba(0,255,0,0.1)' : 'rgba(255,0,0,0.1)',
+                          textShadow: statusType === 'success' ? '0 0 4px rgba(144,238,144,0.8)' : '0 0 4px rgba(255,107,107,0.8)'
                         }}
                       >
                         {checkInMessage}
@@ -507,19 +553,21 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   <div className="flex flex-col space-y-2">
                     <button
                       onClick={handleCheckIn}
+                      disabled={isSubmittingPhrase || !secretPhrase.trim()}
                       className="px-2 py-1 text-xs rounded border border-pink-400/60 hover:border-pink-400/80 transition-colors"
                       style={{
-                        background: 'rgba(255,105,180,0.1)',
-                        color: '#FFB6C1',
+                        background: isSubmittingPhrase || !secretPhrase.trim() ? 'rgba(100,100,100,0.3)' : 'rgba(255,105,180,0.1)',
+                        color: isSubmittingPhrase || !secretPhrase.trim() ? '#666' : '#FFB6C1',
                       }}
                     >
-                      SUBMIT
+                      {isSubmittingPhrase ? 'CHECKING...' : 'SUBMIT'}
                     </button>
                     <button
                       onClick={() => {
                         setShowCheckInModal(false);
                         setSecretPhrase("");
                         setCheckInMessage("");
+                        setStatusType('idle');
                       }}
                       className="px-2 py-1 text-xs rounded border border-gray-400/60 hover:border-gray-400/80 transition-colors"
                       style={{
@@ -532,7 +580,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   </div>
                 ) : (
                   <button
-                    onClick={() => setShowCheckInModal(true)}
+                    onClick={() => {
+                      setShowCheckInModal(true);
+                      setStatusType('idle');
+                      setCheckInMessage('');
+                    }}
                     disabled={dailyQuests.checkedIn}
                     className="px-2 py-1 text-xs rounded border border-pink-400/60 hover:border-pink-400/80 transition-colors"
                     style={{

@@ -33,10 +33,14 @@ import ProfileBar from "@/components/ProfileBar";
 import HoloStarsButton from "@/components/HoloStarsButton";
 import VenmoButton from "@/components/VenmoButton";
 import { useUIStore } from "@/store/useUIStore";
+import { useUIState } from "@/lib/use-ui-state";
 
 export default function DashboardApp({ initialSlug } = {}) {
   // UI store for profile refresh trigger
   const { profileRefreshTrigger } = useUIStore();
+  
+  // Global UI state for profile bar visibility
+  const { setHasEnteredHeartverse } = useUIState();
   
   // Global wheel render mode (LUMA vs PLAIN). Must be top-level to obey Hooks rules.
   // Use false initially to match SSR, then sync with localStorage after hydration
@@ -136,12 +140,7 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [explicitClose, setExplicitClose] = useState(false); // track when explicitly closing without opening another display
   const [shouldOpenJournal, setShouldOpenJournal] = useState(false); // track when journal should be opened
   const [safariRefreshKey, setSafariRefreshKey] = useState(0); // Safari refresh mechanism
-  // Track if user has entered the Heartverse (clicked Start button)
-  // Always start as false for intro screen, even with initial slug
-  // ProfileBar should not be visible until user explicitly starts or warp completes
-  const [hasEnteredHeartverse, setHasEnteredHeartverse] = useState(false);
-  // Profile bar visibility - completely hidden on intro, shown only after entering Heartverse
-  const showProfileBar = hasEnteredHeartverse;
+  // ProfileBar will self-decide whether to render based on global state
   // Saved profile name from HUD signup flow
   const [savedProfileName, setSavedProfileName] = useState('');
   // Saved profile element from HUD signup flow
@@ -1095,35 +1094,32 @@ export default function DashboardApp({ initialSlug } = {}) {
   if (!mounted) {
     // Return a black screen with proper dimensions while loading
     return (
-      <main className="relative min-h-screen overflow-hidden bg-black text-white max-w-screen overflow-x-hidden" style={{ minWidth: '100vw', minHeight: '100vh', paddingTop: showProfileBar ? '64px' : '0' }}>
-        {/* Profile Bar (loading state) */}
-        {showProfileBar && (
-          <ProfileBar 
-            onCodeClick={() => {}}
-            onDigitalBinderClick={() => {}}
-            onBadgesClick={() => {}}
-            onCloseBlueDisplay={() => setShowHUD(false)}
-            onOpenBlueDisplay={() => {
-              // Force open blue display without toggle logic
-              if (!showHUD && beamColor === 'blue') {
-                setBeamEnabled(true);
-                setShowHUD(true);
-              } else if (beamColor !== 'blue') {
-                handleBeamToggle('blue');
-              }
-            }}
-            onOpenJournal={handleOpenJournal}
-            onBeamColorChange={handleBeamToggle}
-            hasEnteredHeartverse={hasEnteredHeartverse}
-            profileRefreshTrigger={profileRefreshTrigger}
-          />
-        )}
+      <main className="relative min-h-screen overflow-hidden bg-black text-white max-w-screen overflow-x-hidden" style={{ minWidth: '100vw', minHeight: '100vh' }}>
+        {/* Profile Bar will self-decide whether to render */}
+        <ProfileBar 
+          onCodeClick={() => {}}
+          onDigitalBinderClick={() => {}}
+          onBadgesClick={() => {}}
+          onCloseBlueDisplay={() => setShowHUD(false)}
+          onOpenBlueDisplay={() => {
+            // Force open blue display without toggle logic
+            if (!showHUD && beamColor === 'blue') {
+              setBeamEnabled(true);
+              setShowHUD(true);
+            } else if (beamColor !== 'blue') {
+              handleBeamToggle('blue');
+            }
+          }}
+          onOpenJournal={handleOpenJournal}
+          onBeamColorChange={handleBeamToggle}
+          profileRefreshTrigger={profileRefreshTrigger}
+        />
         
-        <div className="absolute inset-0 bg-black" style={{ top: showProfileBar ? '64px' : '0' }} />
+        <div className="absolute inset-0 bg-black" />
         {/* Ensure cockpit frame preloads immediately alongside lightbeam base */}
         <div 
           className="fixed z-20 pointer-events-none cockpit-bg"
-          style={{ top: showProfileBar ? '64px' : '0', left: 0, right: 0, bottom: 0 }}
+          style={{ top: 0, left: 0, right: 0, bottom: 0 }}
           aria-hidden="true" 
         />
         {/* Render the steering wheel video immediately on opening screen */}
@@ -1174,7 +1170,7 @@ export default function DashboardApp({ initialSlug } = {}) {
         <div 
           className="fixed z-[100] pointer-events-none lightbeam-base-bg"
           style={{ 
-            top: showProfileBar ? '64px' : '0', 
+            top: 0, 
             left: 0, 
             right: 0, 
             bottom: 0, 
@@ -1207,35 +1203,32 @@ export default function DashboardApp({ initialSlug } = {}) {
 
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-black text-white max-w-screen overflow-x-hidden" style={{ minWidth: '100vw', minHeight: '100vh', paddingTop: showProfileBar ? '64px' : '0' }}>
-      {/* Profile Bar */}
-      {showProfileBar && (
-        <ProfileBar 
-          onCodeClick={handleCodeClick}
-          onDigitalBinderClick={handleDigitalBinderClick}
-          onBadgesClick={handleBadgesClick}
-          onCloseBlueDisplay={() => setShowHUD(false)}
-          onOpenBlueDisplay={() => {
-            // Force open blue display without toggle logic
-            if (!showHUD && beamColor === 'blue') {
-              setBeamEnabled(true);
-              setShowHUD(true);
-            } else if (beamColor !== 'blue') {
-              handleBeamToggle('blue');
-            }
-          }}
-          onOpenJournal={handleOpenJournal}
-          onBeamColorChange={handleBeamToggle}
-          hasEnteredHeartverse={hasEnteredHeartverse}
-          savedAlienName={savedProfileName}
-          savedAlienElement={savedProfileElement}
-          profileRefreshTrigger={profileRefreshTrigger}
-        />
-      )}
+    <main className="relative min-h-screen overflow-hidden bg-black text-white max-w-screen overflow-x-hidden" style={{ minWidth: '100vw', minHeight: '100vh' }}>
+      {/* Profile Bar will self-decide whether to render */}
+      <ProfileBar 
+        onCodeClick={handleCodeClick}
+        onDigitalBinderClick={handleDigitalBinderClick}
+        onBadgesClick={handleBadgesClick}
+        onCloseBlueDisplay={() => setShowHUD(false)}
+        onOpenBlueDisplay={() => {
+          // Force open blue display without toggle logic
+          if (!showHUD && beamColor === 'blue') {
+            setBeamEnabled(true);
+            setShowHUD(true);
+          } else if (beamColor !== 'blue') {
+            handleBeamToggle('blue');
+          }
+        }}
+        onOpenJournal={handleOpenJournal}
+        onBeamColorChange={handleBeamToggle}
+        savedAlienName={savedProfileName}
+        savedAlienElement={savedProfileElement}
+        profileRefreshTrigger={profileRefreshTrigger}
+      />
       
       <div 
         className="absolute inset-0"
-        style={{ ...blurWrapperStyle, top: showProfileBar ? '64px' : '0' }}
+        style={{ ...blurWrapperStyle, top: 0 }}
       >
         <PrewarmThree />
         <AmbientSpace 
@@ -1275,8 +1268,10 @@ export default function DashboardApp({ initialSlug } = {}) {
         // Use provided YouTube clip for lightspeed overlay on opening and Start
         lightspeedYoutubeUrl={'https://youtu.be/KFssNa5WvKc'}
         onWarpSfxEnd={() => {
-          // Set hasEnteredHeartverse to true after warp animation completes
-          setHasEnteredHeartverse(true);
+          // Show profile bar after warp effect completes (1.5 second delay as specified)
+          setTimeout(() => {
+            setHasEnteredHeartverse(true);
+          }, 1500);
           
           // Show welcome home modal after warp effect completes (only on first start button click)
           if (shouldShowWelcomeModal && !userSelected && !pendingTrackPlay) {
@@ -1602,14 +1597,14 @@ export default function DashboardApp({ initialSlug } = {}) {
 
       <div 
         className="fixed z-20 pointer-events-none cockpit-bg"
-        style={{ top: showProfileBar ? '64px' : '0', left: 0, right: 0, bottom: 0 }}
+        style={{ top: 0, left: 0, right: 0, bottom: 0 }}
         aria-hidden="true" 
       />
       
       <div 
         className="fixed z-[100] pointer-events-none lightbeam-base-bg"
         style={{
-          top: showProfileBar ? '64px' : '0',
+          top: 0,
           left: 0,
           right: 0,
           bottom: 0,
