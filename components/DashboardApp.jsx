@@ -31,7 +31,6 @@ import { debugLog } from "@/lib/debug";
 import WelcomeHomeModal from "@/components/WelcomeHomeModal";
 import ProfileBar from "@/components/ProfileBar";
 import HoloStarsButton from "@/components/HoloStarsButton";
-import VenmoButton from "@/components/VenmoButton";
 import { useUIStore } from "@/store/useUIStore";
 import { useUIState } from "@/lib/use-ui-state";
 
@@ -2043,14 +2042,6 @@ export default function DashboardApp({ initialSlug } = {}) {
         onClose={handleWelcomeHomeClose} 
       />
 
-      {/* Venmo $1 Button */}
-      <div className="fixed bottom-6 left-4 z-50 pointer-events-auto">
-        <VenmoButton 
-          amount={1} 
-          note="Thanks for the music!" 
-          recipient="chxndler-music" 
-        />
-      </div>
 
     </main>
   );

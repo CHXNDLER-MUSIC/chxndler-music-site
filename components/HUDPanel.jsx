@@ -2375,7 +2375,16 @@ export default function HUDPanel({
               }}
               data-id="brand"
             >
-              CHXNDLER
+              <img 
+                src="/elements/logo.png" 
+                alt="CHXNDLER" 
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  filter: 'drop-shadow(0 0 6px rgba(242,239,29,0.8))'
+                }}
+              />
             </button>
             {(() => {
               // On homepage (no currentId), always show the CHXNDLER brand cover
@@ -2604,16 +2613,17 @@ export default function HUDPanel({
                         label=""
                         icon={
                           <img 
-                            src="/elements/star.png" 
+                            src="/elements/stars.png" 
                             alt="Journal" 
                             style={{ 
                               width: '20px', 
                               height: '20px', 
-                              filter: 'invert(1) brightness(0)' 
+                              filter: 'brightness(0) saturate(100%) invert(89%) sepia(58%) saturate(2618%) hue-rotate(356deg) brightness(104%) contrast(97%)',
+                              border: 'none'
                             }} 
                           />
                         }
-                        style={{ position: 'absolute', left: '220px', top: '70px', paddingLeft: '16px', paddingRight: '16px', minWidth: '60px' }}
+                        style={{ position: 'absolute', left: '220px', top: '70px', paddingLeft: '16px', paddingRight: '16px', minWidth: '60px', border: 'none !important', outline: 'none !important', boxShadow: 'none !important' }}
                         title="Stars"
                         aria-haspopup="dialog"
                         aria-expanded={showSoulSkyPopover}

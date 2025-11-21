@@ -44,7 +44,6 @@ interface ProfileBarProps {
   onOpenBlueDisplay?: () => void;
   onOpenJournal?: () => void;
   onBeamColorChange?: (color: string) => void;
-  hasEnteredHeartverse?: boolean;
   savedAlienName?: string; // Name from HUD signup flow
   savedAlienElement?: string; // Element from HUD signup flow
   profileRefreshTrigger?: number; // Increment this to trigger profile refresh
@@ -58,7 +57,6 @@ export default function ProfileBar({
   onOpenBlueDisplay,
   onOpenJournal,
   onBeamColorChange,
-  hasEnteredHeartverse = false,
   savedAlienName,
   savedAlienElement,
   profileRefreshTrigger = 0
@@ -361,9 +359,9 @@ export default function ProfileBar({
           </div>
 
           {/* Right Side */}
-          <div className="flex items-center space-x-0.5 sm:space-x-1 flex-shrink-0 mr-0">
+          <div className="flex items-center flex-shrink-0 mr-0">
             {/* Badges Button */}
-            <div className="ml-2">
+            <div className="">
               <BadgesButton 
                 onHoverSound={() => sfx.play('hover', 0.8)}
                 onCloseBlueDisplay={onCloseBlueDisplay}
@@ -372,7 +370,7 @@ export default function ProfileBar({
             </div>
 
             {/* Digital Binder Button */}
-            <div className="-ml-6">
+            <div className="mr-2 -ml-6">
               <BinderButton 
                 onHoverSound={() => sfx.play('hover', 0.8)}
                 onCloseBlueDisplay={onCloseBlueDisplay}
@@ -381,7 +379,7 @@ export default function ProfileBar({
             </div>
 
             {/* Heart Coin Button with Count */}
-            <div className="flex items-center space-x-0.5 -ml-16">
+            <div className="flex items-center space-x-0.5">
               <HeartCoinButton 
                 onHoverSound={() => sfx.play('hover', 0.8)}
                 onCloseBlueDisplay={onCloseBlueDisplay}

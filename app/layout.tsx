@@ -109,7 +109,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {!analyticsOff && <ClickTracker />}
           {!analyticsOff && <AnalyticsWidget />}
           <LazyLoadEnhancer />
-          {/* <NamePromptOnLogin /> */}
+          <NamePromptOnLogin />
           <WhatShouldWeCallYouModal />
           <WhatElementAreYouModal />
           {children}

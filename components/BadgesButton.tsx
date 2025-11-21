@@ -32,6 +32,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
   const [open, setOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
+  const [elementFilter, setElementFilter] = useState<string | null>(null);
 
   const badgeCategories: BadgeCategory[] = [
     {
@@ -180,6 +181,29 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
     return badge.unlocked || (badge.progress !== undefined && badge.progress >= 100);
   };
 
+  const getElementFromBadge = (badge: Badge) => {
+    if (!badge.description) return null;
+    if (badge.description.includes('❤️ HEART')) return 'HEART';
+    if (badge.description.includes('💧 WATER')) return 'WATER';
+    if (badge.description.includes('⚡ LIGHTNING')) return 'LIGHTNING';
+    if (badge.description.includes('🌑 DARKNESS')) return 'DARKNESS';
+    return null;
+  };
+
+  const filterBadgesByElement = (badges: Badge[]) => {
+    if (!elementFilter) return badges;
+    return badges.filter(badge => getElementFromBadge(badge) === elementFilter);
+  };
+
+  const getElementalElements = () => {
+    return [
+      { name: 'HEART', emoji: '❤️', image: '/elements/heart.png', color: '#ff6b9d' },
+      { name: 'WATER', emoji: '💧', image: '/elements/water.png', color: '#4dd0e1' },
+      { name: 'LIGHTNING', emoji: '⚡', image: '/elements/lightning.png', color: '#ffeb3b' },
+      { name: 'DARKNESS', emoji: '🌑', image: '/elements/darkness.png', color: '#9c27b0' }
+    ];
+  };
+
   const handleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
     try { onClick?.(e); } catch {}
     if (!e.defaultPrevented) {
@@ -198,7 +222,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="p-1 rounded-lg transition-all duration-200 w-18 h-14"
+        className="p-1 rounded-lg transition-all duration-200 w-20 h-16"
         style={{
           transition: 'all 0.3s ease',
           ...rest.style
@@ -304,6 +328,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                 setOpen(false);
                 setSelectedCategory(null);
                 setSelectedBadge(null);
+                setElementFilter(null);
                 try { onOpenBlueDisplay?.(); } catch {}
               }}
               className="absolute top-2 right-4 text-pink-400 hover:text-pink-200 cursor-pointer w-8 h-8 rounded-full border border-pink-400/80 flex items-center justify-center"
@@ -329,6 +354,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                     try { sfx.play('click', 0.6); } catch {}
                     setSelectedCategory(null);
                     setSelectedBadge(null);
+                    setElementFilter(null);
                   }}
                   className="px-3 py-1 text-[10px] font-bold rounded border border-pink-400/60 hover:border-pink-400/80 transition-all duration-200"
                   style={{
@@ -445,62 +471,171 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                   
                   return (
                     <div className="space-y-4">
-                      <div 
-                        className="text-center"
-                        style={{ 
-                          color: category.color, 
-                          textShadow: `0 0 8px ${category.color}80`,
-                          fontSize: '14px',
-                          fontWeight: 'bold'
-                        }}
-                      >
-                        {category.name}
-                      </div>
+                      {category.id === 'elemental-streak' ? (
+                        // Element circles for elemental streak
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            {/* Back to elements button when element is selected */}
+                            {elementFilter ? (
+                              <button
+                                onClick={() => {
+                                  try { sfx.play('click', 0.6); } catch {}
+                                  setElementFilter(null);
+                                }}
+                                className="px-3 py-1 text-[10px] font-bold rounded border border-pink-400/60 hover:border-pink-400/80 transition-all duration-200"
+                                style={{
+                                  background: 'rgba(255,105,180,0.1)',
+                                  color: '#FFB6C1',
+                                  textShadow: '0 0 4px rgba(255,182,193,0.8)',
+                                  boxShadow: '0 0 8px rgba(255,105,180,0.3)',
+                                }}
+                              >
+                                ← BACK TO ELEMENTS
+                              </button>
+                            ) : (
+                              <div className="w-32"></div>
+                            )}
+                            
+                            <div 
+                              className="text-center"
+                              style={{ 
+                                color: category.color, 
+                                textShadow: `0 0 8px ${category.color}80`,
+                                fontSize: '14px',
+                                fontWeight: 'bold'
+                              }}
+                            >
+                              {category.name}
+                            </div>
+                            
+                            <div className="w-32"></div>
+                          </div>
+                          <div className="flex justify-center gap-4">
+                            {getElementalElements().map(element => {
+                              const elementBadges = category.badges.filter(badge => getElementFromBadge(badge) === element.name);
+                              const completedCount = elementBadges.filter(badge => isUnlocked(badge)).length;
+                              
+                              return (
+                                <div key={element.name} className="flex flex-col items-center">
+                                  <button
+                                    onClick={() => {
+                                      try { sfx.play('click', 0.7); } catch {}
+                                      setElementFilter(element.name);
+                                    }}
+                                    className="relative w-16 h-16 rounded-full border-2 transition-all duration-300 hover:scale-105 flex items-center justify-center group overflow-hidden"
+                                    style={{
+                                      borderColor: elementFilter === element.name ? element.color : `${element.color}60`,
+                                      background: elementFilter === element.name 
+                                        ? `linear-gradient(135deg, ${element.color}30, ${element.color}10)`
+                                        : `linear-gradient(135deg, ${element.color}20, ${element.color}05)`,
+                                      boxShadow: elementFilter === element.name 
+                                        ? `0 0 20px ${element.color}60, 0 0 40px ${element.color}30`
+                                        : `0 0 15px ${element.color}30`
+                                    }}
+                                  >
+                                    <img
+                                      src={element.image}
+                                      alt={element.name}
+                                      className="absolute inset-0 w-full h-full object-cover rounded-full transition-all duration-300"
+                                      style={{
+                                        filter: `drop-shadow(0 0 8px ${element.color})`,
+                                        transform: elementFilter === element.name ? 'scale(1.05)' : 'scale(1)'
+                                      }}
+                                      draggable={false}
+                                    />
+                                    
+                                    {/* Progress indicator */}
+                                    <div 
+                                      className="absolute -bottom-1 -right-1 rounded-full w-5 h-5 flex items-center justify-center text-white font-bold border-2 border-black/50"
+                                      style={{ 
+                                        background: element.color,
+                                        fontSize: '8px',
+                                        textShadow: '0 0 4px rgba(0,0,0,0.8)'
+                                      }}
+                                    >
+                                      {completedCount}
+                                    </div>
+                                  </button>
+                                  
+                                  <div 
+                                    className="text-xs mt-1 font-bold text-center"
+                                    style={{ 
+                                      color: elementFilter === element.name ? element.color : `${element.color}80`,
+                                      textShadow: `0 0 4px ${element.color}60`,
+                                      fontSize: '9px'
+                                    }}
+                                  >
+                                    {element.name}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : (
+                        // Regular category header for other categories
+                        <div 
+                          className="text-center"
+                          style={{ 
+                            color: category.color, 
+                            textShadow: `0 0 8px ${category.color}80`,
+                            fontSize: '14px',
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          {category.name}
+                        </div>
+                      )}
                       
-                      <div className="flex flex-wrap justify-center gap-3 max-h-44 overflow-y-auto p-2">
-                        {category.badges.map((badge, index) => (
-                          <div key={index} className="flex flex-col items-center space-y-1">
+                      {/* Only show badges if not elemental-streak OR if element filter is selected */}
+                      {(category.id !== 'elemental-streak' || elementFilter) && (
+                        <div className={`flex flex-wrap justify-center max-h-28 overflow-y-auto overflow-x-hidden p-2 -mt-1 ${category.id === 'heartcoin' ? 'gap-8' : 'gap-5'}`} style={{ scrollbarWidth: 'thin' }}>
+                          {filterBadgesByElement(category.badges).map((badge, index) => (
+                            <div key={index} className="flex flex-col items-center space-y-2">
                             <div className="relative">
                               <button
                                 onClick={() => {
                                   try { sfx.play('click', 0.6); } catch {}
                                   setSelectedBadge(badge);
                                 }}
-                                className="relative w-10 h-10 rounded-full bg-black/60 border border-white/20 hover:border-white/40 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
+                                className="relative w-12 h-12 rounded-full bg-black/60 border border-white/20 hover:border-white/40 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
                                 title={badge.description ? `${badge.name}: ${badge.description}` : badge.name}
                               >
                                 {/* Progress ring */}
                                 {badge.progress !== undefined && badge.progress < 100 && (
                                   <div className="absolute inset-0">
-                                    <svg className="w-10 h-10 transform -rotate-90" viewBox="0 0 40 40">
+                                    <svg className="w-12 h-12 transform -rotate-90" viewBox="0 0 48 48">
                                       <circle
-                                        cx="20"
-                                        cy="20"
-                                        r="18"
+                                        cx="24"
+                                        cy="24"
+                                        r="22"
                                         fill="none"
                                         stroke="rgba(255,255,255,0.1)"
                                         strokeWidth="2"
                                       />
                                       <circle
-                                        cx="20"
-                                        cy="20"
-                                        r="18"
+                                        cx="24"
+                                        cy="24"
+                                        r="22"
                                         fill="none"
                                         stroke={isUnlocked(badge) ? "#10B981" : category.color}
                                         strokeWidth="2"
                                         strokeLinecap="round"
-                                        strokeDasharray={`${2 * Math.PI * 18}`}
-                                        strokeDashoffset={`${2 * Math.PI * 18 * (1 - (badge.progress || 0) / 100)}`}
+                                        strokeDasharray={`${2 * Math.PI * 22}`}
+                                        strokeDashoffset={`${2 * Math.PI * 22 * (1 - (badge.progress || 0) / 100)}`}
                                         className="transition-all duration-300"
                                       />
                                     </svg>
                                   </div>
                                 )}
                                 
-                                <div className="absolute inset-0.5 bg-gradient-to-br from-gray-800/80 to-black/90 rounded-full" />
-                                
-                                <div className={`relative z-10 text-sm transition-opacity ${isUnlocked(badge) ? 'opacity-100' : 'opacity-40 group-hover:opacity-60'}`}>
-                                  {getBadgeIcon(badge.name, category.id)}
+                                <div className={`absolute inset-0 rounded-full overflow-hidden transition-opacity ${isUnlocked(badge) ? 'opacity-100' : 'opacity-40 group-hover:opacity-60'}`}>
+                                  <img
+                                    src={`/elements/${getBadgeIcon(badge.name, category.id) === '❤️' ? 'heart' : getBadgeIcon(badge.name, category.id) === '💧' ? 'water' : getBadgeIcon(badge.name, category.id) === '⚡' ? 'lightning' : getBadgeIcon(badge.name, category.id) === '🌑' ? 'darkness' : 'heart'}.png`}
+                                    alt={badge.name}
+                                    className="w-full h-full object-cover"
+                                    draggable={false}
+                                  />
                                 </div>
                                 
                                 {!isUnlocked(badge) && (
@@ -529,25 +664,26 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                               )}
                             </div>
                             
-                            <div className="text-white/60 text-xs text-center max-w-12 truncate">
+                            <div className="text-white/80 text-xs text-center max-w-16 font-medium" style={{ textShadow: '0 0 4px rgba(255,255,255,0.3)' }}>
                               {badge.name}
                             </div>
                           </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   );
                 })()
               ) : (
                 // Badge Detail View - Inline within the popup
-                <div className="text-center space-y-2 max-w-xs mx-auto">
-                  {/* Back button at top */}
+                <div className="relative space-y-2 max-w-xs mx-auto">
+                  {/* Back button positioned to the left */}
                   <button
                     onClick={() => {
                       try { sfx.play('close', 0.6); } catch {}
                       setSelectedBadge(null);
                     }}
-                    className="mb-2 px-3 py-1 text-[10px] font-bold rounded border border-pink-400/60 hover:border-pink-400/80 transition-all duration-200"
+                    className="absolute -left-8 top-0 px-3 py-1 text-[10px] font-bold rounded border border-pink-400/60 hover:border-pink-400/80 transition-all duration-200"
                     style={{
                       background: 'rgba(255,105,180,0.1)',
                       color: '#FFB6C1',

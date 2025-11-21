@@ -20,6 +20,32 @@ export default function HoloStarsButton({
   const [questionResponse, setQuestionResponse] = useState("");
   const [showSoulSky, setShowSoulSky] = useState(false);
   const [showSoulStarText, setShowSoulStarText] = useState(false);
+  const [showJournalModal, setShowJournalModal] = useState(false);
+
+  // Journal storage functions
+  const saveJournalEntry = () => {
+    const entry = {
+      id: Date.now(),
+      date: new Date().toLocaleDateString(),
+      intention: "Find peace in the present moment",
+      reflection: "Share your cosmic vision",
+      response: questionResponse,
+      timestamp: new Date().toISOString()
+    };
+    
+    try {
+      const existingEntries = JSON.parse(localStorage.getItem('soulJournalEntries') || '[]');
+      existingEntries.push(entry);
+      localStorage.setItem('soulJournalEntries', JSON.stringify(existingEntries));
+      
+      // Play success sound
+      try { sfx.play('click', 0.8); } catch {}
+      
+      setShowJournalModal(false);
+    } catch (error) {
+      console.error('Failed to save journal entry:', error);
+    }
+  };
 
   // Auto-open modal when autoOpen is true
   useEffect(() => {
@@ -220,6 +246,38 @@ export default function HoloStarsButton({
           position: relative;
         }
         
+        .journal-button {
+          position: absolute;
+          top: 1rem;
+          left: 1rem;
+          background: transparent;
+          border: none;
+          color: #FFFF00;
+          font-size: 2rem;
+          cursor: pointer;
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          transition: all 0.2s ease;
+          text-shadow: 
+            0 0 10px #FFFF00,
+            0 0 20px #FFFF00,
+            0 0 30px #FFFF00;
+          z-index: 10;
+        }
+        
+        .journal-button:hover {
+          transform: scale(1.1);
+          text-shadow: 
+            0 0 15px #FFFF00,
+            0 0 25px #FFFF00,
+            0 0 35px #FFFF00,
+            0 0 45px #FFFF00;
+        }
+
         .close-button {
           position: absolute;
           top: 1rem;
@@ -432,6 +490,125 @@ export default function HoloStarsButton({
               0 0 80px rgba(255, 255, 0, 0.4);
           }
         }
+        
+        .journal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          background: rgba(0, 0, 0, 0.8);
+          z-index: 10000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .journal-modal {
+          background: rgba(0, 0, 0, 0.95);
+          border: 2px solid #FFFF00;
+          border-radius: 1rem;
+          padding: 2rem;
+          max-width: 500px;
+          width: 90vw;
+          max-height: 80vh;
+          overflow-y: auto;
+          position: relative;
+          box-shadow: 0 0 50px rgba(255, 255, 0, 0.3);
+        }
+        
+        .journal-close {
+          position: absolute;
+          top: 1rem;
+          right: 1rem;
+          background: transparent;
+          border: none;
+          color: #FFFF00;
+          font-size: 2rem;
+          cursor: pointer;
+          width: 30px;
+          height: 30px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          transition: all 0.2s ease;
+          text-shadow: 0 0 10px #FFFF00;
+        }
+        
+        .journal-close:hover {
+          transform: scale(1.1);
+          text-shadow: 0 0 20px #FFFF00;
+        }
+        
+        .journal-modal h2 {
+          color: #FFFF00;
+          text-align: center;
+          margin-bottom: 2rem;
+          text-shadow: 0 0 15px #FFFF00;
+          font-size: 1.8rem;
+        }
+        
+        .journal-entry {
+          color: #FFFFFF;
+        }
+        
+        .journal-field {
+          margin-bottom: 1.5rem;
+          padding: 1rem;
+          background: rgba(255, 255, 0, 0.1);
+          border-radius: 0.5rem;
+          border: 1px solid rgba(255, 255, 0, 0.3);
+        }
+        
+        .journal-field label {
+          display: block;
+          color: #FFFF00;
+          font-weight: bold;
+          margin-bottom: 0.5rem;
+          text-shadow: 0 0 8px #FFFF00;
+        }
+        
+        .journal-field span,
+        .response-text {
+          color: #FFFFFF;
+          line-height: 1.6;
+        }
+        
+        .response-text {
+          background: rgba(0, 0, 0, 0.5);
+          padding: 0.75rem;
+          border-radius: 0.25rem;
+          border: 1px solid rgba(255, 255, 0, 0.2);
+          min-height: 60px;
+          font-style: italic;
+        }
+        
+        .save-journal-btn {
+          background: linear-gradient(135deg, #FFD700, #FFA500);
+          border: none;
+          color: #000;
+          padding: 0.75rem 2rem;
+          border-radius: 0.5rem;
+          font-size: 1rem;
+          font-weight: bold;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+          width: 100%;
+          margin-top: 1rem;
+        }
+        
+        .save-journal-btn:hover:not(:disabled) {
+          transform: scale(1.02);
+          box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+        }
+        
+        .save-journal-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          transform: none;
+        }
       `}</style>
       
       <audio ref={sfxRef} src="/audio/star.mp3" preload="auto" playsInline />
@@ -443,6 +620,13 @@ export default function HoloStarsButton({
           <div className="modal-container">
             {!showStarAnimation && (
               <div className="question-modal">
+                <button 
+                  className="journal-button"
+                  onClick={() => setShowJournalModal(true)}
+                  aria-label="Open Journal"
+                >
+                  📖
+                </button>
                 <button 
                   className="close-button"
                   onClick={() => {
@@ -492,6 +676,47 @@ export default function HoloStarsButton({
             )}
           </div>
 
+        </div>
+      )}
+
+      {/* Journal Modal */}
+      {showJournalModal && (
+        <div className="journal-overlay">
+          <div className="journal-modal">
+            <button 
+              className="journal-close"
+              onClick={() => setShowJournalModal(false)}
+              aria-label="Close Journal"
+            >
+              ×
+            </button>
+            <h2>Soul Journal</h2>
+            <div className="journal-entry">
+              <div className="journal-field">
+                <label>Date:</label>
+                <span>{new Date().toLocaleDateString()}</span>
+              </div>
+              <div className="journal-field">
+                <label>Intention:</label>
+                <span>Find peace in the present moment</span>
+              </div>
+              <div className="journal-field">
+                <label>Reflection:</label>
+                <span>Share your cosmic vision</span>
+              </div>
+              <div className="journal-field">
+                <label>Your Response:</label>
+                <div className="response-text">{questionResponse || "No response yet..."}</div>
+              </div>
+              <button 
+                className="save-journal-btn"
+                onClick={saveJournalEntry}
+                disabled={!questionResponse.trim()}
+              >
+                Save Entry
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </>
