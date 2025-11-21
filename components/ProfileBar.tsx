@@ -90,10 +90,35 @@ export default function ProfileBar({
 
   async function fetchProfile() {
     try {
-      // Try to fetch the most recent completed profile from Supabase
+      // First try to get the current authenticated user's profile
+      const { data: user } = await supabaseBrowser.auth.getUser();
+      
+      if (user?.user) {
+        // Fetch the authenticated user's profile specifically
+        const { data: userProfile, error: userError } = await supabaseBrowser
+          .from('profiles')
+          .select('*, heartcoin_balance, heartcoin_total')
+          .eq('id', user.user.id)
+          .single();
+
+        if (!userError && userProfile) {
+          setProfile({
+            id: userProfile.id,
+            name: userProfile.name || userProfile.display_name,
+            element: userProfile.element,
+            hearts: userProfile.heartcoin_balance || 0,
+            phone: userProfile.phone,
+            email: userProfile.email,
+            profile_complete: userProfile.profile_complete
+          });
+          return;
+        }
+      }
+
+      // Fallback: Try to fetch the most recent completed profile from Supabase
       const { data, error } = await supabaseBrowser
         .from('profiles')
-        .select('*, heart_coins_current, heart_coins_total')
+        .select('*, heartcoin_balance, heartcoin_total')
         .eq('profile_complete', true)
         .order('updated_at', { ascending: false })
         .limit(1);
@@ -112,9 +137,9 @@ export default function ProfileBar({
         const profileData = data[0];
         setProfile({
           id: profileData.id,
-          name: profileData.name,
+          name: profileData.name || profileData.display_name,
           element: profileData.element,
-          hearts: profileData.heart_coins_current || 0, // Use actual heart coin count
+          hearts: profileData.heartcoin_balance || 0,
           phone: profileData.phone,
           email: profileData.email,
           profile_complete: profileData.profile_complete

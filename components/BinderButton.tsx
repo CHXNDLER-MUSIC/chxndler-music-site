@@ -533,16 +533,40 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
               boxShadow: '0 0 4px rgba(255,105,180,0.6)'
             }}
           />
-          <div className="flex justify-between items-center mb-4">
-            {/* Card Name Filter - moved to the left */}
-            {showFullCollection && selectedElement && (
+
+          {/* Back button positioned directly below pink line */}
+          {selectedElement && (
+            <div className="flex justify-start items-center mb-4">
+              <button
+                onClick={() => {
+                  try { sfx.play('click', 0.6); } catch {}
+                  setSelectedElement(null);
+                  setSelectedCardName('All');
+                  setPreselectedCard(null);
+                  setCurrentCardIndex(0);
+                }}
+                className="flex items-center gap-2 text-pink-300 hover:text-pink-200 transition-colors text-xs"
+                style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+              >
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                  <path d="M19 12H5m7-7l-7 7 7 7"/>
+                </svg>
+                Back to Elements
+              </button>
+            </div>
+          )}
+
+          {/* Song filter positioned directly below back button */}
+          {selectedElement && (
+            <div className="flex flex-col items-center gap-3 mb-4">
+              {/* Card Name Filter */}
               <select
                 value={selectedCardName}
                 onChange={(e) => {
                   setSelectedCardName(e.target.value);
                   setCurrentCardIndex(0);
                 }}
-                className="px-1 py-0.5 rounded border border-pink-400/60 bg-black/40 text-pink-200 text-[10px] min-w-24"
+                className="px-2 py-1 rounded border border-pink-400/60 bg-black/40 text-pink-200 text-sm"
                 style={{ 
                   boxShadow: '0 0 8px rgba(255,105,180,0.3)',
                   textShadow: '0 0 4px rgba(255,182,193,0.6)'
@@ -554,8 +578,31 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                   </option>
                 ))}
               </select>
-            )}
-            
+              
+              {/* Rarity Filter - directly below card list filter */}
+              <select
+                value={selectedRarity}
+                onChange={(e) => {
+                  setSelectedRarity(e.target.value);
+                  setSelectedCardName('All');
+                  setCurrentCardIndex(0);
+                }}
+                className="px-2 py-1 rounded border border-pink-400/60 bg-black/40 text-pink-200 text-sm"
+                style={{ 
+                  boxShadow: '0 0 8px rgba(255,105,180,0.3)',
+                  textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                }}
+              >
+                {rarities.map(rarity => (
+                  <option key={rarity} value={rarity} className="bg-black text-pink-200">
+                    {rarity}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className="flex justify-between items-center mb-4">            
             {!selectedElement && (
               <div 
                 className="text-center flex-1"
@@ -571,9 +618,8 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                 Earn the cards that reflect your journey as you move through the Heartverse.
               </div>
             )}
-            
-            <div style={{ width: showFullCollection && selectedElement ? '8rem' : '0' }}></div>
           </div>
+
 
           {/* Collection Progress */}
           <div 
@@ -752,50 +798,6 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                 ) : (
                   // Card View with Filters
                   <>
-                    {/* Back and Filters */}
-                    <div className="flex justify-between items-center mb-4">
-                      <div className="flex items-center gap-4">
-                        <button
-                          onClick={() => {
-                            try { sfx.play('click', 0.6); } catch {}
-                            setSelectedElement(null);
-                            setSelectedCardName('All');
-                            setPreselectedCard(null);
-                            setCurrentCardIndex(0);
-                          }}
-                          className="flex items-center gap-2 text-pink-300 hover:text-pink-200 transition-colors text-xs"
-                          style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
-                        >
-                          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                            <path d="M19 12H5m7-7l-7 7 7 7"/>
-                          </svg>
-                          Back to Elements
-                        </button>
-                        
-                        <select
-                          value={selectedRarity}
-                          onChange={(e) => {
-                            setSelectedRarity(e.target.value);
-                            setSelectedCardName('All');
-                            setCurrentCardIndex(0);
-                          }}
-                          className="px-2 py-1 rounded border border-pink-400/60 bg-black/40 text-pink-200 text-xs"
-                          style={{ 
-                            boxShadow: '0 0 8px rgba(255,105,180,0.3)',
-                            textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                          }}
-                        >
-                          {rarities.map(rarity => (
-                            <option key={rarity} value={rarity} className="bg-black text-pink-200">
-                              {rarity}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      
-                      <div></div>
-                    </div>
-
                     {/* Current Card Display */}
                     {(() => {
                       const cards = getFilteredCards();
@@ -816,7 +818,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                       }
 
                       return (
-                        <div className="flex items-center gap-4 -mt-20">
+                        <div className="flex items-center gap-4 -mt-4">
                           {/* Navigation arrow - left */}
                           {cards.length > 1 && (
                             <button
@@ -856,11 +858,27 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                             />
                           </div>
                           
+                          {/* Navigation arrow - right, positioned right after the card */}
+                          {cards.length > 1 && (
+                            <button
+                              onClick={() => {
+                                try { sfx.play('click', 0.5); } catch {}
+                                setCurrentCardIndex(prev => prev < cards.length - 1 ? prev + 1 : 0);
+                              }}
+                              className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200 mr-4"
+                              style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
+                            >
+                              <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                                <path d="M9 18l6-6-6-6"/>
+                              </svg>
+                            </button>
+                          )}
+                          
                           {/* Card Info - positioned to the right of the card */}
-                          <div className="flex flex-col justify-center min-w-0 max-w-48">
-                            {/* Show COLLECTED indicator or Purchase options */}
+                          <div className="flex flex-col justify-start min-w-0 max-w-48">
+                            {/* Show COLLECTED indicator or Purchase options - moved higher */}
                             {isCardOwned(currentCard.name) ? (
-                              <div className="mb-3">
+                              <div className="mb-4">
                                 <div 
                                   className="inline-block px-3 py-1 rounded-full border-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20"
                                   style={{
@@ -880,7 +898,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                                 </div>
                               </div>
                             ) : (
-                              <div className="flex gap-2 mb-3">
+                              <div className="flex gap-2 mb-6 -mt-16">
                                 {/* Digital option */}
                                 <button
                                   onClick={() => {
@@ -1001,22 +1019,6 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                               </div>
                             )}
                           </div>
-                          
-                          {/* Navigation arrow - right */}
-                          {cards.length > 1 && (
-                            <button
-                              onClick={() => {
-                                try { sfx.play('click', 0.5); } catch {}
-                                setCurrentCardIndex(prev => prev < cards.length - 1 ? prev + 1 : 0);
-                              }}
-                              className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200"
-                              style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
-                            >
-                              <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-                                <path d="M9 18l6-6-6-6"/>
-                              </svg>
-                            </button>
-                          )}
                         </div>
                       );
                     })()}

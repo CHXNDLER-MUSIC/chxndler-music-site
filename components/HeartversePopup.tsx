@@ -9,9 +9,10 @@ type Props = {
   children: React.ReactNode;
   icon?: React.ReactNode;
   headerContent?: React.ReactNode;
+  positioning?: 'default' | 'higher';
 };
 
-export default function HeartversePopup({ isOpen, onClose, title, children, icon, headerContent }: Props) {
+export default function HeartversePopup({ isOpen, onClose, title, children, icon, headerContent, positioning = 'default' }: Props) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -30,7 +31,7 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
       aria-modal="true"
       role="dialog"
       aria-label={title}
-      style={{ paddingBottom: '25vh' }}
+      style={{ paddingTop: positioning === 'higher' ? '5vh' : '30vh' }}
     >
       <div
         className="absolute inset-0 bg-black/85 backdrop-blur-md"
@@ -52,7 +53,7 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
             type="button"
             aria-label="Close"
             onClick={onClose}
-            className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white/80 border border-white/20 hover:bg-white/15"
+            className="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border-2 text-lg font-bold transition-all duration-200 hover:scale-110 pink-neon-close"
           >
             ×
           </button>
@@ -79,6 +80,33 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
           margin-top: 0.5rem;
           font-size: 0.875rem;
           font-weight: normal;
+        }
+        .pink-neon-close {
+          background: transparent;
+          color: #FF1493;
+          border-color: #FF1493;
+          text-shadow: 
+            0 0 5px #FF1493,
+            0 0 10px #FF1493,
+            0 0 15px #FF1493;
+          box-shadow: 
+            0 0 10px rgba(255, 20, 147, 0.5),
+            0 0 20px rgba(255, 20, 147, 0.3),
+            inset 0 0 10px rgba(255, 20, 147, 0.1);
+        }
+        .pink-neon-close:hover {
+          color: #FF69B4;
+          border-color: #FF69B4;
+          text-shadow: 
+            0 0 8px #FF69B4,
+            0 0 15px #FF69B4,
+            0 0 25px #FF69B4,
+            0 0 35px #FF69B4;
+          box-shadow: 
+            0 0 15px rgba(255, 105, 180, 0.7),
+            0 0 30px rgba(255, 105, 180, 0.5),
+            0 0 45px rgba(255, 105, 180, 0.3),
+            inset 0 0 15px rgba(255, 105, 180, 0.2);
         }
       `}</style>
     </div>

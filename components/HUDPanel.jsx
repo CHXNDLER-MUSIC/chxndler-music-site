@@ -282,6 +282,7 @@ export default function HUDPanel({
   const [heartCoinsCount, setHeartCoinsCount] = useState(0); // Fetched from database
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [showWelcomeHomeModal, setShowWelcomeHomeModal] = useState(false);
+  const [hasSeenWelcomeModal, setHasSeenWelcomeModal] = useState(false);
   const [checkInPhrase, setCheckInPhrase] = useState('');
   const [dailyElementTapped, setDailyElementTapped] = useState(false);
   const [dailyJournalDone, setDailyJournalDone] = useState(false);
@@ -841,6 +842,17 @@ export default function HUDPanel({
       }
     } catch {}
   }, [sofiaElement]);
+
+  // Check if user has seen welcome modal before
+  const WELCOME_MODAL_LS_KEY = 'heartverse:welcome_modal_seen';
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const hasSeen = window.localStorage.getItem(WELCOME_MODAL_LS_KEY) === 'true';
+        setHasSeenWelcomeModal(hasSeen);
+      }
+    } catch {}
+  }, []);
   useEffect(() => {
     if (!sofiaPickerOpen) return;
     const onDocClick = (e) => {
@@ -2552,8 +2564,10 @@ export default function HUDPanel({
                           setShowElementPopup(false);
                           // Close blue display when opening welcome home modal
                           try { onCloseBlueDisplay?.(); } catch {}
-                          // Open welcome home modal instead of navigating
-                          setShowWelcomeHomeModal(true);
+                          // Only open welcome home modal if user hasn't seen it before
+                          if (!hasSeenWelcomeModal) {
+                            setShowWelcomeHomeModal(true);
+                          }
                         }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                       />
@@ -6541,6 +6555,13 @@ export default function HUDPanel({
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
       <WelcomeHomeModal open={showWelcomeHomeModal} onClose={() => {
         setShowWelcomeHomeModal(false);
+        // Mark that user has seen the welcome modal
+        setHasSeenWelcomeModal(true);
+        try {
+          if (typeof window !== 'undefined') {
+            window.localStorage.setItem(WELCOME_MODAL_LS_KEY, 'true');
+          }
+        } catch {}
         // Open the blue display (power button) when closing the welcome modal
         try { onOpenBlueDisplay?.(); } catch {}
       }} />

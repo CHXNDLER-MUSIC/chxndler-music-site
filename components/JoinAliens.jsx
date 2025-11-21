@@ -10,6 +10,11 @@ export default function JoinAliens({ visible = true } = {}) {
   const [loading, setLoading] = useState(false);
   const [heartSignalSent, setHeartSignalSent] = useState(false);
   
+  // Tip functionality state
+  const [showTipOptions, setShowTipOptions] = useState(false);
+  const [showVenmoPopup, setShowVenmoPopup] = useState(false);
+  const [selectedTipAmount, setSelectedTipAmount] = useState(null);
+  
   // Countdown state
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [scrambledTime, setScrambledTime] = useState("0:00");
@@ -423,6 +428,246 @@ export default function JoinAliens({ visible = true } = {}) {
         )}
       </button>
       </div> {/* Close Stay Connected Section */}
+
+      {/* $ Button - positioned in bottom right corner */}
+      <button
+        onClick={() => {
+          try { sfx.play('coin-ding', 0.5); } catch {}
+          setShowTipOptions(!showTipOptions);
+        }}
+        style={{
+          position: 'absolute',
+          bottom: '12px',
+          right: '12px',
+          width: '40px',
+          height: '40px',
+          background: 'rgba(252, 84, 175, 0.1)',
+          border: '2px solid #FC54AF',
+          borderRadius: '50%',
+          color: '#FC54AF',
+          fontSize: '18px',
+          fontWeight: 'bold',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 300ms ease',
+          outline: 'none',
+          textShadow: '0 0 8px #FC54AF',
+          boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
+          zIndex: 10
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.transform = 'scale(1.1)';
+          e.target.style.background = 'rgba(252, 84, 175, 0.2)';
+          e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
+          e.target.style.textShadow = '0 0 15px #FC54AF, 0 0 25px #FC54AF';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.transform = 'scale(1)';
+          e.target.style.background = 'rgba(252, 84, 175, 0.1)';
+          e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
+          e.target.style.textShadow = '0 0 8px #FC54AF';
+        }}
+      >
+        $
+      </button>
+
+      {/* Tip Options - appear when $ button is clicked */}
+      {showTipOptions && (
+        <div style={{
+          position: 'absolute',
+          bottom: '60px',
+          right: '12px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+          background: 'transparent',
+          padding: '8px',
+          borderRadius: '8px',
+          zIndex: 11
+        }}>
+          <button
+            onClick={() => {
+              try { sfx.play('click', 0.3); } catch {}
+              setSelectedTipAmount(1);
+              setShowVenmoPopup(true);
+              setShowTipOptions(false);
+            }}
+            style={{
+              padding: '8px 12px',
+              background: 'rgba(252, 84, 175, 0.1)',
+              border: '2px solid #FC54AF',
+              borderRadius: '6px',
+              color: '#FC54AF',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'all 300ms ease',
+              textShadow: '0 0 8px #FC54AF',
+              boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = 'rgba(252, 84, 175, 0.2)';
+              e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'rgba(252, 84, 175, 0.1)';
+              e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
+            }}
+          >
+            $1
+          </button>
+          <button
+            onClick={() => {
+              try { sfx.play('click', 0.3); } catch {}
+              setSelectedTipAmount(3);
+              setShowVenmoPopup(true);
+              setShowTipOptions(false);
+            }}
+            style={{
+              padding: '8px 12px',
+              background: 'rgba(252, 84, 175, 0.1)',
+              border: '2px solid #FC54AF',
+              borderRadius: '6px',
+              color: '#FC54AF',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'all 300ms ease',
+              textShadow: '0 0 8px #FC54AF',
+              boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = 'rgba(252, 84, 175, 0.2)';
+              e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'rgba(252, 84, 175, 0.1)';
+              e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
+            }}
+          >
+            $3
+          </button>
+          <button
+            onClick={() => {
+              try { sfx.play('click', 0.3); } catch {}
+              setSelectedTipAmount('custom');
+              setShowVenmoPopup(true);
+              setShowTipOptions(false);
+            }}
+            style={{
+              padding: '8px 12px',
+              background: 'rgba(252, 84, 175, 0.1)',
+              border: '2px solid #FC54AF',
+              borderRadius: '6px',
+              color: '#FC54AF',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'all 300ms ease',
+              textShadow: '0 0 8px #FC54AF',
+              boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = 'rgba(252, 84, 175, 0.2)';
+              e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'rgba(252, 84, 175, 0.1)';
+              e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
+            }}
+          >
+            $[Enter]
+          </button>
+        </div>
+      )}
+
+      {/* Venmo Popup */}
+      {showVenmoPopup && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}
+        onClick={() => setShowVenmoPopup(false)}
+        >
+          <div style={{
+            background: 'rgba(10, 10, 20, 0.95)',
+            border: '2px solid #FC54AF',
+            borderRadius: '16px',
+            padding: '24px',
+            maxWidth: '400px',
+            width: '90%',
+            textAlign: 'center',
+            boxShadow: '0 0 30px rgba(252, 84, 175, 0.5)',
+          }}
+          onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{
+              color: '#FC54AF',
+              fontSize: '24px',
+              fontWeight: 'bold',
+              marginBottom: '16px',
+              textShadow: '0 0 15px #FC54AF'
+            }}>
+              Send Tip via Venmo
+            </h3>
+            <p style={{
+              color: '#fff',
+              fontSize: '16px',
+              marginBottom: '8px'
+            }}>
+              Send ${selectedTipAmount === 'custom' ? '[Enter Amount]' : selectedTipAmount} to:
+            </p>
+            <p style={{
+              color: '#FC54AF',
+              fontSize: '20px',
+              fontWeight: 'bold',
+              marginBottom: '20px',
+              textShadow: '0 0 10px #FC54AF'
+            }}>
+              @chxndlerthealien
+            </p>
+            <button
+              onClick={() => {
+                try { sfx.play('close', 0.3); } catch {}
+                setShowVenmoPopup(false);
+              }}
+              style={{
+                padding: '12px 24px',
+                background: 'rgba(252, 84, 175, 0.1)',
+                border: '2px solid #FC54AF',
+                borderRadius: '8px',
+                color: '#FC54AF',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                transition: 'all 300ms ease',
+                textShadow: '0 0 8px #FC54AF',
+                boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = 'rgba(252, 84, 175, 0.2)';
+                e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'rgba(252, 84, 175, 0.1)';
+                e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
+              }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         @keyframes spin {

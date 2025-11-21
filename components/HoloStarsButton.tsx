@@ -88,7 +88,7 @@ export default function HoloStarsButton({
           border-radius: 50%;
           font-size: 24px;
           color: #FFFF00;
-          background: transparent;
+          background: transparent !important;
           border: none;
           transition: all 0.2s ease;
           cursor: pointer;
@@ -96,15 +96,8 @@ export default function HoloStarsButton({
           align-items: center;
           justify-content: center;
           padding: 4px;
-          text-shadow: 
-            0 0 10px #FFFF00,
-            0 0 20px #FFFF00,
-            0 0 30px #FFFF00,
-            0 0 40px #FFFF00;
-          box-shadow: 
-            0 0 20px rgba(255, 255, 0, 0.6),
-            0 0 40px rgba(255, 255, 0, 0.4),
-            0 0 60px rgba(255, 255, 0, 0.2);
+          text-shadow: none;
+          box-shadow: none;
         }
         
         .soul-star-text {
@@ -137,15 +130,8 @@ export default function HoloStarsButton({
         
         .custom-stars-style:hover {
           transform: scale(1.1);
-          text-shadow: 
-            0 0 15px #FFFF00,
-            0 0 25px #FFFF00,
-            0 0 35px #FFFF00,
-            0 0 50px #FFFF00;
-          box-shadow: 
-            0 0 30px rgba(255, 255, 0, 0.8),
-            0 0 50px rgba(255, 255, 0, 0.6),
-            0 0 80px rgba(255, 255, 0, 0.4);
+          text-shadow: none;
+          box-shadow: none;
         }
         
         .custom-stars-style:active {

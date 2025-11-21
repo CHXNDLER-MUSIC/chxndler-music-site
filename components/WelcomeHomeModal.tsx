@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { sfx } from "@/lib/sfx";
 
 type Props = {
   open: boolean;
@@ -48,16 +49,29 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
       });
       if (error) throw error;
       
+      // Track the heart signal in our database
+      try {
+        await fetch('/api/track-heart-signal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            email, 
+            source: 'welcome_home_modal' 
+          })
+        });
+      } catch (trackingError) {
+        console.log('Heart signal tracking failed:', trackingError);
+        // Don't fail the flow if tracking fails
+      }
+      
       // Play join aliens audio
       try {
-        const audio = new Audio('/join-aliens.mp3');
-        audio.volume = 0.7;
-        await audio.play();
+        await sfx.play('join-alien', 0.7);
       } catch (audioError) {
         console.log('Audio playback failed:', audioError);
       }
       
-      setMessage("Your signal is received. Check your email to step inside.");
+      setMessage("Heart signal sent to the Heartverse! Check your email to step inside.");
     } catch (e: any) {
       setError(e?.message || "Failed to send heart signal");
     } finally {

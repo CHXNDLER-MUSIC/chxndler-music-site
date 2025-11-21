@@ -96,13 +96,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     if (!dailyQuests.friendInvited) {
       try { sfx.play('click', 0.8); } catch {}
       
-      const text = "I thought of you. I think this world could feel like home for you too. https://chxndler.world/";
+      const text = "I thought of you. I think this world could feel like home for you too. \nhttps://www.chxndler-music.com/";
       
       if (navigator.share) {
         navigator.share({
           title: 'Join the Heartverse',
           text: 'I thought of you. I think this world could feel like home for you too.',
-          url: 'https://chxndler.world/'
+          url: 'https://www.chxndler-music.com/'
         }).then(() => {
           updateHeartCoins(heartCoins + 1);
           setDailyQuests(prev => ({ ...prev, friendInvited: true }));
