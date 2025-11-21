@@ -5,7 +5,7 @@ Next.js 14 app that presents a cockpit-style music experience: masked skybox vid
 ## Run
 - Node: `20.x`
 - Install: `npm install`
-- Dev: `npm run dev` (http://localhost:3000)
+- Dev: `npm run dev` (http://localhost:3000) → Production: https://chxndler.world
 - Build: `npm run build` / `npm start`
 - Lint (no px): `npm run lint:no-px`
 

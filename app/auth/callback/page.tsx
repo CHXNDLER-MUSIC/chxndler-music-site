@@ -7,156 +7,126 @@ import { supabaseClient } from '@/lib/supabaseClient';
 export default function AuthCallbackPage() {
   const router = useRouter();
 
+  const handleSuccessfulAuth = async (session: any) => {
+    console.log('🎉 AUTH SUCCESS! User:', session.user.id, 'Email:', session.user.email);
+    
+    // Check if this is coming from an email confirmation link
+    // With auto-detect flow, check both URL params and hash params
+    const urlSearchParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    
+    const urlType = urlSearchParams.get('type');
+    const hashType = hashParams.get('type');
+    const type = urlType || hashType;
+    
+    const isFromEmailLink = type === 'magiclink' || type === 'signup' || type === 'recovery';
+    
+    console.log('🔍 Auth type check:', {
+      urlType,
+      hashType,
+      finalType: type,
+      isFromEmailLink,
+      hasTokenInHash: !!hashParams.get('access_token'),
+      userEmail: session.user.email,
+      fullUrl: window.location.href
+    });
+    
+    if (isFromEmailLink) {
+      console.log('🎯 EMAIL CONFIRMATION DETECTED! Redirecting with email_confirmed=1');
+      console.log('🔔 This should trigger the name prompt modal');
+      // This is from clicking email confirmation link - show name prompt
+      router.replace('/?email_confirmed=1');
+    } else {
+      console.log('🎯 General auth success, redirecting with basic welcome flag');
+      // This is from OAuth or other flow - basic welcome
+      router.replace('/?welcome=1');
+    }
+  };
+
   useEffect(() => {
     async function handleAuthCallback() {
       try {
         console.log('🚨 AUTH CALLBACK PAGE HIT! 🚨');
         console.log('🚨 CURRENT URL:', window.location.href);
 
-        // Parse the URL parameters first
-        const searchParams = new URLSearchParams(window.location.search);
-        const code = searchParams.get('code');
+        // First, try to let Supabase auto-detect the session from URL
+        console.log('🔄 Attempting to get current session...');
+        const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
         
-        console.log('🔍 Search params:', window.location.search);
-        console.log('🔍 Auth code found:', !!code);
-        console.log('🔍 Hash params:', window.location.hash);
-        
-        let data, error;
-        
-        // Try Supabase's built-in session detection first (recommended)
-        console.log('🔄 Trying Supabase built-in session detection...');
-        
-        // Give Supabase a moment to process the URL and establish the session
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        const result = await supabaseClient.auth.getSession();
-        data = result.data;
-        error = result.error;
-        
-        console.log('🔍 Built-in session result:', {
-          hasSession: !!data?.session,
-          hasUser: !!data?.user,
-          userId: data?.user?.id,
-          error: error?.message
+        console.log('🔍 Initial session check:', {
+          hasSession: !!sessionData?.session,
+          hasUser: !!sessionData?.session?.user,
+          userId: sessionData?.session?.user?.id,
+          userEmail: sessionData?.session?.user?.email,
+          error: sessionError?.message
         });
-        
-        // Fallback: manually parse tokens if built-in detection fails
-        if (!data?.session) {
-          console.log('🔄 Built-in detection failed, trying manual token parsing...');
-          
-          const hashParams = new URLSearchParams(window.location.hash.substring(1));
-          const accessToken = hashParams.get('access_token');
-          const refreshToken = hashParams.get('refresh_token');
-          
-          console.log('🔍 Hash token analysis:', {
-            hasAccessToken: !!accessToken,
-            hasRefreshToken: !!refreshToken,
-            fullHash: window.location.hash
-          });
-          
-          if (accessToken) {
-            console.log('🔄 Found tokens in hash, setting session manually...');
-            const manualResult = await supabaseClient.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken || ''
-            });
-            data = manualResult.data;
-            error = manualResult.error;
-            
-            console.log('🔍 Manual session result:', {
-              hasSession: !!data?.session,
-              hasUser: !!data?.user,
-              userId: data?.user?.id,
-              error: error?.message
-            });
-          }
-        }
 
-        if (error) {
-          console.error('Auth error:', error.message);
-          
-          // Check for specific error types
-          if (error.message.includes('expired') || error.message.includes('invalid')) {
-            console.error('Auth link expired or invalid');
-            router.replace('/?error=link_expired');
-            return;
-          }
-          
-          // Check hash for error parameters (OAuth errors)
-          const hashParams = new URLSearchParams(window.location.hash.substring(1));
-          const hashError = hashParams.get('error');
-          const errorDescription = hashParams.get('error_description');
-
-          if (hashError) {
-            console.error('Auth error from hash:', hashError, errorDescription);
-            router.replace('/?error=auth_failed');
-            return;
-          }
-          
-          router.replace('/?error=auth_failed');
+        // If we have a session, use it
+        if (sessionData?.session?.user) {
+          console.log('✅ Found existing session, proceeding with auth');
+          await handleSuccessfulAuth(sessionData.session);
           return;
         }
 
-        if (!data?.session || !data?.user) {
-          console.warn('No session or user data on first attempt, retrying...');
-          
-          // Wait a moment and try again - sometimes session needs time to establish
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          const retryResult = await supabaseClient.auth.getSession();
-          
-          console.log('🔄 Retry session result:', {
-            hasSession: !!retryResult.data?.session,
-            hasUser: !!retryResult.data?.user,
-            userId: retryResult.data?.user?.id,
-            error: retryResult.error?.message
+        // If no session, try to parse tokens from URL hash manually
+        console.log('🔄 No session found, checking URL for tokens...');
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        
+        console.log('🔍 URL token check:', {
+          hasAccessToken: !!accessToken,
+          hasRefreshToken: !!refreshToken,
+          fullHash: window.location.hash
+        });
+
+        if (accessToken) {
+          console.log('🔄 Found tokens in URL, setting session...');
+          const { data: setSessionData, error: setSessionError } = await supabaseClient.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || ''
           });
-          
-          if (retryResult.data?.session && retryResult.data?.user) {
-            data = retryResult.data;
-            error = retryResult.error;
-          } else {
-            console.error('No session or user data received after retry');
-            router.replace('/?error=no_session');
+
+          if (setSessionError) {
+            console.error('❌ Error setting session:', setSessionError);
+          } else if (setSessionData?.session?.user) {
+            console.log('✅ Successfully set session from URL tokens');
+            await handleSuccessfulAuth(setSessionData.session);
             return;
           }
         }
+
+        // Check for error parameters in the URL
+        const hashError = hashParams.get('error');
+        const errorDescription = hashParams.get('error_description');
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlError = urlParams.get('error');
         
-        console.log('🎉 AUTH SUCCESS! User:', data.user.id, 'Email:', data.user.email);
-        
-        // Check if this is coming from an email confirmation link
-        // With implicit flow, check both URL params and hash params
-        const urlSearchParams = new URLSearchParams(window.location.search);
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        
-        const urlType = urlSearchParams.get('type');
-        const hashType = hashParams.get('type');
-        const type = urlType || hashType;
-        
-        const isFromEmailLink = type === 'magiclink' || type === 'signup' || type === 'recovery';
-        
-        console.log('🔍 Auth type check:', {
-          urlType,
-          hashType,
-          finalType: type,
-          isFromEmailLink,
-          hasTokenInHash: !!hashParams.get('access_token'),
-          userEmail: data.user.email,
-          fullUrl: window.location.href
+        console.log('🔍 Error parameter check:', {
+          hashError,
+          errorDescription,
+          urlError
         });
         
-        if (isFromEmailLink) {
-          console.log('🎯 EMAIL CONFIRMATION DETECTED! Redirecting with email_confirmed=1');
-          console.log('🔔 This should trigger the name prompt modal');
-          // This is from clicking email confirmation link - show name prompt
-          router.replace('/?email_confirmed=1');
-        } else {
-          console.log('🎯 General auth success, redirecting with basic welcome flag');
-          // This is from OAuth or other flow - basic welcome
-          router.replace('/?welcome=1');
+        if (hashError || urlError) {
+          const errorMsg = hashError || urlError;
+          console.error('❌ Auth error detected:', errorMsg, errorDescription);
+          router.replace(`/?error=auth_failed&details=${encodeURIComponent(errorMsg)}`);
+          return;
         }
+
+        // If we get here, no auth methods worked
+        console.error('❌ All authentication methods failed - no session or tokens found');
+        console.log('🔍 Final debug info:', {
+          fullUrl: window.location.href,
+          hash: window.location.hash,
+          search: window.location.search,
+          sessionError: sessionError?.message
+        });
+        
+        router.replace('/?error=no_session');
       } catch (error) {
-        console.error('Unexpected error during auth callback:', error);
+        console.error('❌ Unexpected error during auth callback:', error);
         router.replace('/?error=unexpected');
       }
     }

@@ -123,6 +123,7 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [welcomeHasPlayed, setWelcomeHasPlayed] = useState(false); // tracks if welcome has been played (resets on page refresh)
   const welcomeOnStartRef = React.useRef(false); // signals that welcome VO should play now
   const startButtonWarpRef = React.useRef(false); // prevents double warp when start button is clicked
+  const [shouldShowWelcomeModal, setShouldShowWelcomeModal] = useState(false); // tracks if welcome modal should show after warp
   // Ensure song MP3 starts only after join-alien SFX finishes (played at warp end)
   const buttonSfxWaitRef = React.useRef(null);
   // Join-alien SFX promise used to gate song start after warp
@@ -669,6 +670,7 @@ export default function DashboardApp({ initialSlug } = {}) {
   // Handle welcome home modal close - trigger warp effect and proceed to home
   const handleWelcomeHomeClose = React.useCallback(() => {
     setShowWelcomeHomeModal(false);
+    setShouldShowWelcomeModal(false); // Ensure flag is reset when modal is closed
     
     // Now trigger the warp effect that was skipped on first start
     welcomeOnStartRef.current = true;
@@ -1276,6 +1278,12 @@ export default function DashboardApp({ initialSlug } = {}) {
           // Set hasEnteredHeartverse to true after warp animation completes
           setHasEnteredHeartverse(true);
           
+          // Show welcome home modal after warp effect completes (only on first start button click)
+          if (shouldShowWelcomeModal && !userSelected && !pendingTrackPlay) {
+            setShowWelcomeHomeModal(true);
+            setShouldShowWelcomeModal(false); // Reset flag after showing modal
+          }
+          
           // After a song is selected, reveal ONLY the selected planet post-warp
           if (userSelected || pendingTrackPlay) {
             try { 
@@ -1672,15 +1680,16 @@ export default function DashboardApp({ initialSlug } = {}) {
           // User is starting their journey into the Heartverse - but don't show ProfileBar until warp completes
           // setHasEnteredHeartverse(true); // Moved to onWarpSfxEnd to show ProfileBar only after warp
           // Homepage Start flow (warp to home reveal)
-          // Only enable welcome VO on FIRST Start button press per session
+          // Only show welcome modal after warp on first start button click
           if (!firstStartDone) {
-            // On first start, show welcome home modal instead of triggering warp
-            setShowWelcomeHomeModal(true);
+            welcomeOnStartRef.current = true;
+            setHomeIntroEnabled(true);
             setFirstStartDone(true); // Mark as first start done
-            return; // Exit early, don't trigger warp effect yet
+            setShouldShowWelcomeModal(true); // Show welcome modal after warp on first start
           } else {
             welcomeOnStartRef.current = false;
             setHomeIntroEnabled(false);
+            setShouldShowWelcomeModal(false); // Don't show welcome modal on subsequent starts
             
             // Ensure first-load flag is off after second Start
             try { setIsFirstLoad(false); } catch {}

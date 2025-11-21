@@ -100,7 +100,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       
       if (navigator.share) {
         navigator.share({
-          title: 'Join the Heartverse',
           text: 'I thought of you. I think this world could feel like home for you too. https://chxndler.world'
         }).then(() => {
           updateHeartCoins(heartCoins + 1);

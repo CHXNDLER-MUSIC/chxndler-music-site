@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { supabaseBrowser } from '@/lib/supabase-browser';
+import { supabaseClient } from '@/lib/supabaseClient';
 
 export default function TestEmailSignup() {
   const [email, setEmail] = useState('');
@@ -19,7 +19,7 @@ export default function TestEmailSignup() {
     console.log('🚀 Redirect URL will be:', window.location.origin + '/auth/callback');
 
     try {
-      const { data, error } = await supabaseBrowser.auth.signUp({
+      const { data, error } = await supabaseClient.auth.signUp({
         email,
         password: 'temppassword123', // Temporary password
         options: { 
@@ -32,7 +32,7 @@ export default function TestEmailSignup() {
         setMessage(`Error: ${error.message}`);
       } else {
         console.log('✅ Signup successful:', data);
-        setMessage(`✅ Check your email (${email}) for confirmation link! The link will redirect to localhost:3000/auth/callback`);
+        setMessage(`✅ Check your email (${email}) for confirmation link! The link will redirect to chxndler.world/auth/callback`);
       }
     } catch (error: any) {
       console.error('❌ Unexpected error:', error);
@@ -47,7 +47,7 @@ export default function TestEmailSignup() {
       <div className="max-w-md mx-auto">
         <h1 className="text-2xl font-bold mb-6">🧪 Test Email Confirmation</h1>
         <p className="text-gray-300 mb-6">
-          This will send a confirmation email with localhost:3000/auth/callback redirect
+          This will send a confirmation email with chxndler.world/auth/callback redirect
         </p>
         
         <form onSubmit={handleSignup} className="space-y-4">
@@ -84,7 +84,7 @@ export default function TestEmailSignup() {
         <div className="mt-6 text-sm text-gray-400">
           <p><strong>What this does:</strong></p>
           <ul className="list-disc list-inside space-y-1 mt-2">
-            <li>Sends email with localhost:3000/auth/callback redirect</li>
+            <li>Sends email with chxndler.world/auth/callback redirect</li>
             <li>When you click the link, it should hit our auth callback</li>
             <li>The callback should create a profile automatically</li>
             <li>Check terminal logs for "🚨 AUTH CALLBACK HIT! 🚨"</li>

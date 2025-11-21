@@ -347,20 +347,30 @@ export default function BadgesModal({ open, onClose }: Props) {
       onClose={onClose} 
       title="BADGES"
     >
-      <p className="relative text-sm text-white/80 mb-4">Choose a category to explore your badges.</p>
+      <p className="relative text-sm text-white/80 mb-6 text-center">Choose a category to explore your badges.</p>
       
-      <div className="relative flex justify-center items-center space-x-4 overflow-x-auto px-2">
+      <div className="relative grid grid-cols-3 gap-4 sm:gap-6 max-w-xs sm:max-w-sm mx-auto px-4 sm:px-6 py-4">
         {badgeCategories.map((category) => (
-          <button
-            key={category.id}
-            onClick={() => setSelectedCategory(category.id)}
-            className="relative flex-shrink-0 w-16 h-16 rounded-full bg-black/30 border border-white/20 hover:border-[#FC54AF]/60 hover:bg-[#FC54AF]/10 transition group flex items-center justify-center"
-            title={`${category.name} - ${category.badges.length} badges`}
-          >
-            <div className="text-2xl group-hover:scale-110 transition-transform">
-              {category.emoji}
+          <div key={category.id} className="flex flex-col items-center space-y-2 sm:space-y-3">
+            <button
+              onClick={() => setSelectedCategory(category.id)}
+              className="relative flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 hover:border-[#FC54AF]/80 hover:bg-[#FC54AF]/20 transition-all duration-300 group flex items-center justify-center shadow-lg hover:shadow-[#FC54AF]/20 hover:shadow-2xl hover:scale-105 active:scale-95"
+              title={`${category.name} - ${category.badges.length} badges`}
+            >
+              {/* Glow effect on hover */}
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#FC54AF]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              
+              {/* Emoji with enhanced styling */}
+              <div className="relative z-10 text-2xl sm:text-3xl group-hover:scale-110 transition-transform duration-200 filter drop-shadow-lg">
+                {category.emoji}
+              </div>
+            </button>
+            
+            {/* Category label */}
+            <div className="text-white/60 text-xs text-center max-w-16 sm:max-w-20 leading-tight">
+              {category.name.replace(/^[⭐️🏆💠🎵💰🌐]\s*/, '')}
             </div>
-          </button>
+          </div>
         ))}
       </div>
     </HeartversePopup>
