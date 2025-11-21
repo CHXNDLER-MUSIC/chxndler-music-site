@@ -39,8 +39,8 @@
     "framer-motion": "^11.2.10",
     "next": "^15.5.2",
     "nodemailer": "^7.0.10",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "three": "^0.159.0",
     "zustand": "^5.0.8"
   },

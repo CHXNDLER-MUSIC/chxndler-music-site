@@ -31,7 +31,7 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
       aria-modal="true"
       role="dialog"
       aria-label={title}
-      style={{ paddingTop: positioning === 'higher' ? '5vh' : '30vh' }}
+      style={{ paddingTop: positioning === 'higher' ? '2vh' : '30vh' }}
     >
       <div
         className="absolute inset-0 bg-black/85 backdrop-blur-md"

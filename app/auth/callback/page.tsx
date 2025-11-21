@@ -9,15 +9,39 @@ export default function AuthCallbackPage() {
 
   const handleSuccessfulAuth = async (session: any) => {
     console.log('🎉 AUTH SUCCESS! User:', session.user.id, 'Email:', session.user.email);
-    
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const authType = hashParams.get("type");
-    
-    if (authType === "signup") {
-      router.push("/?finish_profile=1");
-    } else {
-      router.push("/?welcome=1");
+
+    // Ensure a profile exists; if none, create a minimal one
+    let needsName = false;
+    try {
+      const { data: existing, status } = await supabaseClient
+        .from('profiles')
+        .select('id, display_name, email')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+      if (!existing || status === 406) {
+        // Create a bare profile row
+        await supabaseClient
+          .from('profiles')
+          .insert({ id: session.user.id, email: session.user.email || null, display_name: null })
+          .throwOnError();
+        needsName = true;
+      } else {
+        needsName = !existing.display_name || existing.display_name.trim() === '';
+      }
+    } catch (e) {
+      console.warn('⚠️ Profile fetch/create failed; defaulting to needsName flow if uncertain:', e);
+      needsName = true;
     }
+
+    // Redirect back to cockpit with an explicit flag to show the name prompt once
+    if (needsName) {
+      router.push('/?completeProfile=1');
+      return;
+    }
+
+    // Otherwise, proceed to normal welcome path for returning users
+    router.push('/?welcome=1');
   };
 
   useEffect(() => {
@@ -87,6 +111,25 @@ export default function AuthCallbackPage() {
         
         if (hashError || urlError) {
           const errorMsg = hashError || urlError;
+          
+          // Enhanced error handling: Check if we have a valid session despite the error
+          const { data: { session: existingSession } } = await supabaseClient.auth.getSession();
+          
+          if (existingSession && 
+              errorMsg === 'access_denied' && 
+              errorDescription && errorDescription.includes("Email link is invalid or has expired")) {
+            
+            // We have a valid session despite the expired link error - treat as success
+            console.warn('⚠️ Ignoring Supabase auth error because a session already exists:', errorMsg, errorDescription);
+            
+            // Continue with normal success flow based on auth type
+            const authType = hashParams.get("type");
+            // Fallback: if we had a session despite an error, conservatively send to completeProfile
+            router.push('/?completeProfile=1');
+            return;
+          }
+          
+          // No valid session exists, treat as genuine error
           console.error('❌ Auth error detected:', errorMsg, errorDescription);
           router.replace(`/?error=auth_failed&details=${encodeURIComponent(errorMsg)}`);
           return;

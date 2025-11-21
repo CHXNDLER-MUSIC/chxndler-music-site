@@ -29,17 +29,18 @@ import { slugify } from "@/lib/slug";
 import { audioCoordinator } from "@/lib/audio-coordinator";
 import { debugLog } from "@/lib/debug";
 import WelcomeHomeModal from "@/components/WelcomeHomeModal";
-import ProfileBar from "@/components/ProfileBar";
+import ProfileBarWrapper from "@/components/ProfileBarWrapper";
 import HoloStarsButton from "@/components/HoloStarsButton";
 import { useUIStore } from "@/store/useUIStore";
 import { useUIState } from "@/lib/use-ui-state";
+import { supabaseClient } from "@/lib/supabaseClient";
 
 export default function DashboardApp({ initialSlug } = {}) {
   // UI store for profile refresh trigger
   const { profileRefreshTrigger } = useUIStore();
   
   // Global UI state for profile bar visibility
-  const { setHasEnteredHeartverse } = useUIState();
+  const { setHasEnteredHeartverse, enterHeartverse } = useUIState();
   
   // Global wheel render mode (LUMA vs PLAIN). Must be top-level to obey Hooks rules.
   // Use false initially to match SSR, then sync with localStorage after hydration
@@ -1094,8 +1095,8 @@ export default function DashboardApp({ initialSlug } = {}) {
     // Return a black screen with proper dimensions while loading
     return (
       <main className="relative min-h-screen overflow-hidden bg-black text-white max-w-screen overflow-x-hidden" style={{ minWidth: '100vw', minHeight: '100vh' }}>
-        {/* Profile Bar will self-decide whether to render */}
-        <ProfileBar 
+        {/* Profile Bar visibility handled via ProfileBarWrapper (guards hydration + flag) */}
+        <ProfileBarWrapper 
           onCodeClick={() => {}}
           onDigitalBinderClick={() => {}}
           onBadgesClick={() => {}}
@@ -1203,8 +1204,8 @@ export default function DashboardApp({ initialSlug } = {}) {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white max-w-screen overflow-x-hidden" style={{ minWidth: '100vw', minHeight: '100vh' }}>
-      {/* Profile Bar will self-decide whether to render */}
-      <ProfileBar 
+      {/* Profile Bar visibility handled via ProfileBarWrapper (guards hydration + flag) */}
+      <ProfileBarWrapper 
         onCodeClick={handleCodeClick}
         onDigitalBinderClick={handleDigitalBinderClick}
         onBadgesClick={handleBadgesClick}
@@ -1267,10 +1268,7 @@ export default function DashboardApp({ initialSlug } = {}) {
         // Use provided YouTube clip for lightspeed overlay on opening and Start
         lightspeedYoutubeUrl={'https://youtu.be/KFssNa5WvKc'}
         onWarpSfxEnd={() => {
-          // Show profile bar after warp effect completes (1.5 second delay as specified)
-          setTimeout(() => {
-            setHasEnteredHeartverse(true);
-          }, 1500);
+          // Welcome modal and planet visibility sequencing after warp
           
           // Show welcome home modal after warp effect completes (only on first start button click)
           if (shouldShowWelcomeModal && !userSelected && !pendingTrackPlay) {
@@ -1395,6 +1393,8 @@ export default function DashboardApp({ initialSlug } = {}) {
         }}
         onFlyStart={() => {
           setWarpActive(true);
+          // Mark that the user has entered the Heartverse as warp begins
+          try { enterHeartverse(); } catch { setHasEnteredHeartverse(true); }
           // Song selection: hide ALL planets immediately before warp
           if (pendingTrackPlay || userSelected) {
             try { playerStore.getState().setPlanetDisplayMode('hidden'); } catch {}
@@ -1648,7 +1648,21 @@ export default function DashboardApp({ initialSlug } = {}) {
           // Blue button behavior is now handled entirely by handleBeamToggle('blue')
           // No need to call triggerHudPower since beam system manages everything
         }}
-        onLaunch={() => {
+        onLaunch={async () => {
+          // Check authentication + profile state to decide flow
+          try {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) {
+              // No session: open Welcome Home modal only (never name prompt)
+              setShowWelcomeHomeModal(true);
+              return;
+            }
+
+            // Session exists: always proceed to blue display
+            // Name prompt is ONLY triggered by completeProfile=1 URL param from auth callback
+            // Do NOT show name prompt here regardless of profile completeness
+          } catch {}
+
           // Check if stream mode is active
           const isStreamMode = process.env.NEXT_PUBLIC_STREAM_ACTIVE === '1' || process.env.NEXT_PUBLIC_STREAM_ACTIVE?.toLowerCase() === 'true';
           

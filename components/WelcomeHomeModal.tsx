@@ -248,11 +248,11 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
             disabled={loading || email.length === 0}
             className="w-full inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-medium transition disabled:opacity-50 mt-4"
             style={message ? {
-              background: 'rgba(255,255,255,0.15)',
-              border: '1px solid rgba(255,255,255,0.5)',
-              color: '#FFFFFF',
-              textShadow: '0 0 8px rgba(255,255,255,0.8), 0 0 16px rgba(255,255,255,0.6), 0 0 24px rgba(255,255,255,0.4)',
-              boxShadow: '0 0 15px rgba(255,255,255,0.4), 0 0 25px rgba(255,255,255,0.2)'
+              background: 'rgba(0,255,0,0.2)',
+              border: '1px solid rgba(0,255,0,0.6)',
+              color: '#00FF00',
+              textShadow: '0 0 8px rgba(0,255,0,0.8), 0 0 16px rgba(0,255,0,0.6), 0 0 24px rgba(0,255,0,0.4)',
+              boxShadow: '0 0 15px rgba(0,255,0,0.6), 0 0 25px rgba(0,255,0,0.4), 0 0 35px rgba(0,255,0,0.2)'
             } : {
               background: 'rgba(0,255,255,0.15)',
               border: '1px solid rgba(0,255,255,0.5)',
@@ -263,7 +263,7 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
                 : '0 0 15px rgba(0,255,255,0.4), 0 0 25px rgba(0,255,255,0.2)'
             }}
           >
-            {message ? "Heart signal sent to the Heartverse!" : "SEND HEART SIGNAL"}
+            {message ? "HEART SIGNAL SENT" : "SEND HEART SIGNAL"}
           </button>
         </div>
         </div>

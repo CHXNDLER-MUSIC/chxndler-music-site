@@ -63,6 +63,11 @@ export default function ProfileBar({
 }: ProfileBarProps) {
   // Use global UI state for profile bar visibility
   const { hasEnteredHeartverse } = useUIState();
+  // IMPORTANT: Do not render anything until the user has entered
+  // Guard before any loading UI to prevent initial flash on first load
+  if (!hasEnteredHeartverse) {
+    return null;
+  }
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [elementDropdownOpen, setElementDropdownOpen] = useState(false);
@@ -294,10 +299,7 @@ export default function ProfileBar({
     }
   };
 
-  // ❗ IMPORTANT: Do not render anything until the user has started
-  if (!hasEnteredHeartverse) {
-    return null;
-  }
+
 
   return (
     <div 
