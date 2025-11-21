@@ -65,8 +65,8 @@ export default function ElementalButton({ asChild = false, children, onClick, on
         {...rest}
       >
         <img
-          src={committedElement ? `/elements/${committedElement}.png` : (element ? `/elements/${element}.png` : "/elements/elementals.png")}
-          alt={committedElement ? committedElement.charAt(0).toUpperCase() + committedElement.slice(1) : (element ? element.charAt(0).toUpperCase() + element.slice(1) : "Elementals")}
+          src={committedElement ? `/elements/${committedElement}.png` : (element ? `/elements/${element}.png` : "/elements/elemental.png")}
+          alt={committedElement ? committedElement.charAt(0).toUpperCase() + committedElement.slice(1) : (element ? element.charAt(0).toUpperCase() + element.slice(1) : "Elemental")}
           className="w-full h-full object-contain rounded"
           draggable={false}
         />

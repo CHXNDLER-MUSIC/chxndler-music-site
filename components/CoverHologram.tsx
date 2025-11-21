@@ -198,14 +198,14 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
   const fetchUserProfile = async () => {
     setLoadingProfile(true);
     try {
-      const response = await fetch('/api/profile');
+      const response = await fetch('/api/profile', { credentials: 'include' });
       if (response.ok) {
         const profile = await response.json();
         setUserProfile(profile);
         
         // Also fetch the user's selected element
         try {
-          const elementResponse = await fetch('/api/profile/element');
+          const elementResponse = await fetch('/api/profile/element', { credentials: 'include' });
           if (elementResponse.ok) {
             const elementData = await elementResponse.json();
             setUserSelectedElement(elementData?.selected_element || 'heart');
@@ -446,7 +446,8 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
         await fetch('/api/profile/element', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ selected_element: key })
+          body: JSON.stringify({ selected_element: key }),
+          credentials: 'include'
         });
         // Update the local state for the Heart Coin display
         setUserSelectedElement(key);
@@ -459,7 +460,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
   // Load user's previously selected element
   useEffect(() => {
     if (showElementsPopover) {
-      fetch('/api/profile/element')
+      fetch('/api/profile/element', { credentials: 'include' })
         .then(res => res.json())
         .then(data => {
           if (data?.selected_element) {

@@ -31,11 +31,12 @@ alter table public.profiles enable row level security;
 
 -- Ensure authenticated can access (RLS still enforced)
 grant usage on schema public to authenticated;
-grant select, update on table public.profiles to authenticated;
+grant select, insert, update on table public.profiles to authenticated;
 
 -- Policies (re-create to ensure idempotency)
 drop policy if exists "Authenticated users can select their own profile" on public.profiles;
 drop policy if exists "Authenticated users can update their own profile" on public.profiles;
+drop policy if exists "Authenticated users can insert their own profile" on public.profiles;
 
 create policy "Authenticated users can select their own profile"
   on public.profiles
@@ -48,6 +49,12 @@ create policy "Authenticated users can update their own profile"
   for update
   to authenticated
   using (auth.uid() = id)
+  with check (auth.uid() = id);
+
+create policy "Authenticated users can insert their own profile"
+  on public.profiles
+  for insert
+  to authenticated
   with check (auth.uid() = id);
 
 commit;

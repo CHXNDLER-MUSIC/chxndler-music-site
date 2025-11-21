@@ -147,8 +147,8 @@ export async function POST(req: NextRequest) {
       id: user.id,
       email: user.email,
       display_name: displayName,
-      heart_coins_current: 5,
-      heart_coins_total: 5,
+      heart_coins_current: 0,
+      heart_coins_total: 0,
       profile_complete: false,
       metadata: {
         source: 'debug_manual_creation',

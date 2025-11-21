@@ -27,8 +27,8 @@ BEGIN
         NEW.id,
         NEW.email,
         COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1), 'Heartverse Wanderer'),
-        5, -- Welcome bonus heart coins
-        5, -- Total heart coins
+        0, -- Welcome bonus heart coins
+        0, -- Total heart coins
         false,
         jsonb_build_object(
           'source', 'welcome_home_modal',

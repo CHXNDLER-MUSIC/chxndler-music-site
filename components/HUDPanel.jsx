@@ -9,7 +9,7 @@ import LoginModal from "@/components/LoginModal";
 import WelcomeHomeModal from "@/components/WelcomeHomeModal";
 import SharedButton from "@/components/SharedButton";
 import HeartverseButton from "@/components/HeartverseButton";
-import { supabaseBrowser } from "@/lib/supabase-browser";
+import { supabaseClient } from "@/lib/supabaseClient";
 // 2D fallback hologram
 // 2D HUD removed per request; 3D only
 // 3D planet system (requires three/r3f/drei installed)
@@ -792,21 +792,38 @@ export default function HUDPanel({
     }
   }, [filteredCards.length, currentCardIndex]);
 
-  // Fetch heart coins from API
+  // Fetch heart coins directly from Supabase
   useEffect(() => {
     async function fetchHeartCoins() {
       try {
-        const response = await fetch('/api/heart-coins');
-        const result = await response.json();
-
-        if (!response.ok) {
-          console.error('Failed to fetch heart coins:', result.error || 'Unknown error');
+        // Get current session
+        const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
           return;
         }
 
-        if (result.success && result.heartCoins) {
-          setHeartCoinsCount(result.heartCoins.current || 0);
+        if (!session?.user) {
+          console.log('💰 No user session, skipping heart coins fetch');
+          return;
         }
+
+        // Fetch heart coins directly from Supabase
+        const { data: profile, error: profileError } = await supabaseClient
+          .from('profiles')
+          .select('heart_coins_current')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profileError) {
+          console.error('Profile error:', profileError);
+          return;
+        }
+
+        console.log('💰 Heart coins fetched:', profile?.heart_coins_current || 0);
+        setHeartCoinsCount(profile?.heart_coins_current || 0);
+        
       } catch (error) {
         console.error('Error fetching heart coins:', error);
       }
@@ -1106,7 +1123,7 @@ export default function HUDPanel({
     }
 
     try {
-      const { error } = await supabaseBrowser
+      const { error } = await supabaseClient
         .from('profiles')
         .update({
           name: profileName.trim(),
@@ -6140,7 +6157,7 @@ export default function HUDPanel({
                             
                             try {
                               // Save complete profile to database
-                              const { error } = await supabaseBrowser
+                              const { error } = await supabaseClient
                                 .from('profiles')
                                 .update({ 
                                   name: profileName.trim(),

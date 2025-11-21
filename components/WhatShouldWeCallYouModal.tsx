@@ -3,13 +3,10 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { useUIStore } from "@/store/useUIStore";
 
-type Props = {
-  open: boolean;
-  onClose: () => void;
-};
-
-export default function WhatShouldWeCallYouModal({ open, onClose }: Props) {
+export default function WhatShouldWeCallYouModal() {
+  const { showNamePrompt, closeNamePrompt, openElementSelection } = useUIStore();
   const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +31,9 @@ export default function WhatShouldWeCallYouModal({ open, onClose }: Props) {
 
       if (error) throw error;
       
-      onClose();
+      closeNamePrompt();
+      // Open element selection immediately after name is saved
+      setTimeout(() => openElementSelection(), 100);
     } catch (e: any) {
       setError(e?.message || "Failed to save display name");
     } finally {
@@ -42,7 +41,7 @@ export default function WhatShouldWeCallYouModal({ open, onClose }: Props) {
     }
   }
 
-  if (!open) return null;
+  if (!showNamePrompt) return null;
   if (typeof document === 'undefined') return null;
 
   return createPortal(

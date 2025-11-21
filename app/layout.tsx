@@ -9,6 +9,9 @@ import { isAnalyticsDisabled } from "@/lib/analytics";
 import { Suspense } from "react";
 import { AudioProvider } from "@/app/providers/AudioProvider";
 import LazyLoadEnhancer from "@/components/LazyLoadEnhancer";
+import NamePromptOnLogin from "@/components/NamePromptOnLogin";
+import WhatShouldWeCallYouModal from "@/components/WhatShouldWeCallYouModal";
+import WhatElementAreYouModal from "@/components/WhatElementAreYouModal";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://chxndler-music.com"),
@@ -106,6 +109,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {!analyticsOff && <ClickTracker />}
           {!analyticsOff && <AnalyticsWidget />}
           <LazyLoadEnhancer />
+          <NamePromptOnLogin />
+          <WhatShouldWeCallYouModal />
+          <WhatElementAreYouModal />
           {children}
         </AudioProvider>
         {mpId && !analyticsOff ? (

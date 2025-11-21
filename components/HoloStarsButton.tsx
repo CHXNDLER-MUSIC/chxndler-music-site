@@ -78,7 +78,11 @@ export default function HoloStarsButton({
         onHoverSound={() => sfx.play('hover', 0.35)}
         className={`custom-stars-style ${showSoulStarText ? 'soul-star-text' : ''}`}
       >
-        {showSoulStarText ? "Your soul star shines above." : "⭐"}
+        {showSoulStarText ? (
+          "Your soul star shines above."
+        ) : (
+          <img src="/star.png" alt="Star" className="star-image" />
+        )}
       </SharedButton>
       
       <style jsx>{`
@@ -87,7 +91,7 @@ export default function HoloStarsButton({
           height: 50px;
           border-radius: 50%;
           font-size: 24px;
-          color: #FFFF00;
+          color: inherit;
           background: transparent !important;
           border: none;
           transition: all 0.2s ease;
@@ -95,9 +99,16 @@ export default function HoloStarsButton({
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 4px;
+          padding: 0;
           text-shadow: none;
           box-shadow: none;
+        }
+        
+        .star-image {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          border-radius: 50%;
         }
         
         .soul-star-text {

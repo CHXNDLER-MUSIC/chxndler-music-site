@@ -175,7 +175,8 @@ export default function ProfileBar({
       const res = await fetch('/api/profile/element', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ selected_element: element })
+        body: JSON.stringify({ selected_element: element }),
+        credentials: 'include'
       });
       
       if (res.ok) {

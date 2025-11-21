@@ -26,15 +26,9 @@ export async function GET(req: NextRequest) {
 
   if (error && (error as any).code === 'PGRST116') {
     try {
-      const meta = (user as any)?.user_metadata || {};
-      const fullName: string | undefined = meta.full_name || meta.name || undefined;
-      const email: string | undefined = (user as any)?.email || undefined;
-      const emailPrefix = email ? email.split('@')[0] : undefined;
-      const displayName = fullName || emailPrefix || 'Wanderer';
-
       const admin = getSupabaseAdmin();
       await admin.from('profiles').upsert(
-        { id: user.id, display_name: displayName, hearts: 0, updated_at: new Date().toISOString() },
+        { id: user.id, display_name: null, hearts: 0, updated_at: new Date().toISOString() },
         { onConflict: 'id' }
       );
 

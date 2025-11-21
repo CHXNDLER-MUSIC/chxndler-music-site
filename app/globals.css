@@ -1469,7 +1469,7 @@ button:hover > .heart-coin-glow,
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #000;
-  background: radial-gradient(circle at 30% 30%, #FFD700, #FFA500);
+  background: transparent;
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;

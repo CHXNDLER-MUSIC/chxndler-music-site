@@ -29,11 +29,14 @@ import { slugify } from "@/lib/slug";
 import { audioCoordinator } from "@/lib/audio-coordinator";
 import { debugLog } from "@/lib/debug";
 import ProfileBar from "@/components/ProfileBar";
-import WhatShouldWeCallYouModal from "@/components/WhatShouldWeCallYouModal";
 import HoloStarsButton from "@/components/HoloStarsButton";
 import VenmoButton from "@/components/VenmoButton";
+import { useUIStore } from "@/store/useUIStore";
 
 export default function DashboardApp({ initialSlug } = {}) {
+  // UI store for profile refresh trigger
+  const { profileRefreshTrigger } = useUIStore();
+  
   // Global wheel render mode (LUMA vs PLAIN). Must be top-level to obey Hooks rules.
   // Use false initially to match SSR, then sync with localStorage after hydration
   const [wheelPlain, setWheelPlain] = useState(false);
@@ -61,49 +64,6 @@ export default function DashboardApp({ initialSlug } = {}) {
     setIsHydrated(true);
   }, []);
 
-  // Check for new user query parameter and show name modal
-  useEffect(() => {
-    const checkUserAndShowOnboarding = async () => {
-      if (typeof window !== 'undefined') {
-        const urlParams = new URLSearchParams(window.location.search);
-        const isWelcome = urlParams.get('welcome') === '1';
-        
-        console.log('🔍 Checking for welcome parameter:', urlParams.get('welcome'));
-        console.log('🔍 All URL params:', Object.fromEntries(urlParams.entries()));
-        
-        // Check if user is authenticated and needs onboarding
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        
-        if (user) {
-          console.log('🔍 User is authenticated:', user.id);
-          
-          // Check user profile for display_name
-          const { data: profile } = await supabaseClient
-            .from('profiles')
-            .select('display_name')
-            .eq('id', user.id)
-            .single();
-            
-          console.log('🔍 User profile:', profile);
-          
-          // Show onboarding modal if welcome=1 OR display_name is null
-          if (isWelcome || !profile?.display_name) {
-            console.log('✅ Showing onboarding modal - welcome:', isWelcome, 'display_name:', profile?.display_name);
-            setShowNameModal(true);
-          }
-        }
-        
-        // Clean up the URL parameter if present
-        if (isWelcome) {
-          const url = new URL(window.location);
-          url.searchParams.delete('welcome');
-          window.history.replaceState({}, document.title, url.pathname);
-        }
-      }
-    };
-    
-    checkUserAndShowOnboarding();
-  }, []);
   useEffect(() => {
     const onKey = (e) => {
       if ((e.key === 'W' || e.key === 'w') && (e.metaKey || e.ctrlKey || e.shiftKey)) {
@@ -183,13 +143,6 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [savedProfileName, setSavedProfileName] = useState('');
   // Saved profile element from HUD signup flow
   const [savedProfileElement, setSavedProfileElement] = useState('');
-  // Name input modal for new users
-  const [showNameModal, setShowNameModal] = useState(false);
-  
-  // Debug logging for modal state changes
-  useEffect(() => {
-    console.log('🎯 showNameModal state changed to:', showNameModal);
-  }, [showNameModal]);
   // Unified timing constants for display/beam sequencing
   // Keep conservative defaults for overlapping transitions, but tighten a bit for snappier feel
   const BEAM_SWITCH_DELAY_MS = 300; // was 450ms; faster when switching between colors
@@ -1120,6 +1073,7 @@ export default function DashboardApp({ initialSlug } = {}) {
             onOpenJournal={handleOpenJournal}
             onBeamColorChange={handleBeamToggle}
             hasEnteredHeartverse={hasEnteredHeartverse}
+            profileRefreshTrigger={profileRefreshTrigger}
           />
         )}
         
@@ -1233,6 +1187,7 @@ export default function DashboardApp({ initialSlug } = {}) {
           hasEnteredHeartverse={hasEnteredHeartverse}
           savedAlienName={savedProfileName}
           savedAlienElement={savedProfileElement}
+          profileRefreshTrigger={profileRefreshTrigger}
         />
       )}
       
@@ -2026,11 +1981,6 @@ export default function DashboardApp({ initialSlug } = {}) {
         <PreloadMedia maxImage={8} maxAudio={3} maxVideo={2} />
       ) : null}
 
-      {/* What Should We Call You Modal for new users */}
-      <WhatShouldWeCallYouModal 
-        open={showNameModal}
-        onClose={() => setShowNameModal(false)}
-      />
 
       {/* Stars Modal triggered by journal button */}
       {showStarsModal && (

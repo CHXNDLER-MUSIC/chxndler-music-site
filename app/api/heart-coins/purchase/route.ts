@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     // Get user's current Heart Coins balance
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('hearts')
+      .select('heart_coins_current, heart_coins_total')
       .eq('id', user.id)
       .single();
 
@@ -59,9 +59,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if user has enough Heart Coins
-    if (profile.hearts < heartCoins) {
+    if (profile.heart_coins_current < heartCoins) {
       return NextResponse.json({ 
-        error: `Insufficient Heart Coins. You have ${profile.hearts}, but need ${heartCoins}.` 
+        error: `Insufficient Heart Coins. You have ${profile.heart_coins_current}, but need ${heartCoins}.` 
       }, { status: 400 });
     }
 
@@ -98,11 +98,11 @@ export async function POST(req: NextRequest) {
       // Don't fail the purchase if order save fails, but log it
     }
 
-    // Deduct Heart Coins from user's balance
+    // Deduct Heart Coins from user's balance (total remains unchanged for cumulative tracking)
     const { error: updateError } = await supabase
       .from('profiles')
       .update({ 
-        hearts: profile.hearts - heartCoins,
+        heart_coins_current: profile.heart_coins_current - heartCoins,
         updated_at: new Date().toISOString()
       })
       .eq('id', user.id);
@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
       success: true,
       message: 'Purchase completed successfully',
       heartCoinsSpent: heartCoins,
-      remainingHearts: profile.hearts - heartCoins
+      remainingHearts: profile.heart_coins_current - heartCoins
     });
 
   } catch (error) {
