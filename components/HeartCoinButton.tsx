@@ -322,8 +322,37 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             </svg>
           </button>
           
+          {/* Heart Coin Balance - Top Left */}
+          <div className="absolute top-3 left-4 flex items-center space-x-2">
+            <img
+              src="/elements/heart-coin.png"
+              alt="Heart Coin"
+              className="w-8 h-8"
+            />
+            <div>
+              <div 
+                className="text-xs text-left"
+                style={{ 
+                  color: '#FFB6C1', 
+                  textShadow: '0 0 4px rgba(255,182,193,0.6)' 
+                }}
+              >
+                Balance
+              </div>
+              <div 
+                className="text-lg font-bold text-left"
+                style={{ 
+                  color: '#FFFFFF', 
+                  textShadow: '0 0 8px rgba(255,255,255,0.8)' 
+                }}
+              >
+                {heartCoins}
+              </div>
+            </div>
+          </div>
+          
           {/* Header */}
-          <div className="text-center mb-3 mt-8">
+          <div className="text-center mb-3 mt-2">
             <div 
               className="text-lg font-bold mb-4"
               style={{ 
@@ -333,35 +362,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               }}
             >
               HEART COINS
-            </div>
-            
-            {/* Heart Coin Balance - Top Left */}
-            <div className="flex items-center space-x-3 mb-4">
-              <img
-                src="/elements/heart-coin.png"
-                alt="Heart Coin"
-                className="w-10 h-10"
-              />
-              <div>
-                <div 
-                  className="text-xs"
-                  style={{ 
-                    color: '#FFB6C1', 
-                    textShadow: '0 0 4px rgba(255,182,193,0.6)' 
-                  }}
-                >
-                  Balance
-                </div>
-                <div 
-                  className="text-xl font-bold"
-                  style={{ 
-                    color: '#FFFFFF', 
-                    textShadow: '0 0 8px rgba(255,255,255,0.8)' 
-                  }}
-                >
-                  {heartCoins}
-                </div>
-              </div>
             </div>
             
             {/* Thin pink neon line */}

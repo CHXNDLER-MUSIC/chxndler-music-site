@@ -5,9 +5,7 @@ import { useUIState } from '@/lib/use-ui-state';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ElementIcon } from '@/lib/elementIcons';
 import { ActivePanel } from '@/types/ActivePanel';
-import CodeModal from '@/components/CodeModal';
 import BinderModal from '@/components/BinderModal';
-import BadgesModal from '@/components/BadgesModal';
 import JourneyButton from '@/components/JourneyButton';
 import BadgesButton from '@/components/BadgesButton';
 import BinderButton from '@/components/BinderButton';
@@ -41,7 +39,6 @@ const ELEMENTS = [
 interface ProfileBarProps {
   onCodeClick?: () => void;
   onDigitalBinderClick?: () => void;
-  onBadgesClick?: () => void;
   onCloseBlueDisplay?: () => void;
   onOpenBlueDisplay?: () => void;
   onOpenJournal?: () => void;
@@ -54,7 +51,6 @@ interface ProfileBarProps {
 export default function ProfileBar({
   onCodeClick,
   onDigitalBinderClick, 
-  onBadgesClick,
   onCloseBlueDisplay,
   onOpenBlueDisplay,
   onOpenJournal,
@@ -365,17 +361,12 @@ export default function ProfileBar({
       </div>
 
       {/* Panel Modals - Conditional rendering based on activePanel */}
-      {activePanel === 'code' && (
-        <CodeModal open={true} onClose={() => setActivePanel(null)} />
-      )}
 
       {activePanel === 'binder' && (
         <BinderModal open={true} onClose={() => setActivePanel(null)} />
       )}
 
-      {activePanel === 'badges' && (
-        <BadgesModal open={true} onClose={() => setActivePanel(null)} />
-      )}
+
 
       {/* Hologram base glow - wider and stronger */}
       {showHeartPopover && typeof window !== 'undefined' && createPortal(
