@@ -9,11 +9,12 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   onHoverSound?: () => void;
   onCloseBlueDisplay?: () => void;
   onOpenBlueDisplay?: () => void;
+  onBeamColorChange?: (color: string) => void;
   // UI state prop from parent; do not forward to DOM
   isActive?: boolean;
 };
 
-export default function BinderButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, isActive = false, ...restProps }: Props) {
+export default function BinderButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onBeamColorChange, isActive = false, ...restProps }: Props) {
   const [open, setOpen] = useState(false);
   const [cardOpen, setCardOpen] = useState(false);
   const [showFullCollection, setShowFullCollection] = useState(false);
@@ -351,6 +352,8 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
     if (!e.defaultPrevented) {
       e.preventDefault();
       try { sfx.play('click', 0.8); } catch {}
+      // Change beam color to magenta when Binder button is clicked
+      try { onBeamColorChange?.('magenta'); } catch {}
       // Close blue display first
       try { onCloseBlueDisplay?.(); } catch {}
       // Note: Modal opening is now handled by parent component's onClick prop
@@ -686,74 +689,6 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                   )}
                 </div>
                 
-                {/* Purchase buttons below the card image container */}
-                <div className="flex flex-col">
-                  {!isCardOwned(currentCard.name) && (
-                    <div className="flex flex-row gap-1 mt-2">
-                      {/* Digital option */}
-                      <button
-                        onClick={() => {
-                          try { sfx.play('click', 0.6); } catch {}
-                          // Add digital purchase logic here
-                        }}
-                        className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
-                        style={{
-                          boxShadow: '0 0 8px rgba(255,105,180,0.2)',
-                        }}
-                      >
-                        <img
-                          src="/elements/heart-coin.png"
-                          alt="Heart Coin"
-                          className="w-3 h-3"
-                          draggable={false}
-                        />
-                        <span 
-                          className="text-yellow-300 font-bold"
-                          style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
-                        >
-                          20
-                        </span>
-                        <span 
-                          className="text-pink-200 font-medium"
-                          style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
-                        >
-                          DIGITAL
-                        </span>
-                      </button>
-                      
-                      {/* Physical option */}
-                      <button
-                        onClick={() => {
-                          try { sfx.play('click', 0.6); } catch {}
-                          // Add physical purchase logic here
-                        }}
-                        className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
-                        style={{
-                          boxShadow: '0 0 8px rgba(255,105,180,0.2)',
-                        }}
-                      >
-                        <img
-                          src="/elements/heart-coin.png"
-                          alt="Heart Coin"
-                          className="w-3 h-3"
-                          draggable={false}
-                        />
-                        <span 
-                          className="text-yellow-300 font-bold"
-                          style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
-                        >
-                          30
-                        </span>
-                        <span 
-                          className="text-pink-200 font-medium"
-                          style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
-                        >
-                          PHYSICAL
-                        </span>
-                      </button>
-                    </div>
-                  )}
-                </div>
                 
                 {/* Card info on the right */}
                 <div className="flex-1 min-w-0">
@@ -813,7 +748,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                           </div>
                         )}
                         <div 
-                          className="text-sm mb-2"
+                          className="text-sm"
                           style={{ 
                             color: currentCard.rarity === 'Rare' ? '#FF69B4' : '#87CEEB',
                             textShadow: '0 0 4px currentColor',
@@ -834,6 +769,71 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                             {getCardOneLiner(currentCard.name)}
                           </div>
                         )}
+                        
+                        {/* Purchase buttons */}
+                        <div className="flex flex-row gap-1 mt-2">
+                            {/* Digital option */}
+                            <button
+                              onClick={() => {
+                                try { sfx.play('click', 0.6); } catch {}
+                                // Add digital purchase logic here
+                              }}
+                              className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
+                              style={{
+                                boxShadow: '0 0 8px rgba(255,105,180,0.2)',
+                              }}
+                            >
+                              <img
+                                src="/elements/heart-coin.png"
+                                alt="Heart Coin"
+                                className="w-3 h-3"
+                                draggable={false}
+                              />
+                              <span 
+                                className="text-yellow-300 font-bold"
+                                style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
+                              >
+                                20
+                              </span>
+                              <span 
+                                className="text-pink-200 font-medium"
+                                style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                              >
+                                DIGITAL
+                              </span>
+                            </button>
+                            
+                            {/* Physical option */}
+                            <button
+                              onClick={() => {
+                                try { sfx.play('click', 0.6); } catch {}
+                                // Add physical purchase logic here
+                              }}
+                              className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
+                              style={{
+                                boxShadow: '0 0 8px rgba(255,105,180,0.2)',
+                              }}
+                            >
+                              <img
+                                src="/elements/heart-coin.png"
+                                alt="Heart Coin"
+                                className="w-3 h-3"
+                                draggable={false}
+                              />
+                              <span 
+                                className="text-yellow-300 font-bold"
+                                style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
+                              >
+                                30
+                              </span>
+                              <span 
+                                className="text-pink-200 font-medium"
+                                style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                              >
+                                PHYSICAL
+                              </span>
+                            </button>
+                          </div>
                       </div>
                     );
                   })()}

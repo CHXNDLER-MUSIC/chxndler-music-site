@@ -9,11 +9,12 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   onHoverSound?: () => void;
   onCloseBlueDisplay?: () => void;
   onOpenBlueDisplay?: () => void;
+  onBeamColorChange?: (color: string) => void;
   // UI state prop from parent; do not forward to DOM
   isActive?: boolean;
 };
 
-export default function CodeButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, isActive = false, ...restProps }: Props) {
+export default function CodeButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onBeamColorChange, isActive = false, ...restProps }: Props) {
   const [open, setOpen] = useState(false);
 
   const handleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
@@ -21,6 +22,8 @@ export default function CodeButton({ asChild = false, children, onClick, onHover
     if (!e.defaultPrevented) {
       e.preventDefault();
       try { sfx.play('click', 0.8); } catch {}
+      // Change beam color to cyan when Code button is clicked
+      try { onBeamColorChange?.('cyan'); } catch {}
       // Close blue display first
       try { onCloseBlueDisplay?.(); } catch {}
       setOpen(true);
@@ -176,15 +179,15 @@ export default function CodeButton({ asChild = false, children, onClick, onHover
           >
             <div className="flex items-start">
               <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>•</span>
-              <span>We believe being your <span style={{ color: '#00FFFF !important', textShadow: '0 0 8px rgba(0,255,255,0.9), 0 0 15px rgba(0,255,255,0.7)', fontWeight: 'inherit !important', WebkitTextFillColor: '#00FFFF !important', textFillColor: '#00FFFF !important' }}>truest self</span> is the beginning of freedom.</span>
+              <span>We believe being your <span style={{ color: '#0099FF !important', textShadow: '0 0 5px #0099FF, 0 0 10px #0099FF, 0 0 15px #0099FF, 0 0 20px #0099FF', fontWeight: 'inherit !important', WebkitTextFillColor: '#0099FF !important', textFillColor: '#0099FF !important', filter: 'drop-shadow(0 0 3px #0099FF)' }}>truest self</span> is the beginning of freedom.</span>
             </div>
             <div className="flex items-start">
               <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>•</span>
-              <span>We believe <span style={{ color: '#FFFF00 !important', textShadow: '0 0 8px rgba(255,255,0,0.9), 0 0 15px rgba(255,255,0,0.7)' }}>passion</span> is sacred and should be pursued loudly.</span>
+              <span>We believe <span style={{ color: '#FFD700 !important', textShadow: '0 0 5px #FFD700, 0 0 10px #FFD700, 0 0 15px #FFD700, 0 0 20px #FFD700', fontWeight: 'inherit !important', WebkitTextFillColor: '#FFD700 !important', textFillColor: '#FFD700 !important', filter: 'drop-shadow(0 0 3px #FFD700)' }}>passion</span> is sacred and should be pursued loudly.</span>
             </div>
             <div className="flex items-start">
               <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>•</span>
-              <span>We believe <span style={{ color: '#FF69B4 !important', textShadow: '0 0 8px rgba(255,105,180,0.9), 0 0 15px rgba(255,105,180,0.7)' }}>love</span> is the force that connects every soul.</span>
+              <span>We believe <span style={{ color: '#FF1493 !important', textShadow: '0 0 5px #FF1493, 0 0 10px #FF1493, 0 0 15px #FF1493, 0 0 20px #FF1493', fontWeight: 'inherit !important', WebkitTextFillColor: '#FF1493 !important', textFillColor: '#FF1493 !important', filter: 'drop-shadow(0 0 3px #FF1493)' }}>love</span> is the force that connects every soul.</span>
             </div>
           </div>
           </div>

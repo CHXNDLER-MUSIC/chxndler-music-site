@@ -451,10 +451,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 <button
                   onClick={handleJournalEntry}
                   disabled={dailyQuests.journalEntry}
-                  className="px-2 py-1 text-xs rounded border border-pink-400/60 hover:border-pink-400/80 transition-colors"
+                  className="px-2 py-1 text-xs rounded border transition-colors"
                   style={{
-                    background: dailyQuests.journalEntry ? 'rgba(100,100,100,0.3)' : 'rgba(255,105,180,0.1)',
-                    color: dailyQuests.journalEntry ? '#666' : '#FFB6C1',
+                    background: dailyQuests.journalEntry ? 'rgba(0,255,0,0.1)' : 'rgba(255,105,180,0.1)',
+                    color: dailyQuests.journalEntry ? '#00FF00' : '#FFB6C1',
+                    borderColor: dailyQuests.journalEntry ? '#00FF00' : 'rgba(255,105,180,0.6)',
+                    textShadow: dailyQuests.journalEntry ? '0 0 8px #00FF00, 0 0 16px #00FF00' : 'none',
+                    boxShadow: dailyQuests.journalEntry ? '0 0 10px rgba(0,255,0,0.4), 0 0 20px rgba(0,255,0,0.2)' : 'none'
                   }}
                 >
                   {dailyQuests.journalEntry ? 'COMPLETED' : 'OPEN JOURNAL'}
@@ -493,10 +496,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 <button
                   onClick={handleInviteFriend}
                   disabled={dailyQuests.friendInvited}
-                  className="px-2 py-1 text-xs rounded border border-pink-400/60 hover:border-pink-400/80 transition-colors"
+                  className="px-2 py-1 text-xs rounded border transition-colors"
                   style={{
-                    background: dailyQuests.friendInvited ? 'rgba(100,100,100,0.3)' : 'rgba(255,105,180,0.1)',
-                    color: dailyQuests.friendInvited ? '#666' : '#FFB6C1',
+                    background: dailyQuests.friendInvited ? 'rgba(0,255,0,0.1)' : 'rgba(255,105,180,0.1)',
+                    color: dailyQuests.friendInvited ? '#00FF00' : '#FFB6C1',
+                    borderColor: dailyQuests.friendInvited ? '#00FF00' : 'rgba(255,105,180,0.6)',
+                    textShadow: dailyQuests.friendInvited ? '0 0 8px #00FF00, 0 0 16px #00FF00' : 'none',
+                    boxShadow: dailyQuests.friendInvited ? '0 0 10px rgba(0,255,0,0.4), 0 0 20px rgba(0,255,0,0.2)' : 'none'
                   }}
                 >
                   {dailyQuests.friendInvited ? 'INVITED TODAY' : 'INVITE A FRIEND'}
@@ -592,10 +598,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       setCheckInMessage('');
                     }}
                     disabled={dailyQuests.checkedIn}
-                    className="px-2 py-1 text-xs rounded border border-pink-400/60 hover:border-pink-400/80 transition-colors"
+                    className="px-2 py-1 text-xs rounded border transition-colors"
                     style={{
-                      background: dailyQuests.checkedIn ? 'rgba(100,100,100,0.3)' : 'rgba(255,105,180,0.1)',
-                      color: dailyQuests.checkedIn ? '#666' : '#FFB6C1',
+                      background: dailyQuests.checkedIn ? 'rgba(0,255,0,0.1)' : 'rgba(255,105,180,0.1)',
+                      color: dailyQuests.checkedIn ? '#00FF00' : '#FFB6C1',
+                      borderColor: dailyQuests.checkedIn ? '#00FF00' : 'rgba(255,105,180,0.6)',
+                      textShadow: dailyQuests.checkedIn ? '0 0 8px #00FF00, 0 0 16px #00FF00' : 'none',
+                      boxShadow: dailyQuests.checkedIn ? '0 0 10px rgba(0,255,0,0.4), 0 0 20px rgba(0,255,0,0.2)' : 'none'
                     }}
                   >
                     {dailyQuests.checkedIn ? 'CHECKED IN' : 'CHECK IN'}

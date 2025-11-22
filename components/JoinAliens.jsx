@@ -13,6 +13,7 @@ export default function JoinAliens({ visible = true } = {}) {
   // Tip functionality state
   const [showTipOptions, setShowTipOptions] = useState(false);
   const [showVenmoPopup, setShowVenmoPopup] = useState(false);
+  const [showVenmoPayment, setShowVenmoPayment] = useState(false);
   const [selectedTipAmount, setSelectedTipAmount] = useState(null);
   
   // Countdown state
@@ -150,7 +151,7 @@ export default function JoinAliens({ visible = true } = {}) {
     setLoading(true);
 
     try {
-      sfx.play('heart', 0.8);
+      sfx.play('join-alien', 0.8);
       
       // Send heart signal to API
       const response = await fetch('/api/heart-signal', {
@@ -168,7 +169,6 @@ export default function JoinAliens({ visible = true } = {}) {
       const result = await response.json();
       
       if (result.success) {
-        setMessage(result.message || "💖 Heart signal sent to the Heartverse!");
         setHeartSignalSent(true);
         setPhone(""); // Clear phone after successful send
         try { sfx.play('success', 0.7); } catch {}
@@ -178,7 +178,6 @@ export default function JoinAliens({ visible = true } = {}) {
       }
 
       setTimeout(() => {
-        setMessage(null);
         setError(null);
         setHeartSignalSent(false);
       }, 3000);
@@ -368,27 +367,35 @@ export default function JoinAliens({ visible = true } = {}) {
           width: '100%',
           padding: '12px 24px',
           background: 'transparent',
-          border: loading || phone.length < 14 
-            ? '2px solid rgba(128, 128, 128, 0.3)' 
-            : '2px solid #FC54AF',
+          border: heartSignalSent
+            ? '2px solid #00FF00'
+            : loading || phone.length < 14 
+              ? '2px solid rgba(128, 128, 128, 0.3)' 
+              : '2px solid #FC54AF',
           borderRadius: '8px',
-          color: loading || phone.length < 14 
-            ? 'rgba(128, 128, 128, 0.7)' 
-            : '#FC54AF',
+          color: heartSignalSent
+            ? '#00FF00'
+            : loading || phone.length < 14 
+              ? 'rgba(128, 128, 128, 0.7)' 
+              : '#FC54AF',
           fontSize: '16px',
           fontWeight: '600',
           cursor: loading || phone.length < 14 ? 'not-allowed' : 'pointer',
           transition: 'all 300ms ease',
-          boxShadow: loading || phone.length < 14 
-            ? 'none' 
-            : '0 0 15px rgba(252, 84, 175, 0.3)',
-          textShadow: loading || phone.length < 14 
-            ? 'none' 
-            : '0 0 10px #FC54AF, 0 0 20px #FC54AF, 0 0 30px #FC54AF',
+          boxShadow: heartSignalSent
+            ? '0 0 15px rgba(0, 255, 0, 0.3)'
+            : loading || phone.length < 14 
+              ? 'none' 
+              : '0 0 15px rgba(252, 84, 175, 0.3)',
+          textShadow: heartSignalSent
+            ? '0 0 10px #00FF00, 0 0 20px #00FF00, 0 0 30px #00FF00'
+            : loading || phone.length < 14 
+              ? 'none' 
+              : '0 0 10px #FC54AF, 0 0 20px #FC54AF, 0 0 30px #FC54AF',
           outline: 'none'
         }}
         onMouseEnter={(e) => {
-          if (!loading && phone.length >= 14) {
+          if (!loading && phone.length >= 14 && !heartSignalSent) {
             e.target.style.transform = 'translateY(-2px)';
             e.target.style.background = 'rgba(252, 84, 175, 0.15)';
             e.target.style.boxShadow = '0 0 40px rgba(252, 84, 175, 0.8), 0 0 60px rgba(252, 84, 175, 0.4), inset 0 0 30px rgba(252, 84, 175, 0.2)';
@@ -398,7 +405,7 @@ export default function JoinAliens({ visible = true } = {}) {
           }
         }}
         onMouseLeave={(e) => {
-          if (!loading && phone.length >= 14) {
+          if (!loading && phone.length >= 14 && !heartSignalSent) {
             e.target.style.transform = 'translateY(0)';
             e.target.style.background = 'transparent';
             e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
@@ -422,7 +429,7 @@ export default function JoinAliens({ visible = true } = {}) {
             Sending...
           </div>
         ) : heartSignalSent ? (
-          "Heart signal sent to the Heartverse!"
+          "Heart signal sent"
         ) : (
           "Send Heart Signal"
         )}
@@ -490,8 +497,10 @@ export default function JoinAliens({ visible = true } = {}) {
           <button
             onClick={() => {
               try { sfx.play('click', 0.3); } catch {}
+              
+              // Show embedded Venmo payment screen
+              setShowVenmoPayment(true);
               setSelectedTipAmount(1);
-              setShowVenmoPopup(true);
               setShowTipOptions(false);
             }}
             style={{
@@ -521,8 +530,16 @@ export default function JoinAliens({ visible = true } = {}) {
           <button
             onClick={() => {
               try { sfx.play('click', 0.3); } catch {}
-              setSelectedTipAmount(3);
-              setShowVenmoPopup(true);
+              
+              // Direct Venmo integration
+              const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=3&note=${encodeURIComponent('Thanks for the music!')}`;
+              const webVenmoUrl = `https://venmo.com/u/chxndlerthealien?txn=pay&amount=3&note=${encodeURIComponent('Thanks for the music!')}`;
+              
+              window.open(venmoUrl, '_blank');
+              setTimeout(() => {
+                window.open(webVenmoUrl, '_blank');
+              }, 1500);
+              
               setShowTipOptions(false);
             }}
             style={{
@@ -552,8 +569,16 @@ export default function JoinAliens({ visible = true } = {}) {
           <button
             onClick={() => {
               try { sfx.play('click', 0.3); } catch {}
-              setSelectedTipAmount('custom');
-              setShowVenmoPopup(true);
+              
+              // Direct Venmo integration for custom amount
+              const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&note=${encodeURIComponent('Thanks for the music!')}`;
+              const webVenmoUrl = `https://venmo.com/u/chxndlerthealien?txn=pay&note=${encodeURIComponent('Thanks for the music!')}`;
+              
+              window.open(venmoUrl, '_blank');
+              setTimeout(() => {
+                window.open(webVenmoUrl, '_blank');
+              }, 1500);
+              
               setShowTipOptions(false);
             }}
             style={{
@@ -593,8 +618,10 @@ export default function JoinAliens({ visible = true } = {}) {
           height: '100vh',
           background: 'rgba(0, 0, 0, 0.7)',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          alignItems: 'flex-start',
+          justifyContent: 'flex-start',
+          paddingTop: '10vh',
+          paddingLeft: '5vw',
           zIndex: 1000
         }}
         onClick={() => setShowVenmoPopup(false)}
@@ -636,34 +663,252 @@ export default function JoinAliens({ visible = true } = {}) {
             }}>
               @chxndlerthealien
             </p>
+            
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => {
+                  const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=${selectedTipAmount === 'custom' ? '1' : selectedTipAmount}&note=${encodeURIComponent('Thanks for the music!')}`;
+                  const webVenmoUrl = `https://venmo.com/u/chxndlerthealien?txn=pay&amount=${selectedTipAmount === 'custom' ? '1' : selectedTipAmount}&note=${encodeURIComponent('Thanks for the music!')}`;
+                  
+                  window.open(venmoUrl, '_blank');
+                  setTimeout(() => {
+                    window.open(webVenmoUrl, '_blank');
+                  }, 1500);
+                  
+                  setShowVenmoPopup(false);
+                }}
+                style={{
+                  padding: '12px 24px',
+                  background: 'linear-gradient(135deg, #3D95CE, #5BA8D8)',
+                  border: '2px solid #3D95CE',
+                  borderRadius: '8px',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: 'all 300ms ease',
+                  textShadow: '0 0 8px rgba(61, 149, 206, 0.6)',
+                  boxShadow: '0 0 25px rgba(61, 149, 206, 0.5)',
+                  flex: 1,
+                  minWidth: '120px'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.transform = 'scale(1.05)';
+                  e.target.style.boxShadow = '0 0 35px rgba(61, 149, 206, 0.7)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = 'scale(1)';
+                  e.target.style.boxShadow = '0 0 25px rgba(61, 149, 206, 0.5)';
+                }}
+              >
+                📱 Open Venmo
+              </button>
+              
+              <button
+                onClick={() => {
+                  try { sfx.play('close', 0.3); } catch {}
+                  setShowVenmoPopup(false);
+                }}
+                style={{
+                  padding: '12px 24px',
+                  background: 'rgba(252, 84, 175, 0.1)',
+                  border: '2px solid #FC54AF',
+                  borderRadius: '8px',
+                  color: '#FC54AF',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: 'all 300ms ease',
+                  textShadow: '0 0 8px #FC54AF',
+                  boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
+                  flex: 1,
+                  minWidth: '80px'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = 'rgba(252, 84, 175, 0.2)';
+                  e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'rgba(252, 84, 175, 0.1)';
+                  e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Embedded Payment Interface - No External Navigation */}
+      {showVenmoPayment && (
+        <div style={{
+          position: 'absolute',
+          top: '0',
+          left: '0',
+          right: '0',
+          bottom: '0',
+          background: 'rgba(0, 0, 0, 0.95)',
+          backdropFilter: 'blur(12px)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 20,
+          padding: '20px',
+          boxSizing: 'border-box'
+        }}>
+          {/* Payment Interface Card */}
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(61, 149, 206, 0.1), rgba(91, 168, 216, 0.1))',
+            border: '2px solid #3D95CE',
+            borderRadius: '12px',
+            padding: '20px',
+            maxWidth: '280px',
+            width: '90%',
+            textAlign: 'center',
+            boxShadow: '0 0 30px rgba(61, 149, 206, 0.4)',
+            position: 'relative'
+          }}>
+            {/* Close Button */}
+            <button
+              onClick={() => setShowVenmoPayment(false)}
+              style={{
+                position: 'absolute',
+                top: '15px',
+                right: '15px',
+                width: '30px',
+                height: '30px',
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                borderRadius: '50%',
+                color: '#ffffff',
+                fontSize: '16px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 200ms ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+              }}
+            >
+              ×
+            </button>
+
+            {/* Header */}
+            <div style={{
+              marginBottom: '15px'
+            }}>
+              <div style={{
+                color: '#3D95CE',
+                fontSize: '18px',
+                fontWeight: 'bold',
+                textShadow: '0 0 10px rgba(61, 149, 206, 0.8)'
+              }}>
+                💸 Send $1
+              </div>
+            </div>
+
+            {/* Payment Details */}
+            <div style={{
+              background: 'rgba(0, 0, 0, 0.3)',
+              border: '1px solid rgba(61, 149, 206, 0.3)',
+              borderRadius: '8px',
+              padding: '15px',
+              marginBottom: '15px'
+            }}>
+              <div style={{
+                color: '#3D95CE',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                textShadow: '0 0 8px rgba(61, 149, 206, 0.6)'
+              }}>
+                @CHXNDLERTHEALIEN
+              </div>
+              
+              <div style={{
+                fontSize: '12px',
+                color: '#ffffff',
+                opacity: 0.8,
+                fontStyle: 'italic',
+                marginTop: '4px'
+              }}>
+                "Fueling the signal"
+              </div>
+            </div>
+
+
+            {/* Payment Actions */}
             <button
               onClick={() => {
-                try { sfx.play('close', 0.3); } catch {}
-                setShowVenmoPopup(false);
+                try {
+                  // Try mobile app first
+                  const venmoUrl = `venmo://pay?recipients=CHXNDLERTHEALIEN&amount=1&note=${encodeURIComponent('Fueling the signal')}`;
+                  window.location.href = venmoUrl;
+                } catch (e) {
+                  // If app fails, do nothing - keep user on page
+                  console.log('Venmo app not available');
+                }
               }}
               style={{
-                padding: '12px 24px',
-                background: 'rgba(252, 84, 175, 0.1)',
-                border: '2px solid #FC54AF',
+                padding: '12px 20px',
+                background: 'linear-gradient(135deg, #3D95CE, #5BA8D8)',
+                border: 'none',
                 borderRadius: '8px',
-                color: '#FC54AF',
+                color: 'white',
                 fontSize: '14px',
                 fontWeight: 'bold',
                 cursor: 'pointer',
                 transition: 'all 300ms ease',
-                textShadow: '0 0 8px #FC54AF',
-                boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
+                boxShadow: '0 0 20px rgba(61, 149, 206, 0.5)',
+                width: '100%',
+                marginBottom: '10px'
               }}
               onMouseEnter={(e) => {
-                e.target.style.background = 'rgba(252, 84, 175, 0.2)';
-                e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
+                e.target.style.transform = 'scale(1.02)';
+                e.target.style.boxShadow = '0 0 25px rgba(61, 149, 206, 0.7)';
               }}
               onMouseLeave={(e) => {
-                e.target.style.background = 'rgba(252, 84, 175, 0.1)';
-                e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
+                e.target.style.transform = 'scale(1)';
+                e.target.style.boxShadow = '0 0 20px rgba(61, 149, 206, 0.5)';
               }}
             >
-              Close
+              📱 Open Venmo
+            </button>
+
+            {/* Return Button */}
+            <button
+              onClick={() => {
+                setShowVenmoPayment(false);
+                try { sfx.play('success', 0.7); } catch {}
+              }}
+              style={{
+                padding: '8px 16px',
+                background: 'transparent',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                borderRadius: '6px',
+                color: '#ffffff',
+                fontSize: '12px',
+                cursor: 'pointer',
+                transition: 'all 200ms ease',
+                opacity: 0.7,
+                width: '100%'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+                e.target.style.opacity = '1';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'transparent';
+                e.target.style.opacity = '0.7';
+              }}
+            >
+              Done
             </button>
           </div>
         </div>

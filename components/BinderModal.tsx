@@ -9,6 +9,32 @@ type Props = {
   onClose: () => void;
 };
 
+// TypeScript interfaces for shipping and orders
+interface ShippingInfo {
+  fullName: string;
+  streetAddress: string;
+  apartmentUnit: string;
+  city: string;
+  state: string;
+  zipCode: string;
+}
+
+interface PhysicalCardOrder {
+  id?: string;
+  user_id: string;
+  card_key: string;
+  full_name: string;
+  address_line1: string;
+  address_line2?: string;
+  city: string;
+  state: string;
+  postal_code: string;
+  country: string;
+  cost_heartcoins: number;
+  status: string;
+  created_at?: string;
+}
+
 export default function BinderModal({ open, onClose }: Props) {
   const { profile, updateProfile } = useProfile();
   const [cardOpen, setCardOpen] = useState(false);
@@ -21,7 +47,9 @@ export default function BinderModal({ open, onClose }: Props) {
   const [preselectedCard, setPreselectedCard] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [ownedCards, setOwnedCards] = useState<Set<string>>(new Set(['CHXNDLER'])); // Everyone has CHXNDLER by default
-  const [showDigitalPurchase, setShowDigitalPurchase] = useState(false);
+  // Purchase flow state machine
+  const [selectedPurchaseType, setSelectedPurchaseType] = useState<'digital' | 'physical' | null>(null);
+  const [purchaseState, setPurchaseState] = useState<'idle' | 'insufficient' | 'confirm-digital' | 'physical-form' | 'success'>('idle');
 
   // Full song collection data structure
   const songCollection = [
@@ -79,6 +107,21 @@ export default function BinderModal({ open, onClose }: Props) {
   
   const elements = ['LIGHTNING', 'DARKNESS', 'WATER', 'HEART'];
   const rarities = ['All', 'Common', 'Rare'];
+  
+  // Card costs
+  const digitalCost = 20;
+  const physicalCost = 30;
+
+  // Shipping form state
+  const [shippingForm, setShippingForm] = useState({
+    fullName: '',
+    streetAddress: '',
+    apartmentUnit: '',
+    city: '',
+    state: '',
+    zipCode: ''
+  });
+  const [shippingErrors, setShippingErrors] = useState<{[key: string]: string}>({});
   
   const getElementColor = (element: string) => {
     const elementColors: { [key: string]: string } = {
@@ -262,6 +305,215 @@ export default function BinderModal({ open, onClose }: Props) {
     return ['All', ...filteredSongs.map(song => song.name)];
   };
 
+  // Helper functions for purchase flow
+  const getCost = (type: 'digital' | 'physical') => {
+    return type === 'digital' ? digitalCost : physicalCost;
+  };
+
+  const hasEnoughBalance = (type: 'digital' | 'physical') => {
+    const cost = getCost(type);
+    return (profile?.heartcoin_balance || 0) >= cost;
+  };
+
+  const handlePurchaseClick = (type: 'digital' | 'physical') => {
+    setSelectedPurchaseType(type);
+    if (hasEnoughBalance(type)) {
+      if (type === 'digital') {
+        setPurchaseState('confirm-digital');
+      } else {
+        setPurchaseState('physical-form');
+        // Prefill shipping form if user has previous orders
+        prefillShippingForm();
+      }
+    } else {
+      setPurchaseState('insufficient');
+    }
+  };
+
+  const handleConfirmPurchase = async () => {
+    if (!selectedPurchaseType || !profile) return;
+    
+    const cost = getCost(selectedPurchaseType);
+    const cards = getFilteredCards();
+    const currentCard = cards[currentCardIndex];
+    
+    if (!currentCard) return;
+    
+    try {
+      // Add card to collection
+      setOwnedCards(prev => new Set([...prev, currentCard.name]));
+      // Update profile balance
+      await updateProfile({ 
+        heartcoin_balance: (profile.heartcoin_balance || 0) - cost 
+      });
+      setPurchaseState('success');
+      try { sfx.play('success', 0.8); } catch {}
+      
+      // Reset after 2 seconds
+      setTimeout(() => {
+        resetPurchaseState();
+      }, 2000);
+    } catch (error) {
+      try { sfx.play('error', 0.8); } catch {}
+      console.error('Purchase failed:', error);
+      resetPurchaseState();
+    }
+  };
+
+  const resetPurchaseState = () => {
+    setSelectedPurchaseType(null);
+    setPurchaseState('idle');
+    setShippingErrors({});
+    // Keep shipping form data for user convenience - don't clear it
+  };
+
+  const openHeartCoinPopout = () => {
+    // TODO: Implement HeartCoin earning popout
+    console.log('Open HeartCoin earning popout');
+    resetPurchaseState();
+  };
+
+  // Shipping form validation
+  const validateShippingForm = (): boolean => {
+    const errors: {[key: string]: string} = {};
+    
+    if (!shippingForm.fullName.trim()) {
+      errors.fullName = 'Full name is required';
+    }
+    if (!shippingForm.streetAddress.trim()) {
+      errors.streetAddress = 'Street address is required';
+    }
+    if (!shippingForm.city.trim()) {
+      errors.city = 'City is required';
+    }
+    if (!shippingForm.state.trim()) {
+      errors.state = 'State is required';
+    }
+    if (!shippingForm.zipCode.trim()) {
+      errors.zipCode = 'ZIP code is required';
+    }
+    
+    setShippingErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Prefill shipping form from previous orders
+  const prefillShippingForm = async () => {
+    if (!profile?.id) return;
+    
+    try {
+      // Fetch the latest shipping info from user's previous orders
+      const response = await fetch(`/api/physical-orders?user_id=${profile.id}&latest=true`);
+      
+      if (response.ok) {
+        const latestOrder = await response.json();
+        if (latestOrder) {
+          setShippingForm({
+            fullName: latestOrder.full_name || '',
+            streetAddress: latestOrder.address_line1 || '',
+            apartmentUnit: latestOrder.address_line2 || '',
+            city: latestOrder.city || '',
+            state: latestOrder.state || '',
+            zipCode: latestOrder.postal_code || ''
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error prefilling shipping form:', error);
+    }
+  };
+
+  // Handle physical purchase with shipping
+  const handlePhysicalPurchase = async () => {
+    if (!selectedPurchaseType || selectedPurchaseType !== 'physical' || !profile) return;
+    
+    // Validate form
+    if (!validateShippingForm()) {
+      try { sfx.play('error', 0.6); } catch {}
+      return;
+    }
+    
+    const cost = getCost('physical');
+    const cards = getFilteredCards();
+    const currentCard = cards[currentCardIndex];
+    
+    if (!currentCard) return;
+    
+    // Verify balance again
+    if ((profile.heartcoin_balance || 0) < cost) {
+      try { sfx.play('error', 0.8); } catch {}
+      setPurchaseState('insufficient');
+      return;
+    }
+    
+    try {
+      // Create physical order
+      const orderData: Omit<PhysicalCardOrder, 'id' | 'created_at'> = {
+        user_id: profile.id,
+        card_key: currentCard.name,
+        full_name: shippingForm.fullName,
+        address_line1: shippingForm.streetAddress,
+        address_line2: shippingForm.apartmentUnit || null,
+        city: shippingForm.city,
+        state: shippingForm.state,
+        postal_code: shippingForm.zipCode,
+        country: 'US',
+        cost_heartcoins: cost,
+        status: 'pending'
+      };
+      
+      // Insert into physical_card_orders table via API
+      const orderResponse = await fetch('/api/physical-orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData)
+      });
+      
+      if (!orderResponse.ok) {
+        throw new Error('Failed to create physical order');
+      }
+      
+      // Add card to collection
+      setOwnedCards(prev => new Set([...prev, currentCard.name]));
+      
+      // Update profile balance
+      await updateProfile({ 
+        heartcoin_balance: (profile.heartcoin_balance || 0) - cost 
+      });
+      
+      setPurchaseState('success');
+      try { sfx.play('success', 0.8); } catch {}
+      
+      // Reset after 3 seconds
+      setTimeout(() => {
+        resetPurchaseState();
+      }, 3000);
+      
+    } catch (error) {
+      try { sfx.play('error', 0.8); } catch {}
+      console.error('Physical purchase failed:', error);
+      resetPurchaseState();
+    }
+  };
+
+  // Update shipping form field
+  const updateShippingField = (field: keyof ShippingInfo, value: string) => {
+    setShippingForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    // Clear error for this field
+    if (shippingErrors[field]) {
+      setShippingErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
   // Set authentication and owned cards based on profile
   useEffect(() => {
     if (profile) {
@@ -278,6 +530,11 @@ export default function BinderModal({ open, onClose }: Props) {
       setOwnedCards(new Set(['CHXNDLER']));
     }
   }, [profile]);
+
+  // Reset purchase state when navigating cards
+  useEffect(() => {
+    resetPurchaseState();
+  }, [currentCardIndex, selectedElement]);
 
   // Arrow key navigation
   useEffect(() => {
@@ -699,70 +956,348 @@ export default function BinderModal({ open, onClose }: Props) {
                           </div>
                         )}
                         
-                        {/* Purchase buttons directly below 1-liner */}
-                        {!isCardOwned(currentCard.name) && (
-                          <div className="flex justify-center gap-2 mt-2">
-                            {/* Digital option */}
-                            <button
-                              onClick={() => {
-                                try { sfx.play('click', 0.6); } catch {}
-                                setShowDigitalPurchase(true);
-                              }}
-                              className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
-                              style={{
-                                boxShadow: '0 0 8px rgba(255,105,180,0.3)',
+                        {/* State A: Default view - Show HeartCoin balance */}
+                        {purchaseState === 'idle' && (
+                          <div className="mt-2">
+                            {/* HeartCoin balance */}
+                            <div 
+                              className="text-center mb-2 text-xs"
+                              style={{ 
+                                color: '#FFB6C1', 
+                                textShadow: '0 0 4px rgba(255,182,193,0.6)'
                               }}
                             >
-                              <img
-                                src="/elements/heart-coin.png"
-                                alt="Heart Coin"
-                                className="w-3 h-3"
-                                draggable={false}
-                              />
-                              <span 
-                                className="text-yellow-300 font-bold text-xs"
-                                style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
-                              >
-                                20
-                              </span>
-                              <span 
-                                className="text-pink-200 font-medium text-xs"
-                                style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
-                              >
-                                DIGITAL
-                              </span>
-                            </button>
+                              You have {profile?.heartcoin_balance || 0} HeartCoins
+                            </div>
                             
-                            {/* Physical option */}
-                            <button
-                              onClick={() => {
-                                try { sfx.play('click', 0.6); } catch {}
-                                // Add physical purchase logic here
-                              }}
-                              className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
-                              style={{
-                                boxShadow: '0 0 8px rgba(255,105,180,0.3)',
+                            {/* Purchase buttons */}
+                            <div className="flex justify-center gap-2">
+                              {/* Digital option */}
+                              <button
+                                onClick={() => {
+                                  try { sfx.play('click', 0.6); } catch {}
+                                  handlePurchaseClick('digital');
+                                }}
+                                className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
+                                style={{
+                                  boxShadow: '0 0 8px rgba(255,105,180,0.3)',
+                                }}
+                              >
+                                <img
+                                  src="/elements/heart-coin.png"
+                                  alt="Heart Coin"
+                                  className="w-3 h-3"
+                                  draggable={false}
+                                />
+                                <span 
+                                  className="text-yellow-300 font-bold text-xs"
+                                  style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
+                                >
+                                  {digitalCost}
+                                </span>
+                                <span 
+                                  className="text-pink-200 font-medium text-xs"
+                                  style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                                >
+                                  DIGITAL
+                                </span>
+                              </button>
+                              
+                              {/* Physical option */}
+                              <button
+                                onClick={() => {
+                                  try { sfx.play('click', 0.6); } catch {}
+                                  handlePurchaseClick('physical');
+                                }}
+                                className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
+                                style={{
+                                  boxShadow: '0 0 8px rgba(255,105,180,0.3)',
+                                }}
+                              >
+                                <img
+                                  src="/elements/heart-coin.png"
+                                  alt="Heart Coin"
+                                  className="w-3 h-3"
+                                  draggable={false}
+                                />
+                                <span 
+                                  className="text-yellow-300 font-bold text-xs"
+                                  style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
+                                >
+                                  {physicalCost}
+                                </span>
+                                <span 
+                                  className="text-pink-200 font-medium text-xs"
+                                  style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                                >
+                                  PHYSICAL
+                                </span>
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* State B: Not enough HeartCoins */}
+                        {purchaseState === 'insufficient' && selectedPurchaseType && (
+                          <div className="mt-2">
+                            <div 
+                              className="text-center mb-2 text-xs p-2 rounded"
+                              style={{ 
+                                backgroundColor: 'rgba(239,68,68,0.1)',
+                                border: '1px solid rgba(239,68,68,0.3)',
+                                color: '#FCA5A5'
                               }}
                             >
-                              <img
-                                src="/elements/heart-coin.png"
-                                alt="Heart Coin"
-                                className="w-3 h-3"
-                                draggable={false}
-                              />
-                              <span 
-                                className="text-yellow-300 font-bold text-xs"
-                                style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
+                              <div className="mb-1">You have {profile?.heartcoin_balance || 0} HeartCoins.</div>
+                              <div className="mb-1">{selectedPurchaseType === 'digital' ? 'Digital' : 'Physical'} costs {getCost(selectedPurchaseType)} HeartCoins.</div>
+                              <div>You need {getCost(selectedPurchaseType) - (profile?.heartcoin_balance || 0)} more HeartCoins.</div>
+                            </div>
+                            
+                            {/* Disabled button and earn more link */}
+                            <div className="flex flex-col gap-2 items-center">
+                              <button
+                                disabled
+                                className="flex items-center gap-1 px-2 py-1 rounded border border-red-400/40 bg-red-500/10 text-xs opacity-60 cursor-not-allowed"
                               >
-                                30
-                              </span>
-                              <span 
-                                className="text-pink-200 font-medium text-xs"
+                                <span className="text-red-300 text-xs">NOT ENOUGH HEARTCOINS</span>
+                              </button>
+                              <button
+                                onClick={openHeartCoinPopout}
+                                className="text-xs text-blue-300 hover:text-blue-200 underline"
+                                style={{ textShadow: '0 0 4px rgba(147,197,253,0.6)' }}
+                              >
+                                Earn more HeartCoins
+                              </button>
+                              <button
+                                onClick={resetPurchaseState}
+                                className="text-xs text-pink-300 hover:text-pink-200"
                                 style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
                               >
-                                PHYSICAL
-                              </span>
-                            </button>
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* State C: Confirm digital purchase */}
+                        {purchaseState === 'confirm-digital' && selectedPurchaseType === 'digital' && (
+                          <div className="mt-2">
+                            <div 
+                              className="text-center mb-3 text-xs p-2 rounded"
+                              style={{ 
+                                backgroundColor: 'rgba(34,197,94,0.1)',
+                                border: '1px solid rgba(34,197,94,0.3)',
+                                color: '#86EFAC'
+                              }}
+                            >
+                              <div className="mb-1">Confirm purchase of {currentCard.name} {selectedPurchaseType.toUpperCase()}.</div>
+                              <div className="mb-1">This costs {getCost(selectedPurchaseType)} HeartCoins.</div>
+                              <div>You have {profile?.heartcoin_balance || 0} HeartCoins and will have {(profile?.heartcoin_balance || 0) - getCost(selectedPurchaseType)} after this purchase.</div>
+                            </div>
+                            
+                            <div className="flex justify-center gap-2">
+                              <button
+                                onClick={handleConfirmPurchase}
+                                className="px-3 py-1 rounded border border-green-400/60 bg-green-500/10 hover:bg-green-500/20 transition-all duration-200 text-xs text-green-300"
+                                style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)' }}
+                              >
+                                Confirm Purchase
+                              </button>
+                              <button
+                                onClick={resetPurchaseState}
+                                className="px-3 py-1 rounded border border-pink-400/60 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs text-pink-300"
+                                style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* State D: Physical shipping form */}
+                        {purchaseState === 'physical-form' && selectedPurchaseType === 'physical' && (
+                          <div className="mt-2">
+                            {/* Header */}
+                            <div 
+                              className="text-center mb-2 text-xs font-bold"
+                              style={{ 
+                                color: '#FF69B4',
+                                textShadow: '0 0 4px rgba(255,105,180,0.6)'
+                              }}
+                            >
+                              Ship a physical {currentCard.name} card
+                            </div>
+                            <div 
+                              className="text-center mb-3 text-xs"
+                              style={{ 
+                                color: '#FFB6C1',
+                                textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                              }}
+                            >
+                              Enter your mailing details so we can send your card.
+                            </div>
+
+                            {/* Error display */}
+                            {Object.keys(shippingErrors).length > 0 && (
+                              <div 
+                                className="text-center mb-2 text-xs p-2 rounded"
+                                style={{ 
+                                  backgroundColor: 'rgba(239,68,68,0.1)',
+                                  border: '1px solid rgba(239,68,68,0.3)',
+                                  color: '#FCA5A5'
+                                }}
+                              >
+                                Please fill in all required fields
+                              </div>
+                            )}
+
+                            {/* Shipping form */}
+                            <div className="grid grid-cols-2 gap-2 mb-3">
+                              {/* Full name - spans 2 columns */}
+                              <div className="col-span-2">
+                                <input
+                                  type="text"
+                                  placeholder="Full name *"
+                                  value={shippingForm.fullName}
+                                  onChange={(e) => updateShippingField('fullName', e.target.value)}
+                                  className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
+                                    shippingErrors.fullName ? 'border-red-400/60' : 'border-pink-400/40'
+                                  }`}
+                                  style={{ 
+                                    boxShadow: `0 0 8px ${shippingErrors.fullName ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
+                                    textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                                  }}
+                                />
+                              </div>
+
+                              {/* Street address - spans 2 columns */}
+                              <div className="col-span-2">
+                                <input
+                                  type="text"
+                                  placeholder="Street address *"
+                                  value={shippingForm.streetAddress}
+                                  onChange={(e) => updateShippingField('streetAddress', e.target.value)}
+                                  className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
+                                    shippingErrors.streetAddress ? 'border-red-400/60' : 'border-pink-400/40'
+                                  }`}
+                                  style={{ 
+                                    boxShadow: `0 0 8px ${shippingErrors.streetAddress ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
+                                    textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                                  }}
+                                />
+                              </div>
+
+                              {/* Apartment/unit - spans 2 columns */}
+                              <div className="col-span-2">
+                                <input
+                                  type="text"
+                                  placeholder="Apartment or unit (optional)"
+                                  value={shippingForm.apartmentUnit}
+                                  onChange={(e) => updateShippingField('apartmentUnit', e.target.value)}
+                                  className="w-full px-2 py-1 rounded border border-pink-400/40 bg-black/40 text-pink-200 text-xs placeholder-pink-300/60"
+                                  style={{ 
+                                    boxShadow: '0 0 8px rgba(255,105,180,0.3)',
+                                    textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                                  }}
+                                />
+                              </div>
+
+                              {/* City */}
+                              <div>
+                                <input
+                                  type="text"
+                                  placeholder="City *"
+                                  value={shippingForm.city}
+                                  onChange={(e) => updateShippingField('city', e.target.value)}
+                                  className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
+                                    shippingErrors.city ? 'border-red-400/60' : 'border-pink-400/40'
+                                  }`}
+                                  style={{ 
+                                    boxShadow: `0 0 8px ${shippingErrors.city ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
+                                    textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                                  }}
+                                />
+                              </div>
+
+                              {/* State */}
+                              <div>
+                                <input
+                                  type="text"
+                                  placeholder="State *"
+                                  value={shippingForm.state}
+                                  onChange={(e) => updateShippingField('state', e.target.value)}
+                                  className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
+                                    shippingErrors.state ? 'border-red-400/60' : 'border-pink-400/40'
+                                  }`}
+                                  style={{ 
+                                    boxShadow: `0 0 8px ${shippingErrors.state ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
+                                    textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                                  }}
+                                />
+                              </div>
+
+                              {/* ZIP code - spans 2 columns */}
+                              <div className="col-span-2">
+                                <input
+                                  type="text"
+                                  placeholder="ZIP code *"
+                                  value={shippingForm.zipCode}
+                                  onChange={(e) => updateShippingField('zipCode', e.target.value)}
+                                  className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
+                                    shippingErrors.zipCode ? 'border-red-400/60' : 'border-pink-400/40'
+                                  }`}
+                                  style={{ 
+                                    boxShadow: `0 0 8px ${shippingErrors.zipCode ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
+                                    textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                                  }}
+                                />
+                              </div>
+                            </div>
+                            
+                            {/* Action buttons */}
+                            <div className="flex justify-center gap-2">
+                              <button
+                                onClick={handlePhysicalPurchase}
+                                className="px-3 py-1 rounded border border-green-400/60 bg-green-500/10 hover:bg-green-500/20 transition-all duration-200 text-xs text-green-300"
+                                style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)' }}
+                              >
+                                Confirm Physical Purchase
+                              </button>
+                              <button
+                                onClick={resetPurchaseState}
+                                className="px-3 py-1 rounded border border-pink-400/60 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs text-pink-300"
+                                style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* State E: Purchase successful */}
+                        {purchaseState === 'success' && selectedPurchaseType && (
+                          <div className="mt-2">
+                            <div 
+                              className="text-center text-xs p-2 rounded"
+                              style={{ 
+                                backgroundColor: 'rgba(34,197,94,0.1)',
+                                border: '1px solid rgba(34,197,94,0.3)',
+                                color: '#86EFAC'
+                              }}
+                            >
+                              {selectedPurchaseType === 'physical' ? (
+                                <>
+                                  <div className="mb-1">✓ Order received</div>
+                                  <div className="mb-1">Your {currentCard.name} physical card is on its way to you.</div>
+                                  <div className="text-xs">You can update your address later by contacting support if needed.</div>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="mb-1">✓ Purchased!</div>
+                                  <div>{currentCard.name} has been added to your binder.</div>
+                                </>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -947,228 +1482,6 @@ export default function BinderModal({ open, onClose }: Props) {
               </>
             )}
           </div>
-          
-          {/* Digital Purchase Popup */}
-          {showDigitalPurchase && (() => {
-            const cards = getFilteredCards();
-            const currentCard = cards[currentCardIndex];
-            
-            if (!currentCard) {
-              return null;
-            }
-
-            const hasEnoughCoins = (profile?.heartcoin_balance || 0) >= 20;
-
-            return (
-              <div 
-                className="absolute inset-0 z-10 flex items-center justify-center p-4"
-                onClick={() => {
-                  try { sfx.play('close', 0.8); } catch {}
-                  setShowDigitalPurchase(false);
-                }}
-              >
-                {/* Purchase popup container */}
-                <div 
-                  className="relative"
-                  onClick={(e) => e.stopPropagation()}
-                  style={{
-                    width: 'min(90vw, 300px)',
-                    padding: '20px',
-                    borderRadius: 18,
-                    background: 'rgba(0,0,0,0.8)',
-                    border: '1px solid rgba(255,105,180,0.55)',
-                    boxShadow: '0 -8px 25px rgba(255,105,180,0.4), 0 -4px 15px rgba(255,105,180,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(255,105,180,0.45)',
-                    backdropFilter: 'blur(12px) saturate(140%)',
-                    color: '#FF69B4',
-                  }}
-                >
-                  {/* Close button */}
-                  <button
-                    onClick={() => {
-                      try { sfx.play('close', 0.8); } catch {}
-                      setShowDigitalPurchase(false);
-                    }}
-                    className="absolute top-2 right-2 text-pink-400 hover:text-pink-200 cursor-pointer w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center"
-                    style={{ 
-                      fontSize: '14px',
-                      boxShadow: '0 0 10px rgba(255,105,180,0.6)',
-                      textShadow: '0 0 6px rgba(255,105,180,0.8)',
-                      background: 'rgba(255,105,180,0.1)',
-                    }}
-                  >
-                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                      <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                      <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                  </button>
-                  
-                  {/* Header */}
-                  <div 
-                    className="text-center mb-6 font-bold"
-                    style={{ 
-                      color: '#FF69B4', 
-                      textShadow: '0 0 8px rgba(255,105,180,0.6)',
-                      fontSize: '18px'
-                    }}
-                  >
-                    Confirm Purchase
-                  </div>
-                  
-                  {/* Section 1 - Your Balance */}
-                  <div className="mb-4">
-                    <div 
-                      className="text-left mb-2 font-semibold"
-                      style={{ 
-                        color: '#FFB6C1', 
-                        textShadow: '0 0 4px rgba(255,182,193,0.6)',
-                        fontSize: '12px'
-                      }}
-                    >
-                      Section 1 — Your Balance
-                    </div>
-                    <div 
-                      className="text-left mb-1"
-                      style={{ 
-                        color: '#E6E6FA', 
-                        fontSize: '11px'
-                      }}
-                    >
-                      You Have:
-                    </div>
-                    <div className="flex items-center gap-2 mb-4">
-                      <span style={{ color: '#FFD700', fontSize: '14px' }}>⚡</span>
-                      <span 
-                        className="text-yellow-300 font-bold"
-                        style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)', fontSize: '14px' }}
-                      >
-                        {profile?.heartcoin_balance || 0} HeartCoins
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {/* Section 2 - Cost */}
-                  <div className="mb-4">
-                    <div 
-                      className="text-left mb-2 font-semibold"
-                      style={{ 
-                        color: '#FFB6C1', 
-                        textShadow: '0 0 4px rgba(255,182,193,0.6)',
-                        fontSize: '12px'
-                      }}
-                    >
-                      Section 2 — Cost
-                    </div>
-                    <div 
-                      className="text-left mb-1"
-                      style={{ 
-                        color: '#E6E6FA', 
-                        fontSize: '11px'
-                      }}
-                    >
-                      Cost:
-                    </div>
-                    <div className="flex items-center gap-2 mb-4">
-                      <span style={{ color: '#FFD700', fontSize: '14px' }}>⚡</span>
-                      <span 
-                        className="text-yellow-300 font-bold"
-                        style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)', fontSize: '14px' }}
-                      >
-                        20 HeartCoins
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {/* Section 3 - Status */}
-                  <div className="mb-6">
-                    <div 
-                      className="text-left mb-2 font-semibold"
-                      style={{ 
-                        color: '#FFB6C1', 
-                        textShadow: '0 0 4px rgba(255,182,193,0.6)',
-                        fontSize: '12px'
-                      }}
-                    >
-                      Section 3 — Status
-                    </div>
-                    {hasEnoughCoins ? (
-                      <div className="flex items-center gap-2">
-                        <span style={{ color: '#10B981', fontSize: '14px' }}>✓</span>
-                        <span 
-                          className="text-green-300"
-                          style={{ textShadow: '0 0 4px rgba(16,185,129,0.6)', fontSize: '11px' }}
-                        >
-                          You have enough to purchase this card.
-                        </span>
-                      </div>
-                    ) : (
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span style={{ color: '#F59E0B', fontSize: '14px' }}>✦</span>
-                          <span 
-                            className="text-yellow-300"
-                            style={{ textShadow: '0 0 4px rgba(245,158,11,0.6)', fontSize: '11px' }}
-                          >
-                            You need 20 HeartCoins.
-                          </span>
-                        </div>
-                        <div 
-                          className="text-red-300 text-left"
-                          style={{ textShadow: '0 0 4px rgba(248,113,113,0.6)', fontSize: '11px', marginLeft: '20px' }}
-                        >
-                          You currently have {profile?.heartcoin_balance || 0}.
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Section 4 - Button */}
-                  <div className="mb-2">
-                    <div 
-                      className="text-left mb-3 font-semibold"
-                      style={{ 
-                        color: '#FFB6C1', 
-                        textShadow: '0 0 4px rgba(255,182,193,0.6)',
-                        fontSize: '12px'
-                      }}
-                    >
-                      Section 4 — Button
-                    </div>
-                    <button
-                      onClick={async () => {
-                        if (hasEnoughCoins && profile) {
-                          try { sfx.play('success', 0.8); } catch {}
-                          // Add card to collection
-                          setOwnedCards(prev => new Set([...prev, currentCard.name]));
-                          // Update profile balance
-                          await updateProfile({ 
-                            heartcoin_balance: (profile.heartcoin_balance || 0) - 20 
-                          });
-                          setShowDigitalPurchase(false);
-                        } else {
-                          try { sfx.play('error', 0.8); } catch {}
-                        }
-                      }}
-                      disabled={!hasEnoughCoins}
-                      className={`w-full py-3 px-4 rounded-lg font-bold text-sm transition-all duration-200 ${
-                        hasEnoughCoins 
-                          ? 'bg-green-500/20 border-green-400/80 text-green-300 hover:bg-green-500/30 hover:border-green-400' 
-                          : 'bg-red-500/20 border-red-400/80 text-red-300 cursor-not-allowed opacity-60'
-                      }`}
-                      style={{
-                        border: `1px solid ${hasEnoughCoins ? 'rgba(34,197,94,0.8)' : 'rgba(239,68,68,0.8)'}`,
-                        boxShadow: `0 0 15px ${hasEnoughCoins ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}`,
-                        textShadow: hasEnoughCoins 
-                          ? '0 0 8px rgba(34,197,94,0.8)' 
-                          : '0 0 8px rgba(239,68,68,0.8)',
-                      }}
-                    >
-                      {hasEnoughCoins ? 'ADD TO COLLECTION' : 'NOT ENOUGH HEARTCOINS'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
         </div>
       </div>
 

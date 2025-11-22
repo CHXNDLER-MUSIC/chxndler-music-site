@@ -339,7 +339,7 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
         {/* Dollar sign button */}
         <button
           type="button"
-          className="absolute top-16 left-4 w-10 h-10 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-600 hover:from-yellow-300 hover:to-yellow-500 text-black font-bold text-xl flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg hover:shadow-xl"
+          className="absolute top-4 left-16 w-10 h-10 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-600 hover:from-yellow-300 hover:to-yellow-500 text-black font-bold text-xl flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg hover:shadow-xl"
           style={{
             boxShadow: '0 0 15px rgba(255, 215, 0, 0.5)',
             border: '2px solid rgba(255, 215, 0, 0.8)'
@@ -382,67 +382,81 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
       `}</style>
     </HeartversePopup>
 
-    {/* Custom Venmo Popup */}
+    {/* Venmo Web Integration Popup */}
     {showVenmoPopup && (
       <div 
         className="fixed inset-0 z-[9999]"
         aria-modal="true"
         role="dialog"
-        aria-label="Send $1 to @chxndlerthealien"
+        aria-label="Venmo Payment Page"
       >
         <div
-          className="absolute inset-0 bg-black/85 backdrop-blur-md"
+          className="absolute inset-0 bg-black/90 backdrop-blur-md"
           onClick={() => setShowVenmoPopup(false)}
         />
         <div 
-          className="absolute max-w-sm z-[10000]"
-          style={{
-            top: '100px',
-            left: '50px'
-          }}
+          className="absolute inset-0 flex items-center justify-center p-4 z-[10000]"
         >
-          <div className="relative rounded-2xl p-6 backdrop-blur-md border-2 border-[#3D95CE]/60 bg-white/10 shadow-[0_0_26px_rgba(61,149,206,0.6)]">
-            <button
-              type="button"
-              aria-label="Close"
-              onClick={() => setShowVenmoPopup(false)}
-              className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#3D95CE] text-[#3D95CE] font-bold transition-all duration-200 hover:scale-110 hover:bg-[#3D95CE]/20"
-            >
-              ×
-            </button>
-
-            <h2 className="text-lg font-bold text-white mb-4" style={{ color: '#3D95CE', textShadow: '0 0 10px rgba(61, 149, 206, 0.8)' }}>
-              💸 SEND $1 TO @CHXNDLERTHEALIEN
-            </h2>
-            
-            <div className="space-y-4">
-              <p className="text-sm text-white/80">
-                Click the button below to open Venmo and send $1 to @chxndlerthealien
-              </p>
-
+          <div className="relative w-full max-w-4xl h-full max-h-[90vh] rounded-2xl backdrop-blur-md border-2 border-[#3D95CE]/60 bg-white/10 shadow-[0_0_26px_rgba(61,149,206,0.6)] overflow-hidden">
+            <div className="flex items-center justify-between p-4 bg-black/40 border-b border-[#3D95CE]/30">
+              <h2 className="text-lg font-bold text-white" style={{ color: '#3D95CE', textShadow: '0 0 10px rgba(61, 149, 206, 0.8)' }}>
+                💸 Send $1 via Venmo
+              </h2>
               <button
-                onClick={() => {
-                  const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=1&note=${encodeURIComponent('Thanks for the music!')}`;
-                  const webVenmoUrl = `https://venmo.com/u/chxndlerthealien?txn=pay&amount=1&note=${encodeURIComponent('Thanks for the music!')}`;
-                  
-                  window.open(venmoUrl, '_blank');
-                  setTimeout(() => {
-                    window.open(webVenmoUrl, '_blank');
-                  }, 1500);
-                  
-                  setShowVenmoPopup(false);
-                }}
-                className="w-full px-6 py-4 rounded-lg font-bold text-white transition-all duration-300 hover:scale-105"
-                style={{
-                  background: 'linear-gradient(135deg, #3D95CE, #5BA8D8)',
-                  border: '2px solid #3D95CE',
-                  boxShadow: '0 0 25px rgba(61, 149, 206, 0.5)',
-                  textShadow: '0 0 8px rgba(61, 149, 206, 0.6)'
-                }}
+                type="button"
+                aria-label="Close"
+                onClick={() => setShowVenmoPopup(false)}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#3D95CE] text-[#3D95CE] font-bold transition-all duration-200 hover:scale-110 hover:bg-[#3D95CE]/20"
               >
-                <span className="text-2xl mr-3">📱</span>
-                Open Venmo & Send $1
+                ×
               </button>
+            </div>
+            
+            <div className="relative h-full p-4">
+              <div className="w-full h-full bg-white rounded-lg overflow-hidden shadow-lg">
+                <iframe
+                  src="https://venmo.com/u/chxndlerthealien?txn=pay&amount=1&note=Thanks%20for%20the%20music!"
+                  title="Venmo Payment"
+                  className="w-full h-full border-0"
+                  style={{ minHeight: '600px' }}
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
+              
+              {/* Fallback buttons in case iframe doesn't work */}
+              <div className="absolute bottom-6 left-6 right-6 flex gap-3 opacity-90">
+                <button
+                  onClick={() => {
+                    const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=1&note=${encodeURIComponent('Thanks for the music!')}`;
+                    window.open(venmoUrl, '_blank');
+                  }}
+                  className="flex-1 px-4 py-3 rounded-lg font-bold text-white transition-all duration-300 hover:scale-105"
+                  style={{
+                    background: 'linear-gradient(135deg, #3D95CE, #5BA8D8)',
+                    border: '2px solid #3D95CE',
+                    boxShadow: '0 0 15px rgba(61, 149, 206, 0.4)',
+                    textShadow: '0 0 8px rgba(61, 149, 206, 0.6)'
+                  }}
+                >
+                  📱 Open Venmo App
+                </button>
+                <button
+                  onClick={() => {
+                    const webVenmoUrl = `https://venmo.com/u/chxndlerthealien?txn=pay&amount=1&note=${encodeURIComponent('Thanks for the music!')}`;
+                    window.open(webVenmoUrl, '_blank');
+                  }}
+                  className="flex-1 px-4 py-3 rounded-lg font-bold text-white transition-all duration-300 hover:scale-105"
+                  style={{
+                    background: 'linear-gradient(135deg, #5BA8D8, #3D95CE)',
+                    border: '2px solid #3D95CE',
+                    boxShadow: '0 0 15px rgba(61, 149, 206, 0.4)',
+                    textShadow: '0 0 8px rgba(61, 149, 206, 0.6)'
+                  }}
+                >
+                  🌐 Open in Browser
+                </button>
+              </div>
             </div>
           </div>
         </div>

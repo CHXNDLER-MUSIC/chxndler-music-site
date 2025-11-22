@@ -2685,6 +2685,8 @@ export default function HUDPanel({
                           e.stopPropagation(); 
                           try { sfx.play('click', 0.45); } catch {}; 
                           try { trackAnalytics('stars_clicked', { location: 'hud_controls' }); } catch {}; 
+                          // Change beam color to yellow when Stars button is clicked
+                          try { onBeamColorChange?.('yellow'); } catch {}
                           if (showSoulSkyPopover) { 
                             try { sfx.play('close', 0.4); } catch {}; 
                             setShowSoulSkyPopover(false); 
@@ -3471,13 +3473,13 @@ export default function HUDPanel({
                               </div>
                               <ul style={{ margin: 0, paddingLeft: 8, listStyle: 'disc' }}>
                                 <li style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 2, color: '#fff' }}>
-                                  We believe being your <span style={{ color: '#00FFFF !important', textShadow: '0 0 10px #00FFFF, 0 0 20px #00FFFF, 0 0 30px #00FFFF', fontWeight: 'inherit !important', WebkitTextFillColor: '#00FFFF !important', textFillColor: '#00FFFF !important' }}>truest self</span> is the beginning of freedom.
+                                  We believe being your <span style={{ color: '#0099FF !important', textShadow: '0 0 5px #0099FF, 0 0 10px #0099FF, 0 0 15px #0099FF, 0 0 20px #0099FF', fontWeight: 'inherit !important', WebkitTextFillColor: '#0099FF !important', textFillColor: '#0099FF !important', filter: 'drop-shadow(0 0 3px #0099FF)' }}>truest self</span> is the beginning of freedom.
                                 </li>
                                 <li style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 2, color: '#fff' }}>
-                                  We believe <span style={{ color: '#FFFF00', textShadow: '0 0 10px #FFFF00, 0 0 20px #FFFF00, 0 0 30px #FFFF00' }}>passion</span> is sacred and should be pursued loudly.
+                                  We believe <span style={{ color: '#FFD700 !important', textShadow: '0 0 5px #FFD700, 0 0 10px #FFD700, 0 0 15px #FFD700, 0 0 20px #FFD700', fontWeight: 'inherit !important', WebkitTextFillColor: '#FFD700 !important', textFillColor: '#FFD700 !important', filter: 'drop-shadow(0 0 3px #FFD700)' }}>passion</span> is sacred and should be pursued loudly.
                                 </li>
                                 <li style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 2, color: '#fff' }}>
-                                  We believe <span style={{ color: '#FF1493', textShadow: '0 0 10px #FF1493, 0 0 20px #FF1493, 0 0 30px #FF1493' }}>love</span> is the force that connects every soul.
+                                  We believe <span style={{ color: '#FF1493 !important', textShadow: '0 0 5px #FF1493, 0 0 10px #FF1493, 0 0 15px #FF1493, 0 0 20px #FF1493', fontWeight: 'inherit !important', WebkitTextFillColor: '#FF1493 !important', textFillColor: '#FF1493 !important', filter: 'drop-shadow(0 0 3px #FF1493)' }}>love</span> is the force that connects every soul.
                                 </li>
                               </ul>
                             </div>
@@ -6462,7 +6464,7 @@ export default function HUDPanel({
                           boxShadow: journalCompletedToday ? '0 0 20px rgba(144,238,144,0.6), 0 0 40px rgba(144,238,144,0.4)' : (questionResponse.trim() ? '0 0 20px rgba(255,215,0,0.6), 0 0 40px rgba(255,223,0,0.4), inset 0 1px rgba(255,255,255,0.2)' : 'none')
                         }}
                       >
-{journalCompletedToday ? 'Completed Today' : 'Cast into the Stars'}
+{journalCompletedToday ? "YOUR SOUL STAR SHINES ABOVE" : 'Cast into the Stars'}
                       </button>
 
                       {/* Yellow beam effect */}
@@ -6491,15 +6493,9 @@ export default function HUDPanel({
                           top: '50%',
                           left: '50%',
                           transform: 'translate(-50%, -50%)',
-                          fontSize: '18px',
-                          fontWeight: 'bold',
-                          color: '#FFFFFF',
-                          textShadow: '0 0 20px rgba(255,255,255,0.8)',
                           animation: 'starBirth 3s ease-out forwards',
-                          zIndex: 5,
-                          textAlign: 'center'
+                          zIndex: 5
                         }}>
-                          ✨ Your constellation shines above ✨
                         </div>
                       )}
                     </div>

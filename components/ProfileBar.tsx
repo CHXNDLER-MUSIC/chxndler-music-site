@@ -43,6 +43,7 @@ interface ProfileBarProps {
   onCloseBlueDisplay?: () => void;
   onOpenBlueDisplay?: () => void;
   onOpenJournal?: () => void;
+  onJournalCompleted?: () => void;
   onBeamColorChange?: (color: string) => void;
   savedAlienName?: string; // Name from HUD signup flow
   savedAlienElement?: string; // Element from HUD signup flow
@@ -55,6 +56,7 @@ export default function ProfileBar({
   onCloseBlueDisplay,
   onOpenBlueDisplay,
   onOpenJournal,
+  onJournalCompleted,
   onBeamColorChange,
   savedAlienName,
   savedAlienElement,
@@ -108,6 +110,8 @@ export default function ProfileBar({
   // Handler for when journal gets completed
   const handleJournalCompleted = async () => {
     setJournalCompletedToday(true);
+    // Notify parent component
+    onJournalCompleted?.();
     // Refresh profile data to get updated HeartCoin balance
     const completed = await checkJournalCompletion();
     setJournalCompletedToday(completed);
@@ -342,8 +346,13 @@ export default function ProfileBar({
               onHoverSound={() => sfx.play('hover', 0.8)}
               onCloseBlueDisplay={onCloseBlueDisplay}
               onOpenBlueDisplay={onOpenBlueDisplay}
+              onBeamColorChange={onBeamColorChange}
               isActive={activePanel === 'code'}
-              onClick={() => togglePanel('code')}
+              onClick={() => {
+                togglePanel('code');
+                // Call the onCodeClick callback if provided
+                onCodeClick?.();
+              }}
             />
           </div>
 
@@ -355,6 +364,7 @@ export default function ProfileBar({
                 onHoverSound={() => sfx.play('hover', 0.8)}
                 onCloseBlueDisplay={onCloseBlueDisplay}
                 onOpenBlueDisplay={onOpenBlueDisplay}
+                onBeamColorChange={onBeamColorChange}
                 isActive={activePanel === 'badges'}
                 onClick={() => togglePanel('badges')}
               />
@@ -366,6 +376,7 @@ export default function ProfileBar({
                 onHoverSound={() => sfx.play('hover', 0.8)}
                 onCloseBlueDisplay={onCloseBlueDisplay}
                 onOpenBlueDisplay={onOpenBlueDisplay}
+                onBeamColorChange={onBeamColorChange}
                 isActive={activePanel === 'binder'}
                 onClick={() => togglePanel('binder')}
               />

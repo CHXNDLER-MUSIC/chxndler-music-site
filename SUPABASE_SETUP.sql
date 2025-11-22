@@ -148,3 +148,32 @@ create trigger trigger_update_journey
   before update of heart_coins_total on profiles
   for each row
   execute function update_profile_journey();
+
+-- Journal entries table for daily journaling
+create table if not exists public.journal_entries (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  entry_date date not null,
+  intention text,
+  reflection text,
+  soul_star text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists journal_entries_user_date_idx
+  on public.journal_entries (user_id, entry_date);
+
+-- Enable RLS for journal_entries
+alter table public.journal_entries enable row level security;
+
+-- Allow authenticated users to manage their own journal entries
+create policy "allow_journal_entries_authenticated"
+  on public.journal_entries for all to authenticated
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+-- Allow anonymous users to manage their own journal entries (for our auth-less setup)
+create policy "allow_journal_entries_anon"
+  on public.journal_entries for all to anon
+  using (true)
+  with check (true);

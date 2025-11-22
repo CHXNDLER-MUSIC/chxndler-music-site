@@ -842,6 +842,72 @@ export default function DashboardApp({ initialSlug } = {}) {
           }, BEAM_SWITCH_DELAY_MS);
         }
       }
+    } else if (color === 'white') {
+      if (beamColor === 'white') {
+        // Already showing white - toggle off without opening blue display
+        setBeamTransitioning(true);
+        setExplicitClose(true);
+        closeAllDisplays();
+        setTimeout(() => {
+          setBeamColor('blue'); // Reset to blue but keep displays closed
+          setBeamTransitioning(false);
+          setExplicitClose(false);
+        }, 150);
+      } else {
+        // Switch to white - close other displays and show white beam
+        setBeamTransitioning(true);
+        closeAllDisplays();
+        setTimeout(() => {
+          setBeamColor('white');
+          setBeamEnabled(true);
+          setBeamTransitioning(false);
+          // White beam doesn't open any specific display, just shows the beam
+        }, BEAM_SWITCH_DELAY_MS);
+      }
+    } else if (color === 'magenta') {
+      if (beamColor === 'magenta') {
+        // Already showing magenta - toggle off without opening blue display
+        setBeamTransitioning(true);
+        setExplicitClose(true);
+        closeAllDisplays();
+        setTimeout(() => {
+          setBeamColor('blue'); // Reset to blue but keep displays closed
+          setBeamTransitioning(false);
+          setExplicitClose(false);
+        }, 150);
+      } else {
+        // Switch to magenta - close other displays and show magenta beam
+        setBeamTransitioning(true);
+        closeAllDisplays();
+        setTimeout(() => {
+          setBeamColor('magenta');
+          setBeamEnabled(true);
+          setBeamTransitioning(false);
+          // Magenta beam doesn't open any specific display, just shows the beam
+        }, BEAM_SWITCH_DELAY_MS);
+      }
+    } else if (color === 'cyan') {
+      if (beamColor === 'cyan') {
+        // Already showing cyan - toggle off without opening blue display
+        setBeamTransitioning(true);
+        setExplicitClose(true);
+        closeAllDisplays();
+        setTimeout(() => {
+          setBeamColor('blue'); // Reset to blue but keep displays closed
+          setBeamTransitioning(false);
+          setExplicitClose(false);
+        }, 150);
+      } else {
+        // Switch to cyan - close other displays and show cyan beam
+        setBeamTransitioning(true);
+        closeAllDisplays();
+        setTimeout(() => {
+          setBeamColor('cyan');
+          setBeamEnabled(true);
+          setBeamTransitioning(false);
+          // Cyan beam doesn't open any specific display, just shows the beam
+        }, BEAM_SWITCH_DELAY_MS);
+      }
     }
   }, [beamColor, showHUD, joinAlienOpen, beamTransitioning, explicitClose]);
 
@@ -1057,17 +1123,17 @@ export default function DashboardApp({ initialSlug } = {}) {
   const getBeamGradient = useMemo(() => {
     const gradients = {
       blue: `linear-gradient(180deg, 
-        rgba(25,227,255, 0.0) 0%, 
-        rgba(25,227,255, 0.15) 15%, 
-        rgba(25,227,255, 0.35) 40%, 
-        rgba(25,227,255, 0.55) 65%, 
-        rgba(25,227,255, 0.35) 85%, 
-        rgba(25,227,255, 0.0) 100%),
+        rgba(0,255,255, 0.0) 0%, 
+        rgba(0,255,255, 0.15) 15%, 
+        rgba(0,255,255, 0.35) 40%, 
+        rgba(0,255,255, 0.55) 65%, 
+        rgba(0,255,255, 0.35) 85%, 
+        rgba(0,255,255, 0.0) 100%),
       repeating-linear-gradient(180deg,
         transparent 0px,
-        rgba(25,227,255, 0.1) 20px,
-        rgba(25,227,255, 0.2) 40px,
-        rgba(25,227,255, 0.1) 60px,
+        rgba(0,255,255, 0.1) 20px,
+        rgba(0,255,255, 0.2) 40px,
+        rgba(0,255,255, 0.1) 60px,
         transparent 80px)`,
       yellow: `linear-gradient(180deg, 
         rgba(242,239,29, 0.0) 0%, 
@@ -1094,6 +1160,45 @@ export default function DashboardApp({ initialSlug } = {}) {
         rgba(252,84,175, 0.1) 20px,
         rgba(252,84,175, 0.2) 40px,
         rgba(252,84,175, 0.1) 60px,
+        transparent 80px)`,
+      white: `linear-gradient(180deg, 
+        rgba(255,255,255, 0.0) 0%, 
+        rgba(255,255,255, 0.15) 15%, 
+        rgba(255,255,255, 0.35) 40%, 
+        rgba(255,255,255, 0.55) 65%, 
+        rgba(255,255,255, 0.35) 85%, 
+        rgba(255,255,255, 0.0) 100%),
+      repeating-linear-gradient(180deg,
+        transparent 0px,
+        rgba(255,255,255, 0.1) 20px,
+        rgba(255,255,255, 0.2) 40px,
+        rgba(255,255,255, 0.1) 60px,
+        transparent 80px)`,
+      magenta: `linear-gradient(180deg, 
+        rgba(220,20,180, 0.0) 0%, 
+        rgba(220,20,180, 0.15) 15%, 
+        rgba(220,20,180, 0.35) 40%, 
+        rgba(220,20,180, 0.55) 65%, 
+        rgba(220,20,180, 0.35) 85%, 
+        rgba(220,20,180, 0.0) 100%),
+      repeating-linear-gradient(180deg,
+        transparent 0px,
+        rgba(220,20,180, 0.1) 20px,
+        rgba(220,20,180, 0.2) 40px,
+        rgba(220,20,180, 0.1) 60px,
+        transparent 80px)`,
+      cyan: `linear-gradient(180deg, 
+        rgba(0,255,255, 0.0) 0%, 
+        rgba(0,255,255, 0.15) 15%, 
+        rgba(0,255,255, 0.35) 40%, 
+        rgba(0,255,255, 0.55) 65%, 
+        rgba(0,255,255, 0.35) 85%, 
+        rgba(0,255,255, 0.0) 100%),
+      repeating-linear-gradient(180deg,
+        transparent 0px,
+        rgba(0,255,255, 0.1) 20px,
+        rgba(0,255,255, 0.2) 40px,
+        rgba(0,255,255, 0.1) 60px,
         transparent 80px)`
     };
     return gradients[beamColor] || gradients.blue;
@@ -1181,6 +1286,7 @@ export default function DashboardApp({ initialSlug } = {}) {
             }
           }}
           onOpenJournal={handleOpenJournal}
+          onJournalCompleted={handleJournalCompleted}
           onBeamColorChange={handleBeamToggle}
           profileRefreshTrigger={profileRefreshTrigger}
         />
@@ -1257,8 +1363,9 @@ export default function DashboardApp({ initialSlug } = {}) {
   const hudBaseFactor = 0.56;   // original baseline factor used earlier
   const hudYOffset = Math.max(0, Math.round(100 * (hudBaseFactor - hudHeightFactor)));
   const handleCodeClick = () => {
-    // TODO: Implement Code modal/route
-    console.log('Code button clicked');
+    // Change beam color to white when Code button is clicked
+    handleBeamToggle('white');
+    console.log('Code button clicked - beam changed to white');
   };
 
   const handleDigitalBinderClick = () => {
@@ -1290,6 +1397,7 @@ export default function DashboardApp({ initialSlug } = {}) {
           }
         }}
         onOpenJournal={handleOpenJournal}
+        onJournalCompleted={handleJournalCompleted}
         onBeamColorChange={handleBeamToggle}
         savedAlienName={savedProfileName}
         savedAlienElement={savedProfileElement}
@@ -1806,6 +1914,7 @@ export default function DashboardApp({ initialSlug } = {}) {
                   onOpenBlueDisplay={() => handleBeamToggle('blue')}
                   shouldOpenJournal={shouldOpenJournal}
                   onJournalOpened={() => setShouldOpenJournal(false)}
+                  onJournalCompleted={handleJournalCompleted}
                   onBeamColorChange={handleBeamToggle}
                 />
               </div>
@@ -2024,6 +2133,7 @@ export default function DashboardApp({ initialSlug } = {}) {
           label="JOURNAL"
           isActive={true}
           autoOpen={true}
+          onBeamColorChange={handleBeamToggle}
         />
       )}
       

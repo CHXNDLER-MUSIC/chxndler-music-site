@@ -3,6 +3,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { sfx } from "@/lib/sfx";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { awardHeartCoins } from "@/utils/heartcoins";
+import { fetchTodaysJournalEntry, upsertJournalEntry, JournalEntry } from "@/utils/journal";
 import SharedButton from "@/components/SharedButton";
 
 export default function HoloStarsButton({
@@ -11,12 +12,14 @@ export default function HoloStarsButton({
   isActive = false,
   autoOpen = false,
   onJournalCompleted,
+  onBeamColorChange,
 }: {
   onClick?: () => void;
   label?: string;
   isActive?: boolean;
   autoOpen?: boolean;
   onJournalCompleted?: () => void;
+  onBeamColorChange?: (color: string) => void;
 }) {
   const sfxRef = useRef<HTMLAudioElement | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -26,6 +29,13 @@ export default function HoloStarsButton({
   const [showSoulStarText, setShowSoulStarText] = useState(false);
   const [showJournalModal, setShowJournalModal] = useState(false);
   const [isJournalCompleted, setIsJournalCompleted] = useState(false);
+  const [showJournalView, setShowJournalView] = useState(false);
+  const [journalEntry, setJournalEntry] = useState<JournalEntry | null>(null);
+  const [intention, setIntention] = useState("");
+  const [reflection, setReflection] = useState("");
+  const [soulStar, setSoulStar] = useState("");
+  const [saveMessage, setSaveMessage] = useState("");
+  const [validationMessage, setValidationMessage] = useState("");
 
   // Check if journal was completed today
   const checkJournalCompletion = async () => {
@@ -56,34 +66,79 @@ export default function HoloStarsButton({
     }
   };
 
-  // Load completion status on mount
+  // Load completion status and journal entry on mount
   useEffect(() => {
     checkJournalCompletion().then(setIsJournalCompleted);
+    loadTodaysJournalEntry();
   }, []);
 
-  // Journal storage functions
-  const saveJournalEntry = () => {
-    const entry = {
-      id: Date.now(),
-      date: new Date().toLocaleDateString(),
-      intention: "Find peace in the present moment",
-      reflection: "Share your cosmic vision",
-      response: questionResponse,
-      timestamp: new Date().toISOString()
-    };
-    
+  // Load today's journal entry
+  const loadTodaysJournalEntry = async () => {
     try {
-      const existingEntries = JSON.parse(localStorage.getItem('soulJournalEntries') || '[]');
-      existingEntries.push(entry);
-      localStorage.setItem('soulJournalEntries', JSON.stringify(existingEntries));
+      const { data: { user } } = await supabaseBrowser.auth.getUser();
+      if (!user) return;
+
+      const entry = await fetchTodaysJournalEntry(supabaseBrowser, user.id);
+      setJournalEntry(entry);
+      
+      if (entry) {
+        setIntention(entry.intention || "");
+        setReflection(entry.reflection || "");
+        setSoulStar(entry.soul_star || "");
+      }
+    } catch (error) {
+      console.error('Error loading journal entry:', error);
+    }
+  };
+
+  // Save journal entry to Supabase
+  const saveJournalEntry = async () => {
+    // Validation
+    if (!intention.trim() && !reflection.trim() && !soulStar.trim()) {
+      setValidationMessage("Write something before saving your star for today");
+      setTimeout(() => setValidationMessage(""), 3000);
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabaseBrowser.auth.getUser();
+      if (!user) {
+        setValidationMessage("User not found");
+        return;
+      }
+
+      const savedEntry = await upsertJournalEntry(supabaseBrowser, user.id, {
+        intention: intention.trim(),
+        reflection: reflection.trim(),
+        soul_star: soulStar.trim()
+      });
+      
+      setJournalEntry(savedEntry);
+      setSaveMessage("Your Soul Star for today is saved");
       
       // Play success sound
       try { sfx.play('click', 0.8); } catch {}
       
-      setShowJournalModal(false);
+      // Clear save message after 3 seconds
+      setTimeout(() => setSaveMessage(""), 3000);
+      
     } catch (error) {
       console.error('Failed to save journal entry:', error);
+      setValidationMessage("Failed to save entry. Please try again.");
+      setTimeout(() => setValidationMessage(""), 3000);
     }
+  };
+
+  // Handle journal button click
+  const handleJournalClick = () => {
+    setShowJournalView(true);
+  };
+
+  // Close journal view
+  const closeJournalView = () => {
+    setShowJournalView(false);
+    setSaveMessage("");
+    setValidationMessage("");
   };
 
   // Auto-open modal when autoOpen is true
@@ -102,6 +157,9 @@ export default function HoloStarsButton({
         a.play().catch(()=>{}); 
       } 
     } catch {}
+    
+    // Change beam color to yellow when Star button is clicked
+    try { onBeamColorChange?.('yellow'); } catch {}
     
     // Start black sky warp transition
     setShowModal(true);
@@ -382,7 +440,7 @@ export default function HoloStarsButton({
         .daily-intention {
           color: #FFFF00;
           font-size: clamp(0.9rem, 3vw, 1.1rem);
-          margin-bottom: 1rem;
+          margin-bottom: 0.5rem;
           text-align: center;
           font-style: italic;
           text-shadow: 0 0 8px #FFFF00;
@@ -392,7 +450,7 @@ export default function HoloStarsButton({
         .solsky-header h1 {
           color: #FFFF00;
           font-size: clamp(1.8rem, 6vw, 2.5rem);
-          margin: 0 0 1rem 0;
+          margin: 0 0 0.25rem 0;
           text-shadow: 0 0 15px #FFFF00;
           font-weight: bold;
           letter-spacing: 0.1em;
@@ -401,7 +459,7 @@ export default function HoloStarsButton({
         .question-modal h2 {
           color: #FFFF00;
           font-size: clamp(1.3rem, 4vw, 1.6rem);
-          margin-bottom: 1.5rem;
+          margin: 0 0 0.75rem 0;
           text-shadow: 0 0 10px #FFFF00;
         }
         
@@ -464,6 +522,20 @@ export default function HoloStarsButton({
         .send-button:disabled {
           opacity: 0.5;
           cursor: not-allowed;
+        }
+        
+        .send-button-completed {
+          background: rgba(0,255,0,0.1);
+          border: 2px solid #00FF00;
+          color: #00FF00;
+          padding: 0.75rem 2rem;
+          border-radius: 0.5rem;
+          font-size: 1rem;
+          font-weight: bold;
+          cursor: not-allowed;
+          transition: all 0.3s ease;
+          text-shadow: 0 0 8px #00FF00, 0 0 16px #00FF00, 0 0 24px #00FF00;
+          box-shadow: 0 0 20px rgba(0,255,0,0.6), 0 0 40px rgba(0,255,0,0.4);
         }
         
         .star-animation-container {
@@ -687,7 +759,7 @@ export default function HoloStarsButton({
               <div className="question-modal">
                 <button 
                   className="journal-button"
-                  onClick={() => setShowJournalModal(true)}
+                  onClick={handleJournalClick}
                   aria-label="Open Journal"
                 >
                   📖
@@ -720,10 +792,10 @@ export default function HoloStarsButton({
                 </div>
                 <button 
                   onClick={handleSendResponse}
-                  className="send-button"
+                  className={isJournalCompleted ? "send-button-completed" : "send-button"}
                   disabled={!questionResponse.trim() || isJournalCompleted}
                 >
-                  {isJournalCompleted ? 'Completed Today' : 'Cast into the Stars'}
+                  {isJournalCompleted ? "YOUR SOUL STAR SHINES ABOVE" : 'Cast into the Stars'}
                 </button>
               </div>
             )}
