@@ -316,16 +316,44 @@ export default function HoloStarsButton({
           transform: scale(0.95);
         }
 
-        .warp-overlay {
+        .journal-popup-overlay {
           position: fixed;
           top: 0;
           left: 0;
           width: 100vw;
           height: 100vh;
           z-index: 9999;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          pointer-events: none;
+        }
+        
+        .journal-popup {
+          position: absolute;
+          top: 4rem;
+          left: 1rem;
+          width: 90vw;
+          max-width: 400px;
+          max-height: 85vh;
+          overflow-y: auto;
+          background: rgba(0, 0, 0, 0.95);
+          border: 2px solid #FFFF00;
+          border-radius: 1rem;
+          box-shadow: 
+            0 0 30px rgba(255, 255, 0, 0.4),
+            0 0 50px rgba(255, 255, 0, 0.2);
+          pointer-events: auto;
+          animation: popupSlideIn 0.3s ease-out;
+          backdrop-filter: blur(10px);
+        }
+        
+        @keyframes popupSlideIn {
+          0% {
+            opacity: 0;
+            transform: translateX(-20px) translateY(-10px) scale(0.95);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(0) translateY(0) scale(1);
+          }
         }
         
         .warp-background {
@@ -921,54 +949,99 @@ export default function HoloStarsButton({
       
       <audio ref={sfxRef} src="/audio/star.mp3" preload="auto" playsInline />
 
-      {/* Black Sky Warp & Modal */}
+      {/* Compact Journal Popup */}
       {showModal && (
-        <div className="warp-overlay">
-          <div className="warp-background" />
-          <div className="modal-container">
+        <div className="journal-popup-overlay">
+          <div className="journal-popup">
             {!showStarAnimation && !showJournalView && (
-              <div className="question-modal">
-                <button 
-                  className="journal-button"
-                  onClick={handleJournalClick}
-                  aria-label="Open Journal"
-                  title="Open Journal"
-                >
-                  JOURNAL
-                </button>
-                <button 
-                  className="close-button"
-                  onClick={() => {
-                    setShowModal(false);
-                    if (typeof onClick === "function") { 
-                      try { onClick(); } catch {} 
-                    }
-                  }}
-                  aria-label="Close"
-                >
-                  ×
-                </button>
-                <div className="solsky-header">
-                  <div className="daily-intention">Intention: Find peace in the present moment</div>
-                  <h1>SolSky</h1>
-                  <h2>Reflection: Share your cosmic vision</h2>
+              <div className="quick-reflection-panel">
+                <div className="popup-header">
+                  <h3>Today's Soul Journal</h3>
+                  <button 
+                    className="popup-close"
+                    onClick={() => {
+                      setShowModal(false);
+                      if (typeof onClick === "function") { 
+                        try { onClick(); } catch {} 
+                      }
+                    }}
+                    aria-label="Close"
+                  >
+                    ×
+                  </button>
                 </div>
-                <div className="cosmic-vision-section">
-                  <label className="cosmic-vision-label">Share your cosmic vision</label>
-                  <textarea
-                    value={questionResponse}
-                    onChange={(e) => setQuestionResponse(e.target.value)}
-                    placeholder="Share your cosmic vision..."
-                    className="response-area"
-                  />
+                
+                <div className="popup-date">{new Date().toLocaleDateString()}</div>
+                
+                <div className="quick-form">
+                  <div className="form-field">
+                    <label>Intention</label>
+                    <input
+                      type="text"
+                      value={intention}
+                      onChange={(e) => setIntention(e.target.value)}
+                      placeholder="Your intention for today"
+                      className="popup-input"
+                    />
+                  </div>
+                  
+                  <div className="form-field">
+                    <label>Reflection</label>
+                    <textarea
+                      value={reflection}
+                      onChange={(e) => setReflection(e.target.value)}
+                      placeholder="Reflect on your day..."
+                      className="popup-textarea"
+                      rows={3}
+                    />
+                  </div>
+                  
+                  <div className="form-field">
+                    <label>Soul Star</label>
+                    <input
+                      type="text"
+                      value={soulStar}
+                      onChange={(e) => setSoulStar(e.target.value)}
+                      placeholder="Name your star"
+                      className="popup-input"
+                    />
+                  </div>
+                  
+                  <div className="form-field">
+                    <label>Cosmic Vision</label>
+                    <textarea
+                      value={questionResponse}
+                      onChange={(e) => setQuestionResponse(e.target.value)}
+                      placeholder="Share your cosmic vision..."
+                      className="popup-textarea"
+                      rows={2}
+                    />
+                  </div>
+                  
+                  {validationMessage && (
+                    <div className="popup-message error">{validationMessage}</div>
+                  )}
+                  
+                  {saveMessage && (
+                    <div className="popup-message success">{saveMessage}</div>
+                  )}
+                  
+                  <div className="popup-actions">
+                    <button 
+                      onClick={saveJournalEntry}
+                      className="save-entry-btn"
+                    >
+                      Save Entry
+                    </button>
+                    <button 
+                      onClick={handleSendResponse}
+                      className={isJournalCompleted ? "cast-completed" : "cast-star-btn"}
+                      disabled={!questionResponse.trim() || isJournalCompleted}
+                    >
+                      {isJournalCompleted ? "Star Shining" : 'Cast Star'}
+                    </button>
+                  </div>
                 </div>
-                <button 
-                  onClick={handleSendResponse}
-                  className={isJournalCompleted ? "send-button-completed" : "send-button"}
-                  disabled={!questionResponse.trim() || isJournalCompleted}
-                >
-                  {isJournalCompleted ? "YOUR SOUL STAR SHINES ABOVE" : 'Cast into the Stars'}
-                </button>
               </div>
             )}
 

@@ -1068,7 +1068,7 @@ export default function JoinAliens({ visible = true } = {}) {
           {/* Venmo Button */}
           <button
             onClick={() => {
-              try { sfx.play('hover', 0.3); } catch {}
+              try { sfx.play('card-ding', 0.7); } catch {}
               const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=3&note=${encodeURIComponent('Fuel the Signal')}`;
               const webVenmoUrl = `https://venmo.com/chxndlerthealien?amount=3&note=${encodeURIComponent('Fuel the Signal')}`;
               
@@ -1121,7 +1121,7 @@ export default function JoinAliens({ visible = true } = {}) {
           {/* Credit Card Button */}
           <button
             onClick={() => {
-              try { sfx.play('hover', 0.3); } catch {}
+              try { sfx.play('card-ding', 0.7); } catch {}
               // Open Stripe payment page for $3
               window.open('https://buy.stripe.com/bJeeVe5X3fZH9Nnchh4gg0P', '_blank');
               setShowPaymentOptions(false);
@@ -1189,7 +1189,7 @@ export default function JoinAliens({ visible = true } = {}) {
           {/* Venmo Button for $5 */}
           <button
             onClick={() => {
-              try { sfx.play('audio/hover.mp3', 0.3); } catch {}
+              try { sfx.play('card-ding', 0.7); } catch {}
               const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=5&note=${encodeURIComponent('Boost the Transmission')}`;
               const webVenmoUrl = `https://venmo.com/chxndlerthealien?amount=5&note=${encodeURIComponent('Boost the Transmission')}`;
               
@@ -1242,7 +1242,7 @@ export default function JoinAliens({ visible = true } = {}) {
           {/* Credit Card Button for $5 */}
           <button
             onClick={() => {
-              try { sfx.play('audio/hover.mp3', 0.3); } catch {}
+              try { sfx.play('card-ding', 0.7); } catch {}
               // Open Stripe payment page for $5
               window.open('https://buy.stripe.com/3cIaEYbhn00JbVv4OP4gg0Q', '_blank');
               setShowPaymentOptions5(false);
@@ -1310,7 +1310,7 @@ export default function JoinAliens({ visible = true } = {}) {
           {/* Venmo Button for $10 */}
           <button
             onClick={() => {
-              try { sfx.play('audio/hover.mp3', 0.3); } catch {}
+              try { sfx.play('card-ding', 0.7); } catch {}
               const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=10&note=${encodeURIComponent('Ignite the Heartverse')}`;
               const webVenmoUrl = `https://venmo.com/chxndlerthealien?amount=10&note=${encodeURIComponent('Ignite the Heartverse')}`;
               
@@ -1363,7 +1363,7 @@ export default function JoinAliens({ visible = true } = {}) {
           {/* Credit Card Button for $10 */}
           <button
             onClick={() => {
-              try { sfx.play('audio/hover.mp3', 0.3); } catch {}
+              try { sfx.play('card-ding', 0.7); } catch {}
               // Open Stripe payment page for $10
               window.open('https://buy.stripe.com/4gM5kEdpv3cV9Nn6WX4gg0R', '_blank');
               setShowPaymentOptions10(false);

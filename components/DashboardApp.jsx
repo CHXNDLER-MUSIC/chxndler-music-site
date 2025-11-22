@@ -676,18 +676,10 @@ export default function DashboardApp({ initialSlug } = {}) {
     setShowWelcomeHomeModal(false);
     setShouldShowWelcomeModal(false); // Ensure flag is reset when modal is closed
     
-    // Now trigger the warp effect that was skipped on first start
-    welcomeOnStartRef.current = true;
-    setHomeIntroEnabled(true);
-    setPendingOverlayReveal(true);
+    // Enable UI and prepare for blue display (no warp effect)
     setUiUnlocked(true);
     setShowDimmingOverlay(false);
     setLandingRevealReady(true);
-    
-    // Prepare warp to homepage (same logic as original onLaunch)
-    setUserSelected(false);
-    setHomeMode(false);
-    startButtonWarpRef.current = true;
     
     // Stop any playing main track audio
     try {
@@ -697,17 +689,15 @@ export default function DashboardApp({ initialSlug } = {}) {
     setIsPlaying(false);
     try { playerStore.setState({ mainId: null }); } catch {}
     
-    // Prepare for blue display after warp
-    setShowHUD(false);
-    setShowOverlayUI(false);
-    setBeamEnabled(false);
-    setPendingHomePower(true);
+    // Open blue display directly instead of triggering warp
+    setShowOverlayUI(true);
+    setBeamEnabled(true);
+    setBeamColor('blue');
     
-    setAllowWarp(true);
-    setSky(SPACE_SKY);
-    setNextSky(null);
-    setFlySignal((n) => n + 1);
-    setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
+    // Small delay to let beam appear before showing HUD
+    setTimeout(() => {
+      setShowHUD(true);
+    }, 150);
   }, []);
   
   // Handle beam color control with strict mutual exclusion between displays

@@ -26,6 +26,14 @@ export default function VenmoButton({
   className = "" 
 }: VenmoButtonProps) {
   const handleVenmoClick = () => {
+    // Play card-ding sound
+    try {
+      // Import sfx dynamically to avoid potential module issues
+      import("@/lib/sfx").then(({ sfx }) => {
+        sfx.play('card-ding', 0.7);
+      });
+    } catch {}
+    
     // Venmo deep link format: venmo://paycharge?txn=pay&recipients=username&amount=amount&note=message
     const venmoUrl = `venmo://paycharge?txn=pay&recipients=${recipient}&amount=${amount}&note=${encodeURIComponent(note)}`;
     
@@ -34,9 +42,8 @@ export default function VenmoButton({
     
     // Fallback: if mobile app doesn't open, try web version after a short delay
     setTimeout(() => {
-      const webVenmoUrl = `https://venmo.com/?txn=pay&recipients=${recipient}&amount=${amount}&note=${encodeURIComponent(note)}`;
-      // This won't open if the app already opened successfully
-      // window.open(webVenmoUrl, '_blank');
+      const webVenmoUrl = `https://venmo.com/${recipient}?amount=${amount}&note=${encodeURIComponent(note)}`;
+      window.open(webVenmoUrl, '_blank');
     }, 1000);
   };
 

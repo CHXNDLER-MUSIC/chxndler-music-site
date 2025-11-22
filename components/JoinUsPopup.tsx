@@ -375,9 +375,9 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
                       window.open(venmoUrl, '_blank');
                       
                       setTimeout(() => {
-                        const webUrl = `https://venmo.com/u/chxndlerthealien?txn=pay&amount=5&note=${encodeURIComponent('Thanks for the music!')}`;
+                        const webUrl = `https://venmo.com/chxndlerthealien?amount=5&note=${encodeURIComponent('Thanks for the music!')}`;
                         window.open(webUrl, '_blank');
-                      }, 1500);
+                      }, 1000);
                       
                       setShowVenmoPopup(false);
                     } catch (error) {

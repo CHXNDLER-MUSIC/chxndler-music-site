@@ -763,7 +763,89 @@ export default function BinderModal({ open, onClose }: Props) {
             </div>
           )}
 
-          {/* Card info positioned after filters - only show when purchase state is idle */}
+          {/* Card layout with image - positioned directly under Back to Elements */}
+          {selectedElement && (() => {
+            const cards = getFilteredCards();
+            const currentCard = cards[currentCardIndex];
+            
+            if (!currentCard) {
+              return null;
+            }
+
+            return (
+              <>
+                <div className="flex items-center gap-0 mb-4">
+                {/* Left navigation arrow */}
+                {cards.length > 1 && (
+                  <button
+                    onClick={() => {
+                      try { sfx.play('click', 0.5); } catch {}
+                      setCurrentCardIndex(prev => prev > 0 ? prev - 1 : cards.length - 1);
+                    }}
+                    className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200"
+                    style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
+                  >
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                      <path d="M15 18l-6-6 6-6"/>
+                    </svg>
+                  </button>
+                )}
+                
+                {/* Card image in the center */}
+                <div className="flex-shrink-0">
+                  <img
+                    src={currentCard.image}
+                    alt={currentCard.name}
+                    className="w-24 h-auto rounded-lg cursor-pointer transition-transform duration-300 hover:scale-110"
+                    style={{
+                      boxShadow: '0 0 15px rgba(255,105,180,0.6), 0 0 30px rgba(255,105,180,0.3)',
+                      border: '2px solid rgba(255,105,180,0.6)',
+                    }}
+                    draggable={false}
+                    onClick={() => {
+                      try { sfx.play('click', 0.8); } catch {}
+                      setPreselectedCard(currentCard.name);
+                      setSelectedCard(currentCard);
+                      setCardOpen(true);
+                    }}
+                  />
+                  
+                  {/* Card count info below image */}
+                  {cards.length > 1 && (
+                    <div 
+                      className="text-center mt-2"
+                      style={{ 
+                        color: '#FFB6C1', 
+                        textShadow: '0 0 4px rgba(255,182,193,0.6)',
+                        fontSize: '10px'
+                      }}
+                    >
+                      {currentCardIndex + 1} of {cards.length}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Right navigation arrow */}
+                {cards.length > 1 && (
+                  <button
+                    onClick={() => {
+                      try { sfx.play('click', 0.5); } catch {}
+                      setCurrentCardIndex(prev => prev < cards.length - 1 ? prev + 1 : 0);
+                    }}
+                    className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200 ml-4"
+                    style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
+                  >
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                      <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                  </button>
+                )}
+                </div>
+              </>
+            );
+          })()}
+
+          {/* Card info positioned after card image - only show when purchase state is idle */}
           {selectedElement && purchaseState === 'idle' && (() => {
             const cards = getFilteredCards();
             const currentCard = cards[currentCardIndex];
@@ -828,133 +910,91 @@ export default function BinderModal({ open, onClose }: Props) {
                     {getCardOneLiner(currentCard.name)}
                   </div>
                 )}
-              </div>
-            );
-          })()}
 
-          {/* Card layout with image on left side */}
-          {selectedElement && (() => {
-            const cards = getFilteredCards();
-            const currentCard = cards[currentCardIndex];
-            
-            if (!currentCard) {
-              return null;
-            }
-
-            return (
-              <>
-                <div className="flex items-center gap-0 mb-1 -mt-32">
-                {/* Left navigation arrow */}
-                {cards.length > 1 && (
-                  <button
-                    onClick={() => {
-                      try { sfx.play('click', 0.5); } catch {}
-                      setCurrentCardIndex(prev => prev > 0 ? prev - 1 : cards.length - 1);
-                    }}
-                    className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200 -mt-1"
-                    style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
-                  >
-                    <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-                      <path d="M15 18l-6-6 6-6"/>
-                    </svg>
-                  </button>
-                )}
-                
-                {/* Card image in the center */}
-                <div className="flex-shrink-0">
-                  <img
-                    src={currentCard.image}
-                    alt={currentCard.name}
-                    className="w-24 h-auto rounded-lg cursor-pointer transition-transform duration-300 hover:scale-110"
-                    style={{
-                      boxShadow: '0 0 15px rgba(255,105,180,0.6), 0 0 30px rgba(255,105,180,0.3)',
-                      border: '2px solid rgba(255,105,180,0.6)',
-                    }}
-                    draggable={false}
-                    onClick={() => {
-                      try { sfx.play('click', 0.8); } catch {}
-                      setPreselectedCard(currentCard.name);
-                      setSelectedCard(currentCard);
-                      setCardOpen(true);
-                    }}
-                  />
-                  
-                  {/* Card count info below image */}
-                  {cards.length > 1 && (
+                {/* Purchase buttons - positioned directly below 1-liner */}
+                {purchaseState === 'idle' && !isCardOwned(currentCard.name) && (
+                  <div className="mt-1">
+                    {/* HeartCoin balance */}
                     <div 
-                      className="text-center mt-2"
+                      className="text-center mb-2 text-xs"
                       style={{ 
                         color: '#FFB6C1', 
-                        textShadow: '0 0 4px rgba(255,182,193,0.6)',
-                        fontSize: '10px'
+                        textShadow: '0 0 4px rgba(255,182,193,0.6)'
                       }}
                     >
-                      {currentCardIndex + 1} of {cards.length}
+                      You have {profile?.heartcoin_balance || 0} HeartCoins
                     </div>
-                  )}
-                </div>
-                
-                {/* Right navigation arrow */}
-                {cards.length > 1 && (
-                  <button
-                    onClick={() => {
-                      try { sfx.play('click', 0.5); } catch {}
-                      setCurrentCardIndex(prev => prev < cards.length - 1 ? prev + 1 : 0);
-                    }}
-                    className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200 ml-4"
-                    style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
-                  >
-                    <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-                      <path d="M9 18l6-6-6-6"/>
-                    </svg>
-                  </button>
-                )}
-                  
-                {/* Text content to the right of arrow */}
-                <div className="flex-1 min-w-0 ml-1">
-                  {(() => {
-                    const cards = getFilteredCards();
-                    const currentCard = cards[currentCardIndex];
                     
-                    if (!currentCard) {
-                      return null;
-                    }
-
-                    return (
-                      <div className="flex flex-col justify-start">
-                        {/* Show COLLECTED indicator */}
-                        {isCardOwned(currentCard.name) && (
-                          <div className="mb-2">
-                            <div 
-                              className="inline-block px-3 py-1 rounded-full border-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20"
-                              style={{
-                                borderColor: '#10B981',
-                                boxShadow: '0 0 15px rgba(16,185,129,0.4), 0 0 30px rgba(16,185,129,0.2)',
-                              }}
-                            >
-                              <span 
-                                className="text-green-300 text-xs font-bold tracking-wider"
-                                style={{ 
-                                  textShadow: '0 0 8px rgba(16,185,129,0.8), 0 0 16px rgba(16,185,129,0.4)',
-                                  fontSize: '11px'
-                                }}
-                              >
-                                ✓ COLLECTED
-                              </span>
-                            </div>
-                          </div>
-                        )}
-                        
-                        
-                      </div>
-                    );
-                  })()
-                  }
-                </div>
+                    {/* Purchase buttons */}
+                    <div className="flex justify-center gap-2">
+                      {/* Digital option */}
+                      <button
+                        onClick={() => {
+                          try { sfx.play('click', 0.6); } catch {}
+                          handlePurchaseClick('digital');
+                        }}
+                        className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
+                        style={{
+                          boxShadow: '0 0 8px rgba(255,105,180,0.3)',
+                        }}
+                      >
+                        <img
+                          src="/elements/heart-coin.png"
+                          alt="Heart Coin"
+                          className="w-3 h-3"
+                          draggable={false}
+                        />
+                        <span 
+                          className="text-yellow-300 font-bold text-xs"
+                          style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
+                        >
+                          {digitalCost}
+                        </span>
+                        <span 
+                          className="text-pink-200 font-medium text-xs"
+                          style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                        >
+                          DIGITAL
+                        </span>
+                      </button>
+                      
+                      {/* Physical option */}
+                      <button
+                        onClick={() => {
+                          try { sfx.play('click', 0.6); } catch {}
+                          handlePurchaseClick('physical');
+                        }}
+                        className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
+                        style={{
+                          boxShadow: '0 0 8px rgba(255,105,180,0.3)',
+                        }}
+                      >
+                        <img
+                          src="/elements/heart-coin.png"
+                          alt="Heart Coin"
+                          className="w-3 h-3"
+                          draggable={false}
+                        />
+                        <span 
+                          className="text-yellow-300 font-bold text-xs"
+                          style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
+                        >
+                          {physicalCost}
+                        </span>
+                        <span 
+                          className="text-pink-200 font-medium text-xs"
+                          style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                        >
+                          PHYSICAL
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-              </>
             );
           })()}
+
 
           <div className="flex justify-between items-center mb-4">            
             {!selectedElement && (
@@ -1159,86 +1199,6 @@ export default function BinderModal({ open, onClose }: Props) {
 
             return (
               <div className="mt-2">
-                {/* State A: Default view - Show HeartCoin balance */}
-                {purchaseState === 'idle' && (
-                  <div className="mt-2">
-                    {/* HeartCoin balance */}
-                    <div 
-                      className="text-center mb-2 text-xs"
-                      style={{ 
-                        color: '#FFB6C1', 
-                        textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                      }}
-                    >
-                      You have {profile?.heartcoin_balance || 0} HeartCoins
-                    </div>
-                    
-                    {/* Purchase buttons */}
-                    <div className="flex justify-center gap-2">
-                      {/* Digital option */}
-                      <button
-                        onClick={() => {
-                          try { sfx.play('click', 0.6); } catch {}
-                          handlePurchaseClick('digital');
-                        }}
-                        className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
-                        style={{
-                          boxShadow: '0 0 8px rgba(255,105,180,0.3)',
-                        }}
-                      >
-                        <img
-                          src="/elements/heart-coin.png"
-                          alt="Heart Coin"
-                          className="w-3 h-3"
-                          draggable={false}
-                        />
-                        <span 
-                          className="text-yellow-300 font-bold text-xs"
-                          style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
-                        >
-                          {digitalCost}
-                        </span>
-                        <span 
-                          className="text-pink-200 font-medium text-xs"
-                          style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
-                        >
-                          DIGITAL
-                        </span>
-                      </button>
-                      
-                      {/* Physical option */}
-                      <button
-                        onClick={() => {
-                          try { sfx.play('click', 0.6); } catch {}
-                          handlePurchaseClick('physical');
-                        }}
-                        className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
-                        style={{
-                          boxShadow: '0 0 8px rgba(255,105,180,0.3)',
-                        }}
-                      >
-                        <img
-                          src="/elements/heart-coin.png"
-                          alt="Heart Coin"
-                          className="w-3 h-3"
-                          draggable={false}
-                        />
-                        <span 
-                          className="text-yellow-300 font-bold text-xs"
-                          style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
-                        >
-                          {physicalCost}
-                        </span>
-                        <span 
-                          className="text-pink-200 font-medium text-xs"
-                          style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
-                        >
-                          PHYSICAL
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-                )}
 
                 {/* State B: Not enough HeartCoins */}
                 {purchaseState === 'insufficient' && selectedPurchaseType && (
