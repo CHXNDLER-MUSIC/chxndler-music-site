@@ -35,8 +35,17 @@ import SongDropdown from "@/components/SongDropdown";
 import DevErrorLogger from "@/components/DevErrorLogger";
 // Lazy-load 3D systems on client only to avoid early evaluation issues
 // Prefer R3F-based system when compatible; otherwise fall back to raw Three.js
-const PlanetSystem = dynamic(() => import("@/components/holo/PlanetSystem"), { ssr: false });
-const PlanetSystemRaw = dynamic(() => import("@/components/holo/PlanetSystemRaw"), { ssr: false });
+const PlanetSystem = dynamic(() => import("@/components/holo/PlanetSystem").catch(err => {
+  console.warn('PlanetSystem import failed, switching to Raw fallback:', err);
+  return import("@/components/holo/PlanetSystemRaw");
+}), { 
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-full text-cyan-400">Loading planets...</div>
+});
+const PlanetSystemRaw = dynamic(() => import("@/components/holo/PlanetSystemRaw"), { 
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-full text-cyan-400">Loading planets...</div>
+});
 import { DEBUG_MEDIA, dlog, dwarn } from "@/lib/debug";
 import { ElementIcon as OptimizedElementIcon } from "@/lib/elementIcons";
 import { sfx } from "@/lib/sfx";
@@ -2224,9 +2233,10 @@ export default function HUDPanel({
                     if (String(e?.name||'').includes('IndexSizeError')) { 
                       try { if (DEBUG_MEDIA) dwarn('Disabling 3D due to IndexSizeError'); } catch {} 
                     }
-                    if (emsg.includes('ReactCurrentOwner')) {
+                    if (emsg.includes('ReactCurrentOwner') || emsg.includes('Cannot read properties of undefined')) {
                       // Switch to raw 3D fallback; keep 3D enabled
                       setPreferRaw3D(true);
+                      console.warn('Switched to Raw3D due to React compatibility issue:', emsg);
                     }
                     setThreeFailed(emsg || 'Render error'); 
                     // Do not disable can3D here; fallback may still work

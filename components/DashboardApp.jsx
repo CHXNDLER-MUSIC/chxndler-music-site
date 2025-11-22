@@ -1698,10 +1698,14 @@ export default function DashboardApp({ initialSlug } = {}) {
             welcomeOnStartRef.current = false;
             setHomeIntroEnabled(false);
             setShouldShowWelcomeModal(false); // Don't show welcome modal on subsequent starts
-            
-            // Ensure first-load flag is off after second Start
-            try { setIsFirstLoad(false); } catch {}
           }
+          
+          // Trigger the warp effect
+          setFlySignal((n) => n + 1);
+            
+          // Ensure first-load flag is off after second Start
+          try { setIsFirstLoad(false); } catch {}
+          
           setPendingOverlayReveal(true);
           setUiUnlocked(true);
           setShowDimmingOverlay(false);

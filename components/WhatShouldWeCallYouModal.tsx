@@ -22,7 +22,7 @@ export default function WhatShouldWeCallYouModal() {
     
     try {
       // Use the context method instead of direct Supabase calls
-      await updateProfile({ name: name.trim(), element: 'heart' }); // Default element
+      await updateProfile({ name: name.trim() });
       
       closeNamePrompt();
       // Open element selection immediately after name is saved

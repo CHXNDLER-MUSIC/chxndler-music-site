@@ -49,33 +49,13 @@ export default function CodeButton({ asChild = false, children, onClick, onHover
         <span 
           className="font-bold text-sm"
           style={{
-            color: '#FFFFFF !important',
-            textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7), 0 0 20px rgba(255,255,255,0.5)'
+            color: '#FFFFFF !important'
           }}
         >
           CODE
         </span>
       </button>
       
-      {/* Hologram base glow - wider and stronger */}
-      {open && (
-        <div 
-          className="fixed inset-0 z-[2147483646] flex items-center justify-center"
-          style={{
-            pointerEvents: 'none',
-            paddingTop: '400px'
-          }}
-        >
-          <div
-            style={{
-              width: 'min(120vw, 700px)',
-              height: '200px',
-              background: 'radial-gradient(ellipse 80% 100% at 50% 0%, rgba(33,150,243,0.7) 0%, rgba(33,150,243,0.4) 30%, rgba(33,150,243,0.1) 60%, transparent 100%)',
-              filter: 'blur(100px)'
-            }}
-          />
-        </div>
-      )}
       
       {/* Code Modal - holographic popup */}
       {open && (
