@@ -137,7 +137,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
             style={{
               zIndex: 2147483646,
               pointerEvents: 'none',
-              paddingTop: '250px'
+              paddingTop: '220px'
             }}
           >
             <div
@@ -153,7 +153,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
           <div 
             className="fixed inset-0 z-[2147483647] flex items-center justify-center"
             style={{
-              paddingTop: '250px',
+              paddingTop: '220px',
               background: 'rgba(0, 0, 0, 0.8)',
               backdropFilter: 'blur(5px)'
             }}
@@ -266,7 +266,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
                     key={tier}
                     className="tier-card"
                     style={{
-                      width: '160px',
+                      width: '185px',
                       height: '100%',
                       perspective: '1000px',
                       cursor: 'pointer'
@@ -381,7 +381,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
                           background: 'rgba(0,0,0,0.9)',
                           border: `2px solid ${data.color}`,
                           borderRadius: '15px',
-                          padding: '25px 25px 25px 10px',
+                          padding: '20px 15px 20px 15px',
                           display: 'flex',
                           flexDirection: 'column',
                           justifyContent: 'center',
@@ -400,17 +400,17 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
                             textAlign: 'center',
                             width: '100%',
                             lineHeight: '1.3',
-                            letterSpacing: '1.5px'
+                            letterSpacing: '0.5px'
                           }}
                         >
                           {data.backMessage}
                         </div>
                         <div
                           style={{
-                            fontSize: '12px',
+                            fontSize: '11px',
                             color: '#F0F8FF',
                             fontWeight: 'bold',
-                            lineHeight: '1.4',
+                            lineHeight: '1.3',
                             textAlign: 'left',
                             width: '100%',
                             textShadow: '0 0 4px rgba(240,248,255,1), 0 0 8px rgba(240,248,255,0.8)'

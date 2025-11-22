@@ -52,6 +52,7 @@ const ELEMENT_LABEL_TO_CODE: Record<string, "water" | "heart" | "lightning" | "d
 interface Profile {
   id: string;
   email: string | null;
+  phone: string | null;
   name: string | null;
   element: string | null;
   journey: string | null;
@@ -102,7 +103,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabaseClient
         .from("profiles")
         .select(
-          "id, email, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at"
+          "id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at"
         )
         .eq("id", user.id)
         .maybeSingle();
@@ -164,6 +165,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const mappedProfile: Profile = {
         id: data.id,
         email: data.email,
+        phone: data.phone,
         name: data.name,
         element: data.element,
         journey: data.journey,
@@ -207,6 +209,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       // Map interface fields to database columns  
       const dbUpdates: any = { updated_at: new Date().toISOString() };
       if (updates.name !== undefined) dbUpdates.name = updates.name;
+      if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
       if (updates.element !== undefined) dbUpdates.element = updates.element;
       if (updates.journey !== undefined) dbUpdates.journey = updates.journey;
       if (updates.heartcoin_balance !== undefined) dbUpdates.heartcoin_balance = updates.heartcoin_balance;
@@ -231,6 +234,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         const mappedProfile: Profile = {
           id: data.id,
           email: data.email,
+          phone: data.phone,
           name: data.name,
           element: data.element,
           journey: data.journey,

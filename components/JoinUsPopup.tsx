@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import HeartversePopup from "@/components/HeartversePopup";
+import VenmoButton from "@/components/VenmoButton";
 import { sfx } from "@/lib/sfx";
 
 type Props = {
@@ -412,18 +413,22 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
               </button>
             </div>
             
-            <div className="relative h-full p-4">
-              <div className="w-full h-full bg-white rounded-lg overflow-hidden shadow-lg">
-                <iframe
-                  src="https://venmo.com/u/chxndlerthealien?txn=pay&amount=5&note=Thanks%20for%20the%20music!"
-                  title="Venmo Payment"
-                  className="w-full h-full border-0"
-                  style={{ minHeight: '600px' }}
-                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
+            <div className="relative h-full p-6 flex flex-col items-center justify-center gap-6">
+              <div className="text-center">
+                <p className="text-lg text-white/90 mb-2">Send $5 via Venmo</p>
+                <p className="text-sm text-white/70">@chxndlerthealien</p>
               </div>
               
+              <VenmoButton 
+                amount={5} 
+                note="Thanks for the music!" 
+                recipient="chxndlerthealien"
+                className="hover:scale-110 transition-transform duration-200"
+              />
+              
+              <p className="text-xs text-white/60 text-center max-w-sm">
+                Click to open Venmo app or web interface for quick payment
+              </p>
             </div>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { sfx } from "@/lib/sfx";
+import { useProfile } from "@/contexts/ProfileContext";
 
 type Props = {
   open: boolean;
@@ -15,6 +16,8 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  
+  const { updateProfile } = useProfile();
 
 
   async function signInWithGoogle() {
@@ -54,6 +57,7 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
         },
       });
       if (error) throw error;
+      
       
       // Track the heart signal in our database
       try {

@@ -197,6 +197,8 @@ export default function HUDPanel({
   const [lyricsPopoverPos, setLyricsPopoverPos] = useState(null);
   const lyricsScrollRef = useRef(null);
   const lyricsLastScrollAtRef = useRef(0);
+  // Venmo popup state
+  const [showVenmoPopup, setShowVenmoPopup] = useState(false);
   // Position lyrics popover relative to its anchor; smaller negative means less high
   const LYRICS_POPOVER_Y_OFFSET = -40; // bring it further down compared to before
 
@@ -5178,7 +5180,25 @@ export default function HUDPanel({
                               {/* Price directly under the image (show $ price and HEART coins side by side) */}
                               <div style={{ fontSize: 16, fontWeight: 700, color: '#FFB9E1', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                                 {/* Cash price */}
-                                <span>{item.price}</span>
+                                <span 
+                                  onClick={item.price === '$3' ? () => {
+                                    try { sfx.play('click.mp3', 0.5); } catch {}
+                                    setShowVenmoPopup(true);
+                                  } : undefined}
+                                  style={{
+                                    cursor: item.price === '$3' ? 'pointer' : 'default',
+                                    transition: 'all 300ms ease'
+                                  }}
+                                  onMouseEnter={item.price === '$3' ? (e) => {
+                                    try { sfx.play('hover', 0.3); } catch {}
+                                    e.target.style.textShadow = '0 0 15px #FFB9E1, 0 0 25px #FFB9E1';
+                                    e.target.style.transform = 'scale(1.05)';
+                                  } : undefined}
+                                  onMouseLeave={item.price === '$3' ? (e) => {
+                                    e.target.style.textShadow = 'none';
+                                    e.target.style.transform = 'scale(1)';
+                                  } : undefined}
+                                >{item.price}</span>
                                 {/* Separator */}
                                 <span style={{ color: '#FFB9E1', opacity: 0.6 }}>|</span>
                                 {/* HeartCoin price */}
@@ -6684,6 +6704,176 @@ export default function HUDPanel({
         // Open the blue display (power button) when closing the welcome modal
         try { onOpenBlueDisplay?.(); } catch {}
       }} />
+      
+      {/* Venmo Popup */}
+      {showVenmoPopup && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(0, 0, 0, 0.8)',
+          backdropFilter: 'blur(12px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '20px',
+          boxSizing: 'border-box'
+        }}
+        onClick={() => setShowVenmoPopup(false)}
+        >
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(0, 200, 255, 0.1))',
+            border: '2px solid #00FFFF',
+            borderRadius: '16px',
+            padding: '30px',
+            maxWidth: '400px',
+            width: '90%',
+            textAlign: 'center',
+            boxShadow: '0 0 40px rgba(0, 255, 255, 0.6), inset 0 0 20px rgba(0, 255, 255, 0.1)',
+            position: 'relative',
+            animation: 'venmoPopupGlow 2s ease-in-out infinite alternate'
+          }}
+          onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => {
+                try { sfx.play('close.mp3', 0.3); } catch {}
+                setShowVenmoPopup(false);
+              }}
+              style={{
+                position: 'absolute',
+                top: '-15px',
+                right: '-15px',
+                width: '40px',
+                height: '40px',
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '2px solid #00FFFF',
+                borderRadius: '50%',
+                color: '#00FFFF',
+                fontSize: '20px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 300ms ease',
+                boxShadow: '0 0 15px rgba(0, 255, 255, 0.4)'
+              }}
+              onMouseEnter={(e) => {
+                try { sfx.play('hover', 0.3); } catch {}
+                e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+                e.target.style.transform = 'scale(1.1)';
+                e.target.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.8)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+                e.target.style.transform = 'scale(1)';
+                e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.4)';
+              }}
+            >
+              ×
+            </button>
+
+            {/* Title */}
+            <h2 style={{
+              color: '#00FFFF',
+              fontSize: '28px',
+              fontWeight: 'bold',
+              marginBottom: '20px',
+              textShadow: '0 0 20px #00FFFF, 0 0 30px #00FFFF',
+              letterSpacing: '0.1em'
+            }}>
+              SUPPORT THE SIGNAL
+            </h2>
+            
+            {/* Description */}
+            <p style={{
+              color: '#ffffff',
+              fontSize: '16px',
+              marginBottom: '25px',
+              lineHeight: '1.5'
+            }}>
+              Send $3 via Venmo to support the HEARTVERSE
+            </p>
+            
+            {/* Venmo Username */}
+            <p style={{
+              color: '#00FFFF',
+              fontSize: '24px',
+              fontWeight: 'bold',
+              marginBottom: '30px',
+              textShadow: '0 0 15px #00FFFF',
+              letterSpacing: '0.05em'
+            }}>
+              @chxndlerthealien
+            </p>
+            
+            {/* VENMO Button */}
+            <button
+              onClick={() => {
+                try { sfx.play('click.mp3', 0.5); } catch {}
+                const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=3&note=${encodeURIComponent('Supporting the HEARTVERSE signal')}`;
+                const webVenmoUrl = `https://venmo.com/u/chxndlerthealien?txn=pay&amount=3&note=${encodeURIComponent('Supporting the HEARTVERSE signal')}`;
+                
+                // Try to open the Venmo app first, then fallback to web
+                window.open(venmoUrl, '_blank');
+                setTimeout(() => {
+                  window.open(webVenmoUrl, '_blank');
+                }, 1500);
+                
+                setShowVenmoPopup(false);
+              }}
+              style={{
+                padding: '16px 32px',
+                background: 'transparent',
+                border: '3px solid #00FFFF',
+                borderRadius: '12px',
+                color: '#00FFFF',
+                fontSize: '18px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                transition: 'all 300ms ease',
+                boxShadow: '0 0 30px rgba(0, 255, 255, 0.6)',
+                width: '100%',
+                textShadow: '0 0 15px #00FFFF',
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase'
+              }}
+              onMouseEnter={(e) => {
+                try { sfx.play('hover', 0.3); } catch {}
+                e.target.style.transform = 'scale(1.05)';
+                e.target.style.background = 'rgba(0, 255, 255, 0.1)';
+                e.target.style.boxShadow = '0 0 50px rgba(0, 255, 255, 0.8), inset 0 0 20px rgba(0, 255, 255, 0.2)';
+                e.target.style.textShadow = '0 0 25px #00FFFF, 0 0 35px #00FFFF';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.transform = 'scale(1)';
+                e.target.style.background = 'transparent';
+                e.target.style.boxShadow = '0 0 30px rgba(0, 255, 255, 0.6)';
+                e.target.style.textShadow = '0 0 15px #00FFFF';
+              }}
+            >
+              Send via Venmo
+            </button>
+          </div>
+          
+          {/* Add CSS keyframes for glow animation */}
+          <style jsx>{`
+            @keyframes venmoPopupGlow {
+              0% {
+                box-shadow: 0 0 40px rgba(0, 255, 255, 0.6), inset 0 0 20px rgba(0, 255, 255, 0.1);
+              }
+              100% {
+                box-shadow: 0 0 60px rgba(0, 255, 255, 0.8), inset 0 0 30px rgba(0, 255, 255, 0.2);
+              }
+            }
+          `}</style>
+        </div>
+      )}
     </motion.section>
   );
 }

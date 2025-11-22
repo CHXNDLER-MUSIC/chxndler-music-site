@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { sfx } from "@/lib/sfx";
+import { useProfile } from "@/contexts/ProfileContext";
+import { supabaseClient } from "@/lib/supabaseClient";
 
 export default function JoinAliens({ visible = true } = {}) {
   const [phone, setPhone] = useState("");
@@ -9,6 +11,8 @@ export default function JoinAliens({ visible = true } = {}) {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [heartSignalSent, setHeartSignalSent] = useState(false);
+  
+  const { updateProfile } = useProfile();
   
   // Tip functionality state
   const [showTipOptions, setShowTipOptions] = useState(false);
@@ -171,6 +175,17 @@ export default function JoinAliens({ visible = true } = {}) {
       
       if (result.success) {
         setHeartSignalSent(true);
+        
+        // Save phone number to user profile
+        try {
+          const cleanPhone = phone.replace(/\D/g, ''); // Remove formatting, keep only digits
+          if (cleanPhone && cleanPhone.trim().length > 0) {
+            await updateProfile({ phone: phone.trim() });
+          }
+        } catch (profileError) {
+          console.error("Error updating phone in profile", profileError);
+        }
+        
         setPhone(""); // Clear phone after successful send
         try { sfx.play('success', 0.7); } catch {}
       } else {
@@ -440,7 +455,7 @@ export default function JoinAliens({ visible = true } = {}) {
       {/* $ Button - positioned in bottom right corner */}
       <button
         onClick={() => {
-          try { sfx.play('coin-ding', 0.5); } catch {}
+          try { sfx.play('click.mp3', 0.5); } catch {}
           setShowTipOptions(!showTipOptions);
         }}
         style={{

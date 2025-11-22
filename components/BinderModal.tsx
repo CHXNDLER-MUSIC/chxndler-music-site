@@ -582,7 +582,7 @@ export default function BinderModal({ open, onClose }: Props) {
           className="binder-hologram-container"
           style={{
             width: 'min(92vw, 700px)',
-            height: '35vh',
+            height: '45vh',
             padding: '10px 14px 14px 14px',
             borderRadius: 18,
             background: 'rgba(0,0,0,0.6)',

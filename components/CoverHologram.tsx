@@ -660,7 +660,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
             className="card-anchored"
             style={{
               position: 'fixed',
-              bottom: '40vh', // Position above light beam area (brought in slightly)
+              bottom: '50vh', // Position higher up on screen
               left: '50%',
               transform: 'translateX(-50%)',
               pointerEvents: 'auto'
