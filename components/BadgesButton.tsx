@@ -39,7 +39,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
   const badgeCategories: BadgeCategory[] = [
     {
       id: "soul-star",
-      name: "⭐️ SOUL STAR",
+      name: "SOUL STAR",
       emoji: "⭐️",
       color: "#FFD700",
       badges: [
@@ -54,7 +54,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
     },
     {
       id: "achievements",
-      name: "🏆 ACHIEVEMENTS",
+      name: "ACHIEVEMENTS",
       emoji: "🏆",
       color: "#38B6FF",
       badges: [
@@ -73,7 +73,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
     },
     {
       id: "elemental-streak",
-      name: "💠 ELEMENTAL STREAK",
+      name: "ELEMENTAL STREAK",
       emoji: "💠",
       color: "#FC54AF",
       badges: [
@@ -109,7 +109,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
     },
     {
       id: "listening",
-      name: "🎵 LISTENING",
+      name: "LISTENING",
       emoji: "🎵",
       color: "#9333EA",
       badges: [
@@ -122,7 +122,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
     },
     {
       id: "heartcoin",
-      name: "💰 HEARTCOIN",
+      name: "HEARTCOIN",
       emoji: "💰",
       color: "#F59E0B",
       badges: [
@@ -134,7 +134,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
     },
     {
       id: "community",
-      name: "🌐 COMMUNITY",
+      name: "COMMUNITY",
       emoji: "🌐",
       color: "#10B981",
       badges: [
@@ -413,58 +413,90 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                     Choose a category to explore your badges and track your progress through the Heartverse.
                   </div>
                   
-                  <div className="flex justify-center items-center gap-3 overflow-x-auto">
-                    {badgeCategories.map((category) => (
-                      <div
-                        key={category.id}
-                        className="text-center cursor-pointer group flex-shrink-0"
-                        onClick={() => {
-                          try { sfx.play('click', 0.7); } catch {}
-                          setSelectedCategory(category.id);
-                        }}
-                      >
-                        <div 
-                          className="w-20 h-20 rounded-lg border-2 border-pink-400/60 hover:border-pink-400/80 relative overflow-hidden transition-all duration-300 group-hover:scale-105 flex items-center justify-center"
-                          style={{
-                            boxShadow: `0 0 15px ${category.color}40`,
-                            background: `linear-gradient(135deg, ${category.color}20, rgba(252,84,175,0.1))`
+                  <div className="flex flex-col items-center justify-center gap-1 w-full">
+                    {/* First row: Soul Star, Achievements, Elemental Streak */}
+                    <div className="flex justify-center items-center gap-4 ml-3">
+                      {badgeCategories.slice(0, 3).map((category) => (
+                        <div
+                          key={category.id}
+                          className="text-center cursor-pointer group flex-shrink-0"
+                          onClick={() => {
+                            try { sfx.play('click', 0.7); } catch {}
+                            setSelectedCategory(category.id);
                           }}
                         >
                           <div 
-                            className="text-3xl"
+                            className="w-20 h-20 rounded-full border-2 border-pink-400/60 hover:border-pink-400/80 relative overflow-hidden transition-all duration-300 group-hover:scale-105 flex items-center justify-center"
                             style={{
-                              filter: `drop-shadow(0 0 8px ${category.color})`
+                              boxShadow: `0 0 15px ${category.color}40`,
+                              background: `linear-gradient(135deg, ${category.color}20, rgba(252,84,175,0.1))`
                             }}
                           >
-                            {category.emoji}
+                            <div 
+                              className="text-3xl"
+                              style={{
+                                filter: `drop-shadow(0 0 8px ${category.color})`
+                              }}
+                            >
+                              {category.emoji}
+                            </div>
                           </div>
                           
-                          {/* Badge count */}
                           <div 
-                            className="absolute top-1 right-1 bg-black/70 rounded px-1 py-0.5"
+                            className="text-xs mt-1 font-bold"
                             style={{ 
-                              color: '#FFB6C1', 
-                              textShadow: '0 0 4px rgba(255,182,193,0.6)',
-                              fontSize: '8px',
-                              fontWeight: 'bold'
+                              color: category.color, 
+                              textShadow: `0 0 4px ${category.color}80`,
+                              fontSize: '10px'
                             }}
                           >
-                            {category.badges.length}
+                            {category.name}
                           </div>
                         </div>
-                        
-                        <div 
-                          className="text-xs mt-1 font-bold"
-                          style={{ 
-                            color: category.color, 
-                            textShadow: `0 0 4px ${category.color}80`,
-                            fontSize: '10px'
+                      ))}
+                    </div>
+                    
+                    {/* Second row: Listening, HeartCoin, Community */}
+                    <div className="flex justify-center items-center gap-4">
+                      {badgeCategories.slice(3, 6).map((category) => (
+                        <div
+                          key={category.id}
+                          className="text-center cursor-pointer group flex-shrink-0"
+                          onClick={() => {
+                            try { sfx.play('click', 0.7); } catch {}
+                            setSelectedCategory(category.id);
                           }}
                         >
-                          {category.name.replace(/^[⭐️🏆💠🎵💰🌐]\s*/, '')}
+                          <div 
+                            className="w-20 h-20 rounded-full border-2 border-pink-400/60 hover:border-pink-400/80 relative overflow-hidden transition-all duration-300 group-hover:scale-105 flex items-center justify-center"
+                            style={{
+                              boxShadow: `0 0 15px ${category.color}40`,
+                              background: `linear-gradient(135deg, ${category.color}20, rgba(252,84,175,0.1))`
+                            }}
+                          >
+                            <div 
+                              className="text-3xl"
+                              style={{
+                                filter: `drop-shadow(0 0 8px ${category.color})`
+                              }}
+                            >
+                              {category.emoji}
+                            </div>
+                          </div>
+                          
+                          <div 
+                            className="text-xs mt-1 font-bold"
+                            style={{ 
+                              color: category.color, 
+                              textShadow: `0 0 4px ${category.color}80`,
+                              fontSize: '10px'
+                            }}
+                          >
+                            {category.name}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </>
               ) : !selectedBadge ? (
@@ -514,7 +546,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                             
                             <div className="w-32"></div>
                           </div>
-                          <div className="flex justify-center gap-4">
+                          <div className="flex justify-center gap-4" style={{ marginTop: '0px' }}>
                             {getElementalElements().map(element => {
                               const elementBadges = category.badges.filter(badge => getElementFromBadge(badge) === element.name);
                               const completedCount = elementBadges.filter(badge => isUnlocked(badge)).length;
@@ -593,7 +625,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                       
                       {/* Only show badges if not elemental-streak OR if element filter is selected */}
                       {(category.id !== 'elemental-streak' || elementFilter) && (
-                        <div className={`flex flex-wrap justify-center max-h-28 overflow-y-auto overflow-x-hidden p-2 -mt-1 ${category.id === 'heartcoin' ? 'gap-8' : 'gap-5'}`} style={{ scrollbarWidth: 'thin' }}>
+                        <div className={`flex flex-wrap justify-center max-h-28 overflow-y-auto overflow-x-hidden p-2 ${category.id === 'heartcoin' ? 'gap-8' : 'gap-5'}`} style={{ scrollbarWidth: 'thin', marginTop: '-8px' }}>
                           {filterBadgesByElement(category.badges).map((badge, index) => (
                             <div key={index} className="flex flex-col items-center space-y-2">
                             <div className="relative">
