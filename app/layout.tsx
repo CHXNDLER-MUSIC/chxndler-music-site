@@ -17,15 +17,15 @@ import { ProfileProvider } from "@/contexts/ProfileContext";
 export const metadata: Metadata = {
   metadataBase: new URL("https://chxndler.world"),
   title: "CHXNDLER",
-  description: "Welcome to the Heartverse.",
+  description: "Welcome to the Heartverse",
   openGraph: {
     title: "CHXNDLER",
-    description: "Welcome to the Heartverse.",
+    description: "Welcome to the Heartverse",
     url: "https://chxndler.world",
     siteName: "CHXNDLER",
     images: [
       {
-        url: "https://ik.imagekit.io/CHXNDLER/cover/logo.png",
+        url: "https://ik.imagekit.io/CHXNDLER/cover/logo.png?updatedAt=1763763254666",
         width: 1200,
         height: 630,
         alt: "CHXNDLER Logo",
@@ -36,8 +36,10 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "CHXNDLER",
-    description: "Welcome to the Heartverse.",
-    images: ["https://ik.imagekit.io/CHXNDLER/cover/logo.png"],
+    description: "Welcome to the Heartverse",
+    images: [
+      "https://ik.imagekit.io/CHXNDLER/cover/logo.png?updatedAt=1763763254666"
+    ],
   },
   icons: {
     icon: "/elements/logo.png",

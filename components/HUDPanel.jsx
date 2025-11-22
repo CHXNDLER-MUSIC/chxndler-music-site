@@ -2163,7 +2163,7 @@ export default function HUDPanel({
       initial={false}
       animate={undefined}
       transition={undefined}
-      aria-label="Spaceship HUD"
+      aria-label="CHXNDLER HUD"
       ref={inConsole ? containerRef : undefined}
     >
       <DevErrorLogger />

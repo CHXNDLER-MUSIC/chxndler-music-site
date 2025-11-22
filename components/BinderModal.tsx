@@ -538,6 +538,62 @@ export default function BinderModal({ open, onClose }: Props) {
             </div>
           )}
 
+          {/* Card info positioned after filters */}
+          {selectedElement && (() => {
+            const cards = getFilteredCards();
+            const currentCard = cards[currentCardIndex];
+            
+            if (!currentCard) {
+              return null;
+            }
+
+            return (
+              <div className="text-center mb-4">
+                {/* Card name title */}
+                <div 
+                  className="mb-1 font-bold"
+                  style={{ 
+                    color: getElementColor(currentCard.element), 
+                    textShadow: `0 0 8px ${getElementColor(currentCard.element)}80`,
+                    fontSize: '14px'
+                  }}
+                >
+                  {currentCard.name}
+                </div>
+                
+                {/* Element info */}
+                {currentCard.element && (
+                  <div 
+                    className="mb-1"
+                    style={{ 
+                      color: '#FFB6C1', 
+                      textShadow: '0 0 4px rgba(255,182,193,0.6)',
+                      fontSize: '9px'
+                    }}
+                  >
+                    Element: <span style={{ 
+                      color: getElementColor(currentCard.element),
+                      textShadow: `0 0 4px ${getElementColor(currentCard.element)}80`
+                    }}>{currentCard.element}</span>
+                  </div>
+                )}
+                
+                {/* Rarity info */}
+                <div 
+                  className="mb-1"
+                  style={{ 
+                    color: currentCard.rarity === 'Rare' ? '#FF69B4' : '#87CEEB',
+                    textShadow: '0 0 4px currentColor',
+                    fontSize: '9px'
+                  }}
+                >
+                  ★ {currentCard.rarity.toUpperCase()} ★
+                </div>
+                
+              </div>
+            );
+          })()}
+
           {/* Card layout with image on left side */}
           {selectedElement && (() => {
             const cards = getFilteredCards();
@@ -548,7 +604,8 @@ export default function BinderModal({ open, onClose }: Props) {
             }
 
             return (
-              <div className="flex items-center gap-0 mb-1 -mt-16">
+              <>
+                <div className="flex items-center gap-0 mb-1 -mt-20">
                 {/* Left navigation arrow */}
                 {cards.length > 1 && (
                   <button
@@ -570,7 +627,7 @@ export default function BinderModal({ open, onClose }: Props) {
                   <img
                     src={currentCard.image}
                     alt={currentCard.name}
-                    className="w-20 h-auto rounded-lg cursor-pointer transition-transform duration-300 hover:scale-110"
+                    className="w-24 h-auto rounded-lg cursor-pointer transition-transform duration-300 hover:scale-110"
                     style={{
                       boxShadow: '0 0 15px rgba(255,105,180,0.6), 0 0 30px rgba(255,105,180,0.3)',
                       border: '2px solid rgba(255,105,180,0.6)',
@@ -584,70 +641,17 @@ export default function BinderModal({ open, onClose }: Props) {
                     }}
                   />
                   
-                  {/* Purchase buttons below the card image */}
-                  {!isCardOwned(currentCard.name) && (
-                    <div className="flex flex-row gap-1 mt-2">
-                      {/* Digital option */}
-                      <button
-                        onClick={() => {
-                          try { sfx.play('click', 0.6); } catch {}
-                          // Add digital purchase logic here
-                        }}
-                        className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
-                        style={{
-                          boxShadow: '0 0 8px rgba(255,105,180,0.2)',
-                        }}
-                      >
-                        <img
-                          src="/elements/heart-coin.png"
-                          alt="Heart Coin"
-                          className="w-3 h-3"
-                          draggable={false}
-                        />
-                        <span 
-                          className="text-yellow-300 font-bold"
-                          style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
-                        >
-                          20
-                        </span>
-                        <span 
-                          className="text-pink-200 font-medium"
-                          style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
-                        >
-                          DIGITAL
-                        </span>
-                      </button>
-                      
-                      {/* Physical option */}
-                      <button
-                        onClick={() => {
-                          try { sfx.play('click', 0.6); } catch {}
-                          // Add physical purchase logic here
-                        }}
-                        className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
-                        style={{
-                          boxShadow: '0 0 8px rgba(255,105,180,0.2)',
-                        }}
-                      >
-                        <img
-                          src="/elements/heart-coin.png"
-                          alt="Heart Coin"
-                          className="w-3 h-3"
-                          draggable={false}
-                        />
-                        <span 
-                          className="text-yellow-300 font-bold"
-                          style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
-                        >
-                          30
-                        </span>
-                        <span 
-                          className="text-pink-200 font-medium"
-                          style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
-                        >
-                          PHYSICAL
-                        </span>
-                      </button>
+                  {/* Card count info below image */}
+                  {cards.length > 1 && (
+                    <div 
+                      className="text-center mt-2"
+                      style={{ 
+                        color: '#FFB6C1', 
+                        textShadow: '0 0 4px rgba(255,182,193,0.6)',
+                        fontSize: '10px'
+                      }}
+                    >
+                      {currentCardIndex + 1} of {cards.length}
                     </div>
                   )}
                 </div>
@@ -659,7 +663,7 @@ export default function BinderModal({ open, onClose }: Props) {
                       try { sfx.play('click', 0.5); } catch {}
                       setCurrentCardIndex(prev => prev < cards.length - 1 ? prev + 1 : 0);
                     }}
-                    className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200 -ml-2"
+                    className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200 ml-4"
                     style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
                   >
                     <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
@@ -703,41 +707,10 @@ export default function BinderModal({ open, onClose }: Props) {
                           </div>
                         )}
                         
-                        <div 
-                          className="font-bold mb-0.5 break-words"
-                          style={{ 
-                            color: getElementColor(currentCard.element), 
-                            textShadow: `0 0 8px ${getElementColor(currentCard.element)}80`,
-                            fontSize: '11px'
-                          }}
-                        >
-                          {currentCard.name}
-                        </div>
-                        {currentCard.element && (
-                          <div 
-                            className="text-sm mb-0.5"
-                            style={{ 
-                              color: '#FFB6C1', 
-                              textShadow: '0 0 4px rgba(255,182,193,0.6)',
-                              fontSize: '9px'
-                            }}
-                          >
-                            Element: {currentCard.element}
-                          </div>
-                        )}
-                        <div 
-                          className="text-sm mb-0.5"
-                          style={{ 
-                            color: currentCard.rarity === 'Rare' ? '#FF69B4' : '#87CEEB',
-                            textShadow: '0 0 4px currentColor',
-                            fontSize: '9px'
-                          }}
-                        >
-                          ★ {currentCard.rarity.toUpperCase()} ★
-                        </div>
+                        {/* 1-liner text */}
                         {getCardOneLiner(currentCard.name) && (
                           <div 
-                            className="text-xs mb-0.5 italic leading-tight"
+                            className="text-xs mb-2 italic leading-tight"
                             style={{ 
                               color: '#E6E6FA', 
                               textShadow: '0 0 2px rgba(230,230,250,0.6)',
@@ -747,25 +720,13 @@ export default function BinderModal({ open, onClose }: Props) {
                             {getCardOneLiner(currentCard.name)}
                           </div>
                         )}
-                        
-                        {/* Card count info */}
-                        {cards.length > 1 && (
-                          <div 
-                            className="text-[10px] mt-0.5"
-                            style={{ 
-                              color: '#FFB6C1', 
-                              textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                            }}
-                          >
-                            {currentCardIndex + 1} of {cards.length}
-                          </div>
-                        )}
                       </div>
                     );
                   })()
                   }
                 </div>
               </div>
+              </>
             );
           })()}
 
@@ -940,9 +901,85 @@ export default function BinderModal({ open, onClose }: Props) {
                 ) : null}
               </>
             )}
-          </div>
+            
+            {/* Purchase buttons at bottom of modal */}
+            {selectedElement && (() => {
+              const cards = getFilteredCards();
+              const currentCard = cards[currentCardIndex];
+              
+              if (!currentCard || isCardOwned(currentCard.name)) {
+                return null;
+              }
+
+              return (
+                <div className="flex justify-center gap-3 mt-4 pt-4 border-t border-pink-400/30">
+                  {/* Digital option */}
+                  <button
+                    onClick={() => {
+                      try { sfx.play('click', 0.6); } catch {}
+                      // Add digital purchase logic here
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-sm"
+                    style={{
+                      boxShadow: '0 0 12px rgba(255,105,180,0.3)',
+                    }}
+                  >
+                    <img
+                      src="/elements/heart-coin.png"
+                      alt="Heart Coin"
+                      className="w-4 h-4"
+                      draggable={false}
+                    />
+                    <span 
+                      className="text-yellow-300 font-bold"
+                      style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
+                    >
+                      20
+                    </span>
+                    <span 
+                      className="text-pink-200 font-medium"
+                      style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                    >
+                      DIGITAL
+                    </span>
+                  </button>
+                  
+                  {/* Physical option */}
+                  <button
+                    onClick={() => {
+                      try { sfx.play('click', 0.6); } catch {}
+                      // Add physical purchase logic here
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-sm"
+                    style={{
+                      boxShadow: '0 0 12px rgba(255,105,180,0.3)',
+                    }}
+                  >
+                    <img
+                      src="/elements/heart-coin.png"
+                      alt="Heart Coin"
+                      className="w-4 h-4"
+                      draggable={false}
+                    />
+                    <span 
+                      className="text-yellow-300 font-bold"
+                      style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
+                    >
+                      30
+                    </span>
+                    <span 
+                      className="text-pink-200 font-medium"
+                      style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                    >
+                      PHYSICAL
+                    </span>
+                  </button>
+                </div>
+              );
+            })()}
           </div>
         </div>
+      </div>
 
         {/* Card Display Modal */}
         {cardOpen && (
@@ -997,7 +1034,7 @@ export default function BinderModal({ open, onClose }: Props) {
                   backdropFilter: 'blur(10px)',
                 }}
               >
-                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
                   <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 </svg>

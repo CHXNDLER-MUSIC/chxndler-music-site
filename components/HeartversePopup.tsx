@@ -9,7 +9,7 @@ type Props = {
   children: React.ReactNode;
   icon?: React.ReactNode;
   headerContent?: React.ReactNode;
-  positioning?: 'default' | 'higher';
+  positioning?: 'default' | 'higher' | 'top-left';
 };
 
 export default function HeartversePopup({ isOpen, onClose, title, children, icon, headerContent, positioning = 'default' }: Props) {
@@ -25,20 +25,21 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
 
   if (!isOpen) return null;
 
+
   return (
     <div
-      className="fixed inset-0 z-[9999] flex justify-center items-center"
+      className="fixed inset-0 z-[9999]"
       aria-modal="true"
       role="dialog"
       aria-label={title}
-      style={{ paddingTop: positioning === 'higher' ? '2vh' : '30vh' }}
     >
       <div
         className="absolute inset-0 bg-black/85 backdrop-blur-md"
         onClick={onClose}
       />
       <div 
-        className="mx-4 max-w-lg w-full relative z-[10000]"
+        className={positioning === 'top-left' ? 'absolute z-[10000] max-w-md' : 'absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 mx-4 max-w-lg w-full z-[10000]'}
+        style={positioning === 'top-left' ? {top: '100px', left: '50px', backgroundColor: 'red'} : {marginTop: positioning === 'higher' ? '-30vh' : '0'}}
       >
         <div className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-[#FC54AF]/60 bg-white/5 shadow-[0_0_26px_rgba(56,182,255,0.35)]">
           <div
