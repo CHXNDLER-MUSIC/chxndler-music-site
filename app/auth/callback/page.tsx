@@ -15,7 +15,7 @@ export default function AuthCallbackPage() {
     try {
       const { data: existing, status } = await supabaseClient
         .from('profiles')
-        .select('id, display_name, email')
+        .select('id, name, email')
         .eq('id', session.user.id)
         .maybeSingle();
 
@@ -23,11 +23,11 @@ export default function AuthCallbackPage() {
         // Create a bare profile row
         await supabaseClient
           .from('profiles')
-          .insert({ id: session.user.id, email: session.user.email || null, display_name: null })
+          .insert({ id: session.user.id, email: session.user.email || null, name: null })
           .throwOnError();
         needsName = true;
       } else {
-        needsName = !existing.display_name || existing.display_name.trim() === '';
+        needsName = !existing.name || existing.name.trim() === '';
       }
     } catch (e) {
       console.warn('⚠️ Profile fetch/create failed; defaulting to needsName flow if uncertain:', e);

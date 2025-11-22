@@ -184,7 +184,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
   
   // Collection panel state
   const [showCollectionPanel, setShowCollectionPanel] = useState(false);
-  const [userProfile, setUserProfile] = useState<{display_name: string; hearts: number; selected_element?: ElementKey; email?: string; phone?: string} | null>(null);
+  const [userProfile, setUserProfile] = useState<{name: string; hearts: number; selected_element?: ElementKey; email?: string; phone?: string} | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [selectedCardType, setSelectedCardType] = useState<'digital' | 'physical'>('digital');
   const [userSelectedElement, setUserSelectedElement] = useState<ElementKey | null>('heart');
@@ -215,12 +215,12 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
         }
       } else {
         // User not logged in or no profile - use hardcoded data for now
-        setUserProfile({ display_name: 'Guest User', hearts: 5 });
+        setUserProfile({ name: 'Guest User', hearts: 5 });
         setUserSelectedElement('heart');
       }
     } catch (error) {
       // Fallback to hardcoded data
-      setUserProfile({ display_name: 'Guest User', hearts: 5 });
+      setUserProfile({ name: 'Guest User', hearts: 5 });
       setUserSelectedElement('heart');
     } finally {
       setLoadingProfile(false);
@@ -831,7 +831,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                           />
                         </div>
                         <div className="flex items-center gap-3">
-                          <div className="text-lg font-semibold text-[#CFF7FF]">{userProfile.display_name}</div>
+                          <div className="text-lg font-semibold text-[#CFF7FF]">{userProfile.name}</div>
                           <div className="flex items-center gap-2">
                             <span className="text-lg text-[#F2EF1D] font-bold">{userProfile.hearts}</span>
                             <img

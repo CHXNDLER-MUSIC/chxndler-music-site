@@ -11,9 +11,11 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   onBeamColorChange?: (color: string) => void;
   element?: string | null; // Current user element from profile
   onElementSelect?: (element: string) => void; // Callback when user selects new element
+  // UI state, should NOT hit the DOM
+  isActive?: boolean;
 };
 
-export default function ElementalButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onBeamColorChange, element, onElementSelect, ...rest }: Props) {
+export default function ElementalButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onBeamColorChange, element, onElementSelect, isActive = false, ...restProps }: Props) {
   const [open, setOpen] = useState(false);
   const [hoveredElement, setHoveredElement] = useState<string | null>(null);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
@@ -53,7 +55,7 @@ export default function ElementalButton({ asChild = false, children, onClick, on
         className="p-1 rounded-lg transition-all duration-200 w-14 h-12"
         style={{
           transition: 'all 0.3s ease',
-          ...rest.style
+          ...restProps.style
         }}
         onMouseEnter={(e) => {
           if (onHoverSound) onHoverSound();
@@ -62,7 +64,8 @@ export default function ElementalButton({ asChild = false, children, onClick, on
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'scale(1)';
         }}
-        {...rest}
+        // Spread only safe DOM props (filtered)
+        {...restProps}
       >
         <img
           src={committedElement ? `/elements/${committedElement}.png` : (element ? `/elements/${element}.png` : "/elements/elemental.png")}

@@ -39,16 +39,17 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
 
-      // Get current user
+      // Prefer getSession to avoid noisy "Auth session missing" errors when logged out
       const {
-        data: { user },
-        error: userError,
-      } = await supabaseClient.auth.getUser();
+        data: { session },
+        error: sessionError,
+      } = await supabaseClient.auth.getSession();
 
-      if (userError) {
-        console.error("Error getting user:", userError.message, userError);
+      if (sessionError) {
+        console.error("Error getting session:", sessionError.message, sessionError);
       }
 
+      const user = session?.user;
       if (!user) {
         setProfile(null);
         return;
@@ -94,15 +95,16 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   ) => {
     try {
       const {
-        data: { user },
-        error: userError,
-      } = await supabaseClient.auth.getUser();
+        data: { session },
+        error: sessionError,
+      } = await supabaseClient.auth.getSession();
 
-      if (userError) {
-        console.error("Error getting user:", userError.message, userError);
+      if (sessionError) {
+        console.error("Error getting session:", sessionError.message, sessionError);
         return;
       }
 
+      const user = session?.user;
       if (!user) return;
 
       const { data, error } = await supabaseClient

@@ -31,11 +31,11 @@ export async function POST(req: NextRequest) {
     const admin = getSupabaseAdmin();
     const { data: inviterProfile } = await admin
       .from('profiles')
-      .select('display_name, email')
+      .select('name, email')
       .eq('id', user.id)
       .single();
 
-    const inviterName = inviterProfile?.display_name || inviterProfile?.email || 'A friend';
+    const inviterName = inviterProfile?.name || inviterProfile?.email || 'A friend';
     
     // Create unique invitation token
     const invitationToken = crypto.randomUUID();

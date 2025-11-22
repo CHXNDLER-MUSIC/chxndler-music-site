@@ -11,9 +11,11 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   onOpenJournal?: () => void;
   heartCoins?: number;
   onHeartCoinsChange?: (newAmount: number) => void;
+  // UI state prop from parent; do not forward to DOM
+  isActive?: boolean;
 };
 
-export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onOpenJournal, heartCoins: externalHeartCoins = 0, onHeartCoinsChange, ...rest }: Props) {
+export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onOpenJournal, heartCoins: externalHeartCoins = 0, onHeartCoinsChange, isActive = false, ...restProps }: Props) {
   const [open, setOpen] = useState(false);
   const [heartCoins, setHeartCoins] = useState(externalHeartCoins);
   const [dailyQuests, setDailyQuests] = useState({
@@ -200,7 +202,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         className="p-1 rounded-lg transition-all duration-200 w-14 h-12"
         style={{
           transition: 'all 0.3s ease',
-          ...rest.style
+          ...restProps.style
         }}
         onMouseEnter={(e) => {
           if (onHoverSound) onHoverSound();
@@ -209,7 +211,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'scale(1)';
         }}
-        {...rest}
+        {...restProps}
       >
         <img
           src="/elements/heart-coin.png"
@@ -323,7 +325,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           {/* Header */}
           <div className="text-center mb-3 mt-8">
             <div 
-              className="text-lg font-bold mb-2"
+              className="text-lg font-bold mb-4"
               style={{ 
                 color: '#FF69B4', 
                 textShadow: '0 0 8px rgba(255,105,180,0.6)', 
@@ -331,6 +333,35 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               }}
             >
               HEART COINS
+            </div>
+            
+            {/* Heart Coin Balance - Top Left */}
+            <div className="flex items-center space-x-3 mb-4">
+              <img
+                src="/elements/heart-coin.png"
+                alt="Heart Coin"
+                className="w-10 h-10"
+              />
+              <div>
+                <div 
+                  className="text-xs"
+                  style={{ 
+                    color: '#FFB6C1', 
+                    textShadow: '0 0 4px rgba(255,182,193,0.6)' 
+                  }}
+                >
+                  Balance
+                </div>
+                <div 
+                  className="text-xl font-bold"
+                  style={{ 
+                    color: '#FFFFFF', 
+                    textShadow: '0 0 8px rgba(255,255,255,0.8)' 
+                  }}
+                >
+                  {heartCoins}
+                </div>
+              </div>
             </div>
             
             {/* Thin pink neon line */}
@@ -342,48 +373,17 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               }}
             />
             
-            <div className="flex items-center justify-between mb-3">
-              {/* Heart Coin Balance - Left Side */}
-              <div className="flex items-center space-x-3">
-                <img
-                  src="/elements/heart-coin.png"
-                  alt="Heart Coin"
-                  className="w-10 h-10"
-                />
-                <div>
-                  <div 
-                    className="text-xs"
-                    style={{ 
-                      color: '#FFB6C1', 
-                      textShadow: '0 0 4px rgba(255,182,193,0.6)' 
-                    }}
-                  >
-                    Balance
-                  </div>
-                  <div 
-                    className="text-xl font-bold"
-                    style={{ 
-                      color: '#FFFFFF', 
-                      textShadow: '0 0 8px rgba(255,255,255,0.8)' 
-                    }}
-                  >
-                    {heartCoins}
-                  </div>
-                </div>
-              </div>
-              
-              {/* Description Text - Right Side */}
-              <div 
-                className="text-base text-right flex-1 ml-4"
-                style={{ 
-                  color: '#FFB6C1', 
-                  textShadow: '0 0 4px rgba(255,182,193,0.8)', 
-                  fontSize: '14px',
-                  lineHeight: 1.3
-                }}
-              >
-                Heart coins are the energy of the Heartverse. You earn them by exploring, connecting and showing up.
-              </div>
+            {/* Description Text */}
+            <div 
+              className="text-base text-center mb-3"
+              style={{ 
+                color: '#FFB6C1', 
+                textShadow: '0 0 4px rgba(255,182,193,0.8)', 
+                fontSize: '14px',
+                lineHeight: 1.3
+              }}
+            >
+              Heart coins are the energy of the Heartverse. You earn them by exploring, connecting and showing up.
             </div>
           </div>
 

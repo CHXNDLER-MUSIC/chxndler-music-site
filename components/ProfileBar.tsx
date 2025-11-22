@@ -103,7 +103,7 @@ export default function ProfileBar({
       'lightning': '/elements/lightning.png',
       'darkness': '/elements/darkness.png'
     };
-    return iconMap[element || 'heart'] || iconMap['heart'];
+    return iconMap[element || ''] || '/elements/elemental.png';
   };
 
   async function updateElement(element: string) {
@@ -216,8 +216,8 @@ export default function ProfileBar({
     );
   }
 
-  const currentElement = contextProfile?.element || savedAlienElement || 'heart';
-  const displayName = contextProfile?.display_name || savedAlienName || 'ALIEN';
+  const currentElement = contextProfile?.element || savedAlienElement || null;
+  const displayName = contextProfile?.name || savedAlienName || 'ALIEN';
   const heartCoins = contextProfile?.heartcoin_balance || 0;
   const currentElementData = ELEMENTS.find(e => e.name === currentElement) || ELEMENTS[0];
 

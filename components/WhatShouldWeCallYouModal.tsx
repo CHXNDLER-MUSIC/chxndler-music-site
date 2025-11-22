@@ -8,14 +8,14 @@ import { useProfile } from "@/contexts/ProfileContext";
 
 export default function WhatShouldWeCallYouModal() {
   const { showNamePrompt, closeNamePrompt, openElementSelection } = useUIStore();
-  const { updateProfile } = useProfile();
-  const [displayName, setDisplayName] = useState("");
+  const { updateProfileNameAndElement } = useProfile();
+  const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!displayName.trim()) return;
+    if (!name.trim()) return;
     
     setLoading(true);
     setError(null);
@@ -26,27 +26,14 @@ export default function WhatShouldWeCallYouModal() {
         throw new Error("Not authenticated");
       }
 
-      const { error } = await supabaseClient
-        .from('profiles')
-        .update({
-          display_name: displayName.trim(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', user.id);
-
-      if (error) throw error;
-      
-      // Update the profile context with the new display name
-      updateProfile({ 
-        display_name: displayName.trim(),
-        updated_at: new Date().toISOString(),
-      });
+      // Use the context method instead of direct Supabase calls
+      await updateProfileNameAndElement(name.trim(), 'heart'); // Default element
       
       closeNamePrompt();
       // Open element selection immediately after name is saved
       setTimeout(() => openElementSelection(), 100);
     } catch (e: any) {
-      setError(e?.message || "Failed to save display name");
+      setError(e?.message || "Failed to save name");
     } finally {
       setLoading(false);
     }
@@ -167,9 +154,9 @@ export default function WhatShouldWeCallYouModal() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="text"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="Your display name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Your name"
             required
             disabled={loading}
             className="block w-full rounded-md border px-3 py-3 text-sm shadow-sm focus:outline-none disabled:opacity-50"
@@ -186,14 +173,14 @@ export default function WhatShouldWeCallYouModal() {
           
           <button
             type="submit"
-            disabled={loading || !displayName.trim()}
+            disabled={loading || !name.trim()}
             className="w-full inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-medium transition disabled:opacity-50"
             style={{
               background: 'rgba(0,255,255,0.15)',
               border: '1px solid rgba(0,255,255,0.5)',
               color: '#00FFFF',
               textShadow: '0 0 8px rgba(0,255,255,0.8), 0 0 16px rgba(0,255,255,0.6), 0 0 24px rgba(0,255,255,0.4)',
-              boxShadow: loading || !displayName.trim()
+              boxShadow: loading || !name.trim()
                 ? 'none' 
                 : '0 0 15px rgba(0,255,255,0.4), 0 0 25px rgba(0,255,255,0.2)'
             }}

@@ -9,6 +9,8 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   onCloseBlueDisplay?: () => void;
   onOpenBlueDisplay?: () => void;
   cumulativeHeartCoins?: number;
+  // UI state prop from parent; do not forward to DOM
+  isActive?: boolean;
 };
 
 type TierType = 'wanderer' | 'dreamer' | 'lover';
@@ -71,7 +73,7 @@ function getUserTier(cumulativeHeartCoins: number): TierType {
   return 'wanderer';
 }
 
-export default function JourneyButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, cumulativeHeartCoins = 0, ...rest }: Props) {
+export default function JourneyButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, cumulativeHeartCoins = 0, isActive = false, ...restProps }: Props) {
   const [open, setOpen] = useState(false);
   const [flippedTier, setFlippedTier] = useState<TierType | null>(null);
 
@@ -115,7 +117,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
           background: 'rgba(0,0,0,0) !important',
           WebkitFilter: 'none !important',
           MozFilter: 'none !important',
-          ...rest.style,
+          ...restProps.style,
           boxShadow: 'none',
           filter: 'none',
           outline: 'none',
@@ -135,7 +137,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
           e.currentTarget.style.textShadow = '0 0 10px #00FFFF, 0 0 20px #00FFFF, 0 0 30px #00FFFF';
           e.currentTarget.style.filter = 'none';
         }}
-        {...rest}
+        {...restProps}
       >
         {tierData[getUserTier(cumulativeHeartCoins)].name}
         </button>

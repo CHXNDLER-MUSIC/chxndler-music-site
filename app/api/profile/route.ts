@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     try {
       const admin = getSupabaseAdmin();
       await admin.from('profiles').upsert(
-        { id: user.id, display_name: null, hearts: 0, updated_at: new Date().toISOString() },
+        { id: user.id, name: null, hearts: 0, updated_at: new Date().toISOString() },
         { onConflict: 'id' }
       );
 

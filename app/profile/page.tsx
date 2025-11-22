@@ -13,10 +13,10 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  const [displayName, setDisplayName] = useState("");
+  const [name, setName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
 
-  const canSave = useMemo(() => !saving && (displayName.length > 0 || avatarUrl.length > 0), [saving, displayName, avatarUrl]);
+  const canSave = useMemo(() => !saving && (name.length > 0 || avatarUrl.length > 0), [saving, name, avatarUrl]);
 
   useEffect(() => {
     let mounted = true;
@@ -35,7 +35,7 @@ export default function ProfilePage() {
         }
         const data = (await res.json()) as Profile;
         if (!mounted) return;
-        setDisplayName(data.display_name ?? "");
+        setName(data.name ?? "");
         setAvatarUrl(data.avatar_url ?? "");
       } catch (e: any) {
         if (!mounted) return;
@@ -59,7 +59,7 @@ export default function ProfilePage() {
       const res = await fetch("/api/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ display_name: displayName, avatar_url: avatarUrl }),
+        body: JSON.stringify({ name: name, avatar_url: avatarUrl }),
       });
       if (res.status === 401) {
         router.push("/signin");
@@ -107,14 +107,14 @@ export default function ProfilePage() {
           )}
 
           <div>
-            <label htmlFor="display_name" className="block text-sm font-medium text-gray-700">
-              Display Name
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+              Name
             </label>
             <input
-              id="display_name"
+              id="name"
               type="text"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               placeholder="Your name"
               className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-black focus:outline-none"
             />

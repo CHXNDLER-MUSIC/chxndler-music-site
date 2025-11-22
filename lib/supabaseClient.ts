@@ -20,7 +20,7 @@ export const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
 // Optional: shared types for the profiles table
 export type Profile = {
   id: string;
-  display_name: string | null;
+  name: string | null;
   avatar_url: string | null;
   phone: string | null;
   hearts: number | null;

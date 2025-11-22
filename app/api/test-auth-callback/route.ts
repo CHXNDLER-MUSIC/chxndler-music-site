@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     // Check if profile already exists
     const { data: existingProfile } = await admin
       .from('profiles')
-      .select('id, email, display_name, heartcoin_balance')
+      .select('id, email, name, heartcoin_balance')
       .eq('id', user.id)
       .single();
 
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
       .insert([{
         id: user.id,
         email: user.email,
-        display_name: displayName,
+        name: displayName,
         heartcoin_balance: 5, // Welcome bonus heart coins
         heartcoin_total: 5,   // Also set total
         profile_complete: false,

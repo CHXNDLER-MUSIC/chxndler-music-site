@@ -9,9 +9,11 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   onHoverSound?: () => void;
   onCloseBlueDisplay?: () => void;
   onOpenBlueDisplay?: () => void;
+  // UI state prop from parent; do not forward to DOM
+  isActive?: boolean;
 };
 
-export default function BinderButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, ...rest }: Props) {
+export default function BinderButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, isActive = false, ...restProps }: Props) {
   const [open, setOpen] = useState(false);
   const [cardOpen, setCardOpen] = useState(false);
   const [showFullCollection, setShowFullCollection] = useState(false);
@@ -351,7 +353,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
       try { sfx.play('click', 0.8); } catch {}
       // Close blue display first
       try { onCloseBlueDisplay?.(); } catch {}
-      setOpen(true);
+      // Note: Modal opening is now handled by parent component's onClick prop
     }
   };
 
@@ -363,7 +365,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
         className="p-1 rounded-lg transition-all duration-200 w-14 h-12"
         style={{
           transition: 'all 0.3s ease',
-          ...rest.style
+          ...restProps.style
         }}
         onMouseEnter={(e) => {
           if (onHoverSound) onHoverSound();
@@ -372,7 +374,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'scale(1)';
         }}
-        {...rest}
+        {...restProps}
       >
         <img
           src="/elements/binder.png"
@@ -537,22 +539,40 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
           {/* Back button and filters positioned in same row */}
           {selectedElement && (
             <div className="flex justify-between items-center mb-4">
-              <button
-                onClick={() => {
-                  try { sfx.play('click', 0.6); } catch {}
-                  setSelectedElement(null);
-                  setSelectedCardName('All');
-                  setPreselectedCard(null);
-                  setCurrentCardIndex(0);
-                }}
-                className="flex items-center gap-2 text-pink-300 hover:text-pink-200 transition-colors text-xs"
-                style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
-              >
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                  <path d="M19 12H5m7-7l-7 7 7 7"/>
-                </svg>
-                Back to Elements
-              </button>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    try { sfx.play('click', 0.6); } catch {}
+                    setSelectedElement(null);
+                    setSelectedCardName('All');
+                    setPreselectedCard(null);
+                    setCurrentCardIndex(0);
+                  }}
+                  className="flex items-center gap-2 text-pink-300 hover:text-pink-200 transition-colors text-xs"
+                  style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                    <path d="M19 12H5m7-7l-7 7 7 7"/>
+                  </svg>
+                  Back to Elements
+                </button>
+                
+                {/* Card count info positioned below "Back to Elements" */}
+                {(() => {
+                  const cards = getFilteredCards();
+                  return cards.length > 1 && (
+                    <div 
+                      className="text-[10px]"
+                      style={{ 
+                        color: '#FFB6C1', 
+                        textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                      }}
+                    >
+                      {currentCardIndex + 1} of {cards.length}
+                    </div>
+                  );
+                })()}
+              </div>
               
               {/* Filters positioned to the right of back button */}
               <div className="flex items-center gap-3">
@@ -627,26 +647,47 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                   </button>
                 )}
                 
-                {/* Card image in the center */}
-                <div className="flex-shrink-0">
-                  <img
-                    src={currentCard.image}
-                    alt={currentCard.name}
-                    className="w-24 h-auto rounded-lg cursor-pointer transition-transform duration-300 hover:scale-110"
-                    style={{
-                      boxShadow: '0 0 15px rgba(255,105,180,0.6), 0 0 30px rgba(255,105,180,0.3)',
-                      border: '2px solid rgba(255,105,180,0.6)',
-                    }}
-                    draggable={false}
-                    onClick={() => {
-                      try { sfx.play('click', 0.8); } catch {}
-                      setPreselectedCard(currentCard.name);
-                      setSelectedCard(currentCard);
-                      setCardOpen(true);
-                    }}
-                  />
+                {/* Card image and right arrow container */}
+                <div className="flex items-center gap-2">
+                  {/* Card image */}
+                  <div className="flex-shrink-0">
+                    <img
+                      src={currentCard.image}
+                      alt={currentCard.name}
+                      className="w-24 h-auto rounded-lg cursor-pointer transition-transform duration-300 hover:scale-110"
+                      style={{
+                        boxShadow: '0 0 15px rgba(255,105,180,0.6), 0 0 30px rgba(255,105,180,0.3)',
+                        border: '2px solid rgba(255,105,180,0.6)',
+                      }}
+                      draggable={false}
+                      onClick={() => {
+                        try { sfx.play('click', 0.8); } catch {}
+                        setPreselectedCard(currentCard.name);
+                        setSelectedCard(currentCard);
+                        setCardOpen(true);
+                      }}
+                    />
+                  </div>
                   
-                  {/* Purchase buttons below the card image */}
+                  {/* Right navigation arrow - directly to the right of card */}
+                  {cards.length > 1 && (
+                    <button
+                      onClick={() => {
+                        try { sfx.play('click', 0.5); } catch {}
+                        setCurrentCardIndex(prev => prev < cards.length - 1 ? prev + 1 : 0);
+                      }}
+                      className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200 self-center"
+                      style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
+                    >
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                        <path d="M9 18l6-6-6-6"/>
+                      </svg>
+                    </button>
+                  )}
+                </div>
+                
+                {/* Purchase buttons below the card image container */}
+                <div className="flex flex-col">
                   {!isCardOwned(currentCard.name) && (
                     <div className="flex flex-row gap-1 mt-2">
                       {/* Digital option */}
@@ -793,74 +834,45 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                             {getCardOneLiner(currentCard.name)}
                           </div>
                         )}
-                        
-                        {/* Card count info */}
-                        {cards.length > 1 && (
-                          <div 
-                            className="text-[10px] mt-2"
-                            style={{ 
-                              color: '#FFB6C1', 
-                              textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                            }}
-                          >
-                            {currentCardIndex + 1} of {cards.length}
-                          </div>
-                        )}
                       </div>
                     );
                   })()}
                 </div>
-                
-                {/* Right navigation arrow */}
-                {cards.length > 1 && (
-                  <button
-                    onClick={() => {
-                      try { sfx.play('click', 0.5); } catch {}
-                      setCurrentCardIndex(prev => prev < cards.length - 1 ? prev + 1 : 0);
-                    }}
-                    className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200 self-center"
-                    style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
-                  >
-                    <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-                      <path d="M9 18l6-6-6-6"/>
-                    </svg>
-                  </button>
-                )}
               </div>
             );
           })()}
 
           <div className="flex justify-between items-center mb-4">            
             {!selectedElement && (
-              <div 
-                className="text-center flex-1"
-                style={{ 
-                  whiteSpace: 'pre-wrap', 
-                  lineHeight: 1.2, 
-                  fontSize: 9, 
-                  color: '#FF69B4', 
-                  textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,105,180,0.6)', 
-                  marginTop: '-4px' 
-                }}
-              >
-                Earn the cards that reflect your journey as you move through the Heartverse.
+              <div className="text-center flex-1">
+                <div 
+                  style={{ 
+                    whiteSpace: 'pre-wrap', 
+                    lineHeight: 1.2, 
+                    fontSize: 9, 
+                    color: '#FF69B4', 
+                    textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,105,180,0.6)', 
+                    marginTop: '-4px' 
+                  }}
+                >
+                  Earn the cards that reflect your journey as you move through the Heartverse.
+                </div>
+
+                {/* Collection Progress - only show in element selection view */}
+                <div 
+                  className="text-center mb-3"
+                  style={{ 
+                    color: '#FFB6C1', 
+                    textShadow: '0 0 4px rgba(255,182,193,0.8)', 
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                    marginTop: '8px'
+                  }}
+                >
+                  CARDS COLLECTED: {ownedCards.size}/{songCollection.length}
+                </div>
               </div>
             )}
-          </div>
-
-
-          {/* Collection Progress */}
-          <div 
-            className="text-center mb-3"
-            style={{ 
-              color: '#FFB6C1', 
-              textShadow: '0 0 4px rgba(255,182,193,0.8)', 
-              fontSize: '10px',
-              fontWeight: 'bold',
-              marginTop: '-8px'
-            }}
-          >
-            CARDS COLLECTED: {ownedCards.size}/{songCollection.length}
           </div>
 
           {/* Dynamic Content - Binder Slots or Full Collection */}

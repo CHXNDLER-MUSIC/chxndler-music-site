@@ -9,9 +9,11 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   onHoverSound?: () => void;
   onCloseBlueDisplay?: () => void;
   onOpenBlueDisplay?: () => void;
+  // UI state prop from parent; do not forward to DOM
+  isActive?: boolean;
 };
 
-export default function CodeButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, ...rest }: Props) {
+export default function CodeButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, isActive = false, ...restProps }: Props) {
   const [open, setOpen] = useState(false);
 
   const handleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
@@ -33,7 +35,7 @@ export default function CodeButton({ asChild = false, children, onClick, onHover
         className="p-1 rounded-lg transition-all duration-200 w-14 h-12"
         style={{
           transition: 'all 0.3s ease',
-          ...rest.style
+          ...restProps.style
         }}
         onMouseEnter={(e) => {
           if (onHoverSound) onHoverSound();
@@ -42,7 +44,7 @@ export default function CodeButton({ asChild = false, children, onClick, onHover
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'scale(1)';
         }}
-        {...rest}
+        {...restProps}
       >
         <span 
           className="font-bold text-sm"

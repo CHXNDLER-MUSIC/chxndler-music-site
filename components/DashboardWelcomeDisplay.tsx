@@ -8,7 +8,7 @@ import WelcomeHomeForm from '@/components/WelcomeHomeForm';
 
 type Profile = {
   id: string;
-  display_name: string | null;
+  name: string | null;
   hearts: number | null;
 };
 
@@ -87,7 +87,7 @@ export default function DashboardWelcomeDisplay({ onBeamColorChange }: Props) {
   }
 
   // Logged in view
-  const name = profile?.display_name ?? 'Pilot';
+  const name = profile?.name ?? 'Pilot';
   const hearts = profile?.hearts ?? 0;
 
   return (

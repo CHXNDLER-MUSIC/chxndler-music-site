@@ -146,7 +146,7 @@ export async function POST(req: NextRequest) {
     const profileData = {
       id: user.id,
       email: user.email,
-      display_name: displayName,
+      name: displayName,
       heart_coins_current: 0,
       heart_coins_total: 0,
       profile_complete: false,
