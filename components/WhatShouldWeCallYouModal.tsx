@@ -82,6 +82,22 @@ export default function WhatShouldWeCallYouModal() {
           }}
         >
         
+        {/* Close button - blue X in circle */}
+        <button
+          onClick={closeNamePrompt}
+          className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+          style={{
+            background: 'rgba(0,255,255,0.2)',
+            border: '1px solid rgba(0,255,255,0.6)',
+            color: '#00FFFF',
+            boxShadow: '0 0 10px rgba(0,255,255,0.3)',
+            fontSize: '14px',
+            fontWeight: 'bold'
+          }}
+        >
+          ×
+        </button>
+        
         {/* Soft bottom glow pseudo element */}
         <div 
           className="absolute"
