@@ -13,17 +13,25 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   onHeartCoinsChange?: (newAmount: number) => void;
   // UI state prop from parent; do not forward to DOM
   isActive?: boolean;
+  // Journal completion tracking
+  journalCompleted?: boolean;
+  onJournalCompleted?: () => void;
 };
 
-export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onOpenJournal, heartCoins: externalHeartCoins = 0, onHeartCoinsChange, isActive = false, ...restProps }: Props) {
+export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onOpenJournal, heartCoins: externalHeartCoins = 0, onHeartCoinsChange, isActive = false, journalCompleted = false, onJournalCompleted, ...restProps }: Props) {
   const [open, setOpen] = useState(false);
   const [heartCoins, setHeartCoins] = useState(externalHeartCoins);
   const [dailyQuests, setDailyQuests] = useState({
     elementTapped: false,
-    journalEntry: false,
+    journalEntry: journalCompleted,
     friendInvited: false,
     checkedIn: false
   });
+
+  // Update journal completion state when external prop changes
+  useEffect(() => {
+    setDailyQuests(prev => ({ ...prev, journalEntry: journalCompleted }));
+  }, [journalCompleted]);
 
   // Update local state when external heartCoins change
   useEffect(() => {
@@ -85,8 +93,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const handleJournalEntry = () => {
     if (!dailyQuests.journalEntry) {
       try { sfx.play('click', 0.8); } catch {}
-      updateHeartCoins(heartCoins + 1);
-      setDailyQuests(prev => ({ ...prev, journalEntry: true }));
       
       // Close heart coin display and open journal
       setOpen(false);

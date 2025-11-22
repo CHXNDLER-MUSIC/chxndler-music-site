@@ -910,6 +910,12 @@ export default function DashboardApp({ initialSlug } = {}) {
     setShouldOpenJournal(true);
   }, []);
 
+  // Handle journal completion: triggers refresh of profile data
+  const handleJournalCompleted = React.useCallback(() => {
+    // Trigger profile refresh to update HeartCoin balance
+    setProfileRefreshTrigger(prev => prev + 1);
+  }, []);
+
   // Spacebar and Pause key toggle (works even when 3D is active)
   React.useEffect(() => {
     const handleKeyDown = (e) => {
@@ -1800,6 +1806,7 @@ export default function DashboardApp({ initialSlug } = {}) {
                   onOpenBlueDisplay={() => handleBeamToggle('blue')}
                   shouldOpenJournal={shouldOpenJournal}
                   onJournalOpened={() => setShouldOpenJournal(false)}
+                  onBeamColorChange={handleBeamToggle}
                 />
               </div>
               {!showHUD ? (

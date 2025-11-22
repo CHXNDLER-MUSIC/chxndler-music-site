@@ -67,6 +67,51 @@ export default function ProfileBar({
   // Use UI store for name prompt
   const { openNamePrompt } = useUIStore();
   const [elementDropdownOpen, setElementDropdownOpen] = useState(false);
+  const [journalCompletedToday, setJournalCompletedToday] = useState(false);
+
+  // Check if journal was completed today
+  const checkJournalCompletion = async () => {
+    try {
+      const { data: { user } } = await supabaseBrowser.auth.getUser();
+      if (!user) return false;
+
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      
+      // Check for existing HeartCoin transaction for journal completion today
+      const { data: transactions, error } = await supabaseBrowser
+        .from('heartcoin_transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('reason', 'Completed journal reflection')
+        .gte('created_at', `${today}T00:00:00`)
+        .lt('created_at', `${today}T23:59:59`);
+
+      if (error) {
+        console.error('Error checking journal completion:', error);
+        return false;
+      }
+
+      return transactions && transactions.length > 0;
+    } catch (error) {
+      console.error('Error checking journal completion:', error);
+      return false;
+    }
+  };
+
+  // Load completion status on mount and when profile changes
+  useEffect(() => {
+    if (contextProfile?.id) {
+      checkJournalCompletion().then(setJournalCompletedToday);
+    }
+  }, [contextProfile?.id, profileRefreshTrigger]);
+
+  // Handler for when journal gets completed
+  const handleJournalCompleted = async () => {
+    setJournalCompletedToday(true);
+    // Refresh profile data to get updated HeartCoin balance
+    const completed = await checkJournalCompletion();
+    setJournalCompletedToday(completed);
+  };
   
   // IMPORTANT: Do not render anything until the user has entered
   // Guard before any loading UI to prevent initial flash on first load
@@ -336,6 +381,8 @@ export default function ProfileBar({
                 heartCoins={heartCoins}
                 isActive={activePanel === 'heartcoins'}
                 onClick={() => togglePanel('heartcoins')}
+                journalCompleted={journalCompletedToday}
+                onJournalCompleted={handleJournalCompleted}
                 onHeartCoinsChange={(newAmount) => {
                   // Update through ProfileContext
                   updateProfile({ heartcoin_balance: newAmount });

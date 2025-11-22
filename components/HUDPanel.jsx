@@ -10,6 +10,7 @@ import WelcomeHomeModal from "@/components/WelcomeHomeModal";
 import SharedButton from "@/components/SharedButton";
 import HeartverseButton from "@/components/HeartverseButton";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { awardHeartCoins } from "@/utils/heartcoins";
 // 2D fallback hologram
 // 2D HUD removed per request; 3D only
 // 3D planet system (requires three/r3f/drei installed)
@@ -128,6 +129,8 @@ export default function HUDPanel({
   onOpenBlueDisplay, // callback to open the blue display
   shouldOpenJournal = false, // flag to automatically open journal
   onJournalOpened, // callback when journal is opened
+  onJournalCompleted, // callback when journal is completed with HeartCoins awarded
+  onBeamColorChange, // callback to change beam color
 }) {
   // Temporary kill-switch to disable 3D planets for performance testing
   // Set to true to disable. You can also override at runtime by setting
@@ -252,6 +255,7 @@ export default function HUDPanel({
   const [questionResponse, setQuestionResponse] = useState('');
   const [showStarAnimation, setShowStarAnimation] = useState(false);
   const [showBeamEffect, setShowBeamEffect] = useState(false);
+  const [journalCompletedToday, setJournalCompletedToday] = useState(false);
   const soulSkyScrollRef = useRef(null);
   const brandLastScrollAtRef = useRef(0);
   // Lift the CHXNDLER popover higher above its anchor
@@ -1315,6 +1319,8 @@ export default function HUDPanel({
   // Open brand popover anchored to the brand button
   const openBrandPopover = async () => {
     try { sfx.play('click', 0.4); } catch {}
+    // Change beam color to yellow when CHXNDLER button is clicked
+    try { onBeamColorChange?.('yellow'); } catch {}
     try {
       const r = brandBtnRef.current?.getBoundingClientRect?.();
       const wrapper = innerRef.current?.parentElement || null; // outer HUD blue display wrapper (padding box)
@@ -1671,6 +1677,38 @@ export default function HUDPanel({
       } catch {}
     }
   }, [shouldOpenJournal, showSoulSkyPopover, onJournalOpened]);
+
+  // Check if journal was completed today on mount and when user changes
+  useEffect(() => {
+    const checkJournalCompletion = async () => {
+      try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) return;
+
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+        
+        // Check for existing HeartCoin transaction for journal completion today
+        const { data: transactions, error } = await supabaseClient
+          .from('heartcoin_transactions')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('reason', 'Completed journal reflection')
+          .gte('created_at', `${today}T00:00:00`)
+          .lt('created_at', `${today}T23:59:59`);
+
+        if (error) {
+          console.error('Error checking journal completion:', error);
+          return;
+        }
+
+        setJournalCompletedToday(transactions && transactions.length > 0);
+      } catch (error) {
+        console.error('Error checking journal completion:', error);
+      }
+    };
+
+    checkJournalCompletion();
+  }, []);
 
   const [animationTime, setAnimationTime] = useState(0);
   // Volume popover (HUD waveform controls)
@@ -6360,8 +6398,39 @@ export default function HUDPanel({
                     <div style={{ position: 'relative' }}>
                     <button
                         className="cast-stars-button"
-                        onClick={() => {
-                          if (questionResponse.trim()) {
+                        onClick={async () => {
+                          if (questionResponse.trim() && !journalCompletedToday) {
+                            try {
+                              // Award HeartCoin for completing journal reflection
+                              const { data: { user } } = await supabaseClient.auth.getUser();
+                              if (user) {
+                                await awardHeartCoins(
+                                  supabaseClient,
+                                  user.id,
+                                  1,
+                                  'Completed journal reflection',
+                                  {
+                                    response: questionResponse.trim(),
+                                    date: new Date().toISOString().split('T')[0]
+                                  }
+                                );
+                                
+                                // Mark journal as completed
+                                setJournalCompletedToday(true);
+                                
+                                // Notify parent component of journal completion
+                                onJournalCompleted?.();
+                                
+                                // Refresh heart coins display
+                                if (typeof fetchHeartCoins === 'function') {
+                                  fetchHeartCoins();
+                                }
+                              }
+                            } catch (error) {
+                              console.error('Failed to award HeartCoins for journal completion:', error);
+                              // Continue with animation even if HeartCoin awarding fails
+                            }
+
                             try { 
                               const audio = new Audio('/audio/join-alien.mp3');
                               audio.volume = 0.7;
@@ -6377,23 +6446,23 @@ export default function HUDPanel({
                             }, 4000);
                           }
                         }}
-                        disabled={!questionResponse.trim()}
+                        disabled={!questionResponse.trim() || journalCompletedToday}
                         style={{
                           padding: '12px 40px',
                           width: '100%',
                           background: 'transparent',
                           border: '1px solid rgba(255,215,0,0.6)',
                           borderRadius: '8px',
-                          color: questionResponse.trim() ? '#FFD700' : 'rgba(255,255,255,0.5)',
-                          cursor: questionResponse.trim() ? 'pointer' : 'not-allowed',
+                          color: journalCompletedToday ? '#90EE90' : (questionResponse.trim() ? '#FFD700' : 'rgba(255,255,255,0.5)'),
+                          cursor: (questionResponse.trim() && !journalCompletedToday) ? 'pointer' : 'not-allowed',
                           transition: 'all 0.3s ease',
                           fontSize: '16px',
                           fontWeight: '600',
-                          textShadow: questionResponse.trim() ? '0 0 8px rgba(255,215,0,1), 0 0 16px rgba(255,223,0,0.8), 0 0 24px rgba(255,215,0,0.6)' : 'none',
-                          boxShadow: questionResponse.trim() ? '0 0 20px rgba(255,215,0,0.6), 0 0 40px rgba(255,223,0,0.4), inset 0 1px rgba(255,255,255,0.2)' : 'none'
+                          textShadow: journalCompletedToday ? '0 0 8px rgba(144,238,144,1), 0 0 16px rgba(144,238,144,0.8)' : (questionResponse.trim() ? '0 0 8px rgba(255,215,0,1), 0 0 16px rgba(255,223,0,0.8), 0 0 24px rgba(255,215,0,0.6)' : 'none'),
+                          boxShadow: journalCompletedToday ? '0 0 20px rgba(144,238,144,0.6), 0 0 40px rgba(144,238,144,0.4)' : (questionResponse.trim() ? '0 0 20px rgba(255,215,0,0.6), 0 0 40px rgba(255,223,0,0.4), inset 0 1px rgba(255,255,255,0.2)' : 'none')
                         }}
                       >
-                        Cast into the Stars
+{journalCompletedToday ? 'Completed Today' : 'Cast into the Stars'}
                       </button>
 
                       {/* Yellow beam effect */}
@@ -6503,7 +6572,7 @@ export default function HUDPanel({
                         style={{
                           display: 'block',
                           // Slightly smaller than full width and centered
-                          width: '78%',
+                          width: '65%',
                           margin: '0 auto',
                           height: 'auto',
                           borderRadius: 10,
@@ -6531,7 +6600,7 @@ export default function HUDPanel({
                       ) : brandError ? (
                         <div style={{ fontSize: 16, color: '#ff7b7b' }}>{brandError}</div>
                       ) : (
-                        <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: 16, color: '#F2EF1D', textShadow: '0 0 3px rgba(242,239,29,0.85), 0 0 6px rgba(242,239,29,0.35)' }}>{brandContent || ''}</div>
+                        <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: 14, color: '#F2EF1D', textShadow: '0 0 3px rgba(242,239,29,0.85), 0 0 6px rgba(242,239,29,0.35)', textTransform: 'none' }}>{brandContent || ''}</div>
                       )}
                     </div>
                   </div>,

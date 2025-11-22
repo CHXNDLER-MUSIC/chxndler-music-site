@@ -1,1 +1,1 @@
-CHXNDLER is an alien from the Heartverse, exploring Earth in search of love. They create dreamy electronic pop to understand what it means to be human. Their music becomes a signal drifting through the cosmos, guiding wanderers, dreamers, and lovers toward a place to call home. 
+CHXNDLER is an alien from the Heartverse, exploring earth in search of love. They create dreamy electronic pop to understand what it means to be human. Their music becomes a signal drifting through the cosmos, guiding wanderers, dreamers, and lovers toward a place to call home. 

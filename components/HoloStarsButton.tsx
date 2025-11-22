@@ -1,6 +1,8 @@
 "use client";
 import React, { useRef, useState, useEffect } from "react";
 import { sfx } from "@/lib/sfx";
+import { supabaseBrowser } from "@/lib/supabase-browser";
+import { awardHeartCoins } from "@/utils/heartcoins";
 import SharedButton from "@/components/SharedButton";
 
 export default function HoloStarsButton({
@@ -8,11 +10,13 @@ export default function HoloStarsButton({
   label = "JOURNAL",
   isActive = false,
   autoOpen = false,
+  onJournalCompleted,
 }: {
   onClick?: () => void;
   label?: string;
   isActive?: boolean;
   autoOpen?: boolean;
+  onJournalCompleted?: () => void;
 }) {
   const sfxRef = useRef<HTMLAudioElement | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -21,6 +25,41 @@ export default function HoloStarsButton({
   const [showSoulSky, setShowSoulSky] = useState(false);
   const [showSoulStarText, setShowSoulStarText] = useState(false);
   const [showJournalModal, setShowJournalModal] = useState(false);
+  const [isJournalCompleted, setIsJournalCompleted] = useState(false);
+
+  // Check if journal was completed today
+  const checkJournalCompletion = async () => {
+    try {
+      const { data: { user } } = await supabaseBrowser.auth.getUser();
+      if (!user) return false;
+
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      
+      // Check for existing HeartCoin transaction for journal completion today
+      const { data: transactions, error } = await supabaseBrowser
+        .from('heartcoin_transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('reason', 'Completed journal reflection')
+        .gte('created_at', `${today}T00:00:00`)
+        .lt('created_at', `${today}T23:59:59`);
+
+      if (error) {
+        console.error('Error checking journal completion:', error);
+        return false;
+      }
+
+      return transactions && transactions.length > 0;
+    } catch (error) {
+      console.error('Error checking journal completion:', error);
+      return false;
+    }
+  };
+
+  // Load completion status on mount
+  useEffect(() => {
+    checkJournalCompletion().then(setIsJournalCompleted);
+  }, []);
 
   // Journal storage functions
   const saveJournalEntry = () => {
@@ -72,8 +111,34 @@ export default function HoloStarsButton({
     }
   }
 
-  function handleSendResponse() {
-    if (!questionResponse.trim()) return;
+  async function handleSendResponse() {
+    if (!questionResponse.trim() || isJournalCompleted) return;
+    
+    try {
+      // Award HeartCoin for completing journal reflection
+      const { data: { user } } = await supabaseBrowser.auth.getUser();
+      if (user) {
+        await awardHeartCoins(
+          supabaseBrowser,
+          user.id,
+          1,
+          'Completed journal reflection',
+          {
+            response: questionResponse.trim(),
+            date: new Date().toISOString().split('T')[0]
+          }
+        );
+        
+        // Mark journal as completed
+        setIsJournalCompleted(true);
+        
+        // Notify parent component
+        onJournalCompleted?.();
+      }
+    } catch (error) {
+      console.error('Failed to award HeartCoins for journal completion:', error);
+      // Continue with animation even if HeartCoin awarding fails
+    }
     
     setShowSoulSky(true);
     setShowStarAnimation(true);
@@ -656,9 +721,9 @@ export default function HoloStarsButton({
                 <button 
                   onClick={handleSendResponse}
                   className="send-button"
-                  disabled={!questionResponse.trim()}
+                  disabled={!questionResponse.trim() || isJournalCompleted}
                 >
-                  Send
+                  {isJournalCompleted ? 'Completed Today' : 'Cast into the Stars'}
                 </button>
               </div>
             )}
