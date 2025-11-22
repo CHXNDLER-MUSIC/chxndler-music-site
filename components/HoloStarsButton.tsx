@@ -13,6 +13,7 @@ export default function HoloStarsButton({
   autoOpen = false,
   onJournalCompleted,
   onBeamColorChange,
+  onJournalEntryChange,
 }: {
   onClick?: () => void;
   label?: string;
@@ -20,6 +21,7 @@ export default function HoloStarsButton({
   autoOpen?: boolean;
   onJournalCompleted?: () => void;
   onBeamColorChange?: (color: string) => void;
+  onJournalEntryChange?: (entry: JournalEntry | null) => void;
 }) {
   const sfxRef = useRef<HTMLAudioElement | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -80,6 +82,7 @@ export default function HoloStarsButton({
 
       const entry = await fetchTodaysJournalEntry(supabaseBrowser, user.id);
       setJournalEntry(entry);
+      onJournalEntryChange?.(entry);
       
       if (entry) {
         setIntention(entry.intention || "");
@@ -114,6 +117,7 @@ export default function HoloStarsButton({
       });
       
       setJournalEntry(savedEntry);
+      onJournalEntryChange?.(savedEntry);
       setSaveMessage("Your Soul Star for today is saved");
       
       // Play success sound
@@ -373,13 +377,13 @@ export default function HoloStarsButton({
           position: absolute;
           top: 1rem;
           left: 1rem;
-          background: transparent;
-          border: none;
+          background: rgba(0, 0, 0, 0.7);
+          border: 2px solid #FFFF00;
           color: #FFFF00;
           font-size: 2rem;
           cursor: pointer;
-          width: 40px;
-          height: 40px;
+          width: 50px;
+          height: 50px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -389,7 +393,10 @@ export default function HoloStarsButton({
             0 0 10px #FFFF00,
             0 0 20px #FFFF00,
             0 0 30px #FFFF00;
-          z-index: 10;
+          box-shadow: 
+            0 0 20px rgba(255, 255, 0, 0.6),
+            0 0 40px rgba(255, 255, 0, 0.3);
+          z-index: 10001;
         }
         
         .journal-button:hover {
@@ -746,6 +753,167 @@ export default function HoloStarsButton({
           cursor: not-allowed;
           transform: none;
         }
+        
+        /* Journal View Styles */
+        .journal-view {
+          min-height: 500px;
+          max-width: 600px;
+          width: 95vw;
+        }
+        
+        .journal-header {
+          text-align: center;
+          margin-bottom: 2rem;
+        }
+        
+        .journal-header h1 {
+          color: #FFFF00;
+          font-size: clamp(1.8rem, 5vw, 2.2rem);
+          margin: 0 0 0.5rem 0;
+          text-shadow: 0 0 15px #FFFF00;
+          font-weight: bold;
+          letter-spacing: 0.1em;
+        }
+        
+        .journal-date {
+          color: #FFFFFF;
+          font-size: 0.9rem;
+          opacity: 0.8;
+        }
+        
+        .journal-form {
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+        }
+        
+        .journal-field {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+        
+        .journal-field label {
+          color: #FFFF00;
+          font-weight: bold;
+          font-size: 1rem;
+          text-shadow: 0 0 8px #FFFF00;
+        }
+        
+        .journal-input,
+        .journal-textarea {
+          background: rgba(0, 0, 0, 0.8);
+          border: 1px solid #FFFF00;
+          border-radius: 0.5rem;
+          color: #FFFFFF;
+          padding: 0.75rem;
+          font-size: 0.9rem;
+          font-family: inherit;
+          resize: vertical;
+        }
+        
+        .journal-input::placeholder,
+        .journal-textarea::placeholder {
+          color: rgba(255, 255, 0, 0.6);
+        }
+        
+        .journal-input:focus,
+        .journal-textarea:focus {
+          outline: none;
+          box-shadow: 0 0 15px rgba(255, 255, 0, 0.5);
+          border-color: #FFD700;
+        }
+        
+        .journal-textarea {
+          min-height: 100px;
+        }
+        
+        .journal-field.readonly {
+          opacity: 0.7;
+        }
+        
+        .journal-date-display {
+          color: #FFFFFF;
+          padding: 0.5rem;
+          background: rgba(255, 255, 0, 0.1);
+          border-radius: 0.25rem;
+          border: 1px solid rgba(255, 255, 0, 0.3);
+        }
+        
+        .journal-message {
+          padding: 0.75rem;
+          border-radius: 0.5rem;
+          text-align: center;
+          font-weight: bold;
+        }
+        
+        .journal-message.error {
+          background: rgba(255, 0, 0, 0.1);
+          border: 1px solid #FF6B6B;
+          color: #FF6B6B;
+        }
+        
+        .journal-message.success {
+          background: rgba(0, 255, 0, 0.1);
+          border: 1px solid #51CF66;
+          color: #51CF66;
+          text-shadow: 0 0 8px #51CF66;
+        }
+        
+        .journal-buttons {
+          display: flex;
+          gap: 1rem;
+          margin-top: 1rem;
+        }
+        
+        .save-button,
+        .close-journal-button {
+          flex: 1;
+          padding: 0.75rem 1.5rem;
+          border: none;
+          border-radius: 0.5rem;
+          font-size: 1rem;
+          font-weight: bold;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+        
+        .save-button {
+          background: linear-gradient(135deg, #FFD700, #FFA500);
+          color: #000;
+          box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        }
+        
+        .save-button:hover {
+          transform: scale(1.02);
+          box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+        }
+        
+        .close-journal-button {
+          background: rgba(255, 255, 255, 0.1);
+          color: #FFFFFF;
+          border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .close-journal-button:hover {
+          background: rgba(255, 255, 255, 0.2);
+          transform: scale(1.02);
+        }
+        
+        @media (max-width: 768px) {
+          .journal-view {
+            max-width: 95vw;
+            padding: 1.5rem;
+          }
+          
+          .journal-buttons {
+            flex-direction: column;
+          }
+          
+          .journal-header h1 {
+            font-size: 1.6rem;
+          }
+        }
       `}</style>
       
       <audio ref={sfxRef} src="/audio/star.mp3" preload="auto" playsInline />
@@ -755,7 +923,7 @@ export default function HoloStarsButton({
         <div className="warp-overlay">
           <div className="warp-background" />
           <div className="modal-container">
-            {!showStarAnimation && (
+            {!showStarAnimation && !showJournalView && (
               <div className="question-modal">
                 <button 
                   className="journal-button"
@@ -809,6 +977,80 @@ export default function HoloStarsButton({
             {showStarAnimation && (
               <div className="star-animation-container">
                 <div className="forming-star">✨</div>
+              </div>
+            )}
+
+            {/* Journal View */}
+            {!showStarAnimation && showJournalView && (
+              <div className="question-modal journal-view">
+                <button 
+                  className="close-button"
+                  onClick={closeJournalView}
+                  aria-label="Close Journal"
+                >
+                  ×
+                </button>
+                <div className="journal-header">
+                  <h1>Today's Soul Journal</h1>
+                  <div className="journal-date">{new Date().toLocaleDateString()}</div>
+                </div>
+                
+                <div className="journal-form">
+                  <div className="journal-field">
+                    <label>Intention of the day</label>
+                    <input
+                      type="text"
+                      value={intention}
+                      onChange={(e) => setIntention(e.target.value)}
+                      placeholder="What is your intention for today?"
+                      className="journal-input"
+                    />
+                  </div>
+                  
+                  <div className="journal-field">
+                    <label>Reflection</label>
+                    <textarea
+                      value={reflection}
+                      onChange={(e) => setReflection(e.target.value)}
+                      placeholder="Reflect on your day..."
+                      className="journal-textarea"
+                      rows={4}
+                    />
+                  </div>
+                  
+                  <div className="journal-field">
+                    <label>Soul Star</label>
+                    <input
+                      type="text"
+                      value={soulStar}
+                      onChange={(e) => setSoulStar(e.target.value)}
+                      placeholder="Name your star for today"
+                      className="journal-input"
+                    />
+                  </div>
+                  
+                  <div className="journal-field readonly">
+                    <label>Date</label>
+                    <div className="journal-date-display">{new Date().toLocaleDateString()}</div>
+                  </div>
+                  
+                  {validationMessage && (
+                    <div className="journal-message error">{validationMessage}</div>
+                  )}
+                  
+                  {saveMessage && (
+                    <div className="journal-message success">{saveMessage}</div>
+                  )}
+                  
+                  <div className="journal-buttons">
+                    <button onClick={saveJournalEntry} className="save-button">
+                      Save Entry
+                    </button>
+                    <button onClick={closeJournalView} className="close-journal-button">
+                      Close
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>

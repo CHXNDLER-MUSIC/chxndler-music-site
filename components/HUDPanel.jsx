@@ -1537,6 +1537,8 @@ export default function HUDPanel({
   // Open Store (Gem) popover anchored to the gem button
   const openStorePopover = async () => {
     try { sfx.play('click', 0.4); } catch {}
+    // Change beam color to pink when store button is clicked
+    try { onBeamColorChange?.('pink'); } catch {}
     try {
       const r = storeBtnRef.current?.getBoundingClientRect?.();
       const wrapper = innerRef.current?.parentElement || null; // outer HUD blue display wrapper (padding box)
@@ -5298,7 +5300,7 @@ export default function HUDPanel({
                     aria-label="Heart Coin Information"
                     style={{
                       position: 'fixed',
-                      top: '50%',
+                      top: '30%',
                       left: '50%',
                       transform: 'translate(-50%, -50%)',
                       width: 'min(90vw, 400px)',

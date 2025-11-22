@@ -34,7 +34,7 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
       aria-label={title}
     >
       <div
-        className="absolute inset-0 bg-black/85 backdrop-blur-md"
+        className="absolute inset-0 backdrop-blur-md"
         onClick={onClose}
       />
       <div 

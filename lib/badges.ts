@@ -20,6 +20,7 @@ export interface Badge {
   name: string;
   description: string;
   emoji: string;
+  icon_url?: string;
   category: BadgeCategory;
   element?: Element;
   achievementType?: AchievementType;
@@ -44,6 +45,7 @@ export const achievementBadges: Badge[] = [
     name: 'FIRST LISTEN',
     description: 'Listened to your first track in the Heartverse',
     emoji: '🎵',
+    icon_url: 'https://ik.imagekit.io/CHXNDLER/Badges/First%20Listen.png?updatedAt=1763736238402',
     category: 'achievement',
     achievementType: 'first_listen',
     rarity: 'common',
@@ -64,6 +66,7 @@ export const achievementBadges: Badge[] = [
     name: 'DIGITAL COLLECTOR',
     description: 'Purchased your first digital card',
     emoji: '🃏',
+    icon_url: 'https://ik.imagekit.io/CHXNDLER/Badges/Digital%20Collector.png?updatedAt=1763736238340',
     category: 'achievement',
     achievementType: 'first_card_purchase',
     rarity: 'rare',

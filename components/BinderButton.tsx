@@ -373,9 +373,17 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
         onMouseEnter={(e) => {
           if (onHoverSound) onHoverSound();
           e.currentTarget.style.transform = 'scale(1.05)';
+          const img = e.currentTarget.querySelector('img');
+          if (img) {
+            img.style.filter = 'drop-shadow(0 0 8px rgba(252, 84, 175, 0.8)) drop-shadow(0 0 16px rgba(252, 84, 175, 0.4)) drop-shadow(0 0 20px rgba(255, 105, 180, 0.8)) drop-shadow(0 0 40px rgba(255, 105, 180, 0.4))';
+          }
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'scale(1)';
+          const img = e.currentTarget.querySelector('img');
+          if (img) {
+            img.style.filter = 'drop-shadow(0 0 8px rgba(252, 84, 175, 0.8)) drop-shadow(0 0 16px rgba(252, 84, 175, 0.4))';
+          }
         }}
         {...restProps}
       >

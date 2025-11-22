@@ -12,6 +12,7 @@ import LazyLoadEnhancer from "@/components/LazyLoadEnhancer";
 import NamePromptOnLogin from "@/components/NamePromptOnLogin";
 import WhatShouldWeCallYouModal from "@/components/WhatShouldWeCallYouModal";
 import WhatElementAreYouModal from "@/components/WhatElementAreYouModal";
+import StoreProvider from "@/components/StoreProvider";
 import { ProfileProvider } from "@/contexts/ProfileContext";
 
 export const metadata: Metadata = {
@@ -115,6 +116,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <NamePromptOnLogin />
             <WhatShouldWeCallYouModal />
             <WhatElementAreYouModal />
+            <StoreProvider />
             {children}
           </AudioProvider>
         </ProfileProvider>

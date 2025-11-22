@@ -9,6 +9,31 @@ import React, {
 } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 
+// Types for user owned cards and badges
+type OwnedCardRow = {
+  id: string;
+  card_id: string;
+  acquired_at: string;
+  cards: {
+    id: string;
+    card_name: string;
+    element: string;
+    rarity: string;
+  };
+};
+
+type OwnedBadgeRow = {
+  id: string;
+  badge_id: string;
+  awarded_at: string;
+  badges: {
+    id: string;
+    badge_name: string;
+    description: string | null;
+    icon_url: string | null;
+  };
+};
+
 const ELEMENT_LABEL_TO_CODE: Record<string, "water" | "heart" | "lightning" | "darkness"> = {
   "💖 Heart": "heart",
   "🌊 Water": "water",
@@ -35,6 +60,8 @@ interface Profile {
   profile_complete: boolean | null;
   created_at: string | null;
   updated_at: string | null;
+  cards: OwnedCardRow[];
+  badges: OwnedBadgeRow[];
 }
 
 interface ProfileContextType {
@@ -92,6 +119,47 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      // Fetch user cards and badges in parallel
+      const [{ data: cardRows, error: cardError }, { data: badgeRows, error: badgeError }] =
+        await Promise.all([
+          supabaseClient
+            .from("user_cards")
+            .select(`
+              id,
+              card_id,
+              acquired_at,
+              cards (
+                id,
+                card_name,
+                element,
+                rarity
+              )
+            `)
+            .eq("user_id", user.id),
+          supabaseClient
+            .from("user_badges")
+            .select(`
+              id,
+              badge_id,
+              awarded_at,
+              badges (
+                id,
+                badge_name,
+                description,
+                icon_url
+              )
+            `)
+            .eq("user_id", user.id),
+        ]);
+
+      if (cardError) {
+        console.error("Error loading user_cards", cardError);
+      }
+
+      if (badgeError) {
+        console.error("Error loading user_badges", badgeError);
+      }
+
       // Map database columns to interface format
       const mappedProfile: Profile = {
         id: data.id,
@@ -104,6 +172,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         profile_complete: data.profile_complete ?? !!(data.name && data.element),
         created_at: data.created_at,
         updated_at: data.updated_at,
+        cards: cardRows ?? [],
+        badges: badgeRows ?? [],
       };
 
       setProfile(mappedProfile);
@@ -157,7 +227,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       }
 
       if (data) {
-        // Map the updated data back to Profile interface
+        // Map the updated data back to Profile interface, preserving existing cards and badges
         const mappedProfile: Profile = {
           id: data.id,
           email: data.email,
@@ -169,6 +239,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           profile_complete: data.profile_complete ?? !!(data.name && data.element),
           created_at: data.created_at,
           updated_at: data.updated_at,
+          cards: profile?.cards ?? [],
+          badges: profile?.badges ?? [],
         };
         setProfile(mappedProfile);
       } else {

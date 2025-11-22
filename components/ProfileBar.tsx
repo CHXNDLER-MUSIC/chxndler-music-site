@@ -321,14 +321,15 @@ export default function ProfileBar({
                   0 0 20px ${getUsernameColor(currentElement)},
                   0 0 25px ${getUsernameColor(currentElement)}
                 `,
-                filter: 'brightness(1.2)'
+                filter: 'brightness(1.2)',
+                padding: '8px 16px'
               }}
             >
               {displayName}
             </button>
 
             {/* Journey Button */}
-            <div className="ml-12">
+            <div className="ml-8">
               <JourneyButton 
                 onHoverSound={() => sfx.play('hover', 0.8)}
                 onCloseBlueDisplay={onCloseBlueDisplay}

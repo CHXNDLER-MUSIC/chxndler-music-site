@@ -665,18 +665,10 @@ export default function JoinAliens({ visible = true } = {}) {
             </p>
             
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button
-                onClick={() => {
-                  const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=${selectedTipAmount === 'custom' ? '1' : selectedTipAmount}&note=${encodeURIComponent('Thanks for the music!')}`;
-                  const webVenmoUrl = `https://venmo.com/u/chxndlerthealien?txn=pay&amount=${selectedTipAmount === 'custom' ? '1' : selectedTipAmount}&note=${encodeURIComponent('Thanks for the music!')}`;
-                  
-                  window.open(venmoUrl, '_blank');
-                  setTimeout(() => {
-                    window.open(webVenmoUrl, '_blank');
-                  }, 1500);
-                  
-                  setShowVenmoPopup(false);
-                }}
+              <a
+                href={`https://venmo.com/CHXNDLERTHEALIEN?amount=${selectedTipAmount === 'custom' ? '1' : selectedTipAmount}&note=Fueling%20the%20signal`}
+                target="_blank"
+                rel="noopener noreferrer"
                 style={{
                   padding: '12px 24px',
                   background: 'linear-gradient(135deg, #3D95CE, #5BA8D8)',
@@ -690,7 +682,10 @@ export default function JoinAliens({ visible = true } = {}) {
                   textShadow: '0 0 8px rgba(61, 149, 206, 0.6)',
                   boxShadow: '0 0 25px rgba(61, 149, 206, 0.5)',
                   flex: 1,
-                  minWidth: '120px'
+                  minWidth: '120px',
+                  textDecoration: 'none',
+                  display: 'inline-block',
+                  textAlign: 'center'
                 }}
                 onMouseEnter={(e) => {
                   e.target.style.transform = 'scale(1.05)';
@@ -702,7 +697,7 @@ export default function JoinAliens({ visible = true } = {}) {
                 }}
               >
                 📱 Open Venmo
-              </button>
+              </a>
               
               <button
                 onClick={() => {
@@ -844,17 +839,10 @@ export default function JoinAliens({ visible = true } = {}) {
 
 
             {/* Payment Actions */}
-            <button
-              onClick={() => {
-                try {
-                  // Try mobile app first
-                  const venmoUrl = `venmo://pay?recipients=CHXNDLERTHEALIEN&amount=1&note=${encodeURIComponent('Fueling the signal')}`;
-                  window.location.href = venmoUrl;
-                } catch (e) {
-                  // If app fails, do nothing - keep user on page
-                  console.log('Venmo app not available');
-                }
-              }}
+            <a
+              href="https://venmo.com/CHXNDLERTHEALIEN?amount=1&note=Fueling%20the%20signal"
+              target="_blank"
+              rel="noopener noreferrer"
               style={{
                 padding: '12px 20px',
                 background: 'linear-gradient(135deg, #3D95CE, #5BA8D8)',
@@ -867,7 +855,10 @@ export default function JoinAliens({ visible = true } = {}) {
                 transition: 'all 300ms ease',
                 boxShadow: '0 0 20px rgba(61, 149, 206, 0.5)',
                 width: '100%',
-                marginBottom: '10px'
+                marginBottom: '10px',
+                textDecoration: 'none',
+                display: 'inline-block',
+                textAlign: 'center'
               }}
               onMouseEnter={(e) => {
                 e.target.style.transform = 'scale(1.02)';
@@ -879,7 +870,7 @@ export default function JoinAliens({ visible = true } = {}) {
               }}
             >
               📱 Open Venmo
-            </button>
+            </a>
 
             {/* Return Button */}
             <button

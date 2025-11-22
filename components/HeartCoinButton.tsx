@@ -9,6 +9,7 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   onCloseBlueDisplay?: () => void;
   onOpenBlueDisplay?: () => void;
   onOpenJournal?: () => void;
+  onOpenBinder?: () => void;
   heartCoins?: number;
   onHeartCoinsChange?: (newAmount: number) => void;
   // UI state prop from parent; do not forward to DOM
@@ -18,7 +19,7 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   onJournalCompleted?: () => void;
 };
 
-export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onOpenJournal, heartCoins: externalHeartCoins = 0, onHeartCoinsChange, isActive = false, journalCompleted = false, onJournalCompleted, ...restProps }: Props) {
+export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onOpenJournal, onOpenBinder, heartCoins: externalHeartCoins = 0, onHeartCoinsChange, isActive = false, journalCompleted = false, onJournalCompleted, ...restProps }: Props) {
   const [open, setOpen] = useState(false);
   const [heartCoins, setHeartCoins] = useState(externalHeartCoins);
   const [dailyQuests, setDailyQuests] = useState({
@@ -98,6 +99,21 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       setOpen(false);
       try { onOpenJournal?.(); } catch {}
     }
+  };
+
+  const handleUseHeartCoins = () => {
+    try { sfx.play('click', 0.8); } catch {}
+    
+    // Close heart coin display
+    setOpen(false);
+    
+    // Open store popover with CARDS tab (where users can spend HeartCoins)
+    window.dispatchEvent(new CustomEvent('openStoreCards', {
+      detail: {
+        source: 'heartcoins_button',
+        openTab: 'CARDS'
+      }
+    }));
   };
 
 
@@ -213,9 +229,17 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         onMouseEnter={(e) => {
           if (onHoverSound) onHoverSound();
           e.currentTarget.style.transform = 'scale(1.05)';
+          const img = e.currentTarget.querySelector('img');
+          if (img) {
+            img.style.filter = 'drop-shadow(0 0 15px rgba(0, 255, 255, 0.8)) drop-shadow(0 0 30px rgba(0, 255, 255, 0.4))';
+          }
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'scale(1)';
+          const img = e.currentTarget.querySelector('img');
+          if (img) {
+            img.style.filter = 'none';
+          }
         }}
         {...restProps}
       >
@@ -333,20 +357,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             <img
               src="/elements/heart-coin.png"
               alt="Heart Coin"
-              className="w-8 h-8"
+              className="w-10 h-10"
             />
-            <div>
+            <div className="flex items-center">
               <div 
-                className="text-xs text-left"
-                style={{ 
-                  color: '#FFB6C1', 
-                  textShadow: '0 0 4px rgba(255,182,193,0.6)' 
-                }}
-              >
-                Balance
-              </div>
-              <div 
-                className="text-lg font-bold text-left"
+                className="text-lg font-bold text-left leading-none"
                 style={{ 
                   color: '#FFFFFF', 
                   textShadow: '0 0 8px rgba(255,255,255,0.8)' 
@@ -360,7 +375,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           {/* Header */}
           <div className="text-center mb-3 mt-2">
             <div 
-              className="text-lg font-bold mb-4"
+              className="text-lg font-bold mb-2"
               style={{ 
                 color: '#FF69B4', 
                 textShadow: '0 0 8px rgba(255,105,180,0.6)', 
@@ -370,9 +385,36 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               HEART COINS
             </div>
             
+            {/* USE HEARTCOINS Button - positioned above the pink line */}
+            <div className="flex justify-start ml-2 mb-1">
+              <button
+                onClick={handleUseHeartCoins}
+                className="px-1.5 py-0.5 text-[10px] rounded border border-yellow-400/60 hover:border-yellow-400/80 transition-all duration-200"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(255,215,0,0.2) 0%, rgba(255,255,0,0.3) 100%)',
+                  color: '#FFD700',
+                  borderColor: 'rgba(255,215,0,0.6)',
+                  textShadow: '0 0 6px rgba(255,215,0,0.8)',
+                  boxShadow: '0 0 10px rgba(255,215,0,0.4), 0 0 20px rgba(255,215,0,0.2)',
+                  fontWeight: 'bold',
+                  fontSize: '9px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,215,0,0.3) 0%, rgba(255,255,0,0.4) 100%)';
+                  e.currentTarget.style.boxShadow = '0 0 15px rgba(255,215,0,0.6), 0 0 25px rgba(255,215,0,0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,215,0,0.2) 0%, rgba(255,255,0,0.3) 100%)';
+                  e.currentTarget.style.boxShadow = '0 0 10px rgba(255,215,0,0.4), 0 0 20px rgba(255,215,0,0.2)';
+                }}
+              >
+                USE HEARTCOINS
+              </button>
+            </div>
+            
             {/* Thin pink neon line */}
             <div 
-              className="w-full h-px mb-4"
+              className="w-full h-px mb-2"
               style={{
                 background: 'linear-gradient(90deg, transparent, rgba(255,105,180,0.8) 20%, rgba(255,105,180,1) 50%, rgba(255,105,180,0.8) 80%, transparent)',
                 boxShadow: '0 0 4px rgba(255,105,180,0.6)'

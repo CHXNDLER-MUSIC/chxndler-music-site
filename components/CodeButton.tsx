@@ -43,9 +43,21 @@ export default function CodeButton({ asChild = false, children, onClick, onHover
         onMouseEnter={(e) => {
           if (onHoverSound) onHoverSound();
           e.currentTarget.style.transform = 'scale(1.05)';
+          const span = e.currentTarget.querySelector('span');
+          if (span) {
+            span.style.color = '#FFFFFF';
+            span.style.filter = 'brightness(2)';
+            span.style.textShadow = '0 0 15px rgba(255, 255, 255, 1), 0 0 30px rgba(255, 255, 255, 0.8)';
+          }
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'scale(1)';
+          const span = e.currentTarget.querySelector('span');
+          if (span) {
+            span.style.color = '#FFFFFF';
+            span.style.filter = 'brightness(1)';
+            span.style.textShadow = 'none';
+          }
         }}
         {...restProps}
       >

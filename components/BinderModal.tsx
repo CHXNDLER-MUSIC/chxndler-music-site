@@ -46,7 +46,6 @@ export default function BinderModal({ open, onClose }: Props) {
   const [selectedCard, setSelectedCard] = useState<{name: string, image: string, rarity: string, element: string} | null>(null);
   const [preselectedCard, setPreselectedCard] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [ownedCards, setOwnedCards] = useState<Set<string>>(new Set(['CHXNDLER'])); // Everyone has CHXNDLER by default
   // Purchase flow state machine
   const [selectedPurchaseType, setSelectedPurchaseType] = useState<'digital' | 'physical' | null>(null);
   const [purchaseState, setPurchaseState] = useState<'idle' | 'insufficient' | 'confirm-digital' | 'physical-form' | 'success'>('idle');
@@ -135,7 +134,8 @@ export default function BinderModal({ open, onClose }: Props) {
   };
 
   const isCardOwned = (cardName: string) => {
-    return ownedCards.has(cardName);
+    if (!profile?.cards) return false;
+    return profile.cards.some(cardRow => cardRow.cards.card_name === cardName);
   };
 
   const getCardOneLiner = (songName: string) => {
@@ -340,9 +340,8 @@ export default function BinderModal({ open, onClose }: Props) {
     if (!currentCard) return;
     
     try {
-      // Add card to collection
-      setOwnedCards(prev => new Set([...prev, currentCard.name]));
-      // Update profile balance
+      // TODO: Add card to user_cards table via API
+      // For now just update the profile balance
       await updateProfile({ 
         heartcoin_balance: (profile.heartcoin_balance || 0) - cost 
       });
@@ -475,8 +474,7 @@ export default function BinderModal({ open, onClose }: Props) {
         throw new Error('Failed to create physical order');
       }
       
-      // Add card to collection
-      setOwnedCards(prev => new Set([...prev, currentCard.name]));
+      // TODO: Add card to user_cards table via API
       
       // Update profile balance
       await updateProfile({ 
@@ -514,20 +512,12 @@ export default function BinderModal({ open, onClose }: Props) {
     }
   };
 
-  // Set authentication and owned cards based on profile
+  // Set authentication based on profile
   useEffect(() => {
     if (profile) {
       setIsAuthenticated(true);
-      // TODO: When user cards API is available, fetch actual owned cards
-      // For now, simulate with the demo cards plus CHXNDLER
-      const demoOwnedCards = new Set([
-        'CHXNDLER', // Always owned
-        'LIGHTNING', 'HEART', 'OCEAN GIRL', 'BLUE', 'HOME', 'CHEERLEADER'
-      ]);
-      setOwnedCards(demoOwnedCards);
     } else {
       setIsAuthenticated(false);
-      setOwnedCards(new Set(['CHXNDLER']));
     }
   }, [profile]);
 
@@ -1330,85 +1320,110 @@ export default function BinderModal({ open, onClose }: Props) {
 
 
 
-          {/* Dynamic Content - Binder Slots or Full Collection */}
+          {/* Dynamic Content - Binder Cards or Full Collection */}
           <div className="relative mt-1">
             {!showFullCollection ? (
-              // Binder Card Slots
-              <div className="grid grid-cols-5 gap-2">
-                {Array.from({ length: 5 }, (_, index) => (
-                  <div key={index} className="text-center">
-                    {index === 0 ? (
-                      // First slot - Chxndler Card
-                      <div 
-                        className="w-full h-32 rounded border-2 border-pink-400/80 relative overflow-hidden cursor-pointer transition-all duration-300 hover:scale-110 hover:z-10"
-                        style={{
-                          boxShadow: '0 0 15px rgba(255,105,180,0.5)',
-                        }}
-                        onClick={() => {
-                          try { sfx.play('click', 0.8); } catch {}
-                          setSelectedCard({
-                            name: 'CHXNDLER',
-                            image: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',
-                            rarity: 'Common',
-                            element: 'ALL'
-                          });
-                          setCardOpen(true);
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.boxShadow = '0 0 25px rgba(255,105,180,0.8), 0 0 40px rgba(255,105,180,0.5)';
-                          e.currentTarget.style.transform = 'scale(1.15) translateY(-5px)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.boxShadow = '0 0 15px rgba(255,105,180,0.5)';
-                          e.currentTarget.style.transform = 'scale(1)';
-                        }}
-                      >
-                        <img
-                          src="https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910"
-                          alt="CHXNDLER Card"
-                          className="w-full h-full object-cover rounded"
-                          draggable={false}
-                        />
-                        {/* Holographic effect */}
-                        <div 
-                          className="absolute inset-0 opacity-20"
-                          style={{
-                            background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%)',
-                            animation: 'shimmer 3s ease-in-out infinite'
+              // User's Binder - Show 5 initial slots
+              <div>
+                {!profile ? (
+                  <div className="text-center p-4 text-sm opacity-80" style={{ color: '#FFB6C1' }}>
+                    Please log in to view your card collection.
+                  </div>
+                ) : (
+                  <div className="grid gap-3 grid-cols-5">
+                    {Array.from({ length: 5 }, (_, index) => {
+                      // Check if there's a collected card for this slot
+                      const collectedCard = profile.cards?.[index];
+                      const hasCard = !!collectedCard?.cards;
+
+                      return (
+                        <div
+                          key={`slot-${index}`}
+                          className={`rounded-2xl border p-3 backdrop-blur-sm transition-all duration-300 ${
+                            hasCard 
+                              ? 'border-white/10 bg-black/40 cursor-pointer hover:scale-105' 
+                              : 'border-white/5 bg-black/20 cursor-default'
+                          }`}
+                          onClick={() => {
+                            if (hasCard && collectedCard?.cards) {
+                              try { sfx.play('click', 0.8); } catch {}
+                              setSelectedCard({
+                                name: collectedCard.cards.card_name,
+                                image: getCardImage(collectedCard.cards.card_name, collectedCard.cards.element),
+                                rarity: collectedCard.cards.rarity,
+                                element: collectedCard.cards.element
+                              });
+                              setCardOpen(true);
+                            }
                           }}
-                        />
-                        {/* Hover overlay with card details */}
-                        <div className="absolute inset-0 bg-black/70 opacity-0 hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center text-white text-xs">
-                          <div className="font-bold mb-1" style={{ textShadow: '0 0 4px rgba(255,255,255,0.8)' }}>
-                            CHXNDLER
-                          </div>
-                          <div className="text-pink-300 mb-1">★ RARE ★</div>
-                          <div className="text-[10px] text-center px-1">
-                            Original Artist Card
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      // Empty slots with + sign
-                      <div 
-                        className="w-full h-32 rounded border-2 border-dashed border-pink-400/40 flex items-center justify-center"
-                        style={{
-                          background: 'rgba(255,105,180,0.05)',
-                          boxShadow: 'inset 0 0 10px rgba(255,105,180,0.1)',
-                        }}
-                      >
-                        <div 
-                          className="text-pink-400/60 text-4xl font-light"
                           style={{
-                            textShadow: '0 0 8px rgba(255,105,180,0.3)',
+                            boxShadow: hasCard 
+                              ? '0 0 15px rgba(255,105,180,0.3)' 
+                              : '0 0 5px rgba(255,105,180,0.1)',
                           }}
                         >
-                          +
+                          <div className="relative">
+                            {hasCard && collectedCard?.cards ? (
+                              <>
+                                <img
+                                  src={getCardImage(collectedCard.cards.card_name, collectedCard.cards.element)}
+                                  alt={collectedCard.cards.card_name}
+                                  className="w-full h-24 object-cover rounded-lg mb-2"
+                                  draggable={false}
+                                />
+                                <div className="absolute top-1 right-1 w-6 h-6 bg-green-500/80 rounded-full flex items-center justify-center">
+                                  <svg viewBox="0 0 24 24" width="14" height="14" fill="white">
+                                    <path d="M20 6L9 17l-5-5"/>
+                                  </svg>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="w-full h-24 bg-gradient-to-br from-pink-500/10 to-purple-500/10 rounded-lg mb-2 border-2 border-dashed border-pink-400/30 flex items-center justify-center">
+                                <div 
+                                  className="text-xs font-bold text-center"
+                                  style={{ 
+                                    color: '#FFB6C1', 
+                                    textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                                  }}
+                                >
+                                  EMPTY SLOT
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          {hasCard && collectedCard?.cards ? (
+                            <>
+                              <p className="text-[10px] uppercase tracking-wide opacity-60" style={{ color: getElementColor(collectedCard.cards.element) }}>
+                                {collectedCard.cards.rarity}
+                              </p>
+                              <p className="text-sm font-semibold leading-tight" style={{ color: '#FF69B4' }}>
+                                {collectedCard.cards.card_name}
+                              </p>
+                              <p className="mt-1 text-[11px] opacity-70" style={{ color: '#FFB6C1' }}>
+                                Element: {collectedCard.cards.element}
+                              </p>
+                              <p className="mt-1 text-[10px] opacity-50" style={{ color: '#FFB6C1' }}>
+                                Acquired {new Date(collectedCard.acquired_at).toLocaleDateString()}
+                              </p>
+                            </>
+                          ) : (
+                            <>
+                              <p className="text-[10px] uppercase tracking-wide opacity-40" style={{ color: '#FFB6C1' }}>
+                                Slot {index + 1}
+                              </p>
+                              <p className="text-sm font-semibold leading-tight opacity-40" style={{ color: '#FF69B4' }}>
+                                No Card
+                              </p>
+                              <p className="mt-1 text-[11px] opacity-30" style={{ color: '#FFB6C1' }}>
+                                Collect cards to fill this slot
+                              </p>
+                            </>
+                          )}
                         </div>
-                      </div>
-                    )}
+                      );
+                    })}
                   </div>
-                ))}
+                )}
               </div>
             ) : (
               // Full Collection View

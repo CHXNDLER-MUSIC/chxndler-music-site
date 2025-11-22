@@ -10,6 +10,7 @@ type Badge = {
   current?: number;
   total?: number;
   unlocked?: boolean;
+  icon_url?: string;
 };
 
 type BadgeCategory = {
@@ -45,11 +46,11 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       badges: [
         { name: "Soul Star", description: "First reflection", progress: 0, current: 0, total: 1 },
         { name: "Soul Ember", description: "3 reflections", progress: 0, current: 0, total: 3 },
-        { name: "Soul Flame", description: "7 reflections", progress: 0, current: 0, total: 7 },
-        { name: "Soul Bloom", description: "14 reflections", progress: 0, current: 0, total: 14 },
+        { name: "Soul Flame", description: "7 reflections", progress: 0, current: 0, total: 7, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Soul%20Flame.png?updatedAt=1763736238477" },
+        { name: "Soul Bloom", description: "14 reflections", progress: 0, current: 0, total: 14, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Soul%20Bloom.png?updatedAt=1763736238510" },
         { name: "Soul Rise", description: "30 reflections", progress: 0, current: 0, total: 30 },
         { name: "Soul Eclipse", description: "50 reflections", progress: 0, current: 0, total: 50 },
-        { name: "Eternal Soul", description: "100 reflections", progress: 0, current: 0, total: 100 },
+        { name: "Eternal Soul", description: "100 reflections", progress: 0, current: 0, total: 100, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Eternal%20Soul.png?updatedAt=1763736238338" },
       ]
     },
     {
@@ -58,9 +59,9 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       emoji: "🏆",
       color: "#38B6FF",
       badges: [
-        { name: "First Listen", unlocked: true },
-        { name: "Digital Collector", description: "Collect 5 cards", progress: 40, current: 2, total: 5 },
-        { name: "Cosmic Archivist", description: "Collect 15 cards", progress: 13, current: 2, total: 15 },
+        { name: "First Listen", unlocked: true, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/First%20Listen.png?updatedAt=1763736238402" },
+        { name: "Digital Collector", description: "Collect 5 cards", progress: 40, current: 2, total: 5, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Digital%20Collector.png?updatedAt=1763736238340" },
+        { name: "Cosmic Archivist", description: "Collect 15 cards", progress: 13, current: 2, total: 15, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Cosmic%20Archivist.png?updatedAt=1763736238431" },
         { name: "Starbinder", description: "Collect 25 cards", progress: 8, current: 2, total: 25 },
         { name: "Master Collector", description: "Collect all cards", progress: 4, current: 2, total: 50 },
         { name: "Live Witness", description: "Watch 1 livestream", progress: 0, current: 0, total: 1 },
@@ -78,17 +79,17 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       color: "#FC54AF",
       badges: [
         // Heart badges
-        { name: "Ember Glow", description: "❤️ HEART - 3 days", progress: 67, current: 2, total: 3 },
-        { name: "Gentle Bloom", description: "❤️ HEART - 7 days", progress: 29, current: 2, total: 7 },
-        { name: "Warm Pulse", description: "❤️ HEART - 14 days", progress: 14, current: 2, total: 14 },
+        { name: "Ember Glow", description: "❤️ HEART - 3 days", progress: 67, current: 2, total: 3, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Ember%20Glow.png?updatedAt=1763736238400" },
+        { name: "Gentle Bloom", description: "❤️ HEART - 7 days", progress: 29, current: 2, total: 7, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Gentle%20Bloom.png?updatedAt=1763736238445" },
+        { name: "Warm Pulse", description: "❤️ HEART - 14 days", progress: 14, current: 2, total: 14, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Warm%20PUlse.png?updatedAt=1763736238454" },
         { name: "Heart Radiance", description: "❤️ HEART - 30 days", progress: 7, current: 2, total: 30 },
         { name: "Deep Devotion", description: "❤️ HEART - 50 days", progress: 4, current: 2, total: 50 },
-        { name: "Eternal Love", description: "❤️ HEART - 100 days", progress: 2, current: 2, total: 100 },
+        { name: "Eternal Love", description: "❤️ HEART - 100 days", progress: 2, current: 2, total: 100, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Eternal%20Love.png?updatedAt=1763736238429" },
         // Water badges
-        { name: "Rising Ripple", description: "💧 WATER - 3 days", progress: 0, current: 0, total: 3 },
-        { name: "Steady Flow", description: "💧 WATER - 7 days", progress: 0, current: 0, total: 7 },
-        { name: "Shifting Tide", description: "💧 WATER - 14 days", progress: 0, current: 0, total: 14 },
-        { name: "Ocean Surge", description: "💧 WATER - 30 days", progress: 0, current: 0, total: 30 },
+        { name: "Rising Ripple", description: "💧 WATER - 3 days", progress: 0, current: 0, total: 3, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Rising%20Ripple.png?updatedAt=1763736238483" },
+        { name: "Steady Flow", description: "💧 WATER - 7 days", progress: 0, current: 0, total: 7, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Steady%20Flow.png?updatedAt=1763736238439" },
+        { name: "Shifting Tide", description: "💧 WATER - 14 days", progress: 0, current: 0, total: 14, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Shifting%20Tide.png?updatedAt=1763736238457" },
+        { name: "Ocean Surge", description: "💧 WATER - 30 days", progress: 0, current: 0, total: 30, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Ocean%20Surge.png?updatedAt=1763736238406" },
         { name: "Silver Depth", description: "💧 WATER - 50 days", progress: 0, current: 0, total: 50 },
         { name: "Endless Drift", description: "💧 WATER - 100 days", progress: 0, current: 0, total: 100 },
         // Lightning badges
@@ -96,12 +97,12 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
         { name: "Bright Flash", description: "⚡ LIGHTNING - 7 days", progress: 0, current: 0, total: 7 },
         { name: "Quick Charge", description: "⚡ LIGHTNING - 14 days", progress: 0, current: 0, total: 14 },
         { name: "Raging Storm", description: "⚡ LIGHTNING - 30 days", progress: 0, current: 0, total: 30 },
-        { name: "Sky Ascend", description: "⚡ LIGHTNING - 50 days", progress: 0, current: 0, total: 50 },
+        { name: "Sky Ascend", description: "⚡ LIGHTNING - 50 days", progress: 0, current: 0, total: 50, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Sky%20Ascend.png?updatedAt=1763736238480" },
         { name: "Ever Storm", description: "⚡ LIGHTNING - 100 days", progress: 0, current: 0, total: 100 },
         // Darkness badges
-        { name: "Fading Shadow", description: "🌑 DARKNESS - 3 days", progress: 0, current: 0, total: 3 },
-        { name: "Silent Veil", description: "🌑 DARKNESS - 7 days", progress: 0, current: 0, total: 7 },
-        { name: "Solar Eclipse", description: "🌑 DARKNESS - 14 days", progress: 0, current: 0, total: 14 },
+        { name: "Fading Shadow", description: "🌑 DARKNESS - 3 days", progress: 0, current: 0, total: 3, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Fading%20Shadow.png?updatedAt=1763736238459" },
+        { name: "Silent Veil", description: "🌑 DARKNESS - 7 days", progress: 0, current: 0, total: 7, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Silent%20Vail.png?updatedAt=1763736238434" },
+        { name: "Solar Eclipse", description: "🌑 DARKNESS - 14 days", progress: 0, current: 0, total: 14, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Solar%20Eclipse.png?updatedAt=1763736514798" },
         { name: "Falling Dusk", description: "🌑 DARKNESS - 30 days", progress: 0, current: 0, total: 30 },
         { name: "Black Midnight", description: "🌑 DARKNESS - 50 days", progress: 0, current: 0, total: 50 },
         { name: "Ever Night", description: "🌑 DARKNESS - 100 days", progress: 0, current: 0, total: 100 },
@@ -113,11 +114,11 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       emoji: "🎵",
       color: "#9333EA",
       badges: [
-        { name: "Deep Listener", description: "10 unique tracks", progress: 70, current: 7, total: 10 },
-        { name: "Song Voyager", description: "25 unique tracks", progress: 28, current: 7, total: 25 },
-        { name: "Track Devotee", description: "25 repeats", progress: 48, current: 12, total: 25 },
-        { name: "Track Obsession", description: "100 repeats", progress: 12, current: 12, total: 100 },
-        { name: "Complete Discography", description: "All songs", progress: 35, current: 7, total: 20 },
+        { name: "Deep Listener", description: "10 unique tracks", progress: 70, current: 7, total: 10, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Deep%20Listener.png?updatedAt=1763736238450" },
+        { name: "Song Voyager", description: "25 unique tracks", progress: 28, current: 7, total: 25, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Song%20Voyager.png?updatedAt=1763736238532" },
+        { name: "Track Devotee", description: "25 repeats", progress: 48, current: 12, total: 25, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Track%20Devotion.png?updatedAt=1763736238387" },
+        { name: "Track Obsession", description: "100 repeats", progress: 12, current: 12, total: 100, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Track%20Obsession.png?updatedAt=1763736238452" },
+        { name: "Complete Discography", description: "All songs", progress: 35, current: 7, total: 20, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Complete%20Discography.png?updatedAt=1763736238462" },
       ]
     },
     {
@@ -232,9 +233,17 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
         onMouseEnter={(e) => {
           if (onHoverSound) onHoverSound();
           e.currentTarget.style.transform = 'scale(1.05)';
+          const img = e.currentTarget.querySelector('img');
+          if (img) {
+            img.style.filter = 'drop-shadow(0 0 15px rgba(255, 255, 0, 0.8)) drop-shadow(0 0 30px rgba(255, 255, 0, 0.4))';
+          }
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'scale(1)';
+          const img = e.currentTarget.querySelector('img');
+          if (img) {
+            img.style.filter = 'none';
+          }
         }}
         {...rest}
       >
@@ -412,7 +421,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                     Choose a category to explore your badges and track your progress through the Heartverse.
                   </div>
                   
-                  <div className="flex flex-col items-center justify-center gap-1 w-full">
+                  <div className="flex flex-col items-center justify-center gap-1 w-full" style={{ marginTop: '-8px' }}>
                     {/* First row: Soul Star, Achievements, Elemental Streak */}
                     <div className="flex justify-center items-center gap-4 ml-3">
                       {badgeCategories.slice(0, 3).map((category) => (
@@ -666,7 +675,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                                 
                                 <div className={`absolute inset-0 rounded-full overflow-hidden transition-opacity ${isUnlocked(badge) ? 'opacity-100' : 'opacity-40 group-hover:opacity-60'}`}>
                                   <img
-                                    src={`/elements/${getBadgeIcon(badge.name, category.id) === '❤️' ? 'heart' : getBadgeIcon(badge.name, category.id) === '💧' ? 'water' : getBadgeIcon(badge.name, category.id) === '⚡' ? 'lightning' : getBadgeIcon(badge.name, category.id) === '🌑' ? 'darkness' : 'heart'}.png`}
+                                    src={badge.icon_url || `/elements/${getBadgeIcon(badge.name, category.id) === '❤️' ? 'heart' : getBadgeIcon(badge.name, category.id) === '💧' ? 'water' : getBadgeIcon(badge.name, category.id) === '⚡' ? 'lightning' : getBadgeIcon(badge.name, category.id) === '🌑' ? 'darkness' : 'heart'}.png`}
                                     alt={badge.name}
                                     className="w-full h-full object-cover"
                                     draggable={false}
@@ -731,10 +740,22 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
 
                   {/* Smaller badge display */}
                   <div className="flex justify-center mb-2">
-                    <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border border-white/30 flex items-center justify-center">
-                      <div className="relative z-10 text-lg opacity-60">
-                        {getBadgeIcon(selectedBadge.name, selectedCategory || '')}
-                      </div>
+                    <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border border-white/30 flex items-center justify-center overflow-hidden">
+                      {selectedBadge.icon_url ? (
+                        <img
+                          src={selectedBadge.icon_url}
+                          alt={selectedBadge.name}
+                          className="w-full h-full object-cover rounded-full"
+                          style={{
+                            opacity: isUnlocked(selectedBadge) ? 1 : 0.4
+                          }}
+                          draggable={false}
+                        />
+                      ) : (
+                        <div className="relative z-10 text-lg opacity-60">
+                          {getBadgeIcon(selectedBadge.name, selectedCategory || '')}
+                        </div>
+                      )}
                       {!isUnlocked(selectedBadge) && (
                         <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
                           <div className="w-2 h-2 bg-white/20 rounded-full" />
