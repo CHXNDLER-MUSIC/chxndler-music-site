@@ -8,16 +8,16 @@ import { useProfile } from "@/contexts/ProfileContext";
 import type { Element } from "@/lib/planets";
 import { ELEMENT_COLORS } from "@/lib/planets";
 
-const ELEMENTS: { key: Element; name: string; description: string; icon: string }[] = [
-  { key: "heart", name: "HEART", description: "Love, passion, and connection", icon: "/elements/heart.png" },
-  { key: "lightning", name: "LIGHTNING", description: "Energy, power, and innovation", icon: "/elements/lightning.png" },
-  { key: "water", name: "WATER", description: "Flow, adaptability, and depth", icon: "/elements/water.png" },
-  { key: "darkness", name: "DARKNESS", description: "Mystery, introspection, and rebirth", icon: "/elements/darkness.png" },
+const ELEMENTS: { key: Element; name: string; label: string; description: string; icon: string }[] = [
+  { key: "heart", name: "HEART", label: "💖 Heart", description: "Love, passion, and connection", icon: "/elements/heart.png" },
+  { key: "lightning", name: "LIGHTNING", label: "⚡ Lightning", description: "Energy, power, and innovation", icon: "/elements/lightning.png" },
+  { key: "water", name: "WATER", label: "🌊 Water", description: "Flow, adaptability, and depth", icon: "/elements/water.png" },
+  { key: "darkness", name: "DARKNESS", label: "🌑 Darkness", description: "Mystery, introspection, and rebirth", icon: "/elements/darkness.png" },
 ];
 
 export default function WhatElementAreYouModal() {
   const { showElementSelection, closeElementSelection, triggerProfileRefresh } = useUIStore();
-  const { updateProfile } = useProfile();
+  const { updateProfileNameAndElement, profile } = useProfile();
   const [selectedElement, setSelectedElement] = useState<Element | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,14 +26,23 @@ export default function WhatElementAreYouModal() {
     e.preventDefault();
     if (!selectedElement) return;
     
+    const selectedElementData = ELEMENTS.find(el => el.key === selectedElement);
+    if (!selectedElementData) return;
+    
+    const currentName = profile?.name;
+    if (!currentName) {
+      setError("Name is required. Please go back and enter your name first.");
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     
     try {
-      // Use the context method instead of direct Supabase calls
-      await updateProfile({ element: selectedElement });
+      // Use the new updateProfileNameAndElement method with pretty label
+      await updateProfileNameAndElement(currentName, selectedElementData.label);
       
-      console.log('🎉 Profile completed! Element selected:', selectedElement);
+      console.log('🎉 Profile completed! Element selected:', selectedElementData.label);
       closeElementSelection();
       // Trigger profile refresh to update the UI with new element
       triggerProfileRefresh();
@@ -205,7 +214,7 @@ export default function WhatElementAreYouModal() {
                         : '#00FFFF'}60`
                     }}
                   >
-                    {element.name}
+                    {element.label}
                   </div>
                 </div>
                 <div 

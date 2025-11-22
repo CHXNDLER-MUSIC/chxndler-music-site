@@ -9,6 +9,21 @@ import React, {
 } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 
+const ELEMENT_LABEL_TO_CODE: Record<string, "water" | "heart" | "lightning" | "darkness"> = {
+  "💖 Heart": "heart",
+  "🌊 Water": "water",
+  "⚡ Lightning": "lightning",
+  "🌑 Darkness": "darkness",
+  "Heart": "heart",
+  "Water": "water",
+  "Lightning": "lightning",
+  "Darkness": "darkness",
+  "heart": "heart",
+  "water": "water",
+  "lightning": "lightning",
+  "darkness": "darkness",
+};
+
 interface Profile {
   id: string;
   email: string | null;
@@ -26,7 +41,7 @@ interface ProfileContextType {
   profile: Profile | null;
   loading: boolean;
   refreshProfile: () => Promise<void>;
-  updateProfileNameAndElement: (name: string, element: string) => Promise<void>;
+  updateProfileNameAndElement: (name: string, elementLabel: string) => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
 }
 
@@ -166,9 +181,20 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
   const updateProfileNameAndElement = async (
     name: string,
-    element: string
+    elementLabel: string
   ) => {
-    await updateProfile({ name, element });
+    const elementCode = ELEMENT_LABEL_TO_CODE[elementLabel] ?? ELEMENT_LABEL_TO_CODE[elementLabel.toLowerCase()];
+
+    if (!elementCode) {
+      console.error("Invalid element label passed to updateProfileNameAndElement:", elementLabel);
+      return;
+    }
+
+    await updateProfile({
+      name,
+      element: elementCode,
+      profile_complete: !!(name && elementCode),
+    });
   };
 
   useEffect(() => {
