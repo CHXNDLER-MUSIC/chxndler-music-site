@@ -19,6 +19,9 @@ export default function BinderModal({ open, onClose }: Props) {
   const [preselectedCard, setPreselectedCard] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [ownedCards, setOwnedCards] = useState<Set<string>>(new Set(['CHXNDLER'])); // Everyone has CHXNDLER by default
+  const [showDigitalPurchase, setShowDigitalPurchase] = useState(false);
+  const [userBalance, setUserBalance] = useState(0);
+  const [username, setUsername] = useState('');
 
   // Full song collection data structure
   const songCollection = [
@@ -80,7 +83,7 @@ export default function BinderModal({ open, onClose }: Props) {
   const getElementColor = (element: string) => {
     const elementColors: { [key: string]: string } = {
       'LIGHTNING': '#FFD700', // Gold
-      'DARKNESS': '#8B0082', // Dark violet
+      'DARKNESS': '#FFFFFF', // White
       'WATER': '#1E90FF', // Dodger blue
       'HEART': '#FF69B4', // Hot pink
       'ALL': '#FFFFFF' // White for special cards
@@ -272,6 +275,11 @@ export default function BinderModal({ open, onClose }: Props) {
         
         if (profileRes.status === 200) {
           setIsAuthenticated(true);
+          
+          // Get user profile data
+          const profileData = await profileRes.json();
+          setUsername(profileData.username || 'User');
+          setUserBalance(profileData.heartCoins || 150); // Demo balance, replace with actual API
           
           // TODO: When user cards API is available, fetch actual owned cards
           // For now, simulate with the demo cards plus CHXNDLER
@@ -720,6 +728,73 @@ export default function BinderModal({ open, onClose }: Props) {
                             {getCardOneLiner(currentCard.name)}
                           </div>
                         )}
+                        
+                        {/* Purchase buttons directly below 1-liner */}
+                        {!isCardOwned(currentCard.name) && (
+                          <div className="flex justify-center gap-2 mt-2">
+                            {/* Digital option */}
+                            <button
+                              onClick={() => {
+                                try { sfx.play('click', 0.6); } catch {}
+                                setShowDigitalPurchase(true);
+                              }}
+                              className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
+                              style={{
+                                boxShadow: '0 0 8px rgba(255,105,180,0.3)',
+                              }}
+                            >
+                              <img
+                                src="/elements/heart-coin.png"
+                                alt="Heart Coin"
+                                className="w-3 h-3"
+                                draggable={false}
+                              />
+                              <span 
+                                className="text-yellow-300 font-bold text-xs"
+                                style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
+                              >
+                                20
+                              </span>
+                              <span 
+                                className="text-pink-200 font-medium text-xs"
+                                style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                              >
+                                DIGITAL
+                              </span>
+                            </button>
+                            
+                            {/* Physical option */}
+                            <button
+                              onClick={() => {
+                                try { sfx.play('click', 0.6); } catch {}
+                                // Add physical purchase logic here
+                              }}
+                              className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
+                              style={{
+                                boxShadow: '0 0 8px rgba(255,105,180,0.3)',
+                              }}
+                            >
+                              <img
+                                src="/elements/heart-coin.png"
+                                alt="Heart Coin"
+                                className="w-3 h-3"
+                                draggable={false}
+                              />
+                              <span 
+                                className="text-yellow-300 font-bold text-xs"
+                                style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
+                              >
+                                30
+                              </span>
+                              <span 
+                                className="text-pink-200 font-medium text-xs"
+                                style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                              >
+                                PHYSICAL
+                              </span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })()
@@ -901,82 +976,6 @@ export default function BinderModal({ open, onClose }: Props) {
                 ) : null}
               </>
             )}
-            
-            {/* Purchase buttons at bottom of modal */}
-            {selectedElement && (() => {
-              const cards = getFilteredCards();
-              const currentCard = cards[currentCardIndex];
-              
-              if (!currentCard || isCardOwned(currentCard.name)) {
-                return null;
-              }
-
-              return (
-                <div className="flex justify-center gap-3 mt-4 pt-4 border-t border-pink-400/30">
-                  {/* Digital option */}
-                  <button
-                    onClick={() => {
-                      try { sfx.play('click', 0.6); } catch {}
-                      // Add digital purchase logic here
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-sm"
-                    style={{
-                      boxShadow: '0 0 12px rgba(255,105,180,0.3)',
-                    }}
-                  >
-                    <img
-                      src="/elements/heart-coin.png"
-                      alt="Heart Coin"
-                      className="w-4 h-4"
-                      draggable={false}
-                    />
-                    <span 
-                      className="text-yellow-300 font-bold"
-                      style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
-                    >
-                      20
-                    </span>
-                    <span 
-                      className="text-pink-200 font-medium"
-                      style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
-                    >
-                      DIGITAL
-                    </span>
-                  </button>
-                  
-                  {/* Physical option */}
-                  <button
-                    onClick={() => {
-                      try { sfx.play('click', 0.6); } catch {}
-                      // Add physical purchase logic here
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-sm"
-                    style={{
-                      boxShadow: '0 0 12px rgba(255,105,180,0.3)',
-                    }}
-                  >
-                    <img
-                      src="/elements/heart-coin.png"
-                      alt="Heart Coin"
-                      className="w-4 h-4"
-                      draggable={false}
-                    />
-                    <span 
-                      className="text-yellow-300 font-bold"
-                      style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
-                    >
-                      30
-                    </span>
-                    <span 
-                      className="text-pink-200 font-medium"
-                      style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
-                    >
-                      PHYSICAL
-                    </span>
-                  </button>
-                </div>
-              );
-            })()}
           </div>
         </div>
       </div>
@@ -1042,6 +1041,142 @@ export default function BinderModal({ open, onClose }: Props) {
             </div>
           </div>
         )}
+
+        {/* Digital Purchase Popup */}
+        {showDigitalPurchase && (() => {
+          const cards = getFilteredCards();
+          const currentCard = cards[currentCardIndex];
+          
+          if (!currentCard) {
+            return null;
+          }
+
+          const hasEnoughCoins = userBalance >= 20;
+
+          return (
+            <div 
+              className="fixed inset-0 z-[2147483649] flex items-center justify-center p-4"
+              onClick={() => {
+                try { sfx.play('close', 0.8); } catch {}
+                setShowDigitalPurchase(false);
+              }}
+            >
+              {/* Purchase popup container */}
+              <div 
+                className="relative"
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  width: 'min(90vw, 300px)',
+                  padding: '20px',
+                  borderRadius: 18,
+                  background: 'rgba(0,0,0,0.8)',
+                  border: '1px solid rgba(255,105,180,0.55)',
+                  boxShadow: '0 -8px 25px rgba(255,105,180,0.4), 0 -4px 15px rgba(255,105,180,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(255,105,180,0.45)',
+                  backdropFilter: 'blur(12px) saturate(140%)',
+                  color: '#FF69B4',
+                }}
+              >
+                {/* Close button */}
+                <button
+                  onClick={() => {
+                    try { sfx.play('close', 0.8); } catch {}
+                    setShowDigitalPurchase(false);
+                  }}
+                  className="absolute top-2 right-2 text-pink-400 hover:text-pink-200 cursor-pointer w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center"
+                  style={{ 
+                    fontSize: '14px',
+                    boxShadow: '0 0 10px rgba(255,105,180,0.6)',
+                    textShadow: '0 0 6px rgba(255,105,180,0.8)',
+                    background: 'rgba(255,105,180,0.1)',
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                    <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </button>
+                
+                {/* Username */}
+                <div 
+                  className="text-center mb-4 font-bold"
+                  style={{ 
+                    color: '#FF69B4', 
+                    textShadow: '0 0 8px rgba(255,105,180,0.6)',
+                    fontSize: '16px'
+                  }}
+                >
+                  {username}
+                </div>
+                
+                {/* Current balance */}
+                <div className="flex items-center justify-center gap-2 mb-4">
+                  <img
+                    src="/elements/heart-coin.png"
+                    alt="Heart Coin"
+                    className="w-5 h-5"
+                    draggable={false}
+                  />
+                  <span 
+                    className="text-yellow-300 font-bold text-lg"
+                    style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
+                  >
+                    {userBalance}
+                  </span>
+                </div>
+                
+                {/* Cost display */}
+                <div className="flex items-center justify-center gap-2 mb-6">
+                  <img
+                    src="/elements/heart-coin.png"
+                    alt="Heart Coin"
+                    className="w-4 h-4"
+                    draggable={false}
+                  />
+                  <span 
+                    className={`font-bold text-lg ${hasEnoughCoins ? 'text-green-300' : 'text-red-300'}`}
+                    style={{ 
+                      textShadow: hasEnoughCoins 
+                        ? '0 0 4px rgba(0,255,0,0.6)' 
+                        : '0 0 4px rgba(255,0,0,0.6)' 
+                    }}
+                  >
+                    20
+                  </span>
+                </div>
+                
+                {/* Add to collection button */}
+                <button
+                  onClick={() => {
+                    if (hasEnoughCoins) {
+                      try { sfx.play('success', 0.8); } catch {}
+                      // Add card to collection
+                      setOwnedCards(prev => new Set([...prev, currentCard.name]));
+                      setUserBalance(prev => prev - 20);
+                      setShowDigitalPurchase(false);
+                    } else {
+                      try { sfx.play('error', 0.8); } catch {}
+                    }
+                  }}
+                  disabled={!hasEnoughCoins}
+                  className={`w-full py-3 px-4 rounded-lg font-bold text-sm transition-all duration-200 ${
+                    hasEnoughCoins 
+                      ? 'bg-green-500/20 border-green-400/80 text-green-300 hover:bg-green-500/30 hover:border-green-400' 
+                      : 'bg-red-500/20 border-red-400/80 text-red-300 cursor-not-allowed opacity-60'
+                  }`}
+                  style={{
+                    border: `1px solid ${hasEnoughCoins ? 'rgba(34,197,94,0.8)' : 'rgba(239,68,68,0.8)'}`,
+                    boxShadow: `0 0 15px ${hasEnoughCoins ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}`,
+                    textShadow: hasEnoughCoins 
+                      ? '0 0 8px rgba(34,197,94,0.8)' 
+                      : '0 0 8px rgba(239,68,68,0.8)',
+                  }}
+                >
+                  ADD TO COLLECTION
+                </button>
+              </div>
+            </div>
+          );
+        })()}
       </>
   );
 }

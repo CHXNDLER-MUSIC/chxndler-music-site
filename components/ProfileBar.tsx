@@ -18,6 +18,7 @@ import { createPortal } from 'react-dom';
 import QuestList from '@/components/QuestList';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { useProfile } from '@/contexts/ProfileContext';
+import { useUIStore } from '@/store/useUIStore';
 
 interface Profile {
   id: string;
@@ -63,6 +64,8 @@ export default function ProfileBar({
   const { hasEnteredHeartverse } = useUIState();
   // Use ProfileContext for profile data
   const { profile: contextProfile, loading, updateProfile } = useProfile();
+  // Use UI store for name prompt
+  const { openNamePrompt } = useUIStore();
   const [elementDropdownOpen, setElementDropdownOpen] = useState(false);
   
   // IMPORTANT: Do not render anything until the user has entered
@@ -253,9 +256,13 @@ export default function ProfileBar({
         <div className="flex items-center justify-between h-full pl-12 sm:pl-16 pr-2 min-w-0">
           {/* Left Side */}
           <div className="flex items-center min-w-0 overflow-hidden flex-1">
-            {/* Username */}
-            <span 
-              className="font-medium text-lg relative flex-shrink-0 ml-2"
+            {/* Username - Clickable */}
+            <button 
+              onClick={() => {
+                try { sfx.play('click', 0.4); } catch {}
+                openNamePrompt();
+              }}
+              className="font-medium text-lg relative flex-shrink-0 ml-2 hover:scale-105 transition-transform duration-200 cursor-pointer bg-transparent border-none focus:outline-none"
               style={{ 
                 color: getUsernameColor(currentElement),
                 textShadow: `
@@ -269,7 +276,7 @@ export default function ProfileBar({
               }}
             >
               {displayName}
-            </span>
+            </button>
 
             {/* Journey Button */}
             <div className="ml-12">

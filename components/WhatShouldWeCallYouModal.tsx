@@ -8,7 +8,7 @@ import { useProfile } from "@/contexts/ProfileContext";
 
 export default function WhatShouldWeCallYouModal() {
   const { showNamePrompt, closeNamePrompt, openElementSelection } = useUIStore();
-  const { updateProfileNameAndElement } = useProfile();
+  const { updateProfile } = useProfile();
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,13 +21,8 @@ export default function WhatShouldWeCallYouModal() {
     setError(null);
     
     try {
-      const { data: { user } } = await supabaseClient.auth.getUser();
-      if (!user) {
-        throw new Error("Not authenticated");
-      }
-
       // Use the context method instead of direct Supabase calls
-      await updateProfileNameAndElement(name.trim(), 'heart'); // Default element
+      await updateProfile({ name: name.trim(), element: 'heart' }); // Default element
       
       closeNamePrompt();
       // Open element selection immediately after name is saved

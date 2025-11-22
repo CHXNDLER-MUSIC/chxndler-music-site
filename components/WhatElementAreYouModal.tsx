@@ -30,27 +30,8 @@ export default function WhatElementAreYouModal() {
     setError(null);
     
     try {
-      const { data: { user } } = await supabaseClient.auth.getUser();
-      if (!user) {
-        throw new Error("Not authenticated");
-      }
-
-      // Update profile with selected element
-      const { error } = await supabaseClient
-        .from('profiles')
-        .update({
-          element: selectedElement,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', user.id);
-
-      if (error) throw error;
-      
-      // Update the profile context with the new element
-      updateProfile({ 
-        element: selectedElement,
-        updated_at: new Date().toISOString(),
-      });
+      // Use the context method instead of direct Supabase calls
+      await updateProfile({ element: selectedElement });
       
       console.log('🎉 Profile completed! Element selected:', selectedElement);
       closeElementSelection();

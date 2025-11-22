@@ -27,6 +27,7 @@ interface ProfileContextType {
   loading: boolean;
   refreshProfile: () => Promise<void>;
   updateProfileNameAndElement: (name: string, element: string) => Promise<void>;
+  updateProfile: (updates: Partial<Profile>) => Promise<void>;
 }
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
@@ -89,10 +90,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     await fetchProfile();
   };
 
-  const updateProfileNameAndElement = async (
-    name: string,
-    element: string
-  ) => {
+  const updateProfile = async (updates: Partial<Profile>) => {
     try {
       const {
         data: { session },
@@ -110,28 +108,29 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabaseClient
         .from("profiles")
         .update({
-          name,
-          element,
+          ...updates,
           updated_at: new Date().toISOString(),
-          // profile_complete and journey are handled in triggers
         })
         .eq("id", user.id)
         .select()
         .single();
 
       if (error) {
-        console.error(
-          "Error updating profile with name and element:",
-          error.message,
-          error
-        );
+        console.error("Error updating profile:", error.message, error);
         return;
       }
 
       setProfile(data as Profile);
     } catch (error) {
-      console.error("Error in updateProfileNameAndElement:", error);
+      console.error("Error in updateProfile:", error);
     }
+  };
+
+  const updateProfileNameAndElement = async (
+    name: string,
+    element: string
+  ) => {
+    await updateProfile({ name, element });
   };
 
   useEffect(() => {
@@ -160,6 +159,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     loading,
     refreshProfile,
     updateProfileNameAndElement,
+    updateProfile,
   };
 
   return (
