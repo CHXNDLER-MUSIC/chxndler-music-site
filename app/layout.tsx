@@ -17,10 +17,10 @@ import { ProfileProvider } from "@/contexts/ProfileContext";
 export const metadata: Metadata = {
   metadataBase: new URL("https://chxndler.world"),
   title: "CHXNDLER",
-  description: "Welcome to the Heartverse",
+  description: "Welcome to the Heartverse.",
   openGraph: {
     title: "CHXNDLER",
-    description: "Welcome to the Heartverse",
+    description: "Welcome to the Heartverse.",
     url: "https://chxndler.world",
     siteName: "CHXNDLER",
     images: [
@@ -36,13 +36,13 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "CHXNDLER",
-    description: "Welcome to the Heartverse",
+    description: "Welcome to the Heartverse.",
     images: [
       "https://ik.imagekit.io/CHXNDLER/cover/logo.png?updatedAt=1763763254666"
     ],
   },
   icons: {
-    icon: "/elements/logo.png",
+    icon: "/logo.png"
   },
 };
 
@@ -55,8 +55,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <link rel="icon" href="/elements/logo.png" sizes="any" />
-        <link rel="icon" href="/elements/logo.png" type="image/png" />
+        <link rel="icon" href="/logo.png" sizes="any" />
+        <link rel="icon" href="/logo.png" type="image/png" />
         {/* Fonts: Orbitron (lyrics page) and Exo 2 (lyrics popover) */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

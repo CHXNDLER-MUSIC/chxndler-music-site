@@ -32,12 +32,16 @@ import WelcomeHomeModal from "@/components/WelcomeHomeModal";
 import ProfileBarWrapper from "@/components/ProfileBarWrapper";
 import HoloStarsButton from "@/components/HoloStarsButton";
 import { useUIStore } from "@/store/useUIStore";
+import { useProfile } from "@/contexts/ProfileContext";
 import { useUIState } from "@/lib/use-ui-state";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 export default function DashboardApp({ initialSlug } = {}) {
-  // UI store for profile refresh trigger
-  const { profileRefreshTrigger } = useUIStore();
+  // UI store for profile refresh trigger and name modal
+  const { profileRefreshTrigger, openNamePrompt } = useUIStore();
+  
+  // Profile context for user and profile data
+  const { profile } = useProfile();
   
   // Global UI state for profile bar visibility
   const { setHasEnteredHeartverse, enterHeartverse } = useUIState();
@@ -840,6 +844,66 @@ export default function DashboardApp({ initialSlug } = {}) {
       }
     }
   }, [beamColor, showHUD, joinAlienOpen, beamTransitioning, explicitClose]);
+
+  const handleStartClick = React.useCallback(async () => {
+    try {
+      // Get current user session
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      const user = session?.user;
+      
+      if (!user) {
+        // User is NOT logged in - show Welcome Home modal
+        setShowWelcomeHomeModal(true);
+        return;
+      }
+      
+      // User IS logged in - check if profile is complete
+      if (!profile?.profile_complete) {
+        // Profile is not complete - show name modal (start onboarding flow)
+        openNamePrompt();
+        return;
+      }
+      
+      // User IS logged in AND profile is complete - trigger warp effect
+      // Use the same logic as handleWelcomeHomeClose for consistent warp behavior
+      welcomeOnStartRef.current = true;
+      setHomeIntroEnabled(true);
+      setPendingOverlayReveal(true);
+      setUiUnlocked(true);
+      setShowDimmingOverlay(false);
+      setLandingRevealReady(true);
+      
+      // Prepare warp to homepage (same logic as original onLaunch)
+      setUserSelected(false);
+      setHomeMode(false);
+      startButtonWarpRef.current = true;
+      
+      // Stop any playing main track audio
+      try {
+        const a = document.querySelector('audio[data-audio-player="1"]');
+        if (a) { a.pause(); try { a.currentTime = 0; } catch {}; try { a.muted = true; } catch {}; try { a.removeAttribute('src'); } catch {}; try { a.load(); } catch {} }
+      } catch {}
+      setIsPlaying(false);
+      try { playerStore.setState({ mainId: null }); } catch {}
+      
+      // Prepare for blue display after warp
+      setShowHUD(false);
+      setShowOverlayUI(false);
+      setBeamEnabled(false);
+      setPendingHomePower(true);
+      
+      setAllowWarp(true);
+      setSky(SPACE_SKY);
+      setNextSky(null);
+      setFlySignal((n) => n + 1);
+      setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
+      
+    } catch (error) {
+      console.error('Error in handleStartClick:', error);
+      // On error, default to showing Welcome Home modal
+      setShowWelcomeHomeModal(true);
+    }
+  }, [profile?.profile_complete, openNamePrompt, setShowWelcomeHomeModal]);
 
   // Handle opening journal: opens star pop-out in HUD
   const handleOpenJournal = React.useCallback(() => {
@@ -1648,105 +1712,7 @@ export default function DashboardApp({ initialSlug } = {}) {
           // Blue button behavior is now handled entirely by handleBeamToggle('blue')
           // No need to call triggerHudPower since beam system manages everything
         }}
-        onLaunch={async () => {
-          // Check authentication + profile state to decide flow
-          try {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (!session) {
-              // No session: open Welcome Home modal only (never name prompt)
-              setShowWelcomeHomeModal(true);
-              return;
-            }
-
-            // Session exists: always proceed to blue display
-            // Name prompt is ONLY triggered by completeProfile=1 URL param from auth callback
-            // Do NOT show name prompt here regardless of profile completeness
-          } catch {}
-
-          // Check if stream mode is active
-          const isStreamMode = process.env.NEXT_PUBLIC_STREAM_ACTIVE === '1' || process.env.NEXT_PUBLIC_STREAM_ACTIVE?.toLowerCase() === 'true';
-          
-          // Ensure SFX are enabled immediately within the user gesture
-          try { 
-            sfx.setEnabled(true); 
-            (window).__CHX_UI_UNLOCKED = true; 
-            // Immediately clear dimming so the wheel brightens right away on Start
-            (window).__CHX_SHOW_DIMMING_OVERLAY = false;
-          } catch {}
-          // Prime ambient silently within this user gesture to satisfy autoplay policies
-          try { window.dispatchEvent(new CustomEvent('ambient:prime')); } catch {}
-          // Do not start ambient here; wait until warp finishes and the HUD/blue display is visible
-          // Ignore current playing state: Start always triggers warp to homepage
-          // Any currently playing main track will be stopped below before warp
-          // Show all planets on homepage after Start
-          try { 
-            playerStore.getState().setPlanetDisplayMode('all'); 
-            playerStore.getState().setPlanetsVisible(true); // CRITICAL: Force planets visible
-          } catch {}
-          try { playerStore.setState({ mainId: null }); } catch {}
-          try { setHidePlanetsForSelection(false); } catch {}
-          // User is starting their journey into the Heartverse - but don't show ProfileBar until warp completes
-          // setHasEnteredHeartverse(true); // Moved to onWarpSfxEnd to show ProfileBar only after warp
-          // Homepage Start flow (warp to home reveal)
-          // Only show welcome modal after warp on first start button click
-          if (!firstStartDone) {
-            welcomeOnStartRef.current = true;
-            setHomeIntroEnabled(true);
-            setFirstStartDone(true); // Mark as first start done
-            setShouldShowWelcomeModal(true); // Show welcome modal after warp on first start
-          } else {
-            welcomeOnStartRef.current = false;
-            setHomeIntroEnabled(false);
-            setShouldShowWelcomeModal(false); // Don't show welcome modal on subsequent starts
-          }
-          
-          // Trigger the warp effect
-          setFlySignal((n) => n + 1);
-            
-          // Ensure first-load flag is off after second Start
-          try { setIsFirstLoad(false); } catch {}
-          
-          setPendingOverlayReveal(true);
-          setUiUnlocked(true);
-          setShowDimmingOverlay(false);
-          setLandingRevealReady(true);
-
-          // Prepare warp to homepage
-          setUserSelected(false);
-          setHomeMode(false);
-          startButtonWarpRef.current = true;
-
-          // Stop any playing main track audio and clear track state (leave ambient to AmbientSpace logic)
-          try {
-            const a = document.querySelector('audio[data-audio-player="1"]');
-            if (a) { a.pause(); try { a.currentTime = 0; } catch {}; try { a.muted = true; } catch {}; try { a.removeAttribute('src'); } catch {}; try { a.load(); } catch {} }
-          } catch {}
-          setIsPlaying(false);
-          try { playerStore.setState({ mainId: null }); } catch {}
-          
-          // Stream mode: open signal pop-out instead of blue display
-          if (isStreamMode) {
-            setShowHUD(false);
-            setShowOverlayUI(false);
-            setBeamEnabled(false);
-            // Set up to open signal pop-out after warp
-            setPendingHomePower(false); // Don't trigger blue display
-            // Signal that we should open pink display after warp
-            window.__CHX_PENDING_SIGNAL_OPEN = true;
-          } else {
-            // Normal mode: prepare for blue display
-            setShowHUD(false);
-            setShowOverlayUI(false);
-            setBeamEnabled(false);
-            setPendingHomePower(true);
-          }
-          
-          setAllowWarp(true);
-          setSky(SPACE_SKY);
-          setNextSky(null);
-          setFlySignal((n) => n + 1);
-          setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
-        }}
+        onLaunch={handleStartClick}
       />
       </div> {/* Close blur wrapper */}
 

@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { createSupabaseServerClientWithJwt } from '@/lib/supabaseServer';
+import { awardHeartCoins } from '@/utils/heartcoins';
 
 export async function GET(req: NextRequest) {
   try {
@@ -87,6 +88,24 @@ export async function POST(req: NextRequest) {
 
     if (insertError) {
       return NextResponse.json({ error: 'Failed to save reflection' }, { status: 500 });
+    }
+
+    // Award HeartCoins for completing a reflection
+    try {
+      await awardHeartCoins(
+        supabase,
+        user.id,
+        2,
+        'Completed daily reflection',
+        {
+          reflection_id: reflection.id,
+          category: category,
+          question_id: questionId
+        }
+      );
+    } catch (heartCoinError) {
+      console.error('Failed to award HeartCoins for reflection:', heartCoinError);
+      // Don't fail the entire request if HeartCoin awarding fails
     }
 
     return NextResponse.json({

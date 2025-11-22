@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { sfx } from "@/lib/sfx";
+import { useProfile } from "@/contexts/ProfileContext";
 
 type Props = {
   open: boolean;
@@ -9,6 +10,7 @@ type Props = {
 };
 
 export default function BinderModal({ open, onClose }: Props) {
+  const { profile, updateProfile } = useProfile();
   const [cardOpen, setCardOpen] = useState(false);
   const [showFullCollection, setShowFullCollection] = useState(false);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
@@ -20,8 +22,6 @@ export default function BinderModal({ open, onClose }: Props) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [ownedCards, setOwnedCards] = useState<Set<string>>(new Set(['CHXNDLER'])); // Everyone has CHXNDLER by default
   const [showDigitalPurchase, setShowDigitalPurchase] = useState(false);
-  const [userBalance, setUserBalance] = useState(0);
-  const [username, setUsername] = useState('');
 
   // Full song collection data structure
   const songCollection = [
@@ -262,52 +262,22 @@ export default function BinderModal({ open, onClose }: Props) {
     return ['All', ...filteredSongs.map(song => song.name)];
   };
 
-  // Check authentication and fetch user's owned cards
+  // Set authentication and owned cards based on profile
   useEffect(() => {
-    let mounted = true;
-    
-    async function checkAuthAndFetchCards() {
-      try {
-        // Check authentication by calling profile API
-        const profileRes = await fetch("/api/profile", { method: "GET", cache: "no-store" });
-        
-        if (!mounted) return;
-        
-        if (profileRes.status === 200) {
-          setIsAuthenticated(true);
-          
-          // Get user profile data
-          const profileData = await profileRes.json();
-          setUsername(profileData.username || 'User');
-          setUserBalance(profileData.heartCoins || 150); // Demo balance, replace with actual API
-          
-          // TODO: When user cards API is available, fetch actual owned cards
-          // For now, simulate with the demo cards plus CHXNDLER
-          const demoOwnedCards = new Set([
-            'CHXNDLER', // Always owned
-            'LIGHTNING', 'HEART', 'OCEAN GIRL', 'BLUE', 'HOME', 'CHEERLEADER'
-          ]);
-          setOwnedCards(demoOwnedCards);
-          
-        } else if (profileRes.status === 401) {
-          setIsAuthenticated(false);
-          // Keep only CHXNDLER for unauthenticated users
-          setOwnedCards(new Set(['CHXNDLER']));
-        } else {
-          setIsAuthenticated(false);
-          setOwnedCards(new Set(['CHXNDLER']));
-        }
-      } catch {
-        if (mounted) {
-          setIsAuthenticated(false);
-          setOwnedCards(new Set(['CHXNDLER']));
-        }
-      }
+    if (profile) {
+      setIsAuthenticated(true);
+      // TODO: When user cards API is available, fetch actual owned cards
+      // For now, simulate with the demo cards plus CHXNDLER
+      const demoOwnedCards = new Set([
+        'CHXNDLER', // Always owned
+        'LIGHTNING', 'HEART', 'OCEAN GIRL', 'BLUE', 'HOME', 'CHEERLEADER'
+      ]);
+      setOwnedCards(demoOwnedCards);
+    } else {
+      setIsAuthenticated(false);
+      setOwnedCards(new Set(['CHXNDLER']));
     }
-    
-    checkAuthAndFetchCards();
-    return () => { mounted = false; };
-  }, []);
+  }, [profile]);
 
   // Arrow key navigation
   useEffect(() => {
@@ -977,6 +947,228 @@ export default function BinderModal({ open, onClose }: Props) {
               </>
             )}
           </div>
+          
+          {/* Digital Purchase Popup */}
+          {showDigitalPurchase && (() => {
+            const cards = getFilteredCards();
+            const currentCard = cards[currentCardIndex];
+            
+            if (!currentCard) {
+              return null;
+            }
+
+            const hasEnoughCoins = (profile?.heartcoin_balance || 0) >= 20;
+
+            return (
+              <div 
+                className="absolute inset-0 z-10 flex items-center justify-center p-4"
+                onClick={() => {
+                  try { sfx.play('close', 0.8); } catch {}
+                  setShowDigitalPurchase(false);
+                }}
+              >
+                {/* Purchase popup container */}
+                <div 
+                  className="relative"
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    width: 'min(90vw, 300px)',
+                    padding: '20px',
+                    borderRadius: 18,
+                    background: 'rgba(0,0,0,0.8)',
+                    border: '1px solid rgba(255,105,180,0.55)',
+                    boxShadow: '0 -8px 25px rgba(255,105,180,0.4), 0 -4px 15px rgba(255,105,180,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(255,105,180,0.45)',
+                    backdropFilter: 'blur(12px) saturate(140%)',
+                    color: '#FF69B4',
+                  }}
+                >
+                  {/* Close button */}
+                  <button
+                    onClick={() => {
+                      try { sfx.play('close', 0.8); } catch {}
+                      setShowDigitalPurchase(false);
+                    }}
+                    className="absolute top-2 right-2 text-pink-400 hover:text-pink-200 cursor-pointer w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center"
+                    style={{ 
+                      fontSize: '14px',
+                      boxShadow: '0 0 10px rgba(255,105,180,0.6)',
+                      textShadow: '0 0 6px rgba(255,105,180,0.8)',
+                      background: 'rgba(255,105,180,0.1)',
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                      <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                  
+                  {/* Header */}
+                  <div 
+                    className="text-center mb-6 font-bold"
+                    style={{ 
+                      color: '#FF69B4', 
+                      textShadow: '0 0 8px rgba(255,105,180,0.6)',
+                      fontSize: '18px'
+                    }}
+                  >
+                    Confirm Purchase
+                  </div>
+                  
+                  {/* Section 1 - Your Balance */}
+                  <div className="mb-4">
+                    <div 
+                      className="text-left mb-2 font-semibold"
+                      style={{ 
+                        color: '#FFB6C1', 
+                        textShadow: '0 0 4px rgba(255,182,193,0.6)',
+                        fontSize: '12px'
+                      }}
+                    >
+                      Section 1 — Your Balance
+                    </div>
+                    <div 
+                      className="text-left mb-1"
+                      style={{ 
+                        color: '#E6E6FA', 
+                        fontSize: '11px'
+                      }}
+                    >
+                      You Have:
+                    </div>
+                    <div className="flex items-center gap-2 mb-4">
+                      <span style={{ color: '#FFD700', fontSize: '14px' }}>⚡</span>
+                      <span 
+                        className="text-yellow-300 font-bold"
+                        style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)', fontSize: '14px' }}
+                      >
+                        {profile?.heartcoin_balance || 0} HeartCoins
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Section 2 - Cost */}
+                  <div className="mb-4">
+                    <div 
+                      className="text-left mb-2 font-semibold"
+                      style={{ 
+                        color: '#FFB6C1', 
+                        textShadow: '0 0 4px rgba(255,182,193,0.6)',
+                        fontSize: '12px'
+                      }}
+                    >
+                      Section 2 — Cost
+                    </div>
+                    <div 
+                      className="text-left mb-1"
+                      style={{ 
+                        color: '#E6E6FA', 
+                        fontSize: '11px'
+                      }}
+                    >
+                      Cost:
+                    </div>
+                    <div className="flex items-center gap-2 mb-4">
+                      <span style={{ color: '#FFD700', fontSize: '14px' }}>⚡</span>
+                      <span 
+                        className="text-yellow-300 font-bold"
+                        style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)', fontSize: '14px' }}
+                      >
+                        20 HeartCoins
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Section 3 - Status */}
+                  <div className="mb-6">
+                    <div 
+                      className="text-left mb-2 font-semibold"
+                      style={{ 
+                        color: '#FFB6C1', 
+                        textShadow: '0 0 4px rgba(255,182,193,0.6)',
+                        fontSize: '12px'
+                      }}
+                    >
+                      Section 3 — Status
+                    </div>
+                    {hasEnoughCoins ? (
+                      <div className="flex items-center gap-2">
+                        <span style={{ color: '#10B981', fontSize: '14px' }}>✓</span>
+                        <span 
+                          className="text-green-300"
+                          style={{ textShadow: '0 0 4px rgba(16,185,129,0.6)', fontSize: '11px' }}
+                        >
+                          You have enough to purchase this card.
+                        </span>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span style={{ color: '#F59E0B', fontSize: '14px' }}>✦</span>
+                          <span 
+                            className="text-yellow-300"
+                            style={{ textShadow: '0 0 4px rgba(245,158,11,0.6)', fontSize: '11px' }}
+                          >
+                            You need 20 HeartCoins.
+                          </span>
+                        </div>
+                        <div 
+                          className="text-red-300 text-left"
+                          style={{ textShadow: '0 0 4px rgba(248,113,113,0.6)', fontSize: '11px', marginLeft: '20px' }}
+                        >
+                          You currently have {profile?.heartcoin_balance || 0}.
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Section 4 - Button */}
+                  <div className="mb-2">
+                    <div 
+                      className="text-left mb-3 font-semibold"
+                      style={{ 
+                        color: '#FFB6C1', 
+                        textShadow: '0 0 4px rgba(255,182,193,0.6)',
+                        fontSize: '12px'
+                      }}
+                    >
+                      Section 4 — Button
+                    </div>
+                    <button
+                      onClick={async () => {
+                        if (hasEnoughCoins && profile) {
+                          try { sfx.play('success', 0.8); } catch {}
+                          // Add card to collection
+                          setOwnedCards(prev => new Set([...prev, currentCard.name]));
+                          // Update profile balance
+                          await updateProfile({ 
+                            heartcoin_balance: (profile.heartcoin_balance || 0) - 20 
+                          });
+                          setShowDigitalPurchase(false);
+                        } else {
+                          try { sfx.play('error', 0.8); } catch {}
+                        }
+                      }}
+                      disabled={!hasEnoughCoins}
+                      className={`w-full py-3 px-4 rounded-lg font-bold text-sm transition-all duration-200 ${
+                        hasEnoughCoins 
+                          ? 'bg-green-500/20 border-green-400/80 text-green-300 hover:bg-green-500/30 hover:border-green-400' 
+                          : 'bg-red-500/20 border-red-400/80 text-red-300 cursor-not-allowed opacity-60'
+                      }`}
+                      style={{
+                        border: `1px solid ${hasEnoughCoins ? 'rgba(34,197,94,0.8)' : 'rgba(239,68,68,0.8)'}`,
+                        boxShadow: `0 0 15px ${hasEnoughCoins ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}`,
+                        textShadow: hasEnoughCoins 
+                          ? '0 0 8px rgba(34,197,94,0.8)' 
+                          : '0 0 8px rgba(239,68,68,0.8)',
+                      }}
+                    >
+                      {hasEnoughCoins ? 'ADD TO COLLECTION' : 'NOT ENOUGH HEARTCOINS'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
 
@@ -1042,141 +1234,6 @@ export default function BinderModal({ open, onClose }: Props) {
           </div>
         )}
 
-        {/* Digital Purchase Popup */}
-        {showDigitalPurchase && (() => {
-          const cards = getFilteredCards();
-          const currentCard = cards[currentCardIndex];
-          
-          if (!currentCard) {
-            return null;
-          }
-
-          const hasEnoughCoins = userBalance >= 20;
-
-          return (
-            <div 
-              className="fixed inset-0 z-[2147483649] flex items-center justify-center p-4"
-              onClick={() => {
-                try { sfx.play('close', 0.8); } catch {}
-                setShowDigitalPurchase(false);
-              }}
-            >
-              {/* Purchase popup container */}
-              <div 
-                className="relative"
-                onClick={(e) => e.stopPropagation()}
-                style={{
-                  width: 'min(90vw, 300px)',
-                  padding: '20px',
-                  borderRadius: 18,
-                  background: 'rgba(0,0,0,0.8)',
-                  border: '1px solid rgba(255,105,180,0.55)',
-                  boxShadow: '0 -8px 25px rgba(255,105,180,0.4), 0 -4px 15px rgba(255,105,180,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(255,105,180,0.45)',
-                  backdropFilter: 'blur(12px) saturate(140%)',
-                  color: '#FF69B4',
-                }}
-              >
-                {/* Close button */}
-                <button
-                  onClick={() => {
-                    try { sfx.play('close', 0.8); } catch {}
-                    setShowDigitalPurchase(false);
-                  }}
-                  className="absolute top-2 right-2 text-pink-400 hover:text-pink-200 cursor-pointer w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center"
-                  style={{ 
-                    fontSize: '14px',
-                    boxShadow: '0 0 10px rgba(255,105,180,0.6)',
-                    textShadow: '0 0 6px rgba(255,105,180,0.8)',
-                    background: 'rgba(255,105,180,0.1)',
-                  }}
-                >
-                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                    <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                </button>
-                
-                {/* Username */}
-                <div 
-                  className="text-center mb-4 font-bold"
-                  style={{ 
-                    color: '#FF69B4', 
-                    textShadow: '0 0 8px rgba(255,105,180,0.6)',
-                    fontSize: '16px'
-                  }}
-                >
-                  {username}
-                </div>
-                
-                {/* Current balance */}
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <img
-                    src="/elements/heart-coin.png"
-                    alt="Heart Coin"
-                    className="w-5 h-5"
-                    draggable={false}
-                  />
-                  <span 
-                    className="text-yellow-300 font-bold text-lg"
-                    style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
-                  >
-                    {userBalance}
-                  </span>
-                </div>
-                
-                {/* Cost display */}
-                <div className="flex items-center justify-center gap-2 mb-6">
-                  <img
-                    src="/elements/heart-coin.png"
-                    alt="Heart Coin"
-                    className="w-4 h-4"
-                    draggable={false}
-                  />
-                  <span 
-                    className={`font-bold text-lg ${hasEnoughCoins ? 'text-green-300' : 'text-red-300'}`}
-                    style={{ 
-                      textShadow: hasEnoughCoins 
-                        ? '0 0 4px rgba(0,255,0,0.6)' 
-                        : '0 0 4px rgba(255,0,0,0.6)' 
-                    }}
-                  >
-                    20
-                  </span>
-                </div>
-                
-                {/* Add to collection button */}
-                <button
-                  onClick={() => {
-                    if (hasEnoughCoins) {
-                      try { sfx.play('success', 0.8); } catch {}
-                      // Add card to collection
-                      setOwnedCards(prev => new Set([...prev, currentCard.name]));
-                      setUserBalance(prev => prev - 20);
-                      setShowDigitalPurchase(false);
-                    } else {
-                      try { sfx.play('error', 0.8); } catch {}
-                    }
-                  }}
-                  disabled={!hasEnoughCoins}
-                  className={`w-full py-3 px-4 rounded-lg font-bold text-sm transition-all duration-200 ${
-                    hasEnoughCoins 
-                      ? 'bg-green-500/20 border-green-400/80 text-green-300 hover:bg-green-500/30 hover:border-green-400' 
-                      : 'bg-red-500/20 border-red-400/80 text-red-300 cursor-not-allowed opacity-60'
-                  }`}
-                  style={{
-                    border: `1px solid ${hasEnoughCoins ? 'rgba(34,197,94,0.8)' : 'rgba(239,68,68,0.8)'}`,
-                    boxShadow: `0 0 15px ${hasEnoughCoins ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}`,
-                    textShadow: hasEnoughCoins 
-                      ? '0 0 8px rgba(34,197,94,0.8)' 
-                      : '0 0 8px rgba(239,68,68,0.8)',
-                  }}
-                >
-                  ADD TO COLLECTION
-                </button>
-              </div>
-            </div>
-          );
-        })()}
       </>
   );
 }

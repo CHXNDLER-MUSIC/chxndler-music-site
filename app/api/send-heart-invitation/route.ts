@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { createSupabaseServerClientWithJwt, getSupabaseAdmin } from '@/lib/supabaseServer';
+import { awardHeartCoins } from '@/utils/heartcoins';
 
 export async function POST(req: NextRequest) {
   try {
@@ -145,21 +146,17 @@ export async function POST(req: NextRequest) {
     }
 
     // Award heart coin to inviter for sending invitation
-    const { data: inviterProfileForUpdate } = await admin
-      .from('profiles')
-      .select('heartcoin_balance')
-      .eq('id', user.id)
-      .single();
-    
-    if (inviterProfileForUpdate) {
-      await admin
-        .from('profiles')
-        .update({ 
-          heartcoin_balance: (inviterProfileForUpdate.heartcoin_balance || 0) + 1,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
-    }
+    await awardHeartCoins(
+      admin,
+      user.id,
+      1,
+      'Sent heart invitation',
+      { 
+        recipient_email: recipientEmail,
+        invitation_token: invitationToken,
+        personal_message: personalMessage 
+      }
+    );
 
     return NextResponse.json({ 
       success: true, 

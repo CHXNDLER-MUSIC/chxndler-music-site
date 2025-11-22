@@ -9,10 +9,10 @@ import type { Element } from "@/lib/planets";
 import { ELEMENT_COLORS } from "@/lib/planets";
 
 const ELEMENTS: { key: Element; name: string; label: string; description: string; icon: string }[] = [
-  { key: "heart", name: "HEART", label: "💖 Heart", description: "Love, passion, and connection", icon: "/elements/heart.png" },
-  { key: "lightning", name: "LIGHTNING", label: "⚡ Lightning", description: "Energy, power, and innovation", icon: "/elements/lightning.png" },
-  { key: "water", name: "WATER", label: "🌊 Water", description: "Flow, adaptability, and depth", icon: "/elements/water.png" },
-  { key: "darkness", name: "DARKNESS", label: "🌑 Darkness", description: "Mystery, introspection, and rebirth", icon: "/elements/darkness.png" },
+  { key: "heart", name: "HEART", label: "Heart", description: "Love, passion, and connection", icon: "/elements/heart.png" },
+  { key: "lightning", name: "LIGHTNING", label: "Lightning", description: "Energy, power, and innovation", icon: "/elements/lightning.png" },
+  { key: "water", name: "WATER", label: "Water", description: "Flow, adaptability, and depth", icon: "/elements/water.png" },
+  { key: "darkness", name: "DARKNESS", label: "Darkness", description: "Mystery, introspection, and rebirth", icon: "/elements/darkness.png" },
 ];
 
 export default function WhatElementAreYouModal() {
