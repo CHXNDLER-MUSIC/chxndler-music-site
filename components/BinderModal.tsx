@@ -981,105 +981,99 @@ export default function BinderModal({ open, onClose }: Props) {
             {!showFullCollection ? (
               // User's Binder - Show 5 initial slots
               <div>
-                {!profile ? (
-                  <div className="text-center p-4 text-sm opacity-80" style={{ color: '#FFB6C1' }}>
-                    Please log in to view your card collection.
-                  </div>
-                ) : (
-                  <div className="grid gap-2 grid-cols-5">
-                    {Array.from({ length: 5 }, (_, index) => {
-                      // Check if there's a collected card for this slot
-                      const collectedCard = profile.cards?.[index];
-                      const hasCard = !!collectedCard?.cards;
+                <div className="grid gap-2 grid-cols-5">
+                  {Array.from({ length: 5 }, (_, index) => {
+                    // Check if there's a collected card for this slot
+                    const collectedCard = profile?.cards?.[index];
+                    const hasCard = !!collectedCard?.cards;
 
-                      return (
-                        <div
-                          key={`slot-${index}`}
-                          className={`rounded-lg border p-2 backdrop-blur-sm transition-all duration-300 ${
-                            hasCard 
-                              ? 'border-white/10 bg-black/40 cursor-pointer hover:scale-105' 
-                              : 'border-white/5 bg-black/20 cursor-default'
-                          }`}
-                          onClick={() => {
-                            if (hasCard && collectedCard?.cards) {
-                              try { sfx.play('click', 0.8); } catch {}
-                              setSelectedCard({
-                                name: collectedCard.cards.card_name,
-                                image: getCardImage(collectedCard.cards.card_name, collectedCard.cards.element),
-                                rarity: collectedCard.cards.rarity,
-                                element: collectedCard.cards.element
-                              });
-                              setCardOpen(true);
-                            }
-                          }}
-                          style={{
-                            boxShadow: hasCard 
-                              ? '0 0 15px rgba(255,105,180,0.3)' 
-                              : '0 0 5px rgba(255,105,180,0.1)',
-                          }}
-                        >
-                          <div className="relative">
-                            {hasCard && collectedCard?.cards ? (
-                              <>
-                                <img
-                                  src={getCardImage(collectedCard.cards.card_name, collectedCard.cards.element)}
-                                  alt={collectedCard.cards.card_name}
-                                  className="w-full h-16 object-cover rounded mb-1"
-                                  draggable={false}
-                                />
-                                <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-green-500/80 rounded-full flex items-center justify-center">
-                                  <svg viewBox="0 0 24 24" width="10" height="10" fill="white">
-                                    <path d="M20 6L9 17l-5-5"/>
-                                  </svg>
-                                </div>
-                              </>
-                            ) : (
-                              <div className="w-full h-16 bg-gradient-to-br from-pink-500/10 to-purple-500/10 rounded mb-1 border-2 border-dashed border-pink-400/30 flex items-center justify-center">
-                                <div 
-                                  className="text-xs font-bold text-center"
-                                  style={{ 
-                                    color: '#FFB6C1', 
-                                    textShadow: '0 0 4px rgba(255,182,193,0.6)',
-                                    fontSize: '8px'
-                                  }}
-                                >
-                                  EMPTY
-                                </div>
-                              </div>
-                            )}
-                          </div>
+                    return (
+                      <div
+                        key={`slot-${index}`}
+                        className={`rounded-lg border p-2 backdrop-blur-sm transition-all duration-300 ${
+                          hasCard 
+                            ? 'border-white/10 bg-black/40 cursor-pointer hover:scale-105' 
+                            : 'border-white/5 bg-black/20 cursor-default'
+                        }`}
+                        onClick={() => {
+                          if (hasCard && collectedCard?.cards) {
+                            try { sfx.play('click', 0.8); } catch {}
+                            setSelectedCard({
+                              name: collectedCard.cards.card_name,
+                              image: getCardImage(collectedCard.cards.card_name, collectedCard.cards.element),
+                              rarity: collectedCard.cards.rarity,
+                              element: collectedCard.cards.element
+                            });
+                            setCardOpen(true);
+                          }
+                        }}
+                        style={{
+                          boxShadow: hasCard 
+                            ? '0 0 15px rgba(255,105,180,0.3)' 
+                            : '0 0 5px rgba(255,105,180,0.1)',
+                        }}
+                      >
+                        <div className="relative">
                           {hasCard && collectedCard?.cards ? (
                             <>
-                              <p className="text-[10px] font-semibold leading-tight" style={{ color: '#FF69B4' }}>
-                                {collectedCard.cards.card_name}
-                              </p>
-                              <p className="text-[8px] opacity-70 flex justify-between items-center" style={{ color: '#FFB6C1' }}>
-                                <span>{collectedCard.cards.element}</span>
-                                <span className="uppercase tracking-wide opacity-60" style={{ color: getElementColor(collectedCard.cards.element) }}>
-                                  {collectedCard.cards.rarity}
-                                </span>
-                              </p>
-                              {getCardOneLiner(collectedCard.cards.card_name) && (
-                                <p className="text-[7px] italic opacity-60 leading-tight mt-0.5" style={{ color: '#E6E6FA' }}>
-                                  {getCardOneLiner(collectedCard.cards.card_name)}
-                                </p>
-                              )}
+                              <img
+                                src={getCardImage(collectedCard.cards.card_name, collectedCard.cards.element)}
+                                alt={collectedCard.cards.card_name}
+                                className="w-full h-16 object-cover rounded mb-1"
+                                draggable={false}
+                              />
+                              <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-green-500/80 rounded-full flex items-center justify-center">
+                                <svg viewBox="0 0 24 24" width="10" height="10" fill="white">
+                                  <path d="M20 6L9 17l-5-5"/>
+                                </svg>
+                              </div>
                             </>
                           ) : (
-                            <>
-                              <p className="text-[8px] uppercase tracking-wide opacity-40" style={{ color: '#FFB6C1' }}>
-                                Slot {index + 1}
-                              </p>
-                              <p className="text-[10px] font-semibold leading-tight opacity-40" style={{ color: '#FF69B4' }}>
-                                No Card
-                              </p>
-                            </>
+                            <div className="w-full h-16 bg-gradient-to-br from-pink-500/10 to-purple-500/10 rounded mb-1 border-2 border-dashed border-pink-400/30 flex items-center justify-center">
+                              <div 
+                                className="text-xs font-bold text-center"
+                                style={{ 
+                                  color: '#FFB6C1', 
+                                  textShadow: '0 0 4px rgba(255,182,193,0.6)',
+                                  fontSize: '8px'
+                                }}
+                              >
+                                EMPTY
+                              </div>
+                            </div>
                           )}
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                        {hasCard && collectedCard?.cards ? (
+                          <>
+                            <p className="text-[10px] font-semibold leading-tight" style={{ color: '#FF69B4' }}>
+                              {collectedCard.cards.card_name}
+                            </p>
+                            <p className="text-[8px] opacity-70 flex justify-between items-center" style={{ color: '#FFB6C1' }}>
+                              <span>{collectedCard.cards.element}</span>
+                              <span className="uppercase tracking-wide opacity-60" style={{ color: getElementColor(collectedCard.cards.element) }}>
+                                {collectedCard.cards.rarity}
+                              </span>
+                            </p>
+                            {getCardOneLiner(collectedCard.cards.card_name) && (
+                              <p className="text-[7px] italic opacity-60 leading-tight mt-0.5" style={{ color: '#E6E6FA' }}>
+                                {getCardOneLiner(collectedCard.cards.card_name)}
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-[8px] uppercase tracking-wide opacity-40" style={{ color: '#FFB6C1' }}>
+                              Slot {index + 1}
+                            </p>
+                            <p className="text-[10px] font-semibold leading-tight opacity-40" style={{ color: '#FF69B4' }}>
+                              No Card
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             ) : (
               // Full Collection View

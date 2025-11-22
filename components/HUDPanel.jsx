@@ -2712,7 +2712,9 @@ export default function HUDPanel({
                         aria-haspopup="dialog"
                         aria-expanded={showStorePopover}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
                           try {
                             const songSlug = isHome ? 'homepage' : (slug || active || 'unknown');
                             const songTitle = isHome ? 'CHXNDLER' : (currentSong?.title || track?.title || 'Unknown');

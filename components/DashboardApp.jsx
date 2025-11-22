@@ -101,6 +101,7 @@ export default function DashboardApp({ initialSlug } = {}) {
   const [showStarsModal, setShowStarsModal] = useState(false);
   const [showWelcomeHomeModal, setShowWelcomeHomeModal] = useState(false);
   const [warpActive, setWarpActive] = useState(false);
+  const [isWarping, setIsWarping] = useState(false);
   const [nextSky, setNextSky] = useState(null);
   const [beamOnly, setBeamOnly] = useState(true);
   const [beamEnabled, setBeamEnabled] = useState(false);
@@ -913,25 +914,18 @@ export default function DashboardApp({ initialSlug } = {}) {
 
   const handleStartClick = React.useCallback(async () => {
     try {
-      // Get current user session
+      // Prevent multiple clicks while warping
+      if (isWarping) return;
+
+      // Reset any existing modals
+      setShowWelcomeHomeModal(false);
+      
+      // Get current user session for post-warp logic
       const { data: { session } } = await supabaseClient.auth.getSession();
       const user = session?.user;
       
-      if (!user) {
-        // User is NOT logged in - show Welcome Home modal
-        setShowWelcomeHomeModal(true);
-        return;
-      }
-      
-      // User IS logged in - check if profile is complete
-      if (!profile?.profile_complete) {
-        // Profile is not complete - show name modal (start onboarding flow)
-        openNamePrompt();
-        return;
-      }
-      
-      // User IS logged in AND profile is complete - trigger warp effect
-      // Use the same logic as handleWelcomeHomeClose for consistent warp behavior
+      // Always trigger warp effect first, regardless of login state
+      setIsWarping(true);
       welcomeOnStartRef.current = true;
       setHomeIntroEnabled(true);
       setPendingOverlayReveal(true);
@@ -939,7 +933,7 @@ export default function DashboardApp({ initialSlug } = {}) {
       setShowDimmingOverlay(false);
       setLandingRevealReady(true);
       
-      // Prepare warp to homepage (same logic as original onLaunch)
+      // Prepare warp to homepage
       setUserSelected(false);
       setHomeMode(false);
       startButtonWarpRef.current = true;
@@ -952,24 +946,31 @@ export default function DashboardApp({ initialSlug } = {}) {
       setIsPlaying(false);
       try { playerStore.setState({ mainId: null }); } catch {}
       
-      // Prepare for blue display after warp
+      // Prepare UI state for warp
       setShowHUD(false);
       setShowOverlayUI(false);
       setBeamEnabled(false);
       setPendingHomePower(true);
       
+      // Trigger the warp effect
       setAllowWarp(true);
       setSky(SPACE_SKY);
       setNextSky(null);
       setFlySignal((n) => n + 1);
       setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
       
+      // Post-warp logic will be handled in onWarpSfxEnd based on login state
+      // Store user data for post-warp decision making
+      window.postWarpUser = user;
+      window.postWarpProfileComplete = profile?.profile_complete;
+      
     } catch (error) {
       console.error('Error in handleStartClick:', error);
-      // On error, default to showing Welcome Home modal
+      // On error, reset warp state and show Welcome Home modal
+      setIsWarping(false);
       setShowWelcomeHomeModal(true);
     }
-  }, [profile?.profile_complete, openNamePrompt, setShowWelcomeHomeModal]);
+  }, [profile?.profile_complete, isWarping, openNamePrompt]);
 
   // Handle opening journal: opens star pop-out in HUD
   const handleOpenJournal = React.useCallback(() => {
@@ -1447,6 +1448,28 @@ export default function DashboardApp({ initialSlug } = {}) {
         lightspeedYoutubeUrl={'https://youtu.be/KFssNa5WvKc'}
         onWarpSfxEnd={() => {
           // Welcome modal and planet visibility sequencing after warp
+          
+          // Reset warp state when warp effect completes
+          setIsWarping(false);
+          
+          // Handle post-warp logic based on login state (for Start button warps)
+          if (isWarping) {
+            const postWarpUser = window.postWarpUser;
+            const postWarpProfileComplete = window.postWarpProfileComplete;
+            
+            // Clean up temporary storage
+            delete window.postWarpUser;
+            delete window.postWarpProfileComplete;
+            
+            if (!postWarpUser) {
+              // User is NOT logged in - show Welcome Home modal after warp
+              setShowWelcomeHomeModal(true);
+            } else if (!postWarpProfileComplete) {
+              // User IS logged in but profile is not complete - show name modal
+              openNamePrompt();
+            }
+            // If user is logged in AND profile is complete, continue with normal warp flow (blue cockpit display)
+          }
           
           // Show welcome home modal after warp effect completes (only on first start button click)
           if (shouldShowWelcomeModal && !userSelected && !pendingTrackPlay) {

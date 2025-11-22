@@ -20,6 +20,8 @@ export default function JoinAliens({ visible = true } = {}) {
   const [showVenmoPayment, setShowVenmoPayment] = useState(false);
   const [selectedTipAmount, setSelectedTipAmount] = useState(null);
   const [showPaymentOptions, setShowPaymentOptions] = useState(false);
+  const [showPaymentOptions5, setShowPaymentOptions5] = useState(false);
+  const [showPaymentOptions10, setShowPaymentOptions10] = useState(false);
   
   // Countdown state
   const [timeRemaining, setTimeRemaining] = useState(0);
@@ -455,8 +457,11 @@ export default function JoinAliens({ visible = true } = {}) {
       {/* $ Button - positioned in bottom right corner */}
       <button
         onClick={() => {
-          try { sfx.play('click.mp3', 0.5); } catch {}
+          try { sfx.play('audio/click.mp3', 0.5); } catch {}
           setShowTipOptions(!showTipOptions);
+          setShowPaymentOptions(false); // Also close payment options when closing tip menu
+          setShowPaymentOptions5(false); // Also close $5 payment options
+          setShowPaymentOptions10(false); // Also close $10 payment options
         }}
         style={{
           position: 'absolute',
@@ -514,12 +519,17 @@ export default function JoinAliens({ visible = true } = {}) {
         }}>
           <button
             onClick={() => {
-              try { sfx.play('click', 0.3); } catch {}
+              try { sfx.play('audio/click.mp3', 0.3); } catch {}
               
-              // Show VENMO/CARD options popup
-              setShowPaymentOptions(true);
-              setSelectedTipAmount(3);
-              setShowTipOptions(false);
+              // Toggle VENMO/CARD options popup for $3
+              if (showPaymentOptions) {
+                setShowPaymentOptions(false);
+              } else {
+                setShowPaymentOptions5(false); // Close $5 payment options first
+                setShowPaymentOptions10(false); // Close $10 payment options first
+                setShowPaymentOptions(true);
+                setSelectedTipAmount(3);
+              }
             }}
             style={{
               padding: '10px',
@@ -554,18 +564,17 @@ export default function JoinAliens({ visible = true } = {}) {
           </button>
           <button
             onClick={() => {
-              try { sfx.play('click', 0.3); } catch {}
+              try { sfx.play('audio/click.mp3', 0.3); } catch {}
               
-              // Direct Venmo integration
-              const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=3&note=${encodeURIComponent('Thanks for the music!')}`;
-              const webVenmoUrl = `https://venmo.com/u/chxndlerthealien?txn=pay&amount=3&note=${encodeURIComponent('Thanks for the music!')}`;
-              
-              window.open(venmoUrl, '_blank');
-              setTimeout(() => {
-                window.open(webVenmoUrl, '_blank');
-              }, 1500);
-              
-              setShowTipOptions(false);
+              // Toggle VENMO/CARD options popup for $5
+              if (showPaymentOptions5) {
+                setShowPaymentOptions5(false);
+              } else {
+                setShowPaymentOptions(false); // Close $3 payment options first
+                setShowPaymentOptions10(false); // Close $10 payment options first
+                setShowPaymentOptions5(true);
+                setSelectedTipAmount(5);
+              }
             }}
             style={{
               padding: '10px',
@@ -590,28 +599,29 @@ export default function JoinAliens({ visible = true } = {}) {
               try { sfx.play('hover', 0.3); } catch {}
               e.target.style.background = 'rgba(252, 84, 175, 0.2)';
               e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
+              e.target.style.transform = 'scale(1.05)';
             }}
             onMouseLeave={(e) => {
               e.target.style.background = 'rgba(252, 84, 175, 0.1)';
               e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
+              e.target.style.transform = 'scale(1)';
             }}
           >
             $5
           </button>
           <button
             onClick={() => {
-              try { sfx.play('click', 0.3); } catch {}
+              try { sfx.play('audio/click.mp3', 0.3); } catch {}
               
-              // Direct Venmo integration for $5
-              const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=5&note=${encodeURIComponent('Thanks for the music!')}`;
-              const webVenmoUrl = `https://venmo.com/u/chxndlerthealien?txn=pay&amount=5&note=${encodeURIComponent('Thanks for the music!')}`;
-              
-              window.open(venmoUrl, '_blank');
-              setTimeout(() => {
-                window.open(webVenmoUrl, '_blank');
-              }, 1500);
-              
-              setShowTipOptions(false);
+              // Toggle VENMO/CARD options popup for $10
+              if (showPaymentOptions10) {
+                setShowPaymentOptions10(false);
+              } else {
+                setShowPaymentOptions(false); // Close $3 payment options first
+                setShowPaymentOptions5(false); // Close $5 payment options first
+                setShowPaymentOptions10(true);
+                setSelectedTipAmount(10);
+              }
             }}
             style={{
               padding: '10px',
@@ -1036,139 +1046,366 @@ export default function JoinAliens({ visible = true } = {}) {
         }
       `}</style>
 
-      {/* Payment Options Popup - VENMO/CARD for $3 */}
+      {/* Payment buttons popup */}
       {showPaymentOptions && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          background: 'rgba(0, 0, 0, 0.7)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 20,
-          padding: '20px',
-          boxSizing: 'border-box'
-        }}>
-          <div style={{
-            background: 'linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(0, 200, 255, 0.1))',
-            border: '2px solid #00FFFF',
-            borderRadius: '12px',
-            padding: '20px',
-            maxWidth: '250px',
-            width: '90%',
-            textAlign: 'center',
-            boxShadow: '0 0 30px rgba(0, 255, 255, 0.4)',
-            position: 'relative'
-          }}>
-            {/* Close Button */}
-            <button
-              onClick={() => setShowPaymentOptions(false)}
+        <div 
+          style={{
+            position: 'absolute',
+            bottom: '155px',
+            right: '60px',
+            zIndex: 15,
+            display: 'flex',
+            gap: '8px',
+            alignItems: 'center'
+          }}
+          onClick={(e) => {
+            // Close if clicking the container (outside buttons)
+            if (e.target === e.currentTarget) {
+              setShowPaymentOptions(false);
+            }
+          }}
+        >
+          {/* Venmo Button */}
+          <button
+            onClick={() => {
+              try { sfx.play('hover', 0.3); } catch {}
+              const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=3&note=${encodeURIComponent('Fuel the Signal')}`;
+              const webVenmoUrl = `https://venmo.com/chxndlerthealien?amount=3&note=${encodeURIComponent('Fuel the Signal')}`;
+              
+              window.open(venmoUrl, '_blank');
+              setTimeout(() => {
+                window.open(webVenmoUrl, '_blank');
+              }, 1000);
+              
+              setShowPaymentOptions(false);
+            }}
+            style={{
+              padding: '0',
+              width: '40px',
+              height: '40px',
+              background: 'rgba(0, 255, 255, 0.1)',
+              border: '2px solid #00FFFF',
+              borderRadius: '50%',
+              color: '#00FFFF',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'all 300ms ease',
+              boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)',
+              textShadow: '0 0 8px #00FFFF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            onMouseEnter={(e) => {
+              try { sfx.play('audio/hover.mp3', 0.3); } catch {}
+              e.target.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.6)';
+              e.target.style.background = 'rgba(0, 255, 255, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';
+              e.target.style.background = 'rgba(0, 255, 255, 0.1)';
+            }}
+          >
+            <img 
+              src="/elements/venmo.png" 
+              alt="Venmo" 
               style={{
-                position: 'absolute',
-                top: '-15px',
-                right: '-15px',
-                width: '30px',
+                width: '38px',
+                height: '38px',
+                filter: 'brightness(1) invert(0)'
+              }}
+            />
+          </button>
+
+          {/* Credit Card Button */}
+          <button
+            onClick={() => {
+              try { sfx.play('hover', 0.3); } catch {}
+              // Open Stripe payment page for $3
+              window.open('https://buy.stripe.com/bJeeVe5X3fZH9Nnchh4gg0P', '_blank');
+              setShowPaymentOptions(false);
+            }}
+            style={{
+              padding: '0',
+              width: '50px',
+              height: '32px',
+              background: 'rgba(252, 84, 175, 0.1)',
+              border: '2px solid #FC54AF',
+              borderRadius: '6px',
+              color: '#FC54AF',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'all 300ms ease',
+              boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
+              textShadow: '0 0 8px #FC54AF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            onMouseEnter={(e) => {
+              try { sfx.play('audio/hover.mp3', 0.3); } catch {}
+              e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
+              e.target.style.background = 'rgba(252, 84, 175, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
+              e.target.style.background = 'rgba(252, 84, 175, 0.1)';
+            }}
+          >
+            <img 
+              src="/elements/credit-card.png" 
+              alt="Credit Card" 
+              style={{
+                width: '48px',
                 height: '30px',
-                background: 'rgba(255, 255, 255, 0.1)',
-                border: '1px solid #00FFFF',
-                borderRadius: '50%',
-                color: '#00FFFF',
-                fontSize: '16px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 200ms ease'
+                filter: 'brightness(0) saturate(100%) invert(19%) sepia(95%) saturate(1646%) hue-rotate(300deg) brightness(102%) contrast(98%)'
               }}
-              onMouseEnter={(e) => {
-                e.target.style.background = 'rgba(255, 255, 255, 0.2)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.background = 'rgba(255, 255, 255, 0.1)';
-              }}
-            >
-              ×
-            </button>
+            />
+          </button>
+        </div>
+      )}
 
-            {/* VENMO Button */}
-            <button
-              onClick={() => {
-                try { sfx.play('hover', 0.3); } catch {}
-                const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=3&note=${encodeURIComponent('Thanks for the music!')}`;
-                window.open(venmoUrl, '_blank');
-                setShowPaymentOptions(false);
-              }}
+      {/* Payment buttons popup for $5 */}
+      {showPaymentOptions5 && (
+        <div 
+          style={{
+            position: 'absolute',
+            bottom: '105px',
+            right: '60px',
+            zIndex: 15,
+            display: 'flex',
+            gap: '8px',
+            alignItems: 'center'
+          }}
+          onClick={(e) => {
+            // Close if clicking the container (outside buttons)
+            if (e.target === e.currentTarget) {
+              setShowPaymentOptions5(false);
+            }
+          }}
+        >
+          {/* Venmo Button for $5 */}
+          <button
+            onClick={() => {
+              try { sfx.play('audio/hover.mp3', 0.3); } catch {}
+              const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=5&note=${encodeURIComponent('Boost the Transmission')}`;
+              const webVenmoUrl = `https://venmo.com/chxndlerthealien?amount=5&note=${encodeURIComponent('Boost the Transmission')}`;
+              
+              window.open(venmoUrl, '_blank');
+              setTimeout(() => {
+                window.open(webVenmoUrl, '_blank');
+              }, 1000);
+              
+              setShowPaymentOptions5(false);
+            }}
+            style={{
+              padding: '0',
+              width: '40px',
+              height: '40px',
+              background: 'rgba(0, 255, 255, 0.1)',
+              border: '2px solid #00FFFF',
+              borderRadius: '50%',
+              color: '#00FFFF',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'all 300ms ease',
+              boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)',
+              textShadow: '0 0 8px #00FFFF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            onMouseEnter={(e) => {
+              try { sfx.play('audio/hover.mp3', 0.3); } catch {}
+              e.target.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.6)';
+              e.target.style.background = 'rgba(0, 255, 255, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';
+              e.target.style.background = 'rgba(0, 255, 255, 0.1)';
+            }}
+          >
+            <img 
+              src="/elements/venmo.png" 
+              alt="Venmo" 
               style={{
-                padding: '12px 20px',
-                background: 'transparent',
-                border: '2px solid #00FFFF',
-                borderRadius: '8px',
-                color: '#00FFFF',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                transition: 'all 300ms ease',
-                boxShadow: '0 0 20px rgba(0, 255, 255, 0.5)',
-                width: '100%',
-                textDecoration: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: '10px'
+                width: '38px',
+                height: '38px',
+                filter: 'brightness(1) invert(0)'
               }}
-              onMouseEnter={(e) => {
-                try { sfx.play('hover', 0.3); } catch {}
-                e.target.style.transform = 'scale(1.02)';
-                e.target.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.7)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.transform = 'scale(1)';
-                e.target.style.boxShadow = '0 0 20px rgba(0, 255, 255, 0.5)';
-              }}
-            >
-              VENMO
-            </button>
+            />
+          </button>
 
-            {/* CARD Button */}
-            <button
-              onClick={() => {
-                try { sfx.play('hover', 0.3); } catch {}
-                // Add card payment functionality here later
-                setShowPaymentOptions(false);
-              }}
+          {/* Credit Card Button for $5 */}
+          <button
+            onClick={() => {
+              try { sfx.play('audio/hover.mp3', 0.3); } catch {}
+              // Open Stripe payment page for $5
+              window.open('https://buy.stripe.com/3cIaEYbhn00JbVv4OP4gg0Q', '_blank');
+              setShowPaymentOptions5(false);
+            }}
+            style={{
+              padding: '0',
+              width: '50px',
+              height: '32px',
+              background: 'rgba(252, 84, 175, 0.1)',
+              border: '2px solid #FC54AF',
+              borderRadius: '6px',
+              color: '#FC54AF',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'all 300ms ease',
+              boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
+              textShadow: '0 0 8px #FC54AF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            onMouseEnter={(e) => {
+              try { sfx.play('audio/hover.mp3', 0.3); } catch {}
+              e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
+              e.target.style.background = 'rgba(252, 84, 175, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
+              e.target.style.background = 'rgba(252, 84, 175, 0.1)';
+            }}
+          >
+            <img 
+              src="/elements/credit-card.png" 
+              alt="Credit Card" 
               style={{
-                padding: '12px 20px',
-                background: 'transparent',
-                border: '2px solid #00FFFF',
-                borderRadius: '8px',
-                color: '#00FFFF',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                transition: 'all 300ms ease',
-                boxShadow: '0 0 20px rgba(0, 255, 255, 0.5)',
-                width: '100%',
-                textDecoration: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
+                width: '48px',
+                height: '30px',
+                filter: 'brightness(0) saturate(100%) invert(19%) sepia(95%) saturate(1646%) hue-rotate(300deg) brightness(102%) contrast(98%)'
               }}
-              onMouseEnter={(e) => {
-                try { sfx.play('hover', 0.3); } catch {}
-                e.target.style.transform = 'scale(1.02)';
-                e.target.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.7)';
+            />
+          </button>
+        </div>
+      )}
+
+      {/* Payment buttons popup for $10 */}
+      {showPaymentOptions10 && (
+        <div 
+          style={{
+            position: 'absolute',
+            bottom: '60px',
+            right: '60px',
+            zIndex: 15,
+            display: 'flex',
+            gap: '8px',
+            alignItems: 'center'
+          }}
+          onClick={(e) => {
+            // Close if clicking the container (outside buttons)
+            if (e.target === e.currentTarget) {
+              setShowPaymentOptions10(false);
+            }
+          }}
+        >
+          {/* Venmo Button for $10 */}
+          <button
+            onClick={() => {
+              try { sfx.play('audio/hover.mp3', 0.3); } catch {}
+              const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=10&note=${encodeURIComponent('Ignite the Heartverse')}`;
+              const webVenmoUrl = `https://venmo.com/chxndlerthealien?amount=10&note=${encodeURIComponent('Ignite the Heartverse')}`;
+              
+              window.open(venmoUrl, '_blank');
+              setTimeout(() => {
+                window.open(webVenmoUrl, '_blank');
+              }, 1000);
+              
+              setShowPaymentOptions10(false);
+            }}
+            style={{
+              padding: '0',
+              width: '40px',
+              height: '40px',
+              background: 'rgba(0, 255, 255, 0.1)',
+              border: '2px solid #00FFFF',
+              borderRadius: '50%',
+              color: '#00FFFF',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'all 300ms ease',
+              boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)',
+              textShadow: '0 0 8px #00FFFF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            onMouseEnter={(e) => {
+              try { sfx.play('audio/hover.mp3', 0.3); } catch {}
+              e.target.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.6)';
+              e.target.style.background = 'rgba(0, 255, 255, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';
+              e.target.style.background = 'rgba(0, 255, 255, 0.1)';
+            }}
+          >
+            <img 
+              src="/elements/venmo.png" 
+              alt="Venmo" 
+              style={{
+                width: '38px',
+                height: '38px',
+                filter: 'brightness(1) invert(0)'
               }}
-              onMouseLeave={(e) => {
-                e.target.style.transform = 'scale(1)';
-                e.target.style.boxShadow = '0 0 20px rgba(0, 255, 255, 0.5)';
+            />
+          </button>
+
+          {/* Credit Card Button for $10 */}
+          <button
+            onClick={() => {
+              try { sfx.play('audio/hover.mp3', 0.3); } catch {}
+              // Open Stripe payment page for $10
+              window.open('https://buy.stripe.com/4gM5kEdpv3cV9Nn6WX4gg0R', '_blank');
+              setShowPaymentOptions10(false);
+            }}
+            style={{
+              padding: '0',
+              width: '50px',
+              height: '32px',
+              background: 'rgba(252, 84, 175, 0.1)',
+              border: '2px solid #FC54AF',
+              borderRadius: '6px',
+              color: '#FC54AF',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'all 300ms ease',
+              boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
+              textShadow: '0 0 8px #FC54AF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            onMouseEnter={(e) => {
+              try { sfx.play('audio/hover.mp3', 0.3); } catch {}
+              e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
+              e.target.style.background = 'rgba(252, 84, 175, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
+              e.target.style.background = 'rgba(252, 84, 175, 0.1)';
+            }}
+          >
+            <img 
+              src="/elements/credit-card.png" 
+              alt="Credit Card" 
+              style={{
+                width: '48px',
+                height: '30px',
+                filter: 'brightness(0) saturate(100%) invert(19%) sepia(95%) saturate(1646%) hue-rotate(300deg) brightness(102%) contrast(98%)'
               }}
-            >
-              CARD
-            </button>
-          </div>
+            />
+          </button>
         </div>
       )}
     </div>

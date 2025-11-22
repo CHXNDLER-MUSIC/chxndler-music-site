@@ -14,6 +14,7 @@ type QuestStatus = {
   elementOfDay: boolean;
   journalEntry: boolean;
   inviteFriend: boolean;
+  inviteFriendConfirm: boolean;
   liveShow: boolean;
 };
 
@@ -23,6 +24,7 @@ function useQuestStatus() {
     elementOfDay: false,
     journalEntry: false,
     inviteFriend: false,
+    inviteFriendConfirm: false,
     liveShow: false
   });
   const [todaysElement, setTodaysElement] = useState({ name: "dreamer", color: "pink" });
@@ -33,12 +35,14 @@ function useQuestStatus() {
     const elementDone = localStorage.getItem(`quest_element_${today}`) === 'true';
     const journalDone = localStorage.getItem(`quest_journal_${today}`) === 'true' || hasAnsweredToday();
     const inviteDone = localStorage.getItem(`quest_invite_${today}`) === 'true';
+    const inviteConfirmDone = localStorage.getItem(`quest_invite_confirm_${today}`) === 'true';
     const liveshowDone = localStorage.getItem(`quest_liveshow_${today}`) === 'true';
     
     setQuestStatus({
       elementOfDay: elementDone,
       journalEntry: journalDone,
       inviteFriend: inviteDone,
+      inviteFriendConfirm: inviteConfirmDone,
       liveShow: liveshowDone
     });
     
@@ -125,33 +129,18 @@ export default function QuestList({ onBack, onOpenStore }: Props) {
     try { sfx.play('click', 0.8); } catch {}
     const message = "I thought of you. I think this world could feel like home for you too. https://chxndler.world/";
     
-    const handleShare = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch('/api/heart-coins/update', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ heartCoinsToAdd: 1 })
-        });
-        
-        if (response.ok) {
-          setQuestStatus(prev => ({ ...prev, inviteFriend: true }));
-          // Save to localStorage to persist across sessions for today
-          const today = new Date().toDateString();
-          localStorage.setItem(`quest_invite_${today}`, 'true');
-          showCelebration("💕 Love shared! You've planted a seed of connection. +1 HeartCoin earned.");
-        }
-      } catch (error) {
-        console.error('Failed to award heart coin:', error);
-      } finally {
-        setLoading(false);
-      }
+    const markMessageSent = () => {
+      setQuestStatus(prev => ({ ...prev, inviteFriend: true }));
+      // Save to localStorage to persist across sessions for today
+      const today = new Date().toDateString();
+      localStorage.setItem(`quest_invite_${today}`, 'true');
+      showCelebration("📱 Message sent! Now confirm to complete the quest and earn your HeartCoin.");
     };
     
     if (navigator.share) {
       try {
         await navigator.share({ text: message });
-        await handleShare();
+        markMessageSent();
       } catch (error) {
         console.error('Share failed:', error);
       }
@@ -160,12 +149,39 @@ export default function QuestList({ onBack, onOpenStore }: Props) {
       try {
         await navigator.clipboard.writeText(message);
         alert("Message copied to clipboard!");
-        await handleShare();
+        markMessageSent();
       } catch {
         // Final fallback - show message in alert
         alert(message);
-        await handleShare();
+        markMessageSent();
       }
+    }
+  };
+
+  const handleConfirmInvite = async () => {
+    if (questStatus.inviteFriendConfirm || loading) return;
+    
+    try { sfx.play('click', 0.8); } catch {}
+    setLoading(true);
+    
+    try {
+      const response = await fetch('/api/heart-coins/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ heartCoinsToAdd: 1 })
+      });
+      
+      if (response.ok) {
+        setQuestStatus(prev => ({ ...prev, inviteFriendConfirm: true }));
+        // Save to localStorage to persist across sessions for today
+        const today = new Date().toDateString();
+        localStorage.setItem(`quest_invite_confirm_${today}`, 'true');
+        showCelebration("💕 Love shared! You've planted a seed of connection. +1 HeartCoin earned.");
+      }
+    } catch (error) {
+      console.error('Failed to award heart coin:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -470,35 +486,63 @@ export default function QuestList({ onBack, onOpenStore }: Props) {
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={handleInviteFriend}
-                disabled={questStatus.inviteFriend || loading}
+                onClick={
+                  questStatus.inviteFriendConfirm 
+                    ? undefined 
+                    : questStatus.inviteFriend 
+                      ? handleConfirmInvite 
+                      : handleInviteFriend
+                }
+                disabled={questStatus.inviteFriendConfirm || loading}
                 className={`px-4 py-2 rounded text-sm transition-all duration-200 ${
-                  questStatus.inviteFriend
+                  questStatus.inviteFriendConfirm
                     ? 'bg-green-600/30 border border-green-500/50 text-green-300 cursor-not-allowed'
-                    : 'bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300'
+                    : questStatus.inviteFriend
+                      ? 'bg-yellow-600/30 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-300'
+                      : 'bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300'
                 }`}
                 style={{
-                  boxShadow: questStatus.inviteFriend
+                  boxShadow: questStatus.inviteFriendConfirm
                     ? '0 0 10px rgba(0,255,0,0.3)'
-                    : '0 0 10px rgba(252,84,175,0.3)',
-                  textShadow: questStatus.inviteFriend
+                    : questStatus.inviteFriend
+                      ? '0 0 10px rgba(255,215,0,0.3)'
+                      : '0 0 10px rgba(252,84,175,0.3)',
+                  textShadow: questStatus.inviteFriendConfirm
                     ? '0 0 4px rgba(0,255,0,0.6)'
-                    : '0 0 4px rgba(252,84,175,0.6)'
+                    : questStatus.inviteFriend
+                      ? '0 0 4px rgba(255,215,0,0.6)'
+                      : '0 0 4px rgba(252,84,175,0.6)'
                 }}
               >
-                {questStatus.inviteFriend ? '✓ COMPLETE' : 'INVITE A FRIEND'}
+                {questStatus.inviteFriendConfirm 
+                  ? '✓ COMPLETE' 
+                  : questStatus.inviteFriend 
+                    ? 'CONFIRM' 
+                    : 'INVITE A FRIEND'
+                }
               </button>
               <div 
                 className={`font-bold text-sm ${
-                  questStatus.inviteFriend ? 'text-green-400' : 'text-pink-400'
+                  questStatus.inviteFriendConfirm 
+                    ? 'text-green-400' 
+                    : questStatus.inviteFriend
+                      ? 'text-yellow-400'
+                      : 'text-pink-400'
                 }`}
                 style={{ 
-                  textShadow: questStatus.inviteFriend 
+                  textShadow: questStatus.inviteFriendConfirm 
                     ? '0 0 4px rgba(0,255,0,0.6)' 
-                    : '0 0 4px rgba(252,84,175,0.6)' 
+                    : questStatus.inviteFriend
+                      ? '0 0 4px rgba(255,215,0,0.6)'
+                      : '0 0 4px rgba(252,84,175,0.6)' 
                 }}
               >
-                {questStatus.inviteFriend ? '✓ Complete' : '+1 HeartCoin'}
+                {questStatus.inviteFriendConfirm 
+                  ? '✓ Complete' 
+                  : questStatus.inviteFriend
+                    ? 'Click to Confirm'
+                    : '+1 HeartCoin'
+                }
               </div>
             </div>
           </div>

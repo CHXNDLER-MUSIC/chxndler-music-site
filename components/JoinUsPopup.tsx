@@ -337,24 +337,64 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
           </>
         )}
 
-        {/* Dollar sign button */}
-        <button
-          type="button"
-          className="absolute top-4 left-16 w-10 h-10 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-600 hover:from-yellow-300 hover:to-yellow-500 text-black font-bold text-xl flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg hover:shadow-xl"
-          style={{
-            boxShadow: '0 0 15px rgba(255, 215, 0, 0.5)',
-            border: '2px solid rgba(255, 215, 0, 0.8)'
-          }}
-          onClick={() => {
-            setShowVenmoPopup(true);
-            try {
-              sfx.play('card-ding', 0.7);
-            } catch {}
-          }}
-          aria-label="Dollar action"
-        >
-          $5
-        </button>
+        {/* Simple $5 button with inline popup */}
+        <div className="absolute top-4 left-16">
+          <button
+            type="button"
+            className="w-10 h-10 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-600 hover:from-yellow-300 hover:to-yellow-500 text-black font-bold text-xl flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg hover:shadow-xl relative"
+            style={{
+              boxShadow: '0 0 15px rgba(255, 215, 0, 0.5)',
+              border: '2px solid rgba(255, 215, 0, 0.8)'
+            }}
+            onClick={() => {
+              setShowVenmoPopup(!showVenmoPopup);
+              try {
+                sfx.play('card-ding', 0.7);
+              } catch {}
+            }}
+            aria-label="Send $5 tip"
+          >
+            $5
+          </button>
+
+          {/* New simple popup */}
+          {showVenmoPopup && (
+            <div className="absolute right-12 top-0 bg-black/90 border-2 border-cyan-400 rounded-lg p-4 w-48 z-50"
+                 style={{
+                   boxShadow: '0 0 20px rgba(0, 255, 255, 0.5)',
+                   backdropFilter: 'blur(10px)'
+                 }}>
+              <div className="text-center space-y-3">
+                <p className="text-white text-sm font-semibold">Send $5 Tip</p>
+                <p className="text-cyan-400 text-xs">@chxndlerthealien</p>
+                
+                <button
+                  onClick={() => {
+                    try {
+                      const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=5&note=${encodeURIComponent('Thanks for the music!')}`;
+                      window.open(venmoUrl, '_blank');
+                      
+                      setTimeout(() => {
+                        const webUrl = `https://venmo.com/u/chxndlerthealien?txn=pay&amount=5&note=${encodeURIComponent('Thanks for the music!')}`;
+                        window.open(webUrl, '_blank');
+                      }, 1500);
+                      
+                      setShowVenmoPopup(false);
+                    } catch (error) {
+                      console.error('Venmo open error:', error);
+                    }
+                  }}
+                  className="w-full px-3 py-2 bg-cyan-500 text-black rounded font-semibold hover:bg-cyan-400 transition-colors"
+                >
+                  💙 VENMO
+                </button>
+              </div>
+              
+              {/* Arrow pointing left to button */}
+              <div className="absolute left-[-8px] top-4 w-0 h-0 border-t-[6px] border-b-[6px] border-r-[8px] border-transparent border-r-cyan-400"></div>
+            </div>
+          )}
+        </div>
       </div>
 
       <style jsx>{`
@@ -383,56 +423,5 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
       `}</style>
     </HeartversePopup>
 
-    {/* Venmo Web Integration Popup */}
-    {showVenmoPopup && (
-      <div 
-        className="fixed inset-0 z-[9999]"
-        aria-modal="true"
-        role="dialog"
-        aria-label="Venmo Payment Page"
-      >
-        <div
-          className="absolute inset-0 bg-black/90 backdrop-blur-md"
-          onClick={() => setShowVenmoPopup(false)}
-        />
-        <div 
-          className="absolute inset-0 flex items-center justify-center p-4 z-[10000]"
-        >
-          <div className="relative w-full max-w-4xl h-full max-h-[90vh] rounded-2xl backdrop-blur-md border-2 border-[#3D95CE]/60 bg-white/10 shadow-[0_0_26px_rgba(61,149,206,0.6)] overflow-hidden">
-            <div className="flex items-center justify-between p-4 bg-black/40 border-b border-[#3D95CE]/30">
-              <h2 className="text-lg font-bold text-white" style={{ color: '#3D95CE', textShadow: '0 0 10px rgba(61, 149, 206, 0.8)' }}>
-                Send $5 via Venmo
-              </h2>
-              <button
-                type="button"
-                aria-label="Close"
-                onClick={() => setShowVenmoPopup(false)}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#3D95CE] text-[#3D95CE] font-bold transition-all duration-200 hover:scale-110 hover:bg-[#3D95CE]/20"
-              >
-                ×
-              </button>
-            </div>
-            
-            <div className="relative h-full p-6 flex flex-col items-center justify-center gap-6">
-              <div className="text-center">
-                <p className="text-lg text-white/90 mb-2">Send $5 via Venmo</p>
-                <p className="text-sm text-white/70">@chxndlerthealien</p>
-              </div>
-              
-              <VenmoButton 
-                amount={5} 
-                note="Thanks for the music!" 
-                recipient="chxndlerthealien"
-                className="hover:scale-110 transition-transform duration-200"
-              />
-              
-              <p className="text-xs text-white/60 text-center max-w-sm">
-                Click to open Venmo app or web interface for quick payment
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    )}
   );
 }
