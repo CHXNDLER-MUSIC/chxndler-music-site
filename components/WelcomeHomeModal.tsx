@@ -122,8 +122,8 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
           className="welcome-hologram-container"
           style={{
             width: 'min(92vw, 700px)',
-            minHeight: '40vh',
-            padding: '10px 14px 14px 14px',
+            minHeight: 'auto',
+            padding: '10px 14px 16px 14px',
             borderRadius: 18,
             background: 'rgba(0,0,0,0.6)',
             border: '1px solid rgba(0,255,255,0.55)',
@@ -215,7 +215,7 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
           </div>
         )}
 
-        <div className="relative space-y-3">
+        <div className="relative space-y-1 -mb-2">
 
           {/* Email Login Section */}
           <form onSubmit={signInWithEmail} className="space-y-2">
@@ -246,7 +246,7 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
               }
             }}
             disabled={loading || email.length === 0}
-            className="w-full inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-medium transition disabled:opacity-50 mt-4"
+            className="w-full inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition disabled:opacity-50 mb-2"
             style={message ? {
               background: 'rgba(0,255,0,0.2)',
               border: '1px solid rgba(0,255,0,0.6)',

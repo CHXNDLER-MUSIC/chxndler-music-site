@@ -21,6 +21,10 @@ export default function WhatShouldWeCallYouModal() {
     setError(null);
     
     try {
+      // Play join-alien.mp3 sound
+      const audio = new Audio('/audio/join-alien.mp3');
+      audio.play().catch(e => console.log('Audio play failed:', e));
+      
       // Use the context method instead of direct Supabase calls
       await updateProfile({ name: name.trim() });
       
@@ -153,7 +157,7 @@ export default function WhatShouldWeCallYouModal() {
         />
 
         <p className="relative text-sm mb-6 text-center" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.6)' }}>
-          Choose your name in the Heartverse
+          Choose your ALIEN name
         </p>
 
         {error && (
@@ -196,7 +200,7 @@ export default function WhatShouldWeCallYouModal() {
                 : '0 0 15px rgba(0,255,255,0.4), 0 0 25px rgba(0,255,255,0.2)'
             }}
           >
-            {loading ? "SAVING..." : "ENTER THE HEARTVERSE"}
+            {loading ? "SAVING..." : "CONFIRM"}
           </button>
         </form>
         </div>

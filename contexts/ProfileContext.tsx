@@ -141,7 +141,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             .select(`
               id,
               badge_id,
-              awarded_at,
+              earned_at,
               badges (
                 id,
                 badge_name,

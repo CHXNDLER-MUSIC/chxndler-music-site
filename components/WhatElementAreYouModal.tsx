@@ -39,6 +39,10 @@ export default function WhatElementAreYouModal() {
     setError(null);
     
     try {
+      // Play join-alien.mp3 sound
+      const audio = new Audio('/audio/join-alien.mp3');
+      audio.play().catch(e => console.log('Audio play failed:', e));
+      
       // Use the new updateProfileNameAndElement method with pretty label
       await updateProfileNameAndElement(currentName, selectedElementData.label);
       
@@ -82,15 +86,15 @@ export default function WhatElementAreYouModal() {
         className="fixed inset-0 flex items-center justify-center"
         style={{
           zIndex: 2147483648,
-          marginTop: '-160px'
+          marginTop: '-220px'
         }}
       >
         <div
           className="onboarding-hologram-container"
           style={{
             width: 'min(92vw, 600px)',
-            minHeight: '40vh',
-            padding: '20px 24px 24px 24px',
+            minHeight: '15vh',
+            padding: '12px 16px 8px 16px',
             borderRadius: 18,
             background: 'rgba(0,0,0,0.6)',
             border: '1px solid rgba(0,255,255,0.55)',
@@ -135,11 +139,11 @@ export default function WhatElementAreYouModal() {
 
         {/* Header */}
         <div 
-          className="text-center mb-4"
+          className="text-center mb-2"
           style={{ 
             color: '#00FFFF', 
             textShadow: '0 0 8px rgba(0,255,255,0.6)', 
-            fontSize: '18px',
+            fontSize: '16px',
             fontWeight: 'bold'
           }}
         >
@@ -148,18 +152,18 @@ export default function WhatElementAreYouModal() {
         
         {/* Thin cyan neon line */}
         <div 
-          className="w-full h-px mb-6"
+          className="w-full h-px mb-2"
           style={{
             background: 'linear-gradient(90deg, transparent, rgba(0,255,255,0.8) 20%, rgba(0,255,255,1) 50%, rgba(0,255,255,0.8) 80%, transparent)',
             boxShadow: '0 0 4px rgba(0,255,255,0.6)'
           }}
         />
 
-        <p className="relative text-sm mb-2 text-center" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.6)' }}>
-          Choose your elemental affinity in the Heartverse
+        <p className="relative text-xs mb-1 text-center" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.6)' }}>
+          Choose your elemental affinity
         </p>
         
-        <p className="relative text-xs mb-6 text-center" style={{ color: '#FFFFFF', textShadow: '0 0 4px rgba(255,255,255,0.6)' }}>
+        <p className="relative text-xs mb-2 text-center" style={{ color: '#FFFFFF', textShadow: '0 0 4px rgba(255,255,255,0.6)' }}>
           You can change this later
         </p>
 
@@ -169,16 +173,26 @@ export default function WhatElementAreYouModal() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-2">
           {/* Element Grid */}
-          <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="grid grid-cols-2 gap-2 mb-1">
             {ELEMENTS.map((element) => (
               <button
                 key={element.key}
                 type="button"
-                onClick={() => setSelectedElement(element.key)}
+                onClick={() => {
+                  // Play change-channel.mp3 sound
+                  const audio = new Audio('/audio/change-channel.mp3');
+                  audio.play().catch(e => console.log('Audio play failed:', e));
+                  setSelectedElement(element.key);
+                }}
+                onMouseEnter={() => {
+                  // Play hover.mp3 sound on hover
+                  const audio = new Audio('/audio/hover.mp3');
+                  audio.play().catch(e => console.log('Hover audio play failed:', e));
+                }}
                 disabled={loading}
-                className="p-4 rounded-lg border transition-all text-left disabled:opacity-50"
+                className="p-2 rounded-lg border transition-all text-left disabled:opacity-50"
                 style={{
                   border: selectedElement === element.key 
                     ? `2px solid ${element.key === 'darkness' ? '#FFFFFF' : ELEMENT_COLORS[element.key]}` 
@@ -235,7 +249,7 @@ export default function WhatElementAreYouModal() {
           <button
             type="submit"
             disabled={loading || !selectedElement}
-            className="w-full inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-medium transition disabled:opacity-50"
+            className="w-full inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition disabled:opacity-50"
             style={{
               background: 'rgba(0,255,255,0.15)',
               border: '1px solid rgba(0,255,255,0.5)',

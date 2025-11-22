@@ -1,18 +1,34 @@
 import { NextResponse } from 'next/server';
-
-// For now, we'll use a simple in-memory store since there's no database setup
-// In a real implementation, this would use the existing user profile system
-let selectedElements: Record<string, string> = {};
+import { supabaseClient } from '@/lib/supabaseClient';
 
 export async function GET(request: Request) {
   try {
-    // In a real implementation, you'd get the user ID from auth
-    // For now, use a default user
-    const userId = 'default_user';
+    // Get the current user
+    const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
     
-    const selectedElement = selectedElements[userId] || null;
+    if (sessionError || !session?.user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
     
-    return NextResponse.json({ selected_element: selectedElement });
+    // Get user's profile from database
+    const { data: profile, error } = await supabaseClient
+      .from('profiles')
+      .select('element')
+      .eq('id', session.user.id)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error getting profile element:', error);
+      return NextResponse.json(
+        { error: 'Failed to get selected element' },
+        { status: 500 }
+      );
+    }
+    
+    return NextResponse.json({ selected_element: profile?.element || null });
   } catch (error) {
     console.error('Error getting selected element:', error);
     return NextResponse.json(
@@ -36,15 +52,39 @@ export async function POST(request: Request) {
       );
     }
     
-    // In a real implementation, you'd get the user ID from auth
-    // For now, use a default user
-    const userId = 'default_user';
+    // Get the current user
+    const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
     
-    selectedElements[userId] = selected_element;
+    if (sessionError || !session?.user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+    
+    // Update user's element in the profiles table
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .update({ 
+        element: selected_element,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', session.user.id)
+      .select('*')
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error updating profile element:', error);
+      return NextResponse.json(
+        { error: 'Failed to save selected element' },
+        { status: 500 }
+      );
+    }
     
     return NextResponse.json({ 
       success: true, 
-      selected_element 
+      selected_element,
+      profile: data
     });
   } catch (error) {
     console.error('Error saving selected element:', error);

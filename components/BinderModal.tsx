@@ -763,8 +763,8 @@ export default function BinderModal({ open, onClose }: Props) {
             </div>
           )}
 
-          {/* Card info positioned after filters */}
-          {selectedElement && (() => {
+          {/* Card info positioned after filters - only show when purchase state is idle */}
+          {selectedElement && purchaseState === 'idle' && (() => {
             const cards = getFilteredCards();
             const currentCard = cards[currentCardIndex];
             
@@ -815,6 +815,19 @@ export default function BinderModal({ open, onClose }: Props) {
                   ★ {currentCard.rarity.toUpperCase()} ★
                 </div>
                 
+                {/* 1-liner text */}
+                {getCardOneLiner(currentCard.name) && (
+                  <div 
+                    className="text-xs mb-2 italic leading-tight"
+                    style={{ 
+                      color: '#E6E6FA', 
+                      textShadow: '0 0 2px rgba(230,230,250,0.6)',
+                      fontSize: '8px'
+                    }}
+                  >
+                    {getCardOneLiner(currentCard.name)}
+                  </div>
+                )}
               </div>
             );
           })()}
@@ -830,7 +843,7 @@ export default function BinderModal({ open, onClose }: Props) {
 
             return (
               <>
-                <div className="flex items-center gap-0 mb-1 -mt-20">
+                <div className="flex items-center gap-0 mb-1 -mt-32">
                 {/* Left navigation arrow */}
                 {cards.length > 1 && (
                   <button
@@ -932,364 +945,7 @@ export default function BinderModal({ open, onClose }: Props) {
                           </div>
                         )}
                         
-                        {/* 1-liner text */}
-                        {getCardOneLiner(currentCard.name) && (
-                          <div 
-                            className="text-xs mb-2 italic leading-tight"
-                            style={{ 
-                              color: '#E6E6FA', 
-                              textShadow: '0 0 2px rgba(230,230,250,0.6)',
-                              fontSize: '8px'
-                            }}
-                          >
-                            {getCardOneLiner(currentCard.name)}
-                          </div>
-                        )}
                         
-                        {/* State A: Default view - Show HeartCoin balance */}
-                        {purchaseState === 'idle' && (
-                          <div className="mt-2">
-                            {/* HeartCoin balance */}
-                            <div 
-                              className="text-center mb-2 text-xs"
-                              style={{ 
-                                color: '#FFB6C1', 
-                                textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                              }}
-                            >
-                              You have {profile?.heartcoin_balance || 0} HeartCoins
-                            </div>
-                            
-                            {/* Purchase buttons */}
-                            <div className="flex justify-center gap-2">
-                              {/* Digital option */}
-                              <button
-                                onClick={() => {
-                                  try { sfx.play('click', 0.6); } catch {}
-                                  handlePurchaseClick('digital');
-                                }}
-                                className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
-                                style={{
-                                  boxShadow: '0 0 8px rgba(255,105,180,0.3)',
-                                }}
-                              >
-                                <img
-                                  src="/elements/heart-coin.png"
-                                  alt="Heart Coin"
-                                  className="w-3 h-3"
-                                  draggable={false}
-                                />
-                                <span 
-                                  className="text-yellow-300 font-bold text-xs"
-                                  style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
-                                >
-                                  {digitalCost}
-                                </span>
-                                <span 
-                                  className="text-pink-200 font-medium text-xs"
-                                  style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
-                                >
-                                  DIGITAL
-                                </span>
-                              </button>
-                              
-                              {/* Physical option */}
-                              <button
-                                onClick={() => {
-                                  try { sfx.play('click', 0.6); } catch {}
-                                  handlePurchaseClick('physical');
-                                }}
-                                className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
-                                style={{
-                                  boxShadow: '0 0 8px rgba(255,105,180,0.3)',
-                                }}
-                              >
-                                <img
-                                  src="/elements/heart-coin.png"
-                                  alt="Heart Coin"
-                                  className="w-3 h-3"
-                                  draggable={false}
-                                />
-                                <span 
-                                  className="text-yellow-300 font-bold text-xs"
-                                  style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
-                                >
-                                  {physicalCost}
-                                </span>
-                                <span 
-                                  className="text-pink-200 font-medium text-xs"
-                                  style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
-                                >
-                                  PHYSICAL
-                                </span>
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* State B: Not enough HeartCoins */}
-                        {purchaseState === 'insufficient' && selectedPurchaseType && (
-                          <div className="mt-2">
-                            <div 
-                              className="text-center mb-2 text-xs p-2 rounded"
-                              style={{ 
-                                backgroundColor: 'rgba(239,68,68,0.1)',
-                                border: '1px solid rgba(239,68,68,0.3)',
-                                color: '#FCA5A5'
-                              }}
-                            >
-                              <div className="mb-1">You have {profile?.heartcoin_balance || 0} HeartCoins.</div>
-                              <div className="mb-1">{selectedPurchaseType === 'digital' ? 'Digital' : 'Physical'} costs {getCost(selectedPurchaseType)} HeartCoins.</div>
-                              <div>You need {getCost(selectedPurchaseType) - (profile?.heartcoin_balance || 0)} more HeartCoins.</div>
-                            </div>
-                            
-                            {/* Disabled button and earn more link */}
-                            <div className="flex flex-col gap-2 items-center">
-                              <button
-                                disabled
-                                className="flex items-center gap-1 px-2 py-1 rounded border border-red-400/40 bg-red-500/10 text-xs opacity-60 cursor-not-allowed"
-                              >
-                                <span className="text-red-300 text-xs">NOT ENOUGH HEARTCOINS</span>
-                              </button>
-                              <button
-                                onClick={openHeartCoinPopout}
-                                className="text-xs text-blue-300 hover:text-blue-200 underline"
-                                style={{ textShadow: '0 0 4px rgba(147,197,253,0.6)' }}
-                              >
-                                Earn more HeartCoins
-                              </button>
-                              <button
-                                onClick={resetPurchaseState}
-                                className="text-xs text-pink-300 hover:text-pink-200"
-                                style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* State C: Confirm digital purchase */}
-                        {purchaseState === 'confirm-digital' && selectedPurchaseType === 'digital' && (
-                          <div className="mt-2">
-                            <div 
-                              className="text-center mb-3 text-xs p-2 rounded"
-                              style={{ 
-                                backgroundColor: 'rgba(34,197,94,0.1)',
-                                border: '1px solid rgba(34,197,94,0.3)',
-                                color: '#86EFAC'
-                              }}
-                            >
-                              <div className="mb-1">Confirm purchase of {currentCard.name} {selectedPurchaseType.toUpperCase()}.</div>
-                              <div className="mb-1">This costs {getCost(selectedPurchaseType)} HeartCoins.</div>
-                              <div>You have {profile?.heartcoin_balance || 0} HeartCoins and will have {(profile?.heartcoin_balance || 0) - getCost(selectedPurchaseType)} after this purchase.</div>
-                            </div>
-                            
-                            <div className="flex justify-center gap-2">
-                              <button
-                                onClick={handleConfirmPurchase}
-                                className="px-3 py-1 rounded border border-green-400/60 bg-green-500/10 hover:bg-green-500/20 transition-all duration-200 text-xs text-green-300"
-                                style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)' }}
-                              >
-                                Confirm Purchase
-                              </button>
-                              <button
-                                onClick={resetPurchaseState}
-                                className="px-3 py-1 rounded border border-pink-400/60 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs text-pink-300"
-                                style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* State D: Physical shipping form */}
-                        {purchaseState === 'physical-form' && selectedPurchaseType === 'physical' && (
-                          <div className="mt-2">
-                            {/* Header */}
-                            <div 
-                              className="text-center mb-2 text-xs font-bold"
-                              style={{ 
-                                color: '#FF69B4',
-                                textShadow: '0 0 4px rgba(255,105,180,0.6)'
-                              }}
-                            >
-                              Ship a physical {currentCard.name} card
-                            </div>
-                            <div 
-                              className="text-center mb-3 text-xs"
-                              style={{ 
-                                color: '#FFB6C1',
-                                textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                              }}
-                            >
-                              Enter your mailing details so we can send your card.
-                            </div>
-
-                            {/* Error display */}
-                            {Object.keys(shippingErrors).length > 0 && (
-                              <div 
-                                className="text-center mb-2 text-xs p-2 rounded"
-                                style={{ 
-                                  backgroundColor: 'rgba(239,68,68,0.1)',
-                                  border: '1px solid rgba(239,68,68,0.3)',
-                                  color: '#FCA5A5'
-                                }}
-                              >
-                                Please fill in all required fields
-                              </div>
-                            )}
-
-                            {/* Shipping form */}
-                            <div className="grid grid-cols-2 gap-2 mb-3">
-                              {/* Full name - spans 2 columns */}
-                              <div className="col-span-2">
-                                <input
-                                  type="text"
-                                  placeholder="Full name *"
-                                  value={shippingForm.fullName}
-                                  onChange={(e) => updateShippingField('fullName', e.target.value)}
-                                  className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
-                                    shippingErrors.fullName ? 'border-red-400/60' : 'border-pink-400/40'
-                                  }`}
-                                  style={{ 
-                                    boxShadow: `0 0 8px ${shippingErrors.fullName ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
-                                    textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                                  }}
-                                />
-                              </div>
-
-                              {/* Street address - spans 2 columns */}
-                              <div className="col-span-2">
-                                <input
-                                  type="text"
-                                  placeholder="Street address *"
-                                  value={shippingForm.streetAddress}
-                                  onChange={(e) => updateShippingField('streetAddress', e.target.value)}
-                                  className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
-                                    shippingErrors.streetAddress ? 'border-red-400/60' : 'border-pink-400/40'
-                                  }`}
-                                  style={{ 
-                                    boxShadow: `0 0 8px ${shippingErrors.streetAddress ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
-                                    textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                                  }}
-                                />
-                              </div>
-
-                              {/* Apartment/unit - spans 2 columns */}
-                              <div className="col-span-2">
-                                <input
-                                  type="text"
-                                  placeholder="Apartment or unit (optional)"
-                                  value={shippingForm.apartmentUnit}
-                                  onChange={(e) => updateShippingField('apartmentUnit', e.target.value)}
-                                  className="w-full px-2 py-1 rounded border border-pink-400/40 bg-black/40 text-pink-200 text-xs placeholder-pink-300/60"
-                                  style={{ 
-                                    boxShadow: '0 0 8px rgba(255,105,180,0.3)',
-                                    textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                                  }}
-                                />
-                              </div>
-
-                              {/* City */}
-                              <div>
-                                <input
-                                  type="text"
-                                  placeholder="City *"
-                                  value={shippingForm.city}
-                                  onChange={(e) => updateShippingField('city', e.target.value)}
-                                  className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
-                                    shippingErrors.city ? 'border-red-400/60' : 'border-pink-400/40'
-                                  }`}
-                                  style={{ 
-                                    boxShadow: `0 0 8px ${shippingErrors.city ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
-                                    textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                                  }}
-                                />
-                              </div>
-
-                              {/* State */}
-                              <div>
-                                <input
-                                  type="text"
-                                  placeholder="State *"
-                                  value={shippingForm.state}
-                                  onChange={(e) => updateShippingField('state', e.target.value)}
-                                  className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
-                                    shippingErrors.state ? 'border-red-400/60' : 'border-pink-400/40'
-                                  }`}
-                                  style={{ 
-                                    boxShadow: `0 0 8px ${shippingErrors.state ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
-                                    textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                                  }}
-                                />
-                              </div>
-
-                              {/* ZIP code - spans 2 columns */}
-                              <div className="col-span-2">
-                                <input
-                                  type="text"
-                                  placeholder="ZIP code *"
-                                  value={shippingForm.zipCode}
-                                  onChange={(e) => updateShippingField('zipCode', e.target.value)}
-                                  className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
-                                    shippingErrors.zipCode ? 'border-red-400/60' : 'border-pink-400/40'
-                                  }`}
-                                  style={{ 
-                                    boxShadow: `0 0 8px ${shippingErrors.zipCode ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
-                                    textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                                  }}
-                                />
-                              </div>
-                            </div>
-                            
-                            {/* Action buttons */}
-                            <div className="flex justify-center gap-2">
-                              <button
-                                onClick={handlePhysicalPurchase}
-                                className="px-3 py-1 rounded border border-green-400/60 bg-green-500/10 hover:bg-green-500/20 transition-all duration-200 text-xs text-green-300"
-                                style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)' }}
-                              >
-                                Confirm Physical Purchase
-                              </button>
-                              <button
-                                onClick={resetPurchaseState}
-                                className="px-3 py-1 rounded border border-pink-400/60 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs text-pink-300"
-                                style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* State E: Purchase successful */}
-                        {purchaseState === 'success' && selectedPurchaseType && (
-                          <div className="mt-2">
-                            <div 
-                              className="text-center text-xs p-2 rounded"
-                              style={{ 
-                                backgroundColor: 'rgba(34,197,94,0.1)',
-                                border: '1px solid rgba(34,197,94,0.3)',
-                                color: '#86EFAC'
-                              }}
-                            >
-                              {selectedPurchaseType === 'physical' ? (
-                                <>
-                                  <div className="mb-1">✓ Order received</div>
-                                  <div className="mb-1">Your {currentCard.name} physical card is on its way to you.</div>
-                                  <div className="text-xs">You can update your address later by contacting support if needed.</div>
-                                </>
-                              ) : (
-                                <>
-                                  <div className="mb-1">✓ Purchased!</div>
-                                  <div>{currentCard.name} has been added to your binder.</div>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        )}
                       </div>
                     );
                   })()
@@ -1330,7 +986,7 @@ export default function BinderModal({ open, onClose }: Props) {
                     Please log in to view your card collection.
                   </div>
                 ) : (
-                  <div className="grid gap-3 grid-cols-5">
+                  <div className="grid gap-2 grid-cols-5">
                     {Array.from({ length: 5 }, (_, index) => {
                       // Check if there's a collected card for this slot
                       const collectedCard = profile.cards?.[index];
@@ -1339,7 +995,7 @@ export default function BinderModal({ open, onClose }: Props) {
                       return (
                         <div
                           key={`slot-${index}`}
-                          className={`rounded-2xl border p-3 backdrop-blur-sm transition-all duration-300 ${
+                          className={`rounded-lg border p-2 backdrop-blur-sm transition-all duration-300 ${
                             hasCard 
                               ? 'border-white/10 bg-black/40 cursor-pointer hover:scale-105' 
                               : 'border-white/5 bg-black/20 cursor-default'
@@ -1368,54 +1024,54 @@ export default function BinderModal({ open, onClose }: Props) {
                                 <img
                                   src={getCardImage(collectedCard.cards.card_name, collectedCard.cards.element)}
                                   alt={collectedCard.cards.card_name}
-                                  className="w-full h-24 object-cover rounded-lg mb-2"
+                                  className="w-full h-16 object-cover rounded mb-1"
                                   draggable={false}
                                 />
-                                <div className="absolute top-1 right-1 w-6 h-6 bg-green-500/80 rounded-full flex items-center justify-center">
-                                  <svg viewBox="0 0 24 24" width="14" height="14" fill="white">
+                                <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-green-500/80 rounded-full flex items-center justify-center">
+                                  <svg viewBox="0 0 24 24" width="10" height="10" fill="white">
                                     <path d="M20 6L9 17l-5-5"/>
                                   </svg>
                                 </div>
                               </>
                             ) : (
-                              <div className="w-full h-24 bg-gradient-to-br from-pink-500/10 to-purple-500/10 rounded-lg mb-2 border-2 border-dashed border-pink-400/30 flex items-center justify-center">
+                              <div className="w-full h-16 bg-gradient-to-br from-pink-500/10 to-purple-500/10 rounded mb-1 border-2 border-dashed border-pink-400/30 flex items-center justify-center">
                                 <div 
                                   className="text-xs font-bold text-center"
                                   style={{ 
                                     color: '#FFB6C1', 
-                                    textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                                    textShadow: '0 0 4px rgba(255,182,193,0.6)',
+                                    fontSize: '8px'
                                   }}
                                 >
-                                  EMPTY SLOT
+                                  EMPTY
                                 </div>
                               </div>
                             )}
                           </div>
                           {hasCard && collectedCard?.cards ? (
                             <>
-                              <p className="text-[10px] uppercase tracking-wide opacity-60" style={{ color: getElementColor(collectedCard.cards.element) }}>
-                                {collectedCard.cards.rarity}
-                              </p>
-                              <p className="text-sm font-semibold leading-tight" style={{ color: '#FF69B4' }}>
+                              <p className="text-[10px] font-semibold leading-tight" style={{ color: '#FF69B4' }}>
                                 {collectedCard.cards.card_name}
                               </p>
-                              <p className="mt-1 text-[11px] opacity-70" style={{ color: '#FFB6C1' }}>
-                                Element: {collectedCard.cards.element}
+                              <p className="text-[8px] opacity-70 flex justify-between items-center" style={{ color: '#FFB6C1' }}>
+                                <span>{collectedCard.cards.element}</span>
+                                <span className="uppercase tracking-wide opacity-60" style={{ color: getElementColor(collectedCard.cards.element) }}>
+                                  {collectedCard.cards.rarity}
+                                </span>
                               </p>
-                              <p className="mt-1 text-[10px] opacity-50" style={{ color: '#FFB6C1' }}>
-                                Acquired {new Date(collectedCard.acquired_at).toLocaleDateString()}
-                              </p>
+                              {getCardOneLiner(collectedCard.cards.card_name) && (
+                                <p className="text-[7px] italic opacity-60 leading-tight mt-0.5" style={{ color: '#E6E6FA' }}>
+                                  {getCardOneLiner(collectedCard.cards.card_name)}
+                                </p>
+                              )}
                             </>
                           ) : (
                             <>
-                              <p className="text-[10px] uppercase tracking-wide opacity-40" style={{ color: '#FFB6C1' }}>
+                              <p className="text-[8px] uppercase tracking-wide opacity-40" style={{ color: '#FFB6C1' }}>
                                 Slot {index + 1}
                               </p>
-                              <p className="text-sm font-semibold leading-tight opacity-40" style={{ color: '#FF69B4' }}>
+                              <p className="text-[10px] font-semibold leading-tight opacity-40" style={{ color: '#FF69B4' }}>
                                 No Card
-                              </p>
-                              <p className="mt-1 text-[11px] opacity-30" style={{ color: '#FFB6C1' }}>
-                                Collect cards to fill this slot
                               </p>
                             </>
                           )}
@@ -1497,6 +1153,365 @@ export default function BinderModal({ open, onClose }: Props) {
               </>
             )}
           </div>
+          
+          {/* Purchase Flow - positioned at bottom of popup */}
+          {selectedElement && (() => {
+            const cards = getFilteredCards();
+            const currentCard = cards[currentCardIndex];
+            
+            if (!currentCard) {
+              return null;
+            }
+
+            return (
+              <div className="mt-2">
+                {/* State A: Default view - Show HeartCoin balance */}
+                {purchaseState === 'idle' && (
+                  <div className="mt-2">
+                    {/* HeartCoin balance */}
+                    <div 
+                      className="text-center mb-2 text-xs"
+                      style={{ 
+                        color: '#FFB6C1', 
+                        textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                      }}
+                    >
+                      You have {profile?.heartcoin_balance || 0} HeartCoins
+                    </div>
+                    
+                    {/* Purchase buttons */}
+                    <div className="flex justify-center gap-2">
+                      {/* Digital option */}
+                      <button
+                        onClick={() => {
+                          try { sfx.play('click', 0.6); } catch {}
+                          handlePurchaseClick('digital');
+                        }}
+                        className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
+                        style={{
+                          boxShadow: '0 0 8px rgba(255,105,180,0.3)',
+                        }}
+                      >
+                        <img
+                          src="/elements/heart-coin.png"
+                          alt="Heart Coin"
+                          className="w-3 h-3"
+                          draggable={false}
+                        />
+                        <span 
+                          className="text-yellow-300 font-bold text-xs"
+                          style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
+                        >
+                          {digitalCost}
+                        </span>
+                        <span 
+                          className="text-pink-200 font-medium text-xs"
+                          style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                        >
+                          DIGITAL
+                        </span>
+                      </button>
+                      
+                      {/* Physical option */}
+                      <button
+                        onClick={() => {
+                          try { sfx.play('click', 0.6); } catch {}
+                          handlePurchaseClick('physical');
+                        }}
+                        className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
+                        style={{
+                          boxShadow: '0 0 8px rgba(255,105,180,0.3)',
+                        }}
+                      >
+                        <img
+                          src="/elements/heart-coin.png"
+                          alt="Heart Coin"
+                          className="w-3 h-3"
+                          draggable={false}
+                        />
+                        <span 
+                          className="text-yellow-300 font-bold text-xs"
+                          style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
+                        >
+                          {physicalCost}
+                        </span>
+                        <span 
+                          className="text-pink-200 font-medium text-xs"
+                          style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                        >
+                          PHYSICAL
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* State B: Not enough HeartCoins */}
+                {purchaseState === 'insufficient' && selectedPurchaseType && (
+                  <div className="mt-2">
+                    <div 
+                      className="text-center mb-2 text-xs p-2 rounded"
+                      style={{ 
+                        backgroundColor: 'rgba(239,68,68,0.1)',
+                        border: '1px solid rgba(239,68,68,0.3)',
+                        color: '#FCA5A5'
+                      }}
+                    >
+                      <div className="mb-1">You have {profile?.heartcoin_balance || 0} HeartCoins.</div>
+                      <div className="mb-1">{selectedPurchaseType === 'digital' ? 'Digital' : 'Physical'} costs {getCost(selectedPurchaseType)} HeartCoins.</div>
+                      <div>You need {getCost(selectedPurchaseType) - (profile?.heartcoin_balance || 0)} more HeartCoins.</div>
+                    </div>
+                    
+                    {/* Disabled button and earn more link */}
+                    <div className="flex flex-col gap-2 items-center">
+                      <button
+                        disabled
+                        className="flex items-center gap-1 px-2 py-1 rounded border border-red-400/40 bg-red-500/10 text-xs opacity-60 cursor-not-allowed"
+                      >
+                        <span className="text-red-300 text-xs">NOT ENOUGH HEARTCOINS</span>
+                      </button>
+                      <button
+                        onClick={openHeartCoinPopout}
+                        className="text-xs text-blue-300 hover:text-blue-200 underline"
+                        style={{ textShadow: '0 0 4px rgba(147,197,253,0.6)' }}
+                      >
+                        Earn more HeartCoins
+                      </button>
+                      <button
+                        onClick={resetPurchaseState}
+                        className="text-xs text-pink-300 hover:text-pink-200"
+                        style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* State C: Confirm digital purchase */}
+                {purchaseState === 'confirm-digital' && selectedPurchaseType === 'digital' && (
+                  <div className="mt-2">
+                    <div 
+                      className="text-center mb-3 text-xs p-2 rounded"
+                      style={{ 
+                        backgroundColor: 'rgba(34,197,94,0.1)',
+                        border: '1px solid rgba(34,197,94,0.3)',
+                        color: '#86EFAC'
+                      }}
+                    >
+                      <div className="mb-1">Confirm purchase of {currentCard.name} {selectedPurchaseType.toUpperCase()}.</div>
+                      <div className="mb-1">This costs {getCost(selectedPurchaseType)} HeartCoins.</div>
+                      <div>You have {profile?.heartcoin_balance || 0} HeartCoins and will have {(profile?.heartcoin_balance || 0) - getCost(selectedPurchaseType)} after this purchase.</div>
+                    </div>
+                    
+                    <div className="flex justify-center gap-2">
+                      <button
+                        onClick={handleConfirmPurchase}
+                        className="px-3 py-1 rounded border border-green-400/60 bg-green-500/10 hover:bg-green-500/20 transition-all duration-200 text-xs text-green-300"
+                        style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)' }}
+                      >
+                        Confirm Purchase
+                      </button>
+                      <button
+                        onClick={resetPurchaseState}
+                        className="px-3 py-1 rounded border border-pink-400/60 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs text-pink-300"
+                        style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* State D: Physical shipping form */}
+                {purchaseState === 'physical-form' && selectedPurchaseType === 'physical' && (
+                  <div className="mt-2">
+                    {/* Header */}
+                    <div 
+                      className="text-center mb-2 text-xs font-bold"
+                      style={{ 
+                        color: '#FF69B4',
+                        textShadow: '0 0 4px rgba(255,105,180,0.6)'
+                      }}
+                    >
+                      Ship a physical {currentCard.name} card
+                    </div>
+                    <div 
+                      className="text-center mb-3 text-xs"
+                      style={{ 
+                        color: '#FFB6C1',
+                        textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                      }}
+                    >
+                      Enter your mailing details so we can send your card.
+                    </div>
+
+                    {/* Error display */}
+                    {Object.keys(shippingErrors).length > 0 && (
+                      <div 
+                        className="text-center mb-2 text-xs p-2 rounded"
+                        style={{ 
+                          backgroundColor: 'rgba(239,68,68,0.1)',
+                          border: '1px solid rgba(239,68,68,0.3)',
+                          color: '#FCA5A5'
+                        }}
+                      >
+                        Please fill in all required fields
+                      </div>
+                    )}
+
+                    {/* Shipping form */}
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      {/* Full name - spans 2 columns */}
+                      <div className="col-span-2">
+                        <input
+                          type="text"
+                          placeholder="Full name *"
+                          value={shippingForm.fullName}
+                          onChange={(e) => updateShippingField('fullName', e.target.value)}
+                          className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
+                            shippingErrors.fullName ? 'border-red-400/60' : 'border-pink-400/40'
+                          }`}
+                          style={{ 
+                            boxShadow: `0 0 8px ${shippingErrors.fullName ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
+                            textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                          }}
+                        />
+                      </div>
+
+                      {/* Street address - spans 2 columns */}
+                      <div className="col-span-2">
+                        <input
+                          type="text"
+                          placeholder="Street address *"
+                          value={shippingForm.streetAddress}
+                          onChange={(e) => updateShippingField('streetAddress', e.target.value)}
+                          className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
+                            shippingErrors.streetAddress ? 'border-red-400/60' : 'border-pink-400/40'
+                          }`}
+                          style={{ 
+                            boxShadow: `0 0 8px ${shippingErrors.streetAddress ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
+                            textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                          }}
+                        />
+                      </div>
+
+                      {/* Apartment/unit - spans 2 columns */}
+                      <div className="col-span-2">
+                        <input
+                          type="text"
+                          placeholder="Apartment or unit (optional)"
+                          value={shippingForm.apartmentUnit}
+                          onChange={(e) => updateShippingField('apartmentUnit', e.target.value)}
+                          className="w-full px-2 py-1 rounded border border-pink-400/40 bg-black/40 text-pink-200 text-xs placeholder-pink-300/60"
+                          style={{ 
+                            boxShadow: '0 0 8px rgba(255,105,180,0.3)',
+                            textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                          }}
+                        />
+                      </div>
+
+                      {/* City */}
+                      <div>
+                        <input
+                          type="text"
+                          placeholder="City *"
+                          value={shippingForm.city}
+                          onChange={(e) => updateShippingField('city', e.target.value)}
+                          className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
+                            shippingErrors.city ? 'border-red-400/60' : 'border-pink-400/40'
+                          }`}
+                          style={{ 
+                            boxShadow: `0 0 8px ${shippingErrors.city ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
+                            textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                          }}
+                        />
+                      </div>
+
+                      {/* State */}
+                      <div>
+                        <input
+                          type="text"
+                          placeholder="State *"
+                          value={shippingForm.state}
+                          onChange={(e) => updateShippingField('state', e.target.value)}
+                          className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
+                            shippingErrors.state ? 'border-red-400/60' : 'border-pink-400/40'
+                          }`}
+                          style={{ 
+                            boxShadow: `0 0 8px ${shippingErrors.state ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
+                            textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                          }}
+                        />
+                      </div>
+
+                      {/* ZIP code - spans 2 columns */}
+                      <div className="col-span-2">
+                        <input
+                          type="text"
+                          placeholder="ZIP code *"
+                          value={shippingForm.zipCode}
+                          onChange={(e) => updateShippingField('zipCode', e.target.value)}
+                          className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
+                            shippingErrors.zipCode ? 'border-red-400/60' : 'border-pink-400/40'
+                          }`}
+                          style={{ 
+                            boxShadow: `0 0 8px ${shippingErrors.zipCode ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
+                            textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                          }}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Action buttons */}
+                    <div className="flex justify-center gap-2">
+                      <button
+                        onClick={handlePhysicalPurchase}
+                        className="px-3 py-1 rounded border border-green-400/60 bg-green-500/10 hover:bg-green-500/20 transition-all duration-200 text-xs text-green-300"
+                        style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)' }}
+                      >
+                        Confirm Physical Purchase
+                      </button>
+                      <button
+                        onClick={resetPurchaseState}
+                        className="px-3 py-1 rounded border border-pink-400/60 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs text-pink-300"
+                        style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* State E: Purchase successful */}
+                {purchaseState === 'success' && selectedPurchaseType && (
+                  <div className="mt-2">
+                    <div 
+                      className="text-center text-xs p-2 rounded"
+                      style={{ 
+                        backgroundColor: 'rgba(34,197,94,0.1)',
+                        border: '1px solid rgba(34,197,94,0.3)',
+                        color: '#86EFAC'
+                      }}
+                    >
+                      {selectedPurchaseType === 'physical' ? (
+                        <>
+                          <div className="mb-1">✓ Order received</div>
+                          <div className="mb-1">Your {currentCard.name} physical card is on its way to you.</div>
+                          <div className="text-xs">You can update your address later by contacting support if needed.</div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="mb-1">✓ Purchased!</div>
+                          <div>{currentCard.name} has been added to your binder.</div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
 

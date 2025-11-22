@@ -127,7 +127,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       emoji: "💰",
       color: "#F59E0B",
       badges: [
-        { name: "First HeartCoin", unlocked: true },
+        { name: "First HeartCoin", unlocked: true, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/First%20HeartCoin.png?updatedAt=1763736238400" },
         { name: "Treasure Finder", description: "10 HC", progress: 50, current: 5, total: 10 },
         { name: "Heartflow", description: "50 HC", progress: 10, current: 5, total: 50 },
         { name: "Cosmic Prosperity", description: "100 HC", progress: 5, current: 5, total: 100 },
@@ -738,9 +738,9 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                     ← BACK TO BADGES
                   </button>
 
-                  {/* Smaller badge display */}
-                  <div className="flex justify-center mb-2">
-                    <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border border-white/30 flex items-center justify-center overflow-hidden">
+                  {/* Larger badge display */}
+                  <div className="flex flex-col items-center space-y-2">
+                    <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border border-white/30 flex items-center justify-center overflow-hidden">
                       {selectedBadge.icon_url ? (
                         <img
                           src={selectedBadge.icon_url}
@@ -762,11 +762,17 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                         </div>
                       )}
                     </div>
+                    
+                    {/* Badge name directly below PNG */}
+                    <h2 className="text-white font-bold text-sm text-center">
+                      {selectedBadge.name}
+                    </h2>
+                    
+                    {/* Status directly below badge name */}
+                    <div className={`text-xs ${isUnlocked(selectedBadge) ? 'text-green-400' : 'text-white/40'}`}>
+                      {isUnlocked(selectedBadge) ? '✅ UNLOCKED' : '🔒 LOCKED'}
+                    </div>
                   </div>
-                  
-                  <h2 className="text-white font-bold text-sm">
-                    {selectedBadge.name}
-                  </h2>
                   
                   {selectedBadge.description && (
                     <p className="text-white/70 text-xs px-2">
@@ -796,21 +802,6 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                         </span>
                       </div>
                       
-                      <div className={`text-xs ${isUnlocked(selectedBadge) ? 'text-green-400' : 'text-white/40'}`}>
-                        {isUnlocked(selectedBadge) ? '✅ Unlocked' : '🔒 Locked'}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {selectedBadge.unlocked && selectedBadge.progress === undefined && (
-                    <div className="text-green-400 text-xs">
-                      ✅ Unlocked
-                    </div>
-                  )}
-                  
-                  {!selectedBadge.unlocked && selectedBadge.progress === undefined && (
-                    <div className="text-white/40 text-xs">
-                      🔒 Locked
                     </div>
                   )}
                 </div>

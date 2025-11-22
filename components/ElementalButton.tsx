@@ -343,23 +343,26 @@ THE ELEMENTS OF THE HEARTVERSE
                     setOpen(false);
                     try { onOpenBlueDisplay?.(); } catch {}
                   }}
-                  className="w-full py-2 bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold rounded-lg transition-all duration-200 hover:scale-105"
+                  className="w-full py-2 bg-white/10 hover:bg-white/20 border-2 border-white/60 text-white font-bold rounded-lg transition-all duration-200 hover:scale-105"
                   style={{
-                    boxShadow: '0 0 20px rgba(255, 255, 255, 0.4), 0 0 40px rgba(255, 255, 255, 0.2)',
-                    textShadow: '0 0 8px rgba(255, 255, 255, 0.8)',
+                    boxShadow: '0 0 25px rgba(255, 255, 255, 0.8), 0 0 50px rgba(255, 255, 255, 0.5), 0 0 75px rgba(255, 255, 255, 0.3), inset 0 0 10px rgba(255, 255, 255, 0.2)',
+                    textShadow: '0 0 12px rgba(255, 255, 255, 1), 0 0 20px rgba(255, 255, 255, 0.8)',
                     fontSize: '12px',
                     marginBottom: '0px'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.boxShadow = '0 0 30px rgba(255, 255, 255, 0.7), 0 0 50px rgba(255, 255, 255, 0.4)';
-                    e.currentTarget.style.textShadow = '0 0 12px rgba(255, 255, 255, 1), 0 0 20px rgba(255, 255, 255, 0.8)';
+                    // Play hover.mp3 sound on ALIGN button hover
+                    const audio = new Audio('/audio/hover.mp3');
+                    audio.play().catch(e => console.log('Hover audio play failed:', e));
+                    e.currentTarget.style.boxShadow = '0 0 35px rgba(255, 255, 255, 1), 0 0 70px rgba(255, 255, 255, 0.7), 0 0 105px rgba(255, 255, 255, 0.4), inset 0 0 15px rgba(255, 255, 255, 0.3)';
+                    e.currentTarget.style.textShadow = '0 0 15px rgba(255, 255, 255, 1), 0 0 25px rgba(255, 255, 255, 0.9), 0 0 35px rgba(255, 255, 255, 0.7)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.boxShadow = '0 0 20px rgba(255, 255, 255, 0.4), 0 0 40px rgba(255, 255, 255, 0.2)';
-                    e.currentTarget.style.textShadow = '0 0 8px rgba(255, 255, 255, 0.8)';
+                    e.currentTarget.style.boxShadow = '0 0 25px rgba(255, 255, 255, 0.8), 0 0 50px rgba(255, 255, 255, 0.5), 0 0 75px rgba(255, 255, 255, 0.3), inset 0 0 10px rgba(255, 255, 255, 0.2)';
+                    e.currentTarget.style.textShadow = '0 0 12px rgba(255, 255, 255, 1), 0 0 20px rgba(255, 255, 255, 0.8)';
                   }}
                 >
-                  COMMIT
+                  ALIGN
                 </button>
               </div>
               

@@ -113,7 +113,7 @@ export default function BadgesModal({ open, onClose }: Props) {
       name: "HEARTCOIN BADGES",
       emoji: "💰",
       badges: [
-        { name: "First HeartCoin", progress: 100, current: 1, total: 1 }, // Completed
+        { name: "First HeartCoin", progress: 100, current: 1, total: 1, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/First%20HeartCoin.png?updatedAt=1763736238400" }, // Completed
         { name: "Treasure Finder", description: "10 HC", progress: 50, current: 5, total: 10 },
         { name: "Heartflow", description: "50 HC", progress: 10, current: 5, total: 50 },
         { name: "Cosmic Prosperity", description: "100 HC", progress: 5, current: 5, total: 100 },
@@ -149,14 +149,14 @@ export default function BadgesModal({ open, onClose }: Props) {
           </button>
           
           {/* Large badge display */}
-          <div className="flex justify-center mb-4">
-            <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 flex items-center justify-center">
+          <div className="flex flex-col items-center space-y-3">
+            <div className="relative w-28 h-28 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 flex items-center justify-center">
               <div className="relative z-10 opacity-60">
                 {selectedBadge.icon_url ? (
                   <img
                     src={selectedBadge.icon_url}
                     alt={selectedBadge.name}
-                    className="w-16 h-16 object-cover rounded-full"
+                    className="w-24 h-24 object-cover rounded-full"
                     draggable={false}
                   />
                 ) : (
@@ -181,12 +181,19 @@ export default function BadgesModal({ open, onClose }: Props) {
                 <div className="w-4 h-4 bg-white/20 rounded-full" />
               </div>
             </div>
+            
+            {/* Badge name directly below PNG */}
+            <h2 className="text-white font-bold text-lg text-center">
+              {selectedBadge.name}
+            </h2>
+            
+            {/* Status directly below badge name */}
+            <div className={`text-sm ${
+              selectedBadge.progress === 100 ? 'text-green-400' : 'text-white/40'
+            }`}>
+              {selectedBadge.progress === 100 ? '✅ UNLOCKED' : '🔒 LOCKED'}
+            </div>
           </div>
-          
-          {/* Badge name */}
-          <h2 className="text-white font-bold text-lg">
-            {selectedBadge.name}
-          </h2>
           
           {/* Badge description */}
           {selectedBadge.description && (
@@ -221,23 +228,7 @@ export default function BadgesModal({ open, onClose }: Props) {
                 </div>
               </div>
               
-              {/* Status */}
-              <div className={`text-sm ${selectedBadge.progress === 100 ? 'text-green-400' : 'text-white/40'}`}>
-                {selectedBadge.progress === 100 ? '✅ Unlocked' : '🔒 Locked'}
-              </div>
             </div>
-          )}
-          
-          {/* Requirements for badges without progress data */}
-          {selectedBadge.progress === undefined && (
-            <>
-              <div className="text-white/40 text-sm">
-                🔒 Locked
-              </div>
-              <div className="text-white/50 text-xs">
-                Complete the required actions to unlock this badge
-              </div>
-            </>
           )}
         </div>
       </HeartversePopup>

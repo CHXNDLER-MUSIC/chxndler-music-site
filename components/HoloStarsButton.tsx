@@ -377,17 +377,19 @@ export default function HoloStarsButton({
           position: absolute;
           top: 1rem;
           left: 1rem;
-          background: rgba(0, 0, 0, 0.7);
+          background: rgba(0, 0, 0, 0.8);
           border: 2px solid #FFFF00;
           color: #FFFF00;
-          font-size: 2rem;
+          font-size: 0.8rem;
+          font-weight: bold;
           cursor: pointer;
-          width: 50px;
-          height: 50px;
+          width: auto;
+          height: 40px;
+          padding: 0 1rem;
           display: flex;
           align-items: center;
           justify-content: center;
-          border-radius: 50%;
+          border-radius: 20px;
           transition: all 0.2s ease;
           text-shadow: 
             0 0 10px #FFFF00,
@@ -397,6 +399,7 @@ export default function HoloStarsButton({
             0 0 20px rgba(255, 255, 0, 0.6),
             0 0 40px rgba(255, 255, 0, 0.3);
           z-index: 10001;
+          letter-spacing: 0.1em;
         }
         
         .journal-button:hover {
@@ -929,8 +932,9 @@ export default function HoloStarsButton({
                   className="journal-button"
                   onClick={handleJournalClick}
                   aria-label="Open Journal"
+                  title="Open Journal"
                 >
-                  📖
+                  JOURNAL
                 </button>
                 <button 
                   className="close-button"

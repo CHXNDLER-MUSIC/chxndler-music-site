@@ -65,7 +65,7 @@ export default function ProfileBar({
   // Use global UI state for profile bar visibility
   const { hasEnteredHeartverse } = useUIState();
   // Use ProfileContext for profile data
-  const { profile: contextProfile, loading, updateProfile } = useProfile();
+  const { profile: contextProfile, loading, updateProfile, refreshProfile } = useProfile();
   // Use UI store for name prompt
   const { openNamePrompt } = useUIStore();
   const [elementDropdownOpen, setElementDropdownOpen] = useState(false);
@@ -167,7 +167,10 @@ export default function ProfileBar({
       });
       
       if (res.ok) {
-        // Element update is handled by the ProfileContext
+        // Use ProfileContext to update the profile
+        await updateProfile({ element });
+        // Also refresh profile to make sure UI is in sync
+        await refreshProfile();
         setElementDropdownOpen(false);
       }
     } catch (error) {
@@ -311,25 +314,41 @@ export default function ProfileBar({
                 try { sfx.play('click', 0.4); } catch {}
                 openNamePrompt();
               }}
-              className="font-medium text-lg relative flex-shrink-0 ml-2 hover:scale-105 transition-transform duration-200 cursor-pointer bg-transparent border-none focus:outline-none"
+              className="font-medium text-lg relative flex-shrink-0 ml-2 transition-all duration-200 cursor-pointer bg-transparent border-none focus:outline-none"
               style={{ 
                 color: getUsernameColor(currentElement),
                 textShadow: `
-                  0 0 5px ${getUsernameColor(currentElement)},
                   0 0 10px ${getUsernameColor(currentElement)},
-                  0 0 15px ${getUsernameColor(currentElement)},
                   0 0 20px ${getUsernameColor(currentElement)},
-                  0 0 25px ${getUsernameColor(currentElement)}
+                  0 0 30px ${getUsernameColor(currentElement)}
                 `,
                 filter: 'brightness(1.2)',
-                padding: '8px 16px'
+                padding: '8px 16px',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                try { sfx.play('hover', 0.8); } catch {}
+                e.currentTarget.style.transform = 'scale(1.05)';
+                e.currentTarget.style.textShadow = `
+                  0 0 15px ${getUsernameColor(currentElement)},
+                  0 0 25px ${getUsernameColor(currentElement)},
+                  0 0 35px ${getUsernameColor(currentElement)}
+                `;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.textShadow = `
+                  0 0 10px ${getUsernameColor(currentElement)},
+                  0 0 20px ${getUsernameColor(currentElement)},
+                  0 0 30px ${getUsernameColor(currentElement)}
+                `;
               }}
             >
               {displayName}
             </button>
 
             {/* Journey Button */}
-            <div className="ml-8">
+            <div className="ml-2">
               <JourneyButton 
                 onHoverSound={() => sfx.play('hover', 0.8)}
                 onCloseBlueDisplay={onCloseBlueDisplay}

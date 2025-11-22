@@ -9,6 +9,25 @@ import SongPlanet from "./SongPlanet";
 import Starfield from "./Starfield";
 import { buildPlanetSongs, type Element, ELEMENT_COLORS } from "@/lib/planets";
 
+// Element planet data structure
+type ElementId = "heart" | "water" | "lightning" | "darkness";
+
+type ElementPlanet = {
+  id: ElementId;
+  label: string;
+  color: string;
+  orbitRadius: number;
+  initialAngle: number;
+};
+
+// Using your brand colors
+const ELEMENT_PLANETS: ElementPlanet[] = [
+  { id: "heart", label: "Heart", color: "#FC54AF", orbitRadius: 6, initialAngle: 0 },
+  { id: "water", label: "Water", color: "#19E3FF", orbitRadius: 6, initialAngle: Math.PI / 2 },
+  { id: "lightning", label: "Lightning", color: "#F2EF1D", orbitRadius: 6, initialAngle: Math.PI },
+  { id: "darkness", label: "Darkness", color: "#E8E8E8", orbitRadius: 6, initialAngle: (3 * Math.PI) / 2 },
+];
+
 interface HeartverseSolarSystemProps {
   songs?: Array<{ id: string; title: string; element?: Element }>;
   onSongClick?: (songId: string) => void;
@@ -84,14 +103,17 @@ export default function HeartverseSolarSystem({
     return groups;
   }, [songs]);
 
-  // Define elemental planet positions (four corners around center)
+  // Define elemental planet positions (circle around center)
   const elementalPlanetPositions = useMemo(() => {
-    return {
-      heart: new Vector3(-15, 10, 0),      // Top left
-      water: new Vector3(15, 10, 0),       // Top right  
-      lightning: new Vector3(15, -10, 0),  // Bottom right
-      darkness: new Vector3(-15, -10, 0),  // Bottom left
-    };
+    const positions: { [key in ElementId]: Vector3 } = {} as any;
+    
+    ELEMENT_PLANETS.forEach((planet) => {
+      const x = Math.cos(planet.initialAngle) * planet.orbitRadius;
+      const z = Math.sin(planet.initialAngle) * planet.orbitRadius;
+      positions[planet.id] = new Vector3(x, 0, z);
+    });
+    
+    return positions;
   }, []);
 
   // Only show elemental planets that have songs
@@ -148,22 +170,38 @@ export default function HeartverseSolarSystem({
       {/* Subtle starfield background */}
       <Starfield />
       
-      {/* Core Heart Planet at center (0,0,0) */}
+      {/* Core Heart Planet at center (0,0,0) - keep existing idle rotation */}
       <HeartPlanet />
       
-      {/* Four Large Elemental Planets - only render if they have songs */}
-      {activeElements.map((element) => (
-        <ElementalPlanet
-          key={element}
-          element={element as Element}
-          position={elementalPlanetPositions[element as keyof typeof elementalPlanetPositions]}
-          size={8} // Significantly larger than song planets
-          glowIntensity={1.5}
-        />
-      ))}
+      {/* Four Elemental Planets in orbit around heart */}
+      {ELEMENT_PLANETS.map((elementPlanet) => {
+        const position = elementalPlanetPositions[elementPlanet.id];
+        return (
+          <group key={elementPlanet.id} position={[position.x, position.y, position.z]}>
+            <mesh>
+              <sphereGeometry args={[0.6, 32, 32]} />
+              <meshStandardMaterial 
+                color={elementPlanet.color} 
+                emissive={elementPlanet.color} 
+                emissiveIntensity={0.5} 
+              />
+            </mesh>
+            {/* Optional floating label */}
+            <mesh position={[0, 1.2, 0]}>
+              <planeGeometry args={[2, 0.5]} />
+              <meshBasicMaterial 
+                color={elementPlanet.color}
+                transparent
+                opacity={0.8}
+              />
+            </mesh>
+          </group>
+        );
+      })}
       
-      {/* Song Planets orbiting their respective elemental planets */}
-      {Object.entries(songsByElement).map(([element, elementSongs]) => {
+      {/* Song planet rendering temporarily commented out */}
+      {/* TODO: Will implement song planets orbiting elemental planets in next phase */}
+      {false && Object.entries(songsByElement).map(([element, elementSongs]) => {
         if (elementSongs.length === 0) return null;
         
         const elementalPosition = elementalPlanetPositions[element as keyof typeof elementalPlanetPositions];

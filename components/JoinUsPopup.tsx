@@ -352,7 +352,7 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
           }}
           aria-label="Dollar action"
         >
-          $
+          $5
         </button>
       </div>
 
@@ -400,7 +400,7 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
           <div className="relative w-full max-w-4xl h-full max-h-[90vh] rounded-2xl backdrop-blur-md border-2 border-[#3D95CE]/60 bg-white/10 shadow-[0_0_26px_rgba(61,149,206,0.6)] overflow-hidden">
             <div className="flex items-center justify-between p-4 bg-black/40 border-b border-[#3D95CE]/30">
               <h2 className="text-lg font-bold text-white" style={{ color: '#3D95CE', textShadow: '0 0 10px rgba(61, 149, 206, 0.8)' }}>
-                💸 Send $1 via Venmo
+                Send $5 via Venmo
               </h2>
               <button
                 type="button"
@@ -415,7 +415,7 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
             <div className="relative h-full p-4">
               <div className="w-full h-full bg-white rounded-lg overflow-hidden shadow-lg">
                 <iframe
-                  src="https://venmo.com/u/chxndlerthealien?txn=pay&amount=1&note=Thanks%20for%20the%20music!"
+                  src="https://venmo.com/u/chxndlerthealien?txn=pay&amount=5&note=Thanks%20for%20the%20music!"
                   title="Venmo Payment"
                   className="w-full h-full border-0"
                   style={{ minHeight: '600px' }}
@@ -424,39 +424,6 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
                 />
               </div>
               
-              {/* Fallback buttons in case iframe doesn't work */}
-              <div className="absolute bottom-6 left-6 right-6 flex gap-3 opacity-90">
-                <button
-                  onClick={() => {
-                    const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=1&note=${encodeURIComponent('Thanks for the music!')}`;
-                    window.open(venmoUrl, '_blank');
-                  }}
-                  className="flex-1 px-4 py-3 rounded-lg font-bold text-white transition-all duration-300 hover:scale-105"
-                  style={{
-                    background: 'linear-gradient(135deg, #3D95CE, #5BA8D8)',
-                    border: '2px solid #3D95CE',
-                    boxShadow: '0 0 15px rgba(61, 149, 206, 0.4)',
-                    textShadow: '0 0 8px rgba(61, 149, 206, 0.6)'
-                  }}
-                >
-                  📱 Open Venmo App
-                </button>
-                <button
-                  onClick={() => {
-                    const webVenmoUrl = `https://venmo.com/u/chxndlerthealien?txn=pay&amount=1&note=${encodeURIComponent('Thanks for the music!')}`;
-                    window.open(webVenmoUrl, '_blank');
-                  }}
-                  className="flex-1 px-4 py-3 rounded-lg font-bold text-white transition-all duration-300 hover:scale-105"
-                  style={{
-                    background: 'linear-gradient(135deg, #5BA8D8, #3D95CE)',
-                    border: '2px solid #3D95CE',
-                    boxShadow: '0 0 15px rgba(61, 149, 206, 0.4)',
-                    textShadow: '0 0 8px rgba(61, 149, 206, 0.6)'
-                  }}
-                >
-                  🌐 Open in Browser
-                </button>
-              </div>
             </div>
           </div>
         </div>
