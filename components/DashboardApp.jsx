@@ -1894,7 +1894,6 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               width: 'calc(var(--display-width) + 32px)',
               height: `calc(var(--display-width) * ${hudHeightFactor})`,
               zIndex: 93,
-              borderRadius: 'var(--display-border-radius)',
               ['--hud-y']: `${hudYOffset}px`,
               pointerEvents: (uiUnlocked && showOverlayUI && !showDimmingOverlay) ? 'auto' : 'none'
             }}

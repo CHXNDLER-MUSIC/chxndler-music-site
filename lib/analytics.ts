@@ -426,31 +426,52 @@ export async function trackEvent(
       });
 
     if (error) {
-      // Some Supabase/PostgREST error objects don't stringify well in devtools
-      const errInfo: any = {
-        message: (error as any)?.message,
-        code: (error as any)?.code,
-        details: (error as any)?.details,
-        hint: (error as any)?.hint,
-      };
-      console.error('trackEvent error:', {
-        ...errInfo,
-        eventName,
+      // Some Supabase/PostgREST error objects don't stringify well or have non-enumerable props.
+      // Normalize into a JSON-safe, always-populated payload to avoid `{}` logs.
+      const normalizedError = (() => {
+        const anyErr = error as any;
+        return {
+          message: anyErr?.message ?? (typeof error === 'string' ? error : null),
+          name: anyErr?.name ?? null,
+          code: anyErr?.code ?? null,
+          details: anyErr?.details ?? null,
+          hint: anyErr?.hint ?? null,
+          status: anyErr?.status ?? null,
+          errorType: typeof error,
+        };
+      })();
+
+      const logPayload = {
+        ...normalizedError,
+        eventName: String(eventName),
         source: options?.source ?? 'unknown',
         hasMetadata: !!options?.metadata,
         hasUserId: !!options?.userId,
         table: 'events_v2',
-      });
+      } as const;
+
+      try {
+        // Prefer JSON so undefined values don't get dropped by custom console wrappers
+        console.error('trackEvent error:', JSON.stringify(logPayload));
+      } catch {
+        // Fallback to object logging
+        console.error('trackEvent error:', logPayload);
+      }
       return { success: false, error } as const;
     }
     return { success: true } as const;
   } catch (e) {
     const err = e as any;
-    console.error('trackEvent crashed:', {
+    const crashPayload = {
       message: err?.message ?? String(err),
-      name: err?.name,
-      stack: err?.stack,
-    });
+      name: err?.name ?? null,
+      stack: err?.stack ?? null,
+    } as const;
+    try {
+      console.error('trackEvent crashed:', JSON.stringify(crashPayload));
+    } catch {
+      console.error('trackEvent crashed:', crashPayload);
+    }
     return { success: false, error: e } as const;
   }
 }

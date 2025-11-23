@@ -1781,22 +1781,23 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                   const selectedTrack = tracks[i];
                   setIdx(i); 
                   setPickerOpen(false);
-                  // Focus the selected planet immediately when picking a new song
+                  // Prepare warp: select main and hide planets during the effect
                   try {
                     const { playerStore } = require("@/store/usePlayerStore");
                     if (selectedTrack?.slug) {
-                      playerStore.getState().setMain(selectedTrack.slug, true);
-                      playerStore.getState().setPlanetDisplayMode('single');
-                      playerStore.getState().setPlanetsVisible(true);
+                      // setMain without preserve to trigger hidden state during warp
+                      playerStore.getState().setMain(selectedTrack.slug);
+                      playerStore.getState().setPlanetDisplayMode('hidden');
+                      playerStore.getState().setPlanetsVisible(false);
                     }
                   } catch {}
                   
-                  // When manually selecting from picker, trigger playback immediately
+                  // When manually selecting from picker, trigger warp effect first, then play
                   if (wasChanged && selectedTrack?.src) {
-                    setTimeout(() => {
+                    setTimeout(async () => {
                       const a = audioRef.current;
                       if (!a) return;
-                      
+
                       // Ensure the correct source is loaded
                       try {
                         const want = String(selectedTrack.src || "");
@@ -1806,48 +1807,38 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                           try { a.load(); } catch {}
                         }
                       } catch {}
-                      
-                // Play immediately without waiting for warp delay
-                      // If warp is in progress (planets hidden), defer to external sequence (warp->join->song)
+
+                      // Hide planets and mark warp start for visual sync
                       try {
                         const { playerStore } = require("@/store/usePlayerStore");
                         const st = playerStore.getState();
-                        if (st && st.planetDisplayMode === 'hidden') {
-                          if (DEBUG_MEDIA) dwarn('Picker play suppressed during warp; external flow will start after join.');
-                          return; // do not start now
-                        }
+                        // Switch focus and hide all planets during warp
+                        st.setMain(selectedTrack.slug);
+                        st.setPlanetDisplayMode('hidden');
+                        st.setPlanetsVisible(false);
                       } catch {}
+                      try { stateMachine.current.send({ type: 'WARP_START' }); } catch {}
 
-                      intentionalPlayRef.current = true;
-                      // Ensure audio is unmuted and has proper volume
-                      a.muted = false;
-                      // Simple play attempt first, fallback to retry logic if needed
-                      a.play()
-                        .then(() => {
-                          stateMachine.current.send({ type: 'PLAY' });
-                          gaTrack("play", { slug: selectedTrack.slug });
-                        })
-                        .catch((error) => {
-                          // Fallback to retry logic only if simple play fails
-                          suppressVolumeRef.current = true;
-                          playWithAutoplayFallback(a, {
-                            maxRetries: 2,
-                            onRetry: (attempt, error) => {
-                              /* no-op */
-                            }
-                          })
-                            .then(() => {
-                              stateMachine.current.send({ type: 'PLAY' });
-                              gaTrack("play", { slug: selectedTrack.slug });
-                              suppressVolumeRef.current = false;
-                              try { setVolume(Math.max(0, Math.min(1, a.volume))); } catch {}
-                            })
-                            .catch((retryError) => {
-                              console.error('🔴 Picker: All play attempts failed for', selectedTrack.title, retryError);
-                              stateMachine.current.send({ type: 'ERROR', payload: { error: retryError } });
-                              suppressVolumeRef.current = false;
-                            });
-                        });
+                      // Play warp SFX then join SFX before starting song
+                      try {
+                        await sfx.playAndWait('warp', 0.75);
+                      } catch {}
+                      try {
+                        await sfx.playAndWait('join', 0.9);
+                      } catch {}
+                      try { stateMachine.current.send({ type: 'WARP_END' }); } catch {}
+
+                      // Start playback with autoplay fallbacks
+                      try {
+                        intentionalPlayRef.current = true;
+                        a.muted = false;
+                        await playWithAutoplayFallback(a, { maxRetries: 2 });
+                        stateMachine.current.send({ type: 'PLAY' });
+                        gaTrack("play", { slug: selectedTrack.slug });
+                      } catch (retryError) {
+                        if (DEBUG_MEDIA) dwarn('Picker: play failed after warp sequence', retryError);
+                        try { stateMachine.current.send({ type: 'ERROR', payload: { error: retryError as any } }); } catch {}
+                      }
                     }, 100); // Short delay to allow index change to settle
                   }
                 }}
