@@ -20,6 +20,7 @@ import { supabaseBrowser } from '@/lib/supabase-browser';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useUIStore } from '@/store/useUIStore';
 import JoinUsPopup from '@/components/JoinUsPopup';
+import WelcomeHomeModal from '@/components/WelcomeHomeModal';
 
 interface Profile {
   id: string;
@@ -73,6 +74,7 @@ export default function ProfileBar({
   const [journalCompletedToday, setJournalCompletedToday] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showSignInPopup, setShowSignInPopup] = useState(false);
+  const [showWelcomeHome, setShowWelcomeHome] = useState(false);
   const [nameButtonTooltip, setNameButtonTooltip] = useState('');
   const [showLoginTooltip, setShowLoginTooltip] = useState(false);
 
@@ -425,23 +427,6 @@ export default function ProfileBar({
                 {displayName}
               </button>
 
-              {/* Login Tooltip */}
-              {(!currentUser || !contextProfile) && showLoginTooltip && (
-                <div 
-                  data-tooltip="login-tooltip"
-                  className="absolute left-1/2 top-full mt-2 -translate-x-1/2 rounded-lg border border-pink-500/60 bg-pink-900/95 px-4 py-3 text-sm text-white shadow-xl z-[9999] whitespace-nowrap"
-                  style={{
-                    boxShadow: '0 0 20px rgba(236, 72, 153, 0.6), 0 0 40px rgba(236, 72, 153, 0.4)',
-                    backdropFilter: 'blur(8px)',
-                    fontWeight: '600'
-                  }}
-                >
-                  You need to LOG IN to create your ALIEN name.
-                  
-                  {/* Tooltip arrow */}
-                  <div className="absolute left-1/2 top-[-6px] -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-b-[6px] border-transparent border-b-pink-500/60"></div>
-                </div>
-              )}
             </div>
 
             {/* Journey Button */}
@@ -792,6 +777,52 @@ export default function ProfileBar({
         </div>,
         document.body
       )}
+
+      {/* Login Tooltip - Rendered outside profile bar */}
+      {(!currentUser || !contextProfile) && showLoginTooltip && typeof window !== 'undefined' && createPortal(
+        <div 
+          data-tooltip="login-tooltip"
+          className="fixed top-20 left-1/2 -translate-x-1/2 rounded-lg bg-black/90 px-4 py-3 text-sm text-white shadow-xl z-[9999] whitespace-nowrap"
+          style={{
+            border: '2px solid rgba(255, 255, 255, 0.8)',
+            boxShadow: '0 0 15px rgba(255, 255, 255, 0.8), 0 0 30px rgba(255, 255, 255, 0.6), 0 0 45px rgba(255, 255, 255, 0.4)',
+            backdropFilter: 'blur(8px)',
+            fontWeight: '600'
+          }}
+        >
+          You need to{" "}
+          <button
+            onClick={() => {
+              setShowLoginTooltip(false);
+              setShowWelcomeHome(true);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setShowLoginTooltip(false);
+                setShowWelcomeHome(true);
+              }
+            }}
+            className="underline font-semibold text-pink-200 hover:text-pink-50 focus:outline-none focus:ring-1 focus:ring-pink-400 rounded px-1 transition-colors"
+          >
+            log in
+          </button>{" "}
+          to create your ALIEN name.
+          
+          {/* Tooltip arrow pointing up to profile bar */}
+          <div className="absolute left-1/2 top-[-8px] -translate-x-1/2 w-0 h-0 border-l-[8px] border-r-[8px] border-b-[8px] border-transparent border-b-white/80"
+               style={{
+                 filter: 'drop-shadow(0 0 4px rgba(255, 255, 255, 0.8))'
+               }}></div>
+        </div>,
+        document.body
+      )}
+
+      {/* Welcome Home Modal */}
+      <WelcomeHomeModal 
+        open={showWelcomeHome} 
+        onClose={() => setShowWelcomeHome(false)} 
+      />
 
       {/* Sign In Popup for unauthenticated users */}
       <JoinUsPopup 

@@ -4,6 +4,7 @@ import React, { useRef, useMemo } from "react";
 import { Mesh, ShaderMaterial, Color, AdditiveBlending, Vector3 } from "three";
 import { useFrame } from "@react-three/fiber";
 import { type Element, ELEMENT_COLORS } from "@/lib/planets";
+import { ELEMENT_STYLES, type ElementKey } from "@/utils/planetStyles";
 
 interface ElementalPlanetProps {
   element: Element;
@@ -21,13 +22,26 @@ export default function ElementalPlanet({
   const planetRef = useRef<Mesh>(null);
   const glowRef = useRef<Mesh>(null);
   
-  // Element-specific colors and properties - ALL BLACK FOR TESTING
+  // Element-specific colors and properties using shared styles
   const elementConfig = useMemo(() => {
+    // Map Element type to ElementKey type for ELEMENT_STYLES
+    const elementKey = element as ElementKey;
+    
+    if (ELEMENT_STYLES[elementKey]) {
+      const styles = ELEMENT_STYLES[elementKey];
+      return {
+        color: styles.coreColor,
+        glowColor: styles.innerGlow,
+        emissive: styles.rimColor,
+      };
+    }
+    
+    // Fallback for unmapped elements
+    const baseColor = ELEMENT_COLORS[element];
     return {
-      color: '#000000',
-      glowColor: '#333333',
-      emissive: '#000000',
-      shader: 'test',
+      color: baseColor,
+      glowColor: baseColor,
+      emissive: baseColor,
     };
   }, [element]);
 
@@ -151,7 +165,7 @@ export default function ElementalPlanet({
     return material;
   }, [elementConfig, element, glowIntensity]);
 
-  // Animation loop
+  // Animation loop with element-specific effects
   useFrame((state) => {
     const time = state.clock.elapsedTime;
     
@@ -166,10 +180,54 @@ export default function ElementalPlanet({
       planetRef.current.rotation.x += 0.005;
     }
     
-    // Gentle glow pulsing
+    // Element-specific glow effects
     if (glowRef.current) {
-      const pulse = 0.8 + 0.2 * Math.sin(time * 1.5);
+      let pulse = 1.0;
+      
+      switch (element) {
+        case 'heart':
+          // Stronger pulsing for heart element
+          pulse = 0.8 + 0.4 * Math.sin(time * 2.5);
+          break;
+        case 'lightning':
+          // Quick flicker for lightning
+          pulse = 0.9 + 0.3 * Math.sin(time * 8) + 0.2 * Math.sin(time * 12);
+          break;
+        case 'water':
+          // Gentle wave-like pulsing for water
+          pulse = 0.85 + 0.25 * Math.sin(time * 1.8);
+          break;
+        case 'darkness':
+          // Very subtle pulse for darkness - mysterious
+          pulse = 0.95 + 0.1 * Math.sin(time * 1.0);
+          break;
+        default:
+          pulse = 0.8 + 0.2 * Math.sin(time * 1.5);
+      }
+      
       glowRef.current.scale.setScalar(pulse);
+      
+      // Update emissive intensity based on element
+      if (planetMaterial.uniforms) {
+        const baseIntensity = glowIntensity;
+        let intensityMultiplier = 1.0;
+        
+        switch (element) {
+          case 'heart':
+            intensityMultiplier = 1.0 + 0.3 * Math.sin(time * 2.5);
+            break;
+          case 'lightning':
+            intensityMultiplier = 1.0 + 0.5 * Math.sin(time * 8);
+            break;
+          case 'darkness':
+            intensityMultiplier = 0.8 + 0.2 * Math.sin(time * 1.0);
+            break;
+          default:
+            intensityMultiplier = 1.0;
+        }
+        
+        planetMaterial.uniforms.uIntensity.value = baseIntensity * intensityMultiplier;
+      }
     }
   });
 

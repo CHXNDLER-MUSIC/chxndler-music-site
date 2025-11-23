@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { sfx } from "@/lib/sfx";
 import { useProfile } from "@/contexts/ProfileContext";
-import { Card, CardTier, ProfileTier, isCardLocked } from "@/types/card";
+import { Card, CardTier, ProfileTier, isCardLocked, getCardGateState, getTierDisplayName } from "@/types/card";
+import type { CardGateState } from "@/utils/cardGating";
 
 type Props = {
   open: boolean;
@@ -50,7 +51,7 @@ export default function BinderModal({ open, onClose }: Props) {
   const [isCardFlipped, setIsCardFlipped] = useState(false);
   // Purchase flow state machine
   const [selectedPurchaseType, setSelectedPurchaseType] = useState<'digital' | 'physical' | null>(null);
-  const [purchaseState, setPurchaseState] = useState<'idle' | 'insufficient' | 'confirm-digital' | 'physical-form' | 'success'>('idle');
+  const [purchaseState, setPurchaseState] = useState<'idle' | 'insufficient' | 'digital-preview' | 'confirm-digital' | 'physical-form' | 'success'>('idle');
 
   // Full song collection data structure
   const songCollection = [
@@ -138,6 +139,34 @@ export default function BinderModal({ open, onClose }: Props) {
   const isCardOwned = (cardName: string) => {
     if (!profile?.cards) return false;
     return profile.cards.some(cardRow => cardRow.cards.card_name === cardName);
+  };
+
+  // Helper to get user's owned cards in the format expected by getCardGateState
+  const getUserCards = () => {
+    if (!profile?.cards) return [];
+    return profile.cards.map(cardRow => ({
+      user_id: profile.id || '',
+      card_id: cardRow.cards.id || '',
+      card_name: cardRow.cards.card_name
+    }));
+  };
+
+  // Helper to get card gate state
+  const getCardState = (card: any): CardGateState => {
+    const cardData = {
+      id: card.id || card.name,
+      card_name: card.name || card.card_name,
+      is_released: card.is_released ?? true,
+      min_tier: card.min_tier || 'wanderer'
+    };
+    
+    const profileData = profile ? {
+      id: profile.id,
+      tier: profile.tier || profile.journey_tag || 'wanderer'
+    } : null;
+    
+    const userCards = getUserCards();
+    return getCardGateState(cardData, profileData, userCards);
   };
 
   const getCardOneLiner = (songName: string) => {
@@ -328,7 +357,7 @@ export default function BinderModal({ open, onClose }: Props) {
     setSelectedPurchaseType(type);
     if (hasEnoughBalance(type)) {
       if (type === 'digital') {
-        setPurchaseState('confirm-digital');
+        setPurchaseState('digital-preview');
       } else {
         setPurchaseState('physical-form');
         // Prefill shipping form if user has previous orders
@@ -591,7 +620,7 @@ export default function BinderModal({ open, onClose }: Props) {
           className="binder-hologram-container"
           style={{
             width: 'min(92vw, 700px)',
-            height: '45vh',
+            height: '38vh',
             display: 'flex',
             flexDirection: 'column',
             padding: '10px 14px 14px 14px',
@@ -712,6 +741,93 @@ export default function BinderModal({ open, onClose }: Props) {
           {/* Scrollable content container */}
           <div className="flex-1 overflow-y-auto" style={{ maxHeight: 'calc(100% - 80px)' }}>
 
+          {/* Card popup - fills entire content area when open */}
+          {cardOpen && (
+            <div className="flex flex-col items-center justify-center w-full h-full p-4">
+              {/* Large card display */}
+              <div 
+                className="relative flex items-center justify-center w-full h-full"
+              >
+                {/* Flippable Card */}
+                <div 
+                  className="rounded-lg shadow-2xl cursor-pointer"
+                  style={{
+                    width: 'min(300px, 80vw)',
+                    height: 'min(400px, 60vh)',
+                    boxShadow: '0 0 40px rgba(255,105,180,0.8), 0 0 80px rgba(255,105,180,0.5), 0 0 120px rgba(255,105,180,0.3)',
+                    border: '2px solid rgba(255,105,180,0.6)',
+                    perspective: '1000px'
+                  }}
+                  onClick={() => {
+                    try { sfx.play('flip', 0.8); } catch {}
+                    setIsCardFlipped(!isCardFlipped);
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'relative',
+                      width: '100%',
+                      height: '100%',
+                      textAlign: 'center',
+                      transition: 'transform 0.6s',
+                      transformStyle: 'preserve-3d',
+                      transform: isCardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                    }}
+                  >
+                    {/* Front of card */}
+                    <img
+                      src={selectedCard?.image || "https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910"}
+                      alt={selectedCard?.name || "Card"}
+                      className="w-full h-full rounded-lg object-contain"
+                      style={{
+                        position: 'absolute',
+                        backfaceVisibility: 'hidden',
+                        WebkitBackfaceVisibility: 'hidden'
+                      }}
+                      draggable={false}
+                    />
+                    
+                    {/* Back of card */}
+                    <img
+                      src="https://ik.imagekit.io/CHXNDLER/card/back.png?updatedAt=1762388351170"
+                      alt="Card Back"
+                      className="w-full h-full rounded-lg object-contain"
+                      style={{
+                        position: 'absolute',
+                        backfaceVisibility: 'hidden',
+                        WebkitBackfaceVisibility: 'hidden',
+                        transform: 'rotateY(180deg)'
+                      }}
+                      draggable={false}
+                    />
+                  </div>
+                </div>
+                
+                {/* Close button */}
+                <button
+                  onClick={() => {
+                    try { sfx.play('close', 0.8); } catch {}
+                    setCardOpen(false);
+                    setIsCardFlipped(false);
+                  }}
+                  className="absolute top-4 right-4 w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200"
+                  style={{
+                    boxShadow: '0 0 15px rgba(255,105,180,0.6)',
+                    backdropFilter: 'blur(10px)',
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                    <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Normal content - only shown when card is not open */}
+          {!cardOpen && (
+            <>
           {/* Back button and filters positioned in same row */}
           {selectedElement && (
             <div className="flex justify-between items-center mb-4">
@@ -787,10 +903,11 @@ export default function BinderModal({ open, onClose }: Props) {
               return null;
             }
 
+
             return (
               <>
                 {/* Horizontal layout with card image and text */}
-                <div className="flex flex-row items-start gap-6 w-full overflow-visible mb-4">
+                <div className="flex flex-row items-start gap-2 w-full overflow-visible mb-4">
                   {/* Left navigation arrow */}
                   {cards.length > 1 && (
                     <button
@@ -810,37 +927,52 @@ export default function BinderModal({ open, onClose }: Props) {
                   {/* Card image with fixed width */}
                   <div className="flex-shrink-0">
                     {(() => {
-                      const locked = isCardLocked(currentCard, profile?.tier);
+                      const gateState = getCardState(currentCard);
+                      const isLocked = gateState === 'comingSoon' || gateState === 'lockedTier';
                       return (
-                        <div className="relative">
+                        <div 
+                          className="relative cursor-pointer"
+                          onClick={() => {
+                            try { sfx.play('click', 0.8); } catch {}
+                            setPreselectedCard(currentCard.name);
+                            setSelectedCard(currentCard);
+                            setCardOpen(true);
+                          }}
+                        >
                           <img
                             src={currentCard.image}
                             alt={currentCard.name}
                             className={
-                              locked
-                                ? "w-[120px] h-auto rounded-lg cursor-pointer transition-all duration-300 blur-xl brightness-50 opacity-60"
-                                : "w-[120px] h-auto rounded-lg cursor-pointer transition-transform duration-300 hover:scale-110"
+                              isLocked
+                                ? "w-[120px] h-auto rounded-lg transition-all duration-300 blur-xl brightness-50 opacity-60"
+                                : "w-[120px] h-auto rounded-lg transition-transform duration-300 hover:scale-110"
                             }
                             style={{
-                              boxShadow: '0 0 15px rgba(255,105,180,0.6), 0 0 30px rgba(255,105,180,0.3)',
-                              border: '2px solid rgba(255,105,180,0.6)',
+                              boxShadow: gateState === 'owned' 
+                                ? '0 0 15px rgba(34,197,94,0.6), 0 0 30px rgba(34,197,94,0.3)'
+                                : '0 0 15px rgba(255,105,180,0.6), 0 0 30px rgba(255,105,180,0.3)',
+                              border: gateState === 'owned'
+                                ? '2px solid rgba(34,197,94,0.6)'
+                                : '2px solid rgba(255,105,180,0.6)',
                             }}
                             draggable={false}
-                            onClick={() => {
-                              try { sfx.play('click', 0.8); } catch {}
-                              setPreselectedCard(currentCard.name);
-                              setSelectedCard(currentCard);
-                              setCardOpen(true);
-                            }}
                           />
 
-                          {locked && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                          {isLocked && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 pointer-events-none">
                               <div className="px-3 py-1 rounded-xl bg-black/60 border border-pink-400/70 text-[11px] font-semibold tracking-wide text-pink-100 backdrop-blur-md shadow-[0_0_18px_rgba(252,84,175,0.7)]">
-                                {!currentCard.is_released
+                                {gateState === 'comingSoon'
                                   ? "Coming Soon"
-                                  : `Unlock at ${currentCard.min_tier.toUpperCase()}`}
+                                  : `Reach ${getTierDisplayName(currentCard.min_tier)} to unlock`}
                               </div>
+                            </div>
+                          )}
+                          
+                          {gateState === 'owned' && (
+                            <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-green-500/80 rounded-full flex items-center justify-center">
+                              <svg viewBox="0 0 24 24" width="10" height="10" fill="white">
+                                <path d="M20 6L9 17l-5-5"/>
+                              </svg>
                             </div>
                           )}
                         </div>
@@ -848,44 +980,100 @@ export default function BinderModal({ open, onClose }: Props) {
                     })()}
                   </div>
                   
+                  {/* Right navigation arrow - positioned directly next to card */}
+                  {cards.length > 1 && (
+                    <button
+                      onClick={() => {
+                        try { sfx.play('click', 0.5); } catch {}
+                        setCurrentCardIndex(prev => prev < cards.length - 1 ? prev + 1 : 0);
+                      }}
+                      className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200 ml-1 self-start mt-16"
+                      style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
+                    >
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                        <path d="M9 18l6-6-6-6"/>
+                      </svg>
+                    </button>
+                  )}
+                  
                   {/* Card info positioned to the right */}
                   {purchaseState === 'idle' && (
                     <div className="flex flex-col text-left">
                       <h2 className="text-xl font-bold text-yellow-300 mb-1">
                         {currentCard.title}
                       </h2>
+                      
+                      {/* Element and rarity info - positioned between title and one-liner */}
+                      <div className="flex items-center gap-3 mb-1 text-xs">
+                        {currentCard.element && (
+                          <div 
+                            style={{ 
+                              color: '#FFB6C1', 
+                              textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                            }}
+                          >
+                            Element: <span style={{ 
+                              color: getElementColor(currentCard.element),
+                              textShadow: `0 0 4px ${getElementColor(currentCard.element)}80`
+                            }}>{currentCard.element}</span>
+                          </div>
+                        )}
+                        
+                        <div 
+                          style={{ 
+                            color: currentCard.rarity === 'Rare' ? '#FF69B4' : '#87CEEB',
+                            textShadow: '0 0 4px currentColor'
+                          }}
+                        >
+                          ★ {currentCard.rarity.toUpperCase()} ★
+                        </div>
+                      </div>
+                      
                       <p className="text-sm text-pink-200 opacity-90">
                         {getCardOneLiner(currentCard.name)}
                       </p>
-                      
-                      {/* Element and rarity info */}
-                      {currentCard.element && (
-                        <div 
-                          className="mt-2 text-xs"
-                          style={{ 
-                            color: '#FFB6C1', 
-                            textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                          }}
-                        >
-                          Element: <span style={{ 
-                            color: getElementColor(currentCard.element),
-                            textShadow: `0 0 4px ${getElementColor(currentCard.element)}80`
-                          }}>{currentCard.element}</span>
-                        </div>
-                      )}
-                      
-                      <div 
-                        className="text-xs mt-1"
-                        style={{ 
-                          color: currentCard.rarity === 'Rare' ? '#FF69B4' : '#87CEEB',
-                          textShadow: '0 0 4px currentColor'
-                        }}
-                      >
-                        ★ {currentCard.rarity.toUpperCase()} ★
-                      </div>
 
                       {/* Purchase buttons positioned below text */}
-                      {!isCardOwned(currentCard.name) && (
+                      {(() => {
+                        const gateState = getCardState(currentCard);
+                        
+                        if (gateState === 'owned') {
+                          return (
+                            <div className="mt-4">
+                              <div className="flex items-center gap-2 px-3 py-1 rounded border border-green-400/60 bg-green-500/10 text-xs text-green-300"
+                                   style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)' }}>
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                                  <path d="M20 6L9 17l-5-5"/>
+                                </svg>
+                                <span>In Collection</span>
+                              </div>
+                            </div>
+                          );
+                        }
+                        
+                        if (gateState === 'comingSoon') {
+                          return (
+                            <div className="mt-4">
+                              <div className="px-3 py-1 rounded border border-gray-400/60 bg-gray-500/10 text-xs text-gray-300">
+                                Song not released yet
+                              </div>
+                            </div>
+                          );
+                        }
+                        
+                        if (gateState === 'lockedTier') {
+                          return (
+                            <div className="mt-4">
+                              <div className="px-3 py-1 rounded border border-yellow-400/60 bg-yellow-500/10 text-xs text-yellow-300"
+                                   style={{ textShadow: '0 0 4px rgba(234,179,8,0.6)' }}>
+                                Reach {getTierDisplayName(currentCard.min_tier)} to unlock
+                              </div>
+                            </div>
+                          );
+                        }
+                        
+                        // gateState === 'available' - show purchase buttons
+                        return (
                         <div className="mt-4">
                           <div 
                             className="text-xs mb-2"
@@ -902,7 +1090,11 @@ export default function BinderModal({ open, onClose }: Props) {
                             <button
                               onClick={() => {
                                 try { sfx.play('click', 0.6); } catch {}
-                                handlePurchaseClick('digital');
+                                if (purchaseState === 'digital-preview') {
+                                  resetPurchaseState();
+                                } else {
+                                  handlePurchaseClick('digital');
+                                }
                               }}
                               className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
                               style={{
@@ -961,24 +1153,64 @@ export default function BinderModal({ open, onClose }: Props) {
                             </button>
                           </div>
                         </div>
-                      )}
+                        );
+                      })()}
                     </div>
                   )}
-                  
-                  {/* Right navigation arrow */}
-                  {cards.length > 1 && (
-                    <button
-                      onClick={() => {
-                        try { sfx.play('click', 0.5); } catch {}
-                        setCurrentCardIndex(prev => prev < cards.length - 1 ? prev + 1 : 0);
-                      }}
-                      className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200 mt-16"
-                      style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
-                    >
-                      <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-                        <path d="M9 18l6-6-6-6"/>
-                      </svg>
-                    </button>
+
+                  {/* Digital purchase preview state */}
+                  {purchaseState === 'digital-preview' && selectedPurchaseType === 'digital' && (
+                    <div className="flex flex-col text-left">
+                      <h2 className="text-xl font-bold text-yellow-300 mb-1">
+                        {profile?.display_name || profile?.username || 'User'}
+                      </h2>
+                      
+                      {/* HeartCoin balance with icon */}
+                      <div className="flex items-center gap-2 mt-2">
+                        <img
+                          src="/elements/heart-coin.png"
+                          alt="Heart Coin"
+                          className="w-4 h-4"
+                          draggable={false}
+                        />
+                        <span 
+                          className="text-yellow-300 font-bold text-lg"
+                          style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
+                        >
+                          {profile?.heartcoin_balance || 0}
+                        </span>
+                      </div>
+                      
+                      {/* Cost display */}
+                      <div className="flex items-center gap-2 mt-3">
+                        <img
+                          src="/elements/heart-coin.png"
+                          alt="Heart Coin"
+                          className="w-3 h-3"
+                          draggable={false}
+                        />
+                        <span 
+                          className="text-yellow-300 font-bold text-xs"
+                          style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
+                        >
+                          {digitalCost}
+                        </span>
+                      </div>
+                      
+                      {/* Confirm button */}
+                      <div className="mt-4">
+                        <button
+                          onClick={() => {
+                            try { sfx.play('click', 0.6); } catch {}
+                            setPurchaseState('confirm-digital');
+                          }}
+                          className="px-3 py-1 rounded border border-green-400/60 bg-green-500/10 hover:bg-green-500/20 transition-all duration-200 text-xs text-green-300"
+                          style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)' }}
+                        >
+                          Confirm
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
                 
@@ -1074,7 +1306,7 @@ export default function BinderModal({ open, onClose }: Props) {
                           {hasCard && collectedCard?.cards ? (
                             <>
                               {(() => {
-                                // Create a card object to check if it's locked
+                                // Create a card object to check gate state
                                 const cardData = {
                                   id: collectedCard.cards.id,
                                   title: collectedCard.cards.card_name,
@@ -1085,7 +1317,8 @@ export default function BinderModal({ open, onClose }: Props) {
                                   is_released: collectedCard.cards.is_released ?? true,
                                   min_tier: (collectedCard.cards.min_tier as CardTier) ?? 'wanderer'
                                 };
-                                const locked = isCardLocked(cardData, profile?.tier);
+                                const gateState = getCardState(cardData);
+                                const isLocked = gateState === 'comingSoon' || gateState === 'lockedTier';
                                 
                                 return (
                                   <div className="relative w-full h-28">
@@ -1093,18 +1326,18 @@ export default function BinderModal({ open, onClose }: Props) {
                                       src={getCardImage(collectedCard.cards.card_name, collectedCard.cards.element)}
                                       alt={collectedCard.cards.card_name}
                                       className={
-                                        locked
+                                        isLocked
                                           ? "w-full h-28 object-cover rounded blur-xl brightness-50 opacity-60 transition-all duration-300"
                                           : "w-full h-28 object-cover rounded transition-all duration-300"
                                       }
                                       draggable={false}
                                     />
-                                    {locked && (
+                                    {isLocked && (
                                       <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
                                         <div className="px-2 py-1 rounded-lg bg-black/60 border border-pink-400/70 text-[9px] font-semibold tracking-wide text-pink-100 backdrop-blur-md shadow-[0_0_15px_rgba(252,84,175,0.7)]">
-                                          {!cardData.is_released
+                                          {gateState === 'comingSoon'
                                             ? "Coming Soon"
-                                            : `Unlock at ${cardData.min_tier.toUpperCase()}`}
+                                            : `Reach ${getTierDisplayName(cardData.min_tier)} to unlock`}
                                         </div>
                                       </div>
                                     )}
@@ -1502,6 +1735,8 @@ export default function BinderModal({ open, onClose }: Props) {
               </div>
             );
           })()}
+            </>
+          )}
 
           </div>
         </div>
@@ -1544,114 +1779,6 @@ export default function BinderModal({ open, onClose }: Props) {
         );
       })()}
 
-        {/* Card Display Modal */}
-        {cardOpen && (
-          <div 
-            className="fixed inset-0 z-[2147483648] flex items-center justify-center p-4"
-            style={{ paddingTop: '40vh' }}
-            onClick={() => {
-              try { sfx.play('close', 0.8); } catch {}
-              setCardOpen(false);
-              setIsCardFlipped(false);
-            }}
-          >
-            
-            {/* Card container */}
-            <div 
-              className="relative z-10 overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                maxWidth: 'min(70vw, 200px)',
-                maxHeight: '40vh',
-                display: 'flex',
-                flexDirection: 'column'
-              }}
-            >
-              {/* Flippable Card */}
-              <div 
-                className="w-full h-full rounded-lg shadow-2xl object-contain cursor-pointer"
-                style={{
-                  boxShadow: '0 0 40px rgba(255,105,180,0.8), 0 0 80px rgba(255,105,180,0.5), 0 0 120px rgba(255,105,180,0.3)',
-                  border: '2px solid rgba(255,105,180,0.6)',
-                  maxHeight: '100%',
-                  flex: '1 1 auto',
-                  perspective: '1000px'
-                }}
-                onClick={() => {
-                  try { sfx.play('click', 0.8); } catch {}
-                  setIsCardFlipped(!isCardFlipped);
-                }}
-              >
-                <div
-                  style={{
-                    position: 'relative',
-                    width: '100%',
-                    height: '100%',
-                    textAlign: 'center',
-                    transition: 'transform 0.6s',
-                    transformStyle: 'preserve-3d',
-                    transform: isCardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
-                  }}
-                >
-                  {/* Front of card */}
-                  <img
-                    src={selectedCard?.image || "https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910"}
-                    alt={selectedCard?.name || "CHXNDLER Card"}
-                    className="w-full h-full rounded-lg object-contain"
-                    style={{
-                      position: 'absolute',
-                      backfaceVisibility: 'hidden',
-                      WebkitBackfaceVisibility: 'hidden'
-                    }}
-                    draggable={false}
-                  />
-                  
-                  {/* Back of card */}
-                  <img
-                    src="https://ik.imagekit.io/CHXNDLER/card/back.png?updatedAt=1762388351170"
-                    alt="Card Back"
-                    className="w-full h-full rounded-lg object-contain"
-                    style={{
-                      position: 'absolute',
-                      backfaceVisibility: 'hidden',
-                      WebkitBackfaceVisibility: 'hidden',
-                      transform: 'rotateY(180deg)'
-                    }}
-                    draggable={false}
-                  />
-                </div>
-              </div>
-              
-              {/* Holographic shimmer effect */}
-              <div 
-                className="absolute inset-0 pointer-events-none rounded-lg"
-                style={{
-                  background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%)',
-                  animation: 'shimmer 4s ease-in-out infinite',
-                }}
-              />
-              
-              {/* Close button */}
-              <button
-                onClick={() => {
-                  try { sfx.play('close', 0.8); } catch {}
-                  setCardOpen(false);
-                  setIsCardFlipped(false);
-                }}
-                className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200"
-                style={{
-                  boxShadow: '0 0 15px rgba(255,105,180,0.6)',
-                  backdropFilter: 'blur(10px)',
-                }}
-              >
-                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-                  <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
 
       </>
   );

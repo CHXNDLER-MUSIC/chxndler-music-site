@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { AdditiveBlending, Group as ThreeGroup, SRGBColorSpace, Vector3 } from "three";
 // drei removed to avoid external asset/preset loading that can abort in some runtimes
@@ -12,6 +12,68 @@ import ElementalOrbitSystem from "@/components/holo/ElementalOrbitSystem";
 import { computePlanetLayout } from "@/lib/planetLayout";
 import { buildPlanetSongs } from "@/lib/planets";
 import { getEntriesByRing, getPlanetEntry } from "@/lib/planetRegistry";
+
+// Define elemental planets configuration
+const ELEMENTS = [
+  { key: "water", label: "WATER", color: "#38B6FF", baseAngle: 0 },
+  { key: "heart", label: "HEART", color: "#FC54AF", baseAngle: 90 },
+  { key: "lightning", label: "LIGHTNING", color: "#F2EF1D", baseAngle: 180 },
+  { key: "darkness", label: "DARKNESS", color: "#000000", baseAngle: 270 },
+] as const;
+
+const ELEMENT_ORBIT_RADIUS = 6;
+const ELEMENT_ORBIT_SPEED = 0.05;
+
+// Component to handle orbiting elemental planets and their song systems
+function OrbitingElementalSystem({ songs, mainId, hoverId }: { songs: any[]; mainId: string | null; hoverId: string | null }) {
+  const elementalPlanetsRef = useRef<{ [key: string]: Vector3 }>({});
+
+  // Create orbiting elemental planets
+  const elementalPlanets = ELEMENTS.map((element) => {
+    const ElementalPlanetGroup = ({ element: el }: { element: typeof element }) => {
+      const groupRef = useRef<ThreeGroup>(null);
+      
+      useFrame((state) => {
+        if (!groupRef.current) return;
+        
+        const t = state.clock.getElapsedTime();
+        const angle = (el.baseAngle * Math.PI / 180) + (t * ELEMENT_ORBIT_SPEED);
+        const x = Math.cos(angle) * ELEMENT_ORBIT_RADIUS;
+        const z = Math.sin(angle) * ELEMENT_ORBIT_RADIUS;
+        const y = 0.5; // Slightly elevated above the heart
+        
+        groupRef.current.position.set(x, y, z);
+        
+        // Store position for song planets to use
+        elementalPlanetsRef.current[el.key] = new Vector3(x, y, z);
+      });
+
+      return (
+        <group ref={groupRef}>
+          <ElementalPlanet 
+            element={el.key as any}
+            position={[0, 0, 0]} 
+            size={1.5} 
+            glowIntensity={3.0}
+          />
+          
+          {/* Song planets orbiting this elemental planet */}
+          <ElementalOrbitSystem
+            elementalPosition={[0, 0, 0]} // Relative to the elemental planet
+            element={el.key as any}
+            songs={songs}
+            mainId={mainId}
+            hoverId={hoverId}
+          />
+        </group>
+      );
+    };
+
+    return <ElementalPlanetGroup key={element.key} element={element} />;
+  });
+
+  return <>{elementalPlanets}</>;
+}
 
 function InvalidateOnState() {
   const invalidate = useThree((s) => s.invalidate);
@@ -191,108 +253,34 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         {/* Enlarge full-system view when showing all planets */}
         <group scale={actualShouldShowAll ? 1.45 : 1}>
         <SystemGroup>
-          {/* Heart planet at the center - only show when displaying all planets */}
+          {/* Heart planet at the center - always visible as the core */}
           {actualShouldShowAll && <HeartPlanet />}
           
-          {/* Four large elemental planets around the Core Heart - always show for debugging */}
-          <>
-            <ElementalPlanet 
-              element="heart" 
-              position={[-15, 10, 0]} 
-              size={25} 
-              glowIntensity={5.0}
+          {/* New orbiting elemental system with song planets attached */}
+          {songs.length > 0 && actualShouldShowAll && (
+            <OrbitingElementalSystem
+              songs={songs}
+              mainId={mainId}
+              hoverId={hoverId}
             />
-            <ElementalPlanet 
-              element="water" 
-              position={[15, 10, 0]} 
-              size={25} 
-              glowIntensity={5.0}
-            />
-            <ElementalPlanet 
-              element="lightning" 
-              position={[15, -10, 0]} 
-              size={25} 
-              glowIntensity={5.0}
-            />
-            <ElementalPlanet 
-              element="darkness" 
-              position={[-15, -10, 0]} 
-              size={25} 
-              glowIntensity={5.0}
-            />
-          </>
-          
-          {/* Song planets orbiting around each elemental planet - always show for debugging */}
-          {songs.length > 0 && (
-            <>
-              <ElementalOrbitSystem
-                elementalPosition={[-15, 10, 0]}
-                element="heart"
-                songs={songs}
-                mainId={mainId}
-                hoverId={hoverId}
-              />
-              <ElementalOrbitSystem
-                elementalPosition={[15, 10, 0]}
-                element="water"
-                songs={songs}
-                mainId={mainId}
-                hoverId={hoverId}
-              />
-              <ElementalOrbitSystem
-                elementalPosition={[15, -10, 0]}
-                element="lightning"
-                songs={songs}
-                mainId={mainId}
-                hoverId={hoverId}
-              />
-              <ElementalOrbitSystem
-                elementalPosition={[-15, -10, 0]}
-                element="darkness"
-                songs={songs}
-                mainId={mainId}
-                hoverId={hoverId}
-              />
-            </>
           )}
           
-          {/* Orbit guides when showing all planets */}
-          {(actualShouldShowAll || shouldShowSingle) ? <OrbitGuides /> : null}
-          
-          {/* Clean planet rendering based on planetDisplayMode */}
-          {(() => {
-            // Hide planets entirely when mode requests hidden (e.g., during warp),
-            // regardless of showAll prop passed from the parent.
-            if (actualShouldHide) {
-              return null;
+          {/* Single song focus mode - show individual planet */}
+          {shouldShowSingle && focusId && (() => {
+            const focusedSong = songs.find(s => s.id === focusId);
+            if (focusedSong) {
+              return (
+                <Planet 
+                  key={focusId} 
+                  song={focusedSong} 
+                  isMain={true} 
+                  isHover={hoverId === focusId} 
+                  isMoon={false} 
+                  isMuted={false} 
+                  ringBaseOverride={20} 
+                />
+              );
             }
-            
-            if (actualShouldShowAll) {
-              // Homepage mode: Songs are now rendered through ElementalOrbitSystem components
-              // No need to render individual planets here since they orbit around elemental planets
-              return null;
-            }
-            
-            if (shouldShowSingle && focusId) {
-              // Individual song mode: show only the focused planet
-              const focusedSong = songs.find(s => s.id === focusId);
-              if (focusedSong) {
-                return (
-                  <Planet 
-                    key={focusId} 
-                    song={focusedSong} 
-                    isMain={true} 
-                    isHover={hoverId === focusId} 
-                    isMoon={false} 
-                    isMuted={false} 
-                    ringBaseOverride={20} 
-                  />
-                );
-              } else {
-                return null;
-              }
-            }
-            
             return null;
           })()}
         </SystemGroup>

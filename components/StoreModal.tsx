@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { sfx } from '@/lib/sfx';
 import { useProfile } from '@/contexts/ProfileContext';
+import { getCardGateState, getTierDisplayName } from '@/types/card';
+import type { CardGateState } from '@/utils/cardGating';
 import Image from 'next/image';
 
 interface StoreItem {
@@ -14,6 +16,9 @@ interface StoreItem {
   priceUsd: number;
   priceHeartCoins: number;
   stripeUrl: string;
+  // Gating fields
+  is_released?: boolean;
+  min_tier?: string;
 }
 
 interface StoreModalProps {
@@ -32,7 +37,9 @@ const SAMPLE_ITEMS: Record<string, StoreItem> = {
     image: '/card/baby.png',
     priceUsd: 3,
     priceHeartCoins: 20,
-    stripeUrl: 'https://buy.stripe.com/aFacN64SZ4gZcZz8114gg0a'
+    stripeUrl: 'https://buy.stripe.com/aFacN64SZ4gZcZz8114gg0a',
+    is_released: true,
+    min_tier: 'wanderer'
   },
   'ocean-girl': {
     id: 'ocean-girl',
@@ -41,7 +48,31 @@ const SAMPLE_ITEMS: Record<string, StoreItem> = {
     image: '/card/ocean-girl.png',
     priceUsd: 3,
     priceHeartCoins: 20,
-    stripeUrl: 'https://buy.stripe.com/dRmbJ24SZ00J6Bb9554gg00'
+    stripeUrl: 'https://buy.stripe.com/dRmbJ24SZ00J6Bb9554gg00',
+    is_released: true,
+    min_tier: 'wanderer'
+  },
+  'somebody-to-love': {
+    id: 'somebody-to-love',
+    title: 'Somebody to Love',
+    description: 'Digital collectible card from the Heartverse collection.',
+    image: '/card/somebody-to-love.png',
+    priceUsd: 5,
+    priceHeartCoins: 30,
+    stripeUrl: 'https://buy.stripe.com/example',
+    is_released: true,
+    min_tier: 'lover'
+  },
+  'unreleased-song': {
+    id: 'unreleased-song',
+    title: 'Mystery Track',
+    description: 'A secret song from the upcoming album.',
+    image: '/card/mystery.png',
+    priceUsd: 10,
+    priceHeartCoins: 50,
+    stripeUrl: 'https://buy.stripe.com/example',
+    is_released: false,
+    min_tier: 'guide'
   }
 };
 
@@ -55,6 +86,25 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
   const [isStripeLoading, setIsStripeLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isOwned, setIsOwned] = useState(false);
+
+  // Helper to get card gate state
+  const getItemGateState = (item: StoreItem): CardGateState => {
+    const cardData = {
+      id: item.id,
+      card_name: item.title,
+      is_released: item.is_released ?? true,
+      min_tier: (item.min_tier || 'wanderer') as any
+    };
+    
+    const profileData = profile ? {
+      id: profile.id,
+      tier: profile.tier || profile.journey_tag || 'wanderer'
+    } : null;
+    
+    // For store, we don't check user_cards (ownership) - that's handled separately
+    const userCards: any[] = [];
+    return getCardGateState(cardData, profileData, userCards);
+  };
 
   // Reset states when modal opens/closes or item changes
   useEffect(() => {
@@ -77,6 +127,19 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
   // Handle Stripe checkout
   const handleStripeCheckout = async () => {
     if (!item) return;
+    
+    const gateState = getItemGateState(item);
+    
+    // Check if item is gated
+    if (gateState === 'comingSoon') {
+      setError('This item is not available yet.');
+      return;
+    }
+    
+    if (gateState === 'lockedTier') {
+      setError(`Reach ${getTierDisplayName(item.min_tier as any)} tier to unlock this item.`);
+      return;
+    }
     
     setIsStripeLoading(true);
     setError(null);
@@ -113,6 +176,21 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
 
   // Handle HeartCoin checkout panel toggle
   const handleHeartCoinCheckout = () => {
+    if (!item) return;
+    
+    const gateState = getItemGateState(item);
+    
+    // Check if item is gated
+    if (gateState === 'comingSoon') {
+      setError('This item is not available yet.');
+      return;
+    }
+    
+    if (gateState === 'lockedTier') {
+      setError(`Reach ${getTierDisplayName(item.min_tier as any)} tier to unlock this item.`);
+      return;
+    }
+    
     try {
       sfx.play('click', 0.6);
     } catch {}
@@ -347,62 +425,104 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
         {/* Action buttons */}
         {!showHeartCoinCheckout && (
           <div className="px-6 pb-6">
-            {isOwned ? (
-              <div className="text-center">
-                <button
-                  type="button"
-                  disabled
-                  className="w-full py-3 px-6 rounded-lg font-bold bg-gray-600 text-gray-300 cursor-not-allowed mb-3"
-                >
-                  Owned
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    // TODO: Navigate to binder or collection view
-                    try { sfx.play('click', 0.6); } catch {}
-                  }}
-                  className="text-[#19E3FF] hover:text-[#9EEBFF] text-sm transition-colors"
-                >
-                  View in Binder
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {/* Buy with $ button */}
-                <button
-                  type="button"
-                  onClick={handleStripeCheckout}
-                  disabled={isStripeLoading}
-                  onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
-                  className={`w-full py-3 px-6 rounded-lg font-bold transition-all duration-200 ${
-                    isStripeLoading
-                      ? 'bg-gray-500 cursor-not-allowed text-gray-300'
-                      : 'bg-green-500 hover:bg-green-600 hover:scale-[1.02] text-white'
-                  }`}
-                >
-                  {isStripeLoading ? 'Redirecting...' : `Buy with $${item.priceUsd}`}
-                </button>
+            {(() => {
+              if (!item) return null;
+              
+              const gateState = getItemGateState(item);
+              
+              if (isOwned) {
+                return (
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      disabled
+                      className="w-full py-3 px-6 rounded-lg font-bold bg-gray-600 text-gray-300 cursor-not-allowed mb-3"
+                    >
+                      Owned
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // TODO: Navigate to binder or collection view
+                        try { sfx.play('click', 0.6); } catch {}
+                      }}
+                      className="text-[#19E3FF] hover:text-[#9EEBFF] text-sm transition-colors"
+                    >
+                      View in Binder
+                    </button>
+                  </div>
+                );
+              }
+              
+              if (gateState === 'comingSoon') {
+                return (
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      disabled
+                      className="w-full py-3 px-6 rounded-lg font-bold bg-gray-600 text-gray-300 cursor-not-allowed"
+                    >
+                      Coming Soon
+                    </button>
+                  </div>
+                );
+              }
+              
+              if (gateState === 'lockedTier') {
+                return (
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      disabled
+                      className="w-full py-3 px-6 rounded-lg font-bold bg-yellow-600 text-yellow-200 cursor-not-allowed mb-3"
+                    >
+                      Requires {getTierDisplayName(item.min_tier as any)} Tier
+                    </button>
+                    <p className="text-sm text-gray-400">
+                      Upgrade your tier to unlock this item
+                    </p>
+                  </div>
+                );
+              }
+              
+              // gateState === 'available' - show normal purchase buttons
+              return (
+                <div className="space-y-3">
+                  {/* Buy with $ button */}
+                  <button
+                    type="button"
+                    onClick={handleStripeCheckout}
+                    disabled={isStripeLoading}
+                    onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
+                    className={`w-full py-3 px-6 rounded-lg font-bold transition-all duration-200 ${
+                      isStripeLoading
+                        ? 'bg-gray-500 cursor-not-allowed text-gray-300'
+                        : 'bg-green-500 hover:bg-green-600 hover:scale-[1.02] text-white'
+                    }`}
+                  >
+                    {isStripeLoading ? 'Redirecting...' : `Buy with $${item.priceUsd}`}
+                  </button>
 
-                {/* Add to Collection button */}
-                <button
-                  type="button"
-                  onClick={handleHeartCoinCheckout}
-                  disabled={!profile}
-                  onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
-                  className={`w-full py-3 px-6 rounded-lg font-bold transition-all duration-200 ${
-                    profile
-                      ? 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(242,239,29,0.8)]'
-                      : 'bg-gray-600 text-gray-300 cursor-not-allowed'
-                  }`}
-                  style={profile ? {
-                    boxShadow: '0 0 20px rgba(242,239,29,0.6), inset 0 2px 0 rgba(255,255,255,0.6), inset 0 -8px 16px rgba(0,0,0,0.22)'
-                  } : {}}
-                >
-                  Add to Collection
-                </button>
-              </div>
-            )}
+                  {/* Add to Collection button */}
+                  <button
+                    type="button"
+                    onClick={handleHeartCoinCheckout}
+                    disabled={!profile}
+                    onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
+                    className={`w-full py-3 px-6 rounded-lg font-bold transition-all duration-200 ${
+                      profile
+                        ? 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(242,239,29,0.8)]'
+                        : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                    }`}
+                    style={profile ? {
+                      boxShadow: '0 0 20px rgba(242,239,29,0.6), inset 0 2px 0 rgba(255,255,255,0.6), inset 0 -8px 16px rgba(0,0,0,0.22)'
+                    } : {}}
+                  >
+                    Add to Collection
+                  </button>
+                </div>
+              );
+            })()}
           </div>
         )}
       </motion.div>

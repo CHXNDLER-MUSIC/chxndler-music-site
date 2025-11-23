@@ -67,6 +67,11 @@ interface Profile {
   tier: ProfileTier; // default "wanderer"
   cards: OwnedCardRow[];
   badges: OwnedBadgeRow[];
+  // Legacy fields for compatibility
+  journey_tag?: string | null;
+  tierName?: string | null;
+  display_name?: string | null;
+  username?: string | null;
 }
 
 interface JournalEntry {

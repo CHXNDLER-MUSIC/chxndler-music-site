@@ -26,8 +26,8 @@ export default function HoloAudioBridge() {
       return;
     }
 
-    // Map back to the original track using the title
-    const track = tracks.find(t => t.title === holoSong.title);
+    // Map back to the original track using the slug/ID
+    const track = tracks.find(t => t.slug === holoSong.id);
     
     if (!track) {
       

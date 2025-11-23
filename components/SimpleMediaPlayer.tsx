@@ -1,9 +1,10 @@
-// components/MediaPlayer.tsx
+// components/SimpleMediaPlayer.tsx
 "use client";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { glow } from "@/config/ui";
 import { ELEMENT_COLORS, type Element } from "@/lib/planets";
+import { useAudioGate } from "./AudioGateWrapper";
 
 // Song element icon mapping
 const SONG_ELEMENTS: { [key: string]: string } = {
@@ -47,16 +48,39 @@ export default function MediaPlayer({
   progress,   // 0..1
   onToggle,
   isPlaying,
+  slug,
+  is_released = true,
+  min_tier = 'wanderer',
 }: {
   title: string;
   progress: number;
   onToggle: () => void;
   isPlaying: boolean;
+  slug?: string;
+  is_released?: boolean;
+  min_tier?: string;
 }) {
+  // Check audio gating
+  const gateResult = useAudioGate({
+    title,
+    slug,
+    is_released,
+    min_tier: min_tier as any
+  });
+
   const elementColor = getSongElementColor(title);
   const iconSrc = getSongIcon(title);
   const isDefaultMusicIcon = iconSrc.endsWith('/elements/music.png');
   const [animationTime, setAnimationTime] = useState(0);
+
+  // Handle gated play attempt
+  const handleToggle = () => {
+    if (!gateResult.allowed) {
+      console.log('Audio playback blocked:', gateResult.reason);
+      return;
+    }
+    onToggle();
+  };
   
   // Generate realistic audio waveform data
   const generateWaveform = (songTitle: string, length: number = 200) => {
@@ -112,14 +136,30 @@ export default function MediaPlayer({
     >
       <div className="flex items-center gap-3">
         <button
-          onClick={onToggle}
-          className="rounded-xl bg-white/10 hover:bg-white/20 px-3 py-2"
-          aria-label={isPlaying ? "Pause" : "Play"}
+          onClick={handleToggle}
+          className={`rounded-xl px-3 py-2 transition-all duration-200 ${
+            gateResult.allowed 
+              ? "bg-white/10 hover:bg-white/20" 
+              : "bg-red-500/20 cursor-not-allowed opacity-60"
+          }`}
+          aria-label={
+            !gateResult.allowed 
+              ? gateResult.reason || "Locked"
+              : isPlaying ? "Pause" : "Play"
+          }
+          title={!gateResult.allowed ? gateResult.reason : undefined}
         >
-          {isPlaying ? "⏸" : "▶️"}
+          {!gateResult.allowed ? "🔒" : isPlaying ? "⏸" : "▶️"}
         </button>
         <div className="flex-1">
-          <div className="text-white/90 text-sm truncate">{title}</div>
+          <div className="text-white/90 text-sm truncate">
+            {title}
+          </div>
+          {!gateResult.allowed && (
+            <div className="text-red-300 text-xs mt-1 truncate">
+              {gateResult.reason}
+            </div>
+          )}
           <div className="mt-2 h-16 w-full relative overflow-hidden rounded-lg bg-gradient-to-b from-black/30 to-black/10 border border-white/5">
             {/* Audio Waveform using SVG for smooth curves */}
             <svg 
