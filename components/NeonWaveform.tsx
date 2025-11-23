@@ -29,11 +29,12 @@ const ELEMENT_COLORS: Record<
   },
 };
 
+// Cache a single MediaElementSource per <audio> element across mounts
+const MEDIA_SOURCE_CACHE: WeakMap<HTMLMediaElement, { ctx: AudioContext; src: MediaElementAudioSourceNode }> = new WeakMap();
+
 const NeonWaveform: React.FC<NeonWaveformProps> = ({ audioUrl, element }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationIdRef = useRef<number | null>(null);
   const elementRef = useRef(element);
@@ -51,27 +52,23 @@ const NeonWaveform: React.FC<NeonWaveformProps> = ({ audioUrl, element }) => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Create a single AudioContext and MediaElementSourceNode per element
-    const AudioCtx: typeof AudioContext =
-      (window as any).AudioContext || (window as any).webkitAudioContext;
-    if (!audioContextRef.current) {
-      audioContextRef.current = new AudioCtx();
+    // Obtain or create a cached AudioContext and MediaElementSource for this <audio>
+    const AudioCtor: typeof AudioContext = (window as any).AudioContext || (window as any).webkitAudioContext;
+    let cached = MEDIA_SOURCE_CACHE.get(audioEl);
+    if (!cached) {
+      const ctx = new AudioCtor();
+      const src = ctx.createMediaElementSource(audioEl);
+      MEDIA_SOURCE_CACHE.set(audioEl, { ctx, src });
+      cached = { ctx, src };
     }
-    const audioContext = audioContextRef.current;
+    const audioContext = cached.ctx;
+    const sourceNode = cached.src;
 
-    if (!analyserRef.current) {
-      analyserRef.current = audioContext.createAnalyser();
-      analyserRef.current.fftSize = 1024;
-    }
-    const analyser = analyserRef.current;
-
-    if (!sourceRef.current) {
-      // Create the source exactly once for this media element
-      sourceRef.current = audioContext.createMediaElementSource(audioEl);
-      sourceRef.current.connect(analyser);
-      // Do not connect analyser to destination to avoid duplicate audio output
-      // analyser.connect(audioContext.destination);
-    }
+    // Create a dedicated analyser for this component instance and connect it
+    const analyser = audioContext.createAnalyser();
+    analyser.fftSize = 1024;
+    try { sourceNode.connect(analyser); } catch {}
+    analyserRef.current = analyser;
 
     const bufferLength = analyser.fftSize;
     const dataArray = new Uint8Array(bufferLength);
@@ -135,11 +132,12 @@ const NeonWaveform: React.FC<NeonWaveformProps> = ({ audioUrl, element }) => {
       audioEl.removeEventListener("play", handlePlay);
       audioEl.removeEventListener("pause", handlePause);
       audioEl.removeEventListener("ended", handlePause);
-      // Do not recreate the source; only stop animation here.
+      // Stop animation and disconnect only this analyser
       if (animationIdRef.current != null) {
         cancelAnimationFrame(animationIdRef.current);
         animationIdRef.current = null;
       }
+      try { analyser.disconnect(); } catch {}
     };
     // Intentionally only set up once for the element lifecycle
   }, []);
@@ -152,12 +150,8 @@ const NeonWaveform: React.FC<NeonWaveformProps> = ({ audioUrl, element }) => {
           cancelAnimationFrame(animationIdRef.current);
         }
         analyserRef.current?.disconnect();
-        sourceRef.current?.disconnect();
-        audioContextRef.current?.close();
       } catch {}
       analyserRef.current = null;
-      sourceRef.current = null;
-      audioContextRef.current = null;
     };
   }, []);
 
