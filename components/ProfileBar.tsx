@@ -520,15 +520,6 @@ export default function ProfileBar({
               />
             </div>
 
-            {/* Soul Star Journal Button */}
-            <div className="mr-2 -ml-6">
-              <HoloStarsButton 
-                onClick={() => sfx.play('hover', 0.8)}
-                prompt={todaysPrompt}
-                onJournalCompleted={onJournalCompleted}
-                onBeamColorChange={onBeamColorChange}
-              />
-            </div>
 
             {/* Heart Coin Button with Count */}
             <div className="flex items-center space-x-0.5">

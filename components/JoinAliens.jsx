@@ -509,7 +509,7 @@ export default function JoinAliens({ visible = true } = {}) {
         }}
       >
         <img 
-          src="/audio/phone.png" 
+          src="/elements/phone.png" 
           alt="Phone" 
           style={{
             width: '100%',
