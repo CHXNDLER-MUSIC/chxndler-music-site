@@ -13,6 +13,7 @@ import { testAudioFile, testAllAudioFiles } from "@/lib/audio-debug";
 import { MediaStateMachine, type MediaState } from "@/lib/media-state-machine";
 import { audioCoordinator } from "@/lib/audio-coordinator";
 import { sfx } from "@/lib/sfx";
+import NeonWaveform from "@/components/NeonWaveform";
 
 type Props = {
   onSkyChange: (webm: string, mp4: string, key: string) => void;
@@ -70,6 +71,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const [showWaveformVolumePopover, setShowWaveformVolumePopover] = useState(false);
   const mainVolRef = useRef<HTMLDivElement|null>(null);
   const waveVolRef = useRef<HTMLDivElement|null>(null);
+  const neonWrapRef = useRef<HTMLDivElement|null>(null);
   const mainVolBtnRef = useRef<HTMLButtonElement|null>(null);
   const waveVolBtnRef = useRef<HTMLButtonElement|null>(null);
   const [mainPopoverPos, setMainPopoverPos] = useState<{left:number; top:number} | null>(null);
@@ -197,6 +199,11 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   // Get current song's element and color
   const currentElement = getTrackElement(cur);
   const currentElementColor = ELEMENT_COLORS[currentElement];
+  // Map to NeonWaveform's allowed element set
+  const neonElement: "heart" | "water" | "lightning" | "darkness" =
+    (currentElement === 'heart' || currentElement === 'water' || currentElement === 'lightning' || currentElement === 'darkness')
+      ? (currentElement as any)
+      : 'heart';
 
   // Run sky verification in development on component mount
   useEffect(() => {
@@ -1039,6 +1046,56 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     };
   }, []);
 
+  // Sync NeonWaveform's internal audio element with the main player
+  useEffect(() => {
+    const container = neonWrapRef.current;
+    const neonAudio: HTMLAudioElement | null = container ? (container.querySelector('audio') as HTMLAudioElement | null) : null;
+    const mainAudio = audioRef.current;
+    if (!neonAudio || !mainAudio) return;
+
+    try { neonAudio.crossOrigin = 'anonymous'; } catch {}
+    neonAudio.preload = 'auto';
+    neonAudio.muted = true;
+    neonAudio.volume = 0;
+    try { neonAudio.controls = false; } catch {}
+    try { neonAudio.style.display = 'none'; } catch {}
+    // Align sources
+    if (neonAudio.src !== mainAudio.src && mainAudio.src) {
+      try { neonAudio.src = mainAudio.src; } catch {}
+    }
+
+    const onPlay = () => {
+      try { neonAudio.currentTime = mainAudio.currentTime || 0; } catch {}
+      neonAudio.play().catch(() => {});
+    };
+    const onPause = () => { try { neonAudio.pause(); } catch {} };
+    const onSeeked = () => { try { neonAudio.currentTime = mainAudio.currentTime || 0; } catch {} };
+    const onTimeUpdate = () => {
+      const dt = Math.abs((neonAudio.currentTime || 0) - (mainAudio.currentTime || 0));
+      if (dt > 0.2) {
+        try { neonAudio.currentTime = mainAudio.currentTime || 0; } catch {}
+      }
+    };
+
+    mainAudio.addEventListener('play', onPlay);
+    mainAudio.addEventListener('pause', onPause);
+    mainAudio.addEventListener('seeked', onSeeked);
+    mainAudio.addEventListener('timeupdate', onTimeUpdate);
+
+    // If playing already, start neon
+    if (!mainAudio.paused) onPlay();
+
+    return () => {
+      try {
+        mainAudio.removeEventListener('play', onPlay);
+        mainAudio.removeEventListener('pause', onPause);
+        mainAudio.removeEventListener('seeked', onSeeked);
+        mainAudio.removeEventListener('timeupdate', onTimeUpdate);
+      } catch {}
+      try { neonAudio.pause(); } catch {}
+    };
+  }, [cur?.src]);
+
   // Dial interactions moved to StationDialOverlay; keep keyboard + prev/next here
 
   // mobile swipe
@@ -1075,6 +1132,11 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             </div>
           </div>
           
+        </div>
+
+        {/* Neon waveform visualizer (client-only canvas) */}
+        <div style={{ marginTop: 8 }} data-neon-audio="1" ref={neonWrapRef}>
+          <NeonWaveform audioUrl={cur.src} element={neonElement} />
         </div>
         
         {/* Waveform section moved above controls */}

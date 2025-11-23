@@ -426,16 +426,32 @@ export async function trackEvent(
       });
 
     if (error) {
+      // Some Supabase/PostgREST error objects don't stringify well in devtools
+      const errInfo: any = {
+        message: (error as any)?.message,
+        code: (error as any)?.code,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint,
+      };
       console.error('trackEvent error:', {
-        error,
+        ...errInfo,
         eventName,
         source: options?.source ?? 'unknown',
         hasMetadata: !!options?.metadata,
-        hasUserId: !!options?.userId
+        hasUserId: !!options?.userId,
+        table: 'events_v2',
       });
+      return { success: false, error } as const;
     }
+    return { success: true } as const;
   } catch (e) {
-    console.error('trackEvent crashed:', e);
+    const err = e as any;
+    console.error('trackEvent crashed:', {
+      message: err?.message ?? String(err),
+      name: err?.name,
+      stack: err?.stack,
+    });
+    return { success: false, error: e } as const;
   }
 }
 
