@@ -1323,8 +1323,7 @@ export default function HUDPanel({
   // Open brand popover anchored to the brand button
   const openBrandPopover = async () => {
     try { sfx.play('click', 0.4); } catch {}
-    // Change beam color to yellow when CHXNDLER button is clicked
-    try { onBeamColorChange?.('yellow'); } catch {}
+    // Keep the blue display open when showing brand popover
     try {
       const r = brandBtnRef.current?.getBoundingClientRect?.();
       const wrapper = innerRef.current?.parentElement || null; // outer HUD blue display wrapper (padding box)
@@ -6803,7 +6802,7 @@ export default function HUDPanel({
                       ) : brandError ? (
                         <div style={{ fontSize: 16, color: '#ff7b7b' }}>{brandError}</div>
                       ) : (
-                        <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: 14, color: '#F2EF1D', textShadow: '0 0 3px rgba(242,239,29,0.85), 0 0 6px rgba(242,239,29,0.35)', textTransform: 'none' }}>{brandContent || ''}</div>
+                        <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: 12, color: '#F2EF1D', textShadow: '0 0 3px rgba(242,239,29,0.85), 0 0 6px rgba(242,239,29,0.35)', textTransform: 'none' }}>{brandContent || ''}</div>
                       )}
                     </div>
                   </div>,

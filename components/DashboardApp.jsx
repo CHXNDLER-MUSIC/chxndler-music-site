@@ -31,6 +31,7 @@ import { debugLog } from "@/lib/debug";
 import WelcomeHomeModal from "@/components/WelcomeHomeModal";
 import ProfileBarWrapper from "@/components/ProfileBarWrapper";
 import HoloStarsButton from "@/components/HoloStarsButton";
+import SoulStareModal from "@/components/SoulStareModal";
 import { useUIStore } from "@/store/useUIStore";
 import { useProfile } from "@/contexts/ProfileContext";
 import { useUIState } from "@/lib/use-ui-state";
@@ -2141,12 +2142,10 @@ export default function DashboardApp({ initialSlug } = {}) {
 
       {/* Stars Modal triggered by journal button */}
       {showStarsModal && (
-        <HoloStarsButton 
-          onClick={() => setShowStarsModal(false)}
-          label="JOURNAL"
-          isActive={true}
-          autoOpen={true}
-          onBeamColorChange={handleBeamToggle}
+        <SoulStareModal 
+          isOpen={showStarsModal}
+          onClose={() => setShowStarsModal(false)}
+          onComplete={handleJournalCompleted}
           onOpenBlueDisplay={() => {
             // Force open blue display without toggle logic
             if (!showHUD && beamColor === 'blue') {

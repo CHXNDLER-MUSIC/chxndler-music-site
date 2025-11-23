@@ -449,7 +449,13 @@ export default function ProfileBar({
       {/* Panel Modals - Conditional rendering based on activePanel */}
 
       {activePanel === 'binder' && (
-        <BinderModal open={true} onClose={() => setActivePanel(null)} />
+        <BinderModal 
+          open={true} 
+          onClose={() => {
+            setActivePanel(null);
+            try { onOpenBlueDisplay?.(); } catch {}
+          }} 
+        />
       )}
 
 
