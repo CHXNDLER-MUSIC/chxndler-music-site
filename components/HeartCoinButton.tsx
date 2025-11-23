@@ -368,6 +368,38 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
             </svg>
           </button>
+
+          {/* SEND HEART COINS button (pink variant of user heartcoins button) */}
+          <div className="absolute right-3" style={{ top: '48px' }}>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                try { sfx.play('click', 0.8); } catch {}
+                // Placeholder: dispatch a custom event for a future send flow
+                window.dispatchEvent(new CustomEvent('openSendHeartCoins'));
+              }}
+              className="px-2 py-1 text-[10px] rounded border transition-all duration-200"
+              style={{
+                background: 'linear-gradient(135deg, rgba(252,84,175,0.20) 0%, rgba(255,105,180,0.30) 100%)',
+                color: '#FF69B4',
+                borderColor: 'rgba(255,105,180,0.60)',
+                textShadow: '0 0 6px rgba(255,105,180,0.85)',
+                boxShadow: '0 0 10px rgba(255,105,180,0.45), 0 0 20px rgba(255,105,180,0.25)',
+                fontWeight: 700
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(252,84,175,0.30) 0%, rgba(255,105,180,0.40) 100%)';
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 15px rgba(255,105,180,0.65), 0 0 25px rgba(255,105,180,0.35)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(252,84,175,0.20) 0%, rgba(255,105,180,0.30) 100%)';
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 10px rgba(255,105,180,0.45), 0 0 20px rgba(255,105,180,0.25)';
+              }}
+            >
+              SEND HEART COINS
+            </button>
+          </div>
           
           {/* Heart Coin Balance - Top Left */}
           <div className="absolute top-3 left-4 flex items-center space-x-2">
