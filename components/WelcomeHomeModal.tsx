@@ -171,7 +171,10 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
 
         {/* Close button */}
         <button
-          onClick={onClose}
+          onClick={() => {
+            try { sfx.play('click', 0.5); } catch {}
+            onClose();
+          }}
           className="absolute top-2 right-4 text-cyan-400 hover:text-cyan-200 cursor-pointer w-8 h-8 rounded-full border border-cyan-400/80 flex items-center justify-center"
           style={{ 
             fontSize: '16px',

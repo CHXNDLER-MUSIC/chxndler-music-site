@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { sfx } from "@/lib/sfx";
 import HeartversePopup from "@/components/HeartversePopup";
 
 type Props = {
@@ -91,7 +92,10 @@ export default function LoginModal({ open, onClose }: Props) {
 
           <div className="relative space-y-3">
             <button
-              onClick={signInWithGoogle}
+              onClick={() => {
+                try { sfx.play('click', 0.5); } catch {}
+                signInWithGoogle();
+              }}
               disabled={loading}
               className="w-full inline-flex items-center justify-center rounded-lg bg-[#FC54AF] px-4 py-3 text-sm font-semibold text-black hover:brightness-110 transition disabled:opacity-50"
             >
@@ -121,6 +125,9 @@ export default function LoginModal({ open, onClose }: Props) {
                 />
                 <button
                   type="submit"
+                  onClick={() => {
+                    try { sfx.play('click', 0.5); } catch {}
+                  }}
                   disabled={loading || phone.length === 0}
                   className="w-full inline-flex items-center justify-center rounded-lg bg-[#FC54AF]/20 border-2 border-[#FC54AF]/60 px-4 py-3 text-sm font-medium text-white hover:bg-[#FC54AF]/30 transition disabled:opacity-50"
                   style={{
@@ -149,6 +156,9 @@ export default function LoginModal({ open, onClose }: Props) {
                 />
                 <button
                   type="submit"
+                  onClick={() => {
+                    try { sfx.play('click', 0.5); } catch {}
+                  }}
                   disabled={loading || email.length === 0}
                   className="w-full inline-flex items-center justify-center rounded-lg bg-[#FC54AF]/20 border-2 border-[#FC54AF]/60 px-4 py-3 text-sm font-medium text-white hover:bg-[#FC54AF]/30 transition disabled:opacity-50"
                   style={{

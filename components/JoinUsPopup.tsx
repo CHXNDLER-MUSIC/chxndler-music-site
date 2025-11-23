@@ -21,6 +21,8 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [heartSignalSent, setHeartSignalSent] = useState(false);
   const [showVenmoPopup, setShowVenmoPopup] = useState(false);
+  const [showPhonePopup, setShowPhonePopup] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
 
   async function createProfileWithPhone(e: React.FormEvent) {
     e.preventDefault();
@@ -357,9 +359,10 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
             $5
           </button>
 
+
           {/* New simple popup */}
           {showVenmoPopup && (
-            <div className="absolute right-12 top-0 bg-black/90 border-2 border-cyan-400 rounded-lg p-4 w-48 z-50"
+            <div className="absolute right-12 top-3 bg-black/90 border-2 border-cyan-400 rounded-lg p-4 w-48 z-50"
                  style={{
                    boxShadow: '0 0 20px rgba(0, 255, 255, 0.5)',
                    backdropFilter: 'blur(10px)'
@@ -387,7 +390,165 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
               </div>
               
               {/* Arrow pointing left to button */}
-              <div className="absolute left-[-8px] top-4 w-0 h-0 border-t-[6px] border-b-[6px] border-r-[8px] border-transparent border-r-cyan-400"></div>
+              <div className="absolute left-[-8px] top-7 w-0 h-0 border-t-[6px] border-b-[6px] border-r-[8px] border-transparent border-r-cyan-400"></div>
+            </div>
+          )}
+        </div>
+
+        {/* Phone button in bottom left of popup */}
+        <div className="absolute bottom-4 left-4">
+          <button
+            type="button"
+            className="w-12 h-12 rounded-full bg-gradient-to-r from-cyan-400 to-cyan-600 hover:from-cyan-300 hover:to-cyan-500 flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg hover:shadow-xl"
+            style={{
+              boxShadow: '0 0 20px rgba(0, 255, 255, 0.6)',
+              border: '2px solid rgba(0, 255, 255, 0.8)'
+            }}
+            onClick={() => {
+              setShowPhonePopup(!showPhonePopup);
+              try {
+                sfx.play('success', 0.5);
+              } catch {}
+            }}
+            aria-label="Phone"
+          >
+            <img 
+              src="/audio/phone.png" 
+              alt="Phone" 
+              className="w-6 h-6 object-contain"
+            />
+          </button>
+
+          {/* Phone popup - using signal lost styling */}
+          {showPhonePopup && (
+            <div
+              style={{
+                position: 'absolute',
+                bottom: '60px',
+                left: '0px',
+                width: '280px',
+                height: 'auto',
+                margin: '0',
+                padding: '15px 20px 20px 20px',
+                background: 'rgba(0, 0, 0, 0.6)',
+                backdropFilter: 'blur(12px)',
+                border: 'none',
+                borderRadius: '12px',
+                boxShadow: '0 0 30px rgba(0, 255, 255, 0.5)',
+                zIndex: 50,
+                boxSizing: 'border-box'
+              }}
+            >
+              {/* Header Text */}
+              <div 
+                style={{ 
+                  textAlign: 'center', 
+                  marginBottom: '12px',
+                  color: '#00FFFF',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  textShadow: '0 0 8px rgba(0, 255, 255, 0.6)'
+                }}
+              >
+                Stay connected to the heartverse
+              </div>
+
+              {/* Phone Number Input */}
+              <div style={{ marginBottom: '20px' }}>
+                <input
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="+1 (555) 123-4567"
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    background: 'rgba(0, 0, 0, 0.6)',
+                    border: '1px solid rgba(0, 255, 255, 0.4)',
+                    borderRadius: '8px',
+                    color: '#ffffff',
+                    fontSize: '16px',
+                    outline: 'none',
+                    transition: 'border-color 200ms ease',
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#00FFFF';
+                    e.target.style.boxShadow = '0 0 0 2px rgba(0, 255, 255, 0.2)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = 'rgba(0, 255, 255, 0.4)';
+                    e.target.style.boxShadow = 'none';
+                  }}
+                />
+              </div>
+
+              {/* Send Heart Signal Button */}
+              <button
+                onClick={() => {
+                  if (phoneNumber.trim()) {
+                    sendHeartSignal();
+                    setShowPhonePopup(false);
+                    setPhoneNumber("");
+                  }
+                }}
+                disabled={!phoneNumber.trim()}
+                style={{
+                  width: '100%',
+                  padding: '12px 24px',
+                  background: 'transparent',
+                  border: !phoneNumber.trim() 
+                    ? '2px solid rgba(128, 128, 128, 0.3)' 
+                    : '2px solid #00FFFF',
+                  borderRadius: '8px',
+                  color: !phoneNumber.trim() 
+                    ? 'rgba(128, 128, 128, 0.7)' 
+                    : '#00FFFF',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  cursor: !phoneNumber.trim() ? 'not-allowed' : 'pointer',
+                  transition: 'all 300ms ease',
+                  boxShadow: !phoneNumber.trim() 
+                    ? 'none' 
+                    : '0 0 15px rgba(0, 255, 255, 0.3)',
+                  textShadow: !phoneNumber.trim() 
+                    ? 'none' 
+                    : '0 0 10px #00FFFF, 0 0 20px #00FFFF, 0 0 30px #00FFFF',
+                  outline: 'none'
+                }}
+                onMouseEnter={(e) => {
+                  if (phoneNumber.trim()) {
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.background = 'rgba(0, 255, 255, 0.15)';
+                    e.target.style.boxShadow = '0 0 40px rgba(0, 255, 255, 0.8), 0 0 60px rgba(0, 255, 255, 0.4), inset 0 0 30px rgba(0, 255, 255, 0.2)';
+                    e.target.style.textShadow = '0 0 15px #00FFFF, 0 0 25px #00FFFF, 0 0 35px #00FFFF, 0 0 45px #00FFFF';
+                    e.target.style.borderColor = '#00E5FF';
+                    try { sfx.play('hover.mp3', 0.3); } catch {}
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (phoneNumber.trim()) {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.background = 'transparent';
+                    e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';
+                    e.target.style.textShadow = '0 0 10px #00FFFF, 0 0 20px #00FFFF, 0 0 30px #00FFFF';
+                    e.target.style.borderColor = '#00FFFF';
+                  }
+                }}
+              >
+                Send Heart Signal
+              </button>
+              
+              {/* Arrow pointing down to button */}
+              <div style={{
+                position: 'absolute',
+                bottom: '-8px',
+                left: '24px',
+                width: '0',
+                height: '0',
+                borderLeft: '6px solid transparent',
+                borderRight: '6px solid transparent',
+                borderTop: '8px solid #00FFFF'
+              }}></div>
             </div>
           )}
         </div>

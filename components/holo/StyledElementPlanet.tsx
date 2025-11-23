@@ -1,0 +1,133 @@
+"use client";
+
+import React, { useRef, useMemo } from "react";
+import { useFrame } from "@react-three/fiber";
+import { Mesh, AdditiveBlending } from "three";
+import { ELEMENT_STYLES, ElementKey } from "@/utils/planetStyles";
+
+interface StyledElementPlanetProps {
+  elementKey: ElementKey;
+  position: [number, number, number];
+  radius?: number;
+}
+
+export default function StyledElementPlanet({ 
+  elementKey, 
+  position,
+  radius = 1.5
+}: StyledElementPlanetProps) {
+  const planetRef = useRef<Mesh>(null);
+  const glowRef = useRef<Mesh>(null);
+  const time = useRef(0);
+  
+  const styles = ELEMENT_STYLES[elementKey];
+  
+  // Different animation behaviors per element
+  const animations = useMemo(() => {
+    switch (elementKey) {
+      case "heart":
+        return {
+          pulse: true,
+          flicker: false,
+          fresnel: false,
+          baseEmissive: 1.2,
+          maxEmissive: 1.8
+        };
+      case "lightning":
+        return {
+          pulse: false,
+          flicker: true,
+          fresnel: false,
+          baseEmissive: 1.0,
+          maxEmissive: 2.0
+        };
+      case "darkness":
+        return {
+          pulse: false,
+          flicker: false,
+          fresnel: true,
+          baseEmissive: 0.1,
+          maxEmissive: 0.3
+        };
+      default: // water
+        return {
+          pulse: false,
+          flicker: false,
+          fresnel: false,
+          baseEmissive: 1.0,
+          maxEmissive: 1.0
+        };
+    }
+  }, [elementKey]);
+  
+  useFrame((state) => {
+    time.current = state.clock.elapsedTime;
+    
+    if (!planetRef.current) return;
+    
+    const material = planetRef.current.material as any;
+    
+    if (animations.pulse) {
+      // Heart: gentle pulsing
+      const pulse = Math.sin(time.current * 2) * 0.3 + 0.7;
+      material.emissiveIntensity = animations.baseEmissive * pulse;
+    } else if (animations.flicker) {
+      // Lightning: quick flicker variation
+      const flicker = Math.sin(time.current * 8) * 0.5 + 
+                     Math.sin(time.current * 15) * 0.3 + 
+                     Math.sin(time.current * 23) * 0.2;
+      material.emissiveIntensity = animations.baseEmissive + Math.abs(flicker) * 0.8;
+    } else if (animations.fresnel) {
+      // Darkness: very subtle intensity variation
+      const subtle = Math.sin(time.current * 0.5) * 0.1 + 0.9;
+      material.emissiveIntensity = animations.baseEmissive * subtle;
+    }
+    
+    // Slow rotation for all element planets
+    planetRef.current.rotation.y += 0.005;
+  });
+  
+  return (
+    <group position={position}>
+      {/* Background glow */}
+      <mesh ref={glowRef} renderOrder={2}>
+        <sphereGeometry args={[radius * 2.5, 16, 16]} />
+        <meshBasicMaterial
+          color={styles.innerGlow}
+          transparent
+          opacity={0.3}
+          depthWrite={false}
+          blending={AdditiveBlending}
+        />
+      </mesh>
+      
+      {/* Main element planet */}
+      <mesh ref={planetRef} renderOrder={1}>
+        <sphereGeometry args={[radius, 32, 32]} />
+        <meshStandardMaterial
+          color={styles.coreColor}
+          emissive={elementKey === "darkness" ? styles.rimColor : styles.innerGlow}
+          emissiveIntensity={animations.baseEmissive}
+          roughness={elementKey === "darkness" ? 0.1 : 0.3}
+          metalness={elementKey === "darkness" ? 0.8 : 0.2}
+          transparent={false}
+          depthWrite={true}
+          depthTest={true}
+        />
+      </mesh>
+      
+      {/* Rim highlight for darkness */}
+      {elementKey === "darkness" && (
+        <mesh renderOrder={1}>
+          <sphereGeometry args={[radius * 1.02, 32, 32]} />
+          <meshBasicMaterial
+            color={styles.rimColor}
+            transparent
+            opacity={0.5}
+            depthWrite={false}
+          />
+        </mesh>
+      )}
+    </group>
+  );
+}

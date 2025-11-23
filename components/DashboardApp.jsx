@@ -964,9 +964,9 @@ export default function DashboardApp({ initialSlug } = {}) {
     }
   }, [profile?.profile_complete, isWarping, openNamePrompt]);
 
-  // Handle opening journal: opens star pop-out in HUD
+  // Handle opening journal: opens journal view in Soul Sky popover
   const handleOpenJournal = React.useCallback(() => {
-    setShowStarsModal(true);
+    setShouldOpenJournal(true);
   }, []);
 
   // Handle journal completion: triggers refresh of profile data

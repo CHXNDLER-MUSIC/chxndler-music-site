@@ -1,4 +1,5 @@
 export type ElementKey = "water" | "heart" | "lightning" | "darkness";
+export type GateState = "comingSoon" | "lockedTier" | "available" | "owned";
 
 export const ELEMENT_STYLES: Record<ElementKey, {
   coreColor: string;
@@ -26,3 +27,31 @@ export const ELEMENT_STYLES: Record<ElementKey, {
     innerGlow: "#141526",
   },
 };
+
+// Helper function to determine card gate state
+export function getCardGateState(
+  card: any,
+  profile: any,
+  userCards: any[]
+): GateState {
+  // comingSoon - !is_released
+  if (!card.is_released) {
+    return "comingSoon";
+  }
+
+  // lockedTier - is_released true but user tier is less than card.min_tier
+  const userTier = profile?.current_tier || 0;
+  const minTier = card.min_tier || 0;
+  if (userTier < minTier) {
+    return "lockedTier";
+  }
+
+  // owned - is_released true, user tier >= card.min_tier, in user_cards
+  const isOwned = userCards?.some(uc => uc.card_id === card.id);
+  if (isOwned) {
+    return "owned";
+  }
+
+  // available - is_released true, user tier >= card.min_tier, not in user_cards
+  return "available";
+}
