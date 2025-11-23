@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 // Browser/client-side Supabase instance (uses anon key)
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -8,7 +8,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY');
 }
 
-export const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabaseClient = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
@@ -16,6 +16,11 @@ export const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
     // Let Supabase auto-detect the best flow type
   },
 });
+
+// Export a function that returns the client for consistency with the analytics spec
+export function createClient() {
+  return supabaseClient;
+}
 
 import { ProfileTier } from '@/types/card';
 

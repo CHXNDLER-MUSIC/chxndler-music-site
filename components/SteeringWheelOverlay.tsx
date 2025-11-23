@@ -163,6 +163,13 @@ export default function SteeringWheelOverlay({
     // Explicit analytics event for Signal button
     try { track('signal_click', { payload: { button_type: 'twitch_embed' } }); } catch {}
     try { track('twitch_embed_clicked', { location: 'signal_button' }); } catch {}
+    
+    // Track with new events_v2 system
+    try {
+      import('@/lib/analytics').then(({ trackEvent }) => {
+        trackEvent('signal_click', { source: 'wheel' });
+      }).catch(() => {});
+    } catch {}
   }, [showUI, isUIUnlocked, joinAlienOpen, activeBeamColor, onJoinToggle, onBeamColorChange]);
 
   // Helper function to get responsive values
@@ -514,6 +521,11 @@ export default function SteeringWheelOverlay({
                       });
                       // Also expose a dedicated event for possible server aggregation
                       track('power_button_clicked');
+                      
+                      // Track with new events_v2 system
+                      import('@/lib/analytics').then(({ trackEvent }) => {
+                        trackEvent('power_click', { source: 'wheel' });
+                      }).catch(() => {});
                     } catch {}
 
                     // Toggle behavior: if blue is active, turn OFF; otherwise turn ON blue

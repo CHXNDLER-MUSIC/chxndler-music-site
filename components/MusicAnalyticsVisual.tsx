@@ -302,23 +302,49 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
 
   async function loadEventsV2Data() {
     try {
-      const { success, data } = await loadEventsV2Analytics();
-      if (success) {
-        setEventsV2Data(data);
-      } else {
-        setEventsV2Data({});
+      // Import createClient from the correct path
+      const { createClient } = await import('@/lib/supabaseClient');
+      const supabase = createClient();
+
+      // Get counts for different event types using count: 'exact', head: true
+      const eventQueries = [
+        { name: 'start_click', key: 'startClicks' },
+        { name: 'instagram_click', key: 'instagramClicks' },
+        { name: 'tiktok_click', key: 'tiktokClicks' },
+        { name: 'youtube_click', key: 'youtubeClicks' },
+        { name: 'power_click', key: 'powerClicks' },
+        { name: 'signal_click', key: 'signalClicks' },
+      ];
+
+      const results: Record<string, number> = {};
+      
+      for (const query of eventQueries) {
+        const { count, error } = await supabase
+          .from('events_v2')
+          .select('*', { count: 'exact', head: true })
+          .eq('event_name', query.name);
+        
+        if (error) {
+          console.error(`[Analytics] Failed to load ${query.name} count:`, error);
+          results[query.key] = 0;
+        } else {
+          results[query.key] = count || 0;
+        }
       }
+      
+      setEventsV2Data(results);
     } catch (error) {
-      console.error('[Analytics] Failed to load events_v2 data:', error);
+      console.error('[Analytics] Exception loading events_v2 analytics:', error);
       setEventsV2Data({});
     }
   }
 
   useEffect(() => {
+    // Only load when modal is open - this component is only rendered when modal is open
     loadServerMetrics();
     loadMusicAnalytics();
     loadEventsV2Data();
-  }, []);
+  }, []); // Load once when component mounts (modal opens)
 
   if (!stats) {
     return (
@@ -413,7 +439,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                     const local = getRunningMetricsLocal(); 
                     return eventsV2Count ?? metrics?.startClicks ?? local.startClicks ?? (stats?.controlButtons.find(b=>b.button==='Start')?.count || 0); 
                   })()}</div>
-                  <div className="text-sm text-purple-300/70">Start Button Clicks {eventsV2Data?.startClicks !== undefined ? '(Events v2)' : ''}</div>
+                  <div className="text-sm text-purple-300/70">Start Button Clicks {eventsV2Data?.startClicks !== undefined ? '(events_v2)' : ''}</div>
                 </div>
                 
               </div>
@@ -476,7 +502,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                         </button>
                         {it.open && (
                           <div className="px-6 pb-4 text-sm text-yellow-100/80">
-                            {it.value} clicks {it.fromV2 ? '(Events v2)' : ''}
+                            {it.value} clicks {it.fromV2 ? '(events_v2)' : ''}
                           </div>
                         )}
                       </div>
@@ -518,11 +544,23 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                     <div className="divide-y divide-cyan-400/10">
                       <div className="w-full px-6 py-4 flex items-center justify-between">
                         <span className="text-white font-medium">Power</span>
-                        <span className="text-cyan-200 font-bold">{stats?.controlButtons.find(b=>b.button==='Power')?.count || 0}</span>
+                        <span className="text-cyan-200 font-bold">{(() => {
+                          const eventsV2Count = eventsV2Data?.powerClicks;
+                          const localCount = stats?.controlButtons.find(b=>b.button==='Power')?.count || 0;
+                          return eventsV2Count ?? localCount;
+                        })()}</span>
                       </div>
                       <div className="w-full px-6 py-4 flex items-center justify-between">
                         <span className="text-white font-medium">Play/Pause</span>
                         <span className="text-cyan-200 font-bold">{stats?.controlButtons.find(b=>b.button==='Play/Pause')?.count || 0}</span>
+                      </div>
+                      <div className="w-full px-6 py-4 flex items-center justify-between">
+                        <span className="text-white font-medium">Signal</span>
+                        <span className="text-cyan-200 font-bold">{(() => {
+                          const eventsV2Count = eventsV2Data?.signalClicks;
+                          const localCount = stats?.controlButtons.find(b=>b.button==='Join Aliens')?.count || 0;
+                          return eventsV2Count ?? localCount;
+                        })()}</span>
                       </div>
                       <div className="w-full px-6 py-4 flex items-center justify-between">
                         <span className="text-white font-medium text-sm">chxndler</span>

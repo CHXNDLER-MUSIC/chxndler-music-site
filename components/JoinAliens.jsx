@@ -348,6 +348,7 @@ export default function JoinAliens({ visible = true } = {}) {
 
       {/* Phone Number Input */}
       {showPhoneForm && (
+      <>
       <div style={{ marginBottom: '20px' }}>
         <input
           id="signal-phone"
@@ -456,6 +457,8 @@ export default function JoinAliens({ visible = true } = {}) {
           "Send Heart Signal"
         )}
       </button>
+      </> 
+      )}
       </div> {/* Close Stay Connected Section */}
 
       {/* Phone Button - positioned above $ button */}

@@ -179,27 +179,25 @@ create policy "allow_journal_entries_anon"
   with check (true);
 
 -- Events v2 table for simplified analytics tracking
-create table if not exists public.events_v2 (
+create table if not exists events_v2 (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid references public.profiles (id) on delete set null,
-  event_name text not null check (length(event_name) <= 100),
-  source text not null default 'unknown' check (length(source) <= 100),
+  user_id uuid references profiles(id) on delete set null,
+  event_name text not null check (char_length(event_name) <= 100),
+  source text not null default 'unknown' check (char_length(source) <= 100),
   metadata jsonb,
-  created_at timestamptz not null default now()
+  created_at timestamptz default now()
 );
 
-create index if not exists idx_events_v2_event_name on public.events_v2 (event_name);
-create index if not exists idx_events_v2_source on public.events_v2 (source);
-create index if not exists idx_events_v2_created_at on public.events_v2 (created_at desc);
-create index if not exists idx_events_v2_user_id on public.events_v2 (user_id);
+-- Helpful indexes
+create index if not exists events_v2_event_name_idx on events_v2(event_name);
+create index if not exists events_v2_user_id_idx on events_v2(user_id);
+create index if not exists events_v2_created_at_idx on events_v2(created_at);
 
 -- Enable RLS for events_v2
-alter table public.events_v2 enable row level security;
+alter table events_v2 enable row level security;
 
--- Allow anonymous users to insert events (for tracking)
-create policy "allow_insert_events_v2_anon"
-  on public.events_v2 for insert to anon with check (true);
+create policy "Anon insert OK" on events_v2
+  for insert to anon with check (true);
 
--- Allow anonymous users to read aggregated events data (for analytics modal)
-create policy "allow_select_events_v2_anon"
-  on public.events_v2 for select to anon using (true);
+create policy "Anon read OK" on events_v2
+  for select to anon using (true);
