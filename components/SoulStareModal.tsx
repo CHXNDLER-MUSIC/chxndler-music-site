@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { getTodaysQuestion, markQuestionAnswered, hasAnsweredToday } from "@/lib/dailyQuestions";
+import { useProfile } from "@/contexts/ProfileContext";
 import { sfx } from "@/lib/sfx";
+import SoulStarJournal from "@/components/SoulStarJournal";
 
 type Props = {
   isOpen: boolean;
@@ -21,11 +23,10 @@ type JournalEntry = {
 };
 
 export default function SoulStareModal({ isOpen, onClose, onComplete, onOpenBlueDisplay }: Props) {
+  const { isJournalOpen, setIsJournalOpen } = useProfile();
   const [response, setResponse] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [showJournal, setShowJournal] = useState(false);
-  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
   
   const todaysQuestion = getTodaysQuestion();
   const alreadyAnswered = hasAnsweredToday();
@@ -33,21 +34,12 @@ export default function SoulStareModal({ isOpen, onClose, onComplete, onOpenBlue
   // Enhanced close handler that opens blue display
   const handleClose = () => {
     onClose();
-    // Automatically open blue display after closing soul stare
+    // Automatically open blue display after closing soul star
     try { 
       onOpenBlueDisplay?.(); 
     } catch {}
   };
 
-  // Load journal entries on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedEntries = localStorage.getItem('soul_stare_journal');
-      if (storedEntries) {
-        setJournalEntries(JSON.parse(storedEntries));
-      }
-    }
-  }, [isOpen]);
 
   const handleSubmit = async () => {
     if (!response.trim() || isSubmitting) return;
@@ -64,20 +56,6 @@ export default function SoulStareModal({ isOpen, onClose, onComplete, onOpenBlue
       });
       
       if (heartResponse.ok) {
-        // Save to journal
-        const journalEntry: JournalEntry = {
-          date: new Date().toDateString(),
-          question: todaysQuestion.question,
-          category: todaysQuestion.category,
-          response: response.trim(),
-          color: todaysQuestion.color,
-          glowColor: todaysQuestion.glowColor
-        };
-        
-        const updatedEntries = [journalEntry, ...journalEntries];
-        setJournalEntries(updatedEntries);
-        localStorage.setItem('soul_stare_journal', JSON.stringify(updatedEntries));
-        
         markQuestionAnswered();
         setSubmitted(true);
         onComplete();
@@ -88,7 +66,7 @@ export default function SoulStareModal({ isOpen, onClose, onComplete, onOpenBlue
         }, 2000);
       }
     } catch (error) {
-      console.error('Failed to submit soul stare:', error);
+      console.error('Failed to submit soul star:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -158,7 +136,8 @@ export default function SoulStareModal({ isOpen, onClose, onComplete, onOpenBlue
         <button
           onClick={() => {
             try { sfx.play('click', 0.8); } catch {}
-            setShowJournal(!showJournal);
+            setIsJournalOpen(true);
+            onClose(); // Close the Soul Stare modal when opening journal
           }}
           className="absolute top-3 left-4 px-3 py-1 rounded-full border flex items-center gap-1 transition-all text-xs font-semibold"
           style={{ 
@@ -166,7 +145,7 @@ export default function SoulStareModal({ isOpen, onClose, onComplete, onOpenBlue
             color: todaysQuestion.color,
             boxShadow: `0 0 15px ${todaysQuestion.glowColor}, 0 0 25px ${todaysQuestion.color}50`,
             textShadow: `0 0 8px ${todaysQuestion.glowColor}`,
-            background: showJournal ? `${todaysQuestion.color}20` : `${todaysQuestion.color}10`,
+            background: `${todaysQuestion.color}10`,
             backdropFilter: 'blur(2px)',
             textTransform: 'uppercase',
             letterSpacing: '0.5px'
@@ -207,114 +186,38 @@ export default function SoulStareModal({ isOpen, onClose, onComplete, onOpenBlue
             letterSpacing: '1px'
           }}
         >
-          🌟 {showJournal ? 'Soul Journal' : 'Soul Stare'} 🌟
+          🌟 SOUL STAR 🌟
         </div>
         
-        {!showJournal && (
-          <>
-            {/* Category badge */}
-            <div className="text-center mb-4">
-              <span 
-                className="inline-block px-4 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
-                style={{
-                  background: `${todaysQuestion.color}20`,
-                  border: `1px solid ${todaysQuestion.color}60`,
-                  color: todaysQuestion.color,
-                  textShadow: `0 0 4px ${todaysQuestion.glowColor}`
-                }}
-              >
-                {todaysQuestion.category}
-              </span>
-            </div>
+        {/* Category badge */}
+        <div className="text-center mb-4">
+          <span 
+            className="inline-block px-4 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
+            style={{
+              background: `${todaysQuestion.color}20`,
+              border: `1px solid ${todaysQuestion.color}60`,
+              color: todaysQuestion.color,
+              textShadow: `0 0 4px ${todaysQuestion.glowColor}`
+            }}
+          >
+            {todaysQuestion.category}
+          </span>
+        </div>
 
-            {/* Question */}
-            <div 
-              className="text-center mb-8 px-4"
-              style={{ 
-                fontSize: '18px',
-                lineHeight: 1.4,
-                color: '#FFFFFF',
-                textShadow: '0 0 4px rgba(255,255,255,0.8)'
-              }}
-            >
-              "{todaysQuestion.question}"
-            </div>
-          </>
-        )}
+        {/* Question */}
+        <div 
+          className="text-center mb-8 px-4"
+          style={{ 
+            fontSize: '18px',
+            lineHeight: 1.4,
+            color: '#FFFFFF',
+            textShadow: '0 0 4px rgba(255,255,255,0.8)'
+          }}
+        >
+          "{todaysQuestion.question}"
+        </div>
 
-        {showJournal ? (
-          /* Journal View */
-          <div className="space-y-4 max-h-96 overflow-y-auto">
-            {journalEntries.length === 0 ? (
-              <div 
-                className="text-center p-6 rounded-lg"
-                style={{ 
-                  background: `${todaysQuestion.color}10`,
-                  border: `1px solid ${todaysQuestion.color}40`,
-                  color: todaysQuestion.color,
-                  textShadow: `0 0 4px ${todaysQuestion.glowColor}`
-                }}
-              >
-                <div className="text-lg mb-2">📖 Your journal awaits</div>
-                <div className="text-sm opacity-80">Start by answering today's soul stare question</div>
-              </div>
-            ) : (
-              journalEntries.map((entry, index) => (
-                <div 
-                  key={`${entry.date}-${index}`}
-                  className="p-4 rounded-lg space-y-3"
-                  style={{
-                    background: `${entry.color}08`,
-                    border: `1px solid ${entry.color}30`,
-                    borderLeft: `4px solid ${entry.color}`
-                  }}
-                >
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="text-sm font-semibold" style={{ color: entry.color }}>
-                      {entry.date}
-                    </div>
-                    <span 
-                      className="text-xs px-2 py-1 rounded-full uppercase font-semibold"
-                      style={{
-                        background: `${entry.color}15`,
-                        color: entry.color,
-                        border: `1px solid ${entry.color}40`
-                      }}
-                    >
-                      {entry.category}
-                    </span>
-                  </div>
-                  
-                  <div 
-                    className="text-sm italic opacity-90"
-                    style={{ 
-                      color: '#FFFFFF',
-                      fontSize: '14px',
-                      lineHeight: 1.4
-                    }}
-                  >
-                    "{entry.question}"
-                  </div>
-                  
-                  <div 
-                    className="text-sm leading-relaxed"
-                    style={{ 
-                      color: '#FFFFFF',
-                      background: 'rgba(0,0,0,0.2)',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      border: `1px solid ${entry.color}20`
-                    }}
-                  >
-                    {entry.response}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        ) : (
-          /* Soul Stare Interface */
-          <>
+        {/* Soul Star Interface */}
             {alreadyAnswered ? (
               /* Already answered state */
               <div 
@@ -327,7 +230,7 @@ export default function SoulStareModal({ isOpen, onClose, onComplete, onOpenBlue
                 }}
               >
                 <div className="text-lg mb-2">✨ You've already reflected today ✨</div>
-                <div className="text-sm opacity-80">Come back tomorrow for a new soul stare question</div>
+                <div className="text-sm opacity-80">come back tomorrow for a new soul star question</div>
               </div>
             ) : submitted ? (
               /* Just submitted state */
@@ -375,7 +278,7 @@ export default function SoulStareModal({ isOpen, onClose, onComplete, onOpenBlue
                     className="text-sm opacity-70"
                     style={{ color: todaysQuestion.color }}
                   >
-                    Your reflection is private and stays with you
+                    your REFLECTION is private and stays with you
                   </div>
                   
                   <button
@@ -392,14 +295,18 @@ export default function SoulStareModal({ isOpen, onClose, onComplete, onOpenBlue
                       textShadow: `0 0 4px ${todaysQuestion.glowColor}`
                     }}
                   >
-                    {isSubmitting ? 'REFLECTING...' : 'SHARE YOUR TRUTH'}
+                    {isSubmitting ? 'REFLECTING...' : 'share your truth'}
                   </button>
                 </div>
               </div>
             )}
-          </>
-        )}
       </div>
+      
+      {/* Unified Soul Star Journal */}
+      <SoulStarJournal 
+        isOpen={isJournalOpen} 
+        onClose={() => setIsJournalOpen(false)}
+      />
     </div>
   );
 }

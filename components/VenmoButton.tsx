@@ -34,17 +34,11 @@ export default function VenmoButton({
       });
     } catch {}
     
-    // Venmo deep link format: venmo://paycharge?txn=pay&recipients=username&amount=amount&note=message
-    const venmoUrl = `venmo://paycharge?txn=pay&recipients=${recipient}&amount=${amount}&note=${encodeURIComponent(note)}`;
+    // Use the specific Venmo URL provided
+    const venmoUrl = 'https://venmo.com/CHXNDLERTHEALIEN?txn=pay&amount=3&note=Fuel%20the%20Signal';
     
-    // Try to open the Venmo app first
-    window.location.href = venmoUrl;
-    
-    // Fallback: if mobile app doesn't open, try web version after a short delay
-    setTimeout(() => {
-      const webVenmoUrl = `https://venmo.com/u/${recipient}?txn=pay&amount=${amount}&note=${encodeURIComponent(note)}`;
-      window.open(webVenmoUrl, '_blank');
-    }, 1500);
+    // Open the Venmo payment page
+    window.open(venmoUrl, '_blank');
   };
 
   const color = "#3D95CE"; // Venmo brand blue

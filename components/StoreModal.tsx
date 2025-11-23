@@ -47,7 +47,10 @@ const SAMPLE_ITEMS: Record<string, StoreItem> = {
 
 export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }: StoreModalProps) {
   const { profile, refreshProfile } = useProfile();
-  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showHeartCoinCheckout, setShowHeartCoinCheckout] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [isSpending, setIsSpending] = useState(false);
+  const [purchaseSuccess, setPurchaseSuccess] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isStripeLoading, setIsStripeLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,10 +59,13 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
   // Reset states when modal opens/closes or item changes
   useEffect(() => {
     if (!isOpen || !item) {
-      setShowConfirmation(false);
+      setShowHeartCoinCheckout(false);
       setIsProcessing(false);
       setIsStripeLoading(false);
       setError(null);
+      setCheckoutError(null);
+      setIsSpending(false);
+      setPurchaseSuccess(false);
       setIsOwned(false);
     } else {
       // TODO: Check if user already owns this item
@@ -105,32 +111,33 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
     }
   };
 
-  // Handle HeartCoin redemption confirmation
-  const handleHeartCoinConfirmation = () => {
+  // Handle HeartCoin checkout panel toggle
+  const handleHeartCoinCheckout = () => {
     try {
       sfx.play('click', 0.6);
     } catch {}
     
-    setShowConfirmation(true);
+    setShowHeartCoinCheckout(true);
     setError(null);
+    setCheckoutError(null);
   };
 
-  // Cancel HeartCoin redemption
-  const handleCancelRedemption = () => {
+  // Cancel HeartCoin checkout
+  const handleCancelCheckout = () => {
     try {
       sfx.play('close', 0.4);
     } catch {}
     
-    setShowConfirmation(false);
-    setError(null);
+    setShowHeartCoinCheckout(false);
+    setCheckoutError(null);
   };
 
-  // Execute HeartCoin redemption
-  const handleConfirmRedemption = async () => {
+  // Execute HeartCoin spending
+  const handleSpendHeartCoins = async () => {
     if (!item || !profile) return;
     
-    setIsProcessing(true);
-    setError(null);
+    setIsSpending(true);
+    setCheckoutError(null);
     
     try {
       const response = await fetch('/api/purchase-item-with-heartcoins', {
@@ -153,8 +160,8 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
           sfx.play('click', 0.7);
         } catch {}
         
+        setPurchaseSuccess(true);
         setIsOwned(true);
-        setShowConfirmation(false);
         
         // Refresh profile to update HeartCoin balance
         await refreshProfile();
@@ -162,17 +169,23 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
         // Notify parent component
         onPurchaseSuccess?.(item);
         
+        // Hide checkout panel after brief success display
+        setTimeout(() => {
+          setShowHeartCoinCheckout(false);
+          setPurchaseSuccess(false);
+        }, 2000);
+        
       } else if (response.status === 400 && result.error?.includes('insufficient')) {
         // Insufficient HeartCoins
-        setError(`You need ${item.priceHeartCoins} HeartCoins but only have ${profile.heartcoin_balance || 0}.`);
+        setCheckoutError(`You need ${item.priceHeartCoins} HeartCoins but only have ${profile.heartcoin_balance || 0}.`);
       } else {
         throw new Error(result.error || 'Purchase failed');
       }
     } catch (error) {
       console.error('HeartCoin purchase error:', error);
-      setError('Purchase failed. Please try again.');
+      setCheckoutError('Purchase failed. Please try again.');
     } finally {
-      setIsProcessing(false);
+      setIsSpending(false);
     }
   };
 
@@ -254,40 +267,85 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
           </div>
         )}
 
-        {/* Confirmation area for HeartCoin redemption */}
-        {showConfirmation && (
+        {/* Inline HeartCoin checkout panel */}
+        {showHeartCoinCheckout && (
           <div className="px-6 pb-4">
-            <div className="bg-[#F2EF1D]/10 border border-[#F2EF1D]/30 rounded-lg p-4 text-center">
-              <p className="text-[#F2EF1D] mb-4">
-                Spend {item.priceHeartCoins} HeartCoins to add this item to your collection?
-              </p>
-              <div className="flex gap-3 justify-center">
-                <button
-                  type="button"
-                  onClick={handleCancelRedemption}
-                  className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded text-white font-medium transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleConfirmRedemption}
-                  disabled={isProcessing}
-                  className={`px-4 py-2 rounded font-medium transition-colors ${
-                    isProcessing
-                      ? 'bg-gray-500 cursor-not-allowed text-gray-300'
-                      : 'bg-[#F2EF1D] hover:bg-[#E6E318] text-black'
-                  }`}
-                >
-                  {isProcessing ? 'Processing...' : 'Confirm'}
-                </button>
+            <div className="rounded-xl border border-pink-500/40 bg-pink-900/20 px-4 py-3 space-y-3">
+              {/* User tier and balance */}
+              <div className="text-center space-y-2">
+                <div className="text-sm text-pink-200">
+                  {profile?.tierName ?? "Wanderer"}
+                </div>
+                <div className="flex items-center justify-center gap-2 text-lg font-semibold text-white">
+                  <span>{profile?.heartcoin_balance ?? 0}</span>
+                  <img
+                    src="/elements/heart-coin.png"
+                    alt="Heart Coin"
+                    className="w-5 h-5 object-contain"
+                    style={{
+                      filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
+                    }}
+                  />
+                </div>
+                <div className="text-sm text-pink-200">
+                  Current Item Price: <span className="font-bold text-pink-300">
+                    {item.priceHeartCoins} Heart Coins
+                  </span>
+                </div>
               </div>
+
+              {/* Success message */}
+              {purchaseSuccess && (
+                <div className="text-center py-2">
+                  <div className="text-green-400 font-semibold">✓ Added to your collection!</div>
+                </div>
+              )}
+
+              {/* Error message */}
+              {checkoutError && (
+                <div className="rounded-lg border border-red-500/60 bg-red-900/40 px-3 py-2 text-sm text-red-200 text-center">
+                  {checkoutError}
+                </div>
+              )}
+
+              {/* Action buttons */}
+              {!purchaseSuccess && (
+                <div className="space-y-2">
+                  {hasEnoughHeartCoins ? (
+                    <button
+                      onClick={handleSpendHeartCoins}
+                      disabled={isSpending}
+                      className={`w-full rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 ${
+                        isSpending
+                          ? 'bg-gray-500 cursor-not-allowed text-gray-300'
+                          : 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(242,239,29,0.8)]'
+                      }`}
+                      style={!isSpending ? {
+                        boxShadow: '0 0 20px rgba(242,239,29,0.6), inset 0 2px 0 rgba(255,255,255,0.6), inset 0 -8px 16px rgba(0,0,0,0.22)'
+                      } : {}}
+                    >
+                      {isSpending ? 'Processing...' : `Spend ${item.priceHeartCoins} Heart Coins`}
+                    </button>
+                  ) : (
+                    <div className="rounded-lg border border-red-400/60 bg-red-900/40 px-3 py-2 text-sm text-red-200 text-center">
+                      You need {item.priceHeartCoins - (profile?.heartcoin_balance ?? 0)} more Heart Coins
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleCancelCheckout}
+                    className="w-full px-4 py-2 text-sm text-pink-300 hover:text-pink-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
 
         {/* Action buttons */}
-        {!showConfirmation && (
+        {!showHeartCoinCheckout && (
           <div className="px-6 pb-6">
             {isOwned ? (
               <div className="text-center">
@@ -326,22 +384,22 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
                   {isStripeLoading ? 'Redirecting...' : `Buy with $${item.priceUsd}`}
                 </button>
 
-                {/* Redeem HeartCoins button */}
+                {/* Add to Collection button */}
                 <button
                   type="button"
-                  onClick={handleHeartCoinConfirmation}
-                  disabled={!hasEnoughHeartCoins || !profile}
+                  onClick={handleHeartCoinCheckout}
+                  disabled={!profile}
                   onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
                   className={`w-full py-3 px-6 rounded-lg font-bold transition-all duration-200 ${
-                    hasEnoughHeartCoins && profile
+                    profile
                       ? 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(242,239,29,0.8)]'
                       : 'bg-gray-600 text-gray-300 cursor-not-allowed'
                   }`}
-                  style={hasEnoughHeartCoins && profile ? {
+                  style={profile ? {
                     boxShadow: '0 0 20px rgba(242,239,29,0.6), inset 0 2px 0 rgba(255,255,255,0.6), inset 0 -8px 16px rgba(0,0,0,0.22)'
                   } : {}}
                 >
-                  Redeem {item.priceHeartCoins} HeartCoins
+                  Add to Collection
                 </button>
               </div>
             )}

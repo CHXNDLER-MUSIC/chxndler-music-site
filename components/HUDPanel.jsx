@@ -263,7 +263,7 @@ export default function HUDPanel({
   const soulSkyScrollRef = useRef(null);
   const brandLastScrollAtRef = useRef(0);
   // Lift the CHXNDLER popover higher above its anchor
-  const BRAND_POPOVER_Y_OFFSET = 200; // pixels to shift upward when positioning
+  const BRAND_POPOVER_Y_OFFSET = 180; // pixels to shift upward when positioning
 
   // YouTube popout state (waveform HUD)
   const [showYouTubePopover, setShowYouTubePopover] = useState(false);
@@ -2703,8 +2703,6 @@ export default function HUDPanel({
                           setShowHeartCoinPopover(false);
                           setShowIdenticalPopup(false);
                           setShowElementPopup(false);
-                          // Close blue display when opening welcome home modal
-                          try { onCloseBlueDisplay?.(); } catch {}
                           // Always show welcome home modal when button is clicked
                           setShowWelcomeHomeModal(true);
                         }}
@@ -6562,7 +6560,7 @@ export default function HUDPanel({
                       </div>
                     </div>
 
-                    <div style={{ marginTop: '20px', marginBottom: '8px' }}>
+                    <div style={{ marginTop: '8px', marginBottom: '8px' }}>
                       <textarea
                           value={questionResponse}
                           onChange={(e) => setQuestionResponse(e.target.value)}

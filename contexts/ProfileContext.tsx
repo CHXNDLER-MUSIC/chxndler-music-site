@@ -8,6 +8,7 @@ import React, {
   ReactNode,
 } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { ProfileTier } from "@/types/card";
 
 // Types for user owned cards and badges
 type OwnedCardRow = {
@@ -19,6 +20,8 @@ type OwnedCardRow = {
     card_name: string;
     element: string;
     rarity: string;
+    is_released?: boolean;
+    min_tier?: string;
   };
 };
 
@@ -61,8 +64,38 @@ interface Profile {
   profile_complete: boolean | null;
   created_at: string | null;
   updated_at: string | null;
+  tier: ProfileTier; // default "wanderer"
   cards: OwnedCardRow[];
   badges: OwnedBadgeRow[];
+}
+
+interface JournalEntry {
+  id: string;
+  user_id: string;
+  entry_date: string;
+  element: string;
+  intention: string | null;
+  reflection: string | null;
+  soul_star: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface DailyPrompts {
+  prompt_date: string;
+  element: string;
+  intention: {
+    id: string;
+    text: string;
+    element: string;
+    prompt_type: string;
+  };
+  reflection: {
+    id: string;
+    text: string;
+    element: string;
+    prompt_type: string;
+  };
 }
 
 interface ProfileContextType {
@@ -71,6 +104,14 @@ interface ProfileContextType {
   refreshProfile: () => Promise<void>;
   updateProfileNameAndElement: (name: string, elementLabel: string) => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
+  updateProfileName: (name: string) => Promise<void>;
+  // Journal functionality
+  journalEntries: JournalEntry[];
+  loadJournalEntries: (userId: string) => Promise<void>;
+  saveJournalEntry: (entry: Omit<JournalEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<JournalEntry | null>;
+  getDailyPrompts: () => Promise<DailyPrompts | null>;
+  isJournalOpen: boolean;
+  setIsJournalOpen: (open: boolean) => void;
 }
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
@@ -78,6 +119,8 @@ const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 export function ProfileProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
+  const [isJournalOpen, setIsJournalOpen] = useState(false);
 
   const fetchProfile = async () => {
     try {
@@ -103,7 +146,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabaseClient
         .from("profiles")
         .select(
-          "id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at"
+          "id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, tier"
         )
         .eq("id", user.id)
         .maybeSingle();
@@ -133,7 +176,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
                 id,
                 card_name,
                 element,
-                rarity
+                rarity,
+                is_released,
+                min_tier
               )
             `)
             .eq("user_id", user.id),
@@ -174,6 +219,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         profile_complete: data.profile_complete ?? !!(data.name && data.element),
         created_at: data.created_at,
         updated_at: data.updated_at,
+        tier: (data.tier || "wanderer") as ProfileTier,
         cards: cardRows ?? [],
         badges: badgeRows ?? [],
       };
@@ -215,6 +261,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       if (updates.heartcoin_balance !== undefined) dbUpdates.heartcoin_balance = updates.heartcoin_balance;
       if (updates.heartcoin_total !== undefined) dbUpdates.heartcoin_total = updates.heartcoin_total;
       if (updates.profile_complete !== undefined) dbUpdates.profile_complete = updates.profile_complete;
+      if (updates.tier !== undefined) dbUpdates.tier = updates.tier;
       
       // Update the existing profile (no insert logic - trigger handles creation)
       const { data, error } = await supabaseClient
@@ -243,6 +290,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           profile_complete: data.profile_complete ?? !!(data.name && data.element),
           created_at: data.created_at,
           updated_at: data.updated_at,
+          tier: (data.tier || "wanderer") as ProfileTier,
           cards: profile?.cards ?? [],
           badges: profile?.badges ?? [],
         };
@@ -273,6 +321,53 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const updateProfileName = async (name: string) => {
+    try {
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabaseClient.auth.getSession();
+
+      if (sessionError) {
+        console.error("Error getting session:", sessionError.message, sessionError);
+        throw new Error("Authentication required to update name");
+      }
+
+      const user = session?.user;
+      if (!user) {
+        throw new Error("You must be logged in to update your name");
+      }
+
+      if (!profile) {
+        throw new Error("Profile not found. Please complete your registration first");
+      }
+
+      // Update the profile name
+      const { data, error } = await supabaseClient
+        .from("profiles")
+        .update({ 
+          name: name.trim(),
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", user.id)
+        .select("*")
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error updating profile name:", error.message, error);
+        throw new Error("Failed to update name");
+      }
+
+      if (data) {
+        // Update local state immediately
+        setProfile(prev => prev ? { ...prev, name: name.trim() } : prev);
+      }
+    } catch (error) {
+      console.error("Error in updateProfileName:", error);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     // Subscribe to auth state changes
     const {
@@ -280,8 +375,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     } = supabaseClient.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         await fetchProfile();
+        await loadJournalEntries(session.user.id);
       } else {
         setProfile(null);
+        setJournalEntries([]);
         setLoading(false);
       }
     });
@@ -294,12 +391,112 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Journal helper functions
+  const loadJournalEntries = async (userId: string) => {
+    try {
+      const { data, error } = await supabaseClient
+        .from('soul_journal_entries')
+        .select('*')
+        .eq('user_id', userId)
+        .order('entry_date', { ascending: false });
+
+      if (error) {
+        console.error('Error loading journal entries:', error);
+        return;
+      }
+
+      setJournalEntries(data || []);
+    } catch (error) {
+      console.error('Error in loadJournalEntries:', error);
+    }
+  };
+
+  const saveJournalEntry = async (entry: Omit<JournalEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<JournalEntry | null> => {
+    try {
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabaseClient.auth.getSession();
+
+      if (sessionError) {
+        console.error('Error getting session:', sessionError.message);
+        return null;
+      }
+
+      const user = session?.user;
+      if (!user) {
+        console.error('No user session found');
+        return null;
+      }
+
+      const { data, error } = await supabaseClient
+        .from('soul_journal_entries')
+        .upsert(
+          {
+            user_id: user.id,
+            entry_date: entry.entry_date,
+            element: entry.element,
+            intention: entry.intention,
+            reflection: entry.reflection,
+            soul_star: entry.soul_star,
+          },
+          { 
+            onConflict: 'user_id,entry_date',
+            ignoreDuplicates: false 
+          }
+        )
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error saving journal entry:', error);
+        return null;
+      }
+
+      // Update local state
+      setJournalEntries(prev => {
+        const filtered = prev.filter(e => e.entry_date !== data.entry_date);
+        return [data, ...filtered].sort((a, b) => 
+          new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime()
+        );
+      });
+
+      return data;
+    } catch (error) {
+      console.error('Error in saveJournalEntry:', error);
+      return null;
+    }
+  };
+
+  const getDailyPrompts = async (): Promise<DailyPrompts | null> => {
+    try {
+      const response = await fetch('/api/soulPrompt/daily');
+      if (!response.ok) {
+        console.error('Error fetching daily prompts:', response.statusText);
+        return null;
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error in getDailyPrompts:', error);
+      return null;
+    }
+  };
+
   const value: ProfileContextType = {
     profile,
     loading,
     refreshProfile,
     updateProfileNameAndElement,
     updateProfile,
+    updateProfileName,
+    journalEntries,
+    loadJournalEntries,
+    saveJournalEntry,
+    getDailyPrompts,
+    isJournalOpen,
+    setIsJournalOpen,
   };
 
   return (

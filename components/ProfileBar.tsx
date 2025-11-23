@@ -19,6 +19,7 @@ import QuestList from '@/components/QuestList';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useUIStore } from '@/store/useUIStore';
+import JoinUsPopup from '@/components/JoinUsPopup';
 
 interface Profile {
   id: string;
@@ -70,6 +71,9 @@ export default function ProfileBar({
   const { openNamePrompt } = useUIStore();
   const [elementDropdownOpen, setElementDropdownOpen] = useState(false);
   const [journalCompletedToday, setJournalCompletedToday] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [showSignInPopup, setShowSignInPopup] = useState(false);
+  const [nameButtonTooltip, setNameButtonTooltip] = useState('');
 
   // Check if journal was completed today
   const checkJournalCompletion = async () => {
@@ -107,6 +111,23 @@ export default function ProfileBar({
     }
   }, [contextProfile?.id, profileRefreshTrigger]);
 
+  // Track authentication state
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabaseBrowser.auth.getUser();
+      setCurrentUser(user);
+    };
+
+    getUser();
+
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabaseBrowser.auth.onAuthStateChange((_event, session) => {
+      setCurrentUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   // Handler for when journal gets completed
   const handleJournalCompleted = async () => {
     setJournalCompletedToday(true);
@@ -115,6 +136,28 @@ export default function ProfileBar({
     // Refresh profile data to get updated HeartCoin balance
     const completed = await checkJournalCompletion();
     setJournalCompletedToday(completed);
+  };
+
+  // Handle name button click with authentication checks
+  const handleNameButtonClick = () => {
+    try { sfx.play('click', 0.4); } catch {}
+
+    // Case a: No authenticated user
+    if (!currentUser) {
+      setNameButtonTooltip("You need to log in to create your ALIEN name.");
+      setShowSignInPopup(true);
+      return;
+    }
+
+    // Case b: Logged in user but no profile row yet
+    if (!contextProfile) {
+      setNameButtonTooltip("Finish creating your Heartverse profile before editing your ALIEN name.");
+      // Don't open name modal - user should go through Welcome Home flow
+      return;
+    }
+
+    // Case c: Logged in user with profile - open name modal
+    openNamePrompt();
   };
   
   // IMPORTANT: Do not render anything until the user has entered
@@ -311,11 +354,9 @@ export default function ProfileBar({
           <div className="flex items-center min-w-0 overflow-hidden flex-1">
             {/* Username - Clickable */}
             <button 
-              onClick={() => {
-                try { sfx.play('click', 0.4); } catch {}
-                openNamePrompt();
-              }}
-              className="font-medium text-lg relative flex-shrink-0 ml-2 transition-all duration-200 cursor-pointer bg-transparent border-none focus:outline-none"
+              onClick={handleNameButtonClick}
+              disabled={loading}
+              className="font-medium text-lg relative flex-shrink-0 ml-2 transition-all duration-200 cursor-pointer bg-transparent border-none focus:outline-none disabled:opacity-50"
               style={{ 
                 color: getUsernameColor(currentElement),
                 textShadow: `
@@ -327,22 +368,27 @@ export default function ProfileBar({
                 padding: '8px 16px',
                 transition: 'all 0.3s ease'
               }}
+              title={!currentUser ? "You need to log in to create your ALIEN name." : !contextProfile ? "Finish creating your Heartverse profile before editing your ALIEN name." : "Click to edit your name"}
               onMouseEnter={(e) => {
-                try { sfx.play('hover', 0.8); } catch {}
-                e.currentTarget.style.transform = 'scale(1.05)';
-                e.currentTarget.style.textShadow = `
-                  0 0 15px ${getUsernameColor(currentElement)},
-                  0 0 25px ${getUsernameColor(currentElement)},
-                  0 0 35px ${getUsernameColor(currentElement)}
-                `;
+                if (!loading) {
+                  try { sfx.play('hover', 0.8); } catch {}
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                  e.currentTarget.style.textShadow = `
+                    0 0 15px ${getUsernameColor(currentElement)},
+                    0 0 25px ${getUsernameColor(currentElement)},
+                    0 0 35px ${getUsernameColor(currentElement)}
+                  `;
+                }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'scale(1)';
-                e.currentTarget.style.textShadow = `
-                  0 0 10px ${getUsernameColor(currentElement)},
-                  0 0 20px ${getUsernameColor(currentElement)},
-                  0 0 30px ${getUsernameColor(currentElement)}
-                `;
+                if (!loading) {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.textShadow = `
+                    0 0 10px ${getUsernameColor(currentElement)},
+                    0 0 20px ${getUsernameColor(currentElement)},
+                    0 0 30px ${getUsernameColor(currentElement)}
+                  `;
+                }
               }}
             >
               {displayName}
@@ -696,6 +742,12 @@ export default function ProfileBar({
         </div>,
         document.body
       )}
+
+      {/* Sign In Popup for unauthenticated users */}
+      <JoinUsPopup 
+        isOpen={showSignInPopup} 
+        onClose={() => setShowSignInPopup(false)} 
+      />
 
     </div>
   );

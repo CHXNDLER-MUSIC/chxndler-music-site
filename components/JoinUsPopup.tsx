@@ -371,13 +371,9 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
                 <button
                   onClick={() => {
                     try {
-                      const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=5&note=${encodeURIComponent('Thanks for the music!')}`;
+                      // Use the specific $5 Venmo URL
+                      const venmoUrl = 'https://venmo.com/CHXNDLERTHEALIEN?txn=pay&amount=5&note=Boost%20the%20Transmission';
                       window.open(venmoUrl, '_blank');
-                      
-                      setTimeout(() => {
-                        const webUrl = `https://venmo.com/u/chxndlerthealien?txn=pay&amount=5&note=${encodeURIComponent('Thanks for the music!')}`;
-                        window.open(webUrl, '_blank');
-                      }, 1000);
                       
                       setShowVenmoPopup(false);
                     } catch (error) {

@@ -17,6 +17,8 @@ export const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
+import { ProfileTier } from '@/types/card';
+
 // Optional: shared types for the profiles table
 export type Profile = {
   id: string;
@@ -26,4 +28,5 @@ export type Profile = {
   hearts: number | null;
   created_at: string | null;
   updated_at: string | null;
+  tier: ProfileTier;
 };

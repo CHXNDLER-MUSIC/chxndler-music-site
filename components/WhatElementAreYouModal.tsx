@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useUIStore } from "@/store/useUIStore";
@@ -16,11 +16,24 @@ const ELEMENTS: { key: Element; name: string; label: string; description: string
 ];
 
 export default function WhatElementAreYouModal() {
-  const { showElementSelection, closeElementSelection, triggerProfileRefresh } = useUIStore();
+  const { showElementSelection, closeElementSelection, triggerProfileRefresh, openNamePrompt } = useUIStore();
   const { updateProfileNameAndElement, profile } = useProfile();
   const [selectedElement, setSelectedElement] = useState<Element | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Check authentication when modal opens
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      setCurrentUser(user);
+    };
+
+    if (showElementSelection) {
+      checkAuth();
+    }
+  }, [showElementSelection]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,15 +41,31 @@ export default function WhatElementAreYouModal() {
     
     const selectedElementData = ELEMENTS.find(el => el.key === selectedElement);
     if (!selectedElementData) return;
-    
-    const currentName = profile?.name;
-    if (!currentName) {
-      setError("Name is required. Please go back and enter your name first.");
-      return;
-    }
-    
+
     setLoading(true);
     setError(null);
+    
+    // Case a: No authenticated user
+    if (!currentUser) {
+      setError("You need to log in to create your ALIEN name before choosing your Element.");
+      setLoading(false);
+      return;
+    }
+
+    // Case b: Logged in user but no profile row
+    if (!profile) {
+      setError("Please complete your Heartverse profile and choose your ALIEN name first.");
+      setLoading(false);
+      return;
+    }
+
+    // Case c: Profile exists but no name
+    const currentName = profile?.name;
+    if (!currentName) {
+      setError("Choose your ALIEN name before selecting an Element.");
+      setLoading(false);
+      return;
+    }
     
     try {
       // Play join-alien.mp3 sound
@@ -169,7 +198,22 @@ export default function WhatElementAreYouModal() {
 
         {error && (
           <div className="relative mb-4 rounded-md bg-red-50/10 border border-red-200/40 p-3 text-sm text-red-200">
-            {error}
+            <div className="mb-2">{error}</div>
+            {error === "Choose your ALIEN name before selecting an Element." && (
+              <button
+                onClick={() => {
+                  closeElementSelection();
+                  openNamePrompt();
+                }}
+                className="mt-2 px-3 py-1 bg-cyan-600/30 hover:bg-cyan-600/40 border border-cyan-500/50 text-cyan-300 rounded text-xs transition-all duration-200"
+                style={{
+                  boxShadow: '0 0 8px rgba(34, 211, 238, 0.3)',
+                  textShadow: '0 0 4px rgba(34, 211, 238, 0.6)'
+                }}
+              >
+                Choose Name
+              </button>
+            )}
           </div>
         )}
 

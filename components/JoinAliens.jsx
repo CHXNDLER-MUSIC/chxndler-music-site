@@ -114,10 +114,18 @@ export default function JoinAliens({ visible = true } = {}) {
     }
   };
 
-  // Start countdown when component becomes visible
+  // Start countdown when component becomes visible and reset tip options when hidden
   useEffect(() => {
     if (visible) {
       startCountdown();
+    } else {
+      // Reset all tip-related states when component becomes hidden
+      setShowTipOptions(false);
+      setShowPaymentOptions(false);
+      setShowPaymentOptions5(false);
+      setShowPaymentOptions10(false);
+      setShowVenmoPopup(false);
+      setShowVenmoPayment(false);
     }
     
     return () => {
@@ -1311,13 +1319,10 @@ export default function JoinAliens({ visible = true } = {}) {
           <button
             onClick={() => {
               try { sfx.play('card-ding', 0.7); } catch {}
-              const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=10&note=${encodeURIComponent('Ignite the Heartverse')}`;
-              const webVenmoUrl = `https://venmo.com/u/chxndlerthealien?txn=pay&amount=10&note=${encodeURIComponent('Ignite the Heartverse')}`;
+              // Use the specific $10 Venmo URL
+              const venmoUrl = 'https://venmo.com/CHXNDLERTHEALIEN?txn=pay&amount=10&note=Ignite%20the%20Heartverse';
               
               window.open(venmoUrl, '_blank');
-              setTimeout(() => {
-                window.open(webVenmoUrl, '_blank');
-              }, 1000);
               
               setShowPaymentOptions10(false);
             }}

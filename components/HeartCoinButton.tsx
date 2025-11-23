@@ -114,6 +114,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         openTab: 'CARDS'
       }
     }));
+    
+    // Don't call onOpenBlueDisplay here - let the store open instead
   };
 
 

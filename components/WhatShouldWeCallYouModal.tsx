@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useUIStore } from "@/store/useUIStore";
@@ -8,10 +8,27 @@ import { useProfile } from "@/contexts/ProfileContext";
 
 export default function WhatShouldWeCallYouModal() {
   const { showNamePrompt, closeNamePrompt, openElementSelection } = useUIStore();
-  const { updateProfile } = useProfile();
+  const { updateProfileName, profile } = useProfile();
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Check authentication and prefill name when modal opens
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      setCurrentUser(user);
+    };
+
+    if (showNamePrompt) {
+      checkAuth();
+      // Prefill with current profile name if it exists
+      if (profile?.name) {
+        setName(profile.name);
+      }
+    }
+  }, [showNamePrompt, profile?.name]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -21,16 +38,21 @@ export default function WhatShouldWeCallYouModal() {
     setError(null);
     
     try {
+      // Validate that name is not empty
+      const trimmedName = name.trim();
+      if (!trimmedName) {
+        setError("Please enter a name");
+        return;
+      }
+
       // Play join-alien.mp3 sound
       const audio = new Audio('/audio/join-alien.mp3');
       audio.play().catch(e => console.log('Audio play failed:', e));
       
-      // Use the context method instead of direct Supabase calls
-      await updateProfile({ name: name.trim() });
+      // Use the new updateProfileName function 
+      await updateProfileName(trimmedName);
       
       closeNamePrompt();
-      // Open element selection immediately after name is saved
-      setTimeout(() => openElementSelection(), 100);
     } catch (e: any) {
       setError(e?.message || "Failed to save name");
     } finally {
@@ -40,6 +62,15 @@ export default function WhatShouldWeCallYouModal() {
 
   if (!showNamePrompt) return null;
   if (typeof document === 'undefined') return null;
+
+  // Guard: Only render if user is authenticated and has a profile
+  if (!currentUser || !profile) {
+    // Close the modal if it's open but conditions aren't met
+    if (showNamePrompt) {
+      closeNamePrompt();
+    }
+    return null;
+  }
 
   return createPortal(
     <>

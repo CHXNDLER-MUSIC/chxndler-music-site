@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { sfx } from "@/lib/sfx";
 import { useProfile } from "@/contexts/ProfileContext";
+import { Card, CardTier, ProfileTier, isCardLocked } from "@/types/card";
 
 type Props = {
   open: boolean;
@@ -46,62 +47,63 @@ export default function BinderModal({ open, onClose }: Props) {
   const [selectedCard, setSelectedCard] = useState<{name: string, image: string, rarity: string, element: string} | null>(null);
   const [preselectedCard, setPreselectedCard] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isCardFlipped, setIsCardFlipped] = useState(false);
   // Purchase flow state machine
   const [selectedPurchaseType, setSelectedPurchaseType] = useState<'digital' | 'physical' | null>(null);
   const [purchaseState, setPurchaseState] = useState<'idle' | 'insufficient' | 'confirm-digital' | 'physical-form' | 'success'>('idle');
 
   // Full song collection data structure
   const songCollection = [
-    { name: 'MR. BRIGHTSIDE', element: 'DARKNESS', rarity: 'Common' },
-    { name: 'CHEERLEADER (ACOUSTIC)', element: 'HEART', rarity: 'Common' },
-    { name: 'I MIGHT FALL IN LOVE WITH YOU (ACOUSTIC)', element: 'HEART', rarity: 'Common' },
-    { name: 'MAKE BELIEVE', element: '', rarity: 'Common' },
-    { name: 'ALONE', element: 'DARKNESS', rarity: 'Common' },
-    { name: 'ALONE (ACOUSTIC)', element: 'DARKNESS', rarity: 'Common' },
-    { name: 'LITTLE BLACK HEART (ACOUSTIC)', element: 'DARKNESS', rarity: 'Common' },
-    { name: 'LITTLE BLACK HEART', element: 'DARKNESS', rarity: 'Common' },
-    { name: 'AMERICAN DREAM', element: 'DARKNESS', rarity: 'Common' },
-    { name: 'PARIS', element: 'DARKNESS', rarity: 'Common' },
-    { name: 'PINK MOON', element: 'DARKNESS', rarity: 'Common' },
-    { name: 'ALWAYS ON MY MIND', element: 'HEART', rarity: 'Common' },
-    { name: 'ALWAYS ON MY MIND (REMIX)', element: 'HEART', rarity: 'Common' },
-    { name: 'BE MY BEE', element: 'HEART', rarity: 'Common' },
-    { name: 'BE MY BEE (ACOUSTIC)', element: 'HEART', rarity: 'Common' },
-    { name: 'CHEERLEADER', element: 'HEART', rarity: 'Common' },
-    { name: 'COLLIDE', element: 'HEART', rarity: 'Common' },
-    { name: 'COLORS OF OUR HOME (BLUMA Game Soundtrack)', element: 'HEART', rarity: 'Common' },
-    { name: 'COLORS OF OUR HOME (ACOUSTIC)', element: 'HEART', rarity: 'Common' },
-    { name: 'COLORS OF OUR HOME', element: 'HEART', rarity: 'Common' },
-    { name: 'I MIGHT FALL IN LOVE WITH YOU', element: 'HEART', rarity: 'Common' },
-    { name: 'LOVE ME', element: 'HEART', rarity: 'Common' },
-    { name: 'LOVE ME (ACOUSTIC)', element: 'HEART', rarity: 'Common' },
-    { name: 'SOMEBODY TO LOVE', element: 'HEART', rarity: 'Common' },
-    { name: 'TIENES UN AMIGO', element: 'HEART', rarity: 'Common' },
-    { name: 'WE\'RE JUST FRIENDS', element: 'HEART', rarity: 'Common' },
-    { name: 'WE\'RE JUST FRIENDS (ACOUSTIC)', element: 'HEART', rarity: 'Common' },
-    { name: 'WE\'RE JUST FRIENDS (DMVRCO REMIX)', element: 'HEART', rarity: 'Common' },
-    { name: 'WE\'RE JUST FRIENDS (mickey jas REMIX)', element: 'HEART', rarity: 'Common' },
-    { name: 'BABY', element: 'HEART', rarity: 'Common' },
-    { name: 'BLUE (ACOUSTIC)', element: 'LIGHTNING', rarity: 'Common' },
-    { name: 'BLUE', element: 'LIGHTNING', rarity: 'Common' },
-    { name: 'BRAIN FREEZE', element: 'LIGHTNING', rarity: 'Common' },
-    { name: 'FEELING THIS', element: 'LIGHTNING', rarity: 'Common' },
-    { name: 'GAME BOY HEART', element: 'LIGHTNING', rarity: 'Common' },
-    { name: 'HOME', element: 'LIGHTNING', rarity: 'Common' },
-    { name: 'HOME (ACOUSTIC)', element: 'LIGHTNING', rarity: 'Common' },
-    { name: 'HOUSE PARTY', element: 'LIGHTNING', rarity: 'Common' },
-    { name: 'HOUSE PARTY (ACOUSTIC)', element: 'LIGHTNING', rarity: 'Common' },
-    { name: 'KID FOREVER', element: 'LIGHTNING', rarity: 'Common' },
-    { name: 'POKÉMON', element: 'LIGHTNING', rarity: 'Common' },
-    { name: 'LETTING GO', element: 'WATER', rarity: 'Common' },
-    { name: 'OCEAN GIRL', element: 'WATER', rarity: 'Common' },
-    { name: 'OCEAN GIRL (ACOUSTIC)', element: 'WATER', rarity: 'Common' },
-    { name: 'OCEAN GIRL (REMIX)', element: 'WATER', rarity: 'Common' },
-    { name: 'WATER', element: 'WATER', rarity: 'Rare' },
-    { name: 'HEART', element: 'HEART', rarity: 'Rare' },
-    { name: 'LIGHTNING', element: 'LIGHTNING', rarity: 'Rare' },
-    { name: 'DARKNESS', element: 'DARKNESS', rarity: 'Rare' },
-    { name: 'CHXNDLER', element: 'ALL', rarity: 'Common' },
+    { name: 'MR. BRIGHTSIDE', element: 'DARKNESS', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'CHEERLEADER (ACOUSTIC)', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'I MIGHT FALL IN LOVE WITH YOU (ACOUSTIC)', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'MAKE BELIEVE', element: '', rarity: 'Common', is_released: false, min_tier: 'wanderer' as CardTier },
+    { name: 'ALONE', element: 'DARKNESS', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'ALONE (ACOUSTIC)', element: 'DARKNESS', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'LITTLE BLACK HEART (ACOUSTIC)', element: 'DARKNESS', rarity: 'Common', is_released: true, min_tier: 'dreamer' as CardTier },
+    { name: 'LITTLE BLACK HEART', element: 'DARKNESS', rarity: 'Common', is_released: true, min_tier: 'dreamer' as CardTier },
+    { name: 'AMERICAN DREAM', element: 'DARKNESS', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'PARIS', element: 'DARKNESS', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'PINK MOON', element: 'DARKNESS', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'ALWAYS ON MY MIND', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'ALWAYS ON MY MIND (REMIX)', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'BE MY BEE', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'BE MY BEE (ACOUSTIC)', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'CHEERLEADER', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'COLLIDE', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'dreamer' as CardTier },
+    { name: 'COLORS OF OUR HOME (BLUMA Game Soundtrack)', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'COLORS OF OUR HOME (ACOUSTIC)', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'COLORS OF OUR HOME', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'I MIGHT FALL IN LOVE WITH YOU', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'LOVE ME', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'LOVE ME (ACOUSTIC)', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'SOMEBODY TO LOVE', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'lover' as CardTier },
+    { name: 'TIENES UN AMIGO', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'WE\'RE JUST FRIENDS', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'WE\'RE JUST FRIENDS (ACOUSTIC)', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'WE\'RE JUST FRIENDS (DMVRCO REMIX)', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'WE\'RE JUST FRIENDS (mickey jas REMIX)', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'BABY', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'BLUE (ACOUSTIC)', element: 'LIGHTNING', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'BLUE', element: 'LIGHTNING', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'BRAIN FREEZE', element: 'LIGHTNING', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'FEELING THIS', element: 'LIGHTNING', rarity: 'Common', is_released: true, min_tier: 'dreamer' as CardTier },
+    { name: 'GAME BOY HEART', element: 'LIGHTNING', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'HOME', element: 'LIGHTNING', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'HOME (ACOUSTIC)', element: 'LIGHTNING', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'HOUSE PARTY', element: 'LIGHTNING', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'HOUSE PARTY (ACOUSTIC)', element: 'LIGHTNING', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'KID FOREVER', element: 'LIGHTNING', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'POKÉMON', element: 'LIGHTNING', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'LETTING GO', element: 'WATER', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'OCEAN GIRL', element: 'WATER', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'OCEAN GIRL (ACOUSTIC)', element: 'WATER', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'OCEAN GIRL (REMIX)', element: 'WATER', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
+    { name: 'WATER', element: 'WATER', rarity: 'Rare', is_released: true, min_tier: 'lover' as CardTier },
+    { name: 'HEART', element: 'HEART', rarity: 'Rare', is_released: true, min_tier: 'lover' as CardTier },
+    { name: 'LIGHTNING', element: 'LIGHTNING', rarity: 'Rare', is_released: true, min_tier: 'lover' as CardTier },
+    { name: 'DARKNESS', element: 'DARKNESS', rarity: 'Rare', is_released: true, min_tier: 'lover' as CardTier },
+    { name: 'CHXNDLER', element: 'ALL', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
   ];
   
   const elements = ['LIGHTNING', 'DARKNESS', 'WATER', 'HEART'];
@@ -270,9 +272,16 @@ export default function BinderModal({ open, onClose }: Props) {
     
     // Convert to card format with images
     let cards = filteredSongs.map(song => ({
-      name: song.name,
+      id: song.name, // Use name as ID for now
+      title: song.name,
+      card_name: song.name,
       rarity: song.rarity,
       element: song.element,
+      image_url: getCardImage(song.name, song.element),
+      is_released: song.is_released,
+      min_tier: song.min_tier,
+      // Legacy fields for compatibility
+      name: song.name,
       image: getCardImage(song.name, song.element)
     }));
     
@@ -583,6 +592,8 @@ export default function BinderModal({ open, onClose }: Props) {
           style={{
             width: 'min(92vw, 700px)',
             height: '45vh',
+            display: 'flex',
+            flexDirection: 'column',
             padding: '10px 14px 14px 14px',
             borderRadius: 18,
             background: 'rgba(0,0,0,0.6)',
@@ -590,7 +601,8 @@ export default function BinderModal({ open, onClose }: Props) {
             boxShadow: '0 -8px 25px rgba(255,105,180,0.4), 0 -4px 15px rgba(255,105,180,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(255,105,180,0.45)',
             backdropFilter: 'blur(12px) saturate(140%)',
             color: '#FF69B4',
-            position: 'relative'
+            position: 'relative',
+            overflow: 'visible'
           }}
         >
           {/* Soft bottom glow pseudo element */}
@@ -646,7 +658,7 @@ export default function BinderModal({ open, onClose }: Props) {
           </button>
           
           {/* Header */}
-          <div className="flex justify-between items-center mb-3">
+          <div className="flex justify-between items-center mb-3 flex-shrink-0">
             <button
               onClick={() => {
                 try { sfx.play('click', 0.6); } catch {}
@@ -690,12 +702,15 @@ export default function BinderModal({ open, onClose }: Props) {
           
           {/* Thin pink neon line */}
           <div 
-            className="w-full h-px mb-4"
+            className="w-full h-px mb-4 flex-shrink-0"
             style={{
               background: 'linear-gradient(90deg, transparent, rgba(255,105,180,0.8) 20%, rgba(255,105,180,1) 50%, rgba(255,105,180,0.8) 80%, transparent)',
               boxShadow: '0 0 4px rgba(255,105,180,0.6)'
             }}
           />
+
+          {/* Scrollable content container */}
+          <div className="flex-1 overflow-y-auto" style={{ maxHeight: 'calc(100% - 80px)' }}>
 
           {/* Back button and filters positioned in same row */}
           {selectedElement && (
@@ -774,226 +789,216 @@ export default function BinderModal({ open, onClose }: Props) {
 
             return (
               <>
-                <div className="flex items-center gap-0 mb-4">
-                {/* Left navigation arrow */}
-                {cards.length > 1 && (
-                  <button
-                    onClick={() => {
-                      try { sfx.play('click', 0.5); } catch {}
-                      setCurrentCardIndex(prev => prev > 0 ? prev - 1 : cards.length - 1);
-                    }}
-                    className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200"
-                    style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
-                  >
-                    <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-                      <path d="M15 18l-6-6 6-6"/>
-                    </svg>
-                  </button>
-                )}
-                
-                {/* Card image in the center */}
-                <div className="flex-shrink-0">
-                  <img
-                    src={currentCard.image}
-                    alt={currentCard.name}
-                    className="w-24 h-auto rounded-lg cursor-pointer transition-transform duration-300 hover:scale-110"
-                    style={{
-                      boxShadow: '0 0 15px rgba(255,105,180,0.6), 0 0 30px rgba(255,105,180,0.3)',
-                      border: '2px solid rgba(255,105,180,0.6)',
-                    }}
-                    draggable={false}
-                    onClick={() => {
-                      try { sfx.play('click', 0.8); } catch {}
-                      setPreselectedCard(currentCard.name);
-                      setSelectedCard(currentCard);
-                      setCardOpen(true);
-                    }}
-                  />
-                  
-                  {/* Card count info below image */}
+                {/* Horizontal layout with card image and text */}
+                <div className="flex flex-row items-start gap-6 w-full overflow-visible mb-4">
+                  {/* Left navigation arrow */}
                   {cards.length > 1 && (
-                    <div 
-                      className="text-center mt-2"
-                      style={{ 
-                        color: '#FFB6C1', 
-                        textShadow: '0 0 4px rgba(255,182,193,0.6)',
-                        fontSize: '10px'
+                    <button
+                      onClick={() => {
+                        try { sfx.play('click', 0.5); } catch {}
+                        setCurrentCardIndex(prev => prev > 0 ? prev - 1 : cards.length - 1);
                       }}
+                      className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200 mt-16"
+                      style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
                     >
-                      {currentCardIndex + 1} of {cards.length}
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                        <path d="M15 18l-6-6 6-6"/>
+                      </svg>
+                    </button>
+                  )}
+                  
+                  {/* Card image with fixed width */}
+                  <div className="flex-shrink-0">
+                    {(() => {
+                      const locked = isCardLocked(currentCard, profile?.tier);
+                      return (
+                        <div className="relative">
+                          <img
+                            src={currentCard.image}
+                            alt={currentCard.name}
+                            className={
+                              locked
+                                ? "w-[260px] h-auto rounded-lg cursor-pointer transition-all duration-300 blur-xl brightness-50 opacity-60"
+                                : "w-[260px] h-auto rounded-lg cursor-pointer transition-transform duration-300 hover:scale-110"
+                            }
+                            style={{
+                              boxShadow: '0 0 15px rgba(255,105,180,0.6), 0 0 30px rgba(255,105,180,0.3)',
+                              border: '2px solid rgba(255,105,180,0.6)',
+                            }}
+                            draggable={false}
+                            onClick={() => {
+                              try { sfx.play('click', 0.8); } catch {}
+                              setPreselectedCard(currentCard.name);
+                              setSelectedCard(currentCard);
+                              setCardOpen(true);
+                            }}
+                          />
+
+                          {locked && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                              <div className="px-3 py-1 rounded-xl bg-black/60 border border-pink-400/70 text-[11px] font-semibold tracking-wide text-pink-100 backdrop-blur-md shadow-[0_0_18px_rgba(252,84,175,0.7)]">
+                                {!currentCard.is_released
+                                  ? "Coming Soon"
+                                  : `Unlock at ${currentCard.min_tier.toUpperCase()}`}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                  
+                  {/* Card info positioned to the right */}
+                  {purchaseState === 'idle' && (
+                    <div className="flex flex-col text-left">
+                      <h2 className="text-xl font-bold text-yellow-300 mb-1">
+                        {currentCard.title}
+                      </h2>
+                      <p className="text-sm text-pink-200 opacity-90">
+                        {getCardOneLiner(currentCard.name)}
+                      </p>
+                      
+                      {/* Element and rarity info */}
+                      {currentCard.element && (
+                        <div 
+                          className="mt-2 text-xs"
+                          style={{ 
+                            color: '#FFB6C1', 
+                            textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                          }}
+                        >
+                          Element: <span style={{ 
+                            color: getElementColor(currentCard.element),
+                            textShadow: `0 0 4px ${getElementColor(currentCard.element)}80`
+                          }}>{currentCard.element}</span>
+                        </div>
+                      )}
+                      
+                      <div 
+                        className="text-xs mt-1"
+                        style={{ 
+                          color: currentCard.rarity === 'Rare' ? '#FF69B4' : '#87CEEB',
+                          textShadow: '0 0 4px currentColor'
+                        }}
+                      >
+                        ★ {currentCard.rarity.toUpperCase()} ★
+                      </div>
+
+                      {/* Purchase buttons positioned below text */}
+                      {!isCardOwned(currentCard.name) && (
+                        <div className="mt-4">
+                          <div 
+                            className="text-xs mb-2"
+                            style={{ 
+                              color: '#FFB6C1', 
+                              textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                            }}
+                          >
+                            You have {profile?.heartcoin_balance || 0} HeartCoins
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            {/* Digital option */}
+                            <button
+                              onClick={() => {
+                                try { sfx.play('click', 0.6); } catch {}
+                                handlePurchaseClick('digital');
+                              }}
+                              className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
+                              style={{
+                                boxShadow: '0 0 8px rgba(255,105,180,0.3)',
+                              }}
+                            >
+                              <img
+                                src="/elements/heart-coin.png"
+                                alt="Heart Coin"
+                                className="w-3 h-3"
+                                draggable={false}
+                              />
+                              <span 
+                                className="text-yellow-300 font-bold text-xs"
+                                style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
+                              >
+                                {digitalCost}
+                              </span>
+                              <span 
+                                className="text-pink-200 font-medium text-xs"
+                                style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                              >
+                                DIGITAL
+                              </span>
+                            </button>
+                            
+                            {/* Physical option */}
+                            <button
+                              onClick={() => {
+                                try { sfx.play('click', 0.6); } catch {}
+                                handlePurchaseClick('physical');
+                              }}
+                              className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
+                              style={{
+                                boxShadow: '0 0 8px rgba(255,105,180,0.3)',
+                              }}
+                            >
+                              <img
+                                src="/elements/heart-coin.png"
+                                alt="Heart Coin"
+                                className="w-3 h-3"
+                                draggable={false}
+                              />
+                              <span 
+                                className="text-yellow-300 font-bold text-xs"
+                                style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
+                              >
+                                {physicalCost}
+                              </span>
+                              <span 
+                                className="text-pink-200 font-medium text-xs"
+                                style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                              >
+                                PHYSICAL
+                              </span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
+                  )}
+                  
+                  {/* Right navigation arrow */}
+                  {cards.length > 1 && (
+                    <button
+                      onClick={() => {
+                        try { sfx.play('click', 0.5); } catch {}
+                        setCurrentCardIndex(prev => prev < cards.length - 1 ? prev + 1 : 0);
+                      }}
+                      className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200 mt-16"
+                      style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
+                    >
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                        <path d="M9 18l6-6-6-6"/>
+                      </svg>
+                    </button>
                   )}
                 </div>
                 
-                {/* Right navigation arrow */}
+                {/* Card count info positioned below the entire viewer */}
                 {cards.length > 1 && (
-                  <button
-                    onClick={() => {
-                      try { sfx.play('click', 0.5); } catch {}
-                      setCurrentCardIndex(prev => prev < cards.length - 1 ? prev + 1 : 0);
+                  <div 
+                    className="text-center"
+                    style={{ 
+                      color: '#FFB6C1', 
+                      textShadow: '0 0 4px rgba(255,182,193,0.6)',
+                      fontSize: '10px'
                     }}
-                    className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200 ml-4"
-                    style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
                   >
-                    <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-                      <path d="M9 18l6-6-6-6"/>
-                    </svg>
-                  </button>
+                    {currentCardIndex + 1} of {cards.length} {currentCard.element} ({currentCard.rarity.toUpperCase()})
+                  </div>
                 )}
-                </div>
               </>
             );
           })()}
 
-          {/* Card info positioned after card image - only show when purchase state is idle */}
-          {selectedElement && purchaseState === 'idle' && (() => {
-            const cards = getFilteredCards();
-            const currentCard = cards[currentCardIndex];
-            
-            if (!currentCard) {
-              return null;
-            }
-
-            return (
-              <div className="text-center mb-4">
-                {/* Card name title */}
-                <div 
-                  className="mb-1 font-bold"
-                  style={{ 
-                    color: getElementColor(currentCard.element), 
-                    textShadow: `0 0 8px ${getElementColor(currentCard.element)}80`,
-                    fontSize: '14px'
-                  }}
-                >
-                  {currentCard.name}
-                </div>
-                
-                {/* Element info */}
-                {currentCard.element && (
-                  <div 
-                    className="mb-1"
-                    style={{ 
-                      color: '#FFB6C1', 
-                      textShadow: '0 0 4px rgba(255,182,193,0.6)',
-                      fontSize: '9px'
-                    }}
-                  >
-                    Element: <span style={{ 
-                      color: getElementColor(currentCard.element),
-                      textShadow: `0 0 4px ${getElementColor(currentCard.element)}80`
-                    }}>{currentCard.element}</span>
-                  </div>
-                )}
-                
-                {/* Rarity info */}
-                <div 
-                  className="mb-1"
-                  style={{ 
-                    color: currentCard.rarity === 'Rare' ? '#FF69B4' : '#87CEEB',
-                    textShadow: '0 0 4px currentColor',
-                    fontSize: '9px'
-                  }}
-                >
-                  ★ {currentCard.rarity.toUpperCase()} ★
-                </div>
-                
-                {/* 1-liner text */}
-                {getCardOneLiner(currentCard.name) && (
-                  <div 
-                    className="text-xs mb-2 italic leading-tight"
-                    style={{ 
-                      color: '#E6E6FA', 
-                      textShadow: '0 0 2px rgba(230,230,250,0.6)',
-                      fontSize: '8px'
-                    }}
-                  >
-                    {getCardOneLiner(currentCard.name)}
-                  </div>
-                )}
-
-                {/* Purchase buttons - positioned directly below 1-liner */}
-                {purchaseState === 'idle' && !isCardOwned(currentCard.name) && (
-                  <div className="mt-1">
-                    {/* HeartCoin balance */}
-                    <div 
-                      className="text-center mb-2 text-xs"
-                      style={{ 
-                        color: '#FFB6C1', 
-                        textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                      }}
-                    >
-                      You have {profile?.heartcoin_balance || 0} HeartCoins
-                    </div>
-                    
-                    {/* Purchase buttons */}
-                    <div className="flex justify-center gap-2">
-                      {/* Digital option */}
-                      <button
-                        onClick={() => {
-                          try { sfx.play('click', 0.6); } catch {}
-                          handlePurchaseClick('digital');
-                        }}
-                        className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
-                        style={{
-                          boxShadow: '0 0 8px rgba(255,105,180,0.3)',
-                        }}
-                      >
-                        <img
-                          src="/elements/heart-coin.png"
-                          alt="Heart Coin"
-                          className="w-3 h-3"
-                          draggable={false}
-                        />
-                        <span 
-                          className="text-yellow-300 font-bold text-xs"
-                          style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
-                        >
-                          {digitalCost}
-                        </span>
-                        <span 
-                          className="text-pink-200 font-medium text-xs"
-                          style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
-                        >
-                          DIGITAL
-                        </span>
-                      </button>
-                      
-                      {/* Physical option */}
-                      <button
-                        onClick={() => {
-                          try { sfx.play('click', 0.6); } catch {}
-                          handlePurchaseClick('physical');
-                        }}
-                        className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
-                        style={{
-                          boxShadow: '0 0 8px rgba(255,105,180,0.3)',
-                        }}
-                      >
-                        <img
-                          src="/elements/heart-coin.png"
-                          alt="Heart Coin"
-                          className="w-3 h-3"
-                          draggable={false}
-                        />
-                        <span 
-                          className="text-yellow-300 font-bold text-xs"
-                          style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
-                        >
-                          {physicalCost}
-                        </span>
-                        <span 
-                          className="text-pink-200 font-medium text-xs"
-                          style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
-                        >
-                          PHYSICAL
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
 
 
           <div className="flex justify-between items-center mb-4">            
@@ -1026,14 +1031,17 @@ export default function BinderModal({ open, onClose }: Props) {
                     // Check if there's a collected card for this slot
                     const collectedCard = profile?.cards?.[index];
                     const hasCard = !!collectedCard?.cards;
+                    
+                    // Show CHXNDLER card in first slot if no card is there
+                    const isFirstSlotWithChxndler = index === 0 && !hasCard;
 
                     return (
                       <div
                         key={`slot-${index}`}
-                        className={`rounded-lg border p-2 backdrop-blur-sm transition-all duration-300 ${
-                          hasCard 
-                            ? 'border-white/10 bg-black/40 cursor-pointer hover:scale-105' 
-                            : 'border-white/5 bg-black/20 cursor-default'
+                        className={`rounded-lg border backdrop-blur-sm transition-all duration-300 ${
+                          hasCard || isFirstSlotWithChxndler
+                            ? 'border-white/10 cursor-pointer hover:scale-105' 
+                            : 'border-white/5 cursor-default'
                         }`}
                         onClick={() => {
                           if (hasCard && collectedCard?.cards) {
@@ -1045,10 +1053,19 @@ export default function BinderModal({ open, onClose }: Props) {
                               element: collectedCard.cards.element
                             });
                             setCardOpen(true);
+                          } else if (isFirstSlotWithChxndler) {
+                            try { sfx.play('click', 0.8); } catch {}
+                            setSelectedCard({
+                              name: 'CHXNDLER',
+                              image: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',
+                              rarity: 'Common',
+                              element: 'ALL'
+                            });
+                            setCardOpen(true);
                           }
                         }}
                         style={{
-                          boxShadow: hasCard 
+                          boxShadow: hasCard || isFirstSlotWithChxndler
                             ? '0 0 15px rgba(255,105,180,0.3)' 
                             : '0 0 5px rgba(255,105,180,0.1)',
                         }}
@@ -1056,20 +1073,66 @@ export default function BinderModal({ open, onClose }: Props) {
                         <div className="relative">
                           {hasCard && collectedCard?.cards ? (
                             <>
+                              {(() => {
+                                // Create a card object to check if it's locked
+                                const cardData = {
+                                  id: collectedCard.cards.id,
+                                  title: collectedCard.cards.card_name,
+                                  card_name: collectedCard.cards.card_name,
+                                  image_url: getCardImage(collectedCard.cards.card_name, collectedCard.cards.element),
+                                  element: collectedCard.cards.element,
+                                  rarity: collectedCard.cards.rarity,
+                                  is_released: collectedCard.cards.is_released ?? true,
+                                  min_tier: (collectedCard.cards.min_tier as CardTier) ?? 'wanderer'
+                                };
+                                const locked = isCardLocked(cardData, profile?.tier);
+                                
+                                return (
+                                  <div className="relative w-full h-28">
+                                    <img
+                                      src={getCardImage(collectedCard.cards.card_name, collectedCard.cards.element)}
+                                      alt={collectedCard.cards.card_name}
+                                      className={
+                                        locked
+                                          ? "w-full h-28 object-cover rounded blur-xl brightness-50 opacity-60 transition-all duration-300"
+                                          : "w-full h-28 object-cover rounded transition-all duration-300"
+                                      }
+                                      draggable={false}
+                                    />
+                                    {locked && (
+                                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+                                        <div className="px-2 py-1 rounded-lg bg-black/60 border border-pink-400/70 text-[9px] font-semibold tracking-wide text-pink-100 backdrop-blur-md shadow-[0_0_15px_rgba(252,84,175,0.7)]">
+                                          {!cardData.is_released
+                                            ? "Coming Soon"
+                                            : `Unlock at ${cardData.min_tier.toUpperCase()}`}
+                                        </div>
+                                      </div>
+                                    )}
+                                    <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-green-500/80 rounded-full flex items-center justify-center">
+                                      <svg viewBox="0 0 24 24" width="10" height="10" fill="white">
+                                        <path d="M20 6L9 17l-5-5"/>
+                                      </svg>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+                            </>
+                          ) : isFirstSlotWithChxndler ? (
+                            <>
                               <img
-                                src={getCardImage(collectedCard.cards.card_name, collectedCard.cards.element)}
-                                alt={collectedCard.cards.card_name}
-                                className="w-full h-16 object-cover rounded mb-1"
+                                src="https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910"
+                                alt="CHXNDLER"
+                                className="w-full h-28 object-cover rounded"
                                 draggable={false}
                               />
-                              <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-green-500/80 rounded-full flex items-center justify-center">
+                              <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-blue-500/80 rounded-full flex items-center justify-center">
                                 <svg viewBox="0 0 24 24" width="10" height="10" fill="white">
-                                  <path d="M20 6L9 17l-5-5"/>
+                                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                                 </svg>
                               </div>
                             </>
                           ) : (
-                            <div className="w-full h-16 bg-gradient-to-br from-pink-500/10 to-purple-500/10 rounded mb-1 border-2 border-dashed border-pink-400/30 flex items-center justify-center">
+                            <div className="w-full h-28 bg-gradient-to-br from-pink-500/10 to-purple-500/10 rounded mb-1 border-2 border-dashed border-pink-400/30 flex items-center justify-center">
                               <div 
                                 className="text-xs font-bold text-center"
                                 style={{ 
@@ -1083,33 +1146,6 @@ export default function BinderModal({ open, onClose }: Props) {
                             </div>
                           )}
                         </div>
-                        {hasCard && collectedCard?.cards ? (
-                          <>
-                            <p className="text-[10px] font-semibold leading-tight" style={{ color: '#FF69B4' }}>
-                              {collectedCard.cards.card_name}
-                            </p>
-                            <p className="text-[8px] opacity-70 flex justify-between items-center" style={{ color: '#FFB6C1' }}>
-                              <span>{collectedCard.cards.element}</span>
-                              <span className="uppercase tracking-wide opacity-60" style={{ color: getElementColor(collectedCard.cards.element) }}>
-                                {collectedCard.cards.rarity}
-                              </span>
-                            </p>
-                            {getCardOneLiner(collectedCard.cards.card_name) && (
-                              <p className="text-[7px] italic opacity-60 leading-tight mt-0.5" style={{ color: '#E6E6FA' }}>
-                                {getCardOneLiner(collectedCard.cards.card_name)}
-                              </p>
-                            )}
-                          </>
-                        ) : (
-                          <>
-                            <p className="text-[8px] uppercase tracking-wide opacity-40" style={{ color: '#FFB6C1' }}>
-                              Slot {index + 1}
-                            </p>
-                            <p className="text-[10px] font-semibold leading-tight opacity-40" style={{ color: '#FF69B4' }}>
-                              No Card
-                            </p>
-                          </>
-                        )}
                       </div>
                     );
                   })}
@@ -1466,8 +1502,47 @@ export default function BinderModal({ open, onClose }: Props) {
               </div>
             );
           })()}
+
+          </div>
         </div>
       </div>
+
+      {/* Element Name Display - positioned on right side */}
+      {selectedElement && (() => {
+        const cards = getFilteredCards();
+        const currentCard = cards[currentCardIndex];
+        
+        if (!currentCard) {
+          return null;
+        }
+
+        return (
+          <div 
+            className="fixed z-[2147483645]"
+            style={{
+              right: '5vw',
+              bottom: '35vh',
+              pointerEvents: 'none'
+            }}
+          >
+            <div 
+              className="text-center font-bold"
+              style={{
+                color: getElementColor(currentCard.element),
+                textShadow: `0 0 12px ${getElementColor(currentCard.element)}, 0 0 24px ${getElementColor(currentCard.element)}80`,
+                fontSize: 'clamp(24px, 5vw, 48px)',
+                fontWeight: 900,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                transform: 'rotate(-5deg)',
+                filter: `drop-shadow(0 0 20px ${getElementColor(currentCard.element)}80)`
+              }}
+            >
+              {currentCard.element}
+            </div>
+          </div>
+        );
+      })()}
 
         {/* Card Display Modal */}
         {cardOpen && (
@@ -1477,29 +1552,75 @@ export default function BinderModal({ open, onClose }: Props) {
             onClick={() => {
               try { sfx.play('close', 0.8); } catch {}
               setCardOpen(false);
+              setIsCardFlipped(false);
             }}
           >
             
             {/* Card container */}
             <div 
-              className="relative z-10"
+              className="relative z-10 overflow-hidden"
               onClick={(e) => e.stopPropagation()}
               style={{
                 maxWidth: 'min(70vw, 200px)',
                 maxHeight: '40vh',
+                display: 'flex',
+                flexDirection: 'column'
               }}
             >
-              {/* Card image */}
-              <img
-                src={selectedCard?.image || "https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910"}
-                alt={selectedCard?.name || "CHXNDLER Card"}
-                className="w-full h-auto rounded-lg shadow-2xl"
+              {/* Flippable Card */}
+              <div 
+                className="w-full h-full rounded-lg shadow-2xl object-contain cursor-pointer"
                 style={{
                   boxShadow: '0 0 40px rgba(255,105,180,0.8), 0 0 80px rgba(255,105,180,0.5), 0 0 120px rgba(255,105,180,0.3)',
                   border: '2px solid rgba(255,105,180,0.6)',
+                  maxHeight: '100%',
+                  flex: '1 1 auto',
+                  perspective: '1000px'
                 }}
-                draggable={false}
-              />
+                onClick={() => {
+                  try { sfx.play('click', 0.8); } catch {}
+                  setIsCardFlipped(!isCardFlipped);
+                }}
+              >
+                <div
+                  style={{
+                    position: 'relative',
+                    width: '100%',
+                    height: '100%',
+                    textAlign: 'center',
+                    transition: 'transform 0.6s',
+                    transformStyle: 'preserve-3d',
+                    transform: isCardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                  }}
+                >
+                  {/* Front of card */}
+                  <img
+                    src={selectedCard?.image || "https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910"}
+                    alt={selectedCard?.name || "CHXNDLER Card"}
+                    className="w-full h-full rounded-lg object-contain"
+                    style={{
+                      position: 'absolute',
+                      backfaceVisibility: 'hidden',
+                      WebkitBackfaceVisibility: 'hidden'
+                    }}
+                    draggable={false}
+                  />
+                  
+                  {/* Back of card */}
+                  <img
+                    src="https://ik.imagekit.io/CHXNDLER/card/back.png?updatedAt=1762388351170"
+                    alt="Card Back"
+                    className="w-full h-full rounded-lg object-contain"
+                    style={{
+                      position: 'absolute',
+                      backfaceVisibility: 'hidden',
+                      WebkitBackfaceVisibility: 'hidden',
+                      transform: 'rotateY(180deg)'
+                    }}
+                    draggable={false}
+                  />
+                </div>
+              </div>
               
               {/* Holographic shimmer effect */}
               <div 
@@ -1515,6 +1636,7 @@ export default function BinderModal({ open, onClose }: Props) {
                 onClick={() => {
                   try { sfx.play('close', 0.8); } catch {}
                   setCardOpen(false);
+                  setIsCardFlipped(false);
                 }}
                 className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200"
                 style={{
