@@ -840,7 +840,7 @@ img[src$="/elements/music.png"] {
   background: rgba(25,227,255,1);
   transform: scale(1.08);
   box-shadow: 0 0 18px rgba(25,227,255,.6);
-  border-color: rgba(255,255,255,.6);
+  border-color: #19E3FF;
 }
 .hud-play-btn-enhanced:active{ transform: scale(0.95); }
 
@@ -1205,7 +1205,7 @@ img[src$="/elements/music.png"] {
   background: linear-gradient(135deg, #ff76c8, #ffa0db);
   transform: scale(1.14);
   box-shadow: 0 0 18px rgba(255, 62, 165, 0.65), 0 0 36px rgba(255, 118, 200, 0.35);
-  border-color: rgba(255,255,255,.65);
+  border-color: #19E3FF;
 }
 .gem-btn-waveform-hud:active{ transform: scale(0.95); }
 

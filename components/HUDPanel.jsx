@@ -2666,10 +2666,13 @@ export default function HUDPanel({
                         display: 'flex', 
                         alignItems: 'center', 
                         gap: 8, 
-                        marginTop: -12, 
-                        marginLeft: -8,
+                        marginTop: -24, 
+                        marginLeft: 4,
                         position: 'relative',
-                        zIndex: 2
+                        zIndex: 2,
+                        borderRadius: '8px',
+                        padding: '4px 8px',
+                        backgroundColor: 'rgba(25,227,255,0.05)'
                       }}>
                       <button 
                         onClick={handlePlayPause}
@@ -2737,7 +2740,7 @@ export default function HUDPanel({
                       <HeartverseButton
                         ref={joinUsBtnRef}
                         label="WELCOME HOME"
-                        style={{ position: 'absolute', left: '8px', top: '66px', paddingLeft: '32px', paddingRight: '32px', minWidth: '180px', height: '32px' }}
+                        style={{ position: 'absolute', left: '8px', top: '58px', paddingLeft: '32px', paddingRight: '32px', minWidth: '180px', height: '32px' }}
                         title="Welcome Home"
                         onClick={(e) => { 
                           e.stopPropagation(); 
@@ -2773,7 +2776,7 @@ export default function HUDPanel({
                             }} 
                           />
                         }
-                        style={{ position: 'absolute', left: '220px', top: '66px', paddingLeft: '12px', paddingRight: '12px', width: '80px', height: '32px', minWidth: '80px', maxWidth: '80px', border: '1px solid rgba(255, 255, 0, 0.6)', outline: 'none', boxShadow: '0 0 8px rgba(255, 255, 0, 0.3), 0 0 16px rgba(255, 255, 0, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible', borderRadius: '8px', filter: 'brightness(1.2) saturate(1.4)', transition: 'all 0.2s ease' }}
+                        style={{ position: 'absolute', left: '200px', top: '58px', paddingLeft: '12px', paddingRight: '12px', width: '80px', height: '32px', minWidth: '80px', maxWidth: '80px', border: '1px solid rgba(255, 255, 0, 0.6)', outline: 'none', boxShadow: '0 0 8px rgba(255, 255, 0, 0.3), 0 0 16px rgba(255, 255, 0, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible', borderRadius: '8px', filter: 'brightness(1.2) saturate(1.4)', transition: 'all 0.2s ease' }}
                         title="Stars"
                         aria-haspopup="dialog"
                         aria-expanded={showSoulSkyPopover}
@@ -6447,7 +6450,15 @@ export default function HUDPanel({
                       onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 0 16px rgba(255,255,0,0.85), 0 0 32px rgba(255,255,0,0.35)'; } catch {} }}
                       onClick={() => { 
                         try { sfx.play('click', 0.4); } catch {}; 
-                        // Toggle journal view
+                        // Trigger stars animation like "Cast into the Stars" button
+                        setShowStarAnimation(true);
+                        setShowBeamEffect(true);
+                        // Star animation will appear for a few seconds
+                        setTimeout(() => {
+                          setShowStarAnimation(false);
+                          setShowBeamEffect(false);
+                        }, 4000);
+                        // Also toggle journal view
                         setShowJournalView(!showJournalView);
                       }}
                       style={{
@@ -6851,13 +6862,14 @@ export default function HUDPanel({
         {/* Song selector positioned outside content opacity container to avoid beamOnly blocking */}
         <div className="absolute" style={{ 
           left: inConsole ? 6 : 8, 
-          bottom: 'calc(80px - 24px + 44px)', // Move dropdown very slightly lower (-4px)
+          bottom: 'calc(80px - 24px + 24px)', // Move dropdown down by 20px
           // Reserve dynamic space to the right so the dropdown never overlaps the cover
           right: oneLinerRight + 4, // Slightly wider than current (~8px wider)
           maxWidth: 'none',
           zIndex: 99999,  // Highest z-index to ensure it's above everything
           pointerEvents: 'auto', // Explicitly enable pointer events
-          position: 'absolute' // Explicit positioning to avoid any layout conflicts
+          position: 'absolute', // Explicit positioning to avoid any layout conflicts
+          overflow: 'visible' // Ensure waveform can overflow below
         }}>
             <SongDropdown
               items={resolvedSongs}
@@ -6906,15 +6918,12 @@ export default function HUDPanel({
               
               return (
                 <div style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: 0,
-                  right: 0,
-                  marginTop: 4,
-                  paddingLeft: 8,
-                  paddingRight: 8,
-                  zIndex: 99999,
-                  pointerEvents: 'auto'
+                  marginTop: 8,
+                  paddingLeft: 0,
+                  paddingRight: 0,
+                  zIndex: 99998,
+                  pointerEvents: 'auto',
+                  width: '100%'
                 }}>
                   <WaveformVisualizer
                     element={validElement}

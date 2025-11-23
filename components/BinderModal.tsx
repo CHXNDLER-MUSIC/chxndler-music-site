@@ -1039,17 +1039,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                     {(() => {
                       const gateState = getCardState(currentCard);
                       if (gateState === 'available') {
-                        return (
-                          <div 
-                            className="absolute top-0 left-[130px] text-xs"
-                            style={{ 
-                              color: '#FFB6C1', 
-                              textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                            }}
-                          >
-                            You have {profile?.heartcoin_balance || 0} HeartCoins
-                          </div>
-                        );
+                        return null; // Removed HeartCoins balance display
                       }
                       return null;
                     })()}
@@ -1563,7 +1553,6 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                         color: '#FCA5A5'
                       }}
                     >
-                      <div className="mb-1">You have {profile?.heartcoin_balance || 0} HeartCoins.</div>
                       <div className="mb-1">{selectedPurchaseType === 'digital' ? 'Digital' : 'Physical'} costs {getCost(selectedPurchaseType)} HeartCoins.</div>
                       <div>You need {getCost(selectedPurchaseType) - (profile?.heartcoin_balance || 0)} more HeartCoins.</div>
                     </div>
@@ -1606,8 +1595,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                       }}
                     >
                       <div className="mb-1">Confirm purchase of {currentCard.name} {selectedPurchaseType.toUpperCase()}.</div>
-                      <div className="mb-1">This costs {getCost(selectedPurchaseType)} HeartCoins.</div>
-                      <div>You have {profile?.heartcoin_balance || 0} HeartCoins and will have {(profile?.heartcoin_balance || 0) - getCost(selectedPurchaseType)} after this purchase.</div>
+                      <div>This will cost {getCost(selectedPurchaseType)} HeartCoins.</div>
                     </div>
                     
                     <div className="flex justify-center gap-2">

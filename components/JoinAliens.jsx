@@ -309,10 +309,10 @@ export default function JoinAliens({ visible = true } = {}) {
           style={{ 
             textAlign: 'center', 
             marginBottom: '12px',
-            color: '#FC54AF',
+            color: '#00FFFF',
             fontSize: '16px',
             fontWeight: '600',
-            textShadow: '0 0 8px rgba(252, 84, 175, 0.6)'
+            textShadow: '0 0 8px rgba(0, 255, 255, 0.6)'
           }}
         >
           {profile?.phone ? `Current signal: ${profile.phone.replace(/(\+1 \(\d{3}\)) \d{3}-(\d{4})/, '$1 ***-$2')}` : 'Stay connected to the Heartverse.'}
@@ -398,13 +398,13 @@ export default function JoinAliens({ visible = true } = {}) {
             ? '2px solid #00FF00'
             : status === "saving" || phone.length < 14 
               ? '2px solid rgba(128, 128, 128, 0.3)' 
-              : '2px solid #FC54AF',
+              : '2px solid #00FFFF',
           borderRadius: '8px',
           color: status === "saved"
             ? '#00FF00'
             : status === "saving" || phone.length < 14 
               ? 'rgba(128, 128, 128, 0.7)' 
-              : '#FC54AF',
+              : '#00FFFF',
           fontSize: '16px',
           fontWeight: '600',
           cursor: status === "saving" || phone.length < 14 ? 'not-allowed' : 'pointer',
@@ -413,21 +413,21 @@ export default function JoinAliens({ visible = true } = {}) {
             ? '0 0 15px rgba(0, 255, 0, 0.3)'
             : status === "saving" || phone.length < 14 
               ? 'none' 
-              : '0 0 15px rgba(252, 84, 175, 0.3)',
+              : '0 0 15px rgba(0, 255, 255, 0.3)',
           textShadow: status === "saved"
             ? '0 0 10px #00FF00, 0 0 20px #00FF00, 0 0 30px #00FF00'
             : status === "saving" || phone.length < 14 
               ? 'none' 
-              : '0 0 10px #FC54AF, 0 0 20px #FC54AF, 0 0 30px #FC54AF',
+              : '0 0 10px #00FFFF, 0 0 20px #00FFFF, 0 0 30px #00FFFF',
           outline: 'none'
         }}
         onMouseEnter={(e) => {
           if (status !== "saving" && phone.length >= 14 && status !== "saved") {
             e.target.style.transform = 'translateY(-2px)';
-            e.target.style.background = 'rgba(252, 84, 175, 0.15)';
-            e.target.style.boxShadow = '0 0 40px rgba(252, 84, 175, 0.8), 0 0 60px rgba(252, 84, 175, 0.4), inset 0 0 30px rgba(252, 84, 175, 0.2)';
-            e.target.style.textShadow = '0 0 15px #FC54AF, 0 0 25px #FC54AF, 0 0 35px #FC54AF, 0 0 45px #FC54AF';
-            e.target.style.borderColor = '#FF1B8D';
+            e.target.style.background = 'rgba(0, 255, 255, 0.15)';
+            e.target.style.boxShadow = '0 0 40px rgba(0, 255, 255, 0.8), 0 0 60px rgba(0, 255, 255, 0.4), inset 0 0 30px rgba(0, 255, 255, 0.2)';
+            e.target.style.textShadow = '0 0 15px #00FFFF, 0 0 25px #00FFFF, 0 0 35px #00FFFF, 0 0 45px #00FFFF';
+            e.target.style.borderColor = '#00E5FF';
             try { sfx.play('hover.mp3', 0.3); } catch {}
           }
         }}
@@ -435,9 +435,9 @@ export default function JoinAliens({ visible = true } = {}) {
           if (status !== "saving" && phone.length >= 14 && status !== "saved") {
             e.target.style.transform = 'translateY(0)';
             e.target.style.background = 'transparent';
-            e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
-            e.target.style.textShadow = '0 0 10px #FC54AF, 0 0 20px #FC54AF, 0 0 30px #FC54AF';
-            e.target.style.borderColor = '#FC54AF';
+            e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';
+            e.target.style.textShadow = '0 0 10px #00FFFF, 0 0 20px #00FFFF, 0 0 30px #00FFFF';
+            e.target.style.borderColor = '#00FFFF';
           }
         }}
       >
@@ -521,7 +521,7 @@ export default function JoinAliens({ visible = true } = {}) {
       </button>
 
       {/* $3 Button - positioned to the left of $5 button */}
-      {!showTipOptions && (
+      {showTipOptions && (
       <button
         onClick={() => {
           try { sfx.play('audio/click.mp3', 0.3); } catch {}
@@ -538,8 +538,8 @@ export default function JoinAliens({ visible = true } = {}) {
         }}
         style={{
           position: 'absolute',
-          bottom: '12px',
-          right: '150px', // Position to the left of $5 button
+          bottom: '150px', // Position above $5 button
+          right: '12px',
           width: '40px',
           height: '40px',
           background: 'rgba(252, 84, 175, 0.1)',
@@ -572,7 +572,7 @@ export default function JoinAliens({ visible = true } = {}) {
       )}
 
       {/* $5 Button - positioned to the left of $10 button */}
-      {!showTipOptions && (
+      {showTipOptions && (
       <button
         onClick={() => {
           try { sfx.play('audio/click.mp3', 0.3); } catch {}
@@ -589,8 +589,8 @@ export default function JoinAliens({ visible = true } = {}) {
         }}
         style={{
           position: 'absolute',
-          bottom: '12px',
-          right: '104px', // Position to the left of $10 button
+          bottom: '104px', // Position above $10 button
+          right: '12px',
           width: '40px',
           height: '40px',
           background: 'rgba(252, 84, 175, 0.1)',
@@ -622,8 +622,10 @@ export default function JoinAliens({ visible = true } = {}) {
       >
         $5
       </button>
+      )}
 
       {/* $10 Button - positioned to the left of $ button */}
+      {showTipOptions && (
       <button
         onClick={() => {
           try { sfx.play('audio/click.mp3', 0.3); } catch {}
@@ -640,8 +642,8 @@ export default function JoinAliens({ visible = true } = {}) {
         }}
         style={{
           position: 'absolute',
-          bottom: '12px',
-          right: '58px', // Position to the left of $ button
+          bottom: '58px', // Position above $ button
+          right: '12px',
           width: '40px',
           height: '40px',
           background: 'rgba(252, 84, 175, 0.1)',
@@ -671,6 +673,7 @@ export default function JoinAliens({ visible = true } = {}) {
       >
         $10
       </button>
+      )}
 
       {/* $ Button - positioned in bottom right corner */}
       <button
