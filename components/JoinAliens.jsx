@@ -223,7 +223,7 @@ export default function JoinAliens({ visible = true } = {}) {
 
   return (
     <div 
-      className={`${visible ? 'pointer-events-auto' : 'pointer-events-none'}`} 
+      className={`signal-lost-container ${visible ? 'pointer-events-auto' : 'pointer-events-none'}`} 
       style={{ 
         zIndex: 130, 
         position: 'relative', 
@@ -232,7 +232,8 @@ export default function JoinAliens({ visible = true } = {}) {
         height: '100%',
         margin: '0',
         padding: '0px 60px 20px 60px',
-        marginTop: '-25px',
+        marginTop: '-50px !important',
+        paddingTop: '0px !important',
         background: 'rgba(0, 0, 0, 0.6)',
         backdropFilter: 'blur(12px)',
         border: 'none',
@@ -246,10 +247,11 @@ export default function JoinAliens({ visible = true } = {}) {
       }}
     >
       {/* Countdown Section - Top */}
-      <div style={{ textAlign: 'center', marginBottom: '20px', marginTop: '0px', paddingTop: '0px' }}>
+      <div style={{ textAlign: 'center', marginBottom: '20px', marginTop: '-30px', paddingTop: '0px' }}>
         {/* Neon "Signal Lost" message */}
         <div style={{ marginBottom: '0px' }}>
           <h2 
+            className="signal-lost-text"
             style={{
               color: '#FC54AF',
               textShadow: `
@@ -264,7 +266,6 @@ export default function JoinAliens({ visible = true } = {}) {
               fontSize: 'clamp(18px, 4vw, 28px)',
               fontWeight: 'bold',
               letterSpacing: '0.1em',
-              margin: '0',
               lineHeight: '1.2'
             }}
           >
@@ -994,6 +995,17 @@ export default function JoinAliens({ visible = true } = {}) {
       )}
 
       <style jsx>{`
+        .signal-lost-container {
+          margin-top: -50px !important;
+          padding-top: 0px !important;
+        }
+        
+        .signal-lost-text {
+          position: relative !important;
+          top: -40px !important;
+          margin: 0 !important;
+        }
+        
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }

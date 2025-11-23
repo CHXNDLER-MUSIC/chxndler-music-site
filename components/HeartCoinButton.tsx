@@ -101,8 +101,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     }
   };
 
-  const handleUseHeartCoins = () => {
+  const handleUseHeartCoins = (e?: React.MouseEvent) => {
     try { sfx.play('click', 0.8); } catch {}
+    
+    // Prevent event bubbling that might trigger other handlers
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     
     // Close heart coin display
     setOpen(false);
@@ -390,7 +396,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             {/* USE HEARTCOINS Button - positioned above the pink line */}
             <div className="flex justify-start ml-2 mb-1">
               <button
-                onClick={handleUseHeartCoins}
+                onClick={(e) => handleUseHeartCoins(e)}
                 className="px-1.5 py-0.5 text-[10px] rounded border border-yellow-400/60 hover:border-yellow-400/80 transition-all duration-200"
                 style={{
                   background: 'linear-gradient(135deg, rgba(255,215,0,0.2) 0%, rgba(255,255,0,0.3) 100%)',

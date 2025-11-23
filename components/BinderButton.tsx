@@ -430,8 +430,8 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
             className="binder-hologram-container overflow-hidden"
             style={{
               width: 'min(92vw, 700px)',
-              height: '50vh',
-              padding: '10px 14px 14px 14px',
+              height: '80vh',
+              padding: '10px 14px 0px 14px',
               borderRadius: 18,
               background: 'rgba(0,0,0,0.6)',
               border: '1px solid rgba(255,105,180,0.55)',
@@ -567,22 +567,6 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                   </svg>
                   Back to Elements
                 </button>
-                
-                {/* Card count info positioned below "Back to Elements" */}
-                {(() => {
-                  const cards = getFilteredCards();
-                  return cards.length > 1 && (
-                    <div 
-                      className="text-[10px]"
-                      style={{ 
-                        color: '#FFB6C1', 
-                        textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                      }}
-                    >
-                      {currentCardIndex + 1} of {cards.length}
-                    </div>
-                  );
-                })()}
               </div>
               
               {/* Filters positioned to the right of back button */}
@@ -659,7 +643,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                 )}
                 
                 {/* Card image */}
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 flex flex-col items-center">
                   <img
                     src={currentCard.image}
                     alt={currentCard.name}
@@ -676,6 +660,21 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                       setCardOpen(true);
                     }}
                   />
+                  {/* Card count info positioned below card image */}
+                  {(() => {
+                    const cards = getFilteredCards();
+                    return cards.length > 1 && (
+                      <div 
+                        className="text-[10px] mt-2"
+                        style={{ 
+                          color: '#FFB6C1', 
+                          textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                        }}
+                      >
+                        {currentCardIndex + 1} of {cards.length}
+                      </div>
+                    );
+                  })()}
                 </div>
                 
                 {/* Right navigation arrow - positioned between card and info */}
@@ -751,16 +750,6 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                             Element: {currentCard.element}
                           </div>
                         )}
-                        <div 
-                          className="text-sm"
-                          style={{ 
-                            color: currentCard.rarity === 'Rare' ? '#FF69B4' : '#87CEEB',
-                            textShadow: '0 0 4px currentColor',
-                            fontSize: '12px'
-                          }}
-                        >
-                          ★ {currentCard.rarity.toUpperCase()} ★
-                        </div>
                         {getCardOneLiner(currentCard.name) && (
                           <div 
                             className="text-xs mb-2 italic leading-relaxed break-words"
@@ -847,7 +836,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
             );
           })()}
 
-          <div className="flex justify-between items-center mb-4">            
+          <div className="flex justify-between items-center mb-0">            
             {!selectedElement && (
               <div className="text-center flex-1">
                 <div 
@@ -1064,8 +1053,8 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
             className="relative z-10"
             onClick={(e) => e.stopPropagation()}
             style={{
-              maxWidth: 'min(70vw, 200px)',
-              maxHeight: '40vh',
+              maxWidth: 'min(60vw, 180px)',
+              maxHeight: '35vh',
             }}
           >
             {/* Card image */}
