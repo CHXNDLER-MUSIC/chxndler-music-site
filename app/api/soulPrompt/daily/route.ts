@@ -19,19 +19,45 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 // Elements cycle: heart -> water -> lightning -> darkness -> heart...
 const ELEMENTS = ['heart', 'water', 'lightning', 'darkness'] as const;
 
+// Define a consistent start date for the cycle (you can adjust this as needed)
+const CYCLE_START_DATE = new Date('2024-01-01');
+
 function getElementForDate(date: string): string {
-  // Use date hash to get consistent element selection
   const dateObj = new Date(date);
-  const daysSinceEpoch = Math.floor(dateObj.getTime() / (1000 * 60 * 60 * 24));
-  return ELEMENTS[daysSinceEpoch % ELEMENTS.length];
+  const cycleStartTime = CYCLE_START_DATE.getTime();
+  const currentTime = dateObj.getTime();
+  
+  // Calculate days since cycle start
+  const daysSinceStart = Math.floor((currentTime - cycleStartTime) / (1000 * 60 * 60 * 24));
+  
+  // Determine element based on 4-day cycle
+  const elementIndex = daysSinceStart % 4;
+  return ELEMENTS[elementIndex];
 }
 
-async function getRandomPrompt(promptType: 'intention' | 'reflection', element: string) {
-  const { data, error } = await supabase
+async function getOrderedPrompt(promptType: 'intention' | 'reflection', element: string, promptIndex: number) {
+  // First try to fetch with sort_order, if that fails, fall back to id ordering
+  let { data, error } = await supabase
     .from('soul_prompts')
-    .select('id, text, element, prompt_type')
+    .select('id, text, element, prompt_type, sort_order')
     .eq('prompt_type', promptType)
-    .eq('element', element);
+    .eq('element', element)
+    .order('sort_order', { ascending: true });
+
+  // If sort_order column doesn't exist yet, fall back to ordering by id (creation order)
+  if (error && (error.message.includes('sort_order') || error.message.includes('does not exist'))) {
+    console.log(`Falling back to id ordering for ${promptType} ${element}`);
+    const fallbackResult = await supabase
+      .from('soul_prompts')
+      .select('id, text, element, prompt_type')
+      .eq('prompt_type', promptType)
+      .eq('element', element)
+      .order('id', { ascending: true });
+    
+    data = fallbackResult.data;
+    error = fallbackResult.error;
+    console.log(`Fallback result: ${data?.length} prompts found`);
+  }
 
   if (error) {
     throw new Error(`Failed to fetch ${promptType} prompts: ${error.message}`);
@@ -41,9 +67,9 @@ async function getRandomPrompt(promptType: 'intention' | 'reflection', element: 
     throw new Error(`No ${promptType} prompts found for element ${element}`);
   }
 
-  // Select random prompt
-  const randomIndex = Math.floor(Math.random() * data.length);
-  return data[randomIndex];
+  // Use modulo to wrap around if we've gone through all prompts
+  const selectedPrompt = data[promptIndex % data.length];
+  return selectedPrompt;
 }
 
 export async function GET(request: NextRequest) {
@@ -87,13 +113,30 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // No existing prompts for today - create new ones
+    // No existing prompts for today - create new ones using the ordered cycle
     const element = getElementForDate(today);
     
-    // Get random intention and reflection prompts for the element
+    // Count how many times this element has appeared in soul_daily_prompts
+    const { data: elementCount, error: countError } = await supabase
+      .from('soul_daily_prompts')
+      .select('element', { count: 'exact', head: true })
+      .eq('element', element);
+
+    if (countError) {
+      console.error('Error counting element occurrences:', countError);
+      return NextResponse.json(
+        { error: 'Failed to count element occurrences' },
+        { status: 500 }
+      );
+    }
+
+    // Use the count as the index for which prompt to select next
+    const promptIndex = elementCount || 0;
+    
+    // Get ordered intention and reflection prompts for the element
     const [intentionPrompt, reflectionPrompt] = await Promise.all([
-      getRandomPrompt('intention', element),
-      getRandomPrompt('reflection', element),
+      getOrderedPrompt('intention', element, promptIndex),
+      getOrderedPrompt('reflection', element, promptIndex),
     ]);
 
     // Insert new daily prompts record

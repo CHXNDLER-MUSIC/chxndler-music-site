@@ -818,8 +818,8 @@ export default function BinderModal({ open, onClose }: Props) {
                             alt={currentCard.name}
                             className={
                               locked
-                                ? "w-[260px] h-auto rounded-lg cursor-pointer transition-all duration-300 blur-xl brightness-50 opacity-60"
-                                : "w-[260px] h-auto rounded-lg cursor-pointer transition-transform duration-300 hover:scale-110"
+                                ? "w-[120px] h-auto rounded-lg cursor-pointer transition-all duration-300 blur-xl brightness-50 opacity-60"
+                                : "w-[120px] h-auto rounded-lg cursor-pointer transition-transform duration-300 hover:scale-110"
                             }
                             style={{
                               boxShadow: '0 0 15px rgba(255,105,180,0.6), 0 0 30px rgba(255,105,180,0.3)',

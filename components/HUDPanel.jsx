@@ -6537,21 +6537,20 @@ export default function HUDPanel({
                         <div className="lyrics-header" style={{ color: '#FFFF00', textShadow: '0 0 8px rgba(255,255,0,0.6)', fontSize: '12px' }}>
                           SOUL STAR
                         </div>
-                    <div style={{ marginBottom: '20px' }}>
+                    <div style={{ marginBottom: '15px' }}>
                       <div className="lyrics-content-enhanced" style={{ 
                         whiteSpace: 'pre-wrap', 
                         lineHeight: 1.4, 
                         fontSize: 12, 
                         color: '#FFFF00', 
                         textShadow: '0 0 2px rgba(255,255,0,0.8), 0 0 8px rgba(255,255,0,0.6)',
-                        marginBottom: '15px'
+                        marginBottom: '8px'
                       }}>
                         <span style={{ fontWeight: 'bold', fontStyle: 'normal' }}>INTENTION:</span> <span style={{ fontStyle: 'italic', fontWeight: 'normal' }}>"The universe is not only stranger than we imagine, it is stranger than we can imagine." - J.B.S. Haldane</span>
                       </div>
-                      
                       <div className="lyrics-content-enhanced" style={{ 
                         whiteSpace: 'pre-wrap', 
-                        lineHeight: 1.4, 
+                        lineHeight: 1.2, 
                         fontSize: 12, 
                         color: '#FFFF00', 
                         textShadow: '0 0 2px rgba(255,255,0,0.8), 0 0 8px rgba(255,255,0,0.6)'
@@ -6559,16 +6558,15 @@ export default function HUDPanel({
                         <span style={{ fontWeight: 'bold', fontStyle: 'normal' }}>REFLECTION:</span> <span style={{ fontStyle: 'italic', fontWeight: 'normal' }}>What constellation would you create if you could arrange the stars in the sky, and what story would it tell?</span>
                       </div>
                     </div>
-
-                    <div style={{ marginTop: '8px', marginBottom: '8px' }}>
+                    <div style={{ marginTop: '-4px', marginBottom: '4px' }}>
                       <textarea
                           value={questionResponse}
                           onChange={(e) => setQuestionResponse(e.target.value)}
                           placeholder="Share your cosmic vision..."
                           style={{
                             width: '100%',
-                            minHeight: '1.5rem',
-                            padding: '8px',
+                            minHeight: '1.3rem',
+                            padding: '6px',
                             background: 'rgba(0,0,20,0.6)',
                             border: '1px solid rgba(255,255,0,0.6)',
                             borderRadius: '8px',

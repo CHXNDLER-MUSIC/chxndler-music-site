@@ -387,7 +387,7 @@ export default function ProfileBar({
                   }
                 }}
                 disabled={loading}
-                className="font-medium text-lg relative flex-shrink-0 ml-2 transition-all duration-200 cursor-pointer bg-transparent border-none focus:outline-none disabled:opacity-50 focus:ring-2 focus:ring-pink-500/50 rounded"
+                className="font-medium text-lg relative flex-shrink-0 ml-2 transition-all duration-200 cursor-pointer bg-transparent border-none focus:outline-none disabled:opacity-50 rounded"
                 style={{ 
                   color: getUsernameColor(currentElement),
                   textShadow: `
@@ -429,30 +429,14 @@ export default function ProfileBar({
               {(!currentUser || !contextProfile) && showLoginTooltip && (
                 <div 
                   data-tooltip="login-tooltip"
-                  className="absolute left-1/2 top-full mt-2 -translate-x-1/2 rounded-lg border border-pink-500/60 bg-pink-900/80 px-3 py-2 text-xs text-pink-100 shadow-lg z-20 whitespace-nowrap"
+                  className="absolute left-1/2 top-full mt-2 -translate-x-1/2 rounded-lg border border-pink-500/60 bg-pink-900/95 px-4 py-3 text-sm text-white shadow-xl z-[9999] whitespace-nowrap"
                   style={{
-                    boxShadow: '0 0 15px rgba(236, 72, 153, 0.4)',
-                    backdropFilter: 'blur(4px)'
+                    boxShadow: '0 0 20px rgba(236, 72, 153, 0.6), 0 0 40px rgba(236, 72, 153, 0.4)',
+                    backdropFilter: 'blur(8px)',
+                    fontWeight: '600'
                   }}
                 >
-                  You need to{" "}
-                  <button
-                    onClick={() => {
-                      setShowLoginTooltip(false);
-                      setShowSignInPopup(true);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setShowLoginTooltip(false);
-                        setShowSignInPopup(true);
-                      }
-                    }}
-                    className="underline font-semibold text-pink-200 hover:text-pink-50 focus:outline-none focus:ring-1 focus:ring-pink-400 rounded px-1 transition-colors"
-                  >
-                    log in
-                  </button>{" "}
-                  to create your ALIEN name.
+                  You need to LOG IN to create your ALIEN name.
                   
                   {/* Tooltip arrow */}
                   <div className="absolute left-1/2 top-[-6px] -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-b-[6px] border-transparent border-b-pink-500/60"></div>

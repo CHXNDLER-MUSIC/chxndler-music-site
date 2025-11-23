@@ -482,7 +482,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             </div>
 
             {/* Journal Entry */}
-            <div className="flex items-center justify-between mb-2 p-2 rounded border border-pink-400/30 bg-pink-400/10">
+            <div className="flex items-center justify-between mb-1 p-2 rounded border border-pink-400/30 bg-pink-400/10">
               <div>
                 <div className="text-xs font-bold" style={{ color: '#FFB6C1' }}>
                   2. Journal Entry of the Day
