@@ -6918,6 +6918,20 @@ export default function HUDPanel({
               }}
             />
             
+            {/* TEST: Debug visual indicator */}
+            <div style={{
+              background: 'red',
+              height: '20px',
+              width: '100%',
+              marginTop: '4px',
+              border: '2px solid yellow',
+              color: 'white',
+              fontSize: '12px',
+              textAlign: 'center'
+            }}>
+              WAVEFORM SHOULD BE HERE
+            </div>
+            
             {/* Waveform visualizer directly under song dropdown */}
             {(() => {
               const currentSong = resolvedSongs.find(s => s.id === active);
@@ -6928,6 +6942,8 @@ export default function HUDPanel({
               const a = liveAudioRef?.current;
               const liveDur = (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
               const liveTime = (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
+              
+              console.log('HUDPanel waveform section:', { currentSong, element, validElement, liveDur, liveTime, active });
               
               return (
                 <div style={{

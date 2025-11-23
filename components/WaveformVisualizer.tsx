@@ -46,11 +46,17 @@ export default function WaveformVisualizer({
 }: WaveformVisualizerProps) {
   const elementColor = ELEMENT_COLORS[element]?.stroke || '#FFFFFF';
   
+  // Debug log to see if component is rendering
+  console.log('WaveformVisualizer rendering:', { element, progress, duration, currentTime, className });
+  
   // Calculate progress ratio
   const liveDur = (duration && isFinite(duration) && duration > 0) ? duration : 0;
   const liveTime = (currentTime && isFinite(currentTime) && currentTime >= 0) ? currentTime : 0;
   const progressRatio = liveDur > 0 ? (liveTime / liveDur) : (progress || 0);
   const progressX = Math.max(0, Math.min(100, progressRatio * 100));
+  
+  // Always show at least the background track even with no progress
+  const showTrack = true;
   const centerY = height / 2;
 
   // Helper function to convert hex to rgba
@@ -81,12 +87,14 @@ export default function WaveformVisualizer({
       onMouseMove={handleMouseMove}
       style={{
         position: 'relative',
-        border: 'none',
+        border: '1px solid rgba(255,255,255,0.1)',
         width,
         height,
-        borderRadius: 0,
-        background: 'transparent',
-        cursor: onProgressClick ? 'pointer' : 'default'
+        borderRadius: '4px',
+        background: 'rgba(0,0,0,0.1)',
+        cursor: onProgressClick ? 'pointer' : 'default',
+        marginTop: '4px',
+        marginBottom: '4px'
       }}
     >
       <svg 

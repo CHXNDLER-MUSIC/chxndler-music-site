@@ -1,5 +1,13 @@
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 
+export interface SoulPrompt {
+  id?: number;
+  prompt_date: string;
+  element: string;
+  intention: string;
+  reflection: string;
+}
+
 function today() {
   const d = new Date();
   return d.toISOString().split('T')[0];
