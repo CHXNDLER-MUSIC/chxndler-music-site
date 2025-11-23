@@ -416,14 +416,33 @@ export async function trackEvent(
     const { createClient } = await import('@/lib/supabaseClient');
     const supabase = createClient();
 
-    const { error } = await supabase
+    let { error } = await supabase
       .from('events_v2')
       .insert({
         event_name: eventName,
         source: options?.source ?? 'unknown',
         metadata: options?.metadata ?? null,
-        user_id: options?.userId ?? null
+        user_id: options?.userId ?? null,
       });
+
+    // Fallback: support older schemas that used `event` instead of `event_name`
+    if (error && (error as any)?.code === 'PGRST204' && /event_name/.test((error as any)?.message || '')) {
+      try {
+        console.warn('[Analytics] events_v2 missing column `event_name`. Retrying with legacy `event`.');
+        const retry = await supabase
+          .from('events_v2')
+          .insert({
+            // @ts-ignore legacy column name for compatibility
+            event: eventName,
+            source: options?.source ?? 'unknown',
+            metadata: options?.metadata ?? null,
+            user_id: options?.userId ?? null,
+          });
+        error = retry.error as any;
+      } catch (e) {
+        // Keep original error handling below
+      }
+    }
 
     if (error) {
       // Some Supabase/PostgREST error objects don't stringify well or have non-enumerable props.

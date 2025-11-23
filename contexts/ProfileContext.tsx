@@ -65,6 +65,7 @@ interface Profile {
   created_at: string | null;
   updated_at: string | null;
   tier: ProfileTier; // default "wanderer"
+  has_seen_tour?: boolean | null; // for onboarding tour
   cards: OwnedCardRow[];
   badges: OwnedBadgeRow[];
   // Legacy fields for compatibility
@@ -158,7 +159,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabaseClient
         .from("profiles")
         .select(
-          "id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, tier"
+          "id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, tier, has_seen_tour"
         )
         .eq("id", user.id)
         .maybeSingle();
@@ -232,6 +233,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         created_at: data.created_at,
         updated_at: data.updated_at,
         tier: (data.tier || "wanderer") as ProfileTier,
+        has_seen_tour: data.has_seen_tour,
         cards: cardRows ?? [],
         badges: badgeRows ?? [],
       };
@@ -274,6 +276,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       if (updates.heartcoin_total !== undefined) dbUpdates.heartcoin_total = updates.heartcoin_total;
       if (updates.profile_complete !== undefined) dbUpdates.profile_complete = updates.profile_complete;
       if (updates.tier !== undefined) dbUpdates.tier = updates.tier;
+      if (updates.has_seen_tour !== undefined) dbUpdates.has_seen_tour = updates.has_seen_tour;
       
       // Update the existing profile (no insert logic - trigger handles creation)
       const { data, error } = await supabaseClient
@@ -303,6 +306,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           created_at: data.created_at,
           updated_at: data.updated_at,
           tier: (data.tier || "wanderer") as ProfileTier,
+          has_seen_tour: data.has_seen_tour,
           cards: profile?.cards ?? [],
           badges: profile?.badges ?? [],
         };

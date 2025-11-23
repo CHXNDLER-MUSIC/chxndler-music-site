@@ -748,13 +748,14 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           }, 100);
         }, 150);
       } else {
-        // Switch to pink - close everything first
+        // Switch to pink - close everything first, but do NOT enable the light beam
         setBeamTransitioning(true);
         closeAllDisplays();
-        // Strictly wait for blue HUD + beam to be fully hidden before enabling pink
+        // Wait until blue HUD + beam are fully hidden, then open pink panel without beam
         waitUntilBlueHidden(() => {
           setBeamColor('pink');
-          setBeamEnabled(true);
+          // Intentionally keep beam disabled so no pink beam shows behind the signal button
+          setBeamEnabled(false);
           setJoinAlienOpen(true);
           setBeamTransitioning(false);
         });

@@ -2262,7 +2262,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           width: 32px;
           height: 32px;
           border-radius: 50%;
-          border: 1px solid rgba(255, 255, 255, 0.5);
+          border: 1px solid rgba(25,227,255,0.4);
           background: radial-gradient(circle at 30% 30%, #FFF76A, #F2EF1D);
           color: #000;
           display: inline-flex;
@@ -2285,7 +2285,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           width: 32px;
           height: 32px;
           border-radius: 50%;
-          border: 1px solid rgba(255, 255, 255, 0.5);
+          border: 1px solid rgba(25,227,255,0.4);
           background: radial-gradient(circle at 30% 30%, #FFD700, #FFA500);
           color: white;
           display: inline-flex;
@@ -2350,7 +2350,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           width: 32px;
           height: 32px;
           border-radius: 50%;
-          border: 1px solid rgba(255,255,255,0.25);
+          border: 1px solid rgba(25,227,255,0.4);
           background: rgba(128,128,128,0.35);
           color: rgba(255,255,255,0.85);
           display: inline-flex;
@@ -2441,7 +2441,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           width: 32px;
           height: 32px;
           border-radius: 50%;
-          border: 1px solid rgba(255, 255, 255, 0.4);
+          border: 1px solid rgba(25,227,255,0.4);
           background: radial-gradient(circle at 30% 30%, #19E3FF, #0EA8D0);
           color: white;
           display: flex;
@@ -2665,7 +2665,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         .volume-btn {
           position: relative;
           border-radius: 50%;
-          border: 1px solid rgba(255, 255, 255, 0.4);
+          border: 1px solid rgba(25,227,255,0.4);
           background: radial-gradient(circle at 30% 30%, #19E3FF, #0EA8D0);
           color: white;
           box-shadow: 0 4px 16px rgba(25,227,255,0.6);
@@ -2794,17 +2794,17 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           width: 32px;
           height: 32px;
           border-radius: 50%;
-          border: 1px solid rgba(255,255,255,0.4);
+          border: 1px solid rgba(25,227,255,0.4);
           background: rgba(0,0,0,0.45);
           color: #fff;
           display: inline-flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          box-shadow: 0 0 16px rgba(255,255,255,0.25);
+          box-shadow: 0 0 16px rgba(25,227,255,0.25);
           transition: background 0.15s ease, box-shadow 0.15s ease;
         }
-        .yt-close:hover { background: rgba(0,0,0,0.6); box-shadow: 0 0 24px rgba(255,255,255,0.55); }
+        .yt-close:hover { background: rgba(0,0,0,0.6); box-shadow: 0 0 24px rgba(25,227,255,0.55); }
         .yt-close:active { }
 
         /* Spotify popout overlay */
@@ -2866,17 +2866,17 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           width: 32px;
           height: 32px;
           border-radius: 50%;
-          border: 1px solid rgba(255,255,255,0.4);
+          border: 1px solid rgba(25,227,255,0.4);
           background: rgba(0,0,0,0.45);
           color: #fff;
           display: inline-flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          box-shadow: 0 0 16px rgba(255,255,255,0.25);
+          box-shadow: 0 0 16px rgba(25,227,255,0.25);
           transition: background 0.15s ease, box-shadow 0.15s ease;
         }
-        .am-close:hover { background: rgba(0,0,0,0.6); box-shadow: 0 0 24px rgba(255,255,255,0.55); }
+        .am-close:hover { background: rgba(0,0,0,0.6); box-shadow: 0 0 24px rgba(25,227,255,0.55); }
         .am-close:active { }
 
         @keyframes ytFadeIn { from { opacity: 0 } to { opacity: 1 } }
