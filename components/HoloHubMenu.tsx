@@ -671,26 +671,27 @@ export default function HoloHubMenu({
           animation: hubActiveGlow 2s ease-in-out infinite, holoPulse 2.6s ease-in-out infinite;
           box-shadow:
             0 14px 28px rgba(0,0,0,.7),
-            0 0 50px #F2EF1DFF,
-            0 0 100px #F2EF1DCC,
-            0 0 150px #F2EF1D88,
+            0 0 70px #F2EF1DFF,
+            0 0 140px #F2EF1DFF,
+            0 0 210px #F2EF1DCC,
+            0 0 280px #F2EF1D88,
             inset 0 2px 0 rgba(255,255,255,.25),
             inset 0 -6px 14px rgba(0,0,0,.6),
             inset 0 0 20px #F2EF1D22;
         }
         .hub-active::before {
           box-shadow: 
-            0 0 60px #F2EF1DFF, 
-            0 0 120px #F2EF1DCC,
-            0 0 180px #F2EF1D88;
+            0 0 80px #F2EF1DFF, 
+            0 0 160px #F2EF1DFF,
+            0 0 240px #F2EF1DCC;
         }
         @keyframes hubActiveGlow {
           0%, 100% { 
-            filter: brightness(1.3) saturate(1.4);
+            filter: brightness(1.4) saturate(1.5);
             transform: scale(1);
           }
           50% { 
-            filter: brightness(1.5) saturate(1.6);
+            filter: brightness(1.7) saturate(1.8);
             transform: scale(1.02);
           }
         }

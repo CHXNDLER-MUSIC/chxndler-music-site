@@ -665,7 +665,7 @@ export default function SteeringWheelOverlay({
               position: "fixed",
               // Bottom of pink display should touch the light beam top
               // Use global CSS var so we can tune per-device
-              bottom: 'calc(var(--display-touch-top) - var(--pink-bottom-nudge, 40px))',
+              bottom: 'calc(var(--display-touch-top) - var(--pink-bottom-nudge, 90px))',
               // Center horizontally in the viewport (always centered)
               left: '50%',
               transform: 'translateX(-50%)',
@@ -1064,22 +1064,23 @@ export default function SteeringWheelOverlay({
           animation: powerActiveGlow 2s ease-in-out infinite, powerPulse 2.6s ease-in-out infinite;
           box-shadow:
             0 14px 28px rgba(0,0,0,.6),
-            0 0 25px #19E3FF,
-            0 0 50px #19E3FFCC,
-            0 0 80px #19E3FF88,
+            0 0 40px #19E3FF,
+            0 0 80px #19E3FFFF,
+            0 0 120px #19E3FFCC,
+            0 0 160px #19E3FF88,
             inset 0 1px 0 rgba(255,255,255,.22),
             inset 0 -6px 14px rgba(0,0,0,.6);
         }
         .power-btn-active::before {
-          box-shadow: 0 0 30px #19E3FFFF, 0 0 60px #19E3FFAA, 0 0 100px #19E3FF66;
+          box-shadow: 0 0 50px #19E3FFFF, 0 0 100px #19E3FFCC, 0 0 150px #19E3FF88;
         }
         @keyframes powerActiveGlow {
           0%, 100% { 
-            filter: brightness(1.2) saturate(1.3);
+            filter: brightness(1.3) saturate(1.4);
             transform: scale(1);
           }
           50% { 
-            filter: brightness(1.4) saturate(1.5);
+            filter: brightness(1.6) saturate(1.7);
             transform: scale(1.02);
           }
         }

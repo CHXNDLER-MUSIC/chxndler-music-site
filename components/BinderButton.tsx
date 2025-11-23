@@ -870,7 +870,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
           </div>
 
           {/* Dynamic Content - Binder Slots or Full Collection */}
-          <div className="relative mt-1">
+          <div className="relative mt-0">
             {!showFullCollection ? (
               // Binder Card Slots
               <div className="grid grid-cols-5 gap-2">
