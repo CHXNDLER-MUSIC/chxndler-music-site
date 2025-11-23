@@ -13,66 +13,212 @@ import { computePlanetLayout } from "@/lib/planetLayout";
 import { buildPlanetSongs } from "@/lib/planets";
 import { getEntriesByRing, getPlanetEntry } from "@/lib/planetRegistry";
 
-// Define elemental planets configuration
+// Define element types and guards
+type ElementCode = "heart" | "water" | "lightning" | "darkness";
+
+// Fixed elemental planets configuration - always 4 planets at fixed positions
 const ELEMENTS = [
-  { key: "water", label: "WATER", color: "#38B6FF", baseAngle: 0 },
-  { key: "heart", label: "HEART", color: "#FC54AF", baseAngle: 90 },
-  { key: "lightning", label: "LIGHTNING", color: "#F2EF1D", baseAngle: 180 },
-  { key: "darkness", label: "DARKNESS", color: "#000000", baseAngle: 270 },
+  { code: "heart",     label: "💖 Heart",     angleDeg: 270 }, // top
+  { code: "water",     label: "🌊 Water",     angleDeg: 0   }, // right
+  { code: "lightning", label: "⚡ Lightning", angleDeg: 90  }, // bottom
+  { code: "darkness",  label: "🌑 Darkness",  angleDeg: 180 }, // left
 ] as const;
 
-const ELEMENT_ORBIT_RADIUS = 6;
-const ELEMENT_ORBIT_SPEED = 0.05;
+// Element colors configuration
+const elementColors: Record<ElementCode, string> = {
+  heart: "#FC54AF",
+  water: "#38B6FF", 
+  lightning: "#F2EF1D",
+  darkness: "#000000"
+};
 
-// Component to handle orbiting elemental planets and their song systems
-function OrbitingElementalSystem({ songs, mainId, hoverId }: { songs: any[]; mainId: string | null; hoverId: string | null }) {
-  const elementalPlanetsRef = useRef<{ [key: string]: Vector3 }>({});
+// Type guard for element codes
+function isElementCode(code: string): code is ElementCode {
+  return ["heart", "water", "lightning", "darkness"].includes(code);
+}
 
-  // Create orbiting elemental planets
-  const elementalPlanets = ELEMENTS.map((element) => {
-    const ElementalPlanetGroup = ({ element: el }: { element: typeof element }) => {
-      const groupRef = useRef<ThreeGroup>(null);
-      
-      useFrame((state) => {
-        if (!groupRef.current) return;
-        
-        const t = state.clock.getElapsedTime();
-        const angle = (el.baseAngle * Math.PI / 180) + (t * ELEMENT_ORBIT_SPEED);
-        const x = Math.cos(angle) * ELEMENT_ORBIT_RADIUS;
-        const z = Math.sin(angle) * ELEMENT_ORBIT_RADIUS;
-        const y = 0.5; // Slightly elevated above the heart
-        
-        groupRef.current.position.set(x, y, z);
-        
-        // Store position for song planets to use
-        elementalPlanetsRef.current[el.key] = new Vector3(x, y, z);
-      });
+const elementRingRadius = 8;
+const songOrbitRadius = 3;
 
-      return (
-        <group ref={groupRef}>
-          <ElementalPlanet 
-            element={el.key as any}
-            position={[0, 0, 0]} 
-            size={1.5} 
-            glowIntensity={3.0}
-          />
-          
-          {/* Song planets orbiting this elemental planet */}
-          <ElementalOrbitSystem
-            elementalPosition={[0, 0, 0]} // Relative to the elemental planet
-            element={el.key as any}
-            songs={songs}
-            mainId={mainId}
-            hoverId={hoverId}
-          />
-        </group>
-      );
+// Fixed elemental system with song orbits
+function FixedElementalSystem({ songs, mainId, hoverId }: { songs: any[]; mainId: string | null; hoverId: string | null }) {
+  const groupRef = useRef<ThreeGroup>(null);
+
+  // Group cards by element using the exact data structure you specified
+  const cardsByElement: Record<ElementCode, any[]> = React.useMemo(() => {
+    const grouped: Record<ElementCode, any[]> = {
+      heart: [],
+      water: [],
+      lightning: [],
+      darkness: [],
     };
+    
+    // Only process released songs
+    songs
+      .filter(song => song.status === "released") // only released cards
+      .forEach(song => {
+        // Use primary_element with fallback to heart
+        const element = song.primary_element ?? "heart";
+        if (isElementCode(element)) {
+          grouped[element].push(song);
+        } else {
+          // Fallback to heart for invalid elements
+          grouped.heart.push(song);
+        }
+      });
+    
+    return grouped;
+  }, [songs]);
 
-    return <ElementalPlanetGroup key={element.key} element={element} />;
+  // Gentle group rotation (optional)
+  useFrame((state) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y += 0.002; // Very slow rotation to keep things stable and predictable
+    }
   });
 
-  return <>{elementalPlanets}</>;
+  // Render each element planet with its song orbits
+  const elementalPlanets = ELEMENTS.map((element) => {
+    // Convert angle to radians and compute position
+    // angleDeg: 270=top, 0=right, 90=bottom, 180=left
+    // We use X/Z coordinates (Y=0 for horizontal plane)
+    const angleRad = (element.angleDeg * Math.PI) / 180;
+    const elementX = Math.cos(angleRad) * elementRingRadius; // X axis (right/left)
+    const elementY = 0; // Keep on horizontal plane
+    const elementZ = Math.sin(angleRad) * elementRingRadius; // Z axis (forward/back)
+    
+    const cardsForThisElement = cardsByElement[element.code];
+    
+    return (
+      <group key={element.code} position={[elementX, elementY, elementZ]}>
+        {/* Fixed elemental planet - always present */}
+        <ElementalPlanet 
+          element={element.code as any}
+          position={[0, 0, 0]} 
+          size={1.5} 
+          glowIntensity={3.0}
+        />
+        
+        {/* Song planets orbiting around this element planet */}
+        <SongOrbitGroup
+          cards={cardsForThisElement}
+          elementCode={element.code}
+          orbitRadius={songOrbitRadius}
+          mainId={mainId}
+          hoverId={hoverId}
+        />
+      </group>
+    );
+  });
+
+  return (
+    <group ref={groupRef}>
+      {/* Always render exactly 4 element planets regardless of songs */}
+      {elementalPlanets}
+    </group>
+  );
+}
+
+// Component to render song planets orbiting around an elemental planet
+function SongOrbitGroup({ 
+  cards, 
+  elementCode, 
+  orbitRadius, 
+  mainId, 
+  hoverId 
+}: { 
+  cards: any[]; 
+  elementCode: ElementCode; 
+  orbitRadius: number; 
+  mainId: string | null; 
+  hoverId: string | null; 
+}) {
+  if (cards.length === 0) return null;
+  
+  // Equal angle distribution
+  const step = (2 * Math.PI) / cards.length;
+  
+  return (
+    <group>
+      {cards.map((card, index) => {
+        // Each song planet gets its own orbit component for individual motion
+        return (
+          <SongOrbitPlanet
+            key={card.id}
+            card={card}
+            index={index}
+            totalCards={cards.length}
+            orbitRadius={orbitRadius}
+            elementCode={elementCode}
+            isMain={mainId === card.id}
+            isHover={hoverId === card.id}
+          />
+        );
+      })}
+    </group>
+  );
+}
+
+// Individual song planet with its own orbital motion
+function SongOrbitPlanet({
+  card,
+  index,
+  totalCards,
+  orbitRadius,
+  elementCode,
+  isMain,
+  isHover,
+}: {
+  card: any;
+  index: number;
+  totalCards: number;
+  orbitRadius: number;
+  elementCode: ElementCode;
+  isMain: boolean;
+  isHover: boolean;
+}) {
+  const planetRef = useRef<ThreeGroup>(null);
+  
+  // Each element has its own orbital speed for variety
+  const elementSpeeds: Record<ElementCode, number> = {
+    heart: 0.3,
+    water: 0.25,
+    lightning: 0.4,
+    darkness: 0.2,
+  };
+  
+  const baseSpeed = elementSpeeds[elementCode];
+  // Slight speed variation per planet to avoid perfect synchronization
+  const speedVariation = 1 + (index * 0.1);
+  const orbitSpeed = baseSpeed * speedVariation;
+  
+  useFrame((state) => {
+    if (planetRef.current) {
+      // Calculate orbital position with time-based rotation
+      const timeOffset = state.clock.elapsedTime * orbitSpeed;
+      const step = (2 * Math.PI) / totalCards;
+      const theta = (index * step) + timeOffset;
+      
+      const x = Math.cos(theta) * orbitRadius;
+      const y = 0; // Keep on horizontal plane
+      const z = Math.sin(theta) * orbitRadius;
+      
+      planetRef.current.position.set(x, y, z);
+    }
+  });
+  
+  return (
+    <group ref={planetRef}>
+      <Planet
+        song={card}
+        isMain={isMain}
+        isHover={isHover}
+        isMoon={false}
+        isMuted={false}
+        ringBaseOverride={0.5} // Make song planets smaller
+      />
+    </group>
+  );
 }
 
 function InvalidateOnState() {
@@ -256,10 +402,10 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
           {/* Heart planet at the center - always visible as the core */}
           {actualShouldShowAll && <HeartPlanet />}
           
-          {/* New orbiting elemental system with song planets attached */}
-          {songs.length > 0 && actualShouldShowAll && (
-            <OrbitingElementalSystem
-              songs={songs}
+          {/* Fixed elemental system with song planets orbiting each element */}
+          {actualShouldShowAll && (
+            <FixedElementalSystem
+              songs={songs || []}
               mainId={mainId}
               hoverId={hoverId}
             />

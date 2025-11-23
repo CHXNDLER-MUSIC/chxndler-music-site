@@ -623,7 +623,7 @@ export default function BinderModal({ open, onClose }: Props) {
             height: '38vh',
             display: 'flex',
             flexDirection: 'column',
-            padding: '10px 14px 14px 14px',
+            padding: '10px 14px 4px 14px',
             borderRadius: 18,
             background: 'rgba(0,0,0,0.6)',
             border: '1px solid rgba(255,105,180,0.55)',

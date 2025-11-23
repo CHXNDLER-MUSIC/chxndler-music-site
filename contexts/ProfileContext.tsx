@@ -105,11 +105,13 @@ interface DailyPrompts {
 
 interface ProfileContextType {
   profile: Profile | null;
+  user: any | null;
   loading: boolean;
   refreshProfile: () => Promise<void>;
   updateProfileNameAndElement: (name: string, elementLabel: string) => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
   updateProfileName: (name: string) => Promise<void>;
+  savePhone: (phone: string) => Promise<void>;
   // Journal functionality
   journalEntries: JournalEntry[];
   loadJournalEntries: (userId: string) => Promise<void>;
@@ -123,6 +125,7 @@ const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [user, setUser] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
   const [isJournalOpen, setIsJournalOpen] = useState(false);
@@ -142,6 +145,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       }
 
       const user = session?.user;
+      setUser(user);
       if (!user) {
         setProfile(null);
         return;
@@ -383,6 +387,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         await loadJournalEntries(session.user.id);
       } else {
         setProfile(null);
+        setUser(null);
         setJournalEntries([]);
         setLoading(false);
       }
@@ -489,13 +494,46 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const savePhone = async (phone: string) => {
+    if (!user) {
+      console.error('No user found - cannot save phone');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabaseClient
+        .from("profiles")
+        .update({ phone })
+        .eq("id", user.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error saving phone:", error.message, error);
+        return;
+      }
+
+      if (data && profile) {
+        // Update local profile state
+        setProfile({
+          ...profile,
+          phone: phone
+        });
+      }
+    } catch (error) {
+      console.error("Error in savePhone:", error);
+    }
+  };
+
   const value: ProfileContextType = {
     profile,
+    user,
     loading,
     refreshProfile,
     updateProfileNameAndElement,
     updateProfile,
     updateProfileName,
+    savePhone,
     journalEntries,
     loadJournalEntries,
     saveJournalEntry,

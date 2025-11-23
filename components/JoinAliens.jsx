@@ -6,13 +6,13 @@ import { useProfile } from "@/contexts/ProfileContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 export default function JoinAliens({ visible = true } = {}) {
-  const [phone, setPhone] = useState("");
+  const { profile, savePhone, user } = useProfile();
+  const [phone, setPhone] = useState(profile?.phone ?? "");
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [heartSignalSent, setHeartSignalSent] = useState(false);
-  
-  const { updateProfile } = useProfile();
+  const [status, setStatus] = useState("idle");
   
   // Tip functionality state
   const [showTipOptions, setShowTipOptions] = useState(false);
@@ -114,6 +114,11 @@ export default function JoinAliens({ visible = true } = {}) {
     }
   };
 
+  // Update phone when profile changes
+  useEffect(() => {
+    if (profile?.phone) setPhone(profile.phone);
+  }, [profile?.phone]);
+
   // Start countdown when component becomes visible and reset tip options when hidden
   useEffect(() => {
     if (visible) {
@@ -163,61 +168,50 @@ export default function JoinAliens({ visible = true } = {}) {
 
     setError(null);
     setMessage(null);
-    setLoading(true);
+    setStatus("saving");
 
     try {
       sfx.play('join-alien', 0.8);
       
-      // Send heart signal to API
-      const response = await fetch('/api/heart-signal', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          phone: phone,
-          message: 'Heart signal from signal pop-out',
-          anonymous: false
-        }),
-      });
-
-      const result = await response.json();
-      
-      if (result.success) {
-        setHeartSignalSent(true);
-        
-        // Save phone number to user profile
-        try {
-          const cleanPhone = phone.replace(/\D/g, ''); // Remove formatting, keep only digits
-          if (cleanPhone && cleanPhone.trim().length > 0) {
-            await updateProfile({ phone: phone.trim() });
-          }
-        } catch (profileError) {
-          console.error("Error updating phone in profile", profileError);
-        }
-        
-        setPhone(""); // Clear phone after successful send
+      if (user && profile) {
+        // User is logged in - save to profile
+        await savePhone(phone);
+        setStatus("saved");
+        setMessage("Signal linked to your Alien profile.");
         try { sfx.play('success', 0.7); } catch {}
       } else {
-        setError("Failed to send heart signal");
-        try { sfx.play('error', 0.5); } catch {}
+        // User is not logged in - insert to signal_signups
+        const { error } = await supabaseClient
+          .from("signal_signups")
+          .insert({ phone });
+
+        if (error) {
+          console.error("Error saving to signal_signups:", error);
+          setError("Failed to send heart signal");
+          setStatus("error");
+          try { sfx.play('error', 0.5); } catch {}
+        } else {
+          setStatus("saved");
+          setMessage("Signal received. When you create your Alien we will connect this number.");
+          try { sfx.play('success', 0.7); } catch {}
+        }
       }
 
       setTimeout(() => {
         setError(null);
-        setHeartSignalSent(false);
+        setMessage(null);
+        setStatus("idle");
       }, 3000);
 
     } catch (e) {
       console.error('Heart signal error:', e);
       setError("Failed to send heart signal");
+      setStatus("error");
       try { sfx.play('error', 0.5); } catch {}
       setTimeout(() => {
         setError(null);
-        setHeartSignalSent(false);
+        setStatus("idle");
       }, 3000);
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -317,7 +311,7 @@ export default function JoinAliens({ visible = true } = {}) {
             textShadow: '0 0 8px rgba(252, 84, 175, 0.6)'
           }}
         >
-          Stay connected to the Heartverse.
+          {profile?.phone ? `Current signal: ${profile.phone.replace(/(\+1 \(\d{3}\)) \d{3}-(\d{4})/, '$1 ***-$2')}` : 'Stay connected to the Heartverse.'}
         </div>
 
       {/* Error/Success Messages */}
@@ -358,8 +352,8 @@ export default function JoinAliens({ visible = true } = {}) {
           type="tel"
           value={phone}
           onChange={handlePhoneChange}
-          placeholder="+1 (555) 123-4567"
-          disabled={loading}
+          placeholder={profile?.phone ? profile.phone : "+1 (555) 123-4567"}
+          disabled={status === "saving"}
           style={{
             width: '100%',
             padding: '12px 16px',
@@ -388,40 +382,40 @@ export default function JoinAliens({ visible = true } = {}) {
       {/* Send Heart Signal Button */}
       <button
         onClick={sendHeartSignal}
-        disabled={loading || phone.length < 14}
+        disabled={status === "saving" || phone.length < 14}
         style={{
           width: '100%',
           padding: '12px 24px',
           background: 'transparent',
-          border: heartSignalSent
+          border: status === "saved"
             ? '2px solid #00FF00'
-            : loading || phone.length < 14 
+            : status === "saving" || phone.length < 14 
               ? '2px solid rgba(128, 128, 128, 0.3)' 
               : '2px solid #FC54AF',
           borderRadius: '8px',
-          color: heartSignalSent
+          color: status === "saved"
             ? '#00FF00'
-            : loading || phone.length < 14 
+            : status === "saving" || phone.length < 14 
               ? 'rgba(128, 128, 128, 0.7)' 
               : '#FC54AF',
           fontSize: '16px',
           fontWeight: '600',
-          cursor: loading || phone.length < 14 ? 'not-allowed' : 'pointer',
+          cursor: status === "saving" || phone.length < 14 ? 'not-allowed' : 'pointer',
           transition: 'all 300ms ease',
-          boxShadow: heartSignalSent
+          boxShadow: status === "saved"
             ? '0 0 15px rgba(0, 255, 0, 0.3)'
-            : loading || phone.length < 14 
+            : status === "saving" || phone.length < 14 
               ? 'none' 
               : '0 0 15px rgba(252, 84, 175, 0.3)',
-          textShadow: heartSignalSent
+          textShadow: status === "saved"
             ? '0 0 10px #00FF00, 0 0 20px #00FF00, 0 0 30px #00FF00'
-            : loading || phone.length < 14 
+            : status === "saving" || phone.length < 14 
               ? 'none' 
               : '0 0 10px #FC54AF, 0 0 20px #FC54AF, 0 0 30px #FC54AF',
           outline: 'none'
         }}
         onMouseEnter={(e) => {
-          if (!loading && phone.length >= 14 && !heartSignalSent) {
+          if (status !== "saving" && phone.length >= 14 && status !== "saved") {
             e.target.style.transform = 'translateY(-2px)';
             e.target.style.background = 'rgba(252, 84, 175, 0.15)';
             e.target.style.boxShadow = '0 0 40px rgba(252, 84, 175, 0.8), 0 0 60px rgba(252, 84, 175, 0.4), inset 0 0 30px rgba(252, 84, 175, 0.2)';
@@ -431,7 +425,7 @@ export default function JoinAliens({ visible = true } = {}) {
           }
         }}
         onMouseLeave={(e) => {
-          if (!loading && phone.length >= 14 && !heartSignalSent) {
+          if (status !== "saving" && phone.length >= 14 && status !== "saved") {
             e.target.style.transform = 'translateY(0)';
             e.target.style.background = 'transparent';
             e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
@@ -440,7 +434,7 @@ export default function JoinAliens({ visible = true } = {}) {
           }
         }}
       >
-        {loading ? (
+        {status === "saving" ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
             <div 
               style={{
@@ -454,7 +448,7 @@ export default function JoinAliens({ visible = true } = {}) {
             />
             Sending...
           </div>
-        ) : heartSignalSent ? (
+        ) : status === "saved" ? (
           "Heart signal sent"
         ) : (
           "Send Heart Signal"
