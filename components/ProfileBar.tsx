@@ -527,6 +527,7 @@ export default function ProfileBar({
                 onHoverSound={() => sfx.play('hover', 0.8)}
                 onCloseBlueDisplay={onCloseBlueDisplay}
                 onOpenBlueDisplay={onOpenBlueDisplay}
+                onOpenJournal={onOpenJournal}
                 heartCoins={heartCoins}
                 isActive={activePanel === 'heartcoins'}
                 onClick={() => togglePanel('heartcoins')}

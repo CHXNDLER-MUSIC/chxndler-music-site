@@ -90,7 +90,7 @@ export default function InlineBrowserModal({
           position: 'absolute',
           top: compact ? '5px' : '5px',
           left: '50%',
-          transform: compact ? 'translateX(-50%) translateY(-80px)' : 'translateX(-50%)',
+          transform: compact ? 'translateX(-50%) translateY(-120px)' : 'translateX(-50%)',
           height: compact ? 'min(50vh, 420px)' : 'min(80vh, 760px)',
           zIndex: 10000
         }}

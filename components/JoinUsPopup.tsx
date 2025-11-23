@@ -407,7 +407,7 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
             onClick={() => {
               setShowPhonePopup(true);
               try {
-                sfx.play('success', 0.5);
+                sfx.play('click', 0.5);
               } catch {}
             }}
             aria-label="Phone"

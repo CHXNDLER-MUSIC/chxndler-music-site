@@ -6918,19 +6918,6 @@ export default function HUDPanel({
               }}
             />
             
-            {/* TEST: Debug visual indicator */}
-            <div style={{
-              background: 'red',
-              height: '20px',
-              width: '100%',
-              marginTop: '4px',
-              border: '2px solid yellow',
-              color: 'white',
-              fontSize: '12px',
-              textAlign: 'center'
-            }}>
-              WAVEFORM SHOULD BE HERE
-            </div>
             
             {/* Waveform visualizer directly under song dropdown */}
             {(() => {
