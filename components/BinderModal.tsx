@@ -703,7 +703,6 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                 setShowFullCollection(!showFullCollection);
                 setSelectedElement(null);
                 setSelectedCardName('All');
-                setPreselectedCard(null);
                 setCurrentCardIndex(0);
               }}
               className="px-3 py-1 text-[10px] font-bold rounded border border-pink-400/60 hover:border-pink-400/80 transition-all duration-200"
@@ -845,7 +844,6 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                   try { sfx.play('click', 0.6); } catch {}
                   setSelectedElement(null);
                   setSelectedCardName('All');
-                  setPreselectedCard(null);
                   setCurrentCardIndex(0);
                 }}
                 className="flex items-center gap-2 text-pink-300 hover:text-pink-200 transition-colors text-xs"
@@ -943,7 +941,6 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                           className="relative cursor-pointer"
                           onClick={() => {
                             try { sfx.play('click', 0.8); } catch {}
-                            setPreselectedCard(currentCard.name);
                             setSelectedCard(currentCard);
                             setCardOpen(true);
                           }}
@@ -1420,7 +1417,6 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                             setSelectedElement(element);
                             setSelectedCardName('All');
                             // Set the element's representative card as preselected (e.g., "LIGHTNING" card for LIGHTNING element)
-                            setPreselectedCard(element.toUpperCase());
                             setCurrentCardIndex(0);
                           }}
                         >
