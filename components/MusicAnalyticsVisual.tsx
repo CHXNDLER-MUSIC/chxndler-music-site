@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getClickAnalyticsLocal, clearClickAnalyticsLocal, clearAnalyticsCache, getRunningMetricsLocal, clearRunningMetricsLocal, loadEventsV2Analytics, getEventCount } from "../lib/analytics";
+import { getClickAnalyticsLocal, clearClickAnalyticsLocal, clearAnalyticsCache, getRunningMetricsLocal, clearRunningMetricsLocal } from "../lib/analytics";
 import { tracks } from "@/lib/songs-consolidated";
 
 interface MusicStats {
