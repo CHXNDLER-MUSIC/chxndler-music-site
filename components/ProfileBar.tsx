@@ -166,6 +166,9 @@ export default function ProfileBar({
   
   // Single active panel state
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
+  
+  // Preselected card state for opening binder with specific card
+  const [preselectedCard, setPreselectedCard] = useState<string | null>(null);
 
   // Panel toggle function
   const togglePanel = (panelKey: ActivePanel) => {
@@ -321,6 +324,26 @@ export default function ProfileBar({
       document.removeEventListener('keydown', onKey);
     };
   }, [showLoginTooltip]);
+
+  // Listen for openBinderCard events to open binder with specific card
+  useEffect(() => {
+    const handleOpenBinderCard = (event: CustomEvent) => {
+      try {
+        const { cardTitle } = event.detail;
+        if (cardTitle) {
+          // Convert song title to the format used in BinderModal songCollection
+          const normalizedTitle = cardTitle.toUpperCase();
+          setPreselectedCard(normalizedTitle);
+          setActivePanel('binder');
+        }
+      } catch (err) {
+        console.warn('Error handling openBinderCard event:', err);
+      }
+    };
+
+    window.addEventListener('openBinderCard', handleOpenBinderCard as EventListener);
+    return () => window.removeEventListener('openBinderCard', handleOpenBinderCard as EventListener);
+  }, []);
 
   if (loading) {
     return (
@@ -534,8 +557,10 @@ export default function ProfileBar({
           open={true} 
           onClose={() => {
             setActivePanel(null);
+            setPreselectedCard(null); // Reset preselected card when closing
             try { onOpenBlueDisplay?.(); } catch {}
           }} 
+          preselectedCard={preselectedCard}
         />
       )}
 

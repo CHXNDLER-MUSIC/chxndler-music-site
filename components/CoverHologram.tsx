@@ -660,7 +660,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
             className="card-anchored"
             style={{
               position: 'fixed',
-              bottom: '50vh', // Position higher up on screen
+              bottom: '45vh', // Position slightly lower on screen
               left: '50%',
               transform: 'translateX(-50%)',
               pointerEvents: 'auto'
@@ -757,23 +757,23 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                           // Close the card modal
                           setShowCard(false);
                           
-                          // Emit custom event to open store with CARDS tab
+                          // Emit custom event to open binder with specific card
                           try {
-                            const storeEvent = new CustomEvent('openStoreCards', {
+                            const binderEvent = new CustomEvent('openBinderCard', {
                               detail: { 
+                                cardTitle: title,
                                 songSlug: title?.toLowerCase().replace(/\s+/g, '-'),
-                                songTitle: title,
                                 cardSrc: src 
                               }
                             });
-                            window.dispatchEvent(storeEvent);
+                            window.dispatchEvent(binderEvent);
                           } catch {}
                           
                           try {
                             track('collect_card_clicked', { 
                               song_slug: title?.toLowerCase().replace(/\s+/g, '-'),
                               card_src: src,
-                              payload: { song_title: title, card_image: src, action: 'navigate_to_store' } 
+                              payload: { song_title: title, card_image: src, action: 'open_binder_with_card' } 
                             });
                           } catch {}
                         }}

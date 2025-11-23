@@ -2,29 +2,31 @@
 
 import React, { useEffect, useRef } from "react";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
-import { AdditiveBlending, Group as ThreeGroup, SRGBColorSpace, Vector3 } from "three";
-// drei removed to avoid external asset/preset loading that can abort in some runtimes
+import { AdditiveBlending, Group as ThreeGroup, SRGBColorSpace, Vector3, SpriteMaterial, Sprite, MeshBasicMaterial, PlaneGeometry, DoubleSide } from "three";
 import { playerStore } from "@/store/usePlayerStore";
 import Planet from "@/components/holo/Planet";
 import HeartPlanet from "@/components/holo/HeartPlanet";
 import ElementalPlanet from "@/components/holo/ElementalPlanet";
-import ElementalOrbitSystem from "@/components/holo/ElementalOrbitSystem";
 import { computePlanetLayout } from "@/lib/planetLayout";
 import { buildPlanetSongs } from "@/lib/planets";
 import { getEntriesByRing, getPlanetEntry } from "@/lib/planetRegistry";
+import { Html } from "@react-three/drei";
 
 // Define element types and guards
 type ElementCode = "heart" | "water" | "lightning" | "darkness";
 
-// Fixed elemental planets configuration - always 4 planets at fixed positions
+// DIAGNOSTIC MODE - Set to true to show orbit rings, bounding boxes, and labels
+const SHOW_ORBITS = false;
+
+// Fixed elemental planets configuration - cardinal positions around heart
 const ELEMENTS = [
-  { code: "heart",     label: "💖 Heart",     angleDeg: 270 }, // top
-  { code: "water",     label: "🌊 Water",     angleDeg: 0   }, // right
-  { code: "lightning", label: "⚡ Lightning", angleDeg: 90  }, // bottom
-  { code: "darkness",  label: "🌑 Darkness",  angleDeg: 180 }, // left
+  { code: "heart",     label: "💖 Heart",     position: [6, 0, 0] },     // right
+  { code: "water",     label: "🌊 Water",     position: [0, 0, 6] },     // forward
+  { code: "lightning", label: "⚡ Lightning", position: [-6, 0, 0] },    // left
+  { code: "darkness",  label: "🌑 Darkness",  position: [0, 0, -6] },    // back
 ] as const;
 
-// Element colors configuration
+// Element colors and glow configuration
 const elementColors: Record<ElementCode, string> = {
   heart: "#FC54AF",
   water: "#38B6FF", 
@@ -32,19 +34,160 @@ const elementColors: Record<ElementCode, string> = {
   darkness: "#000000"
 };
 
+const elementGlows: Record<ElementCode, string> = {
+  heart: "#FC54AF",
+  water: "#38B6FF", 
+  lightning: "#F2EF1D",
+  darkness: "#6A4C93" // purple-blue rim for darkness
+};
+
 // Type guard for element codes
 function isElementCode(code: string): code is ElementCode {
   return ["heart", "water", "lightning", "darkness"].includes(code);
 }
 
-const elementRingRadius = 8;
-const songOrbitRadius = 3;
+const elementOrbitRadius = 6;
+const songOrbitRadius = 2;
 
-// Fixed elemental system with song orbits
+// Elemental Planet with Glow component
+function ElementPlanetWithGlow({ 
+  element, 
+  position, 
+  orbitRef 
+}: { 
+  element: ElementCode; 
+  position: [number, number, number];
+  orbitRef: React.RefObject<ThreeGroup>;
+}) {
+  const glowRef = useRef<any>(null);
+  
+  const color = elementColors[element];
+  const glowColor = elementGlows[element];
+  
+  return (
+    <group position={position}>
+      {/* Glow background - renderOrder 2 */}
+      <sprite ref={glowRef} scale={[8, 8, 1]} renderOrder={2}>
+        <spriteMaterial
+          transparent={true}
+          depthWrite={false}
+          depthTest={true}
+          color={glowColor}
+          opacity={0.4}
+          blending={AdditiveBlending}
+        />
+      </sprite>
+      
+      {/* Element planet - renderOrder 1 */}
+      <mesh renderOrder={1}>
+        <ElementalPlanet 
+          element={element as any}
+          position={[0, 0, 0]} 
+          size={2.0} 
+          glowIntensity={4.0}
+        />
+      </mesh>
+      
+      {/* Diagnostic label */}
+      {SHOW_ORBITS && (
+        <Html position={[0, 3, 0]} center>
+          <div style={{ 
+            color: color, 
+            fontSize: '12px', 
+            fontWeight: 'bold',
+            textShadow: '1px 1px 2px black',
+            pointerEvents: 'none'
+          }}>
+            {element.toUpperCase()}
+          </div>
+        </Html>
+      )}
+      
+      {/* Diagnostic bounding box */}
+      {SHOW_ORBITS && (
+        <mesh renderOrder={0}>
+          <boxGeometry args={[4, 4, 4]} />
+          <meshBasicMaterial 
+            color={color} 
+            transparent={true} 
+            opacity={0.1} 
+            wireframe={true}
+            depthWrite={false}
+          />
+        </mesh>
+      )}
+    </group>
+  );
+}
+
+// Song orbit group that rotates around an element planet
+function SongOrbitGroup({ 
+  cards, 
+  elementCode, 
+  elementPosition 
+}: { 
+  cards: any[]; 
+  elementCode: ElementCode; 
+  elementPosition: [number, number, number];
+}) {
+  const orbitRef = useRef<ThreeGroup>(null);
+  
+  // Rotate song planets around their element
+  useFrame(() => {
+    if (orbitRef.current) {
+      orbitRef.current.rotation.y += 0.0008;
+    }
+  });
+  
+  if (cards.length === 0) return null;
+  
+  const angleStep = (2 * Math.PI) / cards.length;
+  
+  return (
+    <group ref={orbitRef} name={`song-orbit-${elementCode}`}>
+      {/* Diagnostic orbit ring */}
+      {SHOW_ORBITS && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} renderOrder={0}>
+          <ringGeometry args={[songOrbitRadius - 0.1, songOrbitRadius + 0.1, 32]} />
+          <meshBasicMaterial 
+            color={elementColors[elementCode]} 
+            transparent={true} 
+            opacity={0.2}
+            depthWrite={false}
+          />
+        </mesh>
+      )}
+      
+      {cards.map((card, index) => {
+        const angle = index * angleStep;
+        const x = Math.cos(angle) * songOrbitRadius;
+        const z = Math.sin(angle) * songOrbitRadius;
+        const y = (Math.random() - 0.5) * 0.5; // Slight y randomization
+        
+        return (
+          <group key={card.id} position={[x, y, z]}>
+            <mesh renderOrder={3}>
+              <Planet
+                song={card}
+                isMain={mainId === card.id}
+                isHover={hoverId === card.id}
+                isMoon={false}
+                isMuted={false}
+                ringBaseOverride={0.6}
+              />
+            </mesh>
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
+// Fixed elemental system with proper hierarchy
 function FixedElementalSystem({ songs, mainId, hoverId }: { songs: any[]; mainId: string | null; hoverId: string | null }) {
-  const groupRef = useRef<ThreeGroup>(null);
-
-  // Group cards by element using the exact data structure you specified
+  const systemRef = useRef<ThreeGroup>(null);
+  
+  // Group cards by element using song.planet.element
   const cardsByElement: Record<ElementCode, any[]> = React.useMemo(() => {
     const grouped: Record<ElementCode, any[]> = {
       heart: [],
@@ -55,171 +198,70 @@ function FixedElementalSystem({ songs, mainId, hoverId }: { songs: any[]; mainId
     
     // Only process released songs
     songs
-      .filter(song => song.status === "released") // only released cards
+      .filter(song => song.status !== "locked" && song.status !== "coming_soon")
       .forEach(song => {
-        // Use primary_element with fallback to heart
-        const element = song.primary_element ?? "heart";
+        // Use planet.element as the authoritative source
+        const element = song.planet?.element ?? "heart";
         if (isElementCode(element)) {
           grouped[element].push(song);
         } else {
-          // Fallback to heart for invalid elements
           grouped.heart.push(song);
         }
       });
     
     return grouped;
   }, [songs]);
-
-  // Gentle group rotation (optional)
-  useFrame((state) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y += 0.002; // Very slow rotation to keep things stable and predictable
+  
+  // Element planets orbit around the heart
+  useFrame(() => {
+    if (systemRef.current) {
+      systemRef.current.rotation.y += 0.0003;
     }
   });
-
-  // Render each element planet with its song orbits
-  const elementalPlanets = ELEMENTS.map((element) => {
-    // Convert angle to radians and compute position
-    // angleDeg: 270=top, 0=right, 90=bottom, 180=left
-    // We use X/Z coordinates (Y=0 for horizontal plane)
-    const angleRad = (element.angleDeg * Math.PI) / 180;
-    const elementX = Math.cos(angleRad) * elementRingRadius; // X axis (right/left)
-    const elementY = 0; // Keep on horizontal plane
-    const elementZ = Math.sin(angleRad) * elementRingRadius; // Z axis (forward/back)
-    
-    const cardsForThisElement = cardsByElement[element.code];
-    
-    return (
-      <group key={element.code} position={[elementX, elementY, elementZ]}>
-        {/* Fixed elemental planet - always present */}
-        <ElementalPlanet 
-          element={element.code as any}
-          position={[0, 0, 0]} 
-          size={1.5} 
-          glowIntensity={3.0}
-        />
-        
-        {/* Song planets orbiting around this element planet */}
-        <SongOrbitGroup
-          cards={cardsForThisElement}
-          elementCode={element.code}
-          orbitRadius={songOrbitRadius}
-          mainId={mainId}
-          hoverId={hoverId}
-        />
-      </group>
-    );
-  });
-
-  return (
-    <group ref={groupRef}>
-      {/* Always render exactly 4 element planets regardless of songs */}
-      {elementalPlanets}
-    </group>
-  );
-}
-
-// Component to render song planets orbiting around an elemental planet
-function SongOrbitGroup({ 
-  cards, 
-  elementCode, 
-  orbitRadius, 
-  mainId, 
-  hoverId 
-}: { 
-  cards: any[]; 
-  elementCode: ElementCode; 
-  orbitRadius: number; 
-  mainId: string | null; 
-  hoverId: string | null; 
-}) {
-  if (cards.length === 0) return null;
-  
-  // Equal angle distribution
-  const step = (2 * Math.PI) / cards.length;
   
   return (
-    <group>
-      {cards.map((card, index) => {
-        // Each song planet gets its own orbit component for individual motion
-        return (
-          <SongOrbitPlanet
-            key={card.id}
-            card={card}
-            index={index}
-            totalCards={cards.length}
-            orbitRadius={orbitRadius}
-            elementCode={elementCode}
-            isMain={mainId === card.id}
-            isHover={hoverId === card.id}
+    <group ref={systemRef}>
+      {/* Diagnostic central orbit ring */}
+      {SHOW_ORBITS && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} renderOrder={0}>
+          <ringGeometry args={[elementOrbitRadius - 0.2, elementOrbitRadius + 0.2, 64]} />
+          <meshBasicMaterial 
+            color="#ffffff" 
+            transparent={true} 
+            opacity={0.1}
+            depthWrite={false}
           />
+        </mesh>
+      )}
+      
+      {ELEMENTS.map((element) => {
+        const cardsForThisElement = cardsByElement[element.code];
+        const orbitRef = useRef<ThreeGroup>(null);
+        
+        return (
+          <group key={element.code} name={`element-${element.code}`}>
+            {/* Element planet with glow */}
+            <ElementPlanetWithGlow
+              element={element.code}
+              position={element.position as [number, number, number]}
+              orbitRef={orbitRef}
+            />
+            
+            {/* Song planets orbiting this element */}
+            <group position={element.position as [number, number, number]}>
+              <SongOrbitGroup
+                cards={cardsForThisElement}
+                elementCode={element.code}
+                elementPosition={element.position as [number, number, number]}
+              />
+            </group>
+          </group>
         );
       })}
     </group>
   );
 }
 
-// Individual song planet with its own orbital motion
-function SongOrbitPlanet({
-  card,
-  index,
-  totalCards,
-  orbitRadius,
-  elementCode,
-  isMain,
-  isHover,
-}: {
-  card: any;
-  index: number;
-  totalCards: number;
-  orbitRadius: number;
-  elementCode: ElementCode;
-  isMain: boolean;
-  isHover: boolean;
-}) {
-  const planetRef = useRef<ThreeGroup>(null);
-  
-  // Each element has its own orbital speed for variety
-  const elementSpeeds: Record<ElementCode, number> = {
-    heart: 0.3,
-    water: 0.25,
-    lightning: 0.4,
-    darkness: 0.2,
-  };
-  
-  const baseSpeed = elementSpeeds[elementCode];
-  // Slight speed variation per planet to avoid perfect synchronization
-  const speedVariation = 1 + (index * 0.1);
-  const orbitSpeed = baseSpeed * speedVariation;
-  
-  useFrame((state) => {
-    if (planetRef.current) {
-      // Calculate orbital position with time-based rotation
-      const timeOffset = state.clock.elapsedTime * orbitSpeed;
-      const step = (2 * Math.PI) / totalCards;
-      const theta = (index * step) + timeOffset;
-      
-      const x = Math.cos(theta) * orbitRadius;
-      const y = 0; // Keep on horizontal plane
-      const z = Math.sin(theta) * orbitRadius;
-      
-      planetRef.current.position.set(x, y, z);
-    }
-  });
-  
-  return (
-    <group ref={planetRef}>
-      <Planet
-        song={card}
-        isMain={isMain}
-        isHover={isHover}
-        isMoon={false}
-        isMuted={false}
-        ringBaseOverride={0.5} // Make song planets smaller
-      />
-    </group>
-  );
-}
 
 function InvalidateOnState() {
   const invalidate = useThree((s) => s.invalidate);
@@ -400,7 +442,11 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         <group scale={actualShouldShowAll ? 1.45 : 1}>
         <SystemGroup>
           {/* Heart planet at the center - always visible as the core */}
-          {actualShouldShowAll && <HeartPlanet />}
+          {actualShouldShowAll && (
+            <group renderOrder={0}>
+              <HeartPlanet />
+            </group>
+          )}
           
           {/* Fixed elemental system with song planets orbiting each element */}
           {actualShouldShowAll && (
@@ -416,15 +462,16 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
             const focusedSong = songs.find(s => s.id === focusId);
             if (focusedSong) {
               return (
-                <Planet 
-                  key={focusId} 
-                  song={focusedSong} 
-                  isMain={true} 
-                  isHover={hoverId === focusId} 
-                  isMoon={false} 
-                  isMuted={false} 
-                  ringBaseOverride={20} 
-                />
+                <mesh key={focusId} renderOrder={5}>
+                  <Planet 
+                    song={focusedSong} 
+                    isMain={true} 
+                    isHover={hoverId === focusId} 
+                    isMoon={false} 
+                    isMuted={false} 
+                    ringBaseOverride={20} 
+                  />
+                </mesh>
               );
             }
             return null;

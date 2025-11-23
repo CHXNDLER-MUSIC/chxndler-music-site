@@ -79,8 +79,11 @@ interface JournalEntry {
   user_id: string;
   entry_date: string;
   element: string;
+  prompt_id: string | null;
   intention: string | null;
   reflection: string | null;
+  intention_response: string | null;
+  reflection_response: string | null;
   soul_star: string | null;
   created_at: string;
   updated_at: string;
@@ -446,12 +449,15 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             user_id: user.id,
             entry_date: entry.entry_date,
             element: entry.element,
+            prompt_id: entry.prompt_id,
             intention: entry.intention,
             reflection: entry.reflection,
+            intention_response: entry.intention_response,
+            reflection_response: entry.reflection_response,
             soul_star: entry.soul_star,
           },
           { 
-            onConflict: 'user_id,entry_date',
+            onConflict: 'user_id,entry_date,element',
             ignoreDuplicates: false 
           }
         )
@@ -465,7 +471,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
       // Update local state
       setJournalEntries(prev => {
-        const filtered = prev.filter(e => e.entry_date !== data.entry_date);
+        const filtered = prev.filter(e => e.entry_date !== data.entry_date || e.element !== data.element);
         return [data, ...filtered].sort((a, b) => 
           new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime()
         );

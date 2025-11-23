@@ -9,6 +9,7 @@ import type { CardGateState } from "@/utils/cardGating";
 type Props = {
   open: boolean;
   onClose: () => void;
+  preselectedCard?: string | null;
 };
 
 // TypeScript interfaces for shipping and orders
@@ -37,7 +38,7 @@ interface PhysicalCardOrder {
   created_at?: string;
 }
 
-export default function BinderModal({ open, onClose }: Props) {
+export default function BinderModal({ open, onClose, preselectedCard }: Props) {
   const { profile, updateProfile } = useProfile();
   const [cardOpen, setCardOpen] = useState(false);
   const [showFullCollection, setShowFullCollection] = useState(false);
@@ -46,7 +47,6 @@ export default function BinderModal({ open, onClose }: Props) {
   const [selectedCardName, setSelectedCardName] = useState<string>('All');
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [selectedCard, setSelectedCard] = useState<{name: string, image: string, rarity: string, element: string} | null>(null);
-  const [preselectedCard, setPreselectedCard] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isCardFlipped, setIsCardFlipped] = useState(false);
   // Purchase flow state machine
@@ -558,6 +558,15 @@ export default function BinderModal({ open, onClose }: Props) {
       setIsAuthenticated(false);
     }
   }, [profile]);
+
+  // Handle preselected card when modal opens
+  useEffect(() => {
+    if (open && preselectedCard) {
+      // Set to show full collection and filter to the specific card
+      setShowFullCollection(true);
+      setSelectedCardName(preselectedCard);
+    }
+  }, [open, preselectedCard]);
 
   // Reset purchase state when navigating cards
   useEffect(() => {

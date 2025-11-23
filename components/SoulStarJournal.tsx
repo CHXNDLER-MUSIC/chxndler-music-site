@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useProfile } from "@/contexts/ProfileContext";
+import { supabaseClient } from "@/lib/supabaseClient";
 import { sfx } from "@/lib/sfx";
 
 type Props = {
@@ -9,26 +10,17 @@ type Props = {
   onClose: () => void;
 };
 
-interface DailyPrompts {
+interface DailyPrompt {
+  id: string;
   prompt_date: string;
   element: string;
-  intention: {
-    id: string;
-    text: string;
-    element: string;
-    prompt_type: string;
-  };
-  reflection: {
-    id: string;
-    text: string;
-    element: string;
-    prompt_type: string;
-  };
+  intention: string;
+  reflection: string;
 }
 
 interface JournalState {
-  intention: string;
-  reflection: string;
+  intentionResponse: string;
+  reflectionResponse: string;
   soulStar: string;
   isLoading: boolean;
   saveMessage: string;
@@ -51,11 +43,11 @@ const ELEMENT_EMOJIS = {
 };
 
 export default function SoulStarJournal({ isOpen, onClose }: Props) {
-  const { saveJournalEntry, getDailyPrompts, journalEntries, profile } = useProfile();
-  const [dailyPrompts, setDailyPrompts] = useState<DailyPrompts | null>(null);
+  const { saveJournalEntry, journalEntries, profile, user } = useProfile();
+  const [dailyPrompt, setDailyPrompt] = useState<DailyPrompt | null>(null);
   const [journalState, setJournalState] = useState<JournalState>({
-    intention: "",
-    reflection: "",
+    intentionResponse: "",
+    reflectionResponse: "",
     soulStar: "",
     isLoading: false,
     saveMessage: "",
@@ -63,7 +55,7 @@ export default function SoulStarJournal({ isOpen, onClose }: Props) {
   });
   const [showHistory, setShowHistory] = useState(false);
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toISOString().slice(0, 10);
   const todayFormatted = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -73,30 +65,51 @@ export default function SoulStarJournal({ isOpen, onClose }: Props) {
 
   // Load daily prompts and existing entry on mount
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && profile?.element) {
       loadTodaysData();
     }
-  }, [isOpen]);
+  }, [isOpen, profile?.element]);
 
   const loadTodaysData = async () => {
-    // Get daily prompts
-    const prompts = await getDailyPrompts();
-    if (prompts) {
-      setDailyPrompts(prompts);
-    }
+    if (!profile?.element) return;
 
-    // Load existing entry for today if it exists
-    const todayEntry = journalEntries.find(entry => entry.entry_date === today);
-    if (todayEntry) {
-      setJournalState(prev => ({
-        ...prev,
-        soulStar: todayEntry.soul_star || "",
-      }));
+    try {
+      // Get today's prompt for the user's element
+      const { data: prompt, error } = await supabaseClient
+        .from("soul_daily_prompts")
+        .select("*")
+        .eq("prompt_date", today)
+        .eq("element", profile.element)
+        .single();
+
+      if (error) {
+        console.error("Error fetching daily prompt:", error);
+        return;
+      }
+
+      if (prompt) {
+        setDailyPrompt(prompt);
+      }
+
+      // Load existing entry for today if it exists
+      const todayEntry = journalEntries.find(entry => 
+        entry.entry_date === today && entry.element === profile.element
+      );
+      if (todayEntry) {
+        setJournalState(prev => ({
+          ...prev,
+          intentionResponse: todayEntry.intention_response || "",
+          reflectionResponse: todayEntry.reflection_response || "",
+          soulStar: todayEntry.soul_star || "",
+        }));
+      }
+    } catch (error) {
+      console.error("Error loading today's data:", error);
     }
   };
 
   const handleSaveEntry = async () => {
-    if (!profile?.id || !dailyPrompts) return;
+    if (!user?.id || !profile?.element || !dailyPrompt) return;
 
     // Validate input
     if (!journalState.soulStar.trim()) {
@@ -112,24 +125,37 @@ export default function SoulStarJournal({ isOpen, onClose }: Props) {
       setJournalState(prev => ({ ...prev, isLoading: true }));
       sfx.play('click', 0.8);
 
-      const savedEntry = await saveJournalEntry({
-        entry_date: today,
-        element: dailyPrompts.element,
-        intention: dailyPrompts.intention.text,
-        reflection: dailyPrompts.reflection.text,
-        soul_star: journalState.soulStar.trim(),
-      });
+      // Use the upsert logic as specified
+      const { data, error } = await supabaseClient
+        .from("soul_journal_entries")
+        .upsert(
+          {
+            user_id: user.id,
+            entry_date: today,
+            element: profile.element,
+            prompt_id: dailyPrompt.id,
+            intention_response: journalState.intentionResponse,
+            reflection_response: journalState.reflectionResponse,
+            soul_star: journalState.soulStar.trim(),
+          },
+          { onConflict: "user_id,entry_date,element" }
+        )
+        .select()
+        .single();
 
-      if (savedEntry) {
+      if (error) {
+        throw error;
+      }
+
+      if (data) {
         setJournalState(prev => ({
           ...prev,
           saveMessage: "Signal cast into the stars",
         }));
         setTimeout(() => {
           setJournalState(prev => ({ ...prev, saveMessage: "" }));
-        }, 3000);
-      } else {
-        throw new Error("Failed to save entry");
+          onClose(); // Close the popout on success
+        }, 2000);
       }
     } catch (error) {
       console.error('Failed to save journal entry:', error);
@@ -150,7 +176,7 @@ export default function SoulStarJournal({ isOpen, onClose }: Props) {
 
   if (!isOpen) return null;
 
-  if (!dailyPrompts) {
+  if (!dailyPrompt) {
     return (
       <div 
         className="fixed inset-0 z-[2147483647] flex items-center justify-center"
@@ -167,8 +193,8 @@ export default function SoulStarJournal({ isOpen, onClose }: Props) {
     );
   }
 
-  const elementTheme = ELEMENT_COLORS[dailyPrompts.element as keyof typeof ELEMENT_COLORS] || ELEMENT_COLORS.heart;
-  const elementEmoji = ELEMENT_EMOJIS[dailyPrompts.element as keyof typeof ELEMENT_EMOJIS] || "💖";
+  const elementTheme = ELEMENT_COLORS[profile?.element as keyof typeof ELEMENT_COLORS] || ELEMENT_COLORS.heart;
+  const elementEmoji = ELEMENT_EMOJIS[profile?.element as keyof typeof ELEMENT_EMOJIS] || "💖";
 
   return (
     <div 
@@ -376,7 +402,7 @@ export default function SoulStarJournal({ isOpen, onClose }: Props) {
                   textShadow: `0 0 4px ${elementTheme.glow}`
                 }}
               >
-                {elementEmoji} {dailyPrompts.element} element
+                {elementEmoji} {profile?.element} element
               </span>
             </div>
 
@@ -389,7 +415,7 @@ export default function SoulStarJournal({ isOpen, onClose }: Props) {
                 Intention of the Day
               </label>
               <div 
-                className="p-3 rounded-lg"
+                className="p-3 rounded-lg mb-3"
                 style={{
                   background: `${elementTheme.color}10`,
                   border: `1px solid ${elementTheme.color}40`,
@@ -397,8 +423,27 @@ export default function SoulStarJournal({ isOpen, onClose }: Props) {
                   fontStyle: 'italic'
                 }}
               >
-                "{dailyPrompts.intention.text}"
+                "{dailyPrompt.intention}"
               </div>
+              <textarea
+                value={journalState.intentionResponse}
+                onChange={(e) => setJournalState(prev => ({ ...prev, intentionResponse: e.target.value }))}
+                placeholder="Your intention response..."
+                className="w-full h-20 p-3 rounded-lg text-white placeholder-white/50 resize-none focus:outline-none transition-all"
+                style={{
+                  background: 'rgba(0,0,0,0.6)',
+                  border: `1px solid ${elementTheme.color}40`,
+                  boxShadow: `0 0 10px ${elementTheme.color}20`,
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = `${elementTheme.color}80`;
+                  e.target.style.boxShadow = `0 0 15px ${elementTheme.glow}`;
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = `${elementTheme.color}40`;
+                  e.target.style.boxShadow = `0 0 10px ${elementTheme.color}20`;
+                }}
+              />
             </div>
 
             {/* Reflection Prompt */}
@@ -410,7 +455,7 @@ export default function SoulStarJournal({ isOpen, onClose }: Props) {
                 Reflection Prompt
               </label>
               <div 
-                className="p-3 rounded-lg"
+                className="p-3 rounded-lg mb-3"
                 style={{
                   background: `${elementTheme.color}10`,
                   border: `1px solid ${elementTheme.color}40`,
@@ -418,8 +463,27 @@ export default function SoulStarJournal({ isOpen, onClose }: Props) {
                   fontStyle: 'italic'
                 }}
               >
-                "{dailyPrompts.reflection.text}"
+                "{dailyPrompt.reflection}"
               </div>
+              <textarea
+                value={journalState.reflectionResponse}
+                onChange={(e) => setJournalState(prev => ({ ...prev, reflectionResponse: e.target.value }))}
+                placeholder="Your reflection response..."
+                className="w-full h-20 p-3 rounded-lg text-white placeholder-white/50 resize-none focus:outline-none transition-all"
+                style={{
+                  background: 'rgba(0,0,0,0.6)',
+                  border: `1px solid ${elementTheme.color}40`,
+                  boxShadow: `0 0 10px ${elementTheme.color}20`,
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = `${elementTheme.color}80`;
+                  e.target.style.boxShadow = `0 0 15px ${elementTheme.glow}`;
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = `${elementTheme.color}40`;
+                  e.target.style.boxShadow = `0 0 10px ${elementTheme.color}20`;
+                }}
+              />
             </div>
 
             {/* Soul Star Response */}
