@@ -73,7 +73,7 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
         // Delay the onSongChange callback to allow for warp effect timing
         setTimeout(() => {
           if (onSongChange) onSongChange(id);
-        }, 1400); // Delay to allow warp effect to complete before song starts
+        }, 2000); // Increased delay to ensure warp SFX completes before song starts
       }
       return;
     }
@@ -186,7 +186,7 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
               setTimeout(() => {
                 // Notify parent (e.g., to start playback) without altering focus state
                 if (onSongChange) onSongChange(s.id);
-              }, 1400); // Delay to allow warp effect to complete before song starts
+              }, 2000); // Increased delay to ensure warp SFX completes before song starts
             }}
             style={{ 
               cursor: locked ? 'not-allowed' : 'pointer',

@@ -526,7 +526,9 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
                 }}
                 disabled={!phoneNumber.trim()}
                 style={{
-                  width: '100%',
+                  width: 'auto',
+                  minWidth: '180px',
+                  maxWidth: '200px',
                   padding: '12px 24px',
                   background: 'transparent',
                   border: !phoneNumber.trim() 

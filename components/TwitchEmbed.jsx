@@ -203,7 +203,7 @@ export default function TwitchEmbed({ visible = true, channel = "chxndlerthealie
           {/* Neon "Signal Lost" message */}
           <div className="mb-6">
             <h2 
-              className="text-4xl md:text-6xl font-bold tracking-wider mb-6"
+              className="text-4xl md:text-6xl font-bold tracking-wider mb-12"
               style={{
                 color: '#FC54AF',
                 textShadow: `

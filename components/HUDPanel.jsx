@@ -128,6 +128,8 @@ export default function HUDPanel({
   onElementSaved, // callback when user saves their element in signup flow
   onCloseBlueDisplay, // callback to close the blue display
   onOpenBlueDisplay, // callback to open the blue display
+  showHUD = false, // current blue display state
+  beamColor = 'blue', // current beam color
   shouldOpenJournal = false, // flag to automatically open journal
   onJournalOpened, // callback when journal is opened
   onJournalCompleted, // callback when journal is completed with HeartCoins awarded
@@ -1542,7 +1544,7 @@ export default function HUDPanel({
   const openStorePopover = async () => {
     try { sfx.play('click', 0.4); } catch {}
     // Change beam color to pink when store button is clicked
-    try { onBeamColorChange?.('pink'); } catch {}
+    // try { onBeamColorChange?.('pink'); } catch {}
     try {
       const r = storeBtnRef.current?.getBoundingClientRect?.();
       const wrapper = innerRef.current?.parentElement || null; // outer HUD blue display wrapper (padding box)
@@ -6971,8 +6973,11 @@ export default function HUDPanel({
             window.localStorage.setItem(WELCOME_MODAL_LS_KEY, 'true');
           }
         } catch {}
-        // Open the blue display (power button) when closing the welcome modal
-        try { onOpenBlueDisplay?.(); } catch {}
+        // Only open the blue display if it's not already showing
+        const blueDisplayActive = beamColor === 'blue' && (beamEnabled || showHUD);
+        if (!blueDisplayActive) {
+          try { onOpenBlueDisplay?.(); } catch {}
+        }
       }} />
       
       {/* Venmo Popup */}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sfx";
 import { useProfile } from "@/contexts/ProfileContext";
 import { Card, CardTier, ProfileTier, isCardLocked, getCardGateState, getTierDisplayName } from "@/types/card";
@@ -52,6 +53,9 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
   // Purchase flow state machine
   const [selectedPurchaseType, setSelectedPurchaseType] = useState<'digital' | 'physical' | null>(null);
   const [purchaseState, setPurchaseState] = useState<'idle' | 'insufficient' | 'digital-preview' | 'confirm-digital' | 'physical-form' | 'success'>('idle');
+  
+  // Heart coin popup state
+  const [showHeartCoinPopup, setShowHeartCoinPopup] = useState(false);
 
   // Full song collection data structure
   const songCollection = [
@@ -355,16 +359,18 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
 
   const handlePurchaseClick = (type: 'digital' | 'physical') => {
     setSelectedPurchaseType(type);
-    if (hasEnoughBalance(type)) {
-      if (type === 'digital') {
-        setPurchaseState('digital-preview');
-      } else {
+    if (type === 'digital') {
+      // Always show digital preview for digital purchases
+      setPurchaseState('digital-preview');
+    } else {
+      // For physical purchases, check balance
+      if (hasEnoughBalance(type)) {
         setPurchaseState('physical-form');
         // Prefill shipping form if user has previous orders
         prefillShippingForm();
+      } else {
+        setPurchaseState('insufficient');
       }
-    } else {
-      setPurchaseState('insufficient');
     }
   };
 
@@ -405,9 +411,8 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
   };
 
   const openHeartCoinPopout = () => {
-    // TODO: Implement HeartCoin earning popout
-    console.log('Open HeartCoin earning popout');
-    resetPurchaseState();
+    try { sfx.play('click', 0.4); } catch {}
+    setShowHeartCoinPopup(true);
   };
 
   // Shipping form validation
@@ -802,8 +807,8 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                 <div 
                   className="rounded-lg shadow-2xl cursor-pointer"
                   style={{
-                    width: 'min(240px, 65vw)',
-                    height: 'min(300px, 45vh)',
+                    width: 'min(320px, 70vw)',
+                    height: 'min(480px, 80vh)',
                     boxShadow: '0 0 40px rgba(255,105,180,0.8), 0 0 80px rgba(255,105,180,0.5), 0 0 120px rgba(255,105,180,0.3)',
                     border: '2px solid rgba(255,105,180,0.6)',
                     perspective: '1000px'
@@ -1227,12 +1232,27 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                     </div>
                   ) : purchaseState === 'digital-preview' && selectedPurchaseType === 'digital' ? (
                     <div className="flex flex-col text-left">
-                      <h2 className="text-xl font-bold text-yellow-300 mb-1">
-                        {profile?.display_name || profile?.username || 'User'}
-                      </h2>
+                      {/* Title: [user name] Heart Coin PNG [# of current heart coins] */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <h2 className="text-xl font-bold text-yellow-300">
+                          {profile?.display_name || profile?.username || 'User'}
+                        </h2>
+                        <img
+                          src="/elements/heart-coin.png"
+                          alt="Heart Coin"
+                          className="w-5 h-5"
+                          draggable={false}
+                        />
+                        <span 
+                          className="text-yellow-300 font-bold text-xl"
+                          style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
+                        >
+                          {profile?.heartcoin_balance || 0}
+                        </span>
+                      </div>
                       
-                      {/* HeartCoin balance with icon */}
-                      <div className="flex items-center gap-2 mt-2">
+                      {/* Element: Heart Coin PNG then 20 */}
+                      <div className="flex items-center gap-2 mt-2 mb-2">
                         <img
                           src="/elements/heart-coin.png"
                           alt="Heart Coin"
@@ -1243,39 +1263,41 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                           className="text-yellow-300 font-bold text-lg"
                           style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
                         >
-                          {profile?.heartcoin_balance || 0}
-                        </span>
-                      </div>
-                      
-                      {/* Cost display */}
-                      <div className="flex items-center gap-2 mt-3">
-                        <img
-                          src="/elements/heart-coin.png"
-                          alt="Heart Coin"
-                          className="w-3 h-3"
-                          draggable={false}
-                        />
-                        <span 
-                          className="text-yellow-300 font-bold text-xs"
-                          style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
-                        >
                           {digitalCost}
                         </span>
                       </div>
+
+                      {/* Common rarity display */}
+                      <div className="text-gray-300 text-sm mb-2">COMMON</div>
                       
-                      {/* Confirm button */}
-                      <div className="mt-4">
-                        <button
-                          onClick={() => {
-                            try { sfx.play('click', 0.6); } catch {}
-                            setPurchaseState('confirm-digital');
-                          }}
-                          className="px-3 py-1 rounded border border-green-400/60 bg-green-500/10 hover:bg-green-500/20 transition-all duration-200 text-xs text-green-300"
-                          style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)' }}
-                        >
-                          Confirm
-                        </button>
-                      </div>
+                      {/* Check if user has enough heart coins */}
+                      {hasEnoughBalance('digital') ? (
+                        /* Confirm button */
+                        <div className="mt-4">
+                          <button
+                            onClick={() => {
+                              try { sfx.play('click', 0.6); } catch {}
+                              setPurchaseState('confirm-digital');
+                            }}
+                            className="px-3 py-1 rounded border border-green-400/60 bg-green-500/10 hover:bg-green-500/20 transition-all duration-200 text-xs text-green-300"
+                            style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)' }}
+                          >
+                            CONFIRM
+                          </button>
+                        </div>
+                      ) : (
+                        /* Not enough heart coins */
+                        <div className="mt-4">
+                          <div className="text-red-300 font-bold text-sm mb-2">NOT ENOUGH HEART COINS</div>
+                          <button
+                            onClick={openHeartCoinPopout}
+                            className="text-xs text-blue-300 hover:text-blue-200 underline"
+                            style={{ textShadow: '0 0 4px rgba(147,197,253,0.6)' }}
+                          >
+                            EARN MORE HEART COINS
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ) : null}
                 </div>
@@ -1850,6 +1872,166 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
         );
       })()}
 
+      {/* Heart Coin Popup */}
+      {typeof document !== 'undefined' && showHeartCoinPopup ? createPortal(
+        <div
+          role="dialog"
+          aria-label="Heart Coin Information"
+          style={{
+            position: 'fixed',
+            top: '30%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 'min(90vw, 400px)',
+            padding: '20px',
+            borderRadius: 18,
+            background: 'rgba(0,0,0,0.85)',
+            border: '1px solid rgba(255,105,180,0.55)',
+            boxShadow: '0 -8px 25px rgba(255,105,180,0.4), 0 -4px 15px rgba(255,105,180,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(255,105,180,0.45)',
+            backdropFilter: 'blur(12px) saturate(140%)',
+            color: '#FF69B4',
+            zIndex: 2147483648,
+            animation: 'fadeIn 0.3s ease-out'
+          }}
+          onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowHeartCoinPopup(false); } }}
+        >
+          {/* Close button */}
+          <button
+            onClick={() => {
+              try { sfx.play('close', 0.4); } catch {}
+              setShowHeartCoinPopup(false);
+            }}
+            className="absolute top-3 right-3 text-pink-400 hover:text-pink-200 cursor-pointer w-8 h-8 rounded-full border border-pink-400/80 flex items-center justify-center"
+            style={{ 
+              position: 'absolute',
+              top: '12px',
+              right: '12px',
+              fontSize: '16px',
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              border: '1px solid rgba(255,105,180,0.8)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(255,105,180,0.1)',
+              color: '#FF69B4',
+              cursor: 'pointer',
+              boxShadow: '0 0 15px rgba(255,105,180,0.8)',
+              textShadow: '0 0 8px rgba(255,105,180,0.8)',
+              backdropFilter: 'blur(2px)'
+            }}
+          >
+            ×
+          </button>
+
+          {/* Header */}
+          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+            <div 
+              style={{ 
+                fontSize: '18px',
+                fontWeight: 'bold',
+                marginBottom: '8px',
+                color: '#FF69B4', 
+                textShadow: '0 0 8px rgba(255,105,180,0.6)' 
+              }}
+            >
+              EARN HEART COINS
+            </div>
+            
+            {/* Thin pink neon line */}
+            <div 
+              style={{
+                width: '100%',
+                height: '1px',
+                background: 'linear-gradient(90deg, transparent, rgba(255,105,180,0.8) 20%, rgba(255,105,180,1) 50%, rgba(255,105,180,0.8) 80%, transparent)',
+                boxShadow: '0 0 4px rgba(255,105,180,0.6)',
+                marginBottom: '16px'
+              }}
+            />
+          </div>
+
+          {/* Current Balance */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', gap: '12px' }}>
+            <img
+              src="/elements/heart-coin.png"
+              alt="Heart Coin"
+              style={{
+                width: '32px',
+                height: '32px',
+                filter: 'drop-shadow(0 0 8px rgba(255,105,180,0.8))'
+              }}
+            />
+            <div 
+              style={{
+                fontSize: '18px',
+                fontWeight: 'bold',
+                color: '#FFFFFF',
+                textShadow: '0 0 8px rgba(255,255,255,0.8)'
+              }}
+            >
+              Current: {profile?.heartcoins || 0}
+            </div>
+          </div>
+
+          {/* How to Earn Section */}
+          <div style={{ marginBottom: '20px' }}>
+            <div 
+              style={{
+                fontSize: '14px',
+                fontWeight: 'bold',
+                color: '#FFB6C1',
+                textShadow: '0 0 4px rgba(255,182,193,0.6)',
+                marginBottom: '12px',
+                textAlign: 'center'
+              }}
+            >
+              HOW TO EARN HEART COINS:
+            </div>
+            
+            <div style={{ fontSize: '12px', lineHeight: '1.5', color: '#E6E6FA' }}>
+              <div style={{ marginBottom: '8px' }}>
+                • <span style={{ color: '#98FB98' }}>Daily Login Bonus:</span> Visit chxndler.world daily
+              </div>
+              <div style={{ marginBottom: '8px' }}>
+                • <span style={{ color: '#87CEEB' }}>Song Discovery:</span> Listen to new tracks
+              </div>
+              <div style={{ marginBottom: '8px' }}>
+                • <span style={{ color: '#DDA0DD' }}>Community Sharing:</span> Invite friends to the world
+              </div>
+              <div style={{ marginBottom: '8px' }}>
+                • <span style={{ color: '#F0E68C' }}>Special Events:</span> Participate in limited-time activities
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+            <button
+              onClick={() => {
+                try { sfx.play('click', 0.4); } catch {}
+                setShowHeartCoinPopup(false);
+                // Keep the purchase flow active - don't reset it
+              }}
+              style={{
+                padding: '10px 20px',
+                borderRadius: '8px',
+                background: 'linear-gradient(135deg, rgba(255,105,180,0.2), rgba(255,105,180,0.1))',
+                border: '1px solid rgba(255,105,180,0.6)',
+                color: '#FF69B4',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                textShadow: '0 0 4px rgba(255,105,180,0.8)',
+                boxShadow: '0 0 10px rgba(255,105,180,0.3)'
+              }}
+            >
+              CONTINUE BROWSING
+            </button>
+          </div>
+        </div>,
+        document.body
+      ) : null}
 
       </>
   );

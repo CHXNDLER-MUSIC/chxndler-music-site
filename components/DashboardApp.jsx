@@ -1358,7 +1358,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const SHOW_CENTER_BEAM = true; // Enable center light beam
   // HUD vertical sizing + offset mapping so inner items shift down as height shrinks
   const hudHeightFactor = 0.01; // minimal height; bottom stays fixed
-  const hudBaseFactor = 0.56;   // original baseline factor used earlier
+  const hudBaseFactor = 0.36;   // reduced to lower the top positioning
   const hudYOffset = Math.max(0, Math.round(100 * (hudBaseFactor - hudHeightFactor)));
   const handleCodeClick = () => {
     // Change beam color to white when Code button is clicked
@@ -1962,6 +1962,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                   onElementSaved={setSavedProfileElement}
                   onCloseBlueDisplay={() => setShowHUD(false)}
                   onOpenBlueDisplay={() => handleBeamToggle('blue')}
+                  showHUD={showHUD}
+                  beamColor={beamColor}
                   shouldOpenJournal={shouldOpenJournal}
                   onJournalOpened={() => setShouldOpenJournal(false)}
                   onJournalCompleted={handleJournalCompleted}
