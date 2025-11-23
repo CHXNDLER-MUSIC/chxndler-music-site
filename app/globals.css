@@ -404,6 +404,177 @@ main {
   transition: transform 0.2s ease;
 }
 
+/* Hologram scanline effect for heart planet - improvement #8 */
+@keyframes scanlineMove {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+.heartPlanetWrapper::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    transparent,
+    transparent 2px,
+    rgba(255, 255, 255, 0.02) 2px,
+    rgba(255, 255, 255, 0.03) 4px
+  );
+  animation: scanlineMove 6s linear infinite;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0.8;
+}
+
+/* Floating holographic dust particles - improvement #9 */
+@keyframes particleDrift1 {
+  0% { transform: translate(10%, 110%) scale(0.8); opacity: 0; }
+  20% { opacity: 0.25; }
+  80% { opacity: 0.25; }
+  100% { transform: translate(90%, -10%) scale(1.2); opacity: 0; }
+}
+
+@keyframes particleDrift2 {
+  0% { transform: translate(80%, 110%) scale(0.6); opacity: 0; }
+  25% { opacity: 0.3; }
+  75% { opacity: 0.2; }
+  100% { transform: translate(20%, -10%) scale(1.1); opacity: 0; }
+}
+
+@keyframes particleDrift3 {
+  0% { transform: translate(50%, 110%) scale(1.0); opacity: 0; }
+  30% { opacity: 0.2; }
+  70% { opacity: 0.25; }
+  100% { transform: translate(70%, -10%) scale(0.9); opacity: 0; }
+}
+
+.holo-particle {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(1px);
+  pointer-events: none;
+}
+
+.holo-particle-1 {
+  width: 2px;
+  height: 2px;
+  background: #FC54AF;
+  left: 15%;
+  animation: particleDrift1 12s ease-in-out infinite;
+  animation-delay: 0s;
+}
+
+.holo-particle-2 {
+  width: 1px;
+  height: 1px;
+  background: #38B6FF;
+  left: 25%;
+  animation: particleDrift2 16s ease-in-out infinite;
+  animation-delay: 2s;
+}
+
+.holo-particle-3 {
+  width: 3px;
+  height: 3px;
+  background: #F2EF1D;
+  left: 45%;
+  animation: particleDrift3 14s ease-in-out infinite;
+  animation-delay: 4s;
+}
+
+.holo-particle-4 {
+  width: 1px;
+  height: 1px;
+  background: #FC54AF;
+  left: 65%;
+  animation: particleDrift1 18s ease-in-out infinite;
+  animation-delay: 6s;
+}
+
+.holo-particle-5 {
+  width: 2px;
+  height: 2px;
+  background: #38B6FF;
+  left: 75%;
+  animation: particleDrift2 20s ease-in-out infinite;
+  animation-delay: 8s;
+}
+
+.holo-particle-6 {
+  width: 1px;
+  height: 1px;
+  background: #F2EF1D;
+  left: 35%;
+  animation: particleDrift3 8s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+.holo-particle-7 {
+  width: 2px;
+  height: 2px;
+  background: #FC54AF;
+  left: 55%;
+  animation: particleDrift1 15s ease-in-out infinite;
+  animation-delay: 10s;
+}
+
+.holo-particle-8 {
+  width: 1px;
+  height: 1px;
+  background: #38B6FF;
+  left: 85%;
+  animation: particleDrift2 13s ease-in-out infinite;
+  animation-delay: 3s;
+}
+
+.holo-particle-9 {
+  width: 3px;
+  height: 3px;
+  background: #F2EF1D;
+  left: 5%;
+  animation: particleDrift3 17s ease-in-out infinite;
+  animation-delay: 7s;
+}
+
+.holo-particle-10 {
+  width: 2px;
+  height: 2px;
+  background: #FC54AF;
+  left: 95%;
+  animation: particleDrift1 11s ease-in-out infinite;
+  animation-delay: 5s;
+}
+
+/* Soft neon breathing outline around HUD panel - improvement #10 */
+@keyframes hudBreathing {
+  0%, 100% {
+    border-color: rgba(56, 182, 255, 0.4);
+    box-shadow: 
+      0 0 15px rgba(56, 182, 255, 0.25),
+      0 0 30px rgba(56, 182, 255, 0.15),
+      inset 0 0 20px rgba(56, 182, 255, 0.05);
+  }
+  50% {
+    border-color: rgba(56, 182, 255, 0.7);
+    box-shadow: 
+      0 0 25px rgba(56, 182, 255, 0.4),
+      0 0 45px rgba(56, 182, 255, 0.25),
+      inset 0 0 30px rgba(56, 182, 255, 0.1);
+  }
+}
+
+.hud-panel-breathing {
+  border: 1px solid rgba(56, 182, 255, 0.4);
+  animation: hudBreathing 8s ease-in-out infinite;
+}
+
 /* --- Windshield fallback (oval) until you have PNG mask --- */
 .windshield-clip { clip-path: ellipse(65% 45% at 50% 52%); }
 

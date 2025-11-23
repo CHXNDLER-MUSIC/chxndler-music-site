@@ -2222,7 +2222,7 @@ export default function HUDPanel({
       <DevErrorLogger />
       <div className="w-full h-full flex items-end justify-center">
           <motion.div
-            className={`relative rounded-2xl`}
+            className={`relative rounded-2xl hud-panel-breathing`}
             // Remove hover glow/scale for the entire HUD display per request
             transition={{ type: "spring", stiffness: 200, damping: 20 }}
             style={inConsole
@@ -2321,7 +2321,30 @@ export default function HUDPanel({
               }}
               ref={innerRef}
             >
-
+            {/* Darkening glass gradient background overlay - improvement #7 */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: 'linear-gradient(to bottom, rgba(0,0,0,0.20) 0%, rgba(0,0,0,0) 100%)',
+                backdropFilter: 'blur(14px)',
+                borderRadius: 'inherit',
+                zIndex: -1
+              }}
+            />
+            
+            {/* Floating holographic dust particles - improvement #9 */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 1 }}>
+              <div className="holo-particle holo-particle-1"></div>
+              <div className="holo-particle holo-particle-2"></div>
+              <div className="holo-particle holo-particle-3"></div>
+              <div className="holo-particle holo-particle-4"></div>
+              <div className="holo-particle holo-particle-5"></div>
+              <div className="holo-particle holo-particle-6"></div>
+              <div className="holo-particle holo-particle-7"></div>
+              <div className="holo-particle holo-particle-8"></div>
+              <div className="holo-particle holo-particle-9"></div>
+              <div className="holo-particle holo-particle-10"></div>
+            </div>
 
           
           {/* Cover section at bottom right corner - using CoverHologram for pop-out functionality */}

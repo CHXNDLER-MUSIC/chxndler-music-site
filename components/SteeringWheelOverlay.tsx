@@ -105,13 +105,23 @@ export default function SteeringWheelOverlay({
   }, [closeAllSignal]);
 
   function handleLaunch() {
-    // Track Start press - separate events for opening page vs subsequent clicks
+    // Track Start press using new trackEvent function
     try {
+      // Import trackEvent dynamically to avoid SSR issues
+      import('@/lib/analytics').then(({ trackEvent }) => {
+        if (!startTrackedRef.current) {
+          trackEvent('start_opening', { source: 'wheel' });
+          startTrackedRef.current = true;
+        }
+        // Track canonical start button click
+        trackEvent('start_click', { source: 'wheel' });
+      }).catch(() => {});
+      
+      // Keep old tracking for compatibility during transition
       if (!startTrackedRef.current) {
         track('start_button_opening_page');
         startTrackedRef.current = true;
       }
-      // Track canonical start button click (used by metrics API)
       track('start_button_clicked');
     } catch {}
     // Trigger toggle action first so downstream can open streaming links within a user gesture

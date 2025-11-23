@@ -22,6 +22,7 @@ export default function JoinAliens({ visible = true } = {}) {
   const [showPaymentOptions, setShowPaymentOptions] = useState(false);
   const [showPaymentOptions5, setShowPaymentOptions5] = useState(false);
   const [showPaymentOptions10, setShowPaymentOptions10] = useState(false);
+  const [showPhoneForm, setShowPhoneForm] = useState(true);
   
   // Countdown state
   const [timeRemaining, setTimeRemaining] = useState(0);
@@ -346,6 +347,7 @@ export default function JoinAliens({ visible = true } = {}) {
       )}
 
       {/* Phone Number Input */}
+      {showPhoneForm && (
       <div style={{ marginBottom: '20px' }}>
         <input
           id="signal-phone"
@@ -460,17 +462,13 @@ export default function JoinAliens({ visible = true } = {}) {
       <button
         onClick={() => {
           try { sfx.play('audio/click.mp3', 0.5); } catch {}
-          // Focus the phone input
-          const phoneInput = document.getElementById('signal-phone');
-          if (phoneInput) {
-            phoneInput.focus();
-            phoneInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
+          // Toggle the phone form visibility
+          setShowPhoneForm(!showPhoneForm);
         }}
         style={{
           position: 'absolute',
-          bottom: '60px',
-          right: '12px',
+          bottom: '12px',
+          left: '12px',
           width: '40px',
           height: '40px',
           background: 'rgba(0, 255, 255, 0.1)',
@@ -503,7 +501,16 @@ export default function JoinAliens({ visible = true } = {}) {
           e.target.style.textShadow = '0 0 8px #00FFFF';
         }}
       >
-        📞
+        <img 
+          src="/audio/phone.png" 
+          alt="Phone" 
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            filter: 'brightness(1.2) saturate(1.2)'
+          }}
+        />
       </button>
 
       {/* $ Button - positioned in bottom right corner */}

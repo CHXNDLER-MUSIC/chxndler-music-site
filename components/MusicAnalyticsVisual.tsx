@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getClickAnalyticsLocal, clearClickAnalyticsLocal, clearAnalyticsCache, getRunningMetricsLocal, clearRunningMetricsLocal } from "../lib/analytics";
+import { getClickAnalyticsLocal, clearClickAnalyticsLocal, clearAnalyticsCache, getRunningMetricsLocal, clearRunningMetricsLocal, loadEventsV2Analytics, getEventCount } from "../lib/analytics";
 import { tracks } from "@/lib/songs-consolidated";
 
 interface MusicStats {
@@ -51,6 +51,7 @@ type Metrics = {
 export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualProps) {
   const [stats, setStats] = useState<MusicStats | null>(null);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
+  const [eventsV2Data, setEventsV2Data] = useState<Record<string, number> | null>(null);
   const [songsOpen, setSongsOpen] = useState(false);
   const [coversOpen, setCoversOpen] = useState(false);
   const [cardsOpen, setCardsOpen] = useState(false);
@@ -299,9 +300,24 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
     }
   }
 
+  async function loadEventsV2Data() {
+    try {
+      const { success, data } = await loadEventsV2Analytics();
+      if (success) {
+        setEventsV2Data(data);
+      } else {
+        setEventsV2Data({});
+      }
+    } catch (error) {
+      console.error('[Analytics] Failed to load events_v2 data:', error);
+      setEventsV2Data({});
+    }
+  }
+
   useEffect(() => {
     loadServerMetrics();
     loadMusicAnalytics();
+    loadEventsV2Data();
   }, []);
 
   if (!stats) {
@@ -361,7 +377,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
               🗑️ Reset Analytics
             </button>
             <button
-              onClick={() => { loadServerMetrics(); loadMusicAnalytics(); }}
+              onClick={() => { loadServerMetrics(); loadMusicAnalytics(); loadEventsV2Data(); }}
               className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg transition-colors text-sm font-medium"
             >
               🔄 Refresh
@@ -391,8 +407,13 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                   <div className="text-sm text-cyan-300/70">Page Views</div>
                 </div>
                 <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 p-4 rounded-xl border border-purple-500/20">
-                  <div className="text-3xl font-bold text-purple-400">{(() => { const local = getRunningMetricsLocal(); return metrics?.startClicks ?? local.startClicks ?? (stats?.controlButtons.find(b=>b.button==='Start')?.count || 0); })()}</div>
-                  <div className="text-sm text-purple-300/70">Start Button Clicks</div>
+                  <div className="text-3xl font-bold text-purple-400">{(() => { 
+                    // Prefer events_v2 data, then metrics, then local
+                    const eventsV2Count = eventsV2Data?.startClicks;
+                    const local = getRunningMetricsLocal(); 
+                    return eventsV2Count ?? metrics?.startClicks ?? local.startClicks ?? (stats?.controlButtons.find(b=>b.button==='Start')?.count || 0); 
+                  })()}</div>
+                  <div className="text-sm text-purple-300/70">Start Button Clicks {eventsV2Data?.startClicks !== undefined ? '(Events v2)' : ''}</div>
                 </div>
                 
               </div>
@@ -403,7 +424,17 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                   <h3 className="text-lg font-bold text-yellow-200">SOCIAL MEDIA</h3>
                   {(() => {
                     // Total should reflect yellow-hub platform clicks (IG + YouTube + TikTok + Apple + Spotify)
-                    // Prefer server metrics; fall back to local click analytics filtered to yellow hub data-ids
+                    // Prefer events_v2 data, then server metrics; fall back to local click analytics
+                    const haveEventsV2 = eventsV2Data && Object.keys(eventsV2Data).some(k => k.includes('Clicks'));
+                    if (haveEventsV2) {
+                      const ig = eventsV2Data?.instagramClicks || 0;
+                      const yt = eventsV2Data?.youtubeClicks || 0;
+                      const tt = eventsV2Data?.tiktokClicks || 0;
+                      // Note: Apple Music and Spotify not yet in events_v2, use fallback
+                      const am = metrics?.socials?.apple || 0;
+                      const sp = metrics?.socials?.spotify || 0;
+                      return <div className="text-2xl font-extrabold text-yellow-100">{ig + yt + tt + am + sp}</div>;
+                    }
                     const haveServer = !!metrics;
                     if (haveServer) {
                       const ig = metrics?.socials?.instagram || 0;
@@ -431,13 +462,13 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                 {socialOpen && (
                   <div className="divide-y divide-yellow-400/10">
                     {([
-                      { key: 'Instagram', value: metrics?.socials?.instagram ?? (stats?.socialButtons.find(b=>b.button==='Instagram')?.count || 0), open: igOpen, setOpen: setIgOpen },
-                      { key: 'YouTube', value: metrics?.socials?.youtube ?? (stats?.socialButtons.find(b=>b.button==='YouTube')?.count || 0), open: ytOpen, setOpen: setYtOpen },
-                      { key: 'TikTok', value: metrics?.socials?.tiktok ?? (stats?.socialButtons.find(b=>b.button==='TikTok')?.count || 0), open: ttOpen, setOpen: setTtOpen },
+                      { key: 'Instagram', value: eventsV2Data?.instagramClicks ?? metrics?.socials?.instagram ?? (stats?.socialButtons.find(b=>b.button==='Instagram')?.count || 0), open: igOpen, setOpen: setIgOpen, fromV2: eventsV2Data?.instagramClicks !== undefined },
+                      { key: 'YouTube', value: eventsV2Data?.youtubeClicks ?? metrics?.socials?.youtube ?? (stats?.socialButtons.find(b=>b.button==='YouTube')?.count || 0), open: ytOpen, setOpen: setYtOpen, fromV2: eventsV2Data?.youtubeClicks !== undefined },
+                      { key: 'TikTok', value: eventsV2Data?.tiktokClicks ?? metrics?.socials?.tiktok ?? (stats?.socialButtons.find(b=>b.button==='TikTok')?.count || 0), open: ttOpen, setOpen: setTtOpen, fromV2: eventsV2Data?.tiktokClicks !== undefined },
                       // Keep streaming platforms listed below for convenience, but exclude from Social total
-                      { key: 'Apple Music', value: metrics?.socials?.apple ?? (stats?.musicButtons.find(b=>b.button==='Apple Music')?.count || 0), open: amOpen, setOpen: setAmOpen },
-                      { key: 'Spotify', value: metrics?.socials?.spotify ?? (stats?.musicButtons.find(b=>b.button==='Spotify')?.count || 0), open: spOpen, setOpen: setSpOpen },
-                    ] as Array<{key:string;value:number;open:boolean;setOpen:(v:boolean)=>void}>).map((it) => (
+                      { key: 'Apple Music', value: metrics?.socials?.apple ?? (stats?.musicButtons.find(b=>b.button==='Apple Music')?.count || 0), open: amOpen, setOpen: setAmOpen, fromV2: false },
+                      { key: 'Spotify', value: metrics?.socials?.spotify ?? (stats?.musicButtons.find(b=>b.button==='Spotify')?.count || 0), open: spOpen, setOpen: setSpOpen, fromV2: false },
+                    ] as Array<{key:string;value:number;open:boolean;setOpen:(v:boolean)=>void;fromV2:boolean}>).map((it) => (
                       <div key={it.key}>
                         <button className="w-full text-left px-6 py-4 flex items-center justify-between hover:bg-yellow-500/10" onClick={() => it.setOpen(!it.open)}>
                           <span className="text-white font-medium">{it.key}</span>
@@ -445,7 +476,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                         </button>
                         {it.open && (
                           <div className="px-6 pb-4 text-sm text-yellow-100/80">
-                            {it.value} clicks
+                            {it.value} clicks {it.fromV2 ? '(Events v2)' : ''}
                           </div>
                         )}
                       </div>

@@ -216,7 +216,7 @@ export default function HeartPlanet() {
   });
 
   return (
-    <group ref={groupRef} position={[0, 0.05, 0]} scale={[3.2, 3.6, 0.12]}>
+    <group ref={groupRef} position={[0, 0.05, 0]} scale={[3.2, 3.6, 0.12]} className="heartPlanetWrapper">
       {/* Core heart with realistic shading */}
       <mesh ref={meshRef} position={[0, 0, 0]} renderOrder={1}>
         <primitive attach="geometry" object={heartGeometry} />

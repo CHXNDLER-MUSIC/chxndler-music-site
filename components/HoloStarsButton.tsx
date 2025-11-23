@@ -34,10 +34,8 @@ export default function HoloStarsButton({
       } 
     } catch {}
     
-    // Change beam color to yellow when Star button is clicked
-    try { onBeamColorChange?.('yellow'); } catch {}
-    
-    // Open the unified journal
+    // Open the unified journal without changing beam color
+    // This allows the journal to open while keeping the blue display active
     setIsJournalOpen(true);
     
     if (typeof onClick === "function") { 

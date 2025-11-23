@@ -437,3 +437,60 @@ export async function trackEvent(
     return { success: false, error };
   }
 }
+
+// Analytics loading functions for events_v2
+export async function loadEventsV2Analytics() {
+  try {
+    const { supabase } = await import('./supabase');
+    
+    // Get counts for different event types
+    const eventQueries = [
+      { name: 'start_click', key: 'startClicks' },
+      { name: 'instagram_click', key: 'instagramClicks' },
+      { name: 'tiktok_click', key: 'tiktokClicks' },
+      { name: 'youtube_click', key: 'youtubeClicks' },
+    ];
+
+    const results: Record<string, number> = {};
+    
+    for (const query of eventQueries) {
+      const { count, error } = await supabase
+        .from('events_v2')
+        .select('*', { count: 'exact', head: true })
+        .eq('event_name', query.name);
+      
+      if (error) {
+        console.error(`[Analytics] Failed to load ${query.name} count:`, error);
+        results[query.key] = 0;
+      } else {
+        results[query.key] = count || 0;
+      }
+    }
+    
+    return { success: true, data: results };
+  } catch (error) {
+    console.error('[Analytics] Exception loading events_v2 analytics:', error);
+    return { success: false, error, data: {} };
+  }
+}
+
+export async function getEventCount(eventName: string) {
+  try {
+    const { supabase } = await import('./supabase');
+    
+    const { count, error } = await supabase
+      .from('events_v2')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_name', eventName);
+    
+    if (error) {
+      console.error(`[Analytics] Failed to get count for ${eventName}:`, error);
+      return 0;
+    }
+    
+    return count || 0;
+  } catch (error) {
+    console.error(`[Analytics] Exception getting count for ${eventName}:`, error);
+    return 0;
+  }
+}

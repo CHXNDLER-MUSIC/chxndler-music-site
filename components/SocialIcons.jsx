@@ -2,6 +2,7 @@
 import React, { useRef, useCallback, useEffect, useState } from "react";
 import { sfx } from "@/lib/sfx";
 import IconButtonShell from "@/components/IconButtonShell";
+import { useProfile } from "@/contexts/ProfileContext";
 // Removed inline/embed modals for socials; open in new tab instead
 
 const Icon = {
@@ -37,6 +38,7 @@ const Icon = {
 
 export default function SocialIcons({ LINKS, POS, trackLinks }) {
   const s = POS.console;
+  const { profile } = useProfile();
   // No modal state needed; links open directly in a new tab
   
   // Get responsive size based on screen width
@@ -95,6 +97,19 @@ export default function SocialIcons({ LINKS, POS, trackLinks }) {
   }, []);
   const playClick = useCallback(() => { try { sfx.play('click', 0.6); } catch {} }, []);
   const playHover = useCallback(() => { try { sfx.play('hover', 0.35); } catch {} }, []);
+  
+  // Track social media clicks
+  const handleSocialClick = useCallback((socialType) => {
+    try {
+      import('@/lib/analytics').then(({ trackEvent }) => {
+        trackEvent(`${socialType}_click`, { 
+          source: 'social_icons',
+          metadata: { platform: socialType },
+          userId: profile?.id || null
+        });
+      }).catch(() => {});
+    } catch {}
+  }, [profile?.id]);
   // per-brand glow color
   const colorFor = (name) => {
     const n = String(name).toLowerCase();
@@ -107,9 +122,9 @@ export default function SocialIcons({ LINKS, POS, trackLinks }) {
   };
 
   const items = [
-    { key: 'instagram', title: 'Instagram', href: LINKS.instagram, color: colorFor('instagram'), icon: <Icon.Instagram size={iconSize} /> },
-    { key: 'tiktok',    title: 'TikTok',    href: LINKS.tiktok,    color: colorFor('tiktok'),    icon: <Icon.TikTok size={tiktokIconSize} /> },
-    { key: 'youtube',   title: 'YouTube',   href: LINKS.youtube,   color: colorFor('youtube'),   icon: <Icon.YouTube size={youtubeIconSize} /> },
+    { key: 'instagram', title: 'Instagram', href: LINKS.instagram, color: colorFor('instagram'), icon: <Icon.Instagram size={iconSize} />, onClick: () => handleSocialClick('instagram') },
+    { key: 'tiktok',    title: 'TikTok',    href: LINKS.tiktok,    color: colorFor('tiktok'),    icon: <Icon.TikTok size={tiktokIconSize} />, onClick: () => handleSocialClick('tiktok') },
+    { key: 'youtube',   title: 'YouTube',   href: LINKS.youtube,   color: colorFor('youtube'),   icon: <Icon.YouTube size={youtubeIconSize} />, onClick: () => handleSocialClick('youtube') },
   ];
 
   return (
@@ -140,8 +155,8 @@ export default function SocialIcons({ LINKS, POS, trackLinks }) {
               onClickFX={playClick}
               onHoverFX={playHover}
               dataId={it.key === 'instagram' ? 'ig' : it.key === 'tiktok' ? 'tt' : it.key === 'youtube' ? 'yt' : undefined}
-              // No special handler; let anchor open new tab
-              onClick={undefined}
+              // Track analytics on click
+              onClick={it.onClick}
             >
               {it.icon}
             </IconButtonShell>
