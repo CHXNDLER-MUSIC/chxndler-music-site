@@ -37,7 +37,7 @@ import { useProfile } from "@/contexts/ProfileContext";
 import { useUIState } from "@/lib/use-ui-state";
 import { supabaseClient } from "@/lib/supabaseClient";
 
-export default function DashboardApp({ initialSlug } = {}) {
+export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   // UI store for profile refresh trigger and name modal
   const { profileRefreshTrigger, openNamePrompt } = useUIStore();
   
@@ -1284,6 +1284,7 @@ export default function DashboardApp({ initialSlug } = {}) {
           onJournalCompleted={handleJournalCompleted}
           onBeamColorChange={handleBeamToggle}
           profileRefreshTrigger={profileRefreshTrigger}
+          todaysPrompt={todaysPrompt}
         />
         
         <div className="absolute inset-0 bg-black" />
@@ -1397,6 +1398,7 @@ export default function DashboardApp({ initialSlug } = {}) {
         savedAlienName={savedProfileName}
         savedAlienElement={savedProfileElement}
         profileRefreshTrigger={profileRefreshTrigger}
+        todaysPrompt={todaysPrompt}
       />
       
       <div 

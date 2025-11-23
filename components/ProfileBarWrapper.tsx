@@ -4,7 +4,9 @@ import React from "react";
 import ProfileBar from "@/components/ProfileBar";
 import { useUIState } from "@/lib/use-ui-state";
 
-type Props = React.ComponentProps<typeof ProfileBar>;
+type Props = React.ComponentProps<typeof ProfileBar> & {
+  todaysPrompt?: any;
+};
 
 // Wrapper that prevents any render until client hydration, then
 // conditionally shows the ProfileBar only after the user has entered.

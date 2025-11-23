@@ -632,7 +632,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
             height: '38vh',
             display: 'flex',
             flexDirection: 'column',
-            padding: '10px 14px 4px 14px',
+            padding: '10px 14px 0px 14px',
             borderRadius: 18,
             background: 'rgba(0,0,0,0.6)',
             border: '1px solid rgba(255,105,180,0.55)',
@@ -751,7 +751,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
 
           {/* Card popup - fills entire content area when open */}
           {cardOpen && (
-            <div className="flex flex-col items-center justify-center w-full h-full p-4">
+            <div className="flex flex-col items-center justify-center w-full h-full">
               {/* Large card display */}
               <div 
                 className="relative flex items-center justify-center w-full h-full"
@@ -760,8 +760,8 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                 <div 
                   className="rounded-lg shadow-2xl cursor-pointer"
                   style={{
-                    width: 'min(300px, 80vw)',
-                    height: 'min(400px, 60vh)',
+                    width: 'min(240px, 65vw)',
+                    height: 'min(300px, 45vh)',
                     boxShadow: '0 0 40px rgba(255,105,180,0.8), 0 0 80px rgba(255,105,180,0.5), 0 0 120px rgba(255,105,180,0.3)',
                     border: '2px solid rgba(255,105,180,0.6)',
                     perspective: '1000px'
@@ -1003,7 +1003,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                   )}
                   
                   {/* Card info positioned to the right */}
-                  {purchaseState === 'idle' && (
+                  {purchaseState === 'idle' ? (
                     <div className="flex flex-col text-left">
                       <h2 className="text-xl font-bold text-yellow-300 mb-1">
                         {currentCard.title}
@@ -1162,10 +1162,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                         );
                       })()}
                     </div>
-                  )}
-
-                  {/* Digital purchase preview state */}
-                  {purchaseState === 'digital-preview' && selectedPurchaseType === 'digital' && (
+                  ) : purchaseState === 'digital-preview' && selectedPurchaseType === 'digital' ? (
                     <div className="flex flex-col text-left">
                       <h2 className="text-xl font-bold text-yellow-300 mb-1">
                         {profile?.display_name || profile?.username || 'User'}
@@ -1217,7 +1214,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                         </button>
                       </div>
                     </div>
-                  )}
+                  ) : null}
                 </div>
                 
                 {/* Card count info positioned below the entire viewer */}

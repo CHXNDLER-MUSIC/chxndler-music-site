@@ -3,7 +3,7 @@ import React, { useMemo, useRef } from "react";
 import { Group, Mesh, AdditiveBlending, DoubleSide, Vector3 } from "three";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import HeartPlanet from "./holo/HeartPlanet";
+import HeartStarPlanet from "./HeartStarPlanet";
 
 type ElementKey = "water" | "heart" | "lightning" | "darkness";
 
@@ -255,7 +255,7 @@ export const PlanetSystem: React.FC<PlanetSystemProps> = ({
     <group>
       {/* Central heart core */}
       <group>
-        <HeartPlanet />
+        <HeartStarPlanet size={180} />
 
         {/* Debug: show element orbit ring around heart */}
         {SHOW_ORBIT_GIZMOS && (

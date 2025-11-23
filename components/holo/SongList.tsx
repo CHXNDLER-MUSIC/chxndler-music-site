@@ -70,7 +70,10 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
         playerStore.getState().setMain(id, true);
         try { playerStore.getState().setPlanetDisplayMode('single'); } catch {}
         try { playerStore.getState().setPlanetsVisible(true); } catch {}
-        if (onSongChange) onSongChange(id);
+        // Delay the onSongChange callback to allow for warp effect timing
+        setTimeout(() => {
+          if (onSongChange) onSongChange(id);
+        }, 1400); // Delay to allow warp effect to complete before song starts
       }
       return;
     }
@@ -179,8 +182,11 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
               try { playerStore.getState().setPlanetDisplayMode('single'); } catch {}
               try { playerStore.getState().setPlanetsVisible(true); } catch {}
 
-              // Notify parent (e.g., to start playback) without altering focus state
-              if (onSongChange) onSongChange(s.id);
+              // Delay the onSongChange callback to allow for warp effect timing
+              setTimeout(() => {
+                // Notify parent (e.g., to start playback) without altering focus state
+                if (onSongChange) onSongChange(s.id);
+              }, 1400); // Delay to allow warp effect to complete before song starts
             }}
             style={{ 
               cursor: locked ? 'not-allowed' : 'pointer',

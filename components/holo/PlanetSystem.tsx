@@ -5,7 +5,7 @@ import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { AdditiveBlending, Group as ThreeGroup, SRGBColorSpace, Vector3, SpriteMaterial, Sprite, MeshBasicMaterial, PlaneGeometry, DoubleSide } from "three";
 import { playerStore } from "@/store/usePlayerStore";
 import Planet from "@/components/holo/Planet";
-import HeartPlanet from "@/components/holo/HeartPlanet";
+import HeartStarPlanet from "@/components/HeartStarPlanet";
 import ElementalPlanet from "@/components/holo/ElementalPlanet";
 import { computePlanetLayout } from "@/lib/planetLayout";
 import { buildPlanetSongs } from "@/lib/planets";
@@ -441,10 +441,10 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         {/* Enlarge full-system view when showing all planets */}
         <group scale={actualShouldShowAll ? 1.45 : 1}>
         <SystemGroup>
-          {/* Heart planet at the center - always visible as the core */}
+          {/* Heart Star planet at the center - always visible as the core */}
           {actualShouldShowAll && (
             <group renderOrder={0}>
-              <HeartPlanet />
+              <HeartStarPlanet size={180} />
             </group>
           )}
           

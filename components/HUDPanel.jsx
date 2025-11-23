@@ -2841,19 +2841,16 @@ export default function HUDPanel({
                           openStorePopover();
                         }}
                       >
-                        <svg
-                          viewBox="0 0 24 24"
+                        <img
+                          src="/elements/store.png"
+                          alt="Store"
                           width="20"
                           height="20"
-                          fill="currentColor"
-                          aria-hidden
                           style={{
                             display: 'block',
                             filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.85)) drop-shadow(0 0 16px rgba(255,255,255,0.55))'
                           }}
-                        >
-                          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 4 4 6.5 4c1.74 0 3.41 1.01 4.22 2.61C11.09 5.01 12.76 4 14.5 4 17 4 19 6 19 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                        </svg>
+                        />
                       </button>
 
                       {/* Streaming: Spotify, Apple, YouTube moved left into top controls */}

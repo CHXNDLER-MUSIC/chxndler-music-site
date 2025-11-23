@@ -12,6 +12,7 @@ export default function HoloStarsButton({
   autoOpen = false,
   onJournalCompleted,
   onBeamColorChange,
+  prompt,
 }: {
   onClick?: () => void;
   label?: string;
@@ -19,6 +20,7 @@ export default function HoloStarsButton({
   autoOpen?: boolean;
   onJournalCompleted?: () => void;
   onBeamColorChange?: (color: string) => void;
+  prompt?: any;
 }) {
   const sfxRef = useRef<HTMLAudioElement | null>(null);
   const { isJournalOpen, setIsJournalOpen } = useProfile();
@@ -67,6 +69,7 @@ export default function HoloStarsButton({
       <SoulStarJournal 
         isOpen={isJournalOpen} 
         onClose={handleCloseJournal}
+        prompt={prompt}
       />
 
       <audio ref={sfxRef} src="/audio/star.mp3" preload="auto" playsInline />

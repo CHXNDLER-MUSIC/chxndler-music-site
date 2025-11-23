@@ -259,7 +259,8 @@ export default function JoinAliens({ visible = true } = {}) {
               fontSize: 'clamp(18px, 4vw, 28px)',
               fontWeight: 'bold',
               letterSpacing: '0.1em',
-              lineHeight: '1.2'
+              lineHeight: '1.2',
+              marginBottom: '8px'
             }}
           >
             SIGNAL LOST
@@ -283,7 +284,8 @@ export default function JoinAliens({ visible = true } = {}) {
               fontSize: 'clamp(12px, 3vw, 16px)',
               fontFamily: 'monospace',
               letterSpacing: '0.05em',
-              lineHeight: '1.3'
+              lineHeight: '1.3',
+              marginBottom: '12px'
             }}
           >
             Reconnecting in {scrambledTime}
@@ -302,6 +304,7 @@ export default function JoinAliens({ visible = true } = {}) {
       {/* Stay Connected Section - Bottom */}
       <div style={{ marginTop: '0px' }}>
         {/* Header Text */}
+        {showPhoneForm && (
         <div 
           style={{ 
             textAlign: 'center', 
@@ -314,6 +317,7 @@ export default function JoinAliens({ visible = true } = {}) {
         >
           {profile?.phone ? `Current signal: ${profile.phone.replace(/(\+1 \(\d{3}\)) \d{3}-(\d{4})/, '$1 ***-$2')}` : 'Stay connected to the Heartverse.'}
         </div>
+        )}
 
       {/* Error/Success Messages */}
       {error && (

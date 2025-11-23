@@ -10,6 +10,7 @@ import JourneyButton from '@/components/JourneyButton';
 import BadgesButton from '@/components/BadgesButton';
 import BinderButton from '@/components/BinderButton';
 import HeartCoinButton from '@/components/HeartCoinButton';
+import HoloStarsButton from '@/components/HoloStarsButton';
 import CodeButton from '@/components/CodeButton';
 import ElementalButton from '@/components/ElementalButton';
 import { sfx } from '@/lib/sfx';
@@ -50,6 +51,7 @@ interface ProfileBarProps {
   savedAlienName?: string; // Name from HUD signup flow
   savedAlienElement?: string; // Element from HUD signup flow
   profileRefreshTrigger?: number; // Increment this to trigger profile refresh
+  todaysPrompt?: any; // Today's soul prompt
 }
 
 export default function ProfileBar({
@@ -62,7 +64,8 @@ export default function ProfileBar({
   onBeamColorChange,
   savedAlienName,
   savedAlienElement,
-  profileRefreshTrigger = 0
+  profileRefreshTrigger = 0,
+  todaysPrompt
 }: ProfileBarProps) {
   // Use global UI state for profile bar visibility
   const { hasEnteredHeartverse } = useUIState();
@@ -517,13 +520,22 @@ export default function ProfileBar({
               />
             </div>
 
+            {/* Soul Star Journal Button */}
+            <div className="mr-2 -ml-6">
+              <HoloStarsButton 
+                onClick={() => sfx.play('hover', 0.8)}
+                prompt={todaysPrompt}
+                onJournalCompleted={onJournalCompleted}
+                onBeamColorChange={onBeamColorChange}
+              />
+            </div>
+
             {/* Heart Coin Button with Count */}
             <div className="flex items-center space-x-0.5">
               <HeartCoinButton 
                 onHoverSound={() => sfx.play('hover', 0.8)}
                 onCloseBlueDisplay={onCloseBlueDisplay}
                 onOpenBlueDisplay={onOpenBlueDisplay}
-                onOpenJournal={onOpenJournal}
                 heartCoins={heartCoins}
                 isActive={activePanel === 'heartcoins'}
                 onClick={() => togglePanel('heartcoins')}
