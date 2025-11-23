@@ -10,7 +10,6 @@ import WelcomeHomeModal from "@/components/WelcomeHomeModal";
 import SharedButton from "@/components/SharedButton";
 import HeartverseButton from "@/components/HeartverseButton";
 import SoulStarJournal from "@/components/SoulStarJournal";
-import { getTodaySoulPrompt } from "@/lib/getTodaySoulPrompt";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { awardHeartCoins } from "@/utils/heartcoins";
 // 2D fallback hologram
@@ -136,6 +135,7 @@ export default function HUDPanel({
   onJournalOpened, // callback when journal is opened
   onJournalCompleted, // callback when journal is completed with HeartCoins awarded
   onBeamColorChange, // callback to change beam color
+  todaysPrompt, // today's soul prompt (server-fetched)
 }) {
   // Temporary kill-switch to disable 3D planets for performance testing
   // Set to true to disable. You can also override at runtime by setting
@@ -267,7 +267,7 @@ export default function HUDPanel({
   const [journalCompletedToday, setJournalCompletedToday] = useState(false);
   // Soul Star Journal modal state
   const [showSoulStarJournal, setShowSoulStarJournal] = useState(false);
-  const [dailySoulPrompt, setDailySoulPrompt] = useState(null);
+  const [dailySoulPrompt, setDailySoulPrompt] = useState(todaysPrompt || null);
   const soulSkyScrollRef = useRef(null);
   const brandLastScrollAtRef = useRef(0);
   // Lift the CHXNDLER popover higher above its anchor
@@ -1723,19 +1723,10 @@ export default function HUDPanel({
     checkJournalCompletion();
   }, []);
 
-  // Load daily soul prompt
+  // Keep prompt in sync if prop changes
   useEffect(() => {
-    const loadDailyPrompt = async () => {
-      try {
-        const prompt = await getTodaySoulPrompt();
-        setDailySoulPrompt(prompt);
-      } catch (error) {
-        console.error('Error loading daily soul prompt:', error);
-      }
-    };
-
-    loadDailyPrompt();
-  }, []);
+    setDailySoulPrompt(todaysPrompt || null);
+  }, [todaysPrompt]);
 
   const [animationTime, setAnimationTime] = useState(0);
   // Volume popover (HUD waveform controls)

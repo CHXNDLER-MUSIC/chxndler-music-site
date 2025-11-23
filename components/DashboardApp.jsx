@@ -1968,6 +1968,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                   onJournalOpened={() => setShouldOpenJournal(false)}
                   onJournalCompleted={handleJournalCompleted}
                   onBeamColorChange={handleBeamToggle}
+                  todaysPrompt={todaysPrompt}
                 />
               </div>
               {!showHUD ? (
