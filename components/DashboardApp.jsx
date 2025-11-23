@@ -1585,8 +1585,6 @@ export default function DashboardApp({ initialSlug } = {}) {
         }}
         onFlyStart={() => {
           setWarpActive(true);
-          // Mark that the user has entered the Heartverse as warp begins
-          try { enterHeartverse(); } catch { setHasEnteredHeartverse(true); }
           // Song selection: hide ALL planets immediately before warp
           if (pendingTrackPlay || userSelected) {
             try { playerStore.getState().setPlanetDisplayMode('hidden'); } catch {}
@@ -1669,6 +1667,9 @@ export default function DashboardApp({ initialSlug } = {}) {
             // Song selection - proceed to that song (handled by onBasePlaying)
             // Only start UI fade-in and audio sequencing when the base sky MP4 is confirmed playing via onBasePlaying
           }
+          
+          // Mark that the user has entered the Heartverse after warp completes
+          try { enterHeartverse(); } catch { setHasEnteredHeartverse(true); }
         }}
         onBasePlaying={() => {
           
