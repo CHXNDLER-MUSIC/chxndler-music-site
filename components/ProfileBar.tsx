@@ -178,6 +178,16 @@ export default function ProfileBar({
     } else {
       // Different panel clicked, open it
       setActivePanel(panelKey);
+      
+      // Track panel opening with events_v2
+      try {
+        import('@/lib/analytics').then(({ trackEvent }) => {
+          trackEvent(`${panelKey}_click`, { 
+            source: 'profile_bar',
+            userId: profile?.id || null
+          });
+        }).catch(() => {});
+      } catch {}
     }
   };
 

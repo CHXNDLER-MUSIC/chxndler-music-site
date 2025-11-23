@@ -314,6 +314,8 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
         { name: 'youtube_click', key: 'youtubeClicks' },
         { name: 'power_click', key: 'powerClicks' },
         { name: 'signal_click', key: 'signalClicks' },
+        { name: 'binder_click', key: 'binderClicks' },
+        { name: 'journal_click', key: 'journalClicks' },
       ];
 
       const results: Record<string, number> = {};
@@ -561,6 +563,14 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
                           const localCount = stats?.controlButtons.find(b=>b.button==='Join Aliens')?.count || 0;
                           return eventsV2Count ?? localCount;
                         })()}</span>
+                      </div>
+                      <div className="w-full px-6 py-4 flex items-center justify-between">
+                        <span className="text-white font-medium">Binder</span>
+                        <span className="text-cyan-200 font-bold">{eventsV2Data?.binderClicks ?? 0} {eventsV2Data?.binderClicks !== undefined ? '(events_v2)' : ''}</span>
+                      </div>
+                      <div className="w-full px-6 py-4 flex items-center justify-between">
+                        <span className="text-white font-medium">Journal</span>
+                        <span className="text-cyan-200 font-bold">{eventsV2Data?.journalClicks ?? 0} {eventsV2Data?.journalClicks !== undefined ? '(events_v2)' : ''}</span>
                       </div>
                       <div className="w-full px-6 py-4 flex items-center justify-between">
                         <span className="text-white font-medium text-sm">chxndler</span>

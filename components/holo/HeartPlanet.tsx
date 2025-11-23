@@ -248,6 +248,105 @@ export default function HeartPlanet() {
         />
         <scale args={[1.18, 1.18, 1.14]} />
       </mesh>
+      
+      {/* Antennas - Main vertical antenna */}
+      <group position={[0, 0.8, 0]}>
+        {/* Main antenna pole */}
+        <mesh position={[0, 0.6, 0]}>
+          <cylinderGeometry args={[0.02, 0.03, 1.2, 8]} />
+          <meshStandardMaterial
+            color="#B8B8B8"
+            emissive="#444444"
+            emissiveIntensity={0.3}
+            metalness={0.9}
+            roughness={0.1}
+          />
+        </mesh>
+        
+        {/* Antenna tip sphere */}
+        <mesh position={[0, 1.2, 0]}>
+          <sphereGeometry args={[0.04, 16, 16]} />
+          <meshStandardMaterial
+            color="#FF4D94"
+            emissive="#FF4D94"
+            emissiveIntensity={0.8}
+          />
+        </mesh>
+        
+        {/* Cross antennas */}
+        <mesh position={[0, 0.9, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.015, 0.02, 0.4, 6]} />
+          <meshStandardMaterial
+            color="#A0A0A0"
+            emissive="#333333"
+            emissiveIntensity={0.2}
+            metalness={0.8}
+            roughness={0.2}
+          />
+        </mesh>
+        
+        {/* Side antennas */}
+        <mesh position={[-0.2, 0.9, 0]}>
+          <sphereGeometry args={[0.025, 12, 12]} />
+          <meshStandardMaterial
+            color="#4DFFB8"
+            emissive="#4DFFB8"
+            emissiveIntensity={0.6}
+          />
+        </mesh>
+        <mesh position={[0.2, 0.9, 0]}>
+          <sphereGeometry args={[0.025, 12, 12]} />
+          <meshStandardMaterial
+            color="#4DFFB8"
+            emissive="#4DFFB8"
+            emissiveIntensity={0.6}
+          />
+        </mesh>
+      </group>
+
+      {/* Side antennas extending from heart sides */}
+      <group position={[-0.4, 0.2, 0]}>
+        <mesh rotation={[0, 0, -Math.PI / 6]}>
+          <cylinderGeometry args={[0.012, 0.018, 0.6, 6]} />
+          <meshStandardMaterial
+            color="#B8B8B8"
+            emissive="#444444"
+            emissiveIntensity={0.3}
+            metalness={0.9}
+            roughness={0.1}
+          />
+        </mesh>
+        <mesh position={[-0.12, 0.25, 0]}>
+          <sphereGeometry args={[0.03, 12, 12]} />
+          <meshStandardMaterial
+            color="#FFB84D"
+            emissive="#FFB84D"
+            emissiveIntensity={0.7}
+          />
+        </mesh>
+      </group>
+
+      <group position={[0.4, 0.2, 0]}>
+        <mesh rotation={[0, 0, Math.PI / 6]}>
+          <cylinderGeometry args={[0.012, 0.018, 0.6, 6]} />
+          <meshStandardMaterial
+            color="#B8B8B8"
+            emissive="#444444"
+            emissiveIntensity={0.3}
+            metalness={0.9}
+            roughness={0.1}
+          />
+        </mesh>
+        <mesh position={[0.12, 0.25, 0]}>
+          <sphereGeometry args={[0.03, 12, 12]} />
+          <meshStandardMaterial
+            color="#FFB84D"
+            emissive="#FFB84D"
+            emissiveIntensity={0.7}
+          />
+        </mesh>
+      </group>
+      
       {/* No external glow layers */}
       
       {/* Planetary lighting - gentle illumination */}
