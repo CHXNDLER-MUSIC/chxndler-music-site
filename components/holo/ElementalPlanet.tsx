@@ -21,45 +21,14 @@ export default function ElementalPlanet({
   const planetRef = useRef<Mesh>(null);
   const glowRef = useRef<Mesh>(null);
   
-  // Element-specific colors and properties
+  // Element-specific colors and properties - ALL BLACK FOR TESTING
   const elementConfig = useMemo(() => {
-    switch (element) {
-      case 'heart':
-        return {
-          color: '#FC54AF',
-          glowColor: '#FFB8E6',
-          emissive: '#FF77AA',
-          shader: 'heart',
-        };
-      case 'water':
-        return {
-          color: '#38B6FF',
-          glowColor: '#8BDDFF',
-          emissive: '#2299DD',
-          shader: 'water',
-        };
-      case 'lightning':
-        return {
-          color: '#F2EF1D',
-          glowColor: '#FFF966',
-          emissive: '#DDCC00',
-          shader: 'lightning',
-        };
-      case 'darkness':
-        return {
-          color: '#E8E8E8',
-          glowColor: '#C0C0C0',
-          emissive: '#1A1A1A',
-          shader: 'darkness',
-        };
-      default:
-        return {
-          color: '#666666',
-          glowColor: '#AAAAAA',
-          emissive: '#444444',
-          shader: 'default',
-        };
-    }
+    return {
+      color: '#000000',
+      glowColor: '#333333',
+      emissive: '#000000',
+      shader: 'test',
+    };
   }, [element]);
 
   // Elemental planet shader material

@@ -14,6 +14,7 @@ export default function HoloStarsButton({
   onJournalCompleted,
   onBeamColorChange,
   onJournalEntryChange,
+  onOpenBlueDisplay,
 }: {
   onClick?: () => void;
   label?: string;
@@ -22,6 +23,7 @@ export default function HoloStarsButton({
   onJournalCompleted?: () => void;
   onBeamColorChange?: (color: string) => void;
   onJournalEntryChange?: (entry: JournalEntry | null) => void;
+  onOpenBlueDisplay?: () => void;
 }) {
   const sfxRef = useRef<HTMLAudioElement | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -143,6 +145,20 @@ export default function HoloStarsButton({
     setShowJournalView(false);
     setSaveMessage("");
     setValidationMessage("");
+    // Also close the entire modal and open blue display
+    handleCloseModal();
+  };
+
+  // Enhanced close handler that opens blue display
+  const handleCloseModal = () => {
+    setShowModal(false);
+    if (typeof onClick === "function") { 
+      try { onClick(); } catch {} 
+    }
+    // Automatically open blue display after closing stars modal
+    try { 
+      onOpenBlueDisplay?.(); 
+    } catch {}
   };
 
   // Auto-open modal when autoOpen is true
@@ -213,12 +229,9 @@ export default function HoloStarsButton({
     
     // Hide modal after animation
     setTimeout(() => {
-      setShowModal(false);
       setShowStarAnimation(false);
       setShowSoulSky(false);
-      if (typeof onClick === "function") { 
-        try { onClick(); } catch {} 
-      }
+      handleCloseModal();
     }, 5000);
   }
 
@@ -240,10 +253,10 @@ export default function HoloStarsButton({
       
       <style jsx>{`
         .custom-stars-style {
-          width: 50px;
+          width: 90px;
           height: 50px;
-          border-radius: 50%;
-          font-size: 24px;
+          border-radius: 12px;
+          font-size: 32px;
           color: inherit !important;
           background: transparent !important;
           border: none;
@@ -259,17 +272,27 @@ export default function HoloStarsButton({
         }
         
         .star-image {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          border-radius: 50%;
-          filter: drop-shadow(0 0 8px #FFFF00) drop-shadow(0 0 16px #FFFF00) drop-shadow(0 0 24px #FFD700) !important;
+          width: 90%;
+          height: 90%;
+          object-fit: contain;
+          border-radius: 8px;
+          filter: 
+            drop-shadow(0 0 12px #FFFF00) 
+            drop-shadow(0 0 24px #FFFF00) 
+            drop-shadow(0 0 36px #FFD700) 
+            drop-shadow(0 0 48px #FFFF00) 
+            brightness(1.3) 
+            saturate(1.5) !important;
           opacity: 1 !important;
           border: 2px solid #FFFF00;
           box-sizing: border-box;
-          background: none !important;
+          background: transparent !important;
           color: initial !important;
           transition: filter 0.3s ease;
+          box-shadow: 
+            0 0 20px rgba(255, 255, 0, 0.8),
+            0 0 40px rgba(255, 255, 0, 0.6),
+            0 0 60px rgba(255, 255, 0, 0.4);
         }
         
         .soul-star-text {
@@ -285,6 +308,11 @@ export default function HoloStarsButton({
         }
         
         @media (max-width: 768px) {
+          .custom-stars-style {
+            width: 70px;
+            height: 70px;
+            font-size: 28px;
+          }
           .soul-star-text {
             min-width: 150px;
             font-size: 0.7rem;
@@ -293,6 +321,11 @@ export default function HoloStarsButton({
         }
         
         @media (max-width: 480px) {
+          .custom-stars-style {
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+          }
           .soul-star-text {
             min-width: 120px;
             font-size: 0.6rem;
@@ -307,9 +340,20 @@ export default function HoloStarsButton({
         }
         
         .custom-stars-style:hover .star-image {
-          filter: drop-shadow(0 0 12px #FFFF00) drop-shadow(0 0 24px #FFFF00) drop-shadow(0 0 36px #FFD700) drop-shadow(0 0 48px rgba(255, 255, 0, 0.8)) !important;
+          filter: 
+            drop-shadow(0 0 20px #FFFF00) 
+            drop-shadow(0 0 40px #FFFF00) 
+            drop-shadow(0 0 60px #FFD700) 
+            drop-shadow(0 0 80px #FFFF00) 
+            brightness(1.5) 
+            saturate(2) !important;
           border-color: #FFD700;
-          border-width: 3px;
+          border-width: 4px;
+          box-shadow: 
+            0 0 30px rgba(255, 255, 0, 1),
+            0 0 60px rgba(255, 255, 0, 0.8),
+            0 0 90px rgba(255, 255, 0, 0.6),
+            0 0 120px rgba(255, 255, 0, 0.4);
         }
         
         .custom-stars-style:active {
@@ -353,6 +397,256 @@ export default function HoloStarsButton({
           100% {
             opacity: 1;
             transform: translateX(0) translateY(0) scale(1);
+          }
+        }
+        
+        .quick-reflection-panel {
+          padding: 1.5rem;
+        }
+        
+        .popup-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1rem;
+          padding-bottom: 0.5rem;
+          border-bottom: 1px solid rgba(255, 255, 0, 0.3);
+        }
+        
+        .popup-header h3 {
+          color: #FFFF00;
+          font-size: 1.2rem;
+          font-weight: bold;
+          margin: 0;
+          text-shadow: 0 0 10px #FFFF00;
+        }
+        
+        .popup-close {
+          background: transparent;
+          border: none;
+          color: #FFFF00;
+          font-size: 1.5rem;
+          cursor: pointer;
+          width: 30px;
+          height: 30px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          transition: all 0.2s ease;
+        }
+        
+        .popup-close:hover {
+          transform: scale(1.1);
+          text-shadow: 0 0 15px #FFFF00;
+        }
+        
+        .popup-date {
+          color: rgba(255, 255, 255, 0.8);
+          font-size: 0.9rem;
+          margin-bottom: 1rem;
+          text-align: center;
+        }
+        
+        .quick-form {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+        
+        .form-field {
+          display: flex;
+          flex-direction: column;
+          gap: 0.3rem;
+        }
+        
+        .form-field label {
+          color: #FFFF00;
+          font-size: 0.9rem;
+          font-weight: 500;
+          text-shadow: 0 0 5px #FFFF00;
+        }
+        
+        .popup-input,
+        .popup-textarea {
+          background: rgba(0, 0, 0, 0.7);
+          border: 1px solid rgba(255, 255, 0, 0.6);
+          border-radius: 0.5rem;
+          color: #FFFFFF;
+          padding: 0.5rem;
+          font-size: 0.85rem;
+          font-family: inherit;
+          resize: vertical;
+          transition: border-color 0.2s ease;
+        }
+        
+        .popup-input::placeholder,
+        .popup-textarea::placeholder {
+          color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .popup-input:focus,
+        .popup-textarea:focus {
+          outline: none;
+          border-color: #FFFF00;
+          box-shadow: 0 0 10px rgba(255, 255, 0, 0.3);
+        }
+        
+        .popup-textarea {
+          min-height: 60px;
+        }
+        
+        .popup-message {
+          padding: 0.5rem;
+          border-radius: 0.3rem;
+          text-align: center;
+          font-size: 0.85rem;
+          font-weight: 500;
+        }
+        
+        .popup-message.error {
+          background: rgba(255, 0, 0, 0.1);
+          border: 1px solid #FF6B6B;
+          color: #FF6B6B;
+        }
+        
+        .popup-message.success {
+          background: rgba(0, 255, 0, 0.1);
+          border: 1px solid #51CF66;
+          color: #51CF66;
+          text-shadow: 0 0 5px #51CF66;
+        }
+        
+        .popup-actions {
+          display: flex;
+          gap: 0.75rem;
+          margin-top: 0.5rem;
+        }
+        
+        .save-entry-btn,
+        .cast-star-btn,
+        .cast-completed {
+          flex: 1;
+          padding: 0.6rem 1rem;
+          border: none;
+          border-radius: 0.5rem;
+          font-size: 0.85rem;
+          font-weight: bold;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        
+        .save-entry-btn {
+          background: linear-gradient(135deg, #FFD700, #FFA500);
+          color: #000;
+          box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+        }
+        
+        .save-entry-btn:hover {
+          transform: scale(1.02);
+          box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+        
+        .cast-star-btn {
+          background: rgba(255, 255, 0, 0.1);
+          color: #FFFF00;
+          border: 1px solid #FFFF00;
+          text-shadow: 0 0 8px #FFFF00;
+        }
+        
+        .cast-star-btn:hover:not(:disabled) {
+          background: rgba(255, 255, 0, 0.2);
+          transform: scale(1.02);
+          box-shadow: 0 0 15px rgba(255, 255, 0, 0.4);
+        }
+        
+        .cast-star-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        
+        .cast-completed {
+          background: rgba(0, 255, 0, 0.1);
+          color: #00FF00;
+          border: 1px solid #00FF00;
+          text-shadow: 0 0 8px #00FF00;
+          cursor: default;
+        }
+        
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+          .journal-popup {
+            top: 3.5rem;
+            left: 0.5rem;
+            right: 0.5rem;
+            width: auto;
+            max-width: none;
+            max-height: 80vh;
+          }
+          
+          .quick-reflection-panel {
+            padding: 1rem;
+          }
+          
+          .popup-header h3 {
+            font-size: 1rem;
+          }
+          
+          .popup-close {
+            width: 25px;
+            height: 25px;
+            font-size: 1.3rem;
+          }
+          
+          .form-field label {
+            font-size: 0.8rem;
+          }
+          
+          .popup-input,
+          .popup-textarea {
+            font-size: 0.8rem;
+            padding: 0.4rem;
+          }
+          
+          .popup-textarea {
+            min-height: 50px;
+          }
+          
+          .popup-actions {
+            flex-direction: column;
+            gap: 0.5rem;
+          }
+          
+          .save-entry-btn,
+          .cast-star-btn,
+          .cast-completed {
+            padding: 0.5rem 0.8rem;
+            font-size: 0.8rem;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          .journal-popup {
+            top: 3rem;
+            left: 0.25rem;
+            right: 0.25rem;
+            max-height: 75vh;
+          }
+          
+          .quick-reflection-panel {
+            padding: 0.75rem;
+          }
+          
+          .quick-form {
+            gap: 0.75rem;
+          }
+          
+          .popup-header h3 {
+            font-size: 0.9rem;
+          }
+          
+          .popup-textarea {
+            min-height: 40px;
           }
         }
         
@@ -959,12 +1253,7 @@ export default function HoloStarsButton({
                   <h3>Today's Soul Journal</h3>
                   <button 
                     className="popup-close"
-                    onClick={() => {
-                      setShowModal(false);
-                      if (typeof onClick === "function") { 
-                        try { onClick(); } catch {} 
-                      }
-                    }}
+                    onClick={handleCloseModal}
                     aria-label="Close"
                   >
                     ×

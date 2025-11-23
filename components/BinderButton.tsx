@@ -427,10 +427,10 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
           }}
         >
           <div
-            className="binder-hologram-container"
+            className="binder-hologram-container overflow-hidden"
             style={{
               width: 'min(92vw, 700px)',
-              height: '35vh',
+              height: '50vh',
               padding: '10px 14px 14px 14px',
               borderRadius: 18,
               background: 'rgba(0,0,0,0.6)',
@@ -641,7 +641,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
             }
 
             return (
-              <div className="flex items-start gap-4 mb-4">
+              <div className="flex items-start gap-4 mb-4 w-full max-w-full">
                 {/* Left navigation arrow */}
                 {cards.length > 1 && (
                   <button
@@ -658,48 +658,44 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                   </button>
                 )}
                 
-                {/* Card image and right arrow container */}
-                <div className="flex items-center gap-2">
-                  {/* Card image */}
-                  <div className="flex-shrink-0">
-                    <img
-                      src={currentCard.image}
-                      alt={currentCard.name}
-                      className="w-24 h-auto rounded-lg cursor-pointer transition-transform duration-300 hover:scale-110"
-                      style={{
-                        boxShadow: '0 0 15px rgba(255,105,180,0.6), 0 0 30px rgba(255,105,180,0.3)',
-                        border: '2px solid rgba(255,105,180,0.6)',
-                      }}
-                      draggable={false}
-                      onClick={() => {
-                        try { sfx.play('click', 0.8); } catch {}
-                        setPreselectedCard(currentCard.name);
-                        setSelectedCard(currentCard);
-                        setCardOpen(true);
-                      }}
-                    />
-                  </div>
-                  
-                  {/* Right navigation arrow - directly to the right of card */}
-                  {cards.length > 1 && (
-                    <button
-                      onClick={() => {
-                        try { sfx.play('click', 0.5); } catch {}
-                        setCurrentCardIndex(prev => prev < cards.length - 1 ? prev + 1 : 0);
-                      }}
-                      className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200 self-center"
-                      style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
-                    >
-                      <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-                        <path d="M9 18l6-6-6-6"/>
-                      </svg>
-                    </button>
-                  )}
+                {/* Card image */}
+                <div className="flex-shrink-0">
+                  <img
+                    src={currentCard.image}
+                    alt={currentCard.name}
+                    className="w-24 h-auto rounded-lg cursor-pointer transition-transform duration-300 hover:scale-110"
+                    style={{
+                      boxShadow: '0 0 15px rgba(255,105,180,0.6), 0 0 30px rgba(255,105,180,0.3)',
+                      border: '2px solid rgba(255,105,180,0.6)',
+                    }}
+                    draggable={false}
+                    onClick={() => {
+                      try { sfx.play('click', 0.8); } catch {}
+                      setPreselectedCard(currentCard.name);
+                      setSelectedCard(currentCard);
+                      setCardOpen(true);
+                    }}
+                  />
                 </div>
                 
+                {/* Right navigation arrow - positioned between card and info */}
+                {cards.length > 1 && (
+                  <button
+                    onClick={() => {
+                      try { sfx.play('click', 0.5); } catch {}
+                      setCurrentCardIndex(prev => prev < cards.length - 1 ? prev + 1 : 0);
+                    }}
+                    className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200 self-center"
+                    style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
+                  >
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                      <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                  </button>
+                )}
                 
-                {/* Card info on the right */}
-                <div className="flex-1 min-w-0">
+                {/* Card info positioned to the right of the right arrow */}
+                <div className="flex-1 min-w-0 overflow-hidden">
                   {(() => {
                     const cards = getFilteredCards();
                     const currentCard = cards[currentCardIndex];
@@ -767,11 +763,12 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                         </div>
                         {getCardOneLiner(currentCard.name) && (
                           <div 
-                            className="text-xs mb-2 italic leading-relaxed"
+                            className="text-xs mb-2 italic leading-relaxed break-words"
                             style={{ 
                               color: '#E6E6FA', 
                               textShadow: '0 0 2px rgba(230,230,250,0.6)',
-                              fontSize: '11px'
+                              fontSize: '11px',
+                              paddingLeft: '8px'
                             }}
                           >
                             {getCardOneLiner(currentCard.name)}

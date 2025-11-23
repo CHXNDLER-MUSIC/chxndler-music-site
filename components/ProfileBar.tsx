@@ -304,6 +304,7 @@ export default function ProfileBar({
           />
         </div>
 
+
         {/* Main Flex Layout */}
         <div className="flex items-center justify-between h-full pl-12 sm:pl-16 pr-2 min-w-0">
           {/* Left Side */}
@@ -683,6 +684,7 @@ export default function ProfileBar({
                 // TODO: Open store popup
                 console.log("Open store popup from quest list");
               }}
+              onOpenBlueDisplay={onOpenBlueDisplay}
             />
           </div>
         </div>,

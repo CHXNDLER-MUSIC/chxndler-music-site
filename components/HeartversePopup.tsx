@@ -39,7 +39,7 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
       />
       <div 
         className={positioning === 'top-left' ? 'absolute z-[10000] max-w-md' : 'absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 mx-4 max-w-lg w-full z-[10000]'}
-        style={positioning === 'top-left' ? {top: '100px', left: '50px', backgroundColor: 'red'} : {marginTop: positioning === 'higher' ? '-30vh' : '0'}}
+        style={positioning === 'top-left' ? {top: '100px', left: '50px', backgroundColor: 'red'} : {marginTop: positioning === 'higher' ? '-25vh' : '0'}}
       >
         <div className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-[#FC54AF]/60 bg-white/5 shadow-[0_0_26px_rgba(56,182,255,0.35)]">
           <div

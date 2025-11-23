@@ -8,6 +8,7 @@ import { hasAnsweredToday, getTodaysQuestion } from "@/lib/dailyQuestions";
 type Props = {
   onBack: () => void;
   onOpenStore: () => void;
+  onOpenBlueDisplay?: () => void;
 };
 
 type QuestStatus = {
@@ -66,7 +67,7 @@ function useQuestStatus() {
   return { questStatus, setQuestStatus, todaysElement };
 }
 
-export default function QuestList({ onBack, onOpenStore }: Props) {
+export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Props) {
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [secretPhrase, setSecretPhrase] = useState("");
   const [checkInMessage, setCheckInMessage] = useState("");
@@ -652,6 +653,7 @@ export default function QuestList({ onBack, onOpenStore }: Props) {
         isOpen={showSoulStare}
         onClose={() => setShowSoulStare(false)}
         onComplete={handleSoulStareComplete}
+        onOpenBlueDisplay={onOpenBlueDisplay}
       />
     </div>
   );

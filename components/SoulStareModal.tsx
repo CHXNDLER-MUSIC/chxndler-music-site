@@ -8,6 +8,7 @@ type Props = {
   isOpen: boolean;
   onClose: () => void;
   onComplete: () => void;
+  onOpenBlueDisplay?: () => void;
 };
 
 type JournalEntry = {
@@ -19,7 +20,7 @@ type JournalEntry = {
   glowColor: string;
 };
 
-export default function SoulStareModal({ isOpen, onClose, onComplete }: Props) {
+export default function SoulStareModal({ isOpen, onClose, onComplete, onOpenBlueDisplay }: Props) {
   const [response, setResponse] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -28,6 +29,15 @@ export default function SoulStareModal({ isOpen, onClose, onComplete }: Props) {
   
   const todaysQuestion = getTodaysQuestion();
   const alreadyAnswered = hasAnsweredToday();
+
+  // Enhanced close handler that opens blue display
+  const handleClose = () => {
+    onClose();
+    // Automatically open blue display after closing soul stare
+    try { 
+      onOpenBlueDisplay?.(); 
+    } catch {}
+  };
 
   // Load journal entries on mount
   useEffect(() => {
@@ -72,7 +82,7 @@ export default function SoulStareModal({ isOpen, onClose, onComplete }: Props) {
         setSubmitted(true);
         onComplete();
         setTimeout(() => {
-          onClose();
+          handleClose();
           setResponse("");
           setSubmitted(false);
         }, 2000);
@@ -98,7 +108,7 @@ export default function SoulStareModal({ isOpen, onClose, onComplete }: Props) {
           background: 'rgba(0,0,0,0.7)',
           backdropFilter: 'blur(8px)'
         }}
-        onClick={onClose}
+        onClick={handleClose}
       />
 
       {/* Holographic base glow */}
@@ -167,7 +177,7 @@ export default function SoulStareModal({ isOpen, onClose, onComplete }: Props) {
 
         {/* Close button */}
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="absolute top-3 right-4 w-8 h-8 rounded-full border flex items-center justify-center transition-all"
           style={{ 
             fontSize: '16px',

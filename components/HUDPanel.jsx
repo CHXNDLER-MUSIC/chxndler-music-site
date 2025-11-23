@@ -257,6 +257,8 @@ export default function HUDPanel({
   const [questionResponse, setQuestionResponse] = useState('');
   const [showStarAnimation, setShowStarAnimation] = useState(false);
   const [showBeamEffect, setShowBeamEffect] = useState(false);
+  const [showJournalView, setShowJournalView] = useState(false);
+  const [journalEntries, setJournalEntries] = useState([]);
   const [journalCompletedToday, setJournalCompletedToday] = useState(false);
   const soulSkyScrollRef = useRef(null);
   const brandLastScrollAtRef = useRef(0);
@@ -2531,8 +2533,27 @@ export default function HUDPanel({
                           <svg className="w-full h-full" viewBox="0 0 100 18" preserveAspectRatio="none" style={{ background: 'transparent' }}>
                             <defs>
                               {(() => {
+                                const ELEMENT_COLORS = {
+                                  heart: {
+                                    stroke: "#FC54AF",
+                                    glow: "rgba(252, 84, 175, 0.9)"
+                                  },
+                                  water: {
+                                    stroke: "#38B6FF",
+                                    glow: "rgba(56, 182, 255, 0.9)"
+                                  },
+                                  lightning: {
+                                    stroke: "#F2EF1D",
+                                    glow: "rgba(242, 239, 29, 0.9)"
+                                  },
+                                  darkness: {
+                                    stroke: "#FFFFFF",
+                                    glow: "rgba(255, 255, 255, 0.7)"
+                                  }
+                                };
                                 const currentSong = resolvedSongs.find(s => s.id === active);
-                                const elementColor = '#FFFFFF'; // Use white for waveform gradient
+                                const element = currentSong?.icon || 'heart';
+                                const elementColor = ELEMENT_COLORS[element]?.stroke || '#FFFFFF';
                                 const hexToRgba = (hex, alpha) => {
                                   const r = parseInt(hex.slice(1, 3), 16);
                                   const g = parseInt(hex.slice(3, 5), 16);
@@ -2551,13 +2572,39 @@ export default function HUDPanel({
                                       <stop offset="50%" stopColor={hexToRgba(elementColor, 1)} />
                                       <stop offset="100%" stopColor={hexToRgba(elementColor, 0.8)} />
                                     </linearGradient>
+                                    <filter id="waveformGlow">
+                                      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                                      <feMerge>
+                                        <feMergeNode in="coloredBlur"/>
+                                        <feMergeNode in="SourceGraphic"/>
+                                      </feMerge>
+                                    </filter>
                                   </>
                                 );
                               })()}
                             </defs>
                             {(() => {
+                              const ELEMENT_COLORS = {
+                                heart: {
+                                  stroke: "#FC54AF",
+                                  glow: "rgba(252, 84, 175, 0.9)"
+                                },
+                                water: {
+                                  stroke: "#38B6FF",
+                                  glow: "rgba(56, 182, 255, 0.9)"
+                                },
+                                lightning: {
+                                  stroke: "#F2EF1D",
+                                  glow: "rgba(242, 239, 29, 0.9)"
+                                },
+                                darkness: {
+                                  stroke: "#FFFFFF",
+                                  glow: "rgba(255, 255, 255, 0.7)"
+                                }
+                              };
                               const currentSong = resolvedSongs.find(s => s.id === active);
-                              const elementColor = '#FFFFFF'; // Use white for waveform line
+                              const element = currentSong?.icon || 'heart';
+                              const elementColor = ELEMENT_COLORS[element]?.stroke || '#FFFFFF';
                               const a = liveAudioRef.current;
                               const liveDur = (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
                               const liveTime = (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
@@ -2567,9 +2614,9 @@ export default function HUDPanel({
                               return (
                                 <>
                                   {/* Background track as a thick rounded line */}
-                                  <line x1="0" y1={centerY} x2="100" y2={centerY} stroke={elementColor} strokeWidth="8" opacity="0.35" strokeLinecap="round" strokeLinejoin="round" />
-                                  {/* Played portion: single clean rounded bar */}
-                                  <line x1="0" y1={centerY} x2={progressX} y2={centerY} stroke={elementColor} strokeWidth="8" opacity="1" strokeLinecap="round" strokeLinejoin="round" />
+                                  <line x1="0" y1={centerY} x2="100" y2={centerY} stroke={elementColor} strokeWidth="8" opacity="0.35" strokeLinecap="round" strokeLinejoin="round" filter="url(#waveformGlow)" />
+                                  {/* Played portion: single clean rounded bar with glow */}
+                                  <line x1="0" y1={centerY} x2={progressX} y2={centerY} stroke={elementColor} strokeWidth="8" opacity="1" strokeLinecap="round" strokeLinejoin="round" filter="url(#waveformGlow)" />
                                 </>
                               );
                             })()}
@@ -2643,7 +2690,7 @@ export default function HUDPanel({
                       <HeartverseButton
                         ref={joinUsBtnRef}
                         label="WELCOME HOME"
-                        style={{ position: 'absolute', left: '8px', top: '70px', paddingLeft: '32px', paddingRight: '32px', minWidth: '180px' }}
+                        style={{ position: 'absolute', left: '8px', top: '66px', paddingLeft: '32px', paddingRight: '32px', minWidth: '180px', height: '32px' }}
                         title="Welcome Home"
                         onClick={(e) => { 
                           e.stopPropagation(); 
@@ -2674,14 +2721,14 @@ export default function HUDPanel({
                             src="/elements/stars.png" 
                             alt="Journal" 
                             style={{ 
-                              width: '20px', 
-                              height: '20px', 
-                              filter: 'brightness(0) saturate(100%) invert(89%) sepia(58%) saturate(2618%) hue-rotate(356deg) brightness(104%) contrast(97%)',
+                              width: '32px', 
+                              height: '32px', 
+                              filter: 'brightness(0) saturate(100%) invert(89%) sepia(58%) saturate(2618%) hue-rotate(356deg) brightness(120%) contrast(110%) drop-shadow(0 0 6px rgba(255,255,0,0.8)) drop-shadow(0 0 12px rgba(255,255,0,0.6)) drop-shadow(0 0 18px rgba(255,255,0,0.4))',
                               border: 'none'
                             }} 
                           />
                         }
-                        style={{ position: 'absolute', left: '220px', top: '70px', paddingLeft: '16px', paddingRight: '16px', minWidth: '60px', border: 'none !important', outline: 'none !important', boxShadow: 'none !important' }}
+                        style={{ position: 'absolute', left: '220px', top: '66px', paddingLeft: '12px', paddingRight: '12px', width: '80px', height: '32px', minWidth: '80px', maxWidth: '80px', border: '1px solid rgba(255, 255, 0, 0.6)', outline: 'none', boxShadow: '0 0 8px rgba(255, 255, 0, 0.3), 0 0 16px rgba(255, 255, 0, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible', borderRadius: '8px', filter: 'brightness(1.2) saturate(1.4)', transition: 'all 0.2s ease' }}
                         title="Stars"
                         aria-haspopup="dialog"
                         aria-expanded={showSoulSkyPopover}
@@ -2698,7 +2745,33 @@ export default function HUDPanel({
                           }
                           openSoulSkyPopover(); 
                         }}
-                        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                        onMouseEnter={(e) => { 
+                          try { sfx.play('hover', 0.35); } catch {};
+                          // Enhanced glow for button
+                          try { 
+                            e.currentTarget.style.boxShadow = '0 0 16px rgba(255, 255, 0, 0.6), 0 0 32px rgba(255, 255, 0, 0.4), 0 0 48px rgba(255, 255, 0, 0.3)';
+                            e.currentTarget.style.borderColor = 'rgba(255, 255, 0, 0.9)';
+                            e.currentTarget.style.transform = 'scale(1.05)';
+                            // Enhanced glow for stars image
+                            const img = e.currentTarget.querySelector('img');
+                            if (img) {
+                              img.style.filter = 'brightness(0) saturate(100%) invert(89%) sepia(58%) saturate(2618%) hue-rotate(356deg) brightness(140%) contrast(120%) drop-shadow(0 0 8px rgba(255,255,0,0.8)) drop-shadow(0 0 16px rgba(255,255,0,0.6))';
+                            }
+                          } catch {} 
+                        }}
+                        onMouseLeave={(e) => { 
+                          // Reset to normal glow
+                          try { 
+                            e.currentTarget.style.boxShadow = '0 0 8px rgba(255, 255, 0, 0.3), 0 0 16px rgba(255, 255, 0, 0.2)';
+                            e.currentTarget.style.borderColor = 'rgba(255, 255, 0, 0.6)';
+                            e.currentTarget.style.transform = 'scale(1)';
+                            // Reset stars image glow
+                            const img = e.currentTarget.querySelector('img');
+                            if (img) {
+                              img.style.filter = 'brightness(0) saturate(100%) invert(89%) sepia(58%) saturate(2618%) hue-rotate(356deg) brightness(104%) contrast(97%)';
+                            }
+                          } catch {} 
+                        }}
                       />
                       {/* Store (gem) button placed to the right of Lyrics */}
                       <button
@@ -6334,7 +6407,40 @@ export default function HUDPanel({
                     }}
                     onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowSoulSkyPopover(false); } }}
                   >
-                    {/* Obvious close button in the top-right corner */}
+                    {/* Journal button in the top-left corner */}
+                    <button
+                      aria-label="Open Journal"
+                      title="Journal"
+                      onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 26px rgba(255,255,0,0.95), 0 0 42px rgba(255,255,0,0.65)'; } catch {} }}
+                      onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 0 16px rgba(255,255,0,0.85), 0 0 32px rgba(255,255,0,0.35)'; } catch {} }}
+                      onClick={() => { 
+                        try { sfx.play('click', 0.4); } catch {}; 
+                        // Toggle journal view
+                        setShowJournalView(!showJournalView);
+                      }}
+                      style={{
+                        position: 'absolute',
+                        top: 10, left: 10,
+                        width: 60, height: 30, borderRadius: 15,
+                        background: 'rgba(255,255,0,0.15)',
+                        border: '2px solid rgba(255,255,0,0.6)',
+                        color: '#FFFF00',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        fontSize: 10,
+                        fontWeight: 600,
+                        transition: 'all 0.2s ease',
+                        zIndex: 10,
+                        boxShadow: '0 0 16px rgba(255,255,0,0.85), 0 0 32px rgba(255,255,0,0.35)',
+                        backdropFilter: 'blur(4px)'
+                      }}
+                    >
+                      JOURNAL
+                    </button>
+
+                    {/* Close button in the top-right corner */}
                     <button
                       aria-label="Close Soul Sky"
                       title="Close"
@@ -6371,10 +6477,69 @@ export default function HUDPanel({
 
                     {/* Moving glow background */}
                     <div className="lyrics-glow-bg"></div>
-                    {/* Section header */}
-                    <div className="lyrics-header" style={{ color: '#FFFF00', textShadow: '0 0 8px rgba(255,255,0,0.6)', fontSize: '12px' }}>
-                      SOUL STAR
-                    </div>
+                    
+                    {showJournalView ? (
+                      /* Journal Log View */
+                      <div>
+                        <div className="lyrics-header" style={{ color: '#FFFF00', textShadow: '0 0 8px rgba(255,255,0,0.6)', fontSize: '12px' }}>
+                          JOURNAL LOG
+                        </div>
+                        <div style={{ marginTop: '20px', maxHeight: '300px', overflowY: 'auto' }}>
+                          {journalEntries.length === 0 ? (
+                            <div style={{ 
+                              color: '#FFFF00', 
+                              fontSize: '11px', 
+                              textAlign: 'center',
+                              opacity: 0.7,
+                              fontStyle: 'italic' 
+                            }}>
+                              No journal entries yet. Create your first entry by using the Soul Sky interface.
+                            </div>
+                          ) : (
+                            journalEntries.map((entry, index) => (
+                              <div key={index} style={{
+                                marginBottom: '20px',
+                                padding: '15px',
+                                border: '1px solid rgba(255,255,0,0.3)',
+                                borderRadius: '8px',
+                                background: 'rgba(255,255,0,0.05)'
+                              }}>
+                                <div style={{ 
+                                  color: '#FFD700', 
+                                  fontSize: '10px', 
+                                  fontWeight: 'bold',
+                                  marginBottom: '10px',
+                                  textShadow: '0 0 4px rgba(255,215,0,0.6)'
+                                }}>
+                                  {entry.date}
+                                </div>
+                                
+                                <div style={{ marginBottom: '8px' }}>
+                                  <span style={{ color: '#FFFF00', fontSize: '10px', fontWeight: 'bold' }}>INTENTION: </span>
+                                  <span style={{ color: '#FFFF00', fontSize: '10px', fontStyle: 'italic' }}>{entry.intention}</span>
+                                </div>
+                                
+                                <div style={{ marginBottom: '8px' }}>
+                                  <span style={{ color: '#FFFF00', fontSize: '10px', fontWeight: 'bold' }}>REFLECTION: </span>
+                                  <span style={{ color: '#FFFF00', fontSize: '10px', fontStyle: 'italic' }}>{entry.reflection}</span>
+                                </div>
+                                
+                                <div style={{ marginBottom: '8px' }}>
+                                  <span style={{ color: '#FFFF00', fontSize: '10px', fontWeight: 'bold' }}>VISION: </span>
+                                  <span style={{ color: '#FFFF00', fontSize: '10px', fontStyle: 'italic' }}>{entry.vision}</span>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      /* Normal Soul Sky View */
+                      <div>
+                        {/* Section header */}
+                        <div className="lyrics-header" style={{ color: '#FFFF00', textShadow: '0 0 8px rgba(255,255,0,0.6)', fontSize: '12px' }}>
+                          SOUL STAR
+                        </div>
                     <div style={{ marginBottom: '20px' }}>
                       <div className="lyrics-content-enhanced" style={{ 
                         whiteSpace: 'pre-wrap', 
@@ -6426,8 +6591,27 @@ export default function HUDPanel({
                         className="cast-stars-button"
                         onClick={async () => {
                           if (questionResponse.trim() && !journalCompletedToday) {
+                            // Create complete journal entry (always works)
+                            const journalEntry = {
+                              date: new Date().toLocaleDateString('en-US', { 
+                                weekday: 'long', 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
+                              }),
+                              intention: "Find peace in the present moment", // Current intention text
+                              reflection: "What constellation would you create if you could arrange the stars in the sky, and what story would it tell?", // Current reflection text
+                              vision: questionResponse.trim()
+                            };
+                            
+                            // Add to journal entries
+                            setJournalEntries(prev => [journalEntry, ...prev]);
+                            
+                            // Mark journal as completed
+                            setJournalCompletedToday(true);
+                            
+                            // Try to award HeartCoins if user is logged in
                             try {
-                              // Award HeartCoin for completing journal reflection
                               const { data: { user } } = await supabaseClient.auth.getUser();
                               if (user) {
                                 await awardHeartCoins(
@@ -6440,9 +6624,6 @@ export default function HUDPanel({
                                     date: new Date().toISOString().split('T')[0]
                                   }
                                 );
-                                
-                                // Mark journal as completed
-                                setJournalCompletedToday(true);
                                 
                                 // Notify parent component of journal completion
                                 onJournalCompleted?.();
@@ -6523,6 +6704,8 @@ export default function HUDPanel({
                         </div>
                       )}
                     </div>
+                  </div>
+                    )}
                   </div>,
                   document.body
                 ) : null}

@@ -964,7 +964,7 @@ export default function DashboardApp({ initialSlug } = {}) {
 
   // Handle opening journal: opens star pop-out in HUD
   const handleOpenJournal = React.useCallback(() => {
-    setShouldOpenJournal(true);
+    setShowStarsModal(true);
   }, []);
 
   // Handle journal completion: triggers refresh of profile data
@@ -2147,6 +2147,15 @@ export default function DashboardApp({ initialSlug } = {}) {
           isActive={true}
           autoOpen={true}
           onBeamColorChange={handleBeamToggle}
+          onOpenBlueDisplay={() => {
+            // Force open blue display without toggle logic
+            if (!showHUD && beamColor === 'blue') {
+              setBeamEnabled(true);
+              setShowHUD(true);
+            } else if (beamColor !== 'blue') {
+              handleBeamToggle('blue');
+            }
+          }}
         />
       )}
       

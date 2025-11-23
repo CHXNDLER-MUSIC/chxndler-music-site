@@ -20,9 +20,9 @@ type VenmoButtonProps = {
 };
 
 export default function VenmoButton({ 
-  amount = 1, 
-  note = "Thanks for the music!", 
-  recipient = "chxndler-music",
+  amount = 3, 
+  note = "Fuel the Signal", 
+  recipient = "chxndlerthealien",
   className = "" 
 }: VenmoButtonProps) {
   const handleVenmoClick = () => {
@@ -37,14 +37,14 @@ export default function VenmoButton({
     // Venmo deep link format: venmo://paycharge?txn=pay&recipients=username&amount=amount&note=message
     const venmoUrl = `venmo://paycharge?txn=pay&recipients=${recipient}&amount=${amount}&note=${encodeURIComponent(note)}`;
     
-    // Try to open the Venmo app first, fallback to web
-    window.open(venmoUrl, '_blank');
+    // Try to open the Venmo app first
+    window.location.href = venmoUrl;
     
     // Fallback: if mobile app doesn't open, try web version after a short delay
     setTimeout(() => {
-      const webVenmoUrl = `https://venmo.com/${recipient}?amount=${amount}&note=${encodeURIComponent(note)}`;
+      const webVenmoUrl = `https://venmo.com/u/${recipient}?txn=pay&amount=${amount}&note=${encodeURIComponent(note)}`;
       window.open(webVenmoUrl, '_blank');
-    }, 1000);
+    }, 1500);
   };
 
   const color = "#3D95CE"; // Venmo brand blue

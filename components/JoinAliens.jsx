@@ -223,7 +223,7 @@ export default function JoinAliens({ visible = true } = {}) {
         width: '100%',
         height: '100%',
         margin: '0',
-        padding: '20px 60px',
+        padding: '35px 60px 20px 60px',
         background: 'rgba(0, 0, 0, 0.6)',
         backdropFilter: 'blur(12px)',
         border: 'none',
@@ -237,7 +237,7 @@ export default function JoinAliens({ visible = true } = {}) {
       }}
     >
       {/* Countdown Section - Top */}
-      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+      <div style={{ textAlign: 'center', marginBottom: '20px', marginTop: '10px' }}>
         {/* Neon "Signal Lost" message */}
         <div style={{ marginBottom: '16px' }}>
           <h2 
@@ -1070,7 +1070,7 @@ export default function JoinAliens({ visible = true } = {}) {
             onClick={() => {
               try { sfx.play('card-ding', 0.7); } catch {}
               const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=3&note=${encodeURIComponent('Fuel the Signal')}`;
-              const webVenmoUrl = `https://venmo.com/chxndlerthealien?amount=3&note=${encodeURIComponent('Fuel the Signal')}`;
+              const webVenmoUrl = `https://venmo.com/u/chxndlerthealien?txn=pay&amount=3&note=${encodeURIComponent('Fuel the Signal')}`;
               
               window.open(venmoUrl, '_blank');
               setTimeout(() => {
@@ -1191,7 +1191,7 @@ export default function JoinAliens({ visible = true } = {}) {
             onClick={() => {
               try { sfx.play('card-ding', 0.7); } catch {}
               const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=5&note=${encodeURIComponent('Boost the Transmission')}`;
-              const webVenmoUrl = `https://venmo.com/chxndlerthealien?amount=5&note=${encodeURIComponent('Boost the Transmission')}`;
+              const webVenmoUrl = `https://venmo.com/u/chxndlerthealien?txn=pay&amount=5&note=${encodeURIComponent('Boost the Transmission')}`;
               
               window.open(venmoUrl, '_blank');
               setTimeout(() => {
@@ -1312,7 +1312,7 @@ export default function JoinAliens({ visible = true } = {}) {
             onClick={() => {
               try { sfx.play('card-ding', 0.7); } catch {}
               const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=10&note=${encodeURIComponent('Ignite the Heartverse')}`;
-              const webVenmoUrl = `https://venmo.com/chxndlerthealien?amount=10&note=${encodeURIComponent('Ignite the Heartverse')}`;
+              const webVenmoUrl = `https://venmo.com/u/chxndlerthealien?txn=pay&amount=10&note=${encodeURIComponent('Ignite the Heartverse')}`;
               
               window.open(venmoUrl, '_blank');
               setTimeout(() => {

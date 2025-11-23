@@ -154,7 +154,6 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
             className="fixed inset-0 z-[2147483647] flex items-center justify-center"
             style={{
               paddingTop: '220px',
-              background: 'rgba(0, 0, 0, 0.8)',
               backdropFilter: 'blur(5px)'
             }}
           >

@@ -194,38 +194,36 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
           {/* Heart planet at the center - only show when displaying all planets */}
           {actualShouldShowAll && <HeartPlanet />}
           
-          {/* Four large elemental planets around the Core Heart - only show when displaying all planets */}
-          {actualShouldShowAll && (
-            <>
-              <ElementalPlanet 
-                element="heart" 
-                position={[-15, 10, 0]} 
-                size={12} 
-                glowIntensity={1.5}
-              />
-              <ElementalPlanet 
-                element="water" 
-                position={[15, 10, 0]} 
-                size={12} 
-                glowIntensity={1.5}
-              />
-              <ElementalPlanet 
-                element="lightning" 
-                position={[15, -10, 0]} 
-                size={12} 
-                glowIntensity={1.5}
-              />
-              <ElementalPlanet 
-                element="darkness" 
-                position={[-15, -10, 0]} 
-                size={12} 
-                glowIntensity={1.5}
-              />
-            </>
-          )}
+          {/* Four large elemental planets around the Core Heart - always show for debugging */}
+          <>
+            <ElementalPlanet 
+              element="heart" 
+              position={[-15, 10, 0]} 
+              size={25} 
+              glowIntensity={5.0}
+            />
+            <ElementalPlanet 
+              element="water" 
+              position={[15, 10, 0]} 
+              size={25} 
+              glowIntensity={5.0}
+            />
+            <ElementalPlanet 
+              element="lightning" 
+              position={[15, -10, 0]} 
+              size={25} 
+              glowIntensity={5.0}
+            />
+            <ElementalPlanet 
+              element="darkness" 
+              position={[-15, -10, 0]} 
+              size={25} 
+              glowIntensity={5.0}
+            />
+          </>
           
-          {/* Song planets orbiting around each elemental planet - only show when displaying all planets */}
-          {actualShouldShowAll && songs.length > 0 && (
+          {/* Song planets orbiting around each elemental planet - always show for debugging */}
+          {songs.length > 0 && (
             <>
               <ElementalOrbitSystem
                 elementalPosition={[-15, 10, 0]}
