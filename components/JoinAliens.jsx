@@ -456,6 +456,56 @@ export default function JoinAliens({ visible = true } = {}) {
       </button>
       </div> {/* Close Stay Connected Section */}
 
+      {/* Phone Button - positioned above $ button */}
+      <button
+        onClick={() => {
+          try { sfx.play('audio/click.mp3', 0.5); } catch {}
+          // Focus the phone input
+          const phoneInput = document.getElementById('signal-phone');
+          if (phoneInput) {
+            phoneInput.focus();
+            phoneInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }}
+        style={{
+          position: 'absolute',
+          bottom: '60px',
+          right: '12px',
+          width: '40px',
+          height: '40px',
+          background: 'rgba(0, 255, 255, 0.1)',
+          border: '2px solid #00FFFF',
+          borderRadius: '50%',
+          color: '#00FFFF',
+          fontSize: '16px',
+          fontWeight: 'bold',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 300ms ease',
+          outline: 'none',
+          textShadow: '0 0 8px #00FFFF',
+          boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)',
+          zIndex: 10
+        }}
+        onMouseEnter={(e) => {
+          try { sfx.play('hover', 0.3); } catch {}
+          e.target.style.transform = 'scale(1.1)';
+          e.target.style.background = 'rgba(0, 255, 255, 0.2)';
+          e.target.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.6)';
+          e.target.style.textShadow = '0 0 15px #00FFFF, 0 0 25px #00FFFF';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.transform = 'scale(1)';
+          e.target.style.background = 'rgba(0, 255, 255, 0.1)';
+          e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';
+          e.target.style.textShadow = '0 0 8px #00FFFF';
+        }}
+      >
+        📞
+      </button>
+
       {/* $ Button - positioned in bottom right corner */}
       <button
         onClick={() => {

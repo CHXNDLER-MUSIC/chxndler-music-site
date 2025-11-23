@@ -403,3 +403,37 @@ export async function getClickAnalytics() {
 export async function clearClickAnalytics() {
   return { success: false, error: 'Not implemented - use API directly' };
 }
+
+// New events_v2 tracking helper
+export async function trackEvent(
+  eventName: string,
+  options?: { source?: string; metadata?: Record<string, any>; userId?: string | null }
+) {
+  if (isAnalyticsDisabled()) return;
+  
+  try {
+    const { supabase } = await import('./supabase');
+    
+    const eventData = {
+      event_name: eventName,
+      source: options?.source || 'unknown',
+      metadata: options?.metadata || null,
+      user_id: options?.userId || null,
+      created_at: new Date().toISOString()
+    };
+
+    const { error } = await supabase
+      .from('events_v2')
+      .insert([eventData]);
+
+    if (error) {
+      console.error('[Analytics] Failed to track event:', eventName, error);
+      return { success: false, error };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('[Analytics] Exception tracking event:', eventName, error);
+    return { success: false, error };
+  }
+}

@@ -346,6 +346,64 @@ main {
 .pulse-soft { animation: pulse-soft 2.4s ease-in-out infinite; }
 @keyframes pulse-soft { 0%,100% { opacity:.9; filter:brightness(1);} 50% { opacity:1; filter:brightness(1.12);} }
 
+/* Breathing animation for cover art container */
+@keyframes breathe {
+  0%, 100% {
+    opacity: 0.18;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.28;
+    transform: scale(1.02);
+  }
+}
+
+.cover-art-glow::before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  right: -10px; 
+  bottom: -14px;
+  background: rgba(252, 84, 175, 0.18);
+  border-radius: 16px;
+  filter: blur(30px);
+  animation: breathe 5s ease-in-out infinite;
+  z-index: -1;
+}
+
+/* Button rail for icon controls */
+@keyframes buttonRailDrift {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(1px);
+  }
+}
+
+.hud-top-controls::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: -12px;
+  right: -12px;
+  bottom: -8px;
+  background: rgba(56, 182, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 28px;
+  backdrop-filter: blur(8px);
+  animation: buttonRailDrift 3s ease-in-out infinite;
+  z-index: -1;
+}
+
+/* Enhanced button hover effects for floating above rail */
+.hud-top-controls button:hover,
+.hud-top-controls a:hover {
+  transform: translateY(-2px);
+  transition: transform 0.2s ease;
+}
+
 /* --- Windshield fallback (oval) until you have PNG mask --- */
 .windshield-clip { clip-path: ellipse(65% 45% at 50% 52%); }
 

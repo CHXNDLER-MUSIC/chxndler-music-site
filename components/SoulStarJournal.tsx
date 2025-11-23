@@ -4,18 +4,13 @@ import { useState, useEffect } from "react";
 import { useProfile } from "@/contexts/ProfileContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { sfx } from "@/lib/sfx";
+import type { SoulPrompt } from "@/lib/getTodaySoulPrompt";
 
-type Props = {
+interface SoulStarJournalProps {
   isOpen: boolean;
   onClose: () => void;
-};
-
-interface DailyPrompt {
-  id: string;
-  prompt_date: string;
-  element: string;
-  intention: string;
-  reflection: string;
+  prompt: SoulPrompt | null;
+  openWelcomeHome?: () => void;
 }
 
 interface JournalState {
@@ -42,9 +37,9 @@ const ELEMENT_EMOJIS = {
   darkness: "🌑",
 };
 
-export default function SoulStarJournal({ isOpen, onClose }: Props) {
+export default function SoulStarJournal({ isOpen, onClose, prompt, openWelcomeHome }: SoulStarJournalProps) {
   const { saveJournalEntry, journalEntries, profile, user } = useProfile();
-  const [dailyPrompt, setDailyPrompt] = useState<DailyPrompt | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
   const [journalState, setJournalState] = useState<JournalState>({
     intentionResponse: "",
     reflectionResponse: "",
@@ -53,7 +48,6 @@ export default function SoulStarJournal({ isOpen, onClose }: Props) {
     saveMessage: "",
     errorMessage: "",
   });
-  const [showHistory, setShowHistory] = useState(false);
 
   const today = new Date().toISOString().slice(0, 10);
   const todayFormatted = new Date().toLocaleDateString('en-US', {
@@ -63,53 +57,60 @@ export default function SoulStarJournal({ isOpen, onClose }: Props) {
     day: 'numeric'
   });
 
-  // Load daily prompts and existing entry on mount
+  // Load existing entry on mount
   useEffect(() => {
-    if (isOpen && profile?.element) {
-      loadTodaysData();
+    if (isOpen && profile?.element && journalEntries) {
+      loadExistingEntry();
     }
-  }, [isOpen, profile?.element]);
+  }, [isOpen, profile?.element, journalEntries]);
 
-  const loadTodaysData = async () => {
+  const loadExistingEntry = () => {
     if (!profile?.element) return;
 
-    try {
-      // Get today's prompt for the user's element
-      const { data: prompt, error } = await supabaseClient
-        .from("soul_daily_prompts")
-        .select("*")
-        .eq("prompt_date", today)
-        .eq("element", profile.element)
-        .single();
-
-      if (error) {
-        console.error("Error fetching daily prompt:", error);
-        return;
-      }
-
-      if (prompt) {
-        setDailyPrompt(prompt);
-      }
-
-      // Load existing entry for today if it exists
-      const todayEntry = journalEntries.find(entry => 
-        entry.entry_date === today && entry.element === profile.element
-      );
-      if (todayEntry) {
-        setJournalState(prev => ({
-          ...prev,
-          intentionResponse: todayEntry.intention_response || "",
-          reflectionResponse: todayEntry.reflection_response || "",
-          soulStar: todayEntry.soul_star || "",
-        }));
-      }
-    } catch (error) {
-      console.error("Error loading today's data:", error);
+    // Load existing entry for today if it exists
+    const todayEntry = journalEntries.find(entry => 
+      entry.entry_date === today && entry.element === profile.element
+    );
+    if (todayEntry) {
+      setJournalState(prev => ({
+        ...prev,
+        intentionResponse: todayEntry.intention_response || "",
+        reflectionResponse: todayEntry.reflection_response || "",
+        soulStar: todayEntry.soul_star || "",
+      }));
+    } else {
+      // Reset state for new entry
+      setJournalState(prev => ({
+        ...prev,
+        intentionResponse: "",
+        reflectionResponse: "",
+        soulStar: "",
+      }));
     }
   };
 
   const handleSaveEntry = async () => {
-    if (!user?.id || !profile?.element || !dailyPrompt) return;
+    // Check if user is logged in
+    if (!user?.id || !profile?.element) {
+      if (openWelcomeHome) {
+        setJournalState(prev => ({
+          ...prev,
+          errorMessage: "You need to log in to save your soul entry. Opening Welcome Home..."
+        }));
+        setTimeout(() => setJournalState(prev => ({ ...prev, errorMessage: "" })), 2000);
+        openWelcomeHome();
+        return;
+      } else {
+        setJournalState(prev => ({
+          ...prev,
+          errorMessage: "Please log in to save your soul entry."
+        }));
+        setTimeout(() => setJournalState(prev => ({ ...prev, errorMessage: "" })), 3000);
+        return;
+      }
+    }
+
+    if (!prompt) return;
 
     // Validate input
     if (!journalState.soulStar.trim()) {
@@ -133,7 +134,7 @@ export default function SoulStarJournal({ isOpen, onClose }: Props) {
             user_id: user.id,
             entry_date: today,
             element: profile.element,
-            prompt_id: dailyPrompt.id,
+            prompt_id: prompt.id,
             intention_response: journalState.intentionResponse,
             reflection_response: journalState.reflectionResponse,
             soul_star: journalState.soulStar.trim(),
@@ -170,13 +171,12 @@ export default function SoulStarJournal({ isOpen, onClose }: Props) {
   };
 
   const handleClose = () => {
-    setShowHistory(false);
     onClose();
   };
 
   if (!isOpen) return null;
 
-  if (!dailyPrompt) {
+  if (!prompt) {
     return (
       <div 
         className="fixed inset-0 z-[2147483647] flex items-center justify-center"
@@ -255,26 +255,6 @@ export default function SoulStarJournal({ isOpen, onClose }: Props) {
           }}
         />
 
-        {/* History toggle button */}
-        <button
-          onClick={() => {
-            sfx.play('click', 0.8);
-            setShowHistory(!showHistory);
-          }}
-          className="absolute top-3 left-4 px-3 py-1 rounded-full border flex items-center gap-1 transition-all text-xs font-semibold"
-          style={{ 
-            borderColor: `${elementTheme.color}cc`,
-            color: elementTheme.color,
-            boxShadow: `0 0 15px ${elementTheme.glow}, 0 0 25px ${elementTheme.color}50`,
-            textShadow: `0 0 8px ${elementTheme.glow}`,
-            background: showHistory ? `${elementTheme.color}20` : `${elementTheme.color}10`,
-            backdropFilter: 'blur(2px)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px'
-          }}
-        >
-          📖 {showHistory ? 'TODAY' : 'HISTORY'}
-        </button>
 
         {/* Close button */}
         <button
@@ -423,7 +403,7 @@ export default function SoulStarJournal({ isOpen, onClose }: Props) {
                   fontStyle: 'italic'
                 }}
               >
-                "{dailyPrompt.intention}"
+                "{prompt.intention}"
               </div>
               <textarea
                 value={journalState.intentionResponse}
@@ -463,7 +443,7 @@ export default function SoulStarJournal({ isOpen, onClose }: Props) {
                   fontStyle: 'italic'
                 }}
               >
-                "{dailyPrompt.reflection}"
+                "{prompt.reflection}"
               </div>
               <textarea
                 value={journalState.reflectionResponse}

@@ -138,6 +138,8 @@ export default function DashboardApp({ initialSlug } = {}) {
   const buttonSfxWaitRef = React.useRef(null);
   // Join-alien SFX promise used to gate song start after warp
   const joinSfxWaitRef = React.useRef(null);
+  // Track index to set after warp and join-alien SFX complete
+  const pendingTrackIndexRef = React.useRef(null);
   const [cardModalOpen, setCardModalOpen] = useState(false); // track card modal state for beam dimming
   const [joinAlienOpen, setJoinAlienOpen] = useState(false); // track join alien button state for pink beam
   const [beamColor, setBeamColor] = useState('blue'); // track active beam color
@@ -473,6 +475,8 @@ export default function DashboardApp({ initialSlug } = {}) {
     // Set flags for selection sequencing: keep planets visible during warp on homepage
     setPendingTrackPlay(true);
     setHidePlanetsForSelection(false);
+    // Store the track index to set after warp completes
+    pendingTrackIndexRef.current = idx;
     
     // Add a brief delay before triggering warp sequence, allowing for anticipation
     setTimeout(() => {
@@ -484,10 +488,8 @@ export default function DashboardApp({ initialSlug } = {}) {
       setFlySignal((n) => n + 1);
     }, 300); // Small delay before warp starts
     
-    // Delay MediaPlayer channel change until after warp completes (1.8s + buffer + initial delay)
-    setTimeout(() => {
-      setChannelIdx(idx);
-    }, 2300); // Wait for warp to complete before switching audio (300ms delay + 2000ms warp)
+    // MediaPlayer channel change will be handled after warp and join-alien SFX complete
+    // This is done in the onWarpSfxEnd handler to ensure proper timing
   }
 
   // Trigger a fly transition only when the channel index actually changes (not on initial mount)
@@ -1493,7 +1495,35 @@ export default function DashboardApp({ initialSlug } = {}) {
           // Kick off join-alien SFX as soon as warp SFX ends so it's definitely
           // in progress before base sky reports playing (avoids race conditions).
           if (pendingTrackPlay) {
-            try { joinSfxWaitRef.current = sfx.playAndWait('join', 0.9); } catch { joinSfxWaitRef.current = null; }
+            try { 
+              joinSfxWaitRef.current = sfx.playAndWait('join', 0.9); 
+              // Set channel index after join-alien SFX completes
+              if (joinSfxWaitRef.current && typeof joinSfxWaitRef.current.then === 'function') {
+                joinSfxWaitRef.current.then(() => {
+                  // Use the stored track index from when the song was selected
+                  const trackIndex = pendingTrackIndexRef.current;
+                  if (trackIndex !== null && trackIndex >= 0) {
+                    setChannelIdx(trackIndex);
+                    pendingTrackIndexRef.current = null; // Clear the pending index
+                  }
+                }).catch(() => {
+                  // Fallback in case SFX fails
+                  const trackIndex = pendingTrackIndexRef.current;
+                  if (trackIndex !== null && trackIndex >= 0) {
+                    setChannelIdx(trackIndex);
+                    pendingTrackIndexRef.current = null; // Clear the pending index
+                  }
+                });
+              }
+            } catch { 
+              joinSfxWaitRef.current = null; 
+              // Fallback to immediate channel change if SFX setup fails
+              const trackIndex = pendingTrackIndexRef.current;
+              if (trackIndex !== null && trackIndex >= 0) {
+                setChannelIdx(trackIndex);
+                pendingTrackIndexRef.current = null; // Clear the pending index
+              }
+            }
           }
           // If we're landing on home via Start, reveal overlay/UI after warp finishes
           // Only revert to home if this isn't a user-selected song

@@ -33,6 +33,7 @@ import CoverCard from "@/components/CoverCard";
 import CoverHologram from "@/components/CoverHologram";
 import { buildPlanetSongs } from "@/lib/planets";
 import SongDropdown from "@/components/SongDropdown";
+import WaveformVisualizer, { ELEMENT_COLORS } from "@/components/WaveformVisualizer";
 import DevErrorLogger from "@/components/DevErrorLogger";
 // Lazy-load 3D systems on client only to avoid early evaluation issues
 // Prefer R3F-based system when compatible; otherwise fall back to raw Three.js
@@ -2366,16 +2367,18 @@ export default function HUDPanel({
                 // Make button width match cover art container width (92px)
                 width: 92,
                 boxSizing: 'border-box',
-                // Center text with minimal padding since width is fixed
-                padding: '0 4px 0 4px',
+                // Increased padding for better readability
+                padding: '8px 12px',
                 // Adjust vertical alignment to match the Music dropdown height
                 marginTop: -3,
                 // Add a small space below the button so it doesn't attach to the cover
                 marginBottom: 0,
                 marginRight: 2,
                 borderRadius: 12,
-                border: '2px solid rgba(25,227,255,0.80)',
-                background: 'rgba(25,227,255,0.15)',
+                // Thin neon edge
+                border: '1px solid rgba(56,182,255,0.6)',
+                // Transparent cyan glass background
+                background: 'rgba(56,182,255,0.12)',
                 color: '#F2EF1D',
                 fontWeight: 700,
                 letterSpacing: '0.03em',
@@ -2385,7 +2388,8 @@ export default function HUDPanel({
                 lineHeight: 1,
                 // Tighter, stronger glow close to the letters
                 textShadow: '0 0 6px rgba(242,239,29,1), 0 0 10px rgba(242,239,29,0.95), 0 0 16px rgba(242,239,29,0.8)',
-                backdropFilter: 'blur(6px)',
+                // Glass effect with stronger blur
+                backdropFilter: 'blur(8px)',
                 boxShadow: '0 0 20px rgba(25,227,255,0.35)'
               }}
               ref={brandBtnRef}
@@ -2453,8 +2457,14 @@ export default function HUDPanel({
                 const trackingSong = 'chxndler_home';
                 return (
                   <div
+                    className="cover-art-glow"
                     onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {}; try { const a = hoverCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
-                    style={{ pointerEvents: joinAlienOpen ? 'none' : 'auto', overflow: 'visible' }}
+                    style={{ 
+                      pointerEvents: joinAlienOpen ? 'none' : 'auto', 
+                      overflow: 'visible',
+                      position: 'relative',
+                      transform: 'translateY(10px)' // Nudge icon down by 10px
+                    }}
                   >
                     <CoverHologram src={src} title={title} slug={trackingSong} inline={true} size={92} />
                   </div>
@@ -2467,8 +2477,14 @@ export default function HUDPanel({
                 const trackingSong = (track?.slug || active || 'unknown');
                 return (
                   <div
+                    className="cover-art-glow"
                     onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {}; try { const a = hoverCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
-                    style={{ pointerEvents: joinAlienOpen ? 'none' : 'auto', overflow: 'visible' }}
+                    style={{ 
+                      pointerEvents: joinAlienOpen ? 'none' : 'auto', 
+                      overflow: 'visible',
+                      position: 'relative',
+                      transform: 'translateY(10px)' // Nudge icon down by 10px
+                    }}
                   >
                     <CoverHologram src={src} title={title} slug={trackingSong} inline={true} size={92} />
                   </div>
@@ -2622,7 +2638,15 @@ export default function HUDPanel({
                           </svg>
                         </div>
                       </div>
-                      <div className="hud-top-controls" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: -12, marginLeft: -8 }}>
+                      <div className="hud-top-controls" style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 8, 
+                        marginTop: -12, 
+                        marginLeft: -8,
+                        position: 'relative',
+                        zIndex: 2
+                      }}>
                       <button 
                         onClick={handlePlayPause}
                         className="hud-play-btn-enhanced"
@@ -6857,6 +6881,52 @@ export default function HUDPanel({
                 // Stay in place; DashboardApp.onSongChange handles switch without spotlight/route
               }}
             />
+            
+            {/* Waveform visualizer directly under song dropdown */}
+            {(() => {
+              const currentSong = resolvedSongs.find(s => s.id === active);
+              const element = (currentSong?.icon || 'heart').toLowerCase();
+              const validElement = ['heart', 'water', 'lightning', 'darkness'].includes(element) ? element : 'heart';
+              
+              // Calculate progress ratio from audio or fallback to state
+              const a = liveAudioRef?.current;
+              const liveDur = (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
+              const liveTime = (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
+              
+              return (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  marginTop: 4,
+                  paddingLeft: 8,
+                  paddingRight: 8,
+                  zIndex: 99999,
+                  pointerEvents: 'auto'
+                }}>
+                  <WaveformVisualizer
+                    element={validElement}
+                    progress={liveDur > 0 ? (liveTime / liveDur) : 0}
+                    duration={liveDur}
+                    currentTime={liveTime}
+                    onProgressClick={(e) => {
+                      if (a && liveDur > 0) {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const clickX = e.clientX - rect.left;
+                        const clickPercentage = clickX / rect.width;
+                        const newTime = clickPercentage * liveDur;
+                        a.currentTime = Math.max(0, Math.min(liveDur, newTime));
+                        setProgress(a.currentTime);
+                      }
+                    }}
+                    width="100%"
+                    height={18}
+                    className="song-waveform"
+                  />
+                </div>
+              );
+            })()}
           </div>
 
       {/* styles moved to app/globals.css to avoid styled-jsx in this module */}

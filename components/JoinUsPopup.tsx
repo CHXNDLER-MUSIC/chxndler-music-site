@@ -405,7 +405,7 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
               border: '2px solid rgba(0, 255, 255, 0.8)'
             }}
             onClick={() => {
-              setShowPhonePopup(!showPhonePopup);
+              setShowPhonePopup(true);
               try {
                 sfx.play('success', 0.5);
               } catch {}
@@ -415,7 +415,10 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
             <img 
               src="/audio/phone.png" 
               alt="Phone" 
-              className="w-6 h-6 object-contain"
+              className="w-8 h-8 object-contain filter brightness-0 invert"
+              style={{
+                filter: 'brightness(0) invert(1)',
+              }}
             />
           </button>
 
@@ -439,6 +442,35 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
                 boxSizing: 'border-box'
               }}
             >
+              {/* Close Button */}
+              <button
+                onClick={() => setShowPhonePopup(false)}
+                style={{
+                  position: 'absolute',
+                  top: '-10px',
+                  right: '-10px',
+                  width: '24px',
+                  height: '24px',
+                  background: 'rgba(0, 255, 255, 0.1)',
+                  border: '2px solid #00FFFF',
+                  borderRadius: '50%',
+                  color: '#00FFFF',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 200ms ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = 'rgba(0, 255, 255, 0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'rgba(0, 255, 255, 0.1)';
+                }}
+              >
+                ×
+              </button>
               {/* Header Text */}
               <div 
                 style={{ 
@@ -447,10 +479,10 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
                   color: '#00FFFF',
                   fontSize: '16px',
                   fontWeight: '600',
-                  textShadow: '0 0 8px rgba(0, 255, 255, 0.6)'
+                  textShadow: '0 0 12px rgba(0, 255, 255, 0.8), 0 0 20px rgba(0, 255, 255, 0.6)'
                 }}
               >
-                Stay connected to the heartverse
+                Stay connected to the Heartverse
               </div>
 
               {/* Phone Number Input */}
@@ -464,20 +496,21 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
                     width: '100%',
                     padding: '12px 16px',
                     background: 'rgba(0, 0, 0, 0.6)',
-                    border: '1px solid rgba(0, 255, 255, 0.4)',
+                    border: '2px solid #00FFFF',
                     borderRadius: '8px',
                     color: '#ffffff',
                     fontSize: '16px',
                     outline: 'none',
-                    transition: 'border-color 200ms ease',
+                    transition: 'all 200ms ease',
+                    boxShadow: '0 0 8px rgba(0, 255, 255, 0.3)'
                   }}
                   onFocus={(e) => {
                     e.target.style.borderColor = '#00FFFF';
-                    e.target.style.boxShadow = '0 0 0 2px rgba(0, 255, 255, 0.2)';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(0, 255, 255, 0.3), 0 0 15px rgba(0, 255, 255, 0.5)';
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = 'rgba(0, 255, 255, 0.4)';
-                    e.target.style.boxShadow = 'none';
+                    e.target.style.borderColor = '#00FFFF';
+                    e.target.style.boxShadow = '0 0 8px rgba(0, 255, 255, 0.3)';
                   }}
                 />
               </div>
