@@ -1,7 +1,6 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 
 type UIState = {
   hasEnteredHeartverse: boolean;
@@ -10,18 +9,9 @@ type UIState = {
   enterHeartverse: () => void;
 };
 
-// Persist only the minimal UI flag in localStorage to keep the bar visible on refresh
-export const useUIState = create<UIState>()(
-  persist(
-    (set) => ({
-      hasEnteredHeartverse: false,
-      setHasEnteredHeartverse: (value) => set({ hasEnteredHeartverse: value }),
-      enterHeartverse: () => set({ hasEnteredHeartverse: true }),
-    }),
-    {
-      name: "heartverse_entered",
-      // Persist shape as { hasEnteredHeartverse: boolean }
-      partialize: (state) => ({ hasEnteredHeartverse: state.hasEnteredHeartverse }),
-    }
-  )
-);
+// No persistence - ProfileBar should always start hidden on each page load
+export const useUIState = create<UIState>()((set) => ({
+  hasEnteredHeartverse: false,
+  setHasEnteredHeartverse: (value) => set({ hasEnteredHeartverse: value }),
+  enterHeartverse: () => set({ hasEnteredHeartverse: true }),
+}));

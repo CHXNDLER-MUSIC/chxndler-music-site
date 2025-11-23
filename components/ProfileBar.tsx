@@ -74,6 +74,7 @@ export default function ProfileBar({
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showSignInPopup, setShowSignInPopup] = useState(false);
   const [nameButtonTooltip, setNameButtonTooltip] = useState('');
+  const [showLoginTooltip, setShowLoginTooltip] = useState(false);
 
   // Check if journal was completed today
   const checkJournalCompletion = async () => {
@@ -142,21 +143,16 @@ export default function ProfileBar({
   const handleNameButtonClick = () => {
     try { sfx.play('click', 0.4); } catch {}
 
-    // Case a: No authenticated user
-    if (!currentUser) {
-      setNameButtonTooltip("You need to log in to create your ALIEN name.");
-      setShowSignInPopup(true);
+    if (loading) return;
+
+    // Case 1: Not logged in or no profile yet
+    if (!currentUser || !contextProfile) {
+      setShowLoginTooltip(true);
       return;
     }
 
-    // Case b: Logged in user but no profile row yet
-    if (!contextProfile) {
-      setNameButtonTooltip("Finish creating your Heartverse profile before editing your ALIEN name.");
-      // Don't open name modal - user should go through Welcome Home flow
-      return;
-    }
-
-    // Case c: Logged in user with profile - open name modal
+    // Case 2: Logged in and profile exists
+    // Open the name modal "What should we call you"
     openNamePrompt();
   };
   
@@ -296,6 +292,33 @@ export default function ProfileBar({
     };
   }, [showQuests]);
 
+  // Close login tooltip on outside click / Escape
+  useEffect(() => {
+    if (!showLoginTooltip) return;
+    const onDocDown = (e: MouseEvent | TouchEvent) => {
+      const t = e.target as Node;
+      const tooltip = document.querySelector('[data-tooltip="login-tooltip"]');
+      const nameButton = document.querySelector('[data-name-button]');
+      const withinTooltip = tooltip && t && tooltip.contains(t);
+      const withinNameButton = nameButton && t && nameButton.contains(t);
+      if (!withinTooltip && !withinNameButton) {
+        setShowLoginTooltip(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowLoginTooltip(false);
+      }
+    };
+    document.addEventListener('mousedown', onDocDown);
+    document.addEventListener('touchstart', onDocDown, { passive: true });
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocDown);
+      document.removeEventListener('touchstart', onDocDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [showLoginTooltip]);
 
   if (loading) {
     return (
@@ -353,46 +376,89 @@ export default function ProfileBar({
           {/* Left Side */}
           <div className="flex items-center min-w-0 overflow-hidden flex-1">
             {/* Username - Clickable */}
-            <button 
-              onClick={handleNameButtonClick}
-              disabled={loading}
-              className="font-medium text-lg relative flex-shrink-0 ml-2 transition-all duration-200 cursor-pointer bg-transparent border-none focus:outline-none disabled:opacity-50"
-              style={{ 
-                color: getUsernameColor(currentElement),
-                textShadow: `
-                  0 0 10px ${getUsernameColor(currentElement)},
-                  0 0 20px ${getUsernameColor(currentElement)},
-                  0 0 30px ${getUsernameColor(currentElement)}
-                `,
-                filter: 'brightness(1.2)',
-                padding: '8px 16px',
-                transition: 'all 0.3s ease'
-              }}
-              title={!currentUser ? "You need to log in to create your ALIEN name." : !contextProfile ? "Finish creating your Heartverse profile before editing your ALIEN name." : "Click to edit your name"}
-              onMouseEnter={(e) => {
-                if (!loading) {
-                  try { sfx.play('hover', 0.8); } catch {}
-                  e.currentTarget.style.transform = 'scale(1.05)';
-                  e.currentTarget.style.textShadow = `
-                    0 0 15px ${getUsernameColor(currentElement)},
-                    0 0 25px ${getUsernameColor(currentElement)},
-                    0 0 35px ${getUsernameColor(currentElement)}
-                  `;
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!loading) {
-                  e.currentTarget.style.transform = 'scale(1)';
-                  e.currentTarget.style.textShadow = `
+            <div className="relative">
+              <button 
+                data-name-button
+                onClick={handleNameButtonClick}
+                onKeyDown={(e) => {
+                  if ((e.key === 'Enter' || e.key === ' ') && !loading) {
+                    e.preventDefault();
+                    handleNameButtonClick();
+                  }
+                }}
+                disabled={loading}
+                className="font-medium text-lg relative flex-shrink-0 ml-2 transition-all duration-200 cursor-pointer bg-transparent border-none focus:outline-none disabled:opacity-50 focus:ring-2 focus:ring-pink-500/50 rounded"
+                style={{ 
+                  color: getUsernameColor(currentElement),
+                  textShadow: `
                     0 0 10px ${getUsernameColor(currentElement)},
                     0 0 20px ${getUsernameColor(currentElement)},
                     0 0 30px ${getUsernameColor(currentElement)}
-                  `;
-                }
-              }}
-            >
-              {displayName}
-            </button>
+                  `,
+                  filter: 'brightness(1.2)',
+                  padding: '8px 16px',
+                  transition: 'all 0.3s ease'
+                }}
+                title={!currentUser ? "You need to log in to create your ALIEN name." : !contextProfile ? "Finish creating your Heartverse profile before editing your ALIEN name." : "Click to edit your name"}
+                onMouseEnter={(e) => {
+                  if (!loading) {
+                    try { sfx.play('hover', 0.8); } catch {}
+                    e.currentTarget.style.transform = 'scale(1.05)';
+                    e.currentTarget.style.textShadow = `
+                      0 0 15px ${getUsernameColor(currentElement)},
+                      0 0 25px ${getUsernameColor(currentElement)},
+                      0 0 35px ${getUsernameColor(currentElement)}
+                    `;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!loading) {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.textShadow = `
+                      0 0 10px ${getUsernameColor(currentElement)},
+                      0 0 20px ${getUsernameColor(currentElement)},
+                      0 0 30px ${getUsernameColor(currentElement)}
+                    `;
+                  }
+                }}
+              >
+                {displayName}
+              </button>
+
+              {/* Login Tooltip */}
+              {(!currentUser || !contextProfile) && showLoginTooltip && (
+                <div 
+                  data-tooltip="login-tooltip"
+                  className="absolute left-1/2 top-full mt-2 -translate-x-1/2 rounded-lg border border-pink-500/60 bg-pink-900/80 px-3 py-2 text-xs text-pink-100 shadow-lg z-20 whitespace-nowrap"
+                  style={{
+                    boxShadow: '0 0 15px rgba(236, 72, 153, 0.4)',
+                    backdropFilter: 'blur(4px)'
+                  }}
+                >
+                  You need to{" "}
+                  <button
+                    onClick={() => {
+                      setShowLoginTooltip(false);
+                      setShowSignInPopup(true);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setShowLoginTooltip(false);
+                        setShowSignInPopup(true);
+                      }
+                    }}
+                    className="underline font-semibold text-pink-200 hover:text-pink-50 focus:outline-none focus:ring-1 focus:ring-pink-400 rounded px-1 transition-colors"
+                  >
+                    log in
+                  </button>{" "}
+                  to create your ALIEN name.
+                  
+                  {/* Tooltip arrow */}
+                  <div className="absolute left-1/2 top-[-6px] -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-b-[6px] border-transparent border-b-pink-500/60"></div>
+                </div>
+              )}
+            </div>
 
             {/* Journey Button */}
             <div className="ml-2">
