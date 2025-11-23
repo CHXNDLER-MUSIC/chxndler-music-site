@@ -714,8 +714,10 @@ img[src$="/elements/music.png"] {
   .songs-trigger { min-height: 44px !important; contain: layout paint; transform: translateZ(0); -webkit-transform: translateZ(0); }
   .songs-label { line-height: 1.2 !important; }
 
-  /* Lock waveform size on mobile to prevent vw-based oscillation */
-  .waveform { width: 160px !important; height: 120px !important; contain: layout paint; transform: translateZ(0); -webkit-transform: translateZ(0); }
+  /* Lock HUD waveform size on mobile to prevent vw-based oscillation */
+  .hud-waveform-player .waveform { width: 160px !important; height: 120px !important; contain: layout paint; transform: translateZ(0); -webkit-transform: translateZ(0); }
+  /* Keep song waveform responsive */
+  .song-waveform { width: 100% !important; height: 18px !important; background: transparent !important; border-radius: 0 !important; }
   /* Also remove blur on related controls to reduce re-rasterizing */
   .sleek-controls, .volume-popover { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 }
@@ -819,6 +821,18 @@ img[src$="/elements/music.png"] {
   overflow: hidden;
   /* Avoid animating layout properties to prevent jitter on reflows */
   transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+}
+
+/* Song waveform specific styles - compact glowing line below dropdown */
+.song-waveform{
+  position: relative;
+  width: 100%;
+  height: 18px;
+  cursor: pointer;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+  transition: opacity 0.2s ease;
 }
 
 .hud-play-btn-enhanced{

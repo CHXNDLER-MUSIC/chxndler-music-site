@@ -9,6 +9,8 @@ import LoginModal from "@/components/LoginModal";
 import WelcomeHomeModal from "@/components/WelcomeHomeModal";
 import SharedButton from "@/components/SharedButton";
 import HeartverseButton from "@/components/HeartverseButton";
+import SoulStarJournal from "@/components/SoulStarJournal";
+import { getTodaySoulPrompt } from "@/lib/getTodaySoulPrompt";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { awardHeartCoins } from "@/utils/heartcoins";
 // 2D fallback hologram
@@ -263,6 +265,9 @@ export default function HUDPanel({
   const [showJournalView, setShowJournalView] = useState(false);
   const [journalEntries, setJournalEntries] = useState([]);
   const [journalCompletedToday, setJournalCompletedToday] = useState(false);
+  // Soul Star Journal modal state
+  const [showSoulStarJournal, setShowSoulStarJournal] = useState(false);
+  const [dailySoulPrompt, setDailySoulPrompt] = useState(null);
   const soulSkyScrollRef = useRef(null);
   const brandLastScrollAtRef = useRef(0);
   // Lift the CHXNDLER popover higher above its anchor
@@ -1716,6 +1721,20 @@ export default function HUDPanel({
     };
 
     checkJournalCompletion();
+  }, []);
+
+  // Load daily soul prompt
+  useEffect(() => {
+    const loadDailyPrompt = async () => {
+      try {
+        const prompt = await getTodaySoulPrompt();
+        setDailySoulPrompt(prompt);
+      } catch (error) {
+        console.error('Error loading daily soul prompt:', error);
+      }
+    };
+
+    loadDailyPrompt();
   }, []);
 
   const [animationTime, setAnimationTime] = useState(0);
@@ -6452,16 +6471,8 @@ export default function HUDPanel({
                       onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 0 16px rgba(255,255,0,0.85), 0 0 32px rgba(255,255,0,0.35)'; } catch {} }}
                       onClick={() => { 
                         try { sfx.play('click', 0.4); } catch {}; 
-                        // Trigger stars animation like "Cast into the Stars" button
-                        setShowStarAnimation(true);
-                        setShowBeamEffect(true);
-                        // Star animation will appear for a few seconds
-                        setTimeout(() => {
-                          setShowStarAnimation(false);
-                          setShowBeamEffect(false);
-                        }, 4000);
-                        // Also toggle journal view
-                        setShowJournalView(!showJournalView);
+                        // Open the Soul Star Journal modal
+                        setShowSoulStarJournal(true);
                       }}
                       style={{
                         position: 'absolute',
@@ -6973,11 +6984,12 @@ export default function HUDPanel({
             window.localStorage.setItem(WELCOME_MODAL_LS_KEY, 'true');
           }
         } catch {}
-        // Only open the blue display if it's not already showing
+        // Don't modify blue display state when it's already active
         const blueDisplayActive = beamColor === 'blue' && (beamEnabled || showHUD);
         if (!blueDisplayActive) {
           try { onOpenBlueDisplay?.(); } catch {}
         }
+        // If blue display is already active, leave it as-is
       }} />
       
       {/* Venmo Popup */}
@@ -7149,6 +7161,14 @@ export default function HUDPanel({
           `}</style>
         </div>
       )}
+
+      {/* Soul Star Journal Modal */}
+      <SoulStarJournal
+        isOpen={showSoulStarJournal}
+        onClose={() => setShowSoulStarJournal(false)}
+        prompt={dailySoulPrompt}
+        openWelcomeHome={() => setShowWelcomeModal(true)}
+      />
     </motion.section>
   );
 }

@@ -246,14 +246,15 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
           </form>
           
           {/* Single Send Heart Signal Button */}
-          <button
-            onClick={() => {
-              if (email.length > 0 && !message) {
-                signInWithEmail(new Event('submit') as any);
-              }
-            }}
-            disabled={loading || email.length === 0}
-            className="w-full inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition disabled:opacity-50 mb-2"
+          <div className="flex justify-center">
+            <button
+              onClick={() => {
+                if (email.length > 0 && !message) {
+                  signInWithEmail(new Event('submit') as any);
+                }
+              }}
+              disabled={loading || email.length === 0}
+              className="inline-flex items-center justify-center rounded-lg px-6 py-2 text-sm font-medium transition disabled:opacity-50 mb-2"
             style={message ? {
               background: 'rgba(0,255,0,0.2)',
               border: '1px solid rgba(0,255,0,0.6)',
@@ -272,6 +273,7 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
           >
             {message ? "HEART SIGNAL SENT" : "SEND HEART SIGNAL"}
           </button>
+          </div>
         </div>
         </div>
       </div>

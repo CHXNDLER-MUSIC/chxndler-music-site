@@ -6,6 +6,7 @@ import { sfx } from "@/lib/sfx";
 import { useProfile } from "@/contexts/ProfileContext";
 import { Card, CardTier, ProfileTier, isCardLocked, getCardGateState, getTierDisplayName } from "@/types/card";
 import type { CardGateState } from "@/utils/cardGating";
+import WaveformVisualizer from "./WaveformVisualizer";
 
 type Props = {
   open: boolean;
@@ -53,9 +54,6 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
   // Purchase flow state machine
   const [selectedPurchaseType, setSelectedPurchaseType] = useState<'digital' | 'physical' | null>(null);
   const [purchaseState, setPurchaseState] = useState<'idle' | 'insufficient' | 'digital-preview' | 'confirm-digital' | 'physical-form' | 'success'>('idle');
-  
-  // Heart coin popup state
-  const [showHeartCoinPopup, setShowHeartCoinPopup] = useState(false);
 
   // Full song collection data structure
   const songCollection = [
@@ -412,7 +410,12 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
 
   const openHeartCoinPopout = () => {
     try { sfx.play('click', 0.4); } catch {}
-    setShowHeartCoinPopup(true);
+    // Find and click the heart coin button in the HUD to trigger existing popup
+    const heartCoinButton = document.querySelector('[data-heart-coin-trigger]') || 
+                           document.querySelector('img[src*="heart-coin"]')?.parentElement;
+    if (heartCoinButton && heartCoinButton instanceof HTMLElement) {
+      heartCoinButton.click();
+    }
   };
 
   // Shipping form validation
@@ -947,6 +950,38 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
               </div>
             </div>
           )}
+
+          {/* Waveform track - positioned between filters and card layout */}
+          {selectedElement && (() => {
+            const cards = getFilteredCards();
+            const currentCard = cards[currentCardIndex];
+            if (!currentCard) return null;
+
+            // Map element names to waveform element types
+            const getWaveformElement = (elementName: string) => {
+              switch(elementName.toLowerCase()) {
+                case 'heart': return 'heart' as const;
+                case 'water': return 'water' as const;
+                case 'lightning': return 'lightning' as const;
+                case 'darkness': return 'darkness' as const;
+                default: return 'darkness' as const;
+              }
+            };
+
+            return (
+              <div className="mb-4 px-4">
+                <WaveformVisualizer
+                  element={getWaveformElement(selectedElement)}
+                  progress={0} // Default progress since no audio player yet
+                  duration={180} // Default 3 minute duration
+                  currentTime={0} // No current time yet
+                  width="100%"
+                  height={12}
+                  className="opacity-90"
+                />
+              </div>
+            );
+          })()}
 
           {/* Card layout with image - positioned directly under Back to Elements */}
           {selectedElement && (() => {
@@ -1872,166 +1907,6 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
         );
       })()}
 
-      {/* Heart Coin Popup */}
-      {typeof document !== 'undefined' && showHeartCoinPopup ? createPortal(
-        <div
-          role="dialog"
-          aria-label="Heart Coin Information"
-          style={{
-            position: 'fixed',
-            top: '30%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 'min(90vw, 400px)',
-            padding: '20px',
-            borderRadius: 18,
-            background: 'rgba(0,0,0,0.85)',
-            border: '1px solid rgba(255,105,180,0.55)',
-            boxShadow: '0 -8px 25px rgba(255,105,180,0.4), 0 -4px 15px rgba(255,105,180,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(255,105,180,0.45)',
-            backdropFilter: 'blur(12px) saturate(140%)',
-            color: '#FF69B4',
-            zIndex: 2147483648,
-            animation: 'fadeIn 0.3s ease-out'
-          }}
-          onKeyDown={(e) => { if (e.key === 'Escape') { try { sfx.play('close', 0.4); } catch {}; setShowHeartCoinPopup(false); } }}
-        >
-          {/* Close button */}
-          <button
-            onClick={() => {
-              try { sfx.play('close', 0.4); } catch {}
-              setShowHeartCoinPopup(false);
-            }}
-            className="absolute top-3 right-3 text-pink-400 hover:text-pink-200 cursor-pointer w-8 h-8 rounded-full border border-pink-400/80 flex items-center justify-center"
-            style={{ 
-              position: 'absolute',
-              top: '12px',
-              right: '12px',
-              fontSize: '16px',
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              border: '1px solid rgba(255,105,180,0.8)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'rgba(255,105,180,0.1)',
-              color: '#FF69B4',
-              cursor: 'pointer',
-              boxShadow: '0 0 15px rgba(255,105,180,0.8)',
-              textShadow: '0 0 8px rgba(255,105,180,0.8)',
-              backdropFilter: 'blur(2px)'
-            }}
-          >
-            ×
-          </button>
-
-          {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-            <div 
-              style={{ 
-                fontSize: '18px',
-                fontWeight: 'bold',
-                marginBottom: '8px',
-                color: '#FF69B4', 
-                textShadow: '0 0 8px rgba(255,105,180,0.6)' 
-              }}
-            >
-              EARN HEART COINS
-            </div>
-            
-            {/* Thin pink neon line */}
-            <div 
-              style={{
-                width: '100%',
-                height: '1px',
-                background: 'linear-gradient(90deg, transparent, rgba(255,105,180,0.8) 20%, rgba(255,105,180,1) 50%, rgba(255,105,180,0.8) 80%, transparent)',
-                boxShadow: '0 0 4px rgba(255,105,180,0.6)',
-                marginBottom: '16px'
-              }}
-            />
-          </div>
-
-          {/* Current Balance */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', gap: '12px' }}>
-            <img
-              src="/elements/heart-coin.png"
-              alt="Heart Coin"
-              style={{
-                width: '32px',
-                height: '32px',
-                filter: 'drop-shadow(0 0 8px rgba(255,105,180,0.8))'
-              }}
-            />
-            <div 
-              style={{
-                fontSize: '18px',
-                fontWeight: 'bold',
-                color: '#FFFFFF',
-                textShadow: '0 0 8px rgba(255,255,255,0.8)'
-              }}
-            >
-              Current: {profile?.heartcoins || 0}
-            </div>
-          </div>
-
-          {/* How to Earn Section */}
-          <div style={{ marginBottom: '20px' }}>
-            <div 
-              style={{
-                fontSize: '14px',
-                fontWeight: 'bold',
-                color: '#FFB6C1',
-                textShadow: '0 0 4px rgba(255,182,193,0.6)',
-                marginBottom: '12px',
-                textAlign: 'center'
-              }}
-            >
-              HOW TO EARN HEART COINS:
-            </div>
-            
-            <div style={{ fontSize: '12px', lineHeight: '1.5', color: '#E6E6FA' }}>
-              <div style={{ marginBottom: '8px' }}>
-                • <span style={{ color: '#98FB98' }}>Daily Login Bonus:</span> Visit chxndler.world daily
-              </div>
-              <div style={{ marginBottom: '8px' }}>
-                • <span style={{ color: '#87CEEB' }}>Song Discovery:</span> Listen to new tracks
-              </div>
-              <div style={{ marginBottom: '8px' }}>
-                • <span style={{ color: '#DDA0DD' }}>Community Sharing:</span> Invite friends to the world
-              </div>
-              <div style={{ marginBottom: '8px' }}>
-                • <span style={{ color: '#F0E68C' }}>Special Events:</span> Participate in limited-time activities
-              </div>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-            <button
-              onClick={() => {
-                try { sfx.play('click', 0.4); } catch {}
-                setShowHeartCoinPopup(false);
-                // Keep the purchase flow active - don't reset it
-              }}
-              style={{
-                padding: '10px 20px',
-                borderRadius: '8px',
-                background: 'linear-gradient(135deg, rgba(255,105,180,0.2), rgba(255,105,180,0.1))',
-                border: '1px solid rgba(255,105,180,0.6)',
-                color: '#FF69B4',
-                cursor: 'pointer',
-                fontSize: '12px',
-                fontWeight: 'bold',
-                textShadow: '0 0 4px rgba(255,105,180,0.8)',
-                boxShadow: '0 0 10px rgba(255,105,180,0.3)'
-              }}
-            >
-              CONTINUE BROWSING
-            </button>
-          </div>
-        </div>,
-        document.body
-      ) : null}
 
       </>
   );
