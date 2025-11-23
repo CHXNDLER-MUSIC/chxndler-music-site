@@ -682,7 +682,7 @@ export default function SteeringWheelOverlay({
                 // Fixed width so the pink display stays the same size across viewports
                 width: 'calc(var(--pink-display-width, 320px) + 120px)',
                 borderRadius: 'var(--display-border-radius)',
-                padding: '12px',
+                padding: '0px 12px 12px 12px',
                 color: '#fff',
                 background: `
                   linear-gradient(180deg, #FC54AF44, #FC54AF26),

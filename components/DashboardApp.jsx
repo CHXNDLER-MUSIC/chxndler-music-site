@@ -681,6 +681,7 @@ export default function DashboardApp({ initialSlug } = {}) {
     setUiUnlocked(true);
     setShowDimmingOverlay(false);
     setLandingRevealReady(true);
+    setWarpActive(false); // Ensure warp is not active
     
     // Stop any playing main track audio
     try {

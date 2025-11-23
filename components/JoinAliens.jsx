@@ -231,7 +231,8 @@ export default function JoinAliens({ visible = true } = {}) {
         width: '100%',
         height: '100%',
         margin: '0',
-        padding: '35px 60px 20px 60px',
+        padding: '0px 60px 20px 60px',
+        marginTop: '-25px',
         background: 'rgba(0, 0, 0, 0.6)',
         backdropFilter: 'blur(12px)',
         border: 'none',
@@ -245,9 +246,9 @@ export default function JoinAliens({ visible = true } = {}) {
       }}
     >
       {/* Countdown Section - Top */}
-      <div style={{ textAlign: 'center', marginBottom: '20px', marginTop: '10px' }}>
+      <div style={{ textAlign: 'center', marginBottom: '20px', marginTop: '0px', paddingTop: '0px' }}>
         {/* Neon "Signal Lost" message */}
-        <div style={{ marginBottom: '16px' }}>
+        <div style={{ marginBottom: '0px' }}>
           <h2 
             style={{
               color: '#FC54AF',
@@ -263,7 +264,7 @@ export default function JoinAliens({ visible = true } = {}) {
               fontSize: 'clamp(18px, 4vw, 28px)',
               fontWeight: 'bold',
               letterSpacing: '0.1em',
-              margin: '0 0 12px 0',
+              margin: '0',
               lineHeight: '1.2'
             }}
           >

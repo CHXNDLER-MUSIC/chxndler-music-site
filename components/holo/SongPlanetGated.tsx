@@ -4,7 +4,7 @@ import React, { useRef, useMemo } from "react";
 import { Mesh, Color, AdditiveBlending } from "three";
 import { useFrame } from "@react-three/fiber";
 import { ELEMENT_STYLES, type ElementKey } from "@/utils/planetStyles";
-import { type CardGateState } from "@/types/card";
+import { type CardGateState } from "@/utils/cardGating";
 
 interface SongPlanetGatedProps {
   songId: string;
@@ -117,12 +117,12 @@ export default function SongPlanetGated({
             color={dimmedColor}
             emissive={elementStyles.rimColor}
             emissiveIntensity={0.3}
-            roughness={0.7}
-            metalness={0.2}
+            roughness={0.8}
+            metalness={0.1}
           />
         </mesh>
 
-        {/* Lock dome */}
+        {/* Lock dome - protective barrier */}
         <mesh renderOrder={-1}>
           <sphereGeometry args={[radius * 1.15, 32, 32]} />
           <meshStandardMaterial
@@ -132,15 +132,38 @@ export default function SongPlanetGated({
             wireframe
           />
         </mesh>
+        
+        {/* Secondary lock dome for depth */}
+        <mesh renderOrder={-2}>
+          <sphereGeometry args={[radius * 1.25, 16, 16]} />
+          <meshBasicMaterial
+            color={elementStyles.coreColor}
+            transparent
+            opacity={0.1}
+            blending={AdditiveBlending}
+            depthWrite={false}
+          />
+        </mesh>
 
-        {/* Lock indicator - simple plane above planet */}
-        <group position={[0, radius + 0.5, 0]}>
+        {/* Lock indicator - simple glowing plane above planet */}
+        <group position={[0, radius + 0.8, 0]}>
           <mesh>
-            <planeGeometry args={[0.3, 0.3]} />
+            <planeGeometry args={[0.4, 0.4]} />
             <meshBasicMaterial
               color="#FFAA00"
               transparent
-              opacity={0.8}
+              opacity={0.9}
+            />
+          </mesh>
+          {/* Small glow around lock */}
+          <mesh renderOrder={-1}>
+            <planeGeometry args={[0.6, 0.6]} />
+            <meshBasicMaterial
+              color="#FFAA00"
+              transparent
+              opacity={0.3}
+              blending={AdditiveBlending}
+              depthWrite={false}
             />
           </mesh>
         </group>

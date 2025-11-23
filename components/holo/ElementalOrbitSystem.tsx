@@ -5,7 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import SongPlanetGated from "@/components/holo/SongPlanetGated";
 import { type HoloSong, type Element } from "@/lib/planets";
 import { type ElementKey } from "@/utils/planetStyles";
-import { getCardGateState, type CardGateState } from "@/types/card";
+import { getCardGateState, type CardGateState } from "@/utils/cardGating";
 import { useProfile } from "@/contexts/ProfileContext";
 
 interface ElementalOrbitSystemProps {
