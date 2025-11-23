@@ -26,6 +26,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     elementTapped: false,
     journalEntry: journalCompleted,
     friendInvited: false,
+    friendInviteConfirm: false,
     checkedIn: false
   });
 
@@ -127,31 +128,39 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
 
   const handleInviteFriend = () => {
+    if (dailyQuests.friendInviteConfirm) return; // Already complete
+    
+    try { sfx.play('click', 0.8); } catch {}
+    
     if (!dailyQuests.friendInvited) {
-      try { sfx.play('click', 0.8); } catch {}
-      
+      // First click - send the invite
       const text = "I thought of you. I think this world could feel like home for you too. https://chxndler.world";
+      
+      const markMessageSent = () => {
+        setDailyQuests(prev => ({ ...prev, friendInvited: true }));
+      };
       
       if (navigator.share) {
         navigator.share({
-          text: 'I thought of you. I think this world could feel like home for you too. https://chxndler.world'
+          text: text
         }).then(() => {
-          updateHeartCoins(heartCoins + 1);
-          setDailyQuests(prev => ({ ...prev, friendInvited: true }));
+          markMessageSent();
         }).catch(console.error);
       } else {
         // Fallback for browsers that don't support Web Share API
         navigator.clipboard.writeText(text).then(() => {
-          updateHeartCoins(heartCoins + 1);
-          setDailyQuests(prev => ({ ...prev, friendInvited: true }));
           alert("Invite message copied to clipboard! You can now paste it in your messaging app.");
+          markMessageSent();
         }).catch(() => {
           // Manual fallback
           prompt("Copy this message to share:", text);
-          updateHeartCoins(heartCoins + 1);
-          setDailyQuests(prev => ({ ...prev, friendInvited: true }));
+          markMessageSent();
         });
       }
+    } else {
+      // Second click - confirm and award HeartCoin
+      updateHeartCoins(heartCoins + 1);
+      setDailyQuests(prev => ({ ...prev, friendInviteConfirm: true }));
     }
   };
 
@@ -545,17 +554,41 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               <div className="flex items-center space-x-2">
                 <button
                   onClick={handleInviteFriend}
-                  disabled={dailyQuests.friendInvited}
+                  disabled={dailyQuests.friendInviteConfirm}
                   className="px-2 py-1 text-xs rounded border transition-colors"
                   style={{
-                    background: dailyQuests.friendInvited ? 'rgba(0,255,0,0.1)' : 'rgba(255,105,180,0.1)',
-                    color: dailyQuests.friendInvited ? '#00FF00' : '#FFB6C1',
-                    borderColor: dailyQuests.friendInvited ? '#00FF00' : 'rgba(255,105,180,0.6)',
-                    textShadow: dailyQuests.friendInvited ? '0 0 8px #00FF00, 0 0 16px #00FF00' : 'none',
-                    boxShadow: dailyQuests.friendInvited ? '0 0 10px rgba(0,255,0,0.4), 0 0 20px rgba(0,255,0,0.2)' : 'none'
+                    background: dailyQuests.friendInviteConfirm 
+                      ? 'rgba(0,255,0,0.1)' 
+                      : dailyQuests.friendInvited 
+                        ? 'rgba(255,193,7,0.3)'
+                        : 'rgba(255,105,180,0.1)',
+                    color: dailyQuests.friendInviteConfirm 
+                      ? '#00FF00' 
+                      : dailyQuests.friendInvited 
+                        ? '#FFD700'
+                        : '#FFB6C1',
+                    borderColor: dailyQuests.friendInviteConfirm 
+                      ? '#00FF00' 
+                      : dailyQuests.friendInvited 
+                        ? '#FFD700'
+                        : 'rgba(255,105,180,0.6)',
+                    textShadow: dailyQuests.friendInviteConfirm 
+                      ? '0 0 8px #00FF00, 0 0 16px #00FF00' 
+                      : dailyQuests.friendInvited 
+                        ? '0 0 8px #FFD700, 0 0 16px #FFD700'
+                        : 'none',
+                    boxShadow: dailyQuests.friendInviteConfirm 
+                      ? '0 0 10px rgba(0,255,0,0.4), 0 0 20px rgba(0,255,0,0.2)' 
+                      : dailyQuests.friendInvited 
+                        ? '0 0 10px rgba(255,215,0,0.4), 0 0 20px rgba(255,215,0,0.2)'
+                        : 'none'
                   }}
                 >
-                  {dailyQuests.friendInvited ? 'INVITED TODAY' : 'INVITE A FRIEND'}
+                  {dailyQuests.friendInviteConfirm 
+                    ? 'COMPLETE' 
+                    : dailyQuests.friendInvited 
+                      ? 'CONFIRM' 
+                      : 'INVITE A FRIEND'}
                 </button>
                 <span className="text-xs" style={{ color: '#90EE90' }}>
                   (1 MAX per day)

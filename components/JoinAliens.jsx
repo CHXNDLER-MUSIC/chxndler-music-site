@@ -521,6 +521,7 @@ export default function JoinAliens({ visible = true } = {}) {
       </button>
 
       {/* $3 Button - positioned to the left of $5 button */}
+      {!showTipOptions && (
       <button
         onClick={() => {
           try { sfx.play('audio/click.mp3', 0.3); } catch {}
@@ -568,8 +569,10 @@ export default function JoinAliens({ visible = true } = {}) {
       >
         $3
       </button>
+      )}
 
       {/* $5 Button - positioned to the left of $10 button */}
+      {!showTipOptions && (
       <button
         onClick={() => {
           try { sfx.play('audio/click.mp3', 0.3); } catch {}

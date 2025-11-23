@@ -2460,8 +2460,8 @@ export default function HUDPanel({
                 style={{
                   fontSize: 'clamp(0.8rem, 2vw, 1.2rem)',
                   fontWeight: 'bold',
-                  color: '#19E3FF',
-                  textShadow: '0 0 6px rgba(25,227,255,0.8)',
+                  color: '#FFFF00',
+                  textShadow: '0 0 6px rgba(255,255,0,0.8)',
                   letterSpacing: '0.1em',
                   display: 'flex',
                   alignItems: 'center',
@@ -4119,19 +4119,6 @@ export default function HUDPanel({
                         }}>
                           CHXNDLER Card Collection
                         </h3>
-                        <p style={{
-                          fontSize: 12,
-                          opacity: 0.7,
-                          margin: 0,
-                          marginBottom: 8,
-                          color: '#fff'
-                        }}>
-                          {(() => {
-                            const collectedCount = binderCards.filter(card => card !== null).length;
-                            const totalCount = allCards.length;
-                            return `${collectedCount} of ${totalCount} cards collected`;
-                          })()}
-                        </p>
                       </div>
 
                       {/* FULL COLLECTION Button */}
@@ -4656,13 +4643,6 @@ export default function HUDPanel({
                           <option value="DARKNESS">DARKNESS</option>
                         </select>
                         
-                        <span style={{
-                          fontSize: 12,
-                          opacity: 0.7,
-                          marginLeft: 'auto'
-                        }}>
-                          {currentCardIndex + 1} of {filteredCards.length}
-                        </span>
                       </div>
 
                       {/* Card Display */}
@@ -4673,7 +4653,7 @@ export default function HUDPanel({
                           flexDirection: 'column',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          padding: '0 20px 20px 20px'
+                          padding: '0 20px 8px 20px'
                         }}>
                           {(() => {
                             const card = filteredCards[currentCardIndex];
@@ -4685,45 +4665,64 @@ export default function HUDPanel({
                                 gap: 16,
                                 maxWidth: '100%'
                               }}>
-                                {/* Card Image */}
+                                {/* Card and Count Layout - side by side */}
                                 <div style={{
-                                  position: 'relative',
-                                  aspectRatio: '2.5/3.5',
-                                  width: '200px',
-                                  background: 'radial-gradient(circle at 30% 40%, rgba(33,150,243,0.1), rgba(25,227,255,0.08) 60%, rgba(255,212,0,0.06) 100%)',
-                                  border: `2px solid ${card.rarity === 'Legendary' ? '#FFD700' : card.rarity === 'Rare' ? '#3498DB' : '#95A5A6'}`,
-                                  borderRadius: 12,
-                                  overflow: 'hidden',
-                                  boxShadow: `0 0 20px ${card.rarity === 'Legendary' ? 'rgba(255,215,0,0.3)' : card.rarity === 'Rare' ? 'rgba(52,152,219,0.3)' : 'rgba(149,165,166,0.3)'}`
+                                  display: 'flex',
+                                  alignItems: 'flex-start',
+                                  gap: 16
                                 }}>
-                                  <img
-                                    src={card.image}
-                                    alt={card.name}
-                                    style={{
-                                      width: '100%',
-                                      height: '100%',
-                                      objectFit: 'cover',
-                                      filter: card.collected ? 'none' : 'blur(8px) grayscale(0.7) brightness(0.6)',
-                                      transition: 'filter 0.3s ease'
-                                    }}
-                                  />
-                                  {!card.collected && (
-                                    <div style={{
-                                      position: 'absolute',
-                                      top: '50%',
-                                      left: '50%',
-                                      transform: 'translate(-50%, -50%)',
-                                      background: 'rgba(0,0,0,0.8)',
-                                      color: '#fff',
-                                      padding: '4px 8px',
-                                      borderRadius: 4,
-                                      fontSize: 10,
-                                      fontWeight: 600,
-                                      textShadow: '0 0 4px rgba(0,0,0,0.8)'
-                                    }}>
-                                      UNRELEASED
-                                    </div>
-                                  )}
+                                  {/* Card Image */}
+                                  <div style={{
+                                    position: 'relative',
+                                    aspectRatio: '2.5/3.5',
+                                    width: '200px',
+                                    background: 'radial-gradient(circle at 30% 40%, rgba(33,150,243,0.1), rgba(25,227,255,0.08) 60%, rgba(255,212,0,0.06) 100%)',
+                                    border: `2px solid ${card.rarity === 'Legendary' ? '#FFD700' : card.rarity === 'Rare' ? '#3498DB' : '#95A5A6'}`,
+                                    borderRadius: 12,
+                                    overflow: 'hidden',
+                                    boxShadow: `0 0 20px ${card.rarity === 'Legendary' ? 'rgba(255,215,0,0.3)' : card.rarity === 'Rare' ? 'rgba(52,152,219,0.3)' : 'rgba(149,165,166,0.3)'}`
+                                  }}>
+                                    <img
+                                      src={card.image}
+                                      alt={card.name}
+                                      style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'cover',
+                                        filter: card.collected ? 'none' : 'blur(8px) grayscale(0.7) brightness(0.6)',
+                                        transition: 'filter 0.3s ease'
+                                      }}
+                                    />
+                                    {!card.collected && (
+                                      <div style={{
+                                        position: 'absolute',
+                                        top: '50%',
+                                        left: '50%',
+                                        transform: 'translate(-50%, -50%)',
+                                        background: 'rgba(0,0,0,0.8)',
+                                        color: '#fff',
+                                        padding: '4px 8px',
+                                        borderRadius: 4,
+                                        fontSize: 10,
+                                        fontWeight: 600,
+                                        textShadow: '0 0 4px rgba(0,0,0,0.8)'
+                                      }}>
+                                        UNRELEASED
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Card Count positioned to the right of image */}
+                                  <div style={{
+                                    fontSize: 14,
+                                    fontWeight: 600,
+                                    color: '#2196F3',
+                                    textAlign: 'left',
+                                    marginTop: '0px',
+                                    textShadow: '0 0 8px rgba(33,150,243,0.5)'
+                                  }}>
+                                    {currentCardIndex + 1} of {filteredCards.length} {card.type}
+                                  </div>
                                 </div>
 
                                 {/* Card Info */}
@@ -4754,15 +4753,6 @@ export default function HUDPanel({
                                       color: card.rarity === 'Legendary' ? '#FFD700' : card.rarity === 'Rare' ? '#3498DB' : '#95A5A6'
                                     }}>
                                       {card.rarity}
-                                    </span>
-                                    <span style={{
-                                      fontSize: 12,
-                                      padding: '2px 8px',
-                                      borderRadius: 10,
-                                      background: 'rgba(33,150,243,0.2)',
-                                      color: '#2196F3'
-                                    }}>
-                                      {card.type}
                                     </span>
                                   </div>
                                   <p style={{

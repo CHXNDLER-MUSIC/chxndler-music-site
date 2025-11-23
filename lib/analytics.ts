@@ -425,7 +425,15 @@ export async function trackEvent(
         user_id: options?.userId ?? null
       });
 
-    if (error) console.error('trackEvent error:', error);
+    if (error) {
+      console.error('trackEvent error:', {
+        error,
+        eventName,
+        source: options?.source ?? 'unknown',
+        hasMetadata: !!options?.metadata,
+        hasUserId: !!options?.userId
+      });
+    }
   } catch (e) {
     console.error('trackEvent crashed:', e);
   }

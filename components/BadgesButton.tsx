@@ -720,7 +720,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                 })()
               ) : (
                 // Badge Detail View - Inline within the popup
-                <div className="relative space-y-2 max-w-xs mx-auto">
+                <div className="relative space-y-2 max-w-xs mx-auto" style={{ paddingBottom: '12px' }}>
                   {/* Back button positioned to the left */}
                   <button
                     onClick={() => {
@@ -794,7 +794,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                           style={{ width: `${selectedBadge.progress || 0}%` }}
                         />
                       </div>
-                      <div className="text-center">
+                      <div className="text-center" style={{ marginBottom: '8px' }}>
                         <span className={`text-xs font-bold ${
                           isUnlocked(selectedBadge) ? 'text-green-400' : 'text-blue-400'
                         }`}>

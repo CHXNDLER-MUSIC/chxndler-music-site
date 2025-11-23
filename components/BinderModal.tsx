@@ -573,6 +573,48 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
     resetPurchaseState();
   }, [currentCardIndex, selectedElement]);
 
+  // Helper function to find next unlocked card index
+  const findNextUnlockedCard = (currentIndex: number, direction: 'prev' | 'next') => {
+    const cards = getFilteredCards();
+    if (cards.length <= 1) return currentIndex;
+    
+    let nextIndex = currentIndex;
+    const maxAttempts = cards.length; // Prevent infinite loop
+    let attempts = 0;
+    
+    do {
+      if (direction === 'prev') {
+        nextIndex = nextIndex > 0 ? nextIndex - 1 : cards.length - 1;
+      } else {
+        nextIndex = nextIndex < cards.length - 1 ? nextIndex + 1 : 0;
+      }
+      attempts++;
+      
+      const cardData = {
+        name: cards[nextIndex].name,
+        element: cards[nextIndex].element,
+        rarity: cards[nextIndex].rarity,
+        is_released: cards[nextIndex].is_released ?? true,
+        min_tier: cards[nextIndex].min_tier || 'wanderer'
+      };
+      
+      const profileData = profile ? {
+        id: profile.id,
+        tier: profile.tier || profile.journey_tag || 'wanderer'
+      } : null;
+      
+      const userCards = getUserCards();
+      const gateState = getCardGateState(cardData, profileData, userCards);
+      
+      // Stop if we find an unlocked card or if we've tried all cards
+      if (gateState === 'owned' || gateState === 'available' || attempts >= maxAttempts) {
+        break;
+      }
+    } while (attempts < maxAttempts);
+    
+    return nextIndex;
+  };
+
   // Arrow key navigation
   useEffect(() => {
     if (!showFullCollection || !selectedElement) return;
@@ -584,17 +626,17 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
         try { sfx.play('click', 0.5); } catch {}
-        setCurrentCardIndex(prev => prev > 0 ? prev - 1 : cards.length - 1);
+        setCurrentCardIndex(prev => findNextUnlockedCard(prev, 'prev'));
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
         try { sfx.play('click', 0.5); } catch {}
-        setCurrentCardIndex(prev => prev < cards.length - 1 ? prev + 1 : 0);
+        setCurrentCardIndex(prev => findNextUnlockedCard(prev, 'next'));
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showFullCollection, selectedElement, selectedRarity]);
+  }, [showFullCollection, selectedElement, selectedRarity, profile]);
 
   if (!open) return null;
 
@@ -920,7 +962,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                     <button
                       onClick={() => {
                         try { sfx.play('click', 0.5); } catch {}
-                        setCurrentCardIndex(prev => prev > 0 ? prev - 1 : cards.length - 1);
+                        setCurrentCardIndex(prev => findNextUnlockedCard(prev, 'prev'));
                       }}
                       className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200 mt-16"
                       style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
@@ -966,7 +1008,15 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
 
                           {isLocked && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 pointer-events-none">
-                              <div className="px-3 py-1 rounded-xl bg-black/60 border border-pink-400/70 text-[11px] font-semibold tracking-wide text-pink-100 backdrop-blur-md shadow-[0_0_18px_rgba(252,84,175,0.7)]">
+                              <div className={`px-3 py-1 rounded-xl bg-black/60 text-[11px] font-semibold tracking-wide backdrop-blur-md ${
+                                gateState === 'comingSoon' 
+                                  ? 'border border-pink-400/70 text-pink-100 shadow-[0_0_18px_rgba(252,84,175,0.7)]'
+                                  : currentCard.min_tier === 'dreamer'
+                                    ? 'border border-yellow-400/70 text-yellow-100 shadow-[0_0_18px_rgba(255,215,0,0.7)]'
+                                    : currentCard.min_tier === 'lover'
+                                      ? 'border border-pink-400/70 text-pink-100 shadow-[0_0_18px_rgba(252,84,175,0.7)]'
+                                      : 'border border-pink-400/70 text-pink-100 shadow-[0_0_18px_rgba(252,84,175,0.7)]'
+                              }`}>
                                 {gateState === 'comingSoon'
                                   ? "Coming Soon"
                                   : `Reach ${getTierDisplayName(currentCard.min_tier)} to unlock`}
@@ -1010,7 +1060,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                     <button
                       onClick={() => {
                         try { sfx.play('click', 0.5); } catch {}
-                        setCurrentCardIndex(prev => prev < cards.length - 1 ? prev + 1 : 0);
+                        setCurrentCardIndex(prev => findNextUnlockedCard(prev, 'next'));
                       }}
                       className="w-6 h-6 rounded-full border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/20 transition-all duration-200 ml-1 self-start mt-16"
                       style={{ boxShadow: '0 0 8px rgba(255,105,180,0.4)' }}
@@ -1087,10 +1137,24 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                         }
                         
                         if (gateState === 'lockedTier') {
+                          const isDreamerTier = currentCard.min_tier === 'dreamer';
+                          const isLoverTier = currentCard.min_tier === 'lover';
                           return (
                             <div className="mt-4">
-                              <div className="px-3 py-1 rounded border border-yellow-400/60 bg-yellow-500/10 text-xs text-yellow-300"
-                                   style={{ textShadow: '0 0 4px rgba(234,179,8,0.6)' }}>
+                              <div className={`px-3 py-1 rounded text-xs ${
+                                isDreamerTier 
+                                  ? 'border border-yellow-400/60 bg-yellow-500/10 text-yellow-300'
+                                  : isLoverTier
+                                    ? 'border border-pink-400/60 bg-pink-500/10 text-pink-300'
+                                    : 'border border-yellow-400/60 bg-yellow-500/10 text-yellow-300'
+                              }`}
+                                   style={{ 
+                                     textShadow: isDreamerTier 
+                                       ? '0 0 4px rgba(234,179,8,0.6)' 
+                                       : isLoverTier
+                                         ? '0 0 4px rgba(255,182,193,0.6)'
+                                         : '0 0 4px rgba(234,179,8,0.6)'
+                                   }}>
                                 Reach {getTierDisplayName(currentCard.min_tier)} to unlock
                               </div>
                             </div>
@@ -1346,7 +1410,15 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                                     />
                                     {isLocked && (
                                       <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-                                        <div className="px-2 py-1 rounded-lg bg-black/60 border border-pink-400/70 text-[9px] font-semibold tracking-wide text-pink-100 backdrop-blur-md shadow-[0_0_15px_rgba(252,84,175,0.7)]">
+                                        <div className={`px-2 py-1 rounded-lg bg-black/60 text-[9px] font-semibold tracking-wide backdrop-blur-md ${
+                                          gateState === 'comingSoon'
+                                            ? 'border border-pink-400/70 text-pink-100 shadow-[0_0_15px_rgba(252,84,175,0.7)]'
+                                            : cardData.min_tier === 'dreamer'
+                                              ? 'border border-yellow-400/70 text-yellow-100 shadow-[0_0_15px_rgba(255,215,0,0.7)]'
+                                              : cardData.min_tier === 'lover'
+                                                ? 'border border-pink-400/70 text-pink-100 shadow-[0_0_15px_rgba(252,84,175,0.7)]'
+                                                : 'border border-pink-400/70 text-pink-100 shadow-[0_0_15px_rgba(252,84,175,0.7)]'
+                                        }`}>
                                           {gateState === 'comingSoon'
                                             ? "Coming Soon"
                                             : `Reach ${getTierDisplayName(cardData.min_tier)} to unlock`}
