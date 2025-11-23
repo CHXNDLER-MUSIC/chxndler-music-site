@@ -826,7 +826,7 @@ img[src$="/elements/music.png"] {
   height: 32px;
   border-radius: 50%;
   background: rgba(25,227,255,.8);
-  border: 1px solid rgba(255,255,255,.4);
+  border: 1px solid #19E3FF;
   color: #000;
   display: flex;
   align-items: center;
@@ -856,7 +856,7 @@ img[src$="/elements/music.png"] {
   height: 32px;
   border-radius: 50%;
   background: linear-gradient(135deg, #FFF76A, #F2EF1D);
-  border: 1px solid rgba(255,255,255,.45);
+  border: 1px solid #19E3FF;
   color: #000; /* icon color */
   display: flex;
   align-items: center;
@@ -1174,7 +1174,7 @@ img[src$="/elements/music.png"] {
   height: 32px;
   border-radius: 50%;
   background: linear-gradient(135deg, #ff3ea5, #ff76c8);
-  border: 1px solid rgba(255,255,255,.45);
+  border: 1px solid #19E3FF;
   color: white;
   display: flex;
   align-items: center;

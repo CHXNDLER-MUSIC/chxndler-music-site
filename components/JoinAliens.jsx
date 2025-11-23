@@ -520,6 +520,155 @@ export default function JoinAliens({ visible = true } = {}) {
         />
       </button>
 
+      {/* $3 Button - positioned to the left of $5 button */}
+      <button
+        onClick={() => {
+          try { sfx.play('audio/click.mp3', 0.3); } catch {}
+          
+          // Toggle VENMO/CARD options popup for $3
+          if (showPaymentOptions) {
+            setShowPaymentOptions(false);
+          } else {
+            setShowPaymentOptions5(false); // Close $5 payment options first
+            setShowPaymentOptions10(false); // Close $10 payment options first
+            setShowPaymentOptions(true);
+            setSelectedTipAmount(3);
+          }
+        }}
+        style={{
+          position: 'absolute',
+          bottom: '12px',
+          right: '150px', // Position to the left of $5 button
+          width: '40px',
+          height: '40px',
+          background: 'rgba(252, 84, 175, 0.1)',
+          border: '2px solid #FC54AF',
+          borderRadius: '50%',
+          color: '#FC54AF',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 300ms ease',
+          textShadow: '0 0 8px #FC54AF',
+          boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
+          zIndex: 10
+        }}
+        onMouseEnter={(e) => {
+          try { sfx.play('hover', 0.3); } catch {}
+          e.target.style.background = 'rgba(252, 84, 175, 0.2)';
+          e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.background = 'rgba(252, 84, 175, 0.1)';
+          e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
+        }}
+      >
+        $3
+      </button>
+
+      {/* $5 Button - positioned to the left of $10 button */}
+      <button
+        onClick={() => {
+          try { sfx.play('audio/click.mp3', 0.3); } catch {}
+          
+          // Toggle VENMO/CARD options popup for $5
+          if (showPaymentOptions5) {
+            setShowPaymentOptions5(false);
+          } else {
+            setShowPaymentOptions(false); // Close $3 payment options first
+            setShowPaymentOptions10(false); // Close $10 payment options first
+            setShowPaymentOptions5(true);
+            setSelectedTipAmount(5);
+          }
+        }}
+        style={{
+          position: 'absolute',
+          bottom: '12px',
+          right: '104px', // Position to the left of $10 button
+          width: '40px',
+          height: '40px',
+          background: 'rgba(252, 84, 175, 0.1)',
+          border: '2px solid #FC54AF',
+          borderRadius: '50%',
+          color: '#FC54AF',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 300ms ease',
+          textShadow: '0 0 8px #FC54AF',
+          boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
+          zIndex: 10
+        }}
+        onMouseEnter={(e) => {
+          try { sfx.play('hover', 0.3); } catch {}
+          e.target.style.background = 'rgba(252, 84, 175, 0.2)';
+          e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
+          e.target.style.transform = 'scale(1.05)';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.background = 'rgba(252, 84, 175, 0.1)';
+          e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
+          e.target.style.transform = 'scale(1)';
+        }}
+      >
+        $5
+      </button>
+
+      {/* $10 Button - positioned to the left of $ button */}
+      <button
+        onClick={() => {
+          try { sfx.play('audio/click.mp3', 0.3); } catch {}
+          
+          // Toggle VENMO/CARD options popup for $10
+          if (showPaymentOptions10) {
+            setShowPaymentOptions10(false);
+          } else {
+            setShowPaymentOptions(false); // Close $3 payment options first
+            setShowPaymentOptions5(false); // Close $5 payment options first
+            setShowPaymentOptions10(true);
+            setSelectedTipAmount(10);
+          }
+        }}
+        style={{
+          position: 'absolute',
+          bottom: '12px',
+          right: '58px', // Position to the left of $ button
+          width: '40px',
+          height: '40px',
+          background: 'rgba(252, 84, 175, 0.1)',
+          border: '2px solid #FC54AF',
+          borderRadius: '50%',
+          color: '#FC54AF',
+          fontSize: '12px',
+          fontWeight: 'bold',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 300ms ease',
+          textShadow: '0 0 8px #FC54AF',
+          boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
+          zIndex: 10
+        }}
+        onMouseEnter={(e) => {
+          try { sfx.play('hover', 0.3); } catch {}
+          e.target.style.background = 'rgba(252, 84, 175, 0.2)';
+          e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.background = 'rgba(252, 84, 175, 0.1)';
+          e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
+        }}
+      >
+        $10
+      </button>
+
       {/* $ Button - positioned in bottom right corner */}
       <button
         onClick={() => {
@@ -583,143 +732,6 @@ export default function JoinAliens({ visible = true } = {}) {
           zIndex: 11,
           alignItems: 'center'
         }}>
-          <button
-            onClick={() => {
-              try { sfx.play('audio/click.mp3', 0.3); } catch {}
-              
-              // Toggle VENMO/CARD options popup for $3
-              if (showPaymentOptions) {
-                setShowPaymentOptions(false);
-              } else {
-                setShowPaymentOptions5(false); // Close $5 payment options first
-                setShowPaymentOptions10(false); // Close $10 payment options first
-                setShowPaymentOptions(true);
-                setSelectedTipAmount(3);
-              }
-            }}
-            style={{
-              padding: '10px',
-              marginLeft: '8px',
-              width: '40px',
-              height: '40px',
-              background: 'rgba(252, 84, 175, 0.1)',
-              border: '2px solid #FC54AF',
-              borderRadius: '50%',
-              color: '#FC54AF',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 300ms ease',
-              textShadow: '0 0 8px #FC54AF',
-              boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
-            }}
-            onMouseEnter={(e) => {
-              try { sfx.play('hover', 0.3); } catch {}
-              e.target.style.background = 'rgba(252, 84, 175, 0.2)';
-              e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = 'rgba(252, 84, 175, 0.1)';
-              e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
-            }}
-          >
-            $3
-          </button>
-          <button
-            onClick={() => {
-              try { sfx.play('audio/click.mp3', 0.3); } catch {}
-              
-              // Toggle VENMO/CARD options popup for $5
-              if (showPaymentOptions5) {
-                setShowPaymentOptions5(false);
-              } else {
-                setShowPaymentOptions(false); // Close $3 payment options first
-                setShowPaymentOptions10(false); // Close $10 payment options first
-                setShowPaymentOptions5(true);
-                setSelectedTipAmount(5);
-              }
-            }}
-            style={{
-              padding: '10px',
-              marginLeft: '8px',
-              width: '40px',
-              height: '40px',
-              background: 'rgba(252, 84, 175, 0.1)',
-              border: '2px solid #FC54AF',
-              borderRadius: '50%',
-              color: '#FC54AF',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 300ms ease',
-              textShadow: '0 0 8px #FC54AF',
-              boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
-            }}
-            onMouseEnter={(e) => {
-              try { sfx.play('hover', 0.3); } catch {}
-              e.target.style.background = 'rgba(252, 84, 175, 0.2)';
-              e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
-              e.target.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = 'rgba(252, 84, 175, 0.1)';
-              e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
-              e.target.style.transform = 'scale(1)';
-            }}
-          >
-            $5
-          </button>
-          <button
-            onClick={() => {
-              try { sfx.play('audio/click.mp3', 0.3); } catch {}
-              
-              // Toggle VENMO/CARD options popup for $10
-              if (showPaymentOptions10) {
-                setShowPaymentOptions10(false);
-              } else {
-                setShowPaymentOptions(false); // Close $3 payment options first
-                setShowPaymentOptions5(false); // Close $5 payment options first
-                setShowPaymentOptions10(true);
-                setSelectedTipAmount(10);
-              }
-            }}
-            style={{
-              padding: '10px',
-              marginLeft: '8px',
-              width: '40px',
-              height: '40px',
-              background: 'rgba(252, 84, 175, 0.1)',
-              border: '2px solid #FC54AF',
-              borderRadius: '50%',
-              color: '#FC54AF',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 300ms ease',
-              textShadow: '0 0 8px #FC54AF',
-              boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
-            }}
-            onMouseEnter={(e) => {
-              try { sfx.play('hover', 0.3); } catch {}
-              e.target.style.background = 'rgba(252, 84, 175, 0.2)';
-              e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = 'rgba(252, 84, 175, 0.1)';
-              e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
-            }}
-          >
-            $10
-          </button>
         </div>
       )}
 

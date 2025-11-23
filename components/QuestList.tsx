@@ -499,19 +499,19 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
                   questStatus.inviteFriendConfirm
                     ? 'bg-green-600/30 border border-green-500/50 text-green-300 cursor-not-allowed'
                     : questStatus.inviteFriend
-                      ? 'bg-yellow-600/30 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-300'
+                      ? 'bg-yellow-400/30 hover:bg-yellow-400/40 border border-yellow-400/50 text-yellow-200'
                       : 'bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300'
                 }`}
                 style={{
                   boxShadow: questStatus.inviteFriendConfirm
                     ? '0 0 10px rgba(0,255,0,0.3)'
                     : questStatus.inviteFriend
-                      ? '0 0 10px rgba(255,215,0,0.3)'
+                      ? '0 0 10px rgba(255,193,7,0.4)'
                       : '0 0 10px rgba(252,84,175,0.3)',
                   textShadow: questStatus.inviteFriendConfirm
                     ? '0 0 4px rgba(0,255,0,0.6)'
                     : questStatus.inviteFriend
-                      ? '0 0 4px rgba(255,215,0,0.6)'
+                      ? '0 0 4px rgba(255,193,7,0.8)'
                       : '0 0 4px rgba(252,84,175,0.6)'
                 }}
               >
@@ -527,14 +527,14 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
                   questStatus.inviteFriendConfirm 
                     ? 'text-green-400' 
                     : questStatus.inviteFriend
-                      ? 'text-yellow-400'
+                      ? 'text-yellow-200'
                       : 'text-pink-400'
                 }`}
                 style={{ 
                   textShadow: questStatus.inviteFriendConfirm 
                     ? '0 0 4px rgba(0,255,0,0.6)' 
                     : questStatus.inviteFriend
-                      ? '0 0 4px rgba(255,215,0,0.6)'
+                      ? '0 0 4px rgba(255,193,7,0.8)'
                       : '0 0 4px rgba(252,84,175,0.6)' 
                 }}
               >

@@ -932,7 +932,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                   )}
                   
                   {/* Card image with fixed width */}
-                  <div className="flex-shrink-0">
+                  <div className="flex-shrink-0 relative">
                     {(() => {
                       const gateState = getCardState(currentCard);
                       const isLocked = gateState === 'comingSoon' || gateState === 'lockedTier';
@@ -983,6 +983,25 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                           )}
                         </div>
                       );
+                    })()}
+                    
+                    {/* HeartCoins text positioned to the right of card PNG */}
+                    {(() => {
+                      const gateState = getCardState(currentCard);
+                      if (gateState === 'available') {
+                        return (
+                          <div 
+                            className="absolute top-0 left-[130px] text-xs"
+                            style={{ 
+                              color: '#FFB6C1', 
+                              textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                            }}
+                          >
+                            You have {profile?.heartcoin_balance || 0} HeartCoins
+                          </div>
+                        );
+                      }
+                      return null;
                     })()}
                   </div>
                   
@@ -1081,16 +1100,6 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                         // gateState === 'available' - show purchase buttons
                         return (
                         <div className="mt-4">
-                          <div 
-                            className="text-xs mb-2"
-                            style={{ 
-                              color: '#FFB6C1', 
-                              textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                            }}
-                          >
-                            You have {profile?.heartcoin_balance || 0} HeartCoins
-                          </div>
-                          
                           <div className="flex gap-2">
                             {/* Digital option */}
                             <button

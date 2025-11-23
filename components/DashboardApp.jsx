@@ -710,8 +710,10 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     if (beamTransitioning && color !== 'off') return;
     
     // Always close ALL displays first, then open the target display
-    const closeAllDisplays = (skipYellowClose = false) => {
-      setShowHUD(false);
+    const closeAllDisplays = (skipYellowClose = false, keepBlueDisplay = false) => {
+      if (!keepBlueDisplay) {
+        setShowHUD(false);
+      }
       setJoinAlienOpen(false);
       setBeamEnabled(false);
       // Force-close yellow menu and any other UI elements, unless we're opening yellow
@@ -769,9 +771,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           setExplicitClose(false);
         }, 150);
       } else {
-        // Switch to yellow - close other displays but don't force-close yellow menu
+        // Switch to yellow - close other displays but keep blue display open for stars popover
         setBeamTransitioning(true);
-        closeAllDisplays(true); // Skip yellow close since we're opening it
+        closeAllDisplays(true, true); // Skip yellow close and keep blue display open
         setTimeout(() => {
           setBeamColor('yellow');
           setBeamEnabled(true);

@@ -17,10 +17,13 @@ export type EnsureTodayResult = SoulPrompt | ExhaustedStatus;
 
 export async function ensureTodaySoulPrompt(): Promise<EnsureTodayResult> {
   try {
+    console.log('Starting ensureTodaySoulPrompt...');
     const supabase = getSupabaseAdmin();
+    console.log('Supabase admin client created');
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
 
     // Check if there's already a row for today
+    console.log('Checking for existing daily prompt for:', today);
     const { data: existingDaily, error: existingError } = await supabase
       .from('soul_daily_prompts')
       .select(`
@@ -38,6 +41,8 @@ export async function ensureTodaySoulPrompt(): Promise<EnsureTodayResult> {
       `)
       .eq('prompt_date', today)
       .single();
+    
+    console.log('Existing daily check result:', { existingDaily, existingError });
 
     if (existingDaily && existingDaily.soul_prompts) {
       // Return existing daily prompt with its related soul_prompts data
@@ -52,19 +57,29 @@ export async function ensureTodaySoulPrompt(): Promise<EnsureTodayResult> {
     }
 
     // No row for today yet, find an unused prompt
-    const { data: unusedPrompts, error: unusedError } = await supabase
+    // Get all prompts first
+    const { data: allPrompts, error: allPromptsError } = await supabase
       .from('soul_prompts')
-      .select('id, element, intention, reflection, created_at')
-      .not('id', 'in', `(
-        SELECT prompt_id 
-        FROM soul_daily_prompts 
-        WHERE prompt_id IS NOT NULL
-      )`);
+      .select('id, element, intention, reflection, created_at');
 
-    if (unusedError) {
-      console.error('Error fetching unused prompts:', unusedError);
-      throw unusedError;
+    if (allPromptsError) {
+      console.error('Error fetching all prompts:', allPromptsError);
+      throw allPromptsError;
     }
+
+    // Get all used prompt IDs
+    const { data: usedPrompts, error: usedError } = await supabase
+      .from('soul_daily_prompts')
+      .select('prompt_id')
+      .not('prompt_id', 'is', null);
+
+    if (usedError) {
+      console.error('Error fetching used prompts:', usedError);
+      throw usedError;
+    }
+
+    const usedPromptIds = new Set(usedPrompts?.map(p => p.prompt_id) || []);
+    const unusedPrompts = allPrompts?.filter(prompt => !usedPromptIds.has(prompt.id)) || [];
 
     if (!unusedPrompts || unusedPrompts.length === 0) {
       // No prompts remain

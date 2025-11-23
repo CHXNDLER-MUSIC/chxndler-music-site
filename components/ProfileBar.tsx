@@ -831,6 +831,7 @@ export default function ProfileBar({
           You need to{" "}
           <button
             onClick={() => {
+              try { sfx.play('click.mp3', 0.5); } catch {}
               setShowLoginTooltip(false);
               setShowWelcomeHome(true);
             }}

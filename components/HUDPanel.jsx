@@ -2397,23 +2397,24 @@ export default function HUDPanel({
                 // Add a small space below the button so it doesn't attach to the cover
                 marginBottom: 0,
                 marginRight: 2,
-                borderRadius: 12,
-                // Thin neon edge
-                border: '1px solid rgba(56,182,255,0.6)',
-                // Transparent cyan glass background
-                background: 'rgba(56,182,255,0.12)',
-                color: '#F2EF1D',
+                // Rounded borders like song dropdown button
+                borderRadius: '10px',
+                // Cyan border like song dropdown
+                border: '2px solid rgba(25,227,255,0.8)',
+                // Cyan background like song dropdown
+                background: 'rgba(25,227,255,0.1)',
+                color: '#19E3FF',
                 fontWeight: 700,
                 letterSpacing: '0.03em',
                 textTransform: 'uppercase',
                 // Smaller font to make text pop out less
                 fontSize: 11,
                 lineHeight: 1,
-                // Tighter, stronger glow close to the letters
-                textShadow: '0 0 6px rgba(242,239,29,1), 0 0 10px rgba(242,239,29,0.95), 0 0 16px rgba(242,239,29,0.8)',
-                // Glass effect with stronger blur
-                backdropFilter: 'blur(8px)',
-                boxShadow: '0 0 20px rgba(25,227,255,0.35)'
+                // Cyan glow to match theme
+                textShadow: '0 0 6px rgba(25,227,255,0.8), 0 0 10px rgba(25,227,255,0.6), 0 0 16px rgba(25,227,255,0.4)',
+                // Glass effect with stronger blur like song dropdown
+                backdropFilter: 'blur(12px)',
+                boxShadow: '0 0 18px rgba(25,227,255,0.35)'
               }}
               ref={brandBtnRef}
               onMouseEnter={() => { 
@@ -2459,8 +2460,8 @@ export default function HUDPanel({
                 style={{
                   fontSize: 'clamp(0.8rem, 2vw, 1.2rem)',
                   fontWeight: 'bold',
-                  color: '#f2ef1d',
-                  textShadow: '0 0 6px rgba(242,239,29,0.8)',
+                  color: '#19E3FF',
+                  textShadow: '0 0 6px rgba(25,227,255,0.8)',
                   letterSpacing: '0.1em',
                   display: 'flex',
                   alignItems: 'center',
