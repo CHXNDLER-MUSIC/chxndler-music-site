@@ -69,17 +69,35 @@ export default function AuthCallbackPage() {
           return;
         }
 
-        // If no session, try to parse tokens from URL hash manually
-        console.log('🔄 No session found, checking URL for tokens...');
+        // If no session, try to exchange OAuth code or parse tokens from URL hash manually
+        console.log('🔄 No session found, checking URL for tokens/code...');
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const searchParams = new URLSearchParams(window.location.search);
         const accessToken = hashParams.get('access_token');
         const refreshToken = hashParams.get('refresh_token');
+        const oauthCode = searchParams.get('code');
         
-        console.log('🔍 URL token check:', {
+        console.log('🔍 URL token/code check:', {
           hasAccessToken: !!accessToken,
           hasRefreshToken: !!refreshToken,
-          fullHash: window.location.hash
+          hasOAuthCode: !!oauthCode,
+          fullHash: window.location.hash,
+          fullSearch: window.location.search
         });
+
+        // Handle OAuth code flow (e.g., Google)
+        if (oauthCode) {
+          console.log('🔄 Found OAuth code, exchanging for session...');
+          const { data: exchangeData, error: exchangeError } = await supabaseClient.auth.exchangeCodeForSession(oauthCode);
+
+          if (exchangeError) {
+            console.error('❌ Error exchanging code for session:', exchangeError);
+          } else if (exchangeData?.session?.user) {
+            console.log('✅ Successfully exchanged code for session');
+            await handleSuccessfulAuth(exchangeData.session);
+            return;
+          }
+        }
 
         if (accessToken) {
           console.log('🔄 Found tokens in URL, setting session...');
@@ -100,8 +118,7 @@ export default function AuthCallbackPage() {
         // Check for error parameters in the URL
         const hashError = hashParams.get('error');
         const errorDescription = hashParams.get('error_description');
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlError = urlParams.get('error');
+        const urlError = searchParams.get('error');
         
         console.log('🔍 Error parameter check:', {
           hashError,
@@ -128,10 +145,29 @@ export default function AuthCallbackPage() {
             router.push('/?completeProfile=1');
             return;
           }
+
+          // Special handling: expired/invalid magic link without a session
+          if (
+            errorMsg === 'access_denied' &&
+            errorDescription && errorDescription.includes('Email link is invalid or has expired')
+          ) {
+            console.warn('⚠️ Magic link is invalid/expired. Guiding user to sign in again.');
+            router.replace('/?magic_link_expired=1');
+            return;
+          }
           
           // No valid session exists, treat as genuine error
           console.error('❌ Auth error detected:', errorMsg, errorDescription);
           router.replace(`/?error=auth_failed&details=${encodeURIComponent(errorMsg)}`);
+          return;
+        }
+
+        // As a final safeguard, wait briefly for any late session detection, then re-check
+        await new Promise((r) => setTimeout(r, 200));
+        const { data: finalCheck } = await supabaseClient.auth.getSession();
+        if (finalCheck?.session?.user) {
+          console.log('✅ Session appeared after brief wait');
+          await handleSuccessfulAuth(finalCheck.session);
           return;
         }
 

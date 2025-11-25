@@ -1213,7 +1213,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // Move beam down by 30px to match the display adjustment
     return {
       left: '50%',
-      bottom: 'calc(var(--display-touch-top) - var(--beam-height) - 30px)',
+      bottom: 'calc(var(--display-touch-top) - var(--beam-height) + 60px)',
       height: 'var(--beam-height)',
       width: 'var(--display-width)',
       transform: 'translate3d(-50%,0,0)',
@@ -1260,7 +1260,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   }, []);
 
   // Position the blue display slightly lower than the light beam top  
-  const hudBottom = useMemo(() => 'calc(var(--display-touch-top) - 30px)', []);
+  // Raise the bottom edge of the blue display by 70px total (relative to original)
+  // Keep top fixed by reducing height by the same 70px
+  const hudBottom = useMemo(() => 'calc(var(--display-touch-top) + 30px)', []);
 
   // Provide CSS variables globally (avoids any runtime style factory edge cases)
 
@@ -1358,7 +1360,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   }
   const SHOW_CENTER_BEAM = true; // Enable center light beam
   // HUD vertical sizing + offset mapping so inner items shift down as height shrinks
-  const hudHeightFactor = 0.6; // reduced height to prevent extending too high
+  const hudHeightFactor = 0.01; // tiny height to force top edge down
   const hudBaseFactor = 0.46;   // increased to move the blue display further down
   const hudYOffset = Math.max(0, Math.round(100 * (hudBaseFactor - hudHeightFactor)));
   const handleCodeClick = () => {
@@ -1893,7 +1895,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               left: '50%',
               transform: 'translateX(-50%)',
               width: 'calc(var(--display-width) + 32px)',
-              height: `calc(var(--display-width) * ${hudHeightFactor})`,
+              height: '30px',
+              paddingTop: '20px',
               zIndex: 93,
               ['--hud-y']: `${hudYOffset}px`,
               pointerEvents: (uiUnlocked && showOverlayUI && !showDimmingOverlay) ? 'auto' : 'none'
@@ -1929,8 +1932,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                     transition: 'opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)',
                     willChange: 'opacity',
                     transform: 'translateZ(0)', // Force hardware acceleration on Safari
-                    height: '25vh',
-                    maxHeight: '200px'
+                    // Lower the top by 30px more (keep bottom fixed)
+                    height: 'calc(25vh - 100px)',
+                    maxHeight: '100px'
                   };
                 })()}
               >

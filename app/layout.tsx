@@ -18,8 +18,8 @@ import { TourProvider } from "@/contexts/TourContext";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://chxndler.world"),
-  title: "CHXNDLER",
-  description: "Welcome to the Heartverse.",
+  title: "CHXNDLER — SPACESHIP",
+  description: "Enter the Heartverse and board the spaceship.",
   openGraph: {
     title: "CHXNDLER",
     description: "Welcome to the Heartverse.",
@@ -43,8 +43,17 @@ export const metadata: Metadata = {
       "https://ik.imagekit.io/CHXNDLER/cover/logo.png?updatedAt=1763763254666"
     ],
   },
+  manifest: "/manifest.json",
+  themeColor: "#000000",
   icons: {
-    icon: "/logo.png"
+    icon: [
+      { url: "/icons/chxndler-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/chxndler-256.png", sizes: "256x256", type: "image/png" },
+      { url: "/icons/chxndler-384.png", sizes: "384x384", type: "image/png" },
+      { url: "/icons/chxndler-512.png", sizes: "512x512", type: "image/png" }
+    ],
+    apple: "/icons/apple-touch-icon.png",
+    shortcut: "/icons/chxndler-192.png",
   },
 };
 

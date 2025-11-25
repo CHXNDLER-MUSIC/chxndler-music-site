@@ -105,7 +105,14 @@ export default function DashboardWelcomeDisplay({ onBeamColorChange }: Props) {
           <BookButton />
         </h2>
         <p className="text-white/80 mb-6">You have {hearts} HeartCoins.</p>
-        <Link href="/dashboard" className="inline-flex items-center justify-center rounded-xl px-5 py-3 font-semibold text-black bg-[#FC54AF] hover:brightness-110 transition shadow-[0_0_24px_rgba(252,84,175,0.45)]">
+        <Link 
+          href="/dashboard" 
+          className="inline-flex items-center justify-center rounded-xl px-5 py-3 font-semibold text-black bg-[#FC54AF] hover:brightness-110 transition shadow-[0_0_24px_rgba(252,84,175,0.45)]"
+          onClick={() => {
+            // Emit event to potentially trigger tour
+            window.dispatchEvent(new CustomEvent('heartverse:entered'));
+          }}
+        >
           ENTER THE HEARTVERSE
         </Link>
       </div>

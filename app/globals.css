@@ -291,7 +291,7 @@ main {
   overflow: hidden;
   /* Prevent HUD from shrinking on small screens */
   min-width: 460px;
-  min-height: 480px;
+  min-height: 50px;
 }
 
 /* Desktop: slightly deeper right-side concave and wider top taper */

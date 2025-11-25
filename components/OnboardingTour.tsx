@@ -395,13 +395,18 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
         .tour-highlight::after {
           content: '';
           position: absolute;
-          inset: -10px;
+          inset: -15px;
           pointer-events: none;
           background-image:
-            radial-gradient(2px 2px at 20% 30%, rgba(255,255,255,0.7) 50%, transparent 52%),
-            radial-gradient(1.5px 1.5px at 80% 40%, rgba(255,255,255,0.55) 50%, transparent 52%),
-            radial-gradient(1.8px 1.8px at 60% 75%, rgba(255,255,255,0.5) 50%, transparent 52%);
-          animation: twinkle 2.6s ease-in-out infinite;
+            radial-gradient(3px 3px at 15% 25%, rgba(255,255,255,0.9) 50%, transparent 52%),
+            radial-gradient(2px 2px at 85% 35%, rgba(252,84,175,0.8) 50%, transparent 52%),
+            radial-gradient(2.5px 2.5px at 70% 80%, rgba(56,182,255,0.7) 50%, transparent 52%),
+            radial-gradient(1.5px 1.5px at 25% 75%, rgba(242,239,29,0.6) 50%, transparent 52%),
+            radial-gradient(3.2px 3.2px at 90% 15%, rgba(255,255,255,0.8) 50%, transparent 52%),
+            radial-gradient(1.8px 1.8px at 40% 20%, rgba(252,84,175,0.5) 50%, transparent 52%),
+            radial-gradient(2.2px 2.2px at 60% 45%, rgba(56,182,255,0.4) 50%, transparent 52%),
+            radial-gradient(1.3px 1.3px at 10% 60%, rgba(255,255,255,0.6) 50%, transparent 52%);
+          animation: twinkle 2.2s ease-in-out infinite;
         }
 
         /* Pulsing glow animation */
@@ -425,8 +430,20 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
         }
 
         @keyframes twinkle {
-          0%, 100% { opacity: 0.8; transform: translateY(0px); }
-          50% { opacity: 0.4; transform: translateY(1px); }
+          0% { opacity: 0.9; transform: translateY(0px) rotate(0deg) scale(1); }
+          25% { opacity: 0.6; transform: translateY(-1px) rotate(90deg) scale(1.1); }
+          50% { opacity: 0.3; transform: translateY(1px) rotate(180deg) scale(0.9); }
+          75% { opacity: 0.7; transform: translateY(-0.5px) rotate(270deg) scale(1.05); }
+          100% { opacity: 0.9; transform: translateY(0px) rotate(360deg) scale(1); }
+        }
+
+        @keyframes tourSparkle {
+          0%, 100% { opacity: 0.7; transform: scale(1) rotate(0deg); }
+          50% { opacity: 0.3; transform: scale(1.2) rotate(180deg); }
+        }
+
+        .tour-sparkles {
+          animation: tourSparkle 3.5s ease-in-out infinite;
         }
 
         /* Ensure bubble is above everything */

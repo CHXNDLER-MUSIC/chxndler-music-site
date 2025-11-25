@@ -262,7 +262,7 @@ export default function SteeringWheelOverlay({
       // Ensure the entire beam (height ≈72px) sits fully above the blue button
       // Gap = power button size + beam height + small safety margin (accounts for translateY(8px))
       const BEAM_HEIGHT = 68; // keep in sync with :root --beam-height
-      const SAFETY_MARGIN = -40; // reduced to move display lower on screen
+      const SAFETY_MARGIN = -90; // slightly lowered more
       const beamGap = Math.round(powerSizePx + BEAM_HEIGHT + SAFETY_MARGIN);
       root.style.setProperty('--power-size-px', `${powerSizePx}px`);
       root.style.setProperty('--beam-gap-px', `${beamGap}px`);
