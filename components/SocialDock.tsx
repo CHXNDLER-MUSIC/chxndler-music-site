@@ -65,7 +65,7 @@ export default function SocialDock() {
     <div className="absolute inset-0 z-30 pointer-events-none">
       {/* Right-aligned vertical stack inside the console */}
       <div
-        className="absolute right-2 bottom-2 flex flex-col gap-2 pointer-events-auto"
+        className="absolute right-2 bottom-6 flex flex-col gap-2 pointer-events-auto"
         style={{ transform: "perspective(800px) rotateX(8deg) translateZ(0)" }}
       >
       {items.map((s) => {

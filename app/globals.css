@@ -216,6 +216,9 @@ html, body {
   /* Prevent layout shift during load */
   min-width: 100vw;
   position: relative;
+  /* Prevent horizontal panning/movement */
+  touch-action: pan-y pinch-zoom;
+  overscroll-behavior-x: none;
 }
 
 /* Smooth loading transitions to prevent layout shift */
@@ -229,6 +232,9 @@ main {
   min-width: 100vw;
   /* Match hologram blue background */
   background: radial-gradient(120% 120% at 50% 0%, #19E3FF 0%, #0EA8D0 40%, #062837 100%);
+  /* Prevent horizontal movement in main container */
+  touch-action: pan-y pinch-zoom;
+  overscroll-behavior-x: none;
 }
 
 /* Prevent flash of unstyled content */
@@ -372,13 +378,13 @@ main {
 .hud-top-controls::before {
   content: "";
   position: absolute;
-  top: -8px;
+  top: -4px;
   left: -12px;
   right: -12px;
-  bottom: -8px;
+  bottom: -4px;
   background: rgba(56, 182, 255, 0.12);
-  border: 1px solid rgba(25, 227, 255, 0.6);
-  border-radius: 28px;
+  border: 2px solid rgba(25, 227, 255, 0.6);
+  border-radius: 12px;
   backdrop-filter: blur(8px);
   animation: buttonRailDrift 3s ease-in-out infinite;
   z-index: -1;
@@ -816,8 +822,9 @@ img[src$="/elements/music.png"] {
   width: 100%;
   height: 18px;
   cursor: pointer;
-  border-radius: 0;
   background: transparent;
+  margin-top: 2px;
+  margin-bottom: 12px;
   overflow: visible;
   transition: opacity 0.2s ease;
 }

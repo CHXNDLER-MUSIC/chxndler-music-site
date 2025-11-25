@@ -13,7 +13,7 @@ export interface TourStep {
 export const TOUR_STEPS: TourStep[] = [
   {
     id: "code",
-    selector: "[data-tour-id='code'], [data-tour-id='beliefs']",
+    selector: "[data-tour-id='code']",
     title: "CODE",
     body: "This is the CODE. These are the Heartverse beliefs that guide your journey."
   },
@@ -25,13 +25,13 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: "binder",
-    selector: "[data-tour-id='binder'], [data-tour-id='cards']",
+    selector: "[data-tour-id='binder']",
     title: "BINDER",
     body: "Your Binder holds all CHXNDLER cards you collect. Some unlock by tier, others are rare drops."
   },
   {
     id: "stars",
-    selector: "[data-tour-id='stars'], [data-tour-id='journal']",
+    selector: "[data-tour-id='stars']",
     title: "STARS",
     body: "Your Soul Star Journal is where you reflect, grow, and complete your daily elemental prompts."
   },
@@ -114,40 +114,69 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
       el.classList.remove('tour-highlight');
     });
 
-    // Find target element
-    const element = document.querySelector(step.selector) as HTMLElement;
-    if (element) {
-      setTargetElement(element);
-      
-      // Add highlight class
-      element.classList.add('tour-highlight');
-      
-      // Position bubble
-      positionBubble(element);
+    // Helper function to find and setup the element
+    const findAndSetupElement = (retryCount = 0) => {
+      // Find target element
+      const element = document.querySelector(step.selector) as HTMLElement;
+      if (element) {
+        setTargetElement(element);
+        
+        // Add highlight class
+        element.classList.add('tour-highlight');
+        
+        // Position bubble
+        positionBubble(element);
 
-      // Add click listener to target element
-      const handleElementClick = () => {
-        if (currentStepIndex < TOUR_STEPS.length - 1) {
-          handleNext();
-        } else {
-          handleFinish(true);
+        // Trigger the actual button popout for this step
+        setTimeout(() => {
+          triggerButtonPopout(step.id);
+        }, 500);
+
+        // Add click listener to target element
+        const handleElementClick = () => {
+          if (currentStepIndex < TOUR_STEPS.length - 1) {
+            handleNext();
+          } else {
+            handleFinish(true);
+          }
+        };
+        element.addEventListener('click', handleElementClick);
+
+        // Store cleanup function on element
+        (element as any).__tourCleanup = () => {
+          element.removeEventListener('click', handleElementClick);
+          element.classList.remove('tour-highlight');
+        };
+      } else if (retryCount < 3) {
+        // Retry finding the element after a short delay (up to 3 times)
+        console.warn(`Tour target not found on attempt ${retryCount + 1}: ${step.selector}, retrying...`);
+        setTimeout(() => findAndSetupElement(retryCount + 1), 100 * (retryCount + 1));
+      } else {
+        console.warn(`Tour target not found after ${retryCount + 1} attempts: ${step.selector}`);
+        setTargetElement(null);
+        setBubblePosition(null);
+        // Fallback overlay background
+        if (overlayRef.current) {
+          overlayRef.current.style.background = 'radial-gradient(120% 120% at 50% -10%, rgba(0,0,0,0.55), rgba(0,0,0,0.75))';
         }
-      };
-      element.addEventListener('click', handleElementClick);
-
-      // Store cleanup function on element
-      (element as any).__tourCleanup = () => {
-        element.removeEventListener('click', handleElementClick);
-        element.classList.remove('tour-highlight');
-      };
-    } else {
-      console.warn(`Tour target not found: ${step.selector}`);
-      setTargetElement(null);
-      setBubblePosition(null);
-      // Fallback overlay background
-      if (overlayRef.current) {
-        overlayRef.current.style.background = 'radial-gradient(120% 120% at 50% -10%, rgba(0,0,0,0.55), rgba(0,0,0,0.75))';
       }
+    };
+
+    // Start the element finding process
+    findAndSetupElement();
+  };
+
+  // Trigger the actual popout for each button
+  const triggerButtonPopout = (stepId: string) => {
+    const element = document.querySelector(`[data-tour-id="${stepId}"]`) as HTMLElement;
+    if (element) {
+      // Simulate a click on the button to trigger its popout
+      const clickEvent = new MouseEvent('click', {
+        view: window,
+        bubbles: true,
+        cancelable: true
+      });
+      element.dispatchEvent(clickEvent);
     }
   };
 
@@ -162,6 +191,36 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
     // Remove all tour highlights
     document.querySelectorAll('.tour-highlight').forEach(el => {
       el.classList.remove('tour-highlight');
+    });
+
+    // Close any open popouts by clicking their close buttons
+    closeOpenPopouts();
+  };
+
+  // Close any open button popouts
+  const closeOpenPopouts = () => {
+    // Look for close buttons in open popouts and click them
+    const closeButtons = document.querySelectorAll('[class*="hologram-container"] button svg[viewBox="0 0 24 24"]');
+    closeButtons.forEach(svg => {
+      const closeButton = svg.closest('button') as HTMLButtonElement;
+      if (closeButton) {
+        closeButton.click();
+      }
+    });
+    
+    // Also try to close the SoulSky popover specifically
+    const soulSkyCloseButton = document.querySelector('.lyrics-popover-hud button[style*="close"]');
+    if (soulSkyCloseButton) {
+      (soulSkyCloseButton as HTMLButtonElement).click();
+    }
+
+    // Look for any visible popout panels and trigger their close
+    const popoutPanels = document.querySelectorAll('[style*="z-index: 2147483647"]');
+    popoutPanels.forEach(panel => {
+      const closeBtn = panel.querySelector('button');
+      if (closeBtn && closeBtn.textContent?.includes('×')) {
+        closeBtn.click();
+      }
     });
   };
 
@@ -411,6 +470,13 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
             0 0 24px rgba(252,84,175,0.9) !important,
             0 0 48px rgba(252,84,175,0.7) !important,
             0 0 96px rgba(252,84,175,0.5) !important;
+        }
+
+        /* Ensure tour highlight is visible above profile bar */
+        .tour-highlight, 
+        .tour-highlight * {
+          pointer-events: auto !important;
+          isolation: isolate !important;
         }
 
         .tour-highlight::after {

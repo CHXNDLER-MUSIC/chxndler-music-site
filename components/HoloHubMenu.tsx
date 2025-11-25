@@ -65,8 +65,8 @@ export default function HoloHubMenu({
   const joinRef = useRef<HTMLAudioElement | null>(null);
 
   // Position yellow panel using unified touch point system
-  // Bottom of display matches blue display position (30px lower)
-  const beamBottomCss = 'calc(var(--display-touch-top) - 30px)';
+  // Bottom of display shifted up higher than blue display position
+  const beamBottomCss = 'calc(var(--display-touch-top) + 20px)';
   // Panel height fixed - yellow display should never change height
   const panelHeight = 104; // Fixed height (80px itemSize + 24px padding)
 

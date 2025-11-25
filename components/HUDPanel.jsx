@@ -181,8 +181,8 @@ export default function HUDPanel({
   const playerRef = useRef(null);
   const [planetBottom, setPlanetBottom] = useState(56);
   // Vertical offset to raise/lower the Store (Gem) popover relative to its anchor
-  // Move it slightly lower (less negative) per request
-  const STORE_POPOVER_Y_OFFSET = -210; // move popover up slightly
+  // Move it slightly higher (more negative) per request
+  const STORE_POPOVER_Y_OFFSET = -230; // move popover up slightly higher
   // Dynamic spacing for song selector so it doesn't overlap the cover
   const coverRef = useRef(null);
   const [oneLinerRight, setOneLinerRight] = useState(inConsole ? 108 : 140);
@@ -271,7 +271,7 @@ export default function HUDPanel({
   const soulSkyScrollRef = useRef(null);
   const brandLastScrollAtRef = useRef(0);
   // Lift the CHXNDLER popover higher above its anchor
-  const BRAND_POPOVER_Y_OFFSET = 180; // pixels to shift upward when positioning
+  const BRAND_POPOVER_Y_OFFSET = 200; // pixels to shift upward when positioning
 
   // YouTube popout state (waveform HUD)
   const [showYouTubePopover, setShowYouTubePopover] = useState(false);

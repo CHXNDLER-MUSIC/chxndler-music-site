@@ -11,21 +11,19 @@ import { computePlanetLayout } from "@/lib/planetLayout";
 import { buildPlanetSongs } from "@/lib/planets";
 import { getEntriesByRing, getPlanetEntry } from "@/lib/planetRegistry";
 import { Html } from "@react-three/drei";
-import Image from "next/image";
-import { ELEMENTAL_PLANETS } from "@/lib/elementalPlanets";
 
 // Define element types and guards
 type ElementCode = "heart" | "water" | "lightning" | "darkness";
 
 // DIAGNOSTIC MODE - Set to true to show orbit rings, bounding boxes, and labels
-const SHOW_ORBITS = false;
+const SHOW_ORBITS = true;
 
 // Fixed elemental planets configuration - cardinal positions around heart
 const ELEMENTS = [
-  { code: "heart",     label: "💖 Heart",     position: [6, 0, 0] },     // right
-  { code: "water",     label: "🌊 Water",     position: [0, 0, 6] },     // forward
-  { code: "lightning", label: "⚡ Lightning", position: [-6, 0, 0] },    // left
-  { code: "darkness",  label: "🌑 Darkness",  position: [0, 0, -6] },    // back
+  { code: "heart",     label: "💖 Heart",     position: [25, 0, 0] },     // right
+  { code: "water",     label: "🌊 Water",     position: [0, 0, 25] },     // forward
+  { code: "lightning", label: "⚡ Lightning", position: [-25, 0, 0] },    // left
+  { code: "darkness",  label: "🌑 Darkness",  position: [0, 0, -25] },    // back
 ] as const;
 
 // Element colors and glow configuration
@@ -48,8 +46,8 @@ function isElementCode(code: string): code is ElementCode {
   return ["heart", "water", "lightning", "darkness"].includes(code);
 }
 
-const elementOrbitRadius = 6;
-const songOrbitRadius = 2;
+const elementOrbitRadius = 25;
+const songOrbitRadius = 8;
 
 // Elemental Planet with Glow component
 function ElementPlanetWithGlow({ 
@@ -66,10 +64,12 @@ function ElementPlanetWithGlow({
   const color = elementColors[element];
   const glowColor = elementGlows[element];
   
+  console.log(`ElementPlanetWithGlow: ${element} at position:`, position, `color: ${color}`);
+  
   return (
     <group position={position}>
       {/* Glow background - renderOrder 2 */}
-      <sprite ref={glowRef} scale={[8, 8, 1]} renderOrder={2}>
+      <sprite ref={glowRef} scale={[15, 15, 1]} renderOrder={2}>
         <spriteMaterial
           transparent={true}
           depthWrite={false}
@@ -80,14 +80,10 @@ function ElementPlanetWithGlow({
         />
       </sprite>
       
-      {/* Element planet - renderOrder 1 */}
-      <mesh renderOrder={1}>
-        <ElementalPlanet 
-          element={element as any}
-          position={[0, 0, 0]} 
-          size={2.0} 
-          glowIntensity={4.0}
-        />
+      {/* Element planet - renderOrder 1 - SIMPLE VERSION FOR DEBUG */}
+      <mesh renderOrder={1} position={[0, 0, 0]}>
+        <sphereGeometry args={[4.0, 32, 32]} />
+        <meshBasicMaterial color={color} />
       </mesh>
       
       {/* Diagnostic label */}
@@ -108,11 +104,11 @@ function ElementPlanetWithGlow({
       {/* Diagnostic bounding box */}
       {SHOW_ORBITS && (
         <mesh renderOrder={0}>
-          <boxGeometry args={[4, 4, 4]} />
+          <boxGeometry args={[8, 8, 8]} />
           <meshBasicMaterial 
             color={color} 
             transparent={true} 
-            opacity={0.1} 
+            opacity={0.2} 
             wireframe={true}
             depthWrite={false}
           />
@@ -126,11 +122,15 @@ function ElementPlanetWithGlow({
 function SongOrbitGroup({ 
   cards, 
   elementCode, 
-  elementPosition 
+  elementPosition,
+  mainId,
+  hoverId
 }: { 
   cards: any[]; 
   elementCode: ElementCode; 
   elementPosition: [number, number, number];
+  mainId: string | null;
+  hoverId: string | null;
 }) {
   const orbitRef = useRef<ThreeGroup>(null);
   
@@ -189,6 +189,9 @@ function SongOrbitGroup({
 function FixedElementalSystem({ songs, mainId, hoverId }: { songs: any[]; mainId: string | null; hoverId: string | null }) {
   const systemRef = useRef<ThreeGroup>(null);
   
+  // DEBUG: Log when this component renders
+  console.log("🚀 FixedElementalSystem RENDERING! Songs count:", songs?.length || 0, "mainId:", mainId, "hoverId:", hoverId);
+  
   // Group cards by element using song.planet.element
   const cardsByElement: Record<ElementCode, any[]> = React.useMemo(() => {
     const grouped: Record<ElementCode, any[]> = {
@@ -198,18 +201,30 @@ function FixedElementalSystem({ songs, mainId, hoverId }: { songs: any[]; mainId
       darkness: [],
     };
     
+    console.log("🔍 All songs:", songs.length, songs.map(s => ({ id: s.id, title: s.title, element: s.planet?.element, status: s.status })));
+    
     // Only process released songs
-    songs
-      .filter(song => song.status !== "locked" && song.status !== "coming_soon")
-      .forEach(song => {
-        // Use planet.element as the authoritative source
-        const element = song.planet?.element ?? "heart";
-        if (isElementCode(element)) {
-          grouped[element].push(song);
-        } else {
-          grouped.heart.push(song);
-        }
-      });
+    const releasedSongs = songs.filter(song => song.status !== "locked" && song.status !== "coming_soon");
+    console.log("✅ Released songs:", releasedSongs.length);
+    
+    releasedSongs.forEach(song => {
+      // Use planet.element as the authoritative source
+      const element = song.planet?.element ?? "heart";
+      console.log(`📍 Song "${song.title}" → element: ${element}`);
+      if (isElementCode(element)) {
+        grouped[element].push(song);
+      } else {
+        console.warn(`⚠️ Unknown element "${element}" for song "${song.title}", defaulting to heart`);
+        grouped.heart.push(song);
+      }
+    });
+    
+    console.log("📊 Songs grouped by element:", {
+      heart: grouped.heart.length,
+      water: grouped.water.length, 
+      lightning: grouped.lightning.length,
+      darkness: grouped.darkness.length
+    });
     
     return grouped;
   }, [songs]);
@@ -240,6 +255,8 @@ function FixedElementalSystem({ songs, mainId, hoverId }: { songs: any[]; mainId
         const cardsForThisElement = cardsByElement[element.code];
         const orbitRef = useRef<ThreeGroup>(null);
         
+        console.log(`🪐 Rendering element ${element.code} at position:`, element.position, `with ${cardsForThisElement.length} songs`);
+        
         return (
           <group key={element.code} name={`element-${element.code}`}>
             {/* Element planet with glow */}
@@ -255,6 +272,8 @@ function FixedElementalSystem({ songs, mainId, hoverId }: { songs: any[]; mainId
                 cards={cardsForThisElement}
                 elementCode={element.code}
                 elementPosition={element.position as [number, number, number]}
+                mainId={mainId}
+                hoverId={hoverId}
               />
             </group>
           </group>
@@ -301,6 +320,20 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
   // FORCE homepage mode only for real home overview
   const actualShouldShowAll = isHomeOverview ? true : shouldShowAll;
   const actualShouldHide = isHomeOverview ? false : shouldHide; // Never hide in real home overview
+  
+  // DEBUG: Log the visibility conditions
+  console.log("Planet visibility debug:", {
+    showAll,
+    planetDisplayMode,
+    shouldShowAll,
+    shouldShowSingle,
+    shouldHide,
+    isHomeOverview,
+    actualShouldShowAll,
+    actualShouldHide,
+    mainId,
+    condition: actualShouldShowAll || shouldShowSingle
+  });
   
   // EMERGENCY FIX (refined): Only normalize to 'all' on true home overview
   // Do NOT override an explicit 'hidden' mode (e.g., right after a selection/warp)
@@ -378,10 +411,8 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
     <div
       className="absolute inset-0"
       style={{
-        // Hide completely when planetDisplayMode is 'hidden', but ALWAYS show when showAll is true (homepage)
-        // Homepage (showAll=true) always shows planets regardless of other state
-        // CRITICAL FIX: Force opacity=1 when showAll=true (homepage)
-        opacity: isHomeOverview ? 1 : (actualShouldHide || (!effectivePlanetsVisible && !isHomeOverview)) ? 0 : 1,
+        // DEBUG: Force opacity to 1 to debug visibility issue
+        opacity: 1,
         transition: isMobile ? 'none' : 'opacity 400ms ease-in-out',
         willChange: 'opacity',
         transform: 'translateZ(0)',
@@ -389,22 +420,6 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         backfaceVisibility: 'hidden' as any,
       }}
     >
-      {/* Frontend-only elemental planet PNGs overlay (no Supabase). */}
-      <div
-        className="pointer-events-none absolute inset-x-0 top-3 z-[2] flex w-full items-center justify-center gap-4"
-        aria-hidden
-      >
-        {Object.entries(ELEMENTAL_PLANETS).map(([element, src]) => (
-          <Image
-            key={element}
-            src={src}
-            alt={`${element} planet`}
-            width={256}
-            height={256}
-            unoptimized
-          />
-        ))}
-      </div>
       <Canvas
         className="absolute inset-0"
         style={{ background: 'transparent' }}
@@ -466,14 +481,30 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
             </group>
           )}
           
-          {/* Fixed elemental system with song planets orbiting each element */}
-          {actualShouldShowAll && (
-            <FixedElementalSystem
-              songs={songs || []}
-              mainId={mainId}
-              hoverId={hoverId}
-            />
-          )}
+          {/* SIMPLE ELEMENTAL PLANETS - DIRECT IMPLEMENTATION */}
+          {/* Heart Planet */}
+          <mesh position={[25, 0, 0]}>
+            <sphereGeometry args={[4, 32, 32]} />
+            <meshBasicMaterial color="#FC54AF" />
+          </mesh>
+          
+          {/* Water Planet */}
+          <mesh position={[0, 0, 25]}>
+            <sphereGeometry args={[4, 32, 32]} />
+            <meshBasicMaterial color="#38B6FF" />
+          </mesh>
+          
+          {/* Lightning Planet */}
+          <mesh position={[-25, 0, 0]}>
+            <sphereGeometry args={[4, 32, 32]} />
+            <meshBasicMaterial color="#F2EF1D" />
+          </mesh>
+          
+          {/* Darkness Planet */}
+          <mesh position={[0, 0, -25]}>
+            <sphereGeometry args={[4, 32, 32]} />
+            <meshBasicMaterial color="#6A4C93" />
+          </mesh>
           
           {/* Single song focus mode - show individual planet */}
           {shouldShowSingle && focusId && (() => {

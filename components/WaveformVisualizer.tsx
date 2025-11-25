@@ -46,9 +46,6 @@ export default function WaveformVisualizer({
 }: WaveformVisualizerProps) {
   const elementColor = ELEMENT_COLORS[element]?.stroke || '#FFFFFF';
   
-  // Debug log to see if component is rendering
-  console.log('WaveformVisualizer rendering:', { element, progress, duration, currentTime, className });
-  
   // Calculate progress ratio
   const liveDur = (duration && isFinite(duration) && duration > 0) ? duration : 0;
   const liveTime = (currentTime && isFinite(currentTime) && currentTime >= 0) ? currentTime : 0;
@@ -87,13 +84,10 @@ export default function WaveformVisualizer({
       onMouseMove={handleMouseMove}
       style={{
         position: 'relative',
-        border: '1px solid rgba(255,255,255,0.1)',
         width,
         height,
-        borderRadius: '4px',
-        background: 'rgba(0,0,0,0.1)',
         cursor: onProgressClick ? 'pointer' : 'default',
-        marginTop: '4px',
+        marginTop: '8px',
         marginBottom: '4px'
       }}
     >
@@ -118,36 +112,50 @@ export default function WaveformVisualizer({
             <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
             <feMerge>
               <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="coloredBlur"/>
               <feMergeNode in="SourceGraphic"/>
             </feMerge>
           </filter>
         </defs>
         
-        {/* Background track as a thick rounded line */}
+        {/* Full white bar with bright glow */}
         <line 
-          x1="0" 
+          x1="5" 
           y1={centerY} 
-          x2="100" 
+          x2="95" 
           y2={centerY} 
-          stroke={elementColor} 
-          strokeWidth="8" 
-          opacity="0.35" 
+          stroke="#FFFFFF" 
+          strokeWidth="6" 
+          opacity="1" 
           strokeLinecap="round" 
           strokeLinejoin="round" 
           filter="url(#waveformGlow)" 
         />
-        
-        {/* Played portion: single clean rounded bar with glow */}
+        {/* Additional bright line for visibility */}
         <line 
-          x1="0" 
+          x1="5" 
           y1={centerY} 
-          x2={progressX} 
+          x2="95" 
           y2={centerY} 
-          stroke={elementColor} 
-          strokeWidth="8" 
+          stroke="#FFFFFF" 
+          strokeWidth="3" 
           opacity="1" 
           strokeLinecap="round" 
           strokeLinejoin="round" 
+        />
+        
+        {/* Current position indicator heart - always visible */}
+        <path 
+          d={`M ${Math.max(5, progressX)} ${centerY - 2.5} 
+              C ${Math.max(5, progressX) - 1.5} ${centerY - 4}, ${Math.max(5, progressX) - 3.5} ${centerY - 3}, ${Math.max(5, progressX) - 2} ${centerY - 1}
+              C ${Math.max(5, progressX) - 1} ${centerY + 0.5}, ${Math.max(5, progressX)} ${centerY + 2}, ${Math.max(5, progressX)} ${centerY + 2}
+              C ${Math.max(5, progressX)} ${centerY + 2}, ${Math.max(5, progressX) + 1} ${centerY + 0.5}, ${Math.max(5, progressX) + 2} ${centerY - 1}
+              C ${Math.max(5, progressX) + 3.5} ${centerY - 3}, ${Math.max(5, progressX) + 1.5} ${centerY - 4}, ${Math.max(5, progressX)} ${centerY - 2.5} Z`}
+          fill="#FFFFFF" 
+          stroke={elementColor} 
+          strokeWidth="1" 
+          opacity="1" 
           filter="url(#waveformGlow)" 
         />
       </svg>
