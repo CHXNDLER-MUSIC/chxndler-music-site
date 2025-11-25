@@ -478,15 +478,23 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // Store the track index to set after warp completes
     pendingTrackIndexRef.current = idx;
     
-    // Add a brief delay before triggering warp sequence, allowing for anticipation
-    setTimeout(() => {
-      // Trigger warp sequence with new song's sky
-      setAllowWarp(true);
-      // Switch base sky immediately so it loads while lightspeed overlay plays
+    // Always switch the base sky immediately so it can load under the overlay.
+    // Do not start a new warp if one is already in progress; just update the pending track.
+    try {
       setSky(skyFor(t.slug));
       setNextSky(null);
-      setFlySignal((n) => n + 1);
-    }, 300); // Small delay before warp starts
+    } catch {}
+
+    // If a warp is already active (or being initiated by Start), avoid stacking warps.
+    // Keep the current warp running and let the latest pending selection take effect when it finishes.
+    if (!warpActive && !isWarping) {
+      // Add a brief delay before triggering warp sequence, allowing for anticipation
+      setTimeout(() => {
+        // Trigger warp sequence
+        setAllowWarp(true);
+        setFlySignal((n) => n + 1);
+      }, 300);
+    }
     
     // MediaPlayer channel change will be handled after warp and join-alien SFX complete
     // This is done in the onWarpSfxEnd handler to ensure proper timing
@@ -1262,7 +1270,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   // Position the blue display slightly lower than the light beam top  
   // Raise the bottom edge of the blue display by 70px total (relative to original)
   // Keep top fixed by reducing height by the same 70px
-  const hudBottom = useMemo(() => 'calc(var(--display-touch-top) + 30px)', []);
+  const hudBottom = useMemo(() => 'calc(var(--display-touch-top) + 60px)', []);
 
   // Provide CSS variables globally (avoids any runtime style factory edge cases)
 
@@ -1465,9 +1473,6 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             if (!postWarpUser) {
               // User is NOT logged in - show Welcome Home modal after warp
               setShowWelcomeHomeModal(true);
-            } else if (!postWarpProfileComplete) {
-              // User IS logged in but profile is not complete - show name modal
-              openNamePrompt();
             }
             // If user is logged in AND profile is complete, continue with normal warp flow (blue cockpit display)
           }
@@ -1895,8 +1900,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               left: '50%',
               transform: 'translateX(-50%)',
               width: 'calc(var(--display-width) + 32px)',
-              height: '30px',
-              paddingTop: '20px',
+              height: '1px',
+              paddingTop: '0px',
               zIndex: 93,
               ['--hud-y']: `${hudYOffset}px`,
               pointerEvents: (uiUnlocked && showOverlayUI && !showDimmingOverlay) ? 'auto' : 'none'

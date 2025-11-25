@@ -602,7 +602,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
 
   return (
     <motion.div
-      className={`cover-hologram-container ${hovered ? 'hovered' : ''} ${inline ? 'relative' : 'absolute left-1/2 z-30 -translate-x-1/2'} rounded-2xl cursor-pointer border-2 border-[#19E3FF]/80 bg-cyan-400/10 backdrop-blur-xl shadow-[0_0_18px_rgba(25,227,255,0.35)]`}
+      className={`cover-hologram-container ${hovered ? 'hovered' : ''} ${inline ? 'relative' : 'absolute left-1/2 z-30 -translate-x-1/2'} rounded-2xl cursor-pointer border-2 border-[#19E3FF]/80 bg-cyan-400/10 backdrop-blur-xl`}
       style={inline ? { 
         // Make the cover touch the sides of the blue box: no extra padding compensation
         width: size,
@@ -1404,11 +1404,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
         }
         .cover-hologram-container:hover,
         .cover-hologram-container.hovered {
-          box-shadow:
-            0 0 52px rgba(25,227,255,.9),
-            0 0 90px rgba(25,227,255,.7),
-            0 0 140px rgba(25,227,255,0.5),
-            0 0 200px rgba(25,227,255,0.3) !important;
+          box-shadow: none !important;
         }
         
         .cover-hologram-image {
@@ -1417,11 +1413,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
         }
         .cover-hologram-container:hover .cover-hologram-image,
         .cover-hologram-container.hovered .cover-hologram-image {
-          filter: brightness(1.6) contrast(1.4) saturate(1.8) 
-            drop-shadow(0 0 20px rgba(25,227,255,1)) 
-            drop-shadow(0 0 40px rgba(25,227,255,0.8)) 
-            drop-shadow(0 0 80px rgba(25,227,255,0.6))
-            drop-shadow(0 0 120px rgba(25,227,255,0.4));
+          filter: brightness(1.6) contrast(1.4) saturate(1.8);
         }
         
         .cover-glow-frame {
@@ -1431,12 +1423,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
         .cover-hologram-container:hover .cover-glow-frame,
         .cover-hologram-container.hovered .cover-glow-frame {
           border-color: rgba(25, 227, 255, 1);
-          box-shadow:
-            inset 0 0 80px rgba(255,255,255,0.2),
-            0 0 52px rgba(25,227,255,.9),
-            0 0 90px rgba(25,227,255,.7),
-            0 0 140px rgba(25,227,255,0.5),
-            0 0 200px rgba(25,227,255,0.3);
+          box-shadow: none;
         }
         
         

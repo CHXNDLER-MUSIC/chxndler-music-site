@@ -1271,6 +1271,133 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                         );
                       })()}
                     </div>
+                  ) : purchaseState === 'physical-form' && selectedPurchaseType === 'physical' ? (
+                    <div className="flex flex-col text-left">
+                      {/* Error display */}
+                      {Object.keys(shippingErrors).length > 0 && (
+                        <div 
+                          className="text-center mb-2 text-xs p-2 rounded"
+                          style={{ 
+                            backgroundColor: 'rgba(239,68,68,0.1)',
+                            border: '1px solid rgba(239,68,68,0.3)',
+                            color: '#FCA5A5'
+                          }}
+                        >
+                          Please fill in all required fields
+                        </div>
+                      )}
+
+                      {/* Shipping form inputs */}
+                      <div className="space-y-2 mb-3">
+                        {/* Full name */}
+                        <input
+                          type="text"
+                          placeholder="Full name *"
+                          value={shippingForm.fullName}
+                          onChange={(e) => updateShippingField('fullName', e.target.value)}
+                          className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
+                            shippingErrors.fullName ? 'border-red-400/60' : 'border-pink-400/40'
+                          }`}
+                          style={{ 
+                            boxShadow: `0 0 8px ${shippingErrors.fullName ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
+                            textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                          }}
+                        />
+
+                        {/* Street address */}
+                        <input
+                          type="text"
+                          placeholder="Street address *"
+                          value={shippingForm.streetAddress}
+                          onChange={(e) => updateShippingField('streetAddress', e.target.value)}
+                          className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
+                            shippingErrors.streetAddress ? 'border-red-400/60' : 'border-pink-400/40'
+                          }`}
+                          style={{ 
+                            boxShadow: `0 0 8px ${shippingErrors.streetAddress ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
+                            textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                          }}
+                        />
+
+                        {/* City */}
+                        <input
+                          type="text"
+                          placeholder="City *"
+                          value={shippingForm.city}
+                          onChange={(e) => updateShippingField('city', e.target.value)}
+                          className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
+                            shippingErrors.city ? 'border-red-400/60' : 'border-pink-400/40'
+                          }`}
+                          style={{ 
+                            boxShadow: `0 0 8px ${shippingErrors.city ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
+                            textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                          }}
+                        />
+
+                        {/* State */}
+                        <input
+                          type="text"
+                          placeholder="State *"
+                          value={shippingForm.state}
+                          onChange={(e) => updateShippingField('state', e.target.value)}
+                          className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
+                            shippingErrors.state ? 'border-red-400/60' : 'border-pink-400/40'
+                          }`}
+                          style={{ 
+                            boxShadow: `0 0 8px ${shippingErrors.state ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
+                            textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                          }}
+                        />
+
+                        {/* ZIP Code */}
+                        <input
+                          type="text"
+                          placeholder="ZIP code *"
+                          value={shippingForm.zipCode}
+                          onChange={(e) => updateShippingField('zipCode', e.target.value)}
+                          className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
+                            shippingErrors.zipCode ? 'border-red-400/60' : 'border-pink-400/40'
+                          }`}
+                          style={{ 
+                            boxShadow: `0 0 8px ${shippingErrors.zipCode ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
+                            textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                          }}
+                        />
+
+                        {/* Country */}
+                        <input
+                          type="text"
+                          placeholder="Country *"
+                          value={shippingForm.country}
+                          onChange={(e) => updateShippingField('country', e.target.value)}
+                          className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
+                            shippingErrors.country ? 'border-red-400/60' : 'border-pink-400/40'
+                          }`}
+                          style={{ 
+                            boxShadow: `0 0 8px ${shippingErrors.country ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
+                            textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                          }}
+                        />
+                      </div>
+                      
+                      {/* Action buttons */}
+                      <div className="flex justify-center gap-2">
+                        <button
+                          onClick={handlePhysicalPurchase}
+                          className="px-3 py-1 rounded border border-green-400/60 bg-green-500/10 hover:bg-green-500/20 transition-all duration-200 text-xs text-green-300"
+                          style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)' }}
+                        >
+                          Confirm Physical Purchase
+                        </button>
+                        <button
+                          onClick={resetPurchaseState}
+                          className="px-3 py-1 rounded border border-pink-400/60 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs text-pink-300"
+                          style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
                   ) : purchaseState === 'digital-preview' && selectedPurchaseType === 'digital' ? (
                     <div className="flex flex-col text-left">
                       {/* Title: [user name] Heart Coin PNG [# of current heart coins] */}
@@ -1680,182 +1807,6 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                   </div>
                 )}
 
-                {/* State D: Physical shipping form */}
-                {purchaseState === 'physical-form' && selectedPurchaseType === 'physical' && (
-                  <div className="mt-2">
-                    {/* Header */}
-                    <div 
-                      className="text-center mb-2 text-xs font-bold"
-                      style={{ 
-                        color: '#FF69B4',
-                        textShadow: '0 0 4px rgba(255,105,180,0.6)'
-                      }}
-                    >
-                      Ship a physical {currentCard.name} card
-                    </div>
-                    <div 
-                      className="text-center mb-3 text-xs"
-                      style={{ 
-                        color: '#FFB6C1',
-                        textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                      }}
-                    >
-                      Enter your mailing details so we can send your card.
-                    </div>
-
-                    {/* Error display */}
-                    {Object.keys(shippingErrors).length > 0 && (
-                      <div 
-                        className="text-center mb-2 text-xs p-2 rounded"
-                        style={{ 
-                          backgroundColor: 'rgba(239,68,68,0.1)',
-                          border: '1px solid rgba(239,68,68,0.3)',
-                          color: '#FCA5A5'
-                        }}
-                      >
-                        Please fill in all required fields
-                      </div>
-                    )}
-
-                    {/* Shipping form */}
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                      {/* Full name - spans 2 columns */}
-                      <div className="col-span-2">
-                        <input
-                          type="text"
-                          placeholder="Full name *"
-                          value={shippingForm.fullName}
-                          onChange={(e) => updateShippingField('fullName', e.target.value)}
-                          className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
-                            shippingErrors.fullName ? 'border-red-400/60' : 'border-pink-400/40'
-                          }`}
-                          style={{ 
-                            boxShadow: `0 0 8px ${shippingErrors.fullName ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
-                            textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                          }}
-                        />
-                      </div>
-
-                      {/* Street address - spans 2 columns */}
-                      <div className="col-span-2">
-                        <input
-                          type="text"
-                          placeholder="Street address *"
-                          value={shippingForm.streetAddress}
-                          onChange={(e) => updateShippingField('streetAddress', e.target.value)}
-                          className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
-                            shippingErrors.streetAddress ? 'border-red-400/60' : 'border-pink-400/40'
-                          }`}
-                          style={{ 
-                            boxShadow: `0 0 8px ${shippingErrors.streetAddress ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
-                            textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                          }}
-                        />
-                      </div>
-
-                      {/* Apartment/unit - spans 2 columns */}
-                      <div className="col-span-2">
-                        <input
-                          type="text"
-                          placeholder="Apartment or unit (optional)"
-                          value={shippingForm.apartmentUnit}
-                          onChange={(e) => updateShippingField('apartmentUnit', e.target.value)}
-                          className="w-full px-2 py-1 rounded border border-pink-400/40 bg-black/40 text-pink-200 text-xs placeholder-pink-300/60"
-                          style={{ 
-                            boxShadow: '0 0 8px rgba(255,105,180,0.3)',
-                            textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                          }}
-                        />
-                      </div>
-
-                      {/* City */}
-                      <div>
-                        <input
-                          type="text"
-                          placeholder="City *"
-                          value={shippingForm.city}
-                          onChange={(e) => updateShippingField('city', e.target.value)}
-                          className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
-                            shippingErrors.city ? 'border-red-400/60' : 'border-pink-400/40'
-                          }`}
-                          style={{ 
-                            boxShadow: `0 0 8px ${shippingErrors.city ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
-                            textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                          }}
-                        />
-                      </div>
-
-                      {/* State */}
-                      <div>
-                        <input
-                          type="text"
-                          placeholder="State *"
-                          value={shippingForm.state}
-                          onChange={(e) => updateShippingField('state', e.target.value)}
-                          className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
-                            shippingErrors.state ? 'border-red-400/60' : 'border-pink-400/40'
-                          }`}
-                          style={{ 
-                            boxShadow: `0 0 8px ${shippingErrors.state ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
-                            textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                          }}
-                        />
-                      </div>
-
-                      {/* ZIP code - spans 2 columns */}
-                      <div className="col-span-2">
-                        <input
-                          type="text"
-                          placeholder="ZIP code *"
-                          value={shippingForm.zipCode}
-                          onChange={(e) => updateShippingField('zipCode', e.target.value)}
-                          className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
-                            shippingErrors.zipCode ? 'border-red-400/60' : 'border-pink-400/40'
-                          }`}
-                          style={{ 
-                            boxShadow: `0 0 8px ${shippingErrors.zipCode ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
-                            textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                          }}
-                        />
-                      </div>
-
-                      {/* Country - spans 2 columns */}
-                      <div className="col-span-2">
-                        <input
-                          type="text"
-                          placeholder="Country *"
-                          value={shippingForm.country}
-                          onChange={(e) => updateShippingField('country', e.target.value)}
-                          className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
-                            shippingErrors.country ? 'border-red-400/60' : 'border-pink-400/40'
-                          }`}
-                          style={{ 
-                            boxShadow: `0 0 8px ${shippingErrors.country ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
-                            textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                          }}
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* Action buttons */}
-                    <div className="flex justify-center gap-2">
-                      <button
-                        onClick={handlePhysicalPurchase}
-                        className="px-3 py-1 rounded border border-green-400/60 bg-green-500/10 hover:bg-green-500/20 transition-all duration-200 text-xs text-green-300"
-                        style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)' }}
-                      >
-                        Confirm Physical Purchase
-                      </button>
-                      <button
-                        onClick={resetPurchaseState}
-                        className="px-3 py-1 rounded border border-pink-400/60 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs text-pink-300"
-                        style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
 
                 {/* State E: Purchase successful */}
                 {purchaseState === 'success' && selectedPurchaseType && (

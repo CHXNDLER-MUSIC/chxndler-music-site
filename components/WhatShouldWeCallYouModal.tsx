@@ -5,20 +5,29 @@ import { createPortal } from "react-dom";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useUIStore } from "@/store/useUIStore";
 import { useProfile } from "@/contexts/ProfileContext";
+import { useTour } from "@/contexts/TourContext";
 
 export default function WhatShouldWeCallYouModal() {
+  // Hooks (fixed order; all at top)
   const { showNamePrompt, closeNamePrompt, openElementSelection } = useUIStore();
-  const { updateProfileName, profile } = useProfile();
+  const { updateProfileName, updateProfile, profile } = useProfile();
+  const { start: startTour } = useTour();
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [shouldStartTourAfterEnter, setShouldStartTourAfterEnter] = useState(false);
 
   // Check authentication and prefill name when modal opens
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabaseClient.auth.getUser();
-      setCurrentUser(user);
+      try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        setCurrentUser(user);
+      } finally {
+        setAuthChecked(true);
+      }
     };
 
     if (showNamePrompt) {
@@ -51,10 +60,9 @@ export default function WhatShouldWeCallYouModal() {
       
       // Use the new updateProfileName function 
       await updateProfileName(trimmedName);
-      
+      // Close and advance to element selection after saving name
       closeNamePrompt();
-      // If name completes profile in your flow, emit ENTER event; TourProvider guards duplicates
-      try { window.dispatchEvent(new CustomEvent('heartverse:entered')); } catch {}
+      openElementSelection();
     } catch (e: any) {
       setError(e?.message || "Failed to save name");
     } finally {
@@ -62,17 +70,41 @@ export default function WhatShouldWeCallYouModal() {
     }
   }
 
-  if (!showNamePrompt) return null;
-  if (typeof document === 'undefined') return null;
+  // Enter the Heartverse click: close this modal and open element selection
+  const handleEnterHeartverse = () => {
+    // Transition to element selection
+    closeNamePrompt();
+    openElementSelection();
+    // Defer tour until after profile is complete (name + element)
+    const hasSeenTour = !!profile?.has_seen_tour;
+    if (!hasSeenTour) {
+      setShouldStartTourAfterEnter(true);
+    }
+  };
 
-  // Guard: Only render if user is authenticated and has a profile
-  if (!currentUser || !profile) {
-    // Close the modal if it's open but conditions aren't met
-    if (showNamePrompt) {
+  // Guard-close in an effect to avoid updating state during render
+  useEffect(() => {
+    if (!showNamePrompt) return;
+    if (!authChecked) return;
+    if (!currentUser || !profile) {
       closeNamePrompt();
     }
-    return null;
-  }
+  }, [showNamePrompt, authChecked, currentUser, profile, closeNamePrompt]);
+
+  // Safely start tour once user clicks Enter and profile is complete
+  useEffect(() => {
+    if (!shouldStartTourAfterEnter) return;
+    // Require both name and element before starting the tour
+    if (!profile?.name || !profile?.element) return;
+    // Start the tour and mark as seen
+    try { startTour(); } catch {}
+    try { updateProfile({ has_seen_tour: true, profile_complete: true }); } catch {}
+    setShouldStartTourAfterEnter(false);
+  }, [shouldStartTourAfterEnter, profile?.name, profile?.element, startTour, updateProfile]);
+
+  // Early returns come after all hooks
+  if (!showNamePrompt) return null;
+  if (typeof document === 'undefined') return null;
 
   return createPortal(
     <>
@@ -234,6 +266,21 @@ export default function WhatShouldWeCallYouModal() {
             }}
           >
             {loading ? "SAVING..." : "CONFIRM"}
+          </button>
+
+          {/* Continue to element selection */}
+          <button
+            type="button"
+            onClick={handleEnterHeartverse}
+            className="w-full inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-medium transition"
+            style={{
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.25)',
+              color: '#FFFFFF',
+              marginTop: '4px'
+            }}
+          >
+            ENTER THE HEARTVERSE
           </button>
         </form>
         </div>

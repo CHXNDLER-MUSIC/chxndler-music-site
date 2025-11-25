@@ -2260,13 +2260,13 @@ export default function HUDPanel({
             // Remove hover glow/scale for the entire HUD display per request
             transition={{ type: "spring", stiffness: 200, damping: 20 }}
             style={inConsole
-              ? { width: '100%', transform: 'perspective(1200px) rotateX(6deg)', transformOrigin: 'center', marginTop: 0, willChange: 'opacity, transform', contain: 'layout paint', backfaceVisibility: 'hidden' }
-              : { transform: 'perspective(1200px) rotateX(6deg)', marginTop: 0, willChange: 'opacity, transform', contain: 'layout paint', backfaceVisibility: 'hidden' }
+              ? { width: '100%', maxHeight: '350px', transform: 'perspective(1200px) rotateX(6deg)', transformOrigin: 'center', marginTop: 0, willChange: 'opacity, transform', contain: 'layout paint', backfaceVisibility: 'hidden' }
+              : { maxHeight: '350px', transform: 'perspective(1200px) rotateX(6deg)', marginTop: 0, willChange: 'opacity, transform', contain: 'layout paint', backfaceVisibility: 'hidden' }
             }
           >
           {/* Background removed: keep HUD box transparent */}
         {/* Single blue outline wrapping the HUD content (amped glow) */}
-        <div className={`relative rounded-2xl ${inConsole ? 'p-2' : 'p-4'}`} style={{
+        <div className={`relative rounded-2xl ${inConsole ? 'pt-0 pb-2 px-2' : 'pt-0 pb-4 px-4'}`} style={{
           background: 'transparent',
           boxShadow: 'none',
           willChange: 'opacity, transform',
@@ -2283,7 +2283,7 @@ export default function HUDPanel({
               // Fade only the 3D layer when beam-only mode is active
               opacity: contentOpacity,
               // Move the 3D planet system higher
-              top: `calc(${inConsole ? 44 : 64}px + var(--hud-y, 0px)${!currentId ? ' - 18px' : ''})`, 
+              top: `calc(-70px)`, 
               bottom: planetBottom,
               pointerEvents: 'none' // Allow clicks to pass through to elements below
             }}

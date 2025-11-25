@@ -9,12 +9,13 @@ import { isAnalyticsDisabled } from "@/lib/analytics";
 import { Suspense } from "react";
 import { AudioProvider } from "@/app/providers/AudioProvider";
 import LazyLoadEnhancer from "@/components/LazyLoadEnhancer";
-import NamePromptOnLogin from "@/components/NamePromptOnLogin";
+import OnboardingEntryGate from "@/components/OnboardingEntryGate";
 import WhatShouldWeCallYouModal from "@/components/WhatShouldWeCallYouModal";
 import WhatElementAreYouModal from "@/components/WhatElementAreYouModal";
 import StoreProvider from "@/components/StoreProvider";
 import { ProfileProvider } from "@/contexts/ProfileContext";
 import { TourProvider } from "@/contexts/TourContext";
+import TourReplayFloating from "@/components/TourReplayFloating";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://chxndler.world"),
@@ -124,11 +125,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {!analyticsOff && <ClickTracker />}
             {!analyticsOff && <AnalyticsWidget />}
             <LazyLoadEnhancer />
-            <NamePromptOnLogin />
+            <OnboardingEntryGate />
             <WhatShouldWeCallYouModal />
             <WhatElementAreYouModal />
             <StoreProvider />
             {children}
+            {/* Manual replay button (always available once a profile exists) */}
+            <TourReplayFloating />
             </TourProvider>
           </AudioProvider>
         </ProfileProvider>

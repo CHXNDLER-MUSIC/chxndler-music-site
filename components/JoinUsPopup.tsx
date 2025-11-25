@@ -68,14 +68,14 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
 
     try {
       console.log('🚀 Starting email signup for:', email);
-      console.log('🚀 Redirect URL will be:', window.location.origin + '/auth/callback');
+      console.log('🚀 Redirect URL will be:', window.location.origin + '/auth/callback?profileSetup=1');
 
       // Sign up with email and redirect to auth callback for name prompt
       const { data, error: signUpError } = await supabaseClient.auth.signUp({
         email,
         password: 'temppassword123', // Temporary password
         options: { 
-          emailRedirectTo: window.location.origin + '/auth/callback',
+          emailRedirectTo: window.location.origin + '/auth/callback?profileSetup=1',
         }
       });
 

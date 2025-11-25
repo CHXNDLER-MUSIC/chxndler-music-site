@@ -2103,7 +2103,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           justify-content: center; /* center under controls */
           margin-top: 6px;
           width: 100%;
-          order: -1 !important; /* Move waveform above controls */
+          order: 2 !important; /* Place waveform below controls */
         }
         
         /* Waveform visualization - cosmic dark background for glow visibility */

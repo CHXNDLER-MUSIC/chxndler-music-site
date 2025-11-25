@@ -41,7 +41,7 @@ export default function HeartCoinModal({ open, onClose }: Props) {
     try {
       const { error } = await supabaseClient.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: window.location.origin + "/auth/callback" },
+        options: { emailRedirectTo: window.location.origin + "/auth/callback?profileSetup=1" },
       });
       if (error) throw error;
       setMessage("Check your email for a magic link.");

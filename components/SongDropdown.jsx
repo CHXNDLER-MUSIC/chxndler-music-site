@@ -153,8 +153,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
       const id = displayItems[nh]?.id;
       if (id) { 
         setActiveId(id); 
-        onChange?.(id); 
-        // Track keyboard navigation
+        // Do not trigger selection while navigating; only track hover
         track("song_hovered", {
           song_id: id,
           song_title: displayItems[nh]?.title || 'Unknown',
@@ -171,8 +170,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
       const id = displayItems[nh]?.id;
       if (id) { 
         setActiveId(id); 
-        onChange?.(id); 
-        // Track keyboard navigation
+        // Do not trigger selection while navigating; only track hover
         track("song_hovered", {
           song_id: id,
           song_title: displayItems[nh]?.title || 'Unknown',
@@ -186,7 +184,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
       e.preventDefault();
       setHighlight(0);
       const id = displayItems[0]?.id;
-      if (id) { setActiveId(id); onChange?.(id); }
+      if (id) { setActiveId(id); }
       try { setTimeout(() => playerStore.getState().setHover(id || null), 0); } catch {}
       return;
     }
@@ -195,7 +193,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
       const nh = displayItems.length - 1;
       setHighlight(nh);
       const id = displayItems[nh]?.id;
-      if (id) { setActiveId(id); onChange?.(id); }
+      if (id) { setActiveId(id); }
       try { setTimeout(() => playerStore.getState().setHover(id || null), 0); } catch {}
       return;
     }
