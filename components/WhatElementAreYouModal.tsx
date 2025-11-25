@@ -79,6 +79,8 @@ export default function WhatElementAreYouModal() {
       closeElementSelection();
       // Trigger profile refresh to update the UI with new element
       triggerProfileRefresh();
+      // Signal tour auto-start (ENTER THE HEARTVERSE)
+      try { window.dispatchEvent(new CustomEvent('heartverse:entered')); } catch {}
     } catch (e: any) {
       setError(e?.message || "Failed to save element selection");
     } finally {

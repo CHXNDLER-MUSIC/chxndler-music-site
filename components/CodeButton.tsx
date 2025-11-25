@@ -33,6 +33,7 @@ export default function CodeButton({ asChild = false, children, onClick, onHover
   return (
     <>
       <button
+        data-tour-id="code"
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
         className="p-1 rounded-lg transition-all duration-200 w-14 h-12"

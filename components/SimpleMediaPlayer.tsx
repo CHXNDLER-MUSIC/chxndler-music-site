@@ -129,7 +129,7 @@ export default function MediaPlayer({
   }, [isPlaying]);
   return (
     <motion.div
-      className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[min(92vw,680px)] ${glow.ring} backdrop-blur-md rounded-2xl border border-white/10 p-3`}
+      className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[min(92vw,680px)] ${glow.ring} backdrop-blur-md rounded-2xl border border-[#00FFFF] p-3`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       style={{ background: "rgba(25,227,255,0.45)" }}

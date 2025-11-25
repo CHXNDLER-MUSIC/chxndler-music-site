@@ -555,23 +555,23 @@ main {
 /* Soft neon breathing outline around HUD panel - improvement #10 */
 @keyframes hudBreathing {
   0%, 100% {
-    border-color: rgba(56, 182, 255, 0.4);
+    border-color: rgba(0, 255, 255, 0.4);
     box-shadow: 
-      0 0 15px rgba(56, 182, 255, 0.25),
-      0 0 30px rgba(56, 182, 255, 0.15),
-      inset 0 0 20px rgba(56, 182, 255, 0.05);
+      0 0 15px rgba(0, 255, 255, 0.25),
+      0 0 30px rgba(0, 255, 255, 0.15),
+      inset 0 0 20px rgba(0, 255, 255, 0.05);
   }
   50% {
-    border-color: rgba(56, 182, 255, 0.7);
+    border-color: rgba(0, 255, 255, 0.7);
     box-shadow: 
-      0 0 25px rgba(56, 182, 255, 0.4),
-      0 0 45px rgba(56, 182, 255, 0.25),
-      inset 0 0 30px rgba(56, 182, 255, 0.1);
+      0 0 25px rgba(0, 255, 255, 0.4),
+      0 0 45px rgba(0, 255, 255, 0.25),
+      inset 0 0 30px rgba(0, 255, 255, 0.1);
   }
 }
 
 .hud-panel-breathing {
-  border: 1px solid rgba(56, 182, 255, 0.4);
+  border: 1px solid rgba(0, 255, 255, 0.4);
   animation: hudBreathing 8s ease-in-out infinite;
 }
 

@@ -1358,8 +1358,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   }
   const SHOW_CENTER_BEAM = true; // Enable center light beam
   // HUD vertical sizing + offset mapping so inner items shift down as height shrinks
-  const hudHeightFactor = 0.01; // minimal height; bottom stays fixed
-  const hudBaseFactor = 0.36;   // reduced to lower the top positioning
+  const hudHeightFactor = 0.6; // reduced height to prevent extending too high
+  const hudBaseFactor = 0.46;   // increased to move the blue display further down
   const hudYOffset = Math.max(0, Math.round(100 * (hudBaseFactor - hudHeightFactor)));
   const handleCodeClick = () => {
     // Change beam color to white when Code button is clicked
@@ -1902,7 +1902,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             <div className="relative h-full w-full p-0" style={{ overflow: 'visible' }} suppressHydrationWarning>
               {/* Safari fix: Use CSS transitions instead of Framer Motion for portal content */}
               <div
-                className="absolute inset-0 p-0"
+                className="absolute bottom-0 left-0 right-0 p-0"
                 suppressHydrationWarning
                 key={safariRefreshKey} // Force re-render on Safari when needed
                 style={(() => {
@@ -1928,7 +1928,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                     visibility: shouldShow ? 'visible' : 'hidden',
                     transition: 'opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)',
                     willChange: 'opacity',
-                    transform: 'translateZ(0)' // Force hardware acceleration on Safari
+                    transform: 'translateZ(0)', // Force hardware acceleration on Safari
+                    height: '25vh',
+                    maxHeight: '200px'
                   };
                 })()}
               >
@@ -2119,30 +2121,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       ) : null}
 
 
-      {mounted && uiUnlocked && showOverlayUI && showHUD && !showDimmingOverlay && process.env.NEXT_PUBLIC_HOLOHUD === '1' ? (
-        <HoloHUD
-          track={(homeMode && !userSelected && !pendingTrackPlay) ? undefined : curTrack}
-          playing={effectivelyPlaying}
-          hidePlayButton={userSelected || !homeMode}
-          onToggle={() => {
-            try {
-              if (homeMode) {
-                // Do not toggle ambient on home; remain silent
-                try { window.dispatchEvent(new CustomEvent('ambient:userPause')); } catch {}
-                return;
-              }
-            } catch {}
-            // Otherwise toggle main player
-            setToggleSignal((n) => n + 1);
-          }}
-          onSelect={(slug) => {
-            try { 
-              onSongChange(slug);
-              // Song will start automatically after warp completes via pendingTrackPlay mechanism
-            } catch {}
-          }}
-        />
-      ) : null}
+      {/* HoloHUD disabled - blue displays removed */}
 
 
       {/* Simple Dimming Overlay */}

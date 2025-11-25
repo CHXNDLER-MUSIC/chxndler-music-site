@@ -12,43 +12,46 @@ export interface TourStep {
 
 export const TOUR_STEPS: TourStep[] = [
   {
-    id: "beliefs",
-    selector: "[data-tour-id='beliefs']",
-    title: "Beliefs shape the Heartverse",
-    body: "This is your inner code and values. You can always come back and change them as you grow."
+    id: "code",
+    selector: "[data-tour-id='code'], [data-tour-id='beliefs']",
+    title: "This is the CODE",
+    body: "These are the Heartverse beliefs that guide your journey."
   },
   {
     id: "heartcoins",
     selector: "[data-tour-id='heartcoins']",
-    title: "These are your Heart Coins",
-    body: "You earn Heart Coins by listening, exploring and showing up. They unlock new parts of the Heartverse."
+    title: "Heart Coins",
+    body: "Heart Coins are your cosmic energy. Earn them by exploring, connecting, and showing up."
   },
   {
-    id: "cards",
-    selector: "[data-tour-id='cards']",
-    title: "Your CHXNDLER cards live here",
-    body: "These are your cosmic collectibles. Songs and stories you unlock along your journey."
+    id: "binder",
+    selector: "[data-tour-id='binder'], [data-tour-id='cards']",
+    title: "Binder",
+    body: "Your Binder holds all CHXNDLER cards you collect. Some unlock by tier, others are rare drops."
   },
   {
-    id: "journal",
-    selector: "[data-tour-id='journal']",
-    title: "This is your Soul Star Journal",
-    body: "Each day you receive an intention and reflection. You can write from your heart and cast your words into the stars."
+    id: "stars",
+    selector: "[data-tour-id='stars'], [data-tour-id='journal']",
+    title: "Soul Star Journal",
+    body: "Your Soul Star Journal is where you reflect, grow, and complete your daily elemental prompts."
   },
   {
     id: "badges",
     selector: "[data-tour-id='badges']",
-    title: "These are your Heartverse badges",
-    body: "You earn badges by listening, collecting, returning and supporting. They tell the story of who you are becoming."
+    title: "Badges",
+    body: "Badges honor your milestones as an Alien. They track streaks, community actions, and discoveries."
   }
 ];
 
 interface OnboardingTourProps {
   active: boolean;
   onFinish: (completed: boolean) => void;
+  onSkip?: () => void;
+  endModalVisible?: boolean;
+  onRestartFromEnd?: () => void;
 }
 
-export default function OnboardingTour({ active, onFinish }: OnboardingTourProps) {
+export default function OnboardingTour({ active, onFinish, onSkip, endModalVisible, onRestartFromEnd }: OnboardingTourProps) {
   const { updateProfile } = useProfile();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
@@ -158,6 +161,7 @@ export default function OnboardingTour({ active, onFinish }: OnboardingTourProps
 
   // Handle skip tour
   const handleSkip = async () => {
+    if (onSkip) return onSkip();
     handleFinish(false);
   };
 
@@ -230,7 +234,7 @@ export default function OnboardingTour({ active, onFinish }: OnboardingTourProps
     }
   }, [active, targetElement, isVisible]);
 
-  if (!active || !currentStep) {
+  if (!active && !endModalVisible) {
     return null;
   }
 
@@ -239,19 +243,21 @@ export default function OnboardingTour({ active, onFinish }: OnboardingTourProps
       {/* Dim overlay */}
       <div
         ref={overlayRef}
-        className={`tour-overlay fixed inset-0 bg-black/60 backdrop-blur-sm z-[300] transition-opacity duration-300 ${
-          isVisible ? 'opacity-100' : 'opacity-0'
+        className={`tour-overlay fixed inset-0 z-[300] transition-opacity duration-300 ${
+          isVisible && active ? 'opacity-100' : 'opacity-0'
         }`}
         style={{
           pointerEvents: isVisible ? 'auto' : 'none',
+          background: 'radial-gradient(120% 120% at 50% -10%, rgba(0,0,0,0.45), rgba(0,0,0,0.65))',
+          backdropFilter: 'blur(6px)'
         }}
       />
 
       {/* Speech bubble */}
-      {bubblePosition && (
+      {active && bubblePosition && (
         <div
-          className={`tour-bubble fixed z-[301] transition-all duration-300 ${
-            isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+          className={`tour-bubble fixed z-[301] transition-all duration-500 ${
+            isVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-2 scale-95'
           }`}
           style={{
             top: bubblePosition.top,
@@ -261,29 +267,24 @@ export default function OnboardingTour({ active, onFinish }: OnboardingTourProps
           }}
         >
           <div
-            className="relative max-w-sm rounded-2xl border border-cyan-400/30 shadow-2xl p-6"
+            className="relative max-w-sm rounded-2xl p-6"
             style={{
-              background: `
-                linear-gradient(180deg, rgba(25,227,255,0.15), rgba(25,227,255,0.08)),
-                radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,0.06), rgba(255,255,255,0) 42%)
-              `,
+              background: `linear-gradient(180deg, rgba(252,84,175,0.18), rgba(252,84,175,0.12))`,
+              border: '1px solid rgba(252,84,175,0.35)',
               backdropFilter: 'blur(16px)',
-              boxShadow: `
-                0 20px 40px rgba(0,0,0,0.6),
-                0 0 40px rgba(25,227,255,0.4),
-                0 0 80px rgba(25,227,255,0.2),
-                inset 0 2px 0 rgba(255,255,255,0.2),
-                inset 0 -6px 14px rgba(0,0,0,0.4)
-              `,
+              boxShadow: `0 20px 40px rgba(0,0,0,0.6), 0 0 40px rgba(252,84,175,0.45), 0 0 80px rgba(252,84,175,0.25), inset 0 2px 0 rgba(255,255,255,0.2), inset 0 -6px 14px rgba(0,0,0,0.4)`,
             }}
           >
+            <div className="pointer-events-none absolute inset-0">
+              <div className="absolute inset-0 opacity-60" style={{ backgroundImage: `radial-gradient(2px 2px at 20% 30%, rgba(255,255,255,0.6) 50%, transparent 51%), radial-gradient(1.5px 1.5px at 70% 60%, rgba(255,255,255,0.5) 50%, transparent 51%), radial-gradient(1.2px 1.2px at 40% 80%, rgba(255,255,255,0.35) 50%, transparent 51%)` }} />
+            </div>
             {/* Title */}
             <h3 
               className="text-xl font-bold text-white mb-3"
               style={{
                 fontFamily: 'OrbitronLocal, InterLocal, system-ui, sans-serif',
                 letterSpacing: '0.06em',
-                textShadow: '0 0 15px rgba(25,227,255,0.6)',
+                textShadow: '0 0 15px rgba(252,84,175,0.65)',
               }}
             >
               {currentStep.title}
@@ -299,28 +300,20 @@ export default function OnboardingTour({ active, onFinish }: OnboardingTourProps
               {/* Skip button */}
               <button
                 onClick={handleSkip}
-                className="text-white/60 hover:text-white/80 transition-colors duration-200 text-sm underline"
+                className="text-white/70 hover:text-white transition-colors duration-200 text-sm underline"
               >
-                Skip tour
+                Skip Tour
               </button>
 
               {/* Next button */}
               <button
                 onClick={handleNext}
-                className="px-6 py-2 rounded-lg font-semibold text-white transition-all duration-200
-                         hover:scale-105 active:scale-95"
+                className="px-6 py-2 rounded-lg font-semibold text-white transition-all duration-200 hover:scale-105 active:scale-95"
                 style={{
-                  background: `
-                    linear-gradient(135deg, rgba(25,227,255,0.8), rgba(25,227,255,0.6)),
-                    radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,0.1), rgba(255,255,255,0) 42%)
-                  `,
-                  border: '1px solid rgba(25,227,255,0.4)',
-                  boxShadow: `
-                    0 4px 8px rgba(0,0,0,0.3),
-                    0 0 15px rgba(25,227,255,0.3),
-                    inset 0 1px 0 rgba(255,255,255,0.2)
-                  `,
-                  textShadow: '0 0 8px rgba(25,227,255,0.8)',
+                  background: `linear-gradient(135deg, rgba(252,84,175,0.85), rgba(252,84,175,0.65))`,
+                  border: '1px solid rgba(252,84,175,0.5)',
+                  boxShadow: `0 4px 8px rgba(0,0,0,0.3), 0 0 15px rgba(252,84,175,0.45), inset 0 1px 0 rgba(255,255,255,0.2)`,
+                  textShadow: '0 0 8px rgba(252,84,175,0.9)',
                 }}
               >
                 {isLastStep ? 'Got it!' : 'Next'}
@@ -346,6 +339,31 @@ export default function OnboardingTour({ active, onFinish }: OnboardingTourProps
         </div>
       )}
 
+      {/* End of Tour modal */}
+      {endModalVisible && (
+        <div className={`fixed inset-0 z-[320] flex items-center justify-center transition-opacity duration-300 ${endModalVisible ? 'opacity-100' : 'opacity-0'}`}>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div className="relative z-[321] w-full max-w-md mx-4 rounded-2xl p-8 text-center" style={{
+            background: 'linear-gradient(180deg, rgba(252,84,175,0.18), rgba(252,84,175,0.12))',
+            border: '1px solid rgba(252,84,175,0.35)',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.6), 0 0 60px rgba(252,84,175,0.5)'
+          }}>
+            <h2 className="text-2xl font-bold text-white mb-3" style={{ textShadow: '0 0 18px rgba(252,84,175,0.7)' }}>Welcome Home</h2>
+            <p className="text-white/90 mb-8">Your Heartverse journey begins now.</p>
+            <div className="flex gap-3 justify-center">
+              <button onClick={() => onFinish(true)} className="px-6 py-2 rounded-lg font-semibold text-white transition-all duration-200 hover:scale-105" style={{
+                background: 'linear-gradient(135deg, rgba(252,84,175,0.85), rgba(252,84,175,0.65))',
+                border: '1px solid rgba(252,84,175,0.5)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(252,84,175,0.45)'
+              }}>Start Exploring</button>
+              <button onClick={() => onRestartFromEnd && onRestartFromEnd()} className="px-6 py-2 rounded-lg font-semibold text-white/90 hover:text-white transition-all duration-200 border" style={{
+                borderColor: 'rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.05)'
+              }}>Restart Tour</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style jsx global>{`
         /* Body class when tour is active */
         .tour-active {
@@ -356,33 +374,50 @@ export default function OnboardingTour({ active, onFinish }: OnboardingTourProps
         .tour-highlight {
           position: relative !important;
           z-index: 310 !important;
-          animation: tourGlow 2s ease-in-out infinite !important;
+          animation: tourGlow 2.2s ease-in-out infinite !important;
           border-radius: 12px !important;
-          box-shadow: 
-            0 0 0 3px rgba(25,227,255,0.6) !important,
-            0 0 20px rgba(25,227,255,0.8) !important,
-            0 0 40px rgba(25,227,255,0.6) !important,
-            0 0 80px rgba(25,227,255,0.4) !important;
+          box-shadow:
+            0 0 0 3px rgba(252,84,175,0.7) !important,
+            0 0 24px rgba(252,84,175,0.9) !important,
+            0 0 48px rgba(252,84,175,0.7) !important,
+            0 0 96px rgba(252,84,175,0.5) !important;
+        }
+
+        .tour-highlight::after {
+          content: '';
+          position: absolute;
+          inset: -10px;
+          pointer-events: none;
+          background-image:
+            radial-gradient(2px 2px at 20% 30%, rgba(255,255,255,0.7) 50%, transparent 52%),
+            radial-gradient(1.5px 1.5px at 80% 40%, rgba(255,255,255,0.55) 50%, transparent 52%),
+            radial-gradient(1.8px 1.8px at 60% 75%, rgba(255,255,255,0.5) 50%, transparent 52%);
+          animation: twinkle 2.6s ease-in-out infinite;
         }
 
         /* Pulsing glow animation */
         @keyframes tourGlow {
           0%, 100% {
-            box-shadow: 
-              0 0 0 3px rgba(25,227,255,0.6),
-              0 0 20px rgba(25,227,255,0.8),
-              0 0 40px rgba(25,227,255,0.6),
-              0 0 80px rgba(25,227,255,0.4);
-            filter: brightness(1.1) saturate(1.1);
+            box-shadow:
+              0 0 0 3px rgba(252,84,175,0.7),
+              0 0 24px rgba(252,84,175,0.9),
+              0 0 48px rgba(252,84,175,0.7),
+              0 0 96px rgba(252,84,175,0.5);
+            filter: brightness(1.12) saturate(1.12);
           }
           50% {
-            box-shadow: 
-              0 0 0 4px rgba(25,227,255,0.8),
-              0 0 30px rgba(25,227,255,1.0),
-              0 0 60px rgba(25,227,255,0.8),
-              0 0 120px rgba(25,227,255,0.6);
-            filter: brightness(1.2) saturate(1.2);
+            box-shadow:
+              0 0 0 4px rgba(252,84,175,0.9),
+              0 0 36px rgba(252,84,175,1.0),
+              0 0 72px rgba(252,84,175,0.85),
+              0 0 140px rgba(252,84,175,0.65);
+            filter: brightness(1.22) saturate(1.22);
           }
+        }
+
+        @keyframes twinkle {
+          0%, 100% { opacity: 0.8; transform: translateY(0px); }
+          50% { opacity: 0.4; transform: translateY(1px); }
         }
 
         /* Ensure bubble is above everything */

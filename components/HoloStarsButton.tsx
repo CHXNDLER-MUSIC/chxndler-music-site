@@ -56,6 +56,7 @@ export default function HoloStarsButton({
   return (
     <>
       <SharedButton
+        data-tour-id="stars"
         variant="stars"
         aria-label={label}
         onClick={handleActivate}

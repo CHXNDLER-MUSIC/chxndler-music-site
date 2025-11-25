@@ -991,6 +991,11 @@ export default function HUDPanel({
   
   // Heart coin store popup state
   const [showHeartCoinStorePopup, setShowHeartCoinStorePopup] = useState(false);
+  // Inline heart-coin confirmation state (replaces item text area)
+  const [storeConfirming, setStoreConfirming] = useState(false);
+  const [storeConfirmingIndex, setStoreConfirmingIndex] = useState(null);
+  const [storeConfirmProcessing, setStoreConfirmProcessing] = useState(false);
+  const [storeConfirmError, setStoreConfirmError] = useState('');
   
   const products = [
     {
@@ -1601,6 +1606,23 @@ export default function HUDPanel({
       document.removeEventListener('touchstart', onDocDown);
       document.removeEventListener('keydown', onKey);
     };
+  }, [showStorePopover]);
+
+  // Reset STORE popover UI state when closing so it reopens fresh
+  useEffect(() => {
+    if (showStorePopover) return;
+    try { setStoreActiveTab('MERCH'); } catch {}
+    try {
+      const idx = products.findIndex(p => String(p.id) === 'necklace');
+      setStoreIndex(idx >= 0 ? idx : 0);
+    } catch {}
+    try { setBeanieFlipped(false); } catch {}
+    try { setPatchFlipped(false); } catch {}
+    try { setBeanieHovered(false); } catch {}
+    try { setPatchHovered(false); } catch {}
+    try { setShowHeartCoinStorePopup(false); } catch {}
+    // Optional: reset scroll position
+    try { if (storeScrollRef.current) storeScrollRef.current.scrollTop = 0; } catch {}
   }, [showStorePopover]);
 
   // Reset store item flips/hover when cycling items so they always start on the front
@@ -2250,21 +2272,7 @@ export default function HUDPanel({
           willChange: 'opacity, transform',
           contain: 'layout paint'
         }}>
-          {/* Overlay frame to visually lower the blue panel top to match song listing */}
-          <div
-            className="absolute inset-x-0 rounded-2xl pointer-events-none"
-            style={{
-              bottom: 0,
-              // Raise the top edge further for a taller dashboard (bottom unchanged)
-              top: `calc(var(--hud-y, 0px) + ${inConsole ? 92 : 112}px)`,
-              // Keep the overlay subtle but with a touch more blue
-              background: 'linear-gradient(180deg, rgba(25,227,255,0.08), rgba(25,227,255,0.04))',
-              // Constrain glow inside the blue display bounds and keep it soft
-              boxShadow: 'inset 0 0 40px rgba(25,227,255,0.16), inset 0 0 80px rgba(25,227,255,0.10)',
-              border: '1px solid rgba(25,227,255,0.45)'
-            }}
-            aria-hidden
-          />
+          {/* Blue background overlay removed */}
           {/* 3D planets — align to full blue display width (outside inner padding) */}
           {!disable3DPlanets && (
           <div
@@ -2773,6 +2781,7 @@ export default function HUDPanel({
                       />
                       {/* STARS button */}
                       <HeartverseButton
+                        data-tour-id="stars"
                         ref={starsBtnRef}
                         variant="stars"
                         label=""
@@ -5333,7 +5342,10 @@ export default function HUDPanel({
                                     onClick={() => {
                                       try { sfx.play('click', 0.35); } catch {};
                                       try { trackAnalytics('heart_coin_clicked', { song_slug: String(active || currentId || 'store'), payload: { song_title: track?.title || 'Unknown', location: 'store_price_icon' } }); } catch {}
-                                      setShowHeartCoinStorePopup(true);
+                                      // Replace the item text with inline confirmation instead of separate popup
+                                      setStoreConfirmError('');
+                                      setStoreConfirming(true);
+                                      setStoreConfirmingIndex(storeIndex);
                                     }}
                                     style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer', lineHeight: 0 }}
                                   >
@@ -5351,8 +5363,102 @@ export default function HUDPanel({
                               </div>
                             </div>
                             <div>
-                              <div style={{ fontSize: 18, fontWeight: 800, color: '#FFD9EF', textShadow: '0 0 10px rgba(33,150,243,0.9)' }}>{item.title}</div>
-                              <div style={{ fontSize: 14, opacity: 0.9, marginTop: 4 }}>{item.description}</div>
+                              {storeConfirming && storeConfirmingIndex === storeIndex ? (
+                                <div style={{ padding: '8px 10px', borderRadius: 10, border: '1px solid rgba(252,84,175,0.4)', background: 'rgba(252,84,175,0.12)', boxShadow: 'inset 0 0 12px rgba(252,84,175,0.18)' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                                    <div style={{ fontSize: 16, fontWeight: 800, color: '#FFD9EF', textShadow: '0 0 10px rgba(33,150,243,0.85)' }}>{item.title}</div>
+                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                      <img src="/elements/heart-coin.png" alt="Heart Coin" width={18} height={18} style={{ width: 18, height: 18, objectFit: 'contain', filter: 'drop-shadow(0 0 6px rgba(252,84,175,0.65))' }} />
+                                      <span style={{ fontSize: 14, fontWeight: 700, color: '#FFF' }}>{heartCoinsCount}</span>
+                                    </div>
+                                  </div>
+                                  <div style={{ fontSize: 12, color: '#FFC1E6', marginTop: 6 }}>
+                                    {(() => {
+                                      try { return localStorage.getItem('heartverse_username') || 'Wanderer'; } catch { return 'Wanderer'; }
+                                    })()} — You own {heartCoinsCount} Heart Coins
+                                  </div>
+                                  {storeConfirmError ? (
+                                    <div style={{ marginTop: 8, fontSize: 12, color: '#FF6B6B', background: 'rgba(255,0,0,0.08)', border: '1px solid rgba(255,0,0,0.35)', padding: '6px 8px', borderRadius: 8, textAlign: 'center' }}>
+                                      {storeConfirmError}
+                                    </div>
+                                  ) : null}
+                                  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                                    <button
+                                      disabled={storeConfirmProcessing}
+                                      onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                                      onClick={async () => {
+                                        if (storeConfirmProcessing) return;
+                                        setStoreConfirmProcessing(true);
+                                        setStoreConfirmError('');
+                                        try {
+                                          const res = await fetch('/api/purchase-item-with-heartcoins', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ itemId: item.id, itemTitle: item.title, priceHeartCoins: item.heartcoins }),
+                                          });
+                                          const data = await res.json().catch(() => ({}));
+                                          if (!res.ok) {
+                                            if (res.status === 400 && String(data?.error || '').toLowerCase().includes('insufficient')) {
+                                              setStoreConfirmError(`You need ${Math.max(0, (item.heartcoins || 0) - (heartCoinsCount || 0))} more Heart Coins`);
+                                            } else if (res.status === 401) {
+                                              setStoreConfirmError('Please sign in to spend Heart Coins');
+                                            } else {
+                                              setStoreConfirmError(String(data?.error || 'Purchase failed. Please try again.'));
+                                            }
+                                          } else {
+                                            try { sfx.play('success', 0.7); } catch {}
+                                            // Optimistically update balance
+                                            setHeartCoinsCount((c) => Math.max(0, (c || 0) - (item.heartcoins || 0)));
+                                            // Brief success flash then close confirmation
+                                            setTimeout(() => {
+                                              setStoreConfirming(false);
+                                              setStoreConfirmingIndex(null);
+                                            }, 800);
+                                          }
+                                        } catch (e) {
+                                          setStoreConfirmError('Network error. Please try again.');
+                                        } finally {
+                                          setStoreConfirmProcessing(false);
+                                        }
+                                      }}
+                                      style={{
+                                        flex: 1,
+                                        padding: '10px 12px',
+                                        borderRadius: 999,
+                                        border: '1px solid rgba(242,239,29,0.7)',
+                                        background: storeConfirmProcessing ? 'rgba(128,128,128,0.4)' : 'linear-gradient(135deg,#F2EF1D,#FFC700)',
+                                        color: storeConfirmProcessing ? '#DDD' : '#000',
+                                        fontWeight: 800,
+                                        cursor: storeConfirmProcessing ? 'not-allowed' : 'pointer',
+                                        boxShadow: storeConfirmProcessing ? 'none' : '0 6px 18px rgba(242,239,29,0.35)'
+                                      }}
+                                    >
+                                      {storeConfirmProcessing ? 'Processing...' : 'CONFIRM'}
+                                    </button>
+                                    <button
+                                      disabled={storeConfirmProcessing}
+                                      onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                                      onClick={() => { setStoreConfirming(false); setStoreConfirmingIndex(null); setStoreConfirmError(''); try { sfx.play('close', 0.35); } catch {} }}
+                                      style={{
+                                        padding: '10px 12px',
+                                        borderRadius: 999,
+                                        border: '1px solid rgba(255,255,255,0.35)',
+                                        background: 'transparent',
+                                        color: '#FFC1E6',
+                                        fontWeight: 700,
+                                        cursor: storeConfirmProcessing ? 'not-allowed' : 'pointer'
+                                      }}
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  <div style={{ fontSize: 18, fontWeight: 800, color: '#FFD9EF', textShadow: '0 0 10px rgba(33,150,243,0.9)' }}>{item.title}</div>
+                                  <div style={{ fontSize: 14, opacity: 0.9, marginTop: 4 }}>{item.description}</div>
+                                </>
+                              )}
                               {/* Controls moved directly under description */}
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 8 }}>
                             <button

@@ -363,6 +363,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
   return (
     <>
       <button
+        data-tour-id="binder"
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
         className="p-1 rounded-lg transition-all duration-200 w-14 h-12"

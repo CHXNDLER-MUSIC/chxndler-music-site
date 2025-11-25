@@ -53,6 +53,8 @@ export default function WhatShouldWeCallYouModal() {
       await updateProfileName(trimmedName);
       
       closeNamePrompt();
+      // If name completes profile in your flow, emit ENTER event; TourProvider guards duplicates
+      try { window.dispatchEvent(new CustomEvent('heartverse:entered')); } catch {}
     } catch (e: any) {
       setError(e?.message || "Failed to save name");
     } finally {

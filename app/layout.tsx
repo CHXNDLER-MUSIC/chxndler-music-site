@@ -14,6 +14,7 @@ import WhatShouldWeCallYouModal from "@/components/WhatShouldWeCallYouModal";
 import WhatElementAreYouModal from "@/components/WhatElementAreYouModal";
 import StoreProvider from "@/components/StoreProvider";
 import { ProfileProvider } from "@/contexts/ProfileContext";
+import { TourProvider } from "@/contexts/TourContext";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://chxndler.world"),
@@ -105,6 +106,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-sans">
         <ProfileProvider>
           <AudioProvider>
+            <TourProvider>
             {!analyticsOff && (
               <Suspense fallback={null}>
                 <PageViewTracker />
@@ -118,6 +120,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <WhatElementAreYouModal />
             <StoreProvider />
             {children}
+            </TourProvider>
           </AudioProvider>
         </ProfileProvider>
         {mpId && !analyticsOff ? (

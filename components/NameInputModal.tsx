@@ -21,6 +21,7 @@ export default function NameInputModal({ open, onClose, onSubmit }: Props) {
     try {
       await onSubmit(name.trim());
       onClose();
+      try { window.dispatchEvent(new CustomEvent('heartverse:entered')); } catch {}
     } finally {
       setLoading(false);
     }

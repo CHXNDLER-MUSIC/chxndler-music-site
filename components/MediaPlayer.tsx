@@ -2120,7 +2120,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           justify-content: center;
           background: rgba(0,0,5,0.85); /* Very dark background for cosmic feel */
           border-radius: 20px;
-          border: 1px solid rgba(255,255,255,0.15);
+          border: 1px solid #00FFFF;
           backdrop-filter: blur(12px);
           overflow: visible;
           box-shadow: 0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);

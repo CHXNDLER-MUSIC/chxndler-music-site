@@ -22,6 +22,7 @@ interface ShippingInfo {
   city: string;
   state: string;
   zipCode: string;
+  country: string;
 }
 
 interface PhysicalCardOrder {
@@ -123,7 +124,8 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
     apartmentUnit: '',
     city: '',
     state: '',
-    zipCode: ''
+    zipCode: '',
+    country: ''
   });
   const [shippingErrors, setShippingErrors] = useState<{[key: string]: string}>({});
   
@@ -437,6 +439,9 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
     if (!shippingForm.zipCode.trim()) {
       errors.zipCode = 'ZIP code is required';
     }
+    if (!shippingForm.country.trim()) {
+      errors.country = 'Country is required';
+    }
     
     setShippingErrors(errors);
     return Object.keys(errors).length === 0;
@@ -459,7 +464,8 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
             apartmentUnit: latestOrder.address_line2 || '',
             city: latestOrder.city || '',
             state: latestOrder.state || '',
-            zipCode: latestOrder.postal_code || ''
+            zipCode: latestOrder.postal_code || '',
+            country: latestOrder.country || ''
           });
         }
       }
@@ -502,7 +508,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
         city: shippingForm.city,
         state: shippingForm.state,
         postal_code: shippingForm.zipCode,
-        country: 'US',
+        country: shippingForm.country,
         cost_heartcoins: cost,
         status: 'pending'
       };
@@ -1808,6 +1814,23 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                           }`}
                           style={{ 
                             boxShadow: `0 0 8px ${shippingErrors.zipCode ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
+                            textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                          }}
+                        />
+                      </div>
+
+                      {/* Country - spans 2 columns */}
+                      <div className="col-span-2">
+                        <input
+                          type="text"
+                          placeholder="Country *"
+                          value={shippingForm.country}
+                          onChange={(e) => updateShippingField('country', e.target.value)}
+                          className={`w-full px-2 py-1 rounded border bg-black/40 text-pink-200 text-xs placeholder-pink-300/60 ${
+                            shippingErrors.country ? 'border-red-400/60' : 'border-pink-400/40'
+                          }`}
+                          style={{ 
+                            boxShadow: `0 0 8px ${shippingErrors.country ? 'rgba(239,68,68,0.3)' : 'rgba(255,105,180,0.3)'}`,
                             textShadow: '0 0 4px rgba(255,182,193,0.6)'
                           }}
                         />

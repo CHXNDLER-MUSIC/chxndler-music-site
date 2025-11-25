@@ -412,10 +412,22 @@ export async function trackEvent(
     userId?: string | null;
   }
 ) {
+  // Avoid spamming the console: warn once per session about schema mismatch
+  // when falling back from events_v2 to legacy tables.
+  let warnedOnce = false;
+  const warnOnce = (msg: string, extra?: any) => {
+    if (warnedOnce) return;
+    warnedOnce = true;
+    try {
+      if (extra) console.warn(msg, extra);
+      else console.warn(msg);
+    } catch {}
+  };
   try {
     const { createClient } = await import('@/lib/supabaseClient');
     const supabase = createClient();
 
+    // Primary path: public.events_v2 with event_name column
     let { error } = await supabase
       .from('events_v2')
       .insert({
@@ -425,10 +437,12 @@ export async function trackEvent(
         user_id: options?.userId ?? null,
       });
 
-    // Fallback: support older schemas that used `event` instead of `event_name`
-    if (error && (error as any)?.code === 'PGRST204' && /event_name/.test((error as any)?.message || '')) {
+    // Fallback: support older schemas that used `event` instead of `event_name`.
+    // Some PostgREST errors report stale schema cache; if we see PGRST204, try the legacy column too.
+    let firstError: any = error;
+    if (error && ((error as any)?.code === 'PGRST204' || (error as any)?.code === '42P01')) {
       try {
-        console.warn('[Analytics] events_v2 missing column `event_name`. Retrying with legacy `event`.');
+        warnOnce('[Analytics] events_v2 missing or schema cache stale. Retrying with legacy `event` column.');
         const retry = await supabase
           .from('events_v2')
           .insert({
@@ -440,7 +454,39 @@ export async function trackEvent(
           });
         error = retry.error as any;
       } catch (e) {
-        // Keep original error handling below
+        // Preserve the original error if retry throws unexpectedly
+        error = firstError;
+      }
+    }
+
+    // Final fallback: write a minimal record into analytics.events if available.
+    // This lets analytics continue working even if events_v2 isn’t set up yet.
+    if (error && ((error as any)?.code === 'PGRST204' || (error as any)?.code === '42P01')) {
+      try {
+        warnOnce('[Analytics] Falling back to analytics.events. Consider running SUPABASE_SETUP.sql to create events_v2.');
+        const fallback = await supabase
+          // Target analytics schema explicitly
+          .schema('analytics')
+          .from('events')
+          .insert({
+            event_type: eventName,
+            // Pack v2-only fields into payload so data isn’t lost
+            payload: {
+              source: options?.source ?? 'unknown',
+              metadata: options?.metadata ?? null,
+              user_id: options?.userId ?? null,
+              v: 'v2-fallback'
+            }
+          });
+        // If fallback succeeds, treat as success
+        if (!fallback.error) {
+          return { success: true } as const;
+        }
+        // Otherwise, surface the fallback error
+        error = fallback.error as any;
+      } catch (e) {
+        // Keep the last actionable error
+        error = (e as any) ?? error;
       }
     }
 
@@ -467,14 +513,27 @@ export async function trackEvent(
         hasMetadata: !!options?.metadata,
         hasUserId: !!options?.userId,
         table: 'events_v2',
+        // Include initial error snapshot if we attempted a fallback
+        firstError: firstError && firstError !== error ? {
+          message: (firstError as any)?.message ?? null,
+          code: (firstError as any)?.code ?? null,
+        } : undefined,
       } as const;
 
+      // Reduce noise for known setup issues; provide a concise hint.
+      const code = (error as any)?.code;
+      const isSchemaMiss = code === 'PGRST204' || code === '42P01';
+      const hint = isSchemaMiss
+        ? 'events_v2 is missing or has stale schema cache. Run SUPABASE_SETUP.sql (events_v2 section) or refresh PostgREST.'
+        : undefined;
+      const concise = {
+        ...logPayload,
+        hint,
+      };
       try {
-        // Prefer JSON so undefined values don't get dropped by custom console wrappers
-        console.error('trackEvent error:', JSON.stringify(logPayload));
+        console.warn('trackEvent warning:', JSON.stringify(concise));
       } catch {
-        // Fallback to object logging
-        console.error('trackEvent error:', logPayload);
+        console.warn('trackEvent warning:', concise);
       }
       return { success: false, error } as const;
     }
