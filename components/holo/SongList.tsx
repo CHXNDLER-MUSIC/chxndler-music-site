@@ -66,14 +66,8 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
       e.preventDefault();
       const id = activeId || mainId || undefined;
       if (id) {
-        // Set main without toggling planet visibility, then focus the planet
-        playerStore.getState().setMain(id, true);
-        try { playerStore.getState().setPlanetDisplayMode('single'); } catch {}
-        try { playerStore.getState().setPlanetsVisible(true); } catch {}
-        // Delay the onSongChange callback to allow for warp effect timing
-        setTimeout(() => {
-          if (onSongChange) onSongChange(id);
-        }, 2000); // Increased delay to ensure warp SFX completes before song starts
+        // Delegate selection to parent to run the global warp sequence
+        if (onSongChange) onSongChange(id);
       }
       return;
     }
@@ -177,16 +171,8 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
             onBlur={() => setHover(null)}
             onClick={(e) => {
               if (locked) return;
-              // Focus the clicked planet immediately and zoom camera in
-              playerStore.getState().setMain(s.id, true);
-              try { playerStore.getState().setPlanetDisplayMode('single'); } catch {}
-              try { playerStore.getState().setPlanetsVisible(true); } catch {}
-
-              // Delay the onSongChange callback to allow for warp effect timing
-              setTimeout(() => {
-                // Notify parent (e.g., to start playback) without altering focus state
-                if (onSongChange) onSongChange(s.id);
-              }, 2000); // Increased delay to ensure warp SFX completes before song starts
+              // Delegate selection to parent to run the global warp + playback flow
+              if (onSongChange) onSongChange(s.id);
             }}
             style={{ 
               cursor: locked ? 'not-allowed' : 'pointer',

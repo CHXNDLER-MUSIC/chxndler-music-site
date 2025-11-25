@@ -45,8 +45,14 @@ export default function HoloPanel() {
         {/* Song List - positioned below the clipped 3D display */}
         <div className="mt-16 h-[200px] md:h-[240px] lg:h-[280px] rounded-xl bg-black/30 backdrop-blur-md ring-1 ring-cyan-400/20 p-2" style={{ pointerEvents: 'auto' }}>
           <SongList onSongChange={(id) => {
-            // Handle song selection from the song list
-            // This could trigger navigation or player updates if needed
+            // In the Holo panel standalone route, delegate to the 3D audio bridge
+            // by updating the player store selection directly. The bridge will
+            // handle warp -> join -> song sequencing.
+            try {
+              playerStore.getState().setMain(id);
+              playerStore.getState().setPlanetDisplayMode('single');
+              playerStore.getState().setPlanetsVisible(true);
+            } catch {}
           }} />
         </div>
       </div>

@@ -359,20 +359,6 @@ main {
   }
 }
 
-.cover-art-glow::before {
-  content: "";
-  position: absolute;
-  top: -10px;
-  left: -10px;
-  right: -10px; 
-  bottom: -14px;
-  background: rgba(252, 84, 175, 0.18);
-  border-radius: 16px;
-  filter: blur(30px);
-  animation: breathe 5s ease-in-out infinite;
-  z-index: -1;
-}
-
 /* Button rail for icon controls */
 @keyframes buttonRailDrift {
   0%, 100% {
@@ -391,7 +377,7 @@ main {
   right: -12px;
   bottom: -8px;
   background: rgba(56, 182, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(25, 227, 255, 0.6);
   border-radius: 28px;
   backdrop-filter: blur(8px);
   animation: buttonRailDrift 3s ease-in-out infinite;

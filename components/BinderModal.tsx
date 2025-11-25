@@ -363,14 +363,10 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
       // Always show digital preview for digital purchases
       setPurchaseState('digital-preview');
     } else {
-      // For physical purchases, check balance
-      if (hasEnoughBalance(type)) {
-        setPurchaseState('physical-form');
-        // Prefill shipping form if user has previous orders
-        prefillShippingForm();
-      } else {
-        setPurchaseState('insufficient');
-      }
+      // For physical purchases, always show the shipping form in the right panel
+      setPurchaseState('physical-form');
+      // Prefill shipping form if user has previous orders
+      prefillShippingForm();
     }
   };
 
@@ -1080,6 +1076,21 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                         </div>
                       );
                     })()}
+
+                    {/* Card count info directly under the card image, left-aligned */}
+                    {cards.length > 1 && (
+                      <div 
+                        className="mt-1 text-left"
+                        style={{ 
+                          color: '#FFB6C1', 
+                          textShadow: '0 0 4px rgba(255,182,193,0.6)',
+                          fontSize: '10px',
+                          maxWidth: '120px'
+                        }}
+                      >
+                        {currentCardIndex + 1} of {cards.length} {currentCard.element}
+                      </div>
+                    )}
                     
                     {/* HeartCoins text positioned to the right of card PNG */}
                     {(() => {
@@ -1271,10 +1282,10 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                         );
                       })()}
                     </div>
-                  ) : purchaseState === 'physical-form' && selectedPurchaseType === 'physical' ? (
+                  ) : (selectedPurchaseType === 'physical' && (purchaseState === 'physical-form' || purchaseState === 'insufficient')) ? (
                     <div className="flex flex-col text-left">
                       {/* Error display */}
-                      {Object.keys(shippingErrors).length > 0 && (
+                      {(Object.keys(shippingErrors).length > 0 || purchaseState === 'insufficient') && (
                         <div 
                           className="text-center mb-2 text-xs p-2 rounded"
                           style={{ 
@@ -1283,7 +1294,9 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                             color: '#FCA5A5'
                           }}
                         >
-                          Please fill in all required fields
+                          {purchaseState === 'insufficient' 
+                            ? 'Not enough HeartCoins to confirm. Please earn more or try again later.'
+                            : 'Please fill in all required fields'}
                         </div>
                       )}
 
@@ -1387,7 +1400,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                           className="px-3 py-1 rounded border border-green-400/60 bg-green-500/10 hover:bg-green-500/20 transition-all duration-200 text-xs text-green-300"
                           style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)' }}
                         >
-                          Confirm Physical Purchase
+                          CONFIRM
                         </button>
                         <button
                           onClick={resetPurchaseState}
@@ -1470,19 +1483,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                   ) : null}
                 </div>
                 
-                {/* Card count info positioned below the entire viewer */}
-                {cards.length > 1 && (
-                  <div 
-                    className="text-center"
-                    style={{ 
-                      color: '#FFB6C1', 
-                      textShadow: '0 0 4px rgba(255,182,193,0.6)',
-                      fontSize: '10px'
-                    }}
-                  >
-                    {currentCardIndex + 1} of {cards.length} {currentCard.element} ({currentCard.rarity.toUpperCase()})
-                  </div>
-                )}
+                {/* Card count moved under card image */}
               </>
             );
           })()}
@@ -1733,7 +1734,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
               <div className="mt-2">
 
                 {/* State B: Not enough HeartCoins */}
-                {purchaseState === 'insufficient' && selectedPurchaseType && (
+                {purchaseState === 'insufficient' && selectedPurchaseType === 'digital' && (
                   <div className="mt-2">
                     <div 
                       className="text-center mb-2 text-xs p-2 rounded"

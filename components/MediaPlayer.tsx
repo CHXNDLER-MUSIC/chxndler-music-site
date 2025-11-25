@@ -1134,6 +1134,23 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           
         </div>
 
+        {/* Song dropdown row (above waveform) */}
+        <div className="song-dropdown-row">
+          <button 
+            onClick={() => setPickerOpen((o)=>!o)} 
+            className="selector-btn" 
+            aria-haspopup="listbox" 
+            aria-expanded={pickerOpen} 
+            aria-label="Select song"
+            title="Select track"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+            </svg>
+            <span>Track</span>
+          </button>
+        </div>
+
         {/* Neon waveform visualizer (client-only canvas) */}
         <div style={{ marginTop: 8 }} data-neon-audio="1" ref={neonWrapRef}>
           <NeonWaveform audioUrl={cur.src} element={neonElement} />
@@ -1424,7 +1441,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           </div>
         </div>
         
-        {/* Sleek integrated control bar - moved below waveform */}
+        {/* Sleek integrated control bar - stays below waveform */}
         <div className="sleek-controls mt-2">
           {showHUDPlay && (
             <button 
@@ -1499,18 +1516,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             </button>
           )}
           
-          <button 
-            onClick={() => setPickerOpen((o)=>!o)} 
-            className="selector-btn" 
-            aria-haspopup="listbox" 
-            aria-expanded={pickerOpen} 
-            aria-label="Select song"
-          >
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-              <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
-            </svg>
-            <span>Track</span>
-          </button>
+          {null}
           
           <div className="volume-control" ref={mainVolRef}>
             {/* Mute/Unmute button */}
@@ -2103,7 +2109,17 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           justify-content: center; /* center under controls */
           margin-top: 6px;
           width: 100%;
-          order: 2 !important; /* Place waveform below controls */
+          order: 2 !important; /* Place waveform between dropdown and controls */
+        }
+        /* Song dropdown row - sits above waveform */
+        .song-dropdown-row {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          width: 100%;
+          order: 1 !important; /* Above waveform, below title */
+          margin-top: 6px;
         }
         
         /* Waveform visualization - cosmic dark background for glow visibility */
@@ -2581,7 +2597,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         /* Sleek integrated controls - matching blue container style */
         .sleek-controls {
           display: flex;
-          order: 1 !important; /* Move controls below waveform */
+          order: 3 !important; /* Controls are below waveform */
           align-items: center;
           justify-content: center; /* center row so waveform can sit directly under */
           flex-wrap: wrap; /* allow wrapping on smaller screens */
