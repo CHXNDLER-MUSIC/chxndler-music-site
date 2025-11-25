@@ -24,6 +24,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   const { profile, updateProfile } = useProfile();
   const [active, setActive] = useState(false);
   const [endModalVisible, setEndModalVisible] = useState(false);
+  const [welcomeVisible, setWelcomeVisible] = useState(false);
   const autostartGuard = useRef(false);
 
   // Helpers for localStorage fallback
@@ -46,6 +47,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   const start = useCallback(() => {
     clearDisabled();
     setEndModalVisible(false);
+    setWelcomeVisible(false);
     setActive(true);
   }, [clearDisabled]);
 
@@ -90,15 +92,15 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
 
     if (profile.profile_complete) {
       autostartGuard.current = true;
-      // start tour a tick later so UI settles after the last modal
-      setTimeout(() => start(), 250);
+      // show welcome a tick later so UI settles after the last modal
+      setTimeout(() => setWelcomeVisible(true), 250);
     }
   }, [profile, start, isCompleted, isDisabled]);
 
   // Listen to a global event for explicit start (emitted on ENTER THE HEARTVERSE if needed)
   useEffect(() => {
     const onEntered = () => {
-      if (!isDisabled() && !isCompleted()) start();
+      if (!isDisabled() && !isCompleted()) setWelcomeVisible(true);
     };
     window.addEventListener("heartverse:entered", onEntered);
     return () => window.removeEventListener("heartverse:entered", onEntered);
@@ -111,6 +113,48 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
       {children}
       {/* Render the tour globally */}
       <OnboardingTour active={active} onFinish={() => finish()} onSkip={() => skip()} endModalVisible={endModalVisible} onRestartFromEnd={() => restart()} />
+
+      {/* Welcome modal before starting the tour */}
+      {welcomeVisible && (
+        <div className="fixed inset-0 z-[320] flex items-center justify-center transition-opacity duration-300">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div
+            className="relative z-[321] w-full max-w-md mx-4 rounded-2xl p-8 text-center"
+            style={{
+              background: 'linear-gradient(180deg, rgba(56,182,255,0.18), rgba(56,182,255,0.12))',
+              border: '1px solid rgba(56,182,255,0.35)',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.6), 0 0 60px rgba(56,182,255,0.5)'
+            }}
+          >
+            <h2
+              className="text-2xl font-bold text-white mb-2"
+              style={{ textShadow: '0 0 18px rgba(56,182,255,0.7)' }}
+            >
+              {`Welcome ${profile?.name ? profile.name : 'Alien'}`}
+            </h2>
+            <p className="text-white/90 mb-6">Let me show you around?</p>
+
+            <button
+              onClick={() => start()}
+              className="w-full px-6 py-3 rounded-lg font-semibold text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] mb-3"
+              style={{
+                background: 'linear-gradient(135deg, rgba(252,84,175,0.85), rgba(252,84,175,0.65))',
+                border: '1px solid rgba(252,84,175,0.5)',
+                boxShadow: '0 6px 14px rgba(0,0,0,0.35), 0 0 20px rgba(252,84,175,0.45)'
+              }}
+            >
+              Show me around
+            </button>
+
+            <button
+              onClick={() => { setWelcomeVisible(false); skip(); }}
+              className="w-full text-white/80 hover:text-white text-sm underline"
+            >
+              Skip for now
+            </button>
+          </div>
+        </div>
+      )}
     </TourContext.Provider>
   );
 }
@@ -120,4 +164,3 @@ export function useTour() {
   if (!ctx) throw new Error("useTour must be used within a TourProvider");
   return ctx;
 }
-

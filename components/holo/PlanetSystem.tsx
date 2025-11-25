@@ -11,6 +11,8 @@ import { computePlanetLayout } from "@/lib/planetLayout";
 import { buildPlanetSongs } from "@/lib/planets";
 import { getEntriesByRing, getPlanetEntry } from "@/lib/planetRegistry";
 import { Html } from "@react-three/drei";
+import Image from "next/image";
+import { ELEMENTAL_PLANETS } from "@/lib/elementalPlanets";
 
 // Define element types and guards
 type ElementCode = "heart" | "water" | "lightning" | "darkness";
@@ -387,6 +389,22 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         backfaceVisibility: 'hidden' as any,
       }}
     >
+      {/* Frontend-only elemental planet PNGs overlay (no Supabase). */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-3 z-[2] flex w-full items-center justify-center gap-4"
+        aria-hidden
+      >
+        {Object.entries(ELEMENTAL_PLANETS).map(([element, src]) => (
+          <Image
+            key={element}
+            src={src}
+            alt={`${element} planet`}
+            width={256}
+            height={256}
+            unoptimized
+          />
+        ))}
+      </div>
       <Canvas
         className="absolute inset-0"
         style={{ background: 'transparent' }}

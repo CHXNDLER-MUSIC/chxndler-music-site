@@ -12,6 +12,7 @@ import LazyLoadEnhancer from "@/components/LazyLoadEnhancer";
 import OnboardingEntryGate from "@/components/OnboardingEntryGate";
 import WhatShouldWeCallYouModal from "@/components/WhatShouldWeCallYouModal";
 import WhatElementAreYouModal from "@/components/WhatElementAreYouModal";
+import NamePromptOnLogin from "@/components/NamePromptOnLogin";
 import StoreProvider from "@/components/StoreProvider";
 import { ProfileProvider } from "@/contexts/ProfileContext";
 import { TourProvider } from "@/contexts/TourContext";
@@ -126,6 +127,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {!analyticsOff && <AnalyticsWidget />}
             <LazyLoadEnhancer />
             <OnboardingEntryGate />
+            {/* Opens the name prompt when returning from auth with completeProfile=1 */}
+            <NamePromptOnLogin />
             <WhatShouldWeCallYouModal />
             <WhatElementAreYouModal />
             <StoreProvider />

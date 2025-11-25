@@ -2283,7 +2283,7 @@ export default function HUDPanel({
               // Fade only the 3D layer when beam-only mode is active
               opacity: contentOpacity,
               // Move the 3D planet system higher
-              top: `calc(-70px)`, 
+              top: `calc(-110px)`, 
               bottom: planetBottom,
               pointerEvents: 'none' // Allow clicks to pass through to elements below
             }}
@@ -2370,7 +2370,7 @@ export default function HUDPanel({
           {/* Cover section at bottom right corner - using CoverHologram for pop-out functionality */}
           <div ref={coverRef} className="absolute hud-cover-pos" style={{ 
             // Align flush to the right and sit at the bottom edge
-            bottom: 0, 
+            bottom: 10, 
             right: 0, 
             width: 'auto', 
             display: 'flex', 
@@ -2760,7 +2760,7 @@ export default function HUDPanel({
                       <HeartverseButton
                         ref={joinUsBtnRef}
                         label="WELCOME HOME"
-                        style={{ position: 'absolute', left: '8px', top: '58px', paddingLeft: '32px', paddingRight: '32px', minWidth: '180px', height: '32px' }}
+                        style={{ position: 'absolute', left: '8px', top: '38px', paddingLeft: '32px', paddingRight: '32px', minWidth: '180px', height: '32px' }}
                         title="Welcome Home"
                         onClick={(e) => { 
                           e.stopPropagation(); 
@@ -2797,7 +2797,7 @@ export default function HUDPanel({
                             }} 
                           />
                         }
-                        style={{ position: 'absolute', left: '200px', top: '58px', paddingLeft: '12px', paddingRight: '12px', width: '80px', height: '32px', minWidth: '80px', maxWidth: '80px', border: '1px solid rgba(255, 255, 0, 0.6)', outline: 'none', boxShadow: '0 0 8px rgba(255, 255, 0, 0.3), 0 0 16px rgba(255, 255, 0, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible', borderRadius: '8px', filter: 'brightness(1.2) saturate(1.4)', transition: 'all 0.2s ease' }}
+                        style={{ position: 'absolute', left: '200px', top: '38px', paddingLeft: '12px', paddingRight: '12px', width: '80px', height: '32px', minWidth: '80px', maxWidth: '80px', border: '1px solid rgba(255, 255, 0, 0.6)', outline: 'none', boxShadow: '0 0 8px rgba(255, 255, 0, 0.3), 0 0 16px rgba(255, 255, 0, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible', borderRadius: '8px', filter: 'brightness(1.2) saturate(1.4)', transition: 'all 0.2s ease' }}
                         title="Stars"
                         aria-haspopup="dialog"
                         aria-expanded={showSoulSkyPopover}
@@ -3423,7 +3423,7 @@ export default function HUDPanel({
                           </div>
                         )}
                         {/* THE CODE button positioned under THE DREAMER */}
-                        <div style={{ position: 'absolute', left: '50%', top: savedProfileElement ? '52px' : '42px', transform: 'translateX(-50%)' }}>
+                        <div style={{ position: 'absolute', left: '50%', top: savedProfileElement ? '22px' : '12px', transform: 'translateX(-50%)' }}>
                           <button
                             type="button"
                             aria-label="HEARTVERSE Code"
@@ -7019,15 +7019,13 @@ export default function HUDPanel({
             {/* Waveform visualizer directly under song dropdown */}
             {(() => {
               const currentSong = resolvedSongs.find(s => s.id === active);
-              const element = (currentSong?.icon || 'heart').toLowerCase();
-              const validElement = ['heart', 'water', 'lightning', 'darkness'].includes(element) ? element : 'heart';
+              // Force white-glow style by using 'darkness' element mapping
+              const element = 'darkness';
               
               // Calculate progress ratio from audio or fallback to state
               const a = liveAudioRef?.current;
               const liveDur = (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
               const liveTime = (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
-              
-              console.log('HUDPanel waveform section:', { currentSong, element, validElement, liveDur, liveTime, active });
               
               return (
                 <div style={{
@@ -7039,7 +7037,7 @@ export default function HUDPanel({
                   width: '100%'
                 }}>
                   <WaveformVisualizer
-                    element={validElement}
+                    element={element}
                     progress={liveDur > 0 ? (liveTime / liveDur) : 0}
                     duration={liveDur}
                     currentTime={liveTime}

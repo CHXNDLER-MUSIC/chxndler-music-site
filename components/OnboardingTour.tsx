@@ -58,6 +58,7 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
   const [bubblePosition, setBubblePosition] = useState<{ top: number; left: number } | null>(null);
   const [targetElement, setTargetElement] = useState<HTMLElement | null>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const spotlightRef = useRef<{ cx: number; cy: number; r: number } | null>(null);
 
   // Current step
   const currentStep = TOUR_STEPS[currentStepIndex];
@@ -93,6 +94,17 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
     top = Math.max(20, Math.min(top, viewportHeight - bubbleHeight - 20));
 
     setBubblePosition({ top, left });
+
+    // Compute spotlight center and radius for the overlay
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const r = Math.max(120, Math.ceil(Math.hypot(rect.width, rect.height) * 0.8));
+    spotlightRef.current = { cx, cy, r };
+    // Apply dynamic radial-gradient to create a "hole" around the target
+    if (overlayRef.current) {
+      const g = `radial-gradient(${r}px ${r}px at ${cx}px ${cy}px, rgba(0,0,0,0) 0%, rgba(0,0,0,0.2) 65%, rgba(0,0,0,0.6) 100%)`;
+      overlayRef.current.style.background = g;
+    }
   };
 
   // Find target element and set up highlighting
@@ -132,6 +144,10 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
       console.warn(`Tour target not found: ${step.selector}`);
       setTargetElement(null);
       setBubblePosition(null);
+      // Fallback overlay background
+      if (overlayRef.current) {
+        overlayRef.current.style.background = 'radial-gradient(120% 120% at 50% -10%, rgba(0,0,0,0.55), rgba(0,0,0,0.75))';
+      }
     }
   };
 
@@ -191,6 +207,11 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
 
   // Setup tour when active
   useEffect(() => {
+    if (active) {
+      // Always start from the first step when (re)activating
+      setCurrentStepIndex(0);
+    }
+
     if (active) {
       // Add overlay class to body
       document.body.classList.add('tour-active');
@@ -259,12 +280,12 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
           className={`tour-bubble fixed z-[301] transition-all duration-500 ${
             isVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-2 scale-95'
           }`}
-          style={{
-            top: bubblePosition.top,
-            left: bubblePosition.left,
-            transform: 'translateX(-50%)',
-            pointerEvents: isVisible ? 'auto' : 'none',
-          }}
+            style={{
+              top: bubblePosition.top,
+              left: bubblePosition.left,
+              transform: 'translateX(-50%)',
+              pointerEvents: isVisible ? 'auto' : 'none',
+            }}
         >
           <div
             className="relative max-w-sm rounded-2xl p-6"

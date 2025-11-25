@@ -1216,13 +1216,23 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                             <button
                               onClick={() => {
                                 try { sfx.play('click', 0.6); } catch {}
-                                if (purchaseState === 'digital-preview') {
-                                  resetPurchaseState();
-                                } else {
+                                if (purchaseState !== 'digital-preview') {
                                   handlePurchaseClick('digital');
+                                } else {
+                                  if (hasEnoughBalance('digital')) {
+                                    // Second click confirms purchase inline
+                                    handleConfirmPurchase();
+                                  } else {
+                                    setSelectedPurchaseType('digital');
+                                    setPurchaseState('insufficient');
+                                  }
                                 }
                               }}
-                              className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
+                              className={`flex items-center gap-1 px-2 py-1 rounded border bg-pink-500/10 transition-all duration-200 text-xs ${
+                                (purchaseState === 'digital-preview' && hasEnoughBalance('digital'))
+                                  ? 'border-green-400/60 hover:border-green-400/80 hover:bg-green-500/20'
+                                  : 'border-pink-400/40 hover:border-pink-400/70 hover:bg-pink-500/20'
+                              }`}
                               style={{
                                 boxShadow: '0 0 8px rgba(255,105,180,0.3)',
                               }}
@@ -1239,12 +1249,21 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                               >
                                 {digitalCost}
                               </span>
-                              <span 
-                                className="text-pink-200 font-medium text-xs"
-                                style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
-                              >
-                                DIGITAL
-                              </span>
+                              {(purchaseState === 'digital-preview' && hasEnoughBalance('digital')) ? (
+                                <span 
+                                  className="text-green-300 font-semibold text-xs"
+                                  style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)' }}
+                                >
+                                  CONFIRM
+                                </span>
+                              ) : (
+                                <span 
+                                  className="text-pink-200 font-medium text-xs"
+                                  style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                                >
+                                  DIGITAL
+                                </span>
+                              )}
                             </button>
                             
                             {/* Physical option */}
@@ -1453,18 +1472,8 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                       
                       {/* Check if user has enough heart coins */}
                       {hasEnoughBalance('digital') ? (
-                        /* Confirm button */
-                        <div className="mt-4">
-                          <button
-                            onClick={() => {
-                              try { sfx.play('click', 0.6); } catch {}
-                              setPurchaseState('confirm-digital');
-                            }}
-                            className="px-3 py-1 rounded border border-green-400/60 bg-green-500/10 hover:bg-green-500/20 transition-all duration-200 text-xs text-green-300"
-                            style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)' }}
-                          >
-                            CONFIRM
-                          </button>
+                        <div className="mt-4 text-xs text-green-300" style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)' }}>
+                          Click CONFIRM next to the Digital button to continue.
                         </div>
                       ) : (
                         /* Not enough heart coins */
