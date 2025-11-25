@@ -64,7 +64,7 @@
   /* Position the light beam closer to the blue button using a separate gap var */
   /* Nudge the blue display slightly lower on screen */
   /* Increased gap to move all displays and beam down together */
-  --beam-gap-px: 300px; /* Reduced to move blue display down */
+  --beam-gap-px: 200px; /* Further reduced to move blue display down */
   /* Pink display vertical nudge to meet the light beam */
   --pink-bottom-nudge: 8px;
   /* HUD waveform player bottom offset (raises player inside blue display) */

@@ -14,31 +14,31 @@ export const TOUR_STEPS: TourStep[] = [
   {
     id: "code",
     selector: "[data-tour-id='code'], [data-tour-id='beliefs']",
-    title: "This is the CODE",
-    body: "These are the Heartverse beliefs that guide your journey."
+    title: "CODE",
+    body: "This is the CODE. These are the Heartverse beliefs that guide your journey."
   },
   {
     id: "heartcoins",
     selector: "[data-tour-id='heartcoins']",
-    title: "Heart Coins",
+    title: "HEART COINS",
     body: "Heart Coins are your cosmic energy. Earn them by exploring, connecting, and showing up."
   },
   {
     id: "binder",
     selector: "[data-tour-id='binder'], [data-tour-id='cards']",
-    title: "Binder",
+    title: "BINDER",
     body: "Your Binder holds all CHXNDLER cards you collect. Some unlock by tier, others are rare drops."
   },
   {
     id: "stars",
     selector: "[data-tour-id='stars'], [data-tour-id='journal']",
-    title: "Soul Star Journal",
+    title: "STARS",
     body: "Your Soul Star Journal is where you reflect, grow, and complete your daily elemental prompts."
   },
   {
     id: "badges",
     selector: "[data-tour-id='badges']",
-    title: "Badges",
+    title: "BADGES",
     body: "Badges honor your milestones as an Alien. They track streaks, community actions, and discoveries."
   }
 ];
@@ -248,8 +248,8 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
         }`}
         style={{
           pointerEvents: isVisible ? 'auto' : 'none',
-          background: 'radial-gradient(120% 120% at 50% -10%, rgba(0,0,0,0.45), rgba(0,0,0,0.65))',
-          backdropFilter: 'blur(6px)'
+          background: 'radial-gradient(120% 120% at 50% -10%, rgba(0,0,0,0.55), rgba(0,0,0,0.75))',
+          backdropFilter: 'blur(8px)'
         }}
       />
 
@@ -276,7 +276,16 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
             }}
           >
             <div className="pointer-events-none absolute inset-0">
-              <div className="absolute inset-0 opacity-60" style={{ backgroundImage: `radial-gradient(2px 2px at 20% 30%, rgba(255,255,255,0.6) 50%, transparent 51%), radial-gradient(1.5px 1.5px at 70% 60%, rgba(255,255,255,0.5) 50%, transparent 51%), radial-gradient(1.2px 1.2px at 40% 80%, rgba(255,255,255,0.35) 50%, transparent 51%)` }} />
+              <div className="absolute inset-0 opacity-70 tour-sparkles" style={{ 
+                backgroundImage: `
+                  radial-gradient(2px 2px at 20% 30%, rgba(255,255,255,0.8) 50%, transparent 52%), 
+                  radial-gradient(1.5px 1.5px at 70% 60%, rgba(252,84,175,0.6) 50%, transparent 52%), 
+                  radial-gradient(1.2px 1.2px at 40% 80%, rgba(56,182,255,0.5) 50%, transparent 52%),
+                  radial-gradient(1.8px 1.8px at 85% 20%, rgba(255,255,255,0.7) 50%, transparent 52%),
+                  radial-gradient(1.3px 1.3px at 15% 75%, rgba(242,239,29,0.5) 50%, transparent 52%),
+                  radial-gradient(2.2px 2.2px at 60% 15%, rgba(252,84,175,0.4) 50%, transparent 52%)
+                ` 
+              }} />
             </div>
             {/* Title */}
             <h3 
