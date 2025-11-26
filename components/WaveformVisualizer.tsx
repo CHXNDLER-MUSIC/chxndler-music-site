@@ -147,11 +147,13 @@ export default function WaveformVisualizer({
         
         {/* Current position indicator heart - always visible */}
         <path 
-          d={`M ${Math.max(5, progressX)} ${centerY - 2.5} 
-              C ${Math.max(5, progressX) - 1.5} ${centerY - 4}, ${Math.max(5, progressX) - 3.5} ${centerY - 3}, ${Math.max(5, progressX) - 2} ${centerY - 1}
-              C ${Math.max(5, progressX) - 1} ${centerY + 0.5}, ${Math.max(5, progressX)} ${centerY + 2}, ${Math.max(5, progressX)} ${centerY + 2}
-              C ${Math.max(5, progressX)} ${centerY + 2}, ${Math.max(5, progressX) + 1} ${centerY + 0.5}, ${Math.max(5, progressX) + 2} ${centerY - 1}
-              C ${Math.max(5, progressX) + 3.5} ${centerY - 3}, ${Math.max(5, progressX) + 1.5} ${centerY - 4}, ${Math.max(5, progressX)} ${centerY - 2.5} Z`}
+          d={`M ${Math.max(5, progressX)} ${centerY + 2} 
+              L ${Math.max(5, progressX) - 2} ${centerY - 1.2}
+              C ${Math.max(5, progressX) - 2} ${centerY - 3}, ${Math.max(5, progressX) - 0.5} ${centerY - 3}, ${Math.max(5, progressX) - 0.5} ${centerY - 1.8}
+              C ${Math.max(5, progressX) - 0.5} ${centerY - 1.2}, ${Math.max(5, progressX)} ${centerY - 0.7}, ${Math.max(5, progressX)} ${centerY - 0.7}
+              C ${Math.max(5, progressX)} ${centerY - 0.7}, ${Math.max(5, progressX) + 0.5} ${centerY - 1.2}, ${Math.max(5, progressX) + 0.5} ${centerY - 1.8}
+              C ${Math.max(5, progressX) + 0.5} ${centerY - 3}, ${Math.max(5, progressX) + 2} ${centerY - 3}, ${Math.max(5, progressX) + 2} ${centerY - 1.2}
+              L ${Math.max(5, progressX)} ${centerY + 2} Z`}
           fill="#FFFFFF" 
           stroke={elementColor} 
           strokeWidth="1" 

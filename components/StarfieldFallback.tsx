@@ -24,7 +24,7 @@ export default function StarfieldFallback({ brightness = 0.96 }: { brightness?: 
       x: Math.random() * w,
       y: Math.random() * h,
       z: 0.2 + Math.random() * 1.2,
-      r: 0.4 + Math.random() * 1.8,
+      r: 0.6 + Math.random() * 2.2,
       tw: Math.random() * Math.PI * 2,
       sp: 0.2 + Math.random() * 0.8,
     }));

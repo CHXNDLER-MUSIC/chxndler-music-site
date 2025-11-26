@@ -6,7 +6,6 @@ import { sfx } from "@/lib/sfx";
 import { useProfile } from "@/contexts/ProfileContext";
 import { Card, CardTier, ProfileTier, isCardLocked, getCardGateState, getTierDisplayName } from "@/types/card";
 import type { CardGateState } from "@/utils/cardGating";
-import WaveformVisualizer from "./WaveformVisualizer";
 
 type Props = {
   open: boolean;
@@ -970,19 +969,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
               }
             };
 
-            return (
-              <div className="mb-4 px-4">
-                <WaveformVisualizer
-                  element={getWaveformElement(selectedElement)}
-                  progress={0} // Default progress since no audio player yet
-                  duration={180} // Default 3 minute duration
-                  currentTime={0} // No current time yet
-                  width="100%"
-                  height={12}
-                  className="opacity-90"
-                />
-              </div>
-            );
+            return null;
           })()}
 
           {/* Card layout with image - positioned directly under Back to Elements */}

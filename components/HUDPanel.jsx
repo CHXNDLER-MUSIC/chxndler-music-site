@@ -182,7 +182,7 @@ export default function HUDPanel({
   const [planetBottom, setPlanetBottom] = useState(56);
   // Vertical offset to raise/lower the Store (Gem) popover relative to its anchor
   // Move it slightly higher (more negative) per request
-  const STORE_POPOVER_Y_OFFSET = -230; // move popover up slightly higher
+  const STORE_POPOVER_Y_OFFSET = -260; // move popover up higher
   // Dynamic spacing for song selector so it doesn't overlap the cover
   const coverRef = useRef(null);
   const [oneLinerRight, setOneLinerRight] = useState(inConsole ? 108 : 140);
@@ -205,7 +205,7 @@ export default function HUDPanel({
   // Venmo popup state
   const [showVenmoPopup, setShowVenmoPopup] = useState(false);
   // Position lyrics popover relative to its anchor; smaller negative means less high
-  const LYRICS_POPOVER_Y_OFFSET = -40; // bring it further down compared to before
+  const LYRICS_POPOVER_Y_OFFSET = -60; // bring it higher up
 
   // Welcome Home button ref
   const joinUsBtnRef = useRef(null);
@@ -1119,7 +1119,7 @@ export default function HUDPanel({
         rightEdge = Math.min((typeof window !== 'undefined' ? window.innerWidth : rightEdge), rightEdge + HORIZONTAL_EXPAND) - 8 + 8;
         const width = Math.max(0, rightEdge - leftEdge);
         // Bring the top down more while keeping the bottom aligned to blue display bottom; this also shortens the popover
-        const TOP_INSET = 136; // slightly lower + shorter
+        const TOP_INSET = 120; // moved up slightly
         let top = rect.top + TOP_INSET;
         top = Math.max(8, top);
         const height = Math.max(100, rect.height - TOP_INSET);
@@ -1321,7 +1321,7 @@ export default function HUDPanel({
           leftEdge = Math.max(8, leftEdge - HORIZONTAL_EXPAND);
           rightEdge = Math.min((typeof window !== 'undefined' ? window.innerWidth : rightEdge), rightEdge + HORIZONTAL_EXPAND) - 8 + 8;
           const width = Math.max(0, rightEdge - leftEdge);
-          const TOP_INSET = 136; // keep resize calc consistent
+          const TOP_INSET = 120; // keep resize calc consistent
           let top = rect.top + TOP_INSET;
           top = Math.max(8, top);
           const height = Math.max(100, rect.height - TOP_INSET);

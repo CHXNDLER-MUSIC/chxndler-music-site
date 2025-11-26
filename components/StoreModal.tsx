@@ -285,7 +285,7 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
-        className="relative w-full max-w-md bg-black/90 backdrop-blur-lg border border-[#19E3FF]/60 rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.35)] text-white overflow-hidden"
+        className="relative w-full max-w-md bg-black/90 backdrop-blur-lg border border-pink-500/60 rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.35)] text-white overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
@@ -312,8 +312,8 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
 
         {/* Title and description */}
         <div className="px-6 pb-4">
-          <h2 className="text-xl font-bold text-[#19E3FF] mb-2 text-center">{item.title}</h2>
-          <p className="text-sm text-[#9EEBFF] text-center">{item.description}</p>
+          <h2 className="text-xl font-bold text-pink-300 mb-2 text-center">{item.title}</h2>
+          <p className="text-sm text-pink-200 text-center">{item.description}</p>
         </div>
 
         {/* Price row */}
@@ -446,7 +446,7 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
                         // TODO: Navigate to binder or collection view
                         try { sfx.play('click', 0.6); } catch {}
                       }}
-                      className="text-[#19E3FF] hover:text-[#9EEBFF] text-sm transition-colors"
+                      className="text-pink-300 hover:text-pink-200 text-sm transition-colors"
                     >
                       View in Binder
                     </button>

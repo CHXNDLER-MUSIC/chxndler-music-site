@@ -205,8 +205,8 @@ export default function HeartPlanet() {
       const sx = 1.0 + beat;
       const sy = 1.0 + beat * 0.9;
       const sz = 1.0 - beat * 0.50;
-      // Slightly taller than wide, and thinner in Z for a clearer heart read
-      groupRef.current.scale.set(3.2 * sx, 3.6 * sy, 0.12 * sz);
+      // Make heart much taller and thinner in Z for a clearer heart read
+      groupRef.current.scale.set(3.2 * sx, 5.2 * sy, 0.12 * sz);
     }
     
     
@@ -216,7 +216,7 @@ export default function HeartPlanet() {
   });
 
   return (
-    <group ref={groupRef} position={[0, 0.05, 0]} scale={[3.2, 3.6, 0.12]} className="heartPlanetWrapper">
+    <group ref={groupRef} position={[0, 0.05, 0]} scale={[3.2, 5.2, 0.12]} className="heartPlanetWrapper">
       {/* Core heart with realistic shading */}
       <mesh ref={meshRef} position={[0, 0, 0]} renderOrder={1}>
         <primitive attach="geometry" object={heartGeometry} />

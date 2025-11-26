@@ -20,10 +20,10 @@ const SHOW_ORBITS = true;
 
 // Fixed elemental planets configuration - cardinal positions around heart
 const ELEMENTS = [
-  { code: "heart",     label: "💖 Heart",     position: [25, 0, 0] },     // right
-  { code: "water",     label: "🌊 Water",     position: [0, 0, 25] },     // forward
-  { code: "lightning", label: "⚡ Lightning", position: [-25, 0, 0] },    // left
-  { code: "darkness",  label: "🌑 Darkness",  position: [0, 0, -25] },    // back
+  { code: "heart",     label: "💖 Heart",     position: [40, 0, 0] },     // right
+  { code: "water",     label: "🌊 Water",     position: [0, 40, 0] },     // top
+  { code: "lightning", label: "⚡ Lightning", position: [-40, 0, 0] },    // left
+  { code: "darkness",  label: "🌑 Darkness",  position: [0, -40, 0] },    // bottom
 ] as const;
 
 // Element colors and glow configuration
@@ -46,8 +46,8 @@ function isElementCode(code: string): code is ElementCode {
   return ["heart", "water", "lightning", "darkness"].includes(code);
 }
 
-const elementOrbitRadius = 25;
-const songOrbitRadius = 8;
+const elementOrbitRadius = 40;
+const songOrbitRadius = 12;
 
 // Elemental Planet with Glow component
 function ElementPlanetWithGlow({ 
@@ -82,24 +82,25 @@ function ElementPlanetWithGlow({
       
       {/* Element planet - renderOrder 1 - SIMPLE VERSION FOR DEBUG */}
       <mesh renderOrder={1} position={[0, 0, 0]}>
-        <sphereGeometry args={[4.0, 32, 32]} />
+        <sphereGeometry args={[8.0, 32, 32]} />
         <meshBasicMaterial color={color} />
       </mesh>
       
-      {/* Diagnostic label */}
-      {SHOW_ORBITS && (
-        <Html position={[0, 3, 0]} center>
-          <div style={{ 
-            color: color, 
-            fontSize: '12px', 
-            fontWeight: 'bold',
-            textShadow: '1px 1px 2px black',
-            pointerEvents: 'none'
-          }}>
-            {element.toUpperCase()}
-          </div>
-        </Html>
-      )}
+      {/* Element label - always visible */}
+      <Html position={[0, 12, 0]} center>
+        <div style={{ 
+          color: color, 
+          fontSize: '18px', 
+          fontWeight: 'bold',
+          textShadow: '2px 2px 4px black',
+          pointerEvents: 'none',
+          textAlign: 'center',
+          fontFamily: 'Arial, sans-serif',
+          letterSpacing: '1px'
+        }}>
+          {element.toUpperCase()}
+        </div>
+      </Html>
       
       {/* Diagnostic bounding box */}
       {SHOW_ORBITS && (
@@ -481,30 +482,96 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
             </group>
           )}
           
-          {/* SIMPLE ELEMENTAL PLANETS - DIRECT IMPLEMENTATION */}
-          {/* Heart Planet */}
-          <mesh position={[25, 0, 0]}>
-            <sphereGeometry args={[4, 32, 32]} />
-            <meshBasicMaterial color="#FC54AF" />
-          </mesh>
-          
-          {/* Water Planet */}
-          <mesh position={[0, 0, 25]}>
-            <sphereGeometry args={[4, 32, 32]} />
-            <meshBasicMaterial color="#38B6FF" />
-          </mesh>
-          
-          {/* Lightning Planet */}
-          <mesh position={[-25, 0, 0]}>
-            <sphereGeometry args={[4, 32, 32]} />
-            <meshBasicMaterial color="#F2EF1D" />
-          </mesh>
-          
-          {/* Darkness Planet */}
-          <mesh position={[0, 0, -25]}>
-            <sphereGeometry args={[4, 32, 32]} />
-            <meshBasicMaterial color="#6A4C93" />
-          </mesh>
+          {/* 4 ELEMENTAL PLANETS WITH LABELS */}
+          <group>
+            {/* Heart Planet - Pink */}
+            <group position={[40, 0, 0]}>
+              <mesh>
+                <sphereGeometry args={[8, 32, 32]} />
+                <meshBasicMaterial color="#FC54AF" />
+              </mesh>
+              <Html position={[0, 12, 0]} center>
+                <div style={{ 
+                  color: "#FC54AF", 
+                  fontSize: "18px", 
+                  fontWeight: "bold",
+                  textShadow: "2px 2px 4px black",
+                  pointerEvents: "none",
+                  textAlign: "center",
+                  fontFamily: "Arial, sans-serif",
+                  letterSpacing: "1px"
+                }}>
+                  HEART
+                </div>
+              </Html>
+            </group>
+            
+            {/* Water Planet - Blue */}
+            <group position={[0, 40, 0]}>
+              <mesh>
+                <sphereGeometry args={[8, 32, 32]} />
+                <meshBasicMaterial color="#38B6FF" />
+              </mesh>
+              <Html position={[0, 12, 0]} center>
+                <div style={{ 
+                  color: "#38B6FF", 
+                  fontSize: "18px", 
+                  fontWeight: "bold",
+                  textShadow: "2px 2px 4px black",
+                  pointerEvents: "none",
+                  textAlign: "center",
+                  fontFamily: "Arial, sans-serif",
+                  letterSpacing: "1px"
+                }}>
+                  WATER
+                </div>
+              </Html>
+            </group>
+            
+            {/* Lightning Planet - Yellow */}
+            <group position={[-40, 0, 0]}>
+              <mesh>
+                <sphereGeometry args={[8, 32, 32]} />
+                <meshBasicMaterial color="#F2EF1D" />
+              </mesh>
+              <Html position={[0, 12, 0]} center>
+                <div style={{ 
+                  color: "#F2EF1D", 
+                  fontSize: "18px", 
+                  fontWeight: "bold",
+                  textShadow: "2px 2px 4px black",
+                  pointerEvents: "none",
+                  textAlign: "center",
+                  fontFamily: "Arial, sans-serif",
+                  letterSpacing: "1px"
+                }}>
+                  LIGHTNING
+                </div>
+              </Html>
+            </group>
+            
+            {/* Darkness Planet - Purple */}
+            <group position={[0, -40, 0]}>
+              <mesh>
+                <sphereGeometry args={[8, 32, 32]} />
+                <meshBasicMaterial color="#6A4C93" />
+              </mesh>
+              <Html position={[0, 12, 0]} center>
+                <div style={{ 
+                  color: "#6A4C93", 
+                  fontSize: "18px", 
+                  fontWeight: "bold",
+                  textShadow: "2px 2px 4px black",
+                  pointerEvents: "none",
+                  textAlign: "center",
+                  fontFamily: "Arial, sans-serif",
+                  letterSpacing: "1px"
+                }}>
+                  DARKNESS
+                </div>
+              </Html>
+            </group>
+          </group>
           
           {/* Single song focus mode - show individual planet */}
           {shouldShowSingle && focusId && (() => {

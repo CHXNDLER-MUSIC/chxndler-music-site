@@ -132,7 +132,7 @@ export default function HeartStarPlanet({ size = 180 }: { size?: number }) {
           src={heartStarClean}
           alt="Heart Star"
           width={size}
-          height={size}
+          height={size * 1.3}
           className="relative pointer-events-none select-none drop-shadow-2xl"
           style={{
             filter: "drop-shadow(0 0 20px rgba(252,84,175,0.8)) drop-shadow(0 0 40px rgba(252,84,175,0.4))",

@@ -49,10 +49,10 @@ export default function Starfield({ count = 2000, radius = 200 }: StarfieldProps
       <primitive attach="geometry" object={geometry} />
       <pointsMaterial
         color="#ffffff"
-        size={0.5}
+        size={0.8}
         sizeAttenuation={true}
         transparent
-        opacity={0.8}
+        opacity={0.9}
       />
     </points>
   );

@@ -62,12 +62,12 @@ export const POS = {
     // Column X for left console icons
     xVw: 13.6,    // moved right to embed deeper in oval
     // Optional stacking controls (if present, overrides ig/tt/yt Y)
-    baseYVh: 62.0,   // starting Y (vh) for top button — moved further down
+    baseYVh: 46.0,   // starting Y (vh) for top button — moved further down
     spacingVh: 14.0, // vertical spacing between buttons (spread out more)
     // Fallback individual centers (used if base/spacing not provided)
-    igYVh: 42.0,
-    ttYVh: 58.0,
-    ytYVh: 74.0,
+    igYVh: 36.0,
+    ttYVh: 52.0,
+    ytYVh: 68.0,
     // Responsive button sizing for better mobile experience
     sizePx: 76,   // diameter of glow buttons (desktop baseline)
     mobile: { sizePx: 56 },    // smaller on mobile phones

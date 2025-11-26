@@ -60,7 +60,7 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
   const overlayRef = useRef<HTMLDivElement>(null);
   const spotlightRef = useRef<{ cx: number; cy: number; r: number } | null>(null);
 
-  // Current step
+  // Current step with safety check
   const currentStep = TOUR_STEPS[currentStepIndex];
   const isLastStep = currentStepIndex === TOUR_STEPS.length - 1;
 
@@ -255,13 +255,20 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
     // Fade out
     setIsVisible(false);
     
-    // Remove overlay class from body
+    // Remove overlay class from body immediately
     document.body.classList.remove('tour-active');
     
-    // Notify parent
-    setTimeout(() => {
+    // Force remove any tour-related styles that might persist
+    document.body.style.removeProperty('overflow');
+    
+    // Notify parent immediately for end modal, with delay for regular completion
+    if (completed) {
       onFinish(completed);
-    }, 300);
+    } else {
+      setTimeout(() => {
+        onFinish(completed);
+      }, 300);
+    }
   };
 
   // Setup tour when active
@@ -276,7 +283,9 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
       document.body.classList.add('tour-active');
       
       // Setup first step
-      setupStep(currentStep);
+      if (currentStep) {
+        setupStep(currentStep);
+      }
       
       // Fade in
       setIsVisible(true);
@@ -315,6 +324,12 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
   }, [active, targetElement, isVisible]);
 
   if (!active && !endModalVisible) {
+    return null;
+  }
+
+  // Safety check: if no current step and tour is active, don't render
+  if (!currentStep && active) {
+    console.warn(`No step found at index ${currentStepIndex}`);
     return null;
   }
 
@@ -376,12 +391,12 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
                 textShadow: '0 0 15px rgba(252,84,175,0.65)',
               }}
             >
-              {currentStep.title}
+              {currentStep?.title || 'Loading...'}
             </h3>
 
             {/* Body */}
             <p className="text-white/90 mb-6 leading-relaxed">
-              {currentStep.body}
+              {currentStep?.body || 'Loading tour content...'}
             </p>
 
             {/* Controls */}

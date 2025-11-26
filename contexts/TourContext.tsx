@@ -58,6 +58,13 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     try { await updateProfile({ has_seen_tour: true }); } catch {}
   }, [markCompleted, updateProfile]);
 
+  const completeAndDismiss = useCallback(async () => {
+    setActive(false);
+    setEndModalVisible(false);
+    markCompleted();
+    try { await updateProfile({ has_seen_tour: true }); } catch {}
+  }, [markCompleted, updateProfile]);
+
   const skip = useCallback(async () => {
     setActive(false);
     setEndModalVisible(false);
@@ -112,7 +119,13 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     <TourContext.Provider value={value}>
       {children}
       {/* Render the tour globally */}
-      <OnboardingTour active={active} onFinish={() => finish()} onSkip={() => skip()} endModalVisible={endModalVisible} onRestartFromEnd={() => restart()} />
+      <OnboardingTour 
+        active={active} 
+        onFinish={(completed: boolean) => completed ? completeAndDismiss() : finish()} 
+        onSkip={() => skip()} 
+        endModalVisible={endModalVisible} 
+        onRestartFromEnd={() => restart()} 
+      />
 
       {/* Welcome modal before starting the tour */}
       {welcomeVisible && (
