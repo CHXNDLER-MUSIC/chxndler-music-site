@@ -654,13 +654,34 @@ export default function ProfileBar({
       )}
 
       {activePanel === 'badges' && (
-        <BadgesModal 
-          open={true} 
-          onClose={() => {
-            setActivePanel(null);
-            try { onOpenBlueDisplay?.(); } catch {}
-          }} 
-        />
+        <div 
+          className="fixed inset-x-0 z-[250]" 
+          style={{ top: '64px', bottom: '0' }} // Position below the profile bar
+        >
+          <div 
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => {
+              setActivePanel(null);
+              try { onOpenBlueDisplay?.(); } catch {}
+            }}
+          />
+          <div className="relative h-full flex items-start justify-center pt-8">
+            <div 
+              className="w-full max-w-4xl mx-4 rounded-2xl p-6 backdrop-blur-md border-2 border-[#FC54AF]/60 bg-white/5 shadow-[0_0_26px_rgba(56,182,255,0.35)]"
+              style={{ maxHeight: 'calc(100vh - 120px)', overflow: 'auto' }}
+              onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+            >
+              <BadgesModal 
+                open={true} 
+                embedded={true}
+                onClose={() => {
+                  setActivePanel(null);
+                  try { onOpenBlueDisplay?.(); } catch {}
+                }} 
+              />
+            </div>
+          </div>
+        </div>
       )}
 
 

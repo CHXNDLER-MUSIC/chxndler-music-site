@@ -21,9 +21,10 @@ type BadgeCategory = {
 type Props = {
   open: boolean;
   onClose: () => void;
+  embedded?: boolean; // New prop to render without HeartversePopup wrapper
 };
 
-export default function BadgesModal({ open, onClose }: Props) {
+export default function BadgesModal({ open, onClose, embedded = false }: Props) {
   const { profile } = useProfile();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedBadge, setSelectedBadge] = useState<{name: string; description?: string; progress?: number; current?: number; total?: number; icon_url?: string} | null>(null);
@@ -357,56 +358,58 @@ export default function BadgesModal({ open, onClose }: Props) {
     );
   }
 
+  // Render just the content when embedded
+  const badgesContent = (
+    <>
+      {/* Close button for embedded mode */}
+      {embedded && (
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 w-8 h-8 rounded-full border border-pink-400/60 flex items-center justify-center text-pink-400 hover:text-pink-200 transition-colors"
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </button>
+      )}
+
+      {/* Header for embedded mode */}
+      {embedded && (
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold text-white">BADGES</h2>
+        </div>
+      )}
+
+      {/* Badge Categories Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {badgeCategories.map((category) => (
+          <button
+            key={category.id}
+            onClick={() => setSelectedCategory(category.id)}
+            className="p-4 rounded-lg bg-black/40 border border-white/20 hover:border-white/40 transition-all text-center group"
+          >
+            <div className="text-2xl mb-2">{category.emoji}</div>
+            <div className="text-white font-semibold text-sm group-hover:text-pink-300 transition-colors">
+              {category.name}
+            </div>
+          </button>
+        ))}
+      </div>
+    </>
+  );
+
+  if (embedded) {
+    return <div className="relative">{badgesContent}</div>;
+  }
+
   return (
     <HeartversePopup 
       isOpen={open} 
       onClose={onClose} 
       title="BADGES"
     >
-      {!profile ? (
-        <div className="text-center p-4 text-sm opacity-80" style={{ color: '#FFB6C1' }}>
-          Please log in to view your badges.
-        </div>
-      ) : !profile.badges || profile.badges.length === 0 ? (
-        <div className="text-center p-4 text-sm opacity-80" style={{ color: '#FFB6C1' }}>
-          No badges earned yet.
-        </div>
-      ) : (
-        <div className="flex flex-wrap gap-3">
-          {profile.badges.map((row) => {
-            const badge = row.badges;
-            if (!badge) return null;
-
-            return (
-              <div
-                key={row.id}
-                className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/40 px-3 py-2 backdrop-blur-sm"
-              >
-                {badge.icon_url && (
-                  <img
-                    src={badge.icon_url}
-                    alt={badge.badge_name}
-                    className="h-8 w-8 rounded-full object-contain"
-                  />
-                )}
-                <div>
-                  <p className="text-xs font-semibold leading-tight" style={{ color: '#FF69B4' }}>
-                    {badge.badge_name}
-                  </p>
-                  {badge.description && (
-                    <p className="text-[10px] opacity-70" style={{ color: '#FFB6C1' }}>
-                      {badge.description}
-                    </p>
-                  )}
-                  <p className="mt-1 text-[10px] opacity-50" style={{ color: '#FFB6C1' }}>
-                    Awarded {new Date(row.awarded_at).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      {badgesContent}
     </HeartversePopup>
   );
 }

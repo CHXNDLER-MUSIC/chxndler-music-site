@@ -607,7 +607,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
         // Make the cover touch the sides of the blue box: no extra padding compensation
         width: size,
       } : { 
-        top: "calc(50% + 90px)", 
+        top: "calc(50% - 100px)", 
         transform: "translateX(-50%)",
         width: "360px"
       }}
@@ -660,7 +660,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
             className="card-anchored"
             style={{
               position: 'fixed',
-              bottom: '45vh', // Position slightly lower on screen
+              bottom: '35vh', // Position lower on screen
               left: '50%',
               transform: 'translateX(-50%)',
               pointerEvents: 'auto'

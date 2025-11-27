@@ -207,8 +207,6 @@ export default function HUDPanel({
   // Position lyrics popover relative to its anchor; smaller negative means less high
   const LYRICS_POPOVER_Y_OFFSET = -60; // bring it higher up
 
-  // Welcome Home button ref
-  const joinUsBtnRef = useRef(null);
   const [isSubmittingProfile, setIsSubmittingProfile] = useState(false);
   const [profileSubmissionMessage, setProfileSubmissionMessage] = useState('');
   const [welcomeBackProfile, setWelcomeBackProfile] = useState(null); // Tracks existing profile for button text
@@ -1193,7 +1191,7 @@ export default function HUDPanel({
     try { sfx.play('click', 0.4); } catch {}
     // Anchor position (identical to Join Us popover)
     try {
-      const r = joinUsBtnRef.current?.getBoundingClientRect?.();
+      const r = lyricsBtnRef.current?.getBoundingClientRect?.();
       const wrapper = innerRef.current?.parentElement || null; // outer HUD blue display wrapper (padding box)
       // Position the popover to match the blue display's vertical bounds
       if (wrapper && typeof window !== 'undefined') {
@@ -1230,7 +1228,7 @@ export default function HUDPanel({
     try { sfx.play('click', 0.4); } catch {}
     // Anchor position (identical to other popups)
     try {
-      const r = joinUsBtnRef.current?.getBoundingClientRect?.();
+      const r = lyricsBtnRef.current?.getBoundingClientRect?.();
       const wrapper = innerRef.current?.parentElement || null; // outer HUD blue display wrapper (padding box)
       // Position the popover to match the blue display's vertical bounds
       if (wrapper && typeof window !== 'undefined') {
@@ -2393,8 +2391,8 @@ export default function HUDPanel({
           
           {/* Cover section at bottom right corner - using CoverHologram for pop-out functionality */}
           <div ref={coverRef} className="absolute hud-cover-pos" style={{ 
-            // Align flush to the right and sit at the bottom edge
-            bottom: 30, 
+            // Align flush to the right and sit slightly higher from bottom
+            bottom: 45, 
             right: 0, 
             width: 'auto', 
             display: 'flex', 
@@ -2433,7 +2431,7 @@ export default function HUDPanel({
                       transform: 'translateY(10px)' // Nudge icon down by 10px
                     }}
                   >
-                    <CoverHologram src={src} title={title} slug={trackingSong} inline={true} size={92} />
+                    <CoverHologram src={src} title={title} slug={trackingSong} inline={true} size={110} />
                   </div>
                 );
               }
@@ -2453,7 +2451,7 @@ export default function HUDPanel({
                       transform: 'translateY(10px)' // Nudge icon down by 10px
                     }}
                   >
-                    <CoverHologram src={src} title={title} slug={trackingSong} inline={true} size={92} />
+                    <CoverHologram src={src} title={title} slug={trackingSong} inline={true} size={110} />
                   </div>
                 );
               }
@@ -2679,29 +2677,6 @@ export default function HUDPanel({
                           </svg>
                         </div>
                       )}
-                      {/* WELCOME HOME button positioned below LYRICS */}
-                      <HeartverseButton
-                        ref={joinUsBtnRef}
-                        label="WELCOME HOME"
-                        style={{ position: 'absolute', left: '8px', top: '38px', paddingLeft: '32px', paddingRight: '32px', minWidth: '180px', height: '32px' }}
-                        title="Welcome Home"
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          try { sfx.play('click', 0.45); } catch {}; 
-                          try { trackAnalytics('welcome_home_clicked', { location: 'hud_controls' }); } catch {}; 
-                          // Close any open HUD popovers when opening welcome home modal
-                          setShowHudVolumePopover(false);
-                          setShowLyricsPopover(false);
-                          setShowApplePopover(false);
-                          setShowHeartPopover(false);
-                          setShowHeartCoinPopover(false);
-                          setShowIdenticalPopup(false);
-                          setShowElementPopup(false);
-                          // Always show welcome home modal when button is clicked
-                          setShowWelcomeHomeModal(true);
-                        }}
-                        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                      />
                       {/* Store (gem) button placed to the right of Lyrics */}
                       <button
                         type="button"

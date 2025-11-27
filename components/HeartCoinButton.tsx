@@ -2,6 +2,58 @@
 
 import { useState, useEffect } from "react";
 import { sfx } from "@/lib/sfx";
+import Image from "next/image";
+import { useProfile } from '@/contexts/ProfileContext';
+
+// Store item interface
+interface StoreItem {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+  priceUsd: number;
+  priceHeartCoins: number;
+  stripeUrl: string;
+  is_released?: boolean;
+  min_tier?: string;
+}
+
+// Store items data
+const STORE_ITEMS: StoreItem[] = [
+  {
+    id: 'baby',
+    title: 'Baby',
+    description: 'Digital collectible card from the Heartverse collection.',
+    image: '/card/baby.png',
+    priceUsd: 3,
+    priceHeartCoins: 20,
+    stripeUrl: 'https://buy.stripe.com/aFacN64SZ4gZcZz8114gg0a',
+    is_released: true,
+    min_tier: 'wanderer'
+  },
+  {
+    id: 'ocean-girl',
+    title: 'Ocean Girl',
+    description: 'Digital collectible card from the Heartverse collection.',
+    image: '/card/ocean-girl.png',
+    priceUsd: 3,
+    priceHeartCoins: 20,
+    stripeUrl: 'https://buy.stripe.com/dRmbJ24SZ00J6Bb9554gg00',
+    is_released: true,
+    min_tier: 'wanderer'
+  },
+  {
+    id: 'somebody-to-love',
+    title: 'Somebody to Love',
+    description: 'Digital collectible card from the Heartverse collection.',
+    image: '/card/somebody-to-love.png',
+    priceUsd: 5,
+    priceHeartCoins: 30,
+    stripeUrl: 'https://buy.stripe.com/example',
+    is_released: true,
+    min_tier: 'lover'
+  }
+];
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   asChild?: boolean;
@@ -20,9 +72,13 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onOpenJournal, onOpenBinder, heartCoins: externalHeartCoins = 0, onHeartCoinsChange, isActive = false, journalCompleted = false, onJournalCompleted, ...restProps }: Props) {
+  const { profile, refreshProfile } = useProfile();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'EARN' | 'USE' | 'SEND'>('EARN');
   const [heartCoins, setHeartCoins] = useState(externalHeartCoins);
+  const [selectedItem, setSelectedItem] = useState<StoreItem | null>(null);
+  const [showItemDetail, setShowItemDetail] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [dailyQuests, setDailyQuests] = useState({
     elementTapped: false,
     journalEntry: journalCompleted,
@@ -124,6 +180,67 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     }));
     
     // Don't call onOpenBlueDisplay here - let the store open instead
+  };
+
+  // Store functionality
+  const handleSelectItem = (item: StoreItem) => {
+    setSelectedItem(item);
+    setShowItemDetail(true);
+    try { sfx.play('click', 0.6); } catch {}
+  };
+
+  const handleBackToStore = () => {
+    setShowItemDetail(false);
+    setSelectedItem(null);
+    try { sfx.play('close', 0.4); } catch {}
+  };
+
+  const handlePurchaseWithHeartCoins = async (item: StoreItem) => {
+    if (!profile) return;
+    
+    setIsProcessing(true);
+    
+    try {
+      const response = await fetch('/api/purchase-item-with-heartcoins', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          itemId: item.id,
+          itemTitle: item.title,
+          priceHeartCoins: item.priceHeartCoins,
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        // Success! Update UI and profile
+        try { sfx.play('click', 0.7); } catch {}
+        
+        // Update local heart coins state
+        const newBalance = (profile.heartcoin_balance || 0) - item.priceHeartCoins;
+        updateHeartCoins(newBalance);
+        
+        // Refresh profile to update HeartCoin balance
+        await refreshProfile();
+        
+        // Show success and go back to store
+        setTimeout(() => {
+          handleBackToStore();
+        }, 1500);
+        
+      } else if (response.status === 400 && result.error?.includes('insufficient')) {
+        // Insufficient HeartCoins - handled in UI
+      } else {
+        throw new Error(result.error || 'Purchase failed');
+      }
+    } catch (error) {
+      console.error('HeartCoin purchase error:', error);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
 
@@ -742,42 +859,119 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           {/* USE Tab Content */}
           {activeTab === 'USE' && (
             <div className="p-4">
-              <div 
-                className="text-base text-center mb-4"
-                style={{ 
-                  color: '#FFB6C1', 
-                  textShadow: '0 0 4px rgba(255,182,193,0.8)', 
-                  fontSize: '14px',
-                  lineHeight: 1.3
-                }}
-              >
-                Spend your Heart coins in the store for special items and experiences.
-              </div>
-              
-              <div className="text-center">
-                <button
-                  onClick={(e) => handleUseHeartCoins(e)}
-                  className="px-4 py-2 text-sm rounded border transition-all duration-200"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(255,215,0,0.2) 0%, rgba(255,255,0,0.3) 100%)',
-                    color: '#FFD700',
-                    borderColor: 'rgba(255,215,0,0.6)',
-                    textShadow: '0 0 6px rgba(255,215,0,0.8)',
-                    boxShadow: '0 0 10px rgba(255,215,0,0.4), 0 0 20px rgba(255,215,0,0.2)',
-                    fontWeight: 'bold'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,215,0,0.3) 0%, rgba(255,255,0,0.4) 100%)';
-                    e.currentTarget.style.boxShadow = '0 0 15px rgba(255,215,0,0.6), 0 0 25px rgba(255,215,0,0.3)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,215,0,0.2) 0%, rgba(255,255,0,0.3) 100%)';
-                    e.currentTarget.style.boxShadow = '0 0 10px rgba(255,215,0,0.4), 0 0 20px rgba(255,215,0,0.2)';
-                  }}
-                >
-                  OPEN STORE
-                </button>
-              </div>
+              {!showItemDetail ? (
+                <>
+                  <div 
+                    className="text-base text-center mb-4"
+                    style={{ 
+                      color: '#FFB6C1', 
+                      textShadow: '0 0 4px rgba(255,182,193,0.8)', 
+                      fontSize: '14px',
+                      lineHeight: 1.3
+                    }}
+                  >
+                    Spend your Heart coins on digital collectibles and special items.
+                  </div>
+                  
+                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                    {STORE_ITEMS.map((item) => (
+                      <div 
+                        key={item.id}
+                        onClick={() => handleSelectItem(item)}
+                        className="flex items-center gap-3 p-3 rounded-lg border border-pink-500/30 bg-pink-900/10 hover:bg-pink-900/20 cursor-pointer transition-all duration-200"
+                        style={{
+                          boxShadow: '0 0 8px rgba(252,84,175,0.2)'
+                        }}
+                      >
+                        <div className="relative w-12 h-12 flex-shrink-0">
+                          <Image
+                            src={item.image}
+                            alt={item.title}
+                            fill
+                            className="object-cover rounded"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-pink-300 text-sm truncate">{item.title}</div>
+                          <div className="text-xs text-pink-200/80 truncate">{item.description}</div>
+                        </div>
+                        <div className="flex items-center gap-1 text-sm font-bold text-[#F2EF1D]">
+                          <span>{item.priceHeartCoins}</span>
+                          <img
+                            src="/elements/heart-coin.png"
+                            alt="Heart Coin"
+                            className="w-4 h-4 object-contain"
+                            style={{
+                              filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : selectedItem && (
+                <>
+                  <div className="flex items-center mb-4">
+                    <button
+                      onClick={handleBackToStore}
+                      className="mr-3 text-pink-300 hover:text-pink-200 transition-colors"
+                    >
+                      ← Back
+                    </button>
+                    <div className="font-semibold text-pink-300">{selectedItem.title}</div>
+                  </div>
+                  
+                  <div className="text-center mb-4">
+                    <div className="relative w-32 h-32 mx-auto mb-3">
+                      <Image
+                        src={selectedItem.image}
+                        alt={selectedItem.title}
+                        fill
+                        className="object-contain rounded-lg"
+                      />
+                    </div>
+                    <p className="text-sm text-pink-200 mb-4">{selectedItem.description}</p>
+                    
+                    <div className="flex items-center justify-center gap-2 mb-4">
+                      <span className="text-lg font-bold text-[#F2EF1D]">{selectedItem.priceHeartCoins}</span>
+                      <img
+                        src="/elements/heart-coin.png"
+                        alt="Heart Coin"
+                        className="w-6 h-6 object-contain"
+                        style={{
+                          filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
+                        }}
+                      />
+                    </div>
+                    
+                    <div className="text-xs text-pink-200/80 mb-4">
+                      Your balance: {profile?.heartcoin_balance || 0} Heart Coins
+                    </div>
+                    
+                    {(profile?.heartcoin_balance || 0) >= selectedItem.priceHeartCoins ? (
+                      <button
+                        onClick={() => handlePurchaseWithHeartCoins(selectedItem)}
+                        disabled={isProcessing}
+                        className={`w-full px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                          isProcessing
+                            ? 'bg-gray-500 cursor-not-allowed text-gray-300'
+                            : 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(242,239,29,0.8)]'
+                        }`}
+                        style={!isProcessing ? {
+                          boxShadow: '0 0 20px rgba(242,239,29,0.6), inset 0 2px 0 rgba(255,255,255,0.6), inset 0 -8px 16px rgba(0,0,0,0.22)'
+                        } : {}}
+                      >
+                        {isProcessing ? 'Processing...' : `Purchase for ${selectedItem.priceHeartCoins} Heart Coins`}
+                      </button>
+                    ) : (
+                      <div className="text-sm text-red-400 bg-red-400/20 px-3 py-2 rounded border border-red-400/40">
+                        You need {selectedItem.priceHeartCoins - (profile?.heartcoin_balance || 0)} more Heart Coins
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           )}
 
