@@ -21,6 +21,7 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 
 export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onOpenJournal, onOpenBinder, heartCoins: externalHeartCoins = 0, onHeartCoinsChange, isActive = false, journalCompleted = false, onJournalCompleted, ...restProps }: Props) {
   const [open, setOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'EARN' | 'USE' | 'SEND'>('EARN');
   const [heartCoins, setHeartCoins] = useState(externalHeartCoins);
   const [dailyQuests, setDailyQuests] = useState({
     elementTapped: false,
@@ -370,37 +371,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             </svg>
           </button>
 
-          {/* SEND HEART COINS button (pink variant of user heartcoins button) */}
-          <div className="absolute right-3" style={{ top: '48px' }}>
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                try { sfx.play('click', 0.8); } catch {}
-                // Placeholder: dispatch a custom event for a future send flow
-                window.dispatchEvent(new CustomEvent('openSendHeartCoins'));
-              }}
-              className="px-2 py-1 text-[10px] rounded border transition-all duration-200"
-              style={{
-                background: 'linear-gradient(135deg, rgba(252,84,175,0.20) 0%, rgba(255,105,180,0.30) 100%)',
-                color: '#FF69B4',
-                borderColor: 'rgba(255,105,180,0.60)',
-                textShadow: '0 0 6px rgba(255,105,180,0.85)',
-                boxShadow: '0 0 10px rgba(255,105,180,0.45), 0 0 20px rgba(255,105,180,0.25)',
-                fontWeight: 700
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(252,84,175,0.30) 0%, rgba(255,105,180,0.40) 100%)';
-                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 15px rgba(255,105,180,0.65), 0 0 25px rgba(255,105,180,0.35)';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(252,84,175,0.20) 0%, rgba(255,105,180,0.30) 100%)';
-                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 10px rgba(255,105,180,0.45), 0 0 20px rgba(255,105,180,0.25)';
-              }}
-            >
-              SEND HEART COINS
-            </button>
-          </div>
           
           {/* Heart Coin Balance - Top Left */}
           <div className="absolute top-3 left-4 flex items-center space-x-2">
@@ -435,31 +405,43 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               HEART COINS
             </div>
             
-            {/* USE HEARTCOINS Button - positioned above the pink line */}
-            <div className="flex justify-start ml-2 mb-1">
-              <button
-                onClick={(e) => handleUseHeartCoins(e)}
-                className="px-1.5 py-0.5 text-[10px] rounded border border-yellow-400/60 hover:border-yellow-400/80 transition-all duration-200"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(255,215,0,0.2) 0%, rgba(255,255,0,0.3) 100%)',
-                  color: '#FFD700',
-                  borderColor: 'rgba(255,215,0,0.6)',
-                  textShadow: '0 0 6px rgba(255,215,0,0.8)',
-                  boxShadow: '0 0 10px rgba(255,215,0,0.4), 0 0 20px rgba(255,215,0,0.2)',
-                  fontWeight: 'bold',
-                  fontSize: '9px'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,215,0,0.3) 0%, rgba(255,255,0,0.4) 100%)';
-                  e.currentTarget.style.boxShadow = '0 0 15px rgba(255,215,0,0.6), 0 0 25px rgba(255,215,0,0.3)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,215,0,0.2) 0%, rgba(255,255,0,0.3) 100%)';
-                  e.currentTarget.style.boxShadow = '0 0 10px rgba(255,215,0,0.4), 0 0 20px rgba(255,215,0,0.2)';
-                }}
-              >
-                USE HEARTCOINS
-              </button>
+            {/* Tabs */}
+            <div className="flex justify-start ml-2 mb-2 space-x-1">
+              {(['EARN', 'USE', 'SEND'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => {
+                    try { sfx.play('click', 0.6); } catch {}
+                    setActiveTab(tab);
+                  }}
+                  className="px-2 py-1 text-[10px] rounded border transition-all duration-200"
+                  style={{
+                    background: activeTab === tab 
+                      ? 'linear-gradient(135deg, rgba(255,105,180,0.4) 0%, rgba(255,105,180,0.6) 100%)'
+                      : 'linear-gradient(135deg, rgba(255,105,180,0.1) 0%, rgba(255,105,180,0.2) 100%)',
+                    color: activeTab === tab ? '#FFB6C1' : 'rgba(255,182,193,0.7)',
+                    borderColor: activeTab === tab ? 'rgba(255,105,180,0.8)' : 'rgba(255,105,180,0.4)',
+                    textShadow: activeTab === tab ? '0 0 6px rgba(255,105,180,0.8)' : 'none',
+                    boxShadow: activeTab === tab ? '0 0 10px rgba(255,105,180,0.5), 0 0 20px rgba(255,105,180,0.3)' : 'none',
+                    fontWeight: 700,
+                    fontSize: '9px'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (activeTab !== tab) {
+                      e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,105,180,0.2) 0%, rgba(255,105,180,0.35) 100%)';
+                      e.currentTarget.style.color = 'rgba(255,182,193,0.9)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (activeTab !== tab) {
+                      e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,105,180,0.1) 0%, rgba(255,105,180,0.2) 100%)';
+                      e.currentTarget.style.color = 'rgba(255,182,193,0.7)';
+                    }
+                  }}
+                >
+                  {tab} HEART COINS
+                </button>
+              ))}
             </div>
             
             {/* Thin pink neon line */}
@@ -470,20 +452,23 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 boxShadow: '0 0 4px rgba(255,105,180,0.6)'
               }}
             />
-            
-            {/* Description Text */}
-            <div 
-              className="text-base text-center mb-3"
-              style={{ 
-                color: '#FFB6C1', 
-                textShadow: '0 0 4px rgba(255,182,193,0.8)', 
-                fontSize: '14px',
-                lineHeight: 1.3
-              }}
-            >
-              Heart coins are the energy of the Heartverse. You earn them by exploring, connecting and showing up.
-            </div>
           </div>
+
+          {/* Tab Content */}
+          {activeTab === 'EARN' && (
+            <>
+              {/* Description Text */}
+              <div 
+                className="text-base text-center mb-3"
+                style={{ 
+                  color: '#FFB6C1', 
+                  textShadow: '0 0 4px rgba(255,182,193,0.8)', 
+                  fontSize: '14px',
+                  lineHeight: 1.3
+                }}
+              >
+                Heart coins are the energy of the Heartverse. You earn them by exploring, connecting and showing up.
+              </div>
 
           {/* Section 1 - Daily Quests */}
           <div className="mb-4">
@@ -748,6 +733,99 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               {checkInMessage}
               <br />
               <span className="text-sm font-bold">You received +5 HEART COINS</span>
+            </div>
+          )}
+          
+            </>
+          )}
+
+          {/* USE Tab Content */}
+          {activeTab === 'USE' && (
+            <div className="p-4">
+              <div 
+                className="text-base text-center mb-4"
+                style={{ 
+                  color: '#FFB6C1', 
+                  textShadow: '0 0 4px rgba(255,182,193,0.8)', 
+                  fontSize: '14px',
+                  lineHeight: 1.3
+                }}
+              >
+                Spend your Heart coins in the store for special items and experiences.
+              </div>
+              
+              <div className="text-center">
+                <button
+                  onClick={(e) => handleUseHeartCoins(e)}
+                  className="px-4 py-2 text-sm rounded border transition-all duration-200"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(255,215,0,0.2) 0%, rgba(255,255,0,0.3) 100%)',
+                    color: '#FFD700',
+                    borderColor: 'rgba(255,215,0,0.6)',
+                    textShadow: '0 0 6px rgba(255,215,0,0.8)',
+                    boxShadow: '0 0 10px rgba(255,215,0,0.4), 0 0 20px rgba(255,215,0,0.2)',
+                    fontWeight: 'bold'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,215,0,0.3) 0%, rgba(255,255,0,0.4) 100%)';
+                    e.currentTarget.style.boxShadow = '0 0 15px rgba(255,215,0,0.6), 0 0 25px rgba(255,215,0,0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,215,0,0.2) 0%, rgba(255,255,0,0.3) 100%)';
+                    e.currentTarget.style.boxShadow = '0 0 10px rgba(255,215,0,0.4), 0 0 20px rgba(255,215,0,0.2)';
+                  }}
+                >
+                  OPEN STORE
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* SEND Tab Content */}
+          {activeTab === 'SEND' && (
+            <div className="p-4">
+              <div 
+                className="text-base text-center mb-4"
+                style={{ 
+                  color: '#FFB6C1', 
+                  textShadow: '0 0 4px rgba(255,182,193,0.8)', 
+                  fontSize: '14px',
+                  lineHeight: 1.3
+                }}
+              >
+                Share Heart coins with friends and spread the love across the Heartverse.
+              </div>
+              
+              <div className="text-center">
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    try { sfx.play('click', 0.8); } catch {}
+                    // Placeholder: dispatch a custom event for a future send flow
+                    window.dispatchEvent(new CustomEvent('openSendHeartCoins'));
+                  }}
+                  className="px-4 py-2 text-sm rounded border transition-all duration-200"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(252,84,175,0.20) 0%, rgba(255,105,180,0.30) 100%)',
+                    color: '#FF69B4',
+                    borderColor: 'rgba(255,105,180,0.60)',
+                    textShadow: '0 0 6px rgba(255,105,180,0.85)',
+                    boxShadow: '0 0 10px rgba(255,105,180,0.45), 0 0 20px rgba(255,105,180,0.25)',
+                    fontWeight: 700
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(252,84,175,0.30) 0%, rgba(255,105,180,0.40) 100%)';
+                    e.currentTarget.style.boxShadow = '0 0 15px rgba(255,105,180,0.65), 0 0 25px rgba(255,105,180,0.35)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(252,84,175,0.20) 0%, rgba(255,105,180,0.30) 100%)';
+                    e.currentTarget.style.boxShadow = '0 0 10px rgba(255,105,180,0.45), 0 0 20px rgba(255,105,180,0.25)';
+                  }}
+                >
+                  SEND HEART COINS
+                </button>
+              </div>
             </div>
           )}
           

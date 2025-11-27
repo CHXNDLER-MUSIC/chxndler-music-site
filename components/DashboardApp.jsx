@@ -812,8 +812,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         // Wait until blue HUD + beam are fully hidden, then open pink panel without beam
         waitUntilBlueHidden(() => {
           setBeamColor('pink');
-          // Intentionally keep beam disabled so no pink beam shows behind the signal button
-          setBeamEnabled(false);
+          // Enable beam for pink signal display
+          setBeamEnabled(true);
           setJoinAlienOpen(true);
           setBeamTransitioning(false);
         });

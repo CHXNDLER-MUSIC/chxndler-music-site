@@ -1524,6 +1524,31 @@ export default function HUDPanel({
     return () => window.removeEventListener('openStoreCards', handleOpenStoreCards);
   }, [showStorePopover]);
 
+  // Listen for openStore event from hamburger menu
+  useEffect(() => {
+    const handleOpenStore = (e) => {
+      try {
+        // Open the store popover
+        if (!showStorePopover) {
+          openStorePopover();
+        }
+        
+        // Track the event
+        try {
+          const { source } = e.detail || {};
+          track('store_opened_from_hamburger', { 
+            payload: { source: source || 'unknown' }
+          });
+        } catch {}
+      } catch (error) {
+        console.error('Error handling openStore event:', error);
+      }
+    };
+
+    window.addEventListener('openStore', handleOpenStore);
+    return () => window.removeEventListener('openStore', handleOpenStore);
+  }, [showStorePopover]);
+
   // Reset PROFILE popover UI state when closing
   useEffect(() => {
     if (!showHeartPopover) {
@@ -2346,7 +2371,6 @@ export default function HUDPanel({
               className="absolute inset-0 pointer-events-none"
               style={{
                 background: 'linear-gradient(to bottom, rgba(0,0,0,0.20) 0%, rgba(0,0,0,0) 100%)',
-                backdropFilter: 'blur(14px)',
                 borderRadius: 'inherit',
                 zIndex: -1
               }}
@@ -2370,7 +2394,7 @@ export default function HUDPanel({
           {/* Cover section at bottom right corner - using CoverHologram for pop-out functionality */}
           <div ref={coverRef} className="absolute hud-cover-pos" style={{ 
             // Align flush to the right and sit at the bottom edge
-            bottom: 10, 
+            bottom: 30, 
             right: 0, 
             width: 'auto', 
             display: 'flex', 
@@ -2392,107 +2416,6 @@ export default function HUDPanel({
             // Ensure this sits above the 3D planet layer
             zIndex: 5
           }}>
-            {/* Brand button above the cover art */}
-            <button
-              type="button"
-              aria-label="CHXNDLER"
-              title="CHXNDLER"
-              className="brand-cover-btn"
-              style={{
-                pointerEvents: joinAlienOpen ? 'none' : 'auto',
-                // Slightly reduce height to feel tighter
-                height: 44,
-                // Inline-flex to vertically center text within fixed height
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                textAlign: 'center',
-                // Make button width match cover art container width (92px)
-                width: 92,
-                boxSizing: 'border-box',
-                // Increased padding for better readability
-                padding: '8px 12px',
-                // Adjust vertical alignment to match the Music dropdown height
-                marginTop: -3,
-                // Add a small space below the button so it doesn't attach to the cover
-                marginBottom: 0,
-                marginRight: 2,
-                // Rounded borders like song dropdown button
-                borderRadius: '10px',
-                // Cyan border like song dropdown
-                border: '2px solid rgba(25,227,255,0.8)',
-                // Cyan background like song dropdown
-                background: 'rgba(25,227,255,0.1)',
-                color: '#19E3FF',
-                fontWeight: 700,
-                letterSpacing: '0.03em',
-                textTransform: 'uppercase',
-                // Smaller font to make text pop out less
-                fontSize: 11,
-                lineHeight: 1,
-                // Cyan glow to match theme
-                textShadow: '0 0 6px rgba(25,227,255,0.8), 0 0 10px rgba(25,227,255,0.6), 0 0 16px rgba(25,227,255,0.4)',
-                // Glass effect with stronger blur like song dropdown
-                backdropFilter: 'blur(12px)',
-                boxShadow: '0 0 18px rgba(25,227,255,0.35)'
-              }}
-              ref={brandBtnRef}
-              onMouseEnter={() => { 
-                try { sfx.play('hover', 0.35); } catch {}
-                try { const a = hoverCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.35; a.play().catch(()=>{}); } } catch {}
-              }}
-              onClick={() => { 
-                // Track brand button click to server analytics
-                try {
-                  const slug = (!currentId ? 'chxndler_home' : (track?.slug || active || 'unknown'));
-                  const title = (!currentId ? 'CHXNDLER Home' : (track?.title || 'Unknown'));
-                  trackAnalytics('chxndler_button_clicked', { song_slug: String(slug || ''), payload: { song_title: title, location: 'hud_brand_button' } });
-                } catch {}
-                // Also store a local click record so analytics UI can show counts without server
-                try {
-                  const id = generateClickId();
-                  const ts = Date.now();
-                  storeClickData({
-                    id,
-                    timestamp: ts,
-                    element: {
-                      tagName: 'button',
-                      className: 'brand-cover-btn',
-                      id: '',
-                      textContent: 'CHXNDLER',
-                      role: 'button',
-                      ariaLabel: 'CHXNDLER',
-                      dataId: 'brand',
-                    },
-                    position: { x: 0, y: 0, screenX: 0, screenY: 0 },
-                    viewport: { width: (typeof window!== 'undefined'? window.innerWidth:0), height: (typeof window!== 'undefined'? window.innerHeight:0) },
-                    page: { url: (typeof window!== 'undefined'? window.location.href:''), title: (typeof document!== 'undefined'? document.title:'') },
-                    userAgent: (typeof navigator!== 'undefined'? navigator.userAgent:'unknown'),
-                    enhancedLabel: '⭐ CHXNDLER Button',
-                  });
-                } catch {}
-                if (showBrandPopover) { try { sfx.play('close', 0.4); } catch {}; setShowBrandPopover(false); return; }
-                openBrandPopover();
-              }}
-              data-id="brand"
-            >
-              <span
-                style={{
-                  fontSize: 'clamp(0.8rem, 2vw, 1.2rem)',
-                  fontWeight: 'bold',
-                  color: '#FFFF00',
-                  textShadow: '0 0 6px rgba(255,255,0,0.8)',
-                  letterSpacing: '0.1em',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '100%',
-                  height: '100%'
-                }}
-              >
-                CHXNDLER
-              </span>
-            </button>
             {(() => {
               // On homepage (no currentId), always show the CHXNDLER brand cover
               if (!currentId) {
@@ -4970,8 +4893,8 @@ export default function HUDPanel({
                         boxShadow: '0 18px 46px rgba(0,0,0,0.55), 0 0 32px rgba(25,227,255,0.45)',
                         borderRadius: 14,
                         overflow: 'hidden',
-                        // Move a bit lower on screen
-                        marginTop: -168
+                        // Move higher on screen
+                        marginTop: -250
                       }}
                     >
                       <button

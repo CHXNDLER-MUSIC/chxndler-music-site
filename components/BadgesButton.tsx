@@ -207,6 +207,34 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
     ];
   };
 
+  // Listen for openBadges event from hamburger menu
+  React.useEffect(() => {
+    const handleOpenBadges = (e: CustomEvent) => {
+      try {
+        // Simulate a click to trigger badges opening
+        const fakeEvent = {
+          preventDefault: () => {},
+          defaultPrevented: false
+        } as React.MouseEvent<HTMLButtonElement>;
+        
+        try { sfx.play('click', 0.8); } catch {}
+        // Trigger yellow light beam
+        try { onBeamColorChange?.('yellow'); } catch {}
+        // Close blue display first
+        try { onCloseBlueDisplay?.(); } catch {}
+        // Trigger parent click handler to open badges
+        try { onClick?.(fakeEvent); } catch {}
+        
+        console.log('Badges opened from hamburger menu');
+      } catch (error) {
+        console.error('Error handling openBadges event:', error);
+      }
+    };
+
+    window.addEventListener('openBadges', handleOpenBadges as EventListener);
+    return () => window.removeEventListener('openBadges', handleOpenBadges as EventListener);
+  }, [onClick, onBeamColorChange, onCloseBlueDisplay]);
+
   const handleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
     try { onClick?.(e); } catch {}
     if (!e.defaultPrevented) {

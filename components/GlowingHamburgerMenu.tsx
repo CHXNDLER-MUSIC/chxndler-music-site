@@ -7,12 +7,13 @@ interface GlowingHamburgerMenuProps {
 }
 
 const menuItems = [
-  { label: "CODE", href: undefined },
+  { label: "THE CODE", href: undefined },
   { label: "JOURNEY", href: undefined },
   { label: "JOURNAL", href: undefined },
   { label: "BINDER", href: undefined },
   { label: "BADGES", href: undefined },
   { label: "CHXNDLER", href: undefined },
+  { label: "STORE", href: undefined },
 ];
 
 export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMenuProps) {
@@ -81,7 +82,7 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
       {/* Dropdown Panel */}
       {isOpen && (
         <div
-          className="absolute top-16 left-0 w-48 rounded-lg border border-[#FC54AF]/40 backdrop-blur-md transition-all duration-300 overflow-hidden"
+          className="absolute top-20 left-0 w-48 rounded-lg border border-[#FC54AF]/40 backdrop-blur-md transition-all duration-300 overflow-hidden"
           style={{
             background: "rgba(0, 0, 0, 0.8)",
             boxShadow: `
