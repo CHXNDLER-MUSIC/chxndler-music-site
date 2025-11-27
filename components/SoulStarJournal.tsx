@@ -20,6 +20,7 @@ interface JournalState {
   isLoading: boolean;
   saveMessage: string;
   errorMessage: string;
+  isPrivate: boolean;
 }
 
 // Element colors for theming
@@ -47,6 +48,7 @@ export default function SoulStarJournal({ isOpen, onClose, prompt, openWelcomeHo
     isLoading: false,
     saveMessage: "",
     errorMessage: "",
+    isPrivate: true,
   });
 
   const today = new Date().toISOString().slice(0, 10);
@@ -85,6 +87,7 @@ export default function SoulStarJournal({ isOpen, onClose, prompt, openWelcomeHo
         intentionResponse: "",
         reflectionResponse: "",
         soulStar: "",
+        isPrivate: true,
       }));
     }
   };
@@ -180,7 +183,7 @@ export default function SoulStarJournal({ isOpen, onClose, prompt, openWelcomeHo
     return (
       <div 
         className="fixed inset-0 z-[2147483647] flex items-center justify-center"
-        style={{ marginTop: '-80px' }}
+        style={{ marginTop: '280px' }}
       >
         <div 
           className="absolute inset-0 bg-black/70 backdrop-blur-sm"
@@ -193,13 +196,13 @@ export default function SoulStarJournal({ isOpen, onClose, prompt, openWelcomeHo
     );
   }
 
-  const elementTheme = ELEMENT_COLORS[profile?.element as keyof typeof ELEMENT_COLORS] || ELEMENT_COLORS.heart;
+  const elementTheme = ELEMENT_COLORS.lightning;
   const elementEmoji = ELEMENT_EMOJIS[profile?.element as keyof typeof ELEMENT_EMOJIS] || "💖";
 
   return (
     <div 
       className="fixed inset-0 z-[2147483647] flex items-center justify-center"
-      style={{ marginTop: '-80px' }}
+      style={{ marginTop: '280px' }}
     >
       {/* Background blur */}
       <div 
@@ -278,11 +281,11 @@ export default function SoulStarJournal({ isOpen, onClose, prompt, openWelcomeHo
         
         {/* Header */}
         <div 
-          className="text-center mb-6"
+          className="text-center mb-4"
           style={{ 
             color: elementTheme.color,
             textShadow: `0 0 8px ${elementTheme.glow}`,
-            fontSize: '20px',
+            fontSize: '18px',
             fontWeight: 'bold',
             textTransform: 'uppercase',
             letterSpacing: '1px'
@@ -366,15 +369,15 @@ export default function SoulStarJournal({ isOpen, onClose, prompt, openWelcomeHo
           /* Today's Journal Interface */
           <>
             {/* Date and Element */}
-            <div className="text-center mb-6">
+            <div className="text-center mb-3">
               <div 
-                className="text-lg font-semibold mb-2"
+                className="text-base font-semibold mb-1"
                 style={{ color: '#FFFFFF' }}
               >
                 {todayFormatted}
               </div>
               <span 
-                className="inline-block px-4 py-1 rounded-full text-sm font-semibold uppercase tracking-wider"
+                className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
                 style={{
                   background: `${elementTheme.color}20`,
                   border: `1px solid ${elementTheme.color}60`,
@@ -386,88 +389,9 @@ export default function SoulStarJournal({ isOpen, onClose, prompt, openWelcomeHo
               </span>
             </div>
 
-            {/* Intention of the Day */}
-            <div className="mb-6">
-              <label 
-                className="block text-sm font-semibold mb-2"
-                style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
-              >
-                Intention of the Day
-              </label>
-              <div 
-                className="p-3 rounded-lg mb-3"
-                style={{
-                  background: `${elementTheme.color}10`,
-                  border: `1px solid ${elementTheme.color}40`,
-                  color: '#FFFFFF',
-                  fontStyle: 'italic'
-                }}
-              >
-                "{prompt.intention}"
-              </div>
-              <textarea
-                value={journalState.intentionResponse}
-                onChange={(e) => setJournalState(prev => ({ ...prev, intentionResponse: e.target.value }))}
-                placeholder="Your intention response..."
-                className="w-full h-20 p-3 rounded-lg text-white placeholder-white/50 resize-none focus:outline-none transition-all"
-                style={{
-                  background: 'rgba(0,0,0,0.6)',
-                  border: `1px solid ${elementTheme.color}40`,
-                  boxShadow: `0 0 10px ${elementTheme.color}20`,
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = `${elementTheme.color}80`;
-                  e.target.style.boxShadow = `0 0 15px ${elementTheme.glow}`;
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = `${elementTheme.color}40`;
-                  e.target.style.boxShadow = `0 0 10px ${elementTheme.color}20`;
-                }}
-              />
-            </div>
-
-            {/* Reflection Prompt */}
-            <div className="mb-6">
-              <label 
-                className="block text-sm font-semibold mb-2"
-                style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
-              >
-                Reflection Prompt
-              </label>
-              <div 
-                className="p-3 rounded-lg mb-3"
-                style={{
-                  background: `${elementTheme.color}10`,
-                  border: `1px solid ${elementTheme.color}40`,
-                  color: '#FFFFFF',
-                  fontStyle: 'italic'
-                }}
-              >
-                "{prompt.reflection}"
-              </div>
-              <textarea
-                value={journalState.reflectionResponse}
-                onChange={(e) => setJournalState(prev => ({ ...prev, reflectionResponse: e.target.value }))}
-                placeholder="Your reflection response..."
-                className="w-full h-20 p-3 rounded-lg text-white placeholder-white/50 resize-none focus:outline-none transition-all"
-                style={{
-                  background: 'rgba(0,0,0,0.6)',
-                  border: `1px solid ${elementTheme.color}40`,
-                  boxShadow: `0 0 10px ${elementTheme.color}20`,
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = `${elementTheme.color}80`;
-                  e.target.style.boxShadow = `0 0 15px ${elementTheme.glow}`;
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = `${elementTheme.color}40`;
-                  e.target.style.boxShadow = `0 0 10px ${elementTheme.color}20`;
-                }}
-              />
-            </div>
 
             {/* Soul Star Response */}
-            <div className="mb-6">
+            <div className="mb-4">
               <label 
                 className="block text-sm font-semibold mb-2"
                 style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
@@ -478,7 +402,7 @@ export default function SoulStarJournal({ isOpen, onClose, prompt, openWelcomeHo
                 value={journalState.soulStar}
                 onChange={(e) => setJournalState(prev => ({ ...prev, soulStar: e.target.value }))}
                 placeholder="Let your soul speak... What resonates with you today?"
-                className="w-full h-32 p-4 rounded-lg text-white placeholder-white/50 resize-none focus:outline-none transition-all"
+                className="w-full h-20 p-3 rounded-lg text-white placeholder-white/50 resize-none focus:outline-none transition-all"
                 style={{
                   background: 'rgba(0,0,0,0.6)',
                   border: `1px solid ${elementTheme.color}40`,
@@ -522,15 +446,23 @@ export default function SoulStarJournal({ isOpen, onClose, prompt, openWelcomeHo
               </div>
             )}
 
-            {/* Cast into the Stars Button */}
-            <div className="flex justify-between items-center">
-              <div 
-                className="text-sm opacity-70"
-                style={{ color: elementTheme.color }}
+            {/* Bottom Section */}
+            <div className="relative flex justify-center">
+              {/* Private Toggle - positioned absolute to left */}
+              <button
+                onClick={() => setJournalState(prev => ({ ...prev, isPrivate: !prev.isPrivate }))}
+                className="absolute left-0 top-0 px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-200"
+                style={{
+                  background: journalState.isPrivate ? `${elementTheme.color}20` : 'rgba(128, 128, 128, 0.2)',
+                  border: `1px solid ${journalState.isPrivate ? elementTheme.color : '#808080'}60`,
+                  color: journalState.isPrivate ? elementTheme.color : '#808080',
+                  textShadow: journalState.isPrivate ? `0 0 4px ${elementTheme.glow}` : 'none'
+                }}
               >
-                Your reflection stays private with you
-              </div>
-              
+                PRIVATE
+              </button>
+
+              {/* Cast into the Stars Button - centered */}
               <button
                 onClick={handleSaveEntry}
                 disabled={!journalState.soulStar.trim() || journalState.isLoading}

@@ -218,6 +218,7 @@ export default function ProfileBar({
 
     // Case 1: Not logged in or no profile yet
     if (!currentUser || !contextProfile) {
+      try { onBeamColorChange?.('blue'); } catch {}
       setShowWelcomeHome(true);
       return;
     }

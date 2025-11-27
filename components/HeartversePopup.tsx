@@ -28,7 +28,7 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
 
   return (
     <div
-      className="fixed inset-0 z-[9999] modal-no-drag"
+      className="fixed inset-0 z-[2147483647] modal-no-drag"
       aria-modal="true"
       role="dialog"
       aria-label={title}
@@ -39,7 +39,7 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
         onClick={onClose}
       />
       <div 
-        className={positioning === 'top-left' ? 'absolute z-[10000] max-w-md' : 'absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 mx-4 max-w-lg w-full z-[10000]'}
+        className={positioning === 'top-left' ? 'absolute z-[2147483648] max-w-md' : 'absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 mx-4 max-w-lg w-full z-[2147483648]'}
         style={{
           ...((positioning === 'top-left') ? {top: '100px', left: '50px', backgroundColor: 'red'} : {marginTop: positioning === 'higher' ? '-25vh' : '0'}),
           touchAction: 'none',
