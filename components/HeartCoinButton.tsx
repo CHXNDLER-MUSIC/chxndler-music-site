@@ -18,8 +18,8 @@ interface StoreItem {
   min_tier?: string;
 }
 
-// Store items data
-const STORE_ITEMS: StoreItem[] = [
+// Digital collectible cards
+const DIGITAL_ITEMS: StoreItem[] = [
   {
     id: 'baby',
     title: 'Baby',
@@ -54,6 +54,134 @@ const STORE_ITEMS: StoreItem[] = [
     min_tier: 'lover'
   }
 ];
+
+// Physical store items
+const PHYSICAL_ITEMS: StoreItem[] = [
+  {
+    id: 'pin',
+    title: 'PIN',
+    description: 'A symbol that you belong here with the people who feel deeply, dream big, and find beauty in being different.',
+    image: 'https://ik.imagekit.io/CHXNDLER/STORE/pin.png',
+    priceUsd: 4.5,
+    priceHeartCoins: 3,
+    stripeUrl: 'https://buy.stripe.com/cNi00kfxDeVD3oZ5ST4gg0B',
+    is_released: true,
+    min_tier: 'wanderer'
+  },
+  {
+    id: 'patch',
+    title: 'PATCH',
+    description: "Stitch this into your world as a quiet reminder that this isn't just music, it's a community.",
+    image: 'https://ik.imagekit.io/CHXNDLER/STORE/patch.png',
+    priceUsd: 6,
+    priceHeartCoins: 4,
+    stripeUrl: 'https://buy.stripe.com/00w5kEgBHdRz1gRgxx4gg0C',
+    is_released: true,
+    min_tier: 'wanderer'
+  },
+  {
+    id: 'sticker',
+    title: 'Sticker',
+    description: "A simple reminder that you're part of something bigger. Remember you're not alone in this story.",
+    image: 'https://ik.imagekit.io/CHXNDLER/STORE/sticker.png',
+    priceUsd: 3,
+    priceHeartCoins: 2,
+    stripeUrl: 'https://buy.stripe.com/8x24gA99f9Bj1gR6WX4gg0F',
+    is_released: true,
+    min_tier: 'wanderer'
+  },
+  {
+    id: 'hat',
+    title: 'Hat',
+    description: "A classic you'll wear everywhere. It's lowkey, but it says everything it needs to.",
+    image: 'https://ik.imagekit.io/CHXNDLER/STORE/hat.png',
+    priceUsd: 30,
+    priceHeartCoins: 20,
+    stripeUrl: 'https://buy.stripe.com/6oU28s717aFn1gR1CD4gg0I',
+    is_released: true,
+    min_tier: 'wanderer'
+  },
+  {
+    id: 'keychain',
+    title: 'Keychain',
+    description: 'A small piece of the HEARTVERSE to carry everywhere. A quiet reminder that you\'re connected, always.',
+    image: 'https://ik.imagekit.io/CHXNDLER/STORE/keychain.png',
+    priceUsd: 6,
+    priceHeartCoins: 4,
+    stripeUrl: 'https://buy.stripe.com/8x214o99faFn0cN5ST4gg0H',
+    is_released: true,
+    min_tier: 'wanderer'
+  },
+  {
+    id: 'house-party-poster',
+    title: 'House Party Poster',
+    description: 'This poster captures the night the HEARTVERSE came alive. Hang it up and remember when you joined the story.',
+    image: 'https://ik.imagekit.io/CHXNDLER/STORE/house-party-poster.png',
+    priceUsd: 30,
+    priceHeartCoins: 20,
+    stripeUrl: 'https://buy.stripe.com/dRm8wQetz14N5x71CD4gg0L',
+    is_released: true,
+    min_tier: 'wanderer'
+  },
+  {
+    id: 'necklace',
+    title: 'Necklace',
+    description: "A symbol of love, connection, and everything this world stands for. It's a keepsake for the people who found home here.",
+    image: 'https://ik.imagekit.io/CHXNDLER/STORE/necklace.png',
+    priceUsd: 18,
+    priceHeartCoins: 12,
+    stripeUrl: 'https://buy.stripe.com/bJe3cw99f28R5x7epp4gg0K',
+    is_released: true,
+    min_tier: 'wanderer'
+  },
+  {
+    id: 'beanie',
+    title: 'Beanie',
+    description: "For the ones who wear their hearts out loud and aren't afraid to stand out.",
+    image: 'https://ik.imagekit.io/CHXNDLER/STORE/beanie-front.png',
+    priceUsd: 30,
+    priceHeartCoins: 20,
+    stripeUrl: 'https://buy.stripe.com/dRm8wQetz14N5x71CD4gg0L',
+    is_released: true,
+    min_tier: 'wanderer'
+  },
+  {
+    id: 'button',
+    title: 'Button',
+    description: 'A symbol of unity, curiosity, and courage for those who feel deeply and dream beyond the ordinary.',
+    image: 'https://ik.imagekit.io/CHXNDLER/STORE/button.png',
+    priceUsd: 6,
+    priceHeartCoins: 4,
+    stripeUrl: 'https://buy.stripe.com/6oU14oclr8xfbVvbdd4gg0J',
+    is_released: true,
+    min_tier: 'wanderer'
+  },
+  {
+    id: 'bracelet',
+    title: 'Bracelet',
+    description: "A reminder you wear on your wrist that you're growing, healing, and finding your place. It's a quiet symbol that you belong here, with the ones who feel deeply and love endlessly.",
+    image: 'https://ik.imagekit.io/CHXNDLER/STORE/bracelet.png',
+    priceUsd: 24,
+    priceHeartCoins: 16,
+    stripeUrl: 'https://buy.stripe.com/aFa8wQ2KR8xf6Bbftt4gg0N',
+    is_released: true,
+    min_tier: 'wanderer'
+  },
+  {
+    id: 'pick',
+    title: 'Pick',
+    description: 'Your reminder to follow your passion wherever it leads. A glow in the dark pick made for the dreamers and late night creators who carry music like a heartbeat through the dark.',
+    image: 'https://ik.imagekit.io/CHXNDLER/STORE/pick.png',
+    priceUsd: 6,
+    priceHeartCoins: 4,
+    stripeUrl: 'https://buy.stripe.com/4gM9AUadj9Bj2kVgxx4gg0O',
+    is_released: true,
+    min_tier: 'wanderer'
+  }
+];
+
+// Combine all items
+const ALL_STORE_ITEMS = [...DIGITAL_ITEMS, ...PHYSICAL_ITEMS];
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   asChild?: boolean;
@@ -873,41 +1001,106 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     Spend your Heart coins on digital collectibles and special items.
                   </div>
                   
-                  <div className="space-y-3 max-h-64 overflow-y-auto">
-                    {STORE_ITEMS.map((item) => (
-                      <div 
-                        key={item.id}
-                        onClick={() => handleSelectItem(item)}
-                        className="flex items-center gap-3 p-3 rounded-lg border border-pink-500/30 bg-pink-900/10 hover:bg-pink-900/20 cursor-pointer transition-all duration-200"
-                        style={{
-                          boxShadow: '0 0 8px rgba(252,84,175,0.2)'
-                        }}
-                      >
-                        <div className="relative w-12 h-12 flex-shrink-0">
-                          <Image
-                            src={item.image}
-                            alt={item.title}
-                            fill
-                            className="object-cover rounded"
-                          />
+                  {/* Digital Collectibles Section */}
+                  <div className="mb-6">
+                    <div 
+                      className="text-sm font-bold mb-3"
+                      style={{ 
+                        color: '#00BFFF', 
+                        textShadow: '0 0 4px rgba(0,191,255,0.8)' 
+                      }}
+                    >
+                      💎 DIGITAL COLLECTIBLES
+                    </div>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {DIGITAL_ITEMS.map((item) => (
+                        <div 
+                          key={item.id}
+                          onClick={() => handleSelectItem(item)}
+                          className="flex items-center gap-3 p-2 rounded-lg border border-blue-500/30 bg-blue-900/10 hover:bg-blue-900/20 cursor-pointer transition-all duration-200"
+                          style={{
+                            boxShadow: '0 0 8px rgba(0,191,255,0.2)'
+                          }}
+                        >
+                          <div className="relative w-10 h-10 flex-shrink-0">
+                            <Image
+                              src={item.image}
+                              alt={item.title}
+                              fill
+                              className="object-cover rounded"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-blue-300 text-sm truncate">{item.title}</div>
+                            <div className="text-xs text-blue-200/80 truncate">{item.description}</div>
+                          </div>
+                          <div className="flex items-center gap-1 text-sm font-bold text-[#F2EF1D]">
+                            <span>{item.priceHeartCoins}</span>
+                            <img
+                              src="/elements/heart-coin.png"
+                              alt="Heart Coin"
+                              className="w-4 h-4 object-contain"
+                              style={{
+                                filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
+                              }}
+                            />
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-pink-300 text-sm truncate">{item.title}</div>
-                          <div className="text-xs text-pink-200/80 truncate">{item.description}</div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Physical Store Items Section */}
+                  <div>
+                    <div 
+                      className="text-sm font-bold mb-3"
+                      style={{ 
+                        color: '#FF69B4', 
+                        textShadow: '0 0 4px rgba(255,105,180,0.8)' 
+                      }}
+                    >
+                      🛍️ HEARTVERSE COLLECTION
+                    </div>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {PHYSICAL_ITEMS.map((item) => (
+                        <div 
+                          key={item.id}
+                          onClick={() => window.open(item.stripeUrl, '_blank')}
+                          className="flex items-center gap-3 p-2 rounded-lg border border-pink-500/30 bg-pink-900/10 hover:bg-pink-900/20 cursor-pointer transition-all duration-200"
+                          style={{
+                            boxShadow: '0 0 8px rgba(252,84,175,0.2)'
+                          }}
+                        >
+                          <div className="relative w-10 h-10 flex-shrink-0">
+                            <img
+                              src={item.image}
+                              alt={item.title}
+                              className="w-full h-full object-cover rounded"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-pink-300 text-sm truncate">{item.title}</div>
+                            <div className="text-xs text-pink-200/80 truncate">{item.description}</div>
+                          </div>
+                          <div className="flex flex-col items-end text-xs">
+                            <div className="flex items-center gap-1 font-bold text-green-400 mb-1">
+                              <span>${item.priceUsd % 1 === 0 ? item.priceUsd.toFixed(0) : item.priceUsd.toFixed(1)}</span>
+                            </div>
+                            <div className="flex items-center gap-1 font-bold text-[#F2EF1D]">
+                              <span>{item.priceHeartCoins}</span>
+                              <img
+                                src="/elements/heart-coin.png"
+                                alt="Heart Coin"
+                                className="w-3 h-3 object-contain"
+                                style={{
+                                  filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 2px #FC54AF)'
+                                }}
+                              />
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1 text-sm font-bold text-[#F2EF1D]">
-                          <span>{item.priceHeartCoins}</span>
-                          <img
-                            src="/elements/heart-coin.png"
-                            alt="Heart Coin"
-                            className="w-4 h-4 object-contain"
-                            style={{
-                              filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </>
               ) : selectedItem && (

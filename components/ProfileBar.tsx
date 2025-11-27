@@ -476,7 +476,7 @@ export default function ProfileBar({
               console.log(`Menu item clicked: ${label}`);
               
               switch (label) {
-                case "CODE":
+                case "THE CODE":
                   setIsCodePopoutOpen(true);
                   onCodeClick?.();
                   break;
@@ -517,23 +517,8 @@ export default function ProfileBar({
           />
         </div>
 
-        {/* Elemental Button - Top Left (moved right to make room for hamburger) */}
-        <div className="absolute top-2 left-14 z-10">
-          <ElementalButton 
-            onHoverSound={() => sfx.play('hover', 0.8)}
-            onCloseBlueDisplay={onCloseBlueDisplay}
-            onOpenBlueDisplay={onOpenBlueDisplay}
-            onBeamColorChange={onBeamColorChange}
-            element={currentElement}
-            onElementSelect={updateElement}
-            isActive={activePanel === 'element'}
-            onClick={() => togglePanel('element')}
-          />
-        </div>
-
-
         {/* Main Flex Layout */}
-        <div className="flex items-center justify-between h-full pl-24 sm:pl-28 pr-2 min-w-0">
+        <div className="flex items-center justify-between h-full pl-16 sm:pl-20 pr-2 min-w-0">
           {/* Left Side */}
           <div className="flex items-center min-w-0 overflow-hidden flex-1">
             {/* Username - Clickable */}
@@ -586,6 +571,20 @@ export default function ProfileBar({
                 {displayName}
               </button>
 
+            </div>
+
+            {/* Elemental Button - Right of LOG IN button */}
+            <div className="ml-4">
+              <ElementalButton 
+                onHoverSound={() => sfx.play('hover', 0.8)}
+                onCloseBlueDisplay={onCloseBlueDisplay}
+                onOpenBlueDisplay={onOpenBlueDisplay}
+                onBeamColorChange={onBeamColorChange}
+                element={currentElement}
+                onElementSelect={updateElement}
+                isActive={activePanel === 'element'}
+                onClick={() => togglePanel('element')}
+              />
             </div>
 
           </div>

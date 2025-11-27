@@ -323,8 +323,8 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
                     : '0 0 25px rgba(0,255,255,0.6), 0 0 50px rgba(0,255,255,0.4)',
                   width: heartSignalSent ? 'auto' : '4rem',
                   height: heartSignalSent ? 'auto' : '4rem',
-                  padding: heartSignalSent ? '0.75rem 1.5rem' : '0',
-                  minWidth: heartSignalSent ? '150px' : '4rem',
+                  padding: heartSignalSent ? '0.75rem 1rem' : '0',
+                  minWidth: heartSignalSent ? '120px' : '4rem',
                 }}
               >
                 {heartSignalSent ? (
@@ -528,8 +528,8 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
                 style={{
                   width: 'auto',
                   minWidth: '140px',
-                  maxWidth: '160px',
-                  padding: '12px 24px',
+                  maxWidth: '145px',
+                  padding: '12px 20px',
                   background: 'transparent',
                   border: !phoneNumber.trim() 
                     ? '2px solid rgba(128, 128, 128, 0.3)' 

@@ -45,23 +45,72 @@ function orbitAround(parentPosition: [number, number, number], time: number, dis
   ];
 }
 
-// ElementPlanet component with proper glow effects
+// ElementPlanet component with texture mapping
 const ElementPlanet: React.FC<{
   type: ElementKey;
   color: string;
   position: [number, number, number];
   radius: number;
 }> = ({ type, color, position, radius }) => {
+  const [texture, setTexture] = React.useState<THREE.Texture | null>(null);
+  
+  // Load the appropriate texture for each element
+  React.useEffect(() => {
+    const textureLoader = new THREE.TextureLoader();
+    let texturePath: string;
+    
+    switch (type) {
+      case "heart":
+        texturePath = "https://ik.imagekit.io/CHXNDLER/Planets/heart.png";
+        break;
+      case "lightning":
+        texturePath = "https://ik.imagekit.io/CHXNDLER/Planets/lightning";
+        break;
+      case "water":
+        texturePath = "https://ik.imagekit.io/CHXNDLER/Planets/water";
+        break;
+      case "darkness":
+        texturePath = "https://ik.imagekit.io/CHXNDLER/Planets/darkness";
+        break;
+      default:
+        texturePath = "https://ik.imagekit.io/CHXNDLER/Planets/heart.png";
+    }
+    
+    textureLoader.load(
+      texturePath,
+      (loadedTexture) => {
+        loadedTexture.wrapS = loadedTexture.wrapT = THREE.RepeatWrapping;
+        setTexture(loadedTexture);
+      },
+      undefined,
+      (error) => {
+        console.warn(`Failed to load texture for ${type}:`, error);
+      }
+    );
+  }, [type]);
+  
   return (
     <group position={position}>
       <mesh>
         <sphereGeometry args={[radius, 32, 32]} />
         <meshStandardMaterial
-          color={color}
+          map={texture}
+          color={texture ? "#ffffff" : color}
           emissive={color}
-          emissiveIntensity={0.6}
+          emissiveIntensity={0.3}
           metalness={0.1}
           roughness={0.2}
+        />
+      </mesh>
+      {/* Add atmospheric glow */}
+      <mesh renderOrder={-1}>
+        <sphereGeometry args={[radius * 1.2, 16, 16]} />
+        <meshBasicMaterial
+          color={color}
+          transparent
+          opacity={0.2}
+          blending={AdditiveBlending}
+          depthWrite={false}
         />
       </mesh>
     </group>

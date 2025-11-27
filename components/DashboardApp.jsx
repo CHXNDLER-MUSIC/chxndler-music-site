@@ -37,6 +37,7 @@ import { useUIStore } from "@/store/useUIStore";
 import { useProfile } from "@/contexts/ProfileContext";
 import { useUIState } from "@/lib/use-ui-state";
 import { supabaseClient } from "@/lib/supabaseClient";
+import GlowingHamburgerMenuWrapper from "@/components/GlowingHamburgerMenuWrapper";
 
 export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const router = useRouter();
@@ -2264,6 +2265,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Hamburger Menu for CODE access */}
+      <GlowingHamburgerMenuWrapper />
 
     </main>
   );

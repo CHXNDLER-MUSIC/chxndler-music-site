@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
-import { Canvas, useThree, useFrame } from "@react-three/fiber";
-import { AdditiveBlending, Group as ThreeGroup, SRGBColorSpace, Vector3, SpriteMaterial, Sprite, MeshBasicMaterial, PlaneGeometry, DoubleSide } from "three";
+import React, { useEffect, useRef, useState } from "react";
+import { Canvas, useThree, useFrame, useLoader } from "@react-three/fiber";
+import { AdditiveBlending, Group as ThreeGroup, SRGBColorSpace, Vector3, SpriteMaterial, Sprite, MeshBasicMaterial, PlaneGeometry, DoubleSide, TextureLoader } from "three";
 import { playerStore } from "@/store/usePlayerStore";
 import Planet from "@/components/holo/Planet";
 import HeartStarPlanet from "@/components/HeartStarPlanet";
@@ -48,6 +48,203 @@ function isElementCode(code: string): code is ElementCode {
 
 const elementOrbitRadius = 40;
 const songOrbitRadius = 12;
+
+// Component to render all 4 elemental planets with textures
+function ElementalPlanetsWithTextures() {
+  console.log("🪐 ElementalPlanetsWithTextures is rendering!");
+  
+  // Use React state for texture loading to avoid useLoader hook issues
+  const [textures, setTextures] = React.useState<{[key: string]: any}>({});
+  
+  React.useEffect(() => {
+    const loader = new TextureLoader();
+    const textureUrls = {
+      heart: "https://ik.imagekit.io/CHXNDLER/Planets/heart.png",
+      lightning: "https://ik.imagekit.io/CHXNDLER/Planets/lightning",
+      water: "https://ik.imagekit.io/CHXNDLER/Planets/water", 
+      darkness: "https://ik.imagekit.io/CHXNDLER/Planets/darkness"
+    };
+    
+    // Load textures asynchronously
+    Object.entries(textureUrls).forEach(([key, url]) => {
+      loader.load(
+        url,
+        (texture) => {
+          setTextures(prev => ({ ...prev, [key]: texture }));
+          console.log(`✅ Loaded ${key} planet texture`);
+        },
+        undefined,
+        (error) => {
+          console.warn(`❌ Failed to load ${key} texture:`, error);
+        }
+      );
+    });
+  }, []);
+
+  return (
+    <group>
+      {/* Heart Planet - Pink */}
+      <group position={[40, 0, 0]}>
+        <mesh>
+          <sphereGeometry args={[8, 32, 32]} />
+          <meshStandardMaterial 
+            map={textures.heart || null}
+            color={textures.heart ? "#ffffff" : "#FC54AF"}
+            emissive="#FC54AF"
+            emissiveIntensity={0.3}
+            metalness={0.1}
+            roughness={0.2}
+          />
+        </mesh>
+        {/* Atmospheric glow */}
+        <mesh renderOrder={-1}>
+          <sphereGeometry args={[9.6, 16, 16]} />
+          <meshBasicMaterial
+            color="#FC54AF"
+            transparent
+            opacity={0.2}
+            blending={AdditiveBlending}
+            depthWrite={false}
+          />
+        </mesh>
+        <Html position={[0, 12, 0]} center>
+          <div style={{ 
+            color: "#FC54AF", 
+            fontSize: "18px", 
+            fontWeight: "bold",
+            textShadow: "2px 2px 4px black",
+            pointerEvents: "none",
+            textAlign: "center",
+            fontFamily: "Arial, sans-serif",
+            letterSpacing: "1px"
+          }}>
+            HEART
+          </div>
+        </Html>
+      </group>
+      
+      {/* Water Planet - Blue */}
+      <group position={[0, 40, 0]}>
+        <mesh>
+          <sphereGeometry args={[8, 32, 32]} />
+          <meshStandardMaterial 
+            map={textures.water || null}
+            color={textures.water ? "#ffffff" : "#38B6FF"}
+            emissive="#38B6FF"
+            emissiveIntensity={0.3}
+            metalness={0.1}
+            roughness={0.2}
+          />
+        </mesh>
+        {/* Atmospheric glow */}
+        <mesh renderOrder={-1}>
+          <sphereGeometry args={[9.6, 16, 16]} />
+          <meshBasicMaterial
+            color="#38B6FF"
+            transparent
+            opacity={0.2}
+            blending={AdditiveBlending}
+            depthWrite={false}
+          />
+        </mesh>
+        <Html position={[0, 12, 0]} center>
+          <div style={{ 
+            color: "#38B6FF", 
+            fontSize: "18px", 
+            fontWeight: "bold",
+            textShadow: "2px 2px 4px black",
+            pointerEvents: "none",
+            textAlign: "center",
+            fontFamily: "Arial, sans-serif",
+            letterSpacing: "1px"
+          }}>
+            WATER
+          </div>
+        </Html>
+      </group>
+      
+      {/* Lightning Planet - Yellow */}
+      <group position={[-40, 0, 0]}>
+        <mesh>
+          <sphereGeometry args={[8, 32, 32]} />
+          <meshStandardMaterial 
+            map={textures.lightning || null}
+            color={textures.lightning ? "#ffffff" : "#F2EF1D"}
+            emissive="#F2EF1D"
+            emissiveIntensity={0.3}
+            metalness={0.1}
+            roughness={0.2}
+          />
+        </mesh>
+        {/* Atmospheric glow */}
+        <mesh renderOrder={-1}>
+          <sphereGeometry args={[9.6, 16, 16]} />
+          <meshBasicMaterial
+            color="#F2EF1D"
+            transparent
+            opacity={0.2}
+            blending={AdditiveBlending}
+            depthWrite={false}
+          />
+        </mesh>
+        <Html position={[0, 12, 0]} center>
+          <div style={{ 
+            color: "#F2EF1D", 
+            fontSize: "18px", 
+            fontWeight: "bold",
+            textShadow: "2px 2px 4px black",
+            pointerEvents: "none",
+            textAlign: "center",
+            fontFamily: "Arial, sans-serif",
+            letterSpacing: "1px"
+          }}>
+            LIGHTNING
+          </div>
+        </Html>
+      </group>
+      
+      {/* Darkness Planet - Purple */}
+      <group position={[0, -40, 0]}>
+        <mesh>
+          <sphereGeometry args={[8, 32, 32]} />
+          <meshStandardMaterial 
+            map={textures.darkness || null}
+            color={textures.darkness ? "#ffffff" : "#6A4C93"}
+            emissive="#6A4C93"
+            emissiveIntensity={0.3}
+            metalness={0.1}
+            roughness={0.2}
+          />
+        </mesh>
+        {/* Atmospheric glow */}
+        <mesh renderOrder={-1}>
+          <sphereGeometry args={[9.6, 16, 16]} />
+          <meshBasicMaterial
+            color="#6A4C93"
+            transparent
+            opacity={0.2}
+            blending={AdditiveBlending}
+            depthWrite={false}
+          />
+        </mesh>
+        <Html position={[0, 12, 0]} center>
+          <div style={{ 
+            color: "#6A4C93", 
+            fontSize: "18px", 
+            fontWeight: "bold",
+            textShadow: "2px 2px 4px black",
+            pointerEvents: "none",
+            textAlign: "center",
+            fontFamily: "Arial, sans-serif",
+            letterSpacing: "1px"
+          }}>
+            DARKNESS
+          </div>
+        </Html>
+      </group>
+    </group>
+  );
+}
 
 // Elemental Planet with Glow component
 function ElementPlanetWithGlow({ 
@@ -301,6 +498,7 @@ function InvalidateOnState() {
 }
 
 export default function PlanetSystem({ showAll = false, hideUntilPlaying = false }: { showAll?: boolean; hideUntilPlaying?: boolean }) {
+  console.log("🌟 PlanetSystem is rendering with props:", { showAll, hideUntilPlaying });
   // Mark 3D system as active so global key handlers can avoid interfering
   React.useEffect(() => {
     try { (window as any).__CHX_3D_ACTIVE = true; } catch {}
@@ -309,6 +507,17 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
   const [storeSnap, setStoreSnap] = React.useState(() => playerStore.getState());
   React.useEffect(() => playerStore.subscribe(() => setStoreSnap(playerStore.getState())), []);
   const { songs, mainId, prevMainId, hoverId, planetsVisible, planetDisplayMode } = storeSnap as any;
+  
+  // FORCE PLANETS TO BE VISIBLE - DEBUG
+  React.useEffect(() => {
+    try {
+      const state = playerStore.getState();
+      state.setPlanetsVisible(true);
+      state.setPlanetDisplayMode('all');
+    } catch (e) {
+      console.error("Failed to set planet visibility:", e);
+    }
+  }, []);
   
   
   // Use planetDisplayMode for clean state management, but prioritize showAll prop for homepage
@@ -319,11 +528,11 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
   // Treat "showAll" as homepage-only when no main selection exists
   const isHomeOverview = !!showAll && !mainId;
   // FORCE homepage mode only for real home overview
-  const actualShouldShowAll = isHomeOverview ? true : shouldShowAll;
-  const actualShouldHide = isHomeOverview ? false : shouldHide; // Never hide in real home overview
+  const actualShouldShowAll = true; // FORCE SHOW ALL for debugging
+  const actualShouldHide = false; // Never hide for debugging
   
-  // DEBUG: Log the visibility conditions
-  console.log("Planet visibility debug:", {
+  // DEBUG: Log the visibility conditions  
+  console.log("🔥 Planet visibility debug:", {
     showAll,
     planetDisplayMode,
     shouldShowAll,
@@ -333,6 +542,7 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
     actualShouldShowAll,
     actualShouldHide,
     mainId,
+    planetsVisible,
     condition: actualShouldShowAll || shouldShowSingle
   });
   
@@ -414,6 +624,8 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
       style={{
         // DEBUG: Force opacity to 1 to debug visibility issue
         opacity: 1,
+        visibility: 'visible',
+        display: 'block',
         transition: isMobile ? 'none' : 'opacity 400ms ease-in-out',
         willChange: 'opacity',
         transform: 'translateZ(0)',
@@ -482,96 +694,8 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
             </group>
           )}
           
-          {/* 4 ELEMENTAL PLANETS WITH LABELS */}
-          <group>
-            {/* Heart Planet - Pink */}
-            <group position={[40, 0, 0]}>
-              <mesh>
-                <sphereGeometry args={[8, 32, 32]} />
-                <meshBasicMaterial color="#FC54AF" />
-              </mesh>
-              <Html position={[0, 12, 0]} center>
-                <div style={{ 
-                  color: "#FC54AF", 
-                  fontSize: "18px", 
-                  fontWeight: "bold",
-                  textShadow: "2px 2px 4px black",
-                  pointerEvents: "none",
-                  textAlign: "center",
-                  fontFamily: "Arial, sans-serif",
-                  letterSpacing: "1px"
-                }}>
-                  HEART
-                </div>
-              </Html>
-            </group>
-            
-            {/* Water Planet - Blue */}
-            <group position={[0, 40, 0]}>
-              <mesh>
-                <sphereGeometry args={[8, 32, 32]} />
-                <meshBasicMaterial color="#38B6FF" />
-              </mesh>
-              <Html position={[0, 12, 0]} center>
-                <div style={{ 
-                  color: "#38B6FF", 
-                  fontSize: "18px", 
-                  fontWeight: "bold",
-                  textShadow: "2px 2px 4px black",
-                  pointerEvents: "none",
-                  textAlign: "center",
-                  fontFamily: "Arial, sans-serif",
-                  letterSpacing: "1px"
-                }}>
-                  WATER
-                </div>
-              </Html>
-            </group>
-            
-            {/* Lightning Planet - Yellow */}
-            <group position={[-40, 0, 0]}>
-              <mesh>
-                <sphereGeometry args={[8, 32, 32]} />
-                <meshBasicMaterial color="#F2EF1D" />
-              </mesh>
-              <Html position={[0, 12, 0]} center>
-                <div style={{ 
-                  color: "#F2EF1D", 
-                  fontSize: "18px", 
-                  fontWeight: "bold",
-                  textShadow: "2px 2px 4px black",
-                  pointerEvents: "none",
-                  textAlign: "center",
-                  fontFamily: "Arial, sans-serif",
-                  letterSpacing: "1px"
-                }}>
-                  LIGHTNING
-                </div>
-              </Html>
-            </group>
-            
-            {/* Darkness Planet - Purple */}
-            <group position={[0, -40, 0]}>
-              <mesh>
-                <sphereGeometry args={[8, 32, 32]} />
-                <meshBasicMaterial color="#6A4C93" />
-              </mesh>
-              <Html position={[0, 12, 0]} center>
-                <div style={{ 
-                  color: "#6A4C93", 
-                  fontSize: "18px", 
-                  fontWeight: "bold",
-                  textShadow: "2px 2px 4px black",
-                  pointerEvents: "none",
-                  textAlign: "center",
-                  fontFamily: "Arial, sans-serif",
-                  letterSpacing: "1px"
-                }}>
-                  DARKNESS
-                </div>
-              </Html>
-            </group>
-          </group>
+          {/* 4 ELEMENTAL PLANETS WITH TEXTURES - ALWAYS VISIBLE */}
+          {true && <ElementalPlanetsWithTextures />}
           
           {/* Single song focus mode - show individual planet */}
           {shouldShowSingle && focusId && (() => {

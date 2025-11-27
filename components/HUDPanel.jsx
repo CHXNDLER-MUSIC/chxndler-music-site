@@ -205,7 +205,7 @@ export default function HUDPanel({
   // Venmo popup state
   const [showVenmoPopup, setShowVenmoPopup] = useState(false);
   // Position lyrics popover relative to its anchor; smaller negative means less high
-  const LYRICS_POPOVER_Y_OFFSET = -60; // bring it higher up
+  const LYRICS_POPOVER_Y_OFFSET = -100; // bring it higher up
 
   const [isSubmittingProfile, setIsSubmittingProfile] = useState(false);
   const [profileSubmissionMessage, setProfileSubmissionMessage] = useState('');
@@ -1117,7 +1117,7 @@ export default function HUDPanel({
         rightEdge = Math.min((typeof window !== 'undefined' ? window.innerWidth : rightEdge), rightEdge + HORIZONTAL_EXPAND) - 8 + 8;
         const width = Math.max(0, rightEdge - leftEdge);
         // Bring the top down more while keeping the bottom aligned to blue display bottom; this also shortens the popover
-        const TOP_INSET = 120; // moved up slightly
+        const TOP_INSET = 40; // moved up significantly
         let top = rect.top + TOP_INSET;
         top = Math.max(8, top);
         const height = Math.max(100, rect.height - TOP_INSET);
@@ -1319,7 +1319,7 @@ export default function HUDPanel({
           leftEdge = Math.max(8, leftEdge - HORIZONTAL_EXPAND);
           rightEdge = Math.min((typeof window !== 'undefined' ? window.innerWidth : rightEdge), rightEdge + HORIZONTAL_EXPAND) - 8 + 8;
           const width = Math.max(0, rightEdge - leftEdge);
-          const TOP_INSET = 120; // keep resize calc consistent
+          const TOP_INSET = 40; // keep resize calc consistent
           let top = rect.top + TOP_INSET;
           top = Math.max(8, top);
           const height = Math.max(100, rect.height - TOP_INSET);
@@ -5290,8 +5290,80 @@ export default function HUDPanel({
                                 </div>
                               ) : (
                                 <>
-                                  <div style={{ fontSize: 18, fontWeight: 800, color: '#FFD9EF', textShadow: '0 0 10px rgba(33,150,243,0.9)' }}>{item.title}</div>
-                                  <div style={{ fontSize: 14, opacity: 0.9, marginTop: 4 }}>{item.description}</div>
+                                  <div style={{ fontSize: 18, fontWeight: 800, color: '#FFD9EF', textShadow: '0 0 10px rgba(33,150,243,0.9)' }}>HEARTCOIN</div>
+                                  <div style={{ fontSize: 14, opacity: 0.9, marginTop: 4 }}>Choose your connection method.</div>
+                                  
+                                  {/* Authentication Options */}
+                                  <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    <button
+                                      style={{
+                                        width: '100%',
+                                        padding: '8px 12px',
+                                        borderRadius: 8,
+                                        background: '#FC54AF',
+                                        color: '#000',
+                                        fontWeight: 600,
+                                        fontSize: 12,
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease'
+                                      }}
+                                      onMouseEnter={(e) => { e.target.style.filter = 'brightness(1.1)'; }}
+                                      onMouseLeave={(e) => { e.target.style.filter = 'brightness(1)'; }}
+                                    >
+                                      CONNECT with Google
+                                    </button>
+                                    
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: '#fff', opacity: 0.7 }}>
+                                      <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.2)' }}></div>
+                                      <span>OR</span>
+                                      <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.2)' }}></div>
+                                    </div>
+                                    
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                                      <input
+                                        type="tel"
+                                        placeholder="Phone"
+                                        style={{
+                                          padding: '6px 8px',
+                                          borderRadius: 6,
+                                          border: '1px solid rgba(255,255,255,0.2)',
+                                          background: 'rgba(0,0,0,0.3)',
+                                          color: '#fff',
+                                          fontSize: 11
+                                        }}
+                                      />
+                                      <input
+                                        type="email"
+                                        placeholder="Email"
+                                        style={{
+                                          padding: '6px 8px',
+                                          borderRadius: 6,
+                                          border: '1px solid rgba(255,255,255,0.2)',
+                                          background: 'rgba(0,0,0,0.3)',
+                                          color: '#fff',
+                                          fontSize: 11
+                                        }}
+                                      />
+                                    </div>
+                                    
+                                    <button
+                                      style={{
+                                        width: '100%',
+                                        padding: '6px 12px',
+                                        borderRadius: 6,
+                                        background: 'rgba(252,84,175,0.2)',
+                                        border: '1px solid rgba(252,84,175,0.6)',
+                                        color: '#fff',
+                                        fontWeight: 600,
+                                        fontSize: 11,
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease'
+                                      }}
+                                    >
+                                      CONNECT
+                                    </button>
+                                  </div>
                                 </>
                               )}
                               {/* Controls moved directly under description */}
@@ -5585,7 +5657,7 @@ export default function HUDPanel({
                       style={{
                         position: 'fixed',
                         left: (lyricsPopoverPos && lyricsPopoverPos.left) || 0,
-                        top: (lyricsPopoverPos && lyricsPopoverPos.top) || 0,
+                        top: ((lyricsPopoverPos && lyricsPopoverPos.top) || 0) - 40,
                         transform: (lyricsPopoverPos && lyricsPopoverPos.width) ? 'none' : 'translateX(-50%)',
                         // Tighten vertical padding so the bottom sits higher
                         padding: '10px 14px 14px 14px', borderRadius: 14,
@@ -6807,7 +6879,7 @@ export default function HUDPanel({
         {/* Song selector positioned outside content opacity container to avoid beamOnly blocking */}
         <div className="absolute" style={{ 
           left: inConsole ? 6 : 8, 
-          bottom: 'calc(80px - 24px + 24px)', // Move dropdown down by 20px
+          bottom: 'calc(80px - 24px + 36px)', // Move dropdown down by 20px
           // Reserve dynamic space to the right so the dropdown never overlaps the cover
           right: oneLinerRight + 4, // Slightly wider than current (~8px wider)
           maxWidth: 'none',
@@ -6863,13 +6935,16 @@ export default function HUDPanel({
               const liveTime = (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
               
               return (
-                <div style={{
-                  marginTop: 8,
-                  paddingLeft: 0,
-                  paddingRight: 0,
+                <div className="border-2 border-[#19E3FF]/80 bg-cyan-400/10 backdrop-blur-xl rounded-[10px]" style={{
+                  marginTop: 2,
+                  paddingLeft: 8,
+                  paddingRight: 8,
+                  paddingTop: 6,
+                  paddingBottom: 6,
                   zIndex: 99998,
                   pointerEvents: 'auto',
-                  width: '100%'
+                  width: '100%',
+                  boxShadow: '0 0 18px rgba(25,227,255,0.35)'
                 }}>
                   <WaveformVisualizer
                     element={element}

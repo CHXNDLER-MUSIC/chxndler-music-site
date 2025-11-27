@@ -240,7 +240,7 @@ export default function JoinAliens({ visible = true } = {}) {
       }}
     >
       {/* Countdown Section - Top */}
-      <div style={{ textAlign: 'center', marginBottom: '20px', marginTop: '-10px', paddingTop: '0px' }}>
+      <div style={{ textAlign: 'center', marginBottom: '20px', marginTop: '5px', paddingTop: '5px' }}>
         {/* Neon "Signal Lost" message */}
         <div style={{ marginBottom: '0px' }}>
           <h2 

@@ -3,9 +3,11 @@
 import { useState } from "react";
 import GlowingHamburgerMenu from "./GlowingHamburgerMenu";
 import CodeButton from "./CodeButton";
+import ChxndlerButton from "./ChxndlerButton";
 
 export default function GlowingHamburgerMenuWrapper() {
   const [codeOpen, setCodeOpen] = useState(false);
+  const [chxndlerOpen, setChxndlerOpen] = useState(false);
 
   const handleItemClick = (label: string) => {
     console.log(`Menu item clicked: ${label}`);
@@ -27,9 +29,9 @@ export default function GlowingHamburgerMenuWrapper() {
       // case "BADGES":
       //   openBadges();
       //   break;
-      // case "CHXNDLER":
-      //   openChxndler();
-      //   break;
+      case "CHXNDLER":
+        setChxndlerOpen(true);
+        break;
       // case "STORE":
       //   openStore();
       //   break;
@@ -46,6 +48,12 @@ export default function GlowingHamburgerMenuWrapper() {
         style={{ display: 'none' }}
         open={codeOpen}
         onOpenChange={setCodeOpen}
+      />
+      {/* Hidden ChxndlerButton to handle the modal functionality */}
+      <ChxndlerButton
+        style={{ display: 'none' }}
+        open={chxndlerOpen}
+        onOpenChange={setChxndlerOpen}
       />
     </>
   );

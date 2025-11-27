@@ -135,13 +135,8 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
 
   // Badge detail modal
   if (selectedBadge) {
-    return (
-      <HeartversePopup 
-        isOpen={open} 
-        onClose={onClose} 
-        title="BADGE DETAILS"
-      >
-        <div className="relative text-center space-y-4">
+    const badgeDetailContent = (
+      <div className="relative text-center space-y-4">
           <button
             onClick={() => setSelectedBadge(null)}
             className="mb-4 text-[#38B6FF] hover:text-[#38B6FF]/80 transition text-sm"
@@ -232,6 +227,39 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             </div>
           )}
         </div>
+    );
+
+    if (embedded) {
+      return (
+        <div className="relative">
+          {/* Close button for embedded mode */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 w-8 h-8 rounded-full border border-pink-400/60 flex items-center justify-center text-pink-400 hover:text-pink-200 transition-colors z-10"
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20">
+              <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
+
+          {/* Header for embedded mode */}
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-bold text-white">BADGE DETAILS</h2>
+          </div>
+
+          {badgeDetailContent}
+        </div>
+      );
+    }
+
+    return (
+      <HeartversePopup 
+        isOpen={open} 
+        onClose={onClose} 
+        title="BADGE DETAILS"
+      >
+        {badgeDetailContent}
       </HeartversePopup>
     );
   }
@@ -240,13 +268,8 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     const category = badgeCategories.find(cat => cat.id === selectedCategory);
     if (!category) return null;
     
-    return (
-      <HeartversePopup 
-        isOpen={open} 
-        onClose={onClose} 
-        title={category.name}
-      >
-        <div className="relative space-y-4">
+    const categoryContent = (
+      <div className="relative space-y-4">
           <button
             onClick={() => setSelectedCategory(null)}
             className="mb-4 text-[#38B6FF] hover:text-[#38B6FF]/80 transition text-sm"
@@ -354,6 +377,39 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             ))}
           </div>
         </div>
+    );
+
+    if (embedded) {
+      return (
+        <div className="relative">
+          {/* Close button for embedded mode */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 w-8 h-8 rounded-full border border-pink-400/60 flex items-center justify-center text-pink-400 hover:text-pink-200 transition-colors z-10"
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20">
+              <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
+
+          {/* Header for embedded mode */}
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-bold text-white">{category.name}</h2>
+          </div>
+
+          {categoryContent}
+        </div>
+      );
+    }
+
+    return (
+      <HeartversePopup 
+        isOpen={open} 
+        onClose={onClose} 
+        title={category.name}
+      >
+        {categoryContent}
       </HeartversePopup>
     );
   }

@@ -9,6 +9,109 @@ type Props = {
   onClose: () => void;
 };
 
+type StoreItem = {
+  name: string;
+  image: string;
+  image2?: string;
+  stripeUrl: string;
+  description: string;
+  cost: number;
+  heartCoin: number;
+};
+
+const storeItems: StoreItem[] = [
+  {
+    name: "PIN",
+    image: "https://ik.imagekit.io/CHXNDLER/STORE/pin.png",
+    stripeUrl: "https://buy.stripe.com/cNi00kfxDeVD3oZ5ST4gg0B",
+    description: "A symbol that you belong here with the people who feel deeply, dream big, and find beauty in being different.",
+    cost: 4.5,
+    heartCoin: 3
+  },
+  {
+    name: "PATCH",
+    image: "https://ik.imagekit.io/CHXNDLER/STORE/patch.png",
+    image2: "https://ik.imagekit.io/CHXNDLER/STORE/patch-inverse.png",
+    stripeUrl: "https://buy.stripe.com/00w5kEgBHdRz1gRgxx4gg0C",
+    description: "Stitch this into your world as a quiet reminder that this isn't just music, it's a community.",
+    cost: 6,
+    heartCoin: 4
+  },
+  {
+    name: "Sticker",
+    image: "https://ik.imagekit.io/CHXNDLER/STORE/sticker.png",
+    stripeUrl: "https://buy.stripe.com/8x24gA99f9Bj1gR6WX4gg0F",
+    description: "A simple reminder that you're part of something bigger. Remember you're not alone in this story.",
+    cost: 3,
+    heartCoin: 2
+  },
+  {
+    name: "Hat",
+    image: "https://ik.imagekit.io/CHXNDLER/STORE/hat.png",
+    stripeUrl: "https://buy.stripe.com/6oU28s717aFn1gR1CD4gg0I",
+    description: "A classic you'll wear everywhere. It's lowkey, but it says everything it needs to.",
+    cost: 30,
+    heartCoin: 20
+  },
+  {
+    name: "Keychain",
+    image: "https://ik.imagekit.io/CHXNDLER/STORE/keychain.png",
+    stripeUrl: "https://buy.stripe.com/8x214o99faFn0cN5ST4gg0H",
+    description: "A small piece of the HEARTVERSE to carry everywhere. A quiet reminder that you're connected, always.",
+    cost: 6,
+    heartCoin: 4
+  },
+  {
+    name: "House Party Poster",
+    image: "https://ik.imagekit.io/CHXNDLER/STORE/house-party-poster.png",
+    stripeUrl: "https://buy.stripe.com/dRm8wQetz14N5x71CD4gg0L",
+    description: "This poster captures the night the HEARTVERSE came alive. Hang it up and remember when you joined the story.",
+    cost: 30,
+    heartCoin: 20
+  },
+  {
+    name: "Necklace",
+    image: "https://ik.imagekit.io/CHXNDLER/STORE/necklace.png",
+    stripeUrl: "https://buy.stripe.com/bJe3cw99f28R5x7epp4gg0K",
+    description: "A symbol of love, connection, and everything this world stands for. It's a keepsake for the people who found home here.",
+    cost: 18,
+    heartCoin: 12
+  },
+  {
+    name: "Beanie",
+    image: "https://ik.imagekit.io/CHXNDLER/STORE/beanie-front.png",
+    image2: "https://ik.imagekit.io/CHXNDLER/STORE/beanie-back.png",
+    stripeUrl: "https://buy.stripe.com/dRm8wQetz14N5x71CD4gg0L",
+    description: "For the ones who wear their hearts out loud and aren't afraid to stand out.",
+    cost: 30,
+    heartCoin: 20
+  },
+  {
+    name: "Button",
+    image: "https://ik.imagekit.io/CHXNDLER/STORE/button.png",
+    stripeUrl: "https://buy.stripe.com/6oU14oclr8xfbVvbdd4gg0J",
+    description: "A symbol of unity, curiosity, and courage for those who feel deeply and dream beyond the ordinary.",
+    cost: 6,
+    heartCoin: 4
+  },
+  {
+    name: "Bracelet",
+    image: "https://ik.imagekit.io/CHXNDLER/STORE/bracelet.png",
+    stripeUrl: "https://buy.stripe.com/aFa8wQ2KR8xf6Bbftt4gg0N",
+    description: "A reminder you wear on your wrist that you're growing, healing, and finding your place. It's a quiet symbol that you belong here, with the ones who feel deeply and love endlessly.",
+    cost: 24,
+    heartCoin: 16
+  },
+  {
+    name: "Pick",
+    image: "https://ik.imagekit.io/CHXNDLER/STORE/pick.png",
+    stripeUrl: "https://buy.stripe.com/4gM9AUadj9Bj2kVgxx4gg0O",
+    description: "Your reminder to follow your passion wherever it leads. A glow in the dark pick made for the dreamers and late night creators who carry music like a heartbeat through the dark.",
+    cost: 6,
+    heartCoin: 4
+  }
+];
+
 export default function HeartCoinModal({ open, onClose }: Props) {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -70,98 +173,80 @@ export default function HeartCoinModal({ open, onClose }: Props) {
     }
   }
 
+  const handlePurchase = (stripeUrl: string) => {
+    window.open(stripeUrl, '_blank');
+  };
+
   return (
     <HeartversePopup 
       isOpen={open} 
       onClose={onClose} 
-      title="HEARTCOIN"
+      title="THE HEARTVERSE COLLECTION"
     >
-      <p className="relative text-sm text-white/80 mb-3">Choose your connection method.</p>
-
-          {error && (
-            <div className="relative mb-2 rounded-md bg-red-50/10 border border-red-200/40 p-2 text-sm text-red-200">
-              {error}
-            </div>
-          )}
-          {message && (
-            <div className="relative mb-2 rounded-md bg-green-50/10 border border-green-200/40 p-2 text-sm text-green-200">
-              {message}
-            </div>
-          )}
-
-          <div className="relative space-y-3">
-            <button
-              onClick={signInWithGoogle}
-              disabled={loading}
-              className="w-full inline-flex items-center justify-center rounded-lg bg-[#FC54AF] px-4 py-3 text-sm font-semibold text-black hover:brightness-110 transition disabled:opacity-50"
-            >
-              CONNECT with Google
-            </button>
-
-            <div className="relative flex items-center text-white/50">
-              <div className="flex-grow border-t border-white/20" />
-              <span className="mx-3 text-xs uppercase">or</span>
-              <div className="flex-grow border-t border-white/20" />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Phone Login Section */}
-              <form onSubmit={signInWithPhone} className="space-y-2">
-                <label htmlFor="login-phone" className="block text-sm font-medium text-white/90">
-                  Phone Number
-                </label>
-                <input
-                  id="login-phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+1 (555) 123-4567"
-                  required
-                  className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-[#38B6FF] focus:outline-none"
+      <div className="relative">
+        {/* Store Items Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[70vh] overflow-y-auto pr-2">
+          {storeItems.map((item, index) => (
+            <div key={index} className="text-center space-y-4 p-4 bg-black/20 rounded-lg border border-white/10 hover:border-[#F2EF1D]/30 transition-all duration-300">
+              <h3 className="text-lg font-bold text-white tracking-wider">
+                {item.name.toUpperCase()}
+              </h3>
+              
+              {/* Item Images */}
+              <div className="relative h-32 w-full flex items-center justify-center">
+                <img
+                  src={item.image}
+                  alt={item.name}
+                  className="max-h-full max-w-full object-contain rounded-lg"
                 />
-                <button
-                  type="submit"
-                  disabled={loading || phone.length === 0}
-                  className="w-full inline-flex items-center justify-center rounded-lg bg-[#FC54AF]/20 border-2 border-[#FC54AF]/60 px-4 py-3 text-sm font-medium text-white hover:bg-[#FC54AF]/30 transition disabled:opacity-50"
-                  style={{
-                    boxShadow: loading || phone.length === 0 
-                      ? 'none' 
-                      : '0 0 20px rgba(252,84,175,0.6), 0 0 40px rgba(252,84,175,0.4), inset 0 0 10px rgba(252,84,175,0.2)'
-                  }}
-                >
-                  CONNECT
-                </button>
-              </form>
-
-              {/* Email Login Section */}
-              <form onSubmit={signInWithEmail} className="space-y-2">
-                <label htmlFor="login-email" className="block text-sm font-medium text-white/90">
-                  Email Address
-                </label>
-                <input
-                  id="login-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  required
-                  className="block w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-[#38B6FF] focus:outline-none"
-                />
-                <button
-                  type="submit"
-                  disabled={loading || email.length === 0}
-                  className="w-full inline-flex items-center justify-center rounded-lg bg-[#FC54AF]/20 border-2 border-[#FC54AF]/60 px-4 py-3 text-sm font-medium text-white hover:bg-[#FC54AF]/30 transition disabled:opacity-50"
-                  style={{
-                    boxShadow: loading || email.length === 0 
-                      ? 'none' 
-                      : '0 0 20px rgba(252,84,175,0.6), 0 0 40px rgba(252,84,175,0.4), inset 0 0 10px rgba(252,84,175,0.2)'
-                  }}
-                >
-                  CONNECT
-                </button>
-              </form>
+                {item.image2 && (
+                  <img
+                    src={item.image2}
+                    alt={`${item.name} alternative view`}
+                    className="max-h-full max-w-full object-contain rounded-lg absolute top-0 left-0 opacity-0 hover:opacity-100 transition-opacity duration-300"
+                  />
+                )}
+              </div>
+              
+              {/* Description */}
+              <div className="text-white/80 text-xs leading-relaxed px-2">
+                {item.description.toUpperCase()}
+              </div>
+              
+              {/* Price and Heart Coins */}
+              <div className="flex items-center justify-center gap-4 text-center">
+                <div className="flex items-center gap-1">
+                  <span className="text-sm font-bold text-green-400">
+                    ${item.cost % 1 === 0 ? item.cost.toFixed(0) : item.cost.toFixed(1)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-sm font-bold text-[#F2EF1D]">{item.heartCoin}</span>
+                  <img
+                    src="/elements/heart-coin.png"
+                    alt="Heart Coin"
+                    className="w-4 h-4 object-contain"
+                    style={{
+                      filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 2px #FC54AF)'
+                    }}
+                  />
+                </div>
+              </div>
+              
+              {/* Add to Collection Button */}
+              <button
+                onClick={() => handlePurchase(item.stripeUrl)}
+                className="w-full py-2 px-4 rounded-lg font-bold text-xs bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(242,239,29,0.6)] transition-all duration-200"
+                style={{
+                  boxShadow: '0 0 15px rgba(242,239,29,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
+                }}
+              >
+                Add to Collection
+              </button>
             </div>
-          </div>
+          ))}
+        </div>
+      </div>
     </HeartversePopup>
   );
 }

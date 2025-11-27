@@ -43,16 +43,17 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
   };
 
   return (
-    <div ref={menuRef} className="fixed top-4 left-4 z-50">
+    <div ref={menuRef} className="fixed top-2 left-4 z-50">
       {/* Hamburger Button */}
       <button
         onClick={toggleMenu}
-        className="relative w-12 h-12 rounded-full bg-black/60 backdrop-blur-sm border border-[#FC54AF]/30 flex items-center justify-center transition-all duration-300 hover:scale-105 animate-pulse"
+        className="relative w-12 h-12 rounded-full bg-black/60 backdrop-blur-sm border border-white/30 flex items-center justify-center transition-all duration-300 hover:scale-105 animate-pulse"
         style={{
           boxShadow: `
-            0 0 20px #FC54AF40,
-            0 0 40px #FC54AF20,
-            inset 0 0 20px #FC54AF10
+            0 0 30px rgba(255, 255, 255, 0.6),
+            0 0 60px rgba(255, 255, 255, 0.4),
+            0 0 100px rgba(255, 255, 255, 0.2),
+            inset 0 0 20px rgba(255, 255, 255, 0.2)
           `,
         }}
         aria-label={isOpen ? "Close menu" : "Open menu"}
@@ -63,18 +64,27 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
             className={`w-5 h-0.5 bg-white transition-all duration-300 ${
               isOpen ? "rotate-45 translate-y-0.5" : ""
             }`}
+            style={{
+              boxShadow: "0 0 8px rgba(255, 255, 255, 0.6), 0 0 16px rgba(255, 255, 255, 0.3)"
+            }}
           />
           {/* Middle Line */}
           <div
             className={`w-5 h-0.5 bg-white transition-all duration-300 mt-1 ${
               isOpen ? "opacity-0" : ""
             }`}
+            style={{
+              boxShadow: "0 0 8px rgba(255, 255, 255, 0.6), 0 0 16px rgba(255, 255, 255, 0.3)"
+            }}
           />
           {/* Bottom Line */}
           <div
             className={`w-5 h-0.5 bg-white transition-all duration-300 mt-1 ${
               isOpen ? "-rotate-45 -translate-y-2" : ""
             }`}
+            style={{
+              boxShadow: "0 0 8px rgba(255, 255, 255, 0.6), 0 0 16px rgba(255, 255, 255, 0.3)"
+            }}
           />
         </div>
       </button>
