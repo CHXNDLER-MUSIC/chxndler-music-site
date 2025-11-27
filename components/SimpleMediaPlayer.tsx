@@ -129,10 +129,9 @@ export default function MediaPlayer({
   }, [isPlaying]);
   return (
     <motion.div
-      className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[min(92vw,680px)] ${glow.ring} backdrop-blur-md rounded-2xl border border-[#00FFFF] p-3`}
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[min(92vw,680px)] backdrop-blur-md rounded-2xl border border-[#00FFFF] p-3"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      style={{ background: "rgba(25,227,255,0.45)" }}
     >
       <div className="flex items-center gap-3">
         <button
@@ -160,7 +159,7 @@ export default function MediaPlayer({
               {gateResult.reason}
             </div>
           )}
-          <div className="mt-2 h-16 w-full relative overflow-hidden rounded-lg bg-gradient-to-b from-black/30 to-black/10 border border-white/5">
+          <div className="mt-2 h-16 w-full relative overflow-hidden rounded-lg bg-gradient-to-b from-black/30 to-black/10 outline-none ring-0 border-0" style={{ boxShadow: 'none' }}>
             {/* Audio Waveform using SVG for smooth curves */}
             <svg 
               className="w-full h-full" 
@@ -191,24 +190,13 @@ export default function MediaPlayer({
               />
               
               {/* Played portion as a thin glowing light beam */}
-              {/* Outer glow */}
-              <line
-                x1="0"
-                y1="50"
-                x2={`${progress * 800}`}
-                y2="50"
-                stroke={elementColor}
-                strokeWidth="7"
-                opacity="0.22"
-                strokeLinecap="round"
-              />
               {/* Core beam */}
               <line
                 x1="0"
                 y1="50"
                 x2={`${progress * 800}`}
                 y2="50"
-                stroke={elementColor}
+                stroke="white"
                 strokeWidth="1.6"
                 opacity="0.95"
                 strokeLinecap="round"
@@ -246,7 +234,6 @@ export default function MediaPlayer({
                 style={{ 
                   background: `${elementColor}22`,
                   color: elementColor,
-                  border: `1px solid ${elementColor}44`,
                 }}
               >
                 {Math.floor(progress * 100)}%

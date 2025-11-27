@@ -4,6 +4,7 @@ import { useState } from "react";
 import GlowingHamburgerMenu from "./GlowingHamburgerMenu";
 import CodeButton from "./CodeButton";
 import ChxndlerButton from "./ChxndlerButton";
+import CodeModal from "./CodeModal";
 
 export default function GlowingHamburgerMenuWrapper() {
   const [codeOpen, setCodeOpen] = useState(false);
@@ -13,13 +14,15 @@ export default function GlowingHamburgerMenuWrapper() {
     console.log(`Menu item clicked: ${label}`);
     
     switch (label) {
-      case "THE CODE":
+      case "ABOUT":
         setCodeOpen(true);
         break;
-      // Add other cases as needed:
-      // case "JOURNEY":
-      //   openJourney();
-      //   break;
+      // Handle dynamic journey titles:
+      case "JOURNEY":
+      case "MY JOURNEY":
+        // openJourney();
+        console.log(`Journey clicked: ${label}`);
+        break;
       // case "JOURNAL":
       //   openJournal();
       //   break;
@@ -43,11 +46,10 @@ export default function GlowingHamburgerMenuWrapper() {
   return (
     <>
       <GlowingHamburgerMenu onItemClick={handleItemClick} />
-      {/* Hidden CodeButton to handle the modal functionality */}
-      <CodeButton
-        style={{ display: 'none' }}
-        open={codeOpen}
-        onOpenChange={setCodeOpen}
+      {/* CodeModal for ABOUT functionality */}
+      <CodeModal 
+        open={codeOpen} 
+        onClose={() => setCodeOpen(false)} 
       />
       {/* Hidden ChxndlerButton to handle the modal functionality */}
       <ChxndlerButton

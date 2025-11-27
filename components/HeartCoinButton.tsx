@@ -18,42 +18,6 @@ interface StoreItem {
   min_tier?: string;
 }
 
-// Digital collectible cards
-const DIGITAL_ITEMS: StoreItem[] = [
-  {
-    id: 'baby',
-    title: 'Baby',
-    description: 'Digital collectible card from the Heartverse collection.',
-    image: '/card/baby.png',
-    priceUsd: 3,
-    priceHeartCoins: 20,
-    stripeUrl: 'https://buy.stripe.com/aFacN64SZ4gZcZz8114gg0a',
-    is_released: true,
-    min_tier: 'wanderer'
-  },
-  {
-    id: 'ocean-girl',
-    title: 'Ocean Girl',
-    description: 'Digital collectible card from the Heartverse collection.',
-    image: '/card/ocean-girl.png',
-    priceUsd: 3,
-    priceHeartCoins: 20,
-    stripeUrl: 'https://buy.stripe.com/dRmbJ24SZ00J6Bb9554gg00',
-    is_released: true,
-    min_tier: 'wanderer'
-  },
-  {
-    id: 'somebody-to-love',
-    title: 'Somebody to Love',
-    description: 'Digital collectible card from the Heartverse collection.',
-    image: '/card/somebody-to-love.png',
-    priceUsd: 5,
-    priceHeartCoins: 30,
-    stripeUrl: 'https://buy.stripe.com/example',
-    is_released: true,
-    min_tier: 'lover'
-  }
-];
 
 // Physical store items
 const PHYSICAL_ITEMS: StoreItem[] = [
@@ -181,7 +145,7 @@ const PHYSICAL_ITEMS: StoreItem[] = [
 ];
 
 // Combine all items
-const ALL_STORE_ITEMS = [...DIGITAL_ITEMS, ...PHYSICAL_ITEMS];
+const ALL_STORE_ITEMS = [...PHYSICAL_ITEMS];
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   asChild?: boolean;
@@ -203,6 +167,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const { profile, refreshProfile } = useProfile();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'EARN' | 'USE' | 'SEND'>('EARN');
+  const [activeUseTab, setActiveUseTab] = useState<'MERCH' | 'CARDS'>('MERCH');
   const [heartCoins, setHeartCoins] = useState(externalHeartCoins);
   const [selectedItem, setSelectedItem] = useState<StoreItem | null>(null);
   const [showItemDetail, setShowItemDetail] = useState(false);
@@ -554,10 +519,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               padding: '10px 14px 14px 14px',
               borderRadius: 18,
               background: 'rgba(0,0,0,0.6)',
-              border: '1px solid rgba(255,105,180,0.55)',
-              boxShadow: '0 -8px 25px rgba(255,105,180,0.4), 0 -4px 15px rgba(255,105,180,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(255,105,180,0.45)',
+              border: '1px solid rgba(255,255,255,0.55)',
+              boxShadow: '0 -8px 25px rgba(255,255,255,0.4), 0 -4px 15px rgba(255,255,255,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(255,255,255,0.45)',
               backdropFilter: 'blur(12px) saturate(140%)',
-              color: '#FF69B4',
+              color: '#FFFFFF',
               position: 'relative',
               overflow: 'auto'
             }}
@@ -571,7 +536,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               transform: 'translateX(-50%)',
               width: '120%',
               height: '30px',
-              background: 'radial-gradient(ellipse 60% 100% at 50% 0%, rgba(255,105,180,0.6) 0%, rgba(255,105,180,0.3) 40%, transparent 80%)',
+              background: 'radial-gradient(ellipse 60% 100% at 50% 0%, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.3) 40%, transparent 80%)',
               filter: 'blur(30px)',
               pointerEvents: 'none',
               zIndex: -1
@@ -587,7 +552,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               transform: 'translateX(-50%)',
               width: '80%',
               height: '20px',
-              background: 'radial-gradient(ellipse 70% 100% at 50% 100%, rgba(255,105,180,0.4) 0%, rgba(255,105,180,0.2) 50%, transparent 100%)',
+              background: 'radial-gradient(ellipse 70% 100% at 50% 100%, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.2) 50%, transparent 100%)',
               filter: 'blur(25px)',
               pointerEvents: 'none',
               zIndex: -1
@@ -601,12 +566,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               setOpen(false);
               try { onOpenBlueDisplay?.(); } catch {}
             }}
-            className="absolute top-2 right-4 text-pink-400 hover:text-pink-200 cursor-pointer w-8 h-8 rounded-full border border-pink-400/80 flex items-center justify-center"
+            className="absolute top-2 right-4 text-white hover:text-gray-200 cursor-pointer w-8 h-8 rounded-full border border-white/80 flex items-center justify-center"
             style={{ 
               fontSize: '16px',
-              boxShadow: '0 0 15px rgba(255,105,180,0.8), 0 0 25px rgba(255,105,180,0.5), 0 0 35px rgba(255,105,180,0.3)',
-              textShadow: '0 0 8px rgba(255,105,180,0.8), 0 0 15px rgba(255,105,180,0.6)',
-              background: 'rgba(255,105,180,0.1)',
+              boxShadow: '0 0 15px rgba(255,255,255,0.8), 0 0 25px rgba(255,255,255,0.5), 0 0 35px rgba(255,255,255,0.3)',
+              textShadow: '0 0 8px rgba(255,255,255,0.8), 0 0 15px rgba(255,255,255,0.6)',
+              background: 'rgba(255,255,255,0.1)',
               backdropFilter: 'blur(2px)'
             }}
           >
@@ -642,8 +607,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             <div 
               className="text-lg font-bold mb-2"
               style={{ 
-                color: '#FF69B4', 
-                textShadow: '0 0 8px rgba(255,105,180,0.6)', 
+                color: '#FFFFFF', 
+                textShadow: '0 0 8px rgba(255,255,255,0.6)', 
                 fontSize: '16px'
               }}
             >
@@ -651,7 +616,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             </div>
             
             {/* Tabs */}
-            <div className="flex justify-start ml-2 mb-2 space-x-1">
+            <div className="flex justify-center mb-2 space-x-1">
               {(['EARN', 'USE', 'SEND'] as const).map((tab) => (
                 <button
                   key={tab}
@@ -659,28 +624,28 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     try { sfx.play('click', 0.6); } catch {}
                     setActiveTab(tab);
                   }}
-                  className="px-2 py-1 text-[10px] rounded border transition-all duration-200"
+                  className="px-4 py-2 text-xs rounded border transition-all duration-200"
                   style={{
                     background: activeTab === tab 
-                      ? 'linear-gradient(135deg, rgba(255,105,180,0.4) 0%, rgba(255,105,180,0.6) 100%)'
-                      : 'linear-gradient(135deg, rgba(255,105,180,0.1) 0%, rgba(255,105,180,0.2) 100%)',
-                    color: activeTab === tab ? '#FFB6C1' : 'rgba(255,182,193,0.7)',
-                    borderColor: activeTab === tab ? 'rgba(255,105,180,0.8)' : 'rgba(255,105,180,0.4)',
-                    textShadow: activeTab === tab ? '0 0 6px rgba(255,105,180,0.8)' : 'none',
-                    boxShadow: activeTab === tab ? '0 0 10px rgba(255,105,180,0.5), 0 0 20px rgba(255,105,180,0.3)' : 'none',
+                      ? 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.6) 100%)'
+                      : 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.2) 100%)',
+                    color: activeTab === tab ? '#FFFFFF' : 'rgba(255,255,255,0.7)',
+                    borderColor: activeTab === tab ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.4)',
+                    textShadow: activeTab === tab ? '0 0 6px rgba(255,255,255,0.8)' : 'none',
+                    boxShadow: activeTab === tab ? '0 0 10px rgba(255,255,255,0.5), 0 0 20px rgba(255,255,255,0.3)' : 'none',
                     fontWeight: 700,
-                    fontSize: '9px'
+                    fontSize: '11px'
                   }}
                   onMouseEnter={(e) => {
                     if (activeTab !== tab) {
-                      e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,105,180,0.2) 0%, rgba(255,105,180,0.35) 100%)';
-                      e.currentTarget.style.color = 'rgba(255,182,193,0.9)';
+                      e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.35) 100%)';
+                      e.currentTarget.style.color = 'rgba(255,255,255,0.9)';
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (activeTab !== tab) {
-                      e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,105,180,0.1) 0%, rgba(255,105,180,0.2) 100%)';
-                      e.currentTarget.style.color = 'rgba(255,182,193,0.7)';
+                      e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.2) 100%)';
+                      e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
                     }
                   }}
                 >
@@ -693,8 +658,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             <div 
               className="w-full h-px mb-2"
               style={{
-                background: 'linear-gradient(90deg, transparent, rgba(255,105,180,0.8) 20%, rgba(255,105,180,1) 50%, rgba(255,105,180,0.8) 80%, transparent)',
-                boxShadow: '0 0 4px rgba(255,105,180,0.6)'
+                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8) 20%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.8) 80%, transparent)',
+                boxShadow: '0 0 4px rgba(255,255,255,0.6)'
               }}
             />
           </div>
@@ -706,8 +671,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               <div 
                 className="text-base text-center mb-3"
                 style={{ 
-                  color: '#FFB6C1', 
-                  textShadow: '0 0 4px rgba(255,182,193,0.8)', 
+                  color: '#FFFFFF', 
+                  textShadow: '0 0 4px rgba(255,255,255,0.8)', 
                   fontSize: '14px',
                   lineHeight: 1.3
                 }}
@@ -728,12 +693,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             </div>
             
             {/* Element of the Day */}
-            <div className="flex items-center justify-between mb-2 p-2 rounded border border-pink-400/30 bg-pink-400/10">
+            <div className="flex items-center justify-between mb-2 p-2 rounded border border-white/30 bg-white/10">
               <div>
-                <div className="text-xs font-bold" style={{ color: '#FFB6C1' }}>
+                <div className="text-xs font-bold" style={{ color: '#FFFFFF' }}>
                   1. Tap the Element of the Day
                 </div>
-                <div className="text-[10px]" style={{ color: '#FFB6C1', opacity: 0.8 }}>
+                <div className="text-[10px]" style={{ color: '#FFFFFF', opacity: 0.8 }}>
                   Touch the glowing planet to receive one HEART coin.
                 </div>
               </div>
@@ -760,12 +725,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             </div>
 
             {/* Journal Entry */}
-            <div className="flex items-center justify-between mb-1 p-2 rounded border border-pink-400/30 bg-pink-400/10">
+            <div className="flex items-center justify-between mb-1 p-2 rounded border border-white/30 bg-white/10">
               <div>
-                <div className="text-xs font-bold" style={{ color: '#FFB6C1' }}>
+                <div className="text-xs font-bold" style={{ color: '#FFFFFF' }}>
                   2. Journal Entry of the Day
                 </div>
-                <div className="text-[10px]" style={{ color: '#FFB6C1', opacity: 0.8 }}>
+                <div className="text-[10px]" style={{ color: '#FFFFFF', opacity: 0.8 }}>
                   Answer today's journal prompt to earn one HEART coin.
                 </div>
               </div>
@@ -775,9 +740,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   disabled={dailyQuests.journalEntry}
                   className="px-2 py-1 text-xs rounded border transition-colors"
                   style={{
-                    background: dailyQuests.journalEntry ? 'rgba(0,255,0,0.1)' : 'rgba(255,105,180,0.1)',
-                    color: dailyQuests.journalEntry ? '#00FF00' : '#FFB6C1',
-                    borderColor: dailyQuests.journalEntry ? '#00FF00' : 'rgba(255,105,180,0.6)',
+                    background: dailyQuests.journalEntry ? 'rgba(0,255,0,0.1)' : 'rgba(255,255,255,0.1)',
+                    color: dailyQuests.journalEntry ? '#00FF00' : '#FFFFFF',
+                    borderColor: dailyQuests.journalEntry ? '#00FF00' : 'rgba(255,255,255,0.6)',
                     textShadow: dailyQuests.journalEntry ? '0 0 8px #00FF00, 0 0 16px #00FF00' : 'none',
                     boxShadow: dailyQuests.journalEntry ? '0 0 10px rgba(0,255,0,0.4), 0 0 20px rgba(0,255,0,0.2)' : 'none'
                   }}
@@ -805,12 +770,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             </div>
             
             {/* Invite a Friend */}
-            <div className="flex items-center justify-between mb-2 p-2 rounded border border-pink-400/30 bg-pink-400/10">
+            <div className="flex items-center justify-between mb-2 p-2 rounded border border-white/30 bg-white/10">
               <div>
-                <div className="text-xs font-bold" style={{ color: '#FFB6C1' }}>
+                <div className="text-xs font-bold" style={{ color: '#FFFFFF' }}>
                   1. Invite a Friend
                 </div>
-                <div className="text-[10px]" style={{ color: '#FFB6C1', opacity: 0.8 }}>
+                <div className="text-[10px]" style={{ color: '#FFFFFF', opacity: 0.8 }}>
                   Share the Heartverse with someone you love. When they join, you both earn HEART coins.
                 </div>
               </div>
@@ -824,17 +789,17 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       ? 'rgba(0,255,0,0.1)' 
                       : dailyQuests.friendInvited 
                         ? 'rgba(255,193,7,0.3)'
-                        : 'rgba(255,105,180,0.1)',
+                        : 'rgba(255,255,255,0.1)',
                     color: dailyQuests.friendInviteConfirm 
                       ? '#00FF00' 
                       : dailyQuests.friendInvited 
                         ? '#FFD700'
-                        : '#FFB6C1',
+                        : '#FFFFFF',
                     borderColor: dailyQuests.friendInviteConfirm 
                       ? '#00FF00' 
                       : dailyQuests.friendInvited 
                         ? '#FFD700'
-                        : 'rgba(255,105,180,0.6)',
+                        : 'rgba(255,255,255,0.6)',
                     textShadow: dailyQuests.friendInviteConfirm 
                       ? '0 0 8px #00FF00, 0 0 16px #00FF00' 
                       : dailyQuests.friendInvited 
@@ -861,24 +826,24 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
 
             {/* Attend Live Show */}
-            <div className="flex items-center justify-between mb-2 p-2 rounded border border-pink-400/30 bg-pink-400/10 relative">
+            <div className="flex items-center justify-between mb-2 p-2 rounded border border-white/30 bg-white/10 relative">
               <div className="flex-1">
                 {showCheckInModal ? (
                   <div>
-                    <div className="text-xs font-bold mb-2" style={{ color: '#FFB6C1' }}>
+                    <div className="text-xs font-bold mb-2" style={{ color: '#FFFFFF' }}>
                       Secret Phrase
                     </div>
-                    <div className="text-[10px] mb-2" style={{ color: '#FFB6C1', opacity: 0.8 }}>
+                    <div className="text-[10px] mb-2" style={{ color: '#FFFFFF', opacity: 0.8 }}>
                       Enter the secret phrase from the show:
                     </div>
                     <input
                       type="text"
                       value={secretPhrase}
                       onChange={(e) => setSecretPhrase(e.target.value)}
-                      className="w-full p-2 bg-black/60 border border-pink-400/40 rounded text-white text-xs"
+                      className="w-full p-2 bg-black/60 border border-white/40 rounded text-white text-xs"
                       placeholder="Enter secret phrase..."
                       style={{
-                        boxShadow: '0 0 10px rgba(255,105,180,0.3)'
+                        boxShadow: '0 0 10px rgba(255,255,255,0.3)'
                       }}
                     />
                     {statusType !== 'idle' && checkInMessage && (
@@ -897,10 +862,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   </div>
                 ) : (
                   <div>
-                    <div className="text-xs font-bold" style={{ color: '#FFB6C1' }}>
+                    <div className="text-xs font-bold" style={{ color: '#FFFFFF' }}>
                       2. Attend a Livestream or Live Show
                     </div>
-                    <div className="text-[10px]" style={{ color: '#FFB6C1', opacity: 0.8 }}>
+                    <div className="text-[10px]" style={{ color: '#FFFFFF', opacity: 0.8 }}>
                       Check in at a CHXNDLER show to receive bonus HEART coins.
                     </div>
                   </div>
@@ -912,10 +877,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     <button
                       onClick={handleCheckIn}
                       disabled={isSubmittingPhrase || !secretPhrase.trim()}
-                      className="px-2 py-1 text-xs rounded border border-pink-400/60 hover:border-pink-400/80 transition-colors"
+                      className="px-2 py-1 text-xs rounded border border-white/60 hover:border-white/80 transition-colors"
                       style={{
-                        background: isSubmittingPhrase || !secretPhrase.trim() ? 'rgba(100,100,100,0.3)' : 'rgba(255,105,180,0.1)',
-                        color: isSubmittingPhrase || !secretPhrase.trim() ? '#666' : '#FFB6C1',
+                        background: isSubmittingPhrase || !secretPhrase.trim() ? 'rgba(100,100,100,0.3)' : 'rgba(255,255,255,0.1)',
+                        color: isSubmittingPhrase || !secretPhrase.trim() ? '#666' : '#FFFFFF',
                       }}
                     >
                       {isSubmittingPhrase ? 'CHECKING...' : 'SUBMIT'}
@@ -946,9 +911,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     disabled={dailyQuests.checkedIn}
                     className="px-2 py-1 text-xs rounded border transition-colors"
                     style={{
-                      background: dailyQuests.checkedIn ? 'rgba(0,255,0,0.1)' : 'rgba(255,105,180,0.1)',
-                      color: dailyQuests.checkedIn ? '#00FF00' : '#FFB6C1',
-                      borderColor: dailyQuests.checkedIn ? '#00FF00' : 'rgba(255,105,180,0.6)',
+                      background: dailyQuests.checkedIn ? 'rgba(0,255,0,0.1)' : 'rgba(255,255,255,0.1)',
+                      color: dailyQuests.checkedIn ? '#00FF00' : '#FFFFFF',
+                      borderColor: dailyQuests.checkedIn ? '#00FF00' : 'rgba(255,255,255,0.6)',
                       textShadow: dailyQuests.checkedIn ? '0 0 8px #00FF00, 0 0 16px #00FF00' : 'none',
                       boxShadow: dailyQuests.checkedIn ? '0 0 10px rgba(0,255,0,0.4), 0 0 20px rgba(0,255,0,0.2)' : 'none'
                     }}
@@ -992,127 +957,134 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   <div 
                     className="text-base text-center mb-4"
                     style={{ 
-                      color: '#FFB6C1', 
-                      textShadow: '0 0 4px rgba(255,182,193,0.8)', 
+                      color: '#FFFFFF', 
+                      textShadow: '0 0 4px rgba(255,255,255,0.8)', 
                       fontSize: '14px',
                       lineHeight: 1.3
                     }}
                   >
                     Spend your Heart coins on digital collectibles and special items.
                   </div>
-                  
-                  {/* Digital Collectibles Section */}
-                  <div className="mb-6">
-                    <div 
-                      className="text-sm font-bold mb-3"
-                      style={{ 
-                        color: '#00BFFF', 
-                        textShadow: '0 0 4px rgba(0,191,255,0.8)' 
-                      }}
-                    >
-                      💎 DIGITAL COLLECTIBLES
-                    </div>
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {DIGITAL_ITEMS.map((item) => (
-                        <div 
-                          key={item.id}
-                          onClick={() => handleSelectItem(item)}
-                          className="flex items-center gap-3 p-2 rounded-lg border border-blue-500/30 bg-blue-900/10 hover:bg-blue-900/20 cursor-pointer transition-all duration-200"
-                          style={{
-                            boxShadow: '0 0 8px rgba(0,191,255,0.2)'
-                          }}
-                        >
-                          <div className="relative w-10 h-10 flex-shrink-0">
-                            <Image
-                              src={item.image}
-                              alt={item.title}
-                              fill
-                              className="object-cover rounded"
-                            />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-blue-300 text-sm truncate">{item.title}</div>
-                            <div className="text-xs text-blue-200/80 truncate">{item.description}</div>
-                          </div>
-                          <div className="flex items-center gap-1 text-sm font-bold text-[#F2EF1D]">
-                            <span>{item.priceHeartCoins}</span>
-                            <img
-                              src="/elements/heart-coin.png"
-                              alt="Heart Coin"
-                              className="w-4 h-4 object-contain"
-                              style={{
-                                filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
-                              }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+
+                  {/* Sub-tabs for USE */}
+                  <div className="flex justify-center mb-4 space-x-2">
+                    {(['MERCH', 'CARDS'] as const).map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => {
+                          try { sfx.play('click', 0.6); } catch {}
+                          setActiveUseTab(tab);
+                        }}
+                        className="px-3 py-1 text-xs rounded border transition-all duration-200"
+                        style={{
+                          background: activeUseTab === tab 
+                            ? 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.6) 100%)'
+                            : 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.2) 100%)',
+                          color: activeUseTab === tab ? '#FFFFFF' : 'rgba(255,255,255,0.7)',
+                          borderColor: activeUseTab === tab ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.4)',
+                          textShadow: activeUseTab === tab ? '0 0 6px rgba(255,255,255,0.8)' : 'none',
+                          boxShadow: activeUseTab === tab ? '0 0 10px rgba(255,255,255,0.5), 0 0 20px rgba(255,255,255,0.3)' : 'none',
+                          fontWeight: 600,
+                          fontSize: '10px'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (activeUseTab !== tab) {
+                            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.35) 100%)';
+                            e.currentTarget.style.color = 'rgba(255,255,255,0.9)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (activeUseTab !== tab) {
+                            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.2) 100%)';
+                            e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                          }
+                        }}
+                      >
+                        {tab}
+                      </button>
+                    ))}
                   </div>
 
-                  {/* Physical Store Items Section */}
-                  <div>
-                    <div 
-                      className="text-sm font-bold mb-3"
-                      style={{ 
-                        color: '#FF69B4', 
-                        textShadow: '0 0 4px rgba(255,105,180,0.8)' 
-                      }}
-                    >
-                      🛍️ HEARTVERSE COLLECTION
-                    </div>
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {PHYSICAL_ITEMS.map((item) => (
-                        <div 
-                          key={item.id}
-                          onClick={() => window.open(item.stripeUrl, '_blank')}
-                          className="flex items-center gap-3 p-2 rounded-lg border border-pink-500/30 bg-pink-900/10 hover:bg-pink-900/20 cursor-pointer transition-all duration-200"
-                          style={{
-                            boxShadow: '0 0 8px rgba(252,84,175,0.2)'
-                          }}
-                        >
-                          <div className="relative w-10 h-10 flex-shrink-0">
-                            <img
-                              src={item.image}
-                              alt={item.title}
-                              className="w-full h-full object-cover rounded"
-                            />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-pink-300 text-sm truncate">{item.title}</div>
-                            <div className="text-xs text-pink-200/80 truncate">{item.description}</div>
-                          </div>
-                          <div className="flex flex-col items-end text-xs">
-                            <div className="flex items-center gap-1 font-bold text-green-400 mb-1">
-                              <span>${item.priceUsd % 1 === 0 ? item.priceUsd.toFixed(0) : item.priceUsd.toFixed(1)}</span>
-                            </div>
-                            <div className="flex items-center gap-1 font-bold text-[#F2EF1D]">
-                              <span>{item.priceHeartCoins}</span>
+                  {/* MERCH Tab Content */}
+                  {activeUseTab === 'MERCH' && (
+                    <div>
+                      <div 
+                        className="text-sm font-bold mb-3"
+                        style={{ 
+                          color: '#FFFFFF', 
+                          textShadow: '0 0 4px rgba(255,255,255,0.8)' 
+                        }}
+                      >
+                        🛍️ HEARTVERSE COLLECTION
+                      </div>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {PHYSICAL_ITEMS.map((item) => (
+                          <div 
+                            key={item.id}
+                            onClick={() => window.open(item.stripeUrl, '_blank')}
+                            className="flex items-center gap-3 p-2 rounded-lg border border-white/30 bg-white/10 hover:bg-white/20 cursor-pointer transition-all duration-200"
+                            style={{
+                              boxShadow: '0 0 8px rgba(255,255,255,0.2)'
+                            }}
+                          >
+                            <div className="relative w-10 h-10 flex-shrink-0">
                               <img
-                                src="/elements/heart-coin.png"
-                                alt="Heart Coin"
-                                className="w-3 h-3 object-contain"
-                                style={{
-                                  filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 2px #FC54AF)'
-                                }}
+                                src={item.image}
+                                alt={item.title}
+                                className="w-full h-full object-cover rounded"
                               />
                             </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-semibold text-white text-sm truncate">{item.title}</div>
+                              <div className="text-xs text-white/80 truncate">{item.description}</div>
+                            </div>
+                            <div className="flex flex-col items-end text-xs">
+                              <div className="flex items-center gap-1 font-bold text-green-400 mb-1">
+                                <span>${item.priceUsd % 1 === 0 ? item.priceUsd.toFixed(0) : item.priceUsd.toFixed(1)}</span>
+                              </div>
+                              <div className="flex items-center gap-1 font-bold text-[#F2EF1D]">
+                                <span>{item.priceHeartCoins}</span>
+                                <img
+                                  src="/elements/heart-coin.png"
+                                  alt="Heart Coin"
+                                  className="w-3 h-3 object-contain"
+                                  style={{
+                                    filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 2px #FC54AF)'
+                                  }}
+                                />
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {/* CARDS Tab Content */}
+                  {activeUseTab === 'CARDS' && (
+                    <div>
+                      <div 
+                        className="text-center text-white/80 text-sm mt-8"
+                        style={{ 
+                          color: '#FFFFFF', 
+                          textShadow: '0 0 4px rgba(255,255,255,0.6)' 
+                        }}
+                      >
+                        Digital cards coming soon...
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : selectedItem && (
                 <>
                   <div className="flex items-center mb-4">
                     <button
                       onClick={handleBackToStore}
-                      className="mr-3 text-pink-300 hover:text-pink-200 transition-colors"
+                      className="mr-3 text-white hover:text-gray-200 transition-colors"
                     >
                       ← Back
                     </button>
-                    <div className="font-semibold text-pink-300">{selectedItem.title}</div>
+                    <div className="font-semibold text-white">{selectedItem.title}</div>
                   </div>
                   
                   <div className="text-center mb-4">
@@ -1124,7 +1096,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         className="object-contain rounded-lg"
                       />
                     </div>
-                    <p className="text-sm text-pink-200 mb-4">{selectedItem.description}</p>
+                    <p className="text-sm text-white mb-4">{selectedItem.description}</p>
                     
                     <div className="flex items-center justify-center gap-2 mb-4">
                       <span className="text-lg font-bold text-[#F2EF1D]">{selectedItem.priceHeartCoins}</span>
@@ -1138,7 +1110,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       />
                     </div>
                     
-                    <div className="text-xs text-pink-200/80 mb-4">
+                    <div className="text-xs text-white/80 mb-4">
                       Your balance: {profile?.heartcoin_balance || 0} Heart Coins
                     </div>
                     
@@ -1174,8 +1146,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               <div 
                 className="text-base text-center mb-4"
                 style={{ 
-                  color: '#FFB6C1', 
-                  textShadow: '0 0 4px rgba(255,182,193,0.8)', 
+                  color: '#FFFFFF', 
+                  textShadow: '0 0 4px rgba(255,255,255,0.8)', 
                   fontSize: '14px',
                   lineHeight: 1.3
                 }}
@@ -1194,20 +1166,20 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   }}
                   className="px-4 py-2 text-sm rounded border transition-all duration-200"
                   style={{
-                    background: 'linear-gradient(135deg, rgba(252,84,175,0.20) 0%, rgba(255,105,180,0.30) 100%)',
-                    color: '#FF69B4',
-                    borderColor: 'rgba(255,105,180,0.60)',
-                    textShadow: '0 0 6px rgba(255,105,180,0.85)',
-                    boxShadow: '0 0 10px rgba(255,105,180,0.45), 0 0 20px rgba(255,105,180,0.25)',
+                    background: 'linear-gradient(135deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.30) 100%)',
+                    color: '#FFFFFF',
+                    borderColor: 'rgba(255,255,255,0.60)',
+                    textShadow: '0 0 6px rgba(255,255,255,0.85)',
+                    boxShadow: '0 0 10px rgba(255,255,255,0.45), 0 0 20px rgba(255,255,255,0.25)',
                     fontWeight: 700
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(252,84,175,0.30) 0%, rgba(255,105,180,0.40) 100%)';
-                    e.currentTarget.style.boxShadow = '0 0 15px rgba(255,105,180,0.65), 0 0 25px rgba(255,105,180,0.35)';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.40) 100%)';
+                    e.currentTarget.style.boxShadow = '0 0 15px rgba(255,255,255,0.65), 0 0 25px rgba(255,255,255,0.35)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(252,84,175,0.20) 0%, rgba(255,105,180,0.30) 100%)';
-                    e.currentTarget.style.boxShadow = '0 0 10px rgba(255,105,180,0.45), 0 0 20px rgba(255,105,180,0.25)';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.30) 100%)';
+                    e.currentTarget.style.boxShadow = '0 0 10px rgba(255,255,255,0.45), 0 0 20px rgba(255,255,255,0.25)';
                   }}
                 >
                   SEND HEART COINS

@@ -1,24 +1,32 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { useProfile } from "@/contexts/ProfileContext";
 
 interface GlowingHamburgerMenuProps {
   onItemClick?: (label: string) => void;
 }
 
-const menuItems = [
-  { label: "THE CODE", href: undefined },
-  { label: "JOURNEY", href: undefined },
-  { label: "JOURNAL", href: undefined },
-  { label: "BINDER", href: undefined },
-  { label: "BADGES", href: undefined },
-  { label: "CHXNDLER", href: undefined },
-  { label: "STORE", href: undefined },
-];
+const getJourneyTitle = (isLoggedIn: boolean) => {
+  return isLoggedIn ? "MY JOURNEY" : "JOURNEY";
+};
 
 export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { profile, user } = useProfile();
+  
+  const journeyTitle = getJourneyTitle(!!user);
+  
+  const menuItems = [
+    { label: "ABOUT", href: undefined },
+    { label: journeyTitle, href: undefined },
+    { label: "JOURNAL", href: undefined },
+    { label: "BINDER", href: undefined },
+    { label: "BADGES", href: undefined },
+    { label: "CHXNDLER", href: undefined },
+    { label: "STORE", href: undefined },
+  ];
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
