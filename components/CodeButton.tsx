@@ -12,10 +12,16 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   onBeamColorChange?: (color: string) => void;
   // UI state prop from parent; do not forward to DOM
   isActive?: boolean;
+  // External control for the code popout
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
-export default function CodeButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onBeamColorChange, isActive = false, ...restProps }: Props) {
-  const [open, setOpen] = useState(false);
+export default function CodeButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onBeamColorChange, isActive = false, open: externalOpen, onOpenChange, ...restProps }: Props) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  
+  // Use external open state if provided, otherwise use internal state
+  const open = externalOpen !== undefined ? externalOpen : internalOpen;
 
   const handleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
     try { onClick?.(e); } catch {}
@@ -26,7 +32,13 @@ export default function CodeButton({ asChild = false, children, onClick, onHover
       try { onBeamColorChange?.('cyan'); } catch {}
       // Close blue display first
       try { onCloseBlueDisplay?.(); } catch {}
-      setOpen(true);
+      
+      // Use external callback if provided, otherwise use internal state
+      if (onOpenChange) {
+        onOpenChange(true);
+      } else {
+        setInternalOpen(true);
+      }
     }
   };
 
@@ -130,7 +142,12 @@ export default function CodeButton({ asChild = false, children, onClick, onHover
           <button
             onClick={() => {
               try { sfx.play('close', 0.8); } catch {}
-              setOpen(false);
+              // Use external callback if provided, otherwise use internal state
+              if (onOpenChange) {
+                onOpenChange(false);
+              } else {
+                setInternalOpen(false);
+              }
               // Show blue display when closing code popup
               try { onOpenBlueDisplay?.(); } catch {}
             }}

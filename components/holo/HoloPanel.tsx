@@ -32,7 +32,7 @@ export default function HoloPanel() {
 
   return (
     <section
-      className="relative mx-auto mt-6 w-[min(1150px,95vw)] rounded-2xl holo-panel"
+      className="relative mx-auto mt-2 w-[min(1150px,95vw)] rounded-2xl holo-panel"
       aria-label="Holographic cockpit dashboard"
     >
       <div className="scanlines pointer-events-none" aria-hidden />

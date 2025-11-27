@@ -45,10 +45,18 @@ export default function AuthCallbackPage() {
   };
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
     async function handleAuthCallback() {
       try {
         console.log('🚨 AUTH CALLBACK PAGE HIT! 🚨');
         console.log('🚨 CURRENT URL:', window.location.href);
+
+        // Set a safety timeout to prevent infinite loading
+        timeoutId = setTimeout(() => {
+          console.error('⏰ AUTH CALLBACK TIMEOUT - redirecting to home with error');
+          router.replace('/?error=timeout');
+        }, 10000); // 10 second timeout
 
         // First, try to let Supabase auto-detect the session from URL
         console.log('🔄 Attempting to get current session...');
@@ -65,6 +73,7 @@ export default function AuthCallbackPage() {
         // If we have a session, use it
         if (sessionData?.session?.user) {
           console.log('✅ Found existing session, proceeding with auth');
+          clearTimeout(timeoutId);
           await handleSuccessfulAuth(sessionData.session);
           return;
         }
@@ -94,6 +103,7 @@ export default function AuthCallbackPage() {
             console.error('❌ Error exchanging code for session:', exchangeError);
           } else if (exchangeData?.session?.user) {
             console.log('✅ Successfully exchanged code for session');
+            clearTimeout(timeoutId);
             await handleSuccessfulAuth(exchangeData.session);
             return;
           }
@@ -110,6 +120,7 @@ export default function AuthCallbackPage() {
             console.error('❌ Error setting session:', setSessionError);
           } else if (setSessionData?.session?.user) {
             console.log('✅ Successfully set session from URL tokens');
+            clearTimeout(timeoutId);
             await handleSuccessfulAuth(setSessionData.session);
             return;
           }
@@ -142,6 +153,7 @@ export default function AuthCallbackPage() {
             // Continue with normal success flow based on auth type
             const authType = hashParams.get("type");
             // Fallback: if we had a session despite an error, conservatively send to completeProfile
+            clearTimeout(timeoutId);
             router.push('/?completeProfile=1');
             return;
           }
@@ -152,12 +164,14 @@ export default function AuthCallbackPage() {
             errorDescription && errorDescription.includes('Email link is invalid or has expired')
           ) {
             console.warn('⚠️ Magic link is invalid/expired. Guiding user to sign in again.');
+            clearTimeout(timeoutId);
             router.replace('/?magic_link_expired=1');
             return;
           }
           
           // No valid session exists, treat as genuine error
           console.error('❌ Auth error detected:', errorMsg, errorDescription);
+          clearTimeout(timeoutId);
           router.replace(`/?error=auth_failed&details=${encodeURIComponent(errorMsg)}`);
           return;
         }
@@ -167,6 +181,7 @@ export default function AuthCallbackPage() {
         const { data: finalCheck } = await supabaseClient.auth.getSession();
         if (finalCheck?.session?.user) {
           console.log('✅ Session appeared after brief wait');
+          clearTimeout(timeoutId);
           await handleSuccessfulAuth(finalCheck.session);
           return;
         }
@@ -180,14 +195,23 @@ export default function AuthCallbackPage() {
           sessionError: sessionError?.message
         });
         
+        clearTimeout(timeoutId);
         router.replace('/?error=no_session');
       } catch (error) {
         console.error('❌ Unexpected error during auth callback:', error);
+        clearTimeout(timeoutId);
         router.replace('/?error=unexpected');
       }
     }
 
     handleAuthCallback();
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [router]);
 
   // Show a simple loading screen while processing

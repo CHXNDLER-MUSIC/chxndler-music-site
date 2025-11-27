@@ -324,7 +324,7 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
                   width: heartSignalSent ? 'auto' : '4rem',
                   height: heartSignalSent ? 'auto' : '4rem',
                   padding: heartSignalSent ? '0.75rem 1.5rem' : '0',
-                  minWidth: heartSignalSent ? '200px' : '4rem',
+                  minWidth: heartSignalSent ? '150px' : '4rem',
                 }}
               >
                 {heartSignalSent ? (
@@ -527,8 +527,8 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
                 disabled={!phoneNumber.trim()}
                 style={{
                   width: 'auto',
-                  minWidth: '180px',
-                  maxWidth: '200px',
+                  minWidth: '140px',
+                  maxWidth: '160px',
                   padding: '12px 24px',
                   background: 'transparent',
                   border: !phoneNumber.trim() 

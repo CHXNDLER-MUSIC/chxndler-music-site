@@ -119,6 +119,19 @@ export default function WaveformVisualizer({
           </filter>
         </defs>
         
+        {/* Cyan container border for track bar */}
+        <rect 
+          x="1" 
+          y={centerY - 7} 
+          width="98" 
+          height="14" 
+          fill="none" 
+          rx="7" 
+          ry="7"
+          stroke="#00FFFF"
+          strokeWidth="1.5"
+        />
+        
         {/* Full white bar with bright glow */}
         <line 
           x1="5" 

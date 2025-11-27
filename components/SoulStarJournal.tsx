@@ -180,7 +180,7 @@ export default function SoulStarJournal({ isOpen, onClose, prompt, openWelcomeHo
     return (
       <div 
         className="fixed inset-0 z-[2147483647] flex items-center justify-center"
-        style={{ paddingTop: '40px' }}
+        style={{ marginTop: '-80px' }}
       >
         <div 
           className="absolute inset-0 bg-black/70 backdrop-blur-sm"
@@ -199,7 +199,7 @@ export default function SoulStarJournal({ isOpen, onClose, prompt, openWelcomeHo
   return (
     <div 
       className="fixed inset-0 z-[2147483647] flex items-center justify-center"
-      style={{ paddingTop: '40px' }}
+      style={{ marginTop: '-80px' }}
     >
       {/* Background blur */}
       <div 

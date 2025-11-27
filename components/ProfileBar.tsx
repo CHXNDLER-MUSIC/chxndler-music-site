@@ -7,11 +7,8 @@ import { ElementIcon } from '@/lib/elementIcons';
 import { ActivePanel } from '@/types/ActivePanel';
 import BinderModal from '@/components/BinderModal';
 import JourneyButton from '@/components/JourneyButton';
-import BadgesButton from '@/components/BadgesButton';
-import BinderButton from '@/components/BinderButton';
 import HeartCoinButton from '@/components/HeartCoinButton';
 import HoloStarsButton from '@/components/HoloStarsButton';
-import CodeButton from '@/components/CodeButton';
 import ElementalButton from '@/components/ElementalButton';
 import { sfx } from '@/lib/sfx';
 import { track as trackAnalytics } from '@/lib/analytics';
@@ -22,6 +19,7 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { useUIStore } from '@/store/useUIStore';
 import JoinUsPopup from '@/components/JoinUsPopup';
 import WelcomeHomeModal from '@/components/WelcomeHomeModal';
+import GlowingHamburgerMenu from '@/components/GlowingHamburgerMenu';
 
 interface Profile {
   id: string;
@@ -172,6 +170,12 @@ export default function ProfileBar({
   
   // Preselected card state for opening binder with specific card
   const [preselectedCard, setPreselectedCard] = useState<string | null>(null);
+  
+  // Code popout state
+  const [isCodePopoutOpen, setIsCodePopoutOpen] = useState(false);
+  
+  // Chxndler popout state
+  const [isChxndlerPopoutOpen, setIsChxndlerPopoutOpen] = useState(false);
 
   // Panel toggle function
   const togglePanel = (panelKey: ActivePanel) => {
@@ -394,8 +398,44 @@ export default function ProfileBar({
       className="fixed top-0 left-0 right-0 z-[200] h-16 bg-black/80 backdrop-blur-md border-b border-white/10 transition-opacity duration-500 ease-in-out"
     >
       <div className="relative h-full">
-        {/* Elemental Button - Top Left */}
+        {/* Hamburger Menu - Far Top Left */}
         <div className="absolute top-2 left-1 z-10">
+          <GlowingHamburgerMenu
+            onItemClick={(label) => {
+              console.log(`Menu item clicked: ${label}`);
+              
+              switch (label) {
+                case "CODE":
+                  setIsCodePopoutOpen(true);
+                  onCodeClick?.();
+                  break;
+                case "JOURNEY":
+                  try { onCloseBlueDisplay?.(); } catch {}
+                  togglePanel('journey');
+                  break;
+                case "JOURNAL":
+                  onOpenJournal?.();
+                  break;
+                case "BINDER":
+                  try { onCloseBlueDisplay?.(); } catch {}
+                  togglePanel('binder');
+                  onDigitalBinderClick?.();
+                  break;
+                case "BADGES":
+                  try { onCloseBlueDisplay?.(); } catch {}
+                  togglePanel('badges');
+                  break;
+                case "CHXNDLER":
+                  try { onCloseBlueDisplay?.(); } catch {}
+                  setIsChxndlerPopoutOpen(true);
+                  break;
+              }
+            }}
+          />
+        </div>
+
+        {/* Elemental Button - Top Left (moved right to make room for hamburger) */}
+        <div className="absolute top-2 left-14 z-10">
           <ElementalButton 
             onHoverSound={() => sfx.play('hover', 0.8)}
             onCloseBlueDisplay={onCloseBlueDisplay}
@@ -410,7 +450,7 @@ export default function ProfileBar({
 
 
         {/* Main Flex Layout */}
-        <div className="flex items-center justify-between h-full pl-12 sm:pl-16 pr-2 min-w-0">
+        <div className="flex items-center justify-between h-full pl-24 sm:pl-28 pr-2 min-w-0">
           {/* Left Side */}
           <div className="flex items-center min-w-0 overflow-hidden flex-1">
             {/* Username - Clickable */}
@@ -478,47 +518,10 @@ export default function ProfileBar({
             </div>
           </div>
 
-          {/* Center - Code Button */}
-          <div className="flex-shrink-0 -mr-3">
-            <CodeButton 
-              onHoverSound={() => sfx.play('hover', 0.8)}
-              onCloseBlueDisplay={onCloseBlueDisplay}
-              onOpenBlueDisplay={onOpenBlueDisplay}
-              onBeamColorChange={onBeamColorChange}
-              isActive={activePanel === 'code'}
-              onClick={() => {
-                togglePanel('code');
-                // Call the onCodeClick callback if provided
-                onCodeClick?.();
-              }}
-            />
-          </div>
 
           {/* Right Side */}
           <div className="flex items-center flex-shrink-0 mr-0">
-            {/* Badges Button */}
-            <div className="">
-              <BadgesButton 
-                onHoverSound={() => sfx.play('hover', 0.8)}
-                onCloseBlueDisplay={onCloseBlueDisplay}
-                onOpenBlueDisplay={onOpenBlueDisplay}
-                onBeamColorChange={onBeamColorChange}
-                isActive={activePanel === 'badges'}
-                onClick={() => togglePanel('badges')}
-              />
-            </div>
 
-            {/* Digital Binder Button */}
-            <div className="mr-2 -ml-6">
-              <BinderButton 
-                onHoverSound={() => sfx.play('hover', 0.8)}
-                onCloseBlueDisplay={onCloseBlueDisplay}
-                onOpenBlueDisplay={onOpenBlueDisplay}
-                onBeamColorChange={onBeamColorChange}
-                isActive={activePanel === 'binder'}
-                onClick={() => togglePanel('binder')}
-              />
-            </div>
 
 
             {/* Heart Coin Button with Count */}
@@ -577,6 +580,265 @@ export default function ProfileBar({
           preselectedCard={preselectedCard}
         />
       )}
+
+      {/* Badges Modal */}
+      {activePanel === 'badges' && (
+        <BadgesModal 
+          open={true} 
+          onClose={() => {
+            setActivePanel(null);
+            try { onOpenBlueDisplay?.(); } catch {}
+          }} 
+        />
+      )}
+
+      {/* Code Popout - HEARTVERSE CODE */}
+      {isCodePopoutOpen && (
+        <div 
+          className="fixed inset-0 z-[2147483647] flex items-center justify-center"
+          style={{
+            paddingTop: '300px'
+          }}
+        >
+          <div
+            className="code-hologram-container"
+            style={{
+              width: 'min(92vw, 700px)',
+              height: '35vh',
+              padding: '10px 14px 14px 14px',
+              borderRadius: 18,
+              background: 'rgba(0,0,0,0.6)',
+              border: '1px solid rgba(0,255,255,0.55)',
+              boxShadow: '0 -8px 25px rgba(0,255,255,0.4), 0 -4px 15px rgba(0,255,255,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(0,255,255,0.45)',
+              backdropFilter: 'blur(12px) saturate(140%)',
+              position: 'relative'
+            }}
+        >
+          {/* Soft bottom glow pseudo element */}
+          <div 
+            className="absolute"
+            style={{
+              bottom: '-15px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '120%',
+              height: '30px',
+              background: 'radial-gradient(ellipse 60% 100% at 50% 0%, rgba(33,150,243,0.6) 0%, rgba(33,150,243,0.3) 40%, transparent 80%)',
+              filter: 'blur(30px)',
+              pointerEvents: 'none',
+              zIndex: -1
+            }}
+          />
+          
+          {/* Top bloom glow - simulates hologram light rising through panel */}
+          <div 
+            className="absolute"
+            style={{
+              top: '-10px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '80%',
+              height: '20px',
+              background: 'radial-gradient(ellipse 70% 100% at 50% 100%, rgba(33,150,243,0.4) 0%, rgba(33,150,243,0.2) 50%, transparent 100%)',
+              filter: 'blur(25px)',
+              pointerEvents: 'none',
+              zIndex: -1
+            }}
+          />
+          {/* Close button */}
+          <button
+            onClick={() => {
+              try { sfx.play('close', 0.8); } catch {}
+              setIsCodePopoutOpen(false);
+              // Show blue display when closing code popup
+              try { onOpenBlueDisplay?.(); } catch {}
+            }}
+            className="absolute top-2 right-4 text-cyan-400 hover:text-cyan-200 cursor-pointer w-8 h-8 rounded-full border border-cyan-400/80 flex items-center justify-center"
+            style={{ 
+              fontSize: '16px',
+              boxShadow: '0 0 15px rgba(0,255,255,0.8), 0 0 25px rgba(0,255,255,0.5), 0 0 35px rgba(0,255,255,0.3)',
+              textShadow: '0 0 8px rgba(0,255,255,0.8), 0 0 15px rgba(0,255,255,0.6)',
+              background: 'rgba(0,255,255,0.1)',
+              backdropFilter: 'blur(2px)'
+            }}
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+              <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+              <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
+          </button>
+          
+          {/* Header */}
+          <div 
+            className="text-center mb-3"
+            style={{ 
+              color: '#FFFFFF !important', 
+              textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7), 0 0 20px rgba(255,255,255,0.5)', 
+              fontSize: '16px',
+              fontWeight: 'bold'
+            }}
+          >
+            HEARTVERSE CODE
+          </div>
+          
+          {/* Thin blue neon line */}
+          <div 
+            className="w-full h-px mb-4"
+            style={{
+              background: 'linear-gradient(90deg, transparent, rgba(0,255,255,0.8) 20%, rgba(0,255,255,1) 50%, rgba(0,255,255,0.8) 80%, transparent)',
+              boxShadow: '0 0 4px rgba(0,255,255,0.6)'
+            }}
+          />
+          <div 
+            className="text-center mb-4"
+            style={{ 
+              fontSize: 18, 
+              color: '#FFFFFF !important', 
+              textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7), 0 0 20px rgba(255,255,255,0.5)',
+              fontWeight: 'bold'
+            }}
+          >
+            We Believe
+          </div>
+          
+          <div 
+            className="text-left space-y-3"
+            style={{ 
+              fontSize: 14, 
+              color: '#FFFFFF !important', 
+              textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
+            }}
+          >
+            <div className="flex items-start">
+              <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>•</span>
+              <span>We believe being your <span style={{ color: '#0099FF !important', textShadow: '0 0 5px #0099FF, 0 0 10px #0099FF, 0 0 15px #0099FF, 0 0 20px #0099FF', fontWeight: 'inherit !important', WebkitTextFillColor: '#0099FF !important', textFillColor: '#0099FF !important', filter: 'drop-shadow(0 0 3px #0099FF)' }}>truest self</span> is the beginning of freedom.</span>
+            </div>
+            <div className="flex items-start">
+              <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>•</span>
+              <span>We believe <span style={{ color: '#FFD700 !important', textShadow: '0 0 5px #FFD700, 0 0 10px #FFD700, 0 0 15px #FFD700, 0 0 20px #FFD700', fontWeight: 'inherit !important', WebkitTextFillColor: '#FFD700 !important', textFillColor: '#FFD700 !important', filter: 'drop-shadow(0 0 3px #FFD700)' }}>passion</span> is sacred and should be pursued loudly.</span>
+            </div>
+            <div className="flex items-start">
+              <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>•</span>
+              <span>We believe <span style={{ color: '#FF1493 !important', textShadow: '0 0 5px #FF1493, 0 0 10px #FF1493, 0 0 15px #FF1493, 0 0 20px #FF1493', fontWeight: 'inherit !important', WebkitTextFillColor: '#FF1493 !important', textFillColor: '#FF1493 !important', filter: 'drop-shadow(0 0 3px #FF1493)' }}>love</span> is the force that connects every soul.</span>
+            </div>
+          </div>
+          </div>
+        </div>
+      )}
+
+      {/* Chxndler Popout */}
+      {isChxndlerPopoutOpen && (
+        <div 
+          className="fixed inset-0 z-[2147483647] flex items-center justify-center"
+          style={{
+            paddingTop: '300px'
+          }}
+        >
+          <div
+            className="chxndler-hologram-container"
+            style={{
+              width: 'min(92vw, 700px)',
+              height: '35vh',
+              padding: '10px 14px 14px 14px',
+              borderRadius: 18,
+              background: 'rgba(0,0,0,0.6)',
+              border: '1px solid rgba(255,105,180,0.55)',
+              boxShadow: '0 -8px 25px rgba(255,105,180,0.4), 0 -4px 15px rgba(255,105,180,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(255,105,180,0.45)',
+              backdropFilter: 'blur(12px) saturate(140%)',
+              position: 'relative'
+            }}
+        >
+          {/* Soft bottom glow pseudo element */}
+          <div 
+            className="absolute"
+            style={{
+              bottom: '-15px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '120%',
+              height: '30px',
+              background: 'radial-gradient(ellipse 60% 100% at 50% 0%, rgba(255,105,180,0.6) 0%, rgba(255,105,180,0.3) 40%, transparent 80%)',
+              filter: 'blur(30px)',
+              pointerEvents: 'none',
+              zIndex: -1
+            }}
+          />
+          
+          {/* Top bloom glow - simulates hologram light rising through panel */}
+          <div 
+            className="absolute"
+            style={{
+              top: '-10px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '80%',
+              height: '20px',
+              background: 'radial-gradient(ellipse 70% 100% at 50% 100%, rgba(255,105,180,0.4) 0%, rgba(255,105,180,0.2) 50%, transparent 100%)',
+              filter: 'blur(25px)',
+              pointerEvents: 'none',
+              zIndex: -1
+            }}
+          />
+          {/* Close button */}
+          <button
+            onClick={() => {
+              try { sfx.play('close', 0.8); } catch {}
+              setIsChxndlerPopoutOpen(false);
+              // Show blue display when closing chxndler popup
+              try { onOpenBlueDisplay?.(); } catch {}
+            }}
+            className="absolute top-2 right-4 text-pink-400 hover:text-pink-200 cursor-pointer w-8 h-8 rounded-full border border-pink-400/80 flex items-center justify-center"
+            style={{ 
+              fontSize: '16px',
+              boxShadow: '0 0 15px rgba(255,105,180,0.8), 0 0 25px rgba(255,105,180,0.5), 0 0 35px rgba(255,105,180,0.3)',
+              textShadow: '0 0 8px rgba(255,105,180,0.8), 0 0 15px rgba(255,105,180,0.6)',
+              background: 'rgba(255,105,180,0.1)',
+              backdropFilter: 'blur(2px)'
+            }}
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+              <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+              <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
+          </button>
+          
+          {/* Header */}
+          <div 
+            className="text-center mb-3"
+            style={{ 
+              color: '#FF69B4 !important', 
+              textShadow: '0 0 8px rgba(255,105,180,0.9), 0 0 15px rgba(255,105,180,0.7), 0 0 20px rgba(255,105,180,0.5)', 
+              fontSize: '16px',
+              fontWeight: 'bold'
+            }}
+          >
+            CHXNDLER
+          </div>
+          
+          {/* Thin pink neon line */}
+          <div 
+            className="w-full h-px mb-4"
+            style={{
+              background: 'linear-gradient(90deg, transparent, rgba(255,105,180,0.8) 20%, rgba(255,105,180,1) 50%, rgba(255,105,180,0.8) 80%, transparent)',
+              boxShadow: '0 0 4px rgba(255,105,180,0.6)'
+            }}
+          />
+          
+          <div 
+            className="text-center px-4"
+            style={{ 
+              fontSize: 14, 
+              color: '#FFFFFF !important', 
+              textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
+              lineHeight: 1.6
+            }}
+          >
+            CHXNDLER is an alien from the Heartverse, exploring earth in search of love. They create dreamy electronic pop to understand what it means to be human. Their music becomes a signal drifting through the cosmos, guiding wanderers, dreamers, and lovers toward a place to call home.
+          </div>
+          </div>
+        </div>
+      )}
+
 
 
 

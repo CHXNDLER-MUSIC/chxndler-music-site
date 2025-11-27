@@ -267,21 +267,6 @@ export default function WhatShouldWeCallYouModal() {
           >
             {loading ? "SAVING..." : "CONFIRM"}
           </button>
-
-          {/* Continue to element selection */}
-          <button
-            type="button"
-            onClick={handleEnterHeartverse}
-            className="w-full inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-medium transition"
-            style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.25)',
-              color: '#FFFFFF',
-              marginTop: '4px'
-            }}
-          >
-            ENTER THE HEARTVERSE
-          </button>
         </form>
         </div>
       </div>

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter, useSearchParams } from "next/navigation";
 import SkyboxVideo from "@/components/SkyboxVideo";
 import LumaKeyVideo from "@/components/LumaKeyVideo";
 import AmbientSpace from "@/components/AmbientSpace";
@@ -38,6 +39,55 @@ import { useUIState } from "@/lib/use-ui-state";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // Authentication error handling
+  const [authError, setAuthError] = useState(null);
+  
+  useEffect(() => {
+    // Check for authentication errors in URL parameters
+    const error = searchParams.get('error');
+    const magicLinkExpired = searchParams.get('magic_link_expired');
+    
+    if (error) {
+      let errorMessage = '';
+      switch (error) {
+        case 'timeout':
+          errorMessage = 'Authentication timed out. Please try signing in again.';
+          break;
+        case 'no_session':
+          errorMessage = 'Authentication failed. Please try signing in again.';
+          break;
+        case 'auth_failed':
+          const details = searchParams.get('details');
+          errorMessage = `Authentication failed${details ? `: ${details}` : '. Please try again.'}`;
+          break;
+        case 'unexpected':
+          errorMessage = 'An unexpected error occurred during sign in. Please try again.';
+          break;
+        default:
+          errorMessage = 'Authentication error. Please try signing in again.';
+      }
+      setAuthError(errorMessage);
+      
+      // Clean up URL parameters
+      const newParams = new URLSearchParams(searchParams.toString());
+      newParams.delete('error');
+      newParams.delete('details');
+      router.replace(`/?${newParams.toString()}`);
+    }
+    
+    if (magicLinkExpired === '1') {
+      setAuthError('Your magic link has expired or is invalid. Please request a new one.');
+      
+      // Clean up URL parameters
+      const newParams = new URLSearchParams(searchParams.toString());
+      newParams.delete('magic_link_expired');
+      router.replace(`/?${newParams.toString()}`);
+    }
+  }, [searchParams, router]);
+
   // UI store for profile refresh trigger and name modal
   const { profileRefreshTrigger, openNamePrompt } = useUIStore();
   
@@ -2191,6 +2241,29 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         onClose={handleWelcomeHomeClose} 
       />
 
+      {/* Authentication Error Notification */}
+      <AnimatePresence>
+        {authError && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 max-w-md mx-auto"
+          >
+            <div className="bg-red-900/90 border border-red-500/50 rounded-lg p-4 text-center backdrop-blur-sm">
+              <div className="text-red-200 text-sm font-medium mb-3">
+                {authError}
+              </div>
+              <button
+                onClick={() => setAuthError(null)}
+                className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded text-red-200 text-xs transition-colors"
+              >
+                Dismiss
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </main>
   );

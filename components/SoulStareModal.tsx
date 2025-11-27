@@ -76,8 +76,14 @@ export default function SoulStareModal({ isOpen, onClose, onComplete, onOpenBlue
 
   return (
     <div 
-      className="fixed inset-0 z-[2147483647] flex items-center justify-center"
-      style={{ paddingTop: '40px' }}
+      className="fixed z-[2147483647] flex items-start justify-center"
+      style={{ 
+        top: '20px',
+        left: '0',
+        right: '0',
+        bottom: '0',
+        paddingTop: '20px'
+      }}
     >
       {/* Background blur */}
       <div 

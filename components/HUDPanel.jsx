@@ -2779,69 +2779,6 @@ export default function HUDPanel({
                         }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                       />
-                      {/* STARS button */}
-                      <HeartverseButton
-                        data-tour-id="stars"
-                        ref={starsBtnRef}
-                        variant="stars"
-                        label=""
-                        icon={
-                          <img 
-                            src="/elements/stars.png" 
-                            alt="Journal" 
-                            style={{ 
-                              width: '32px', 
-                              height: '32px', 
-                              filter: 'brightness(0) saturate(100%) invert(89%) sepia(58%) saturate(2618%) hue-rotate(356deg) brightness(120%) contrast(110%) drop-shadow(0 0 6px rgba(255,255,0,0.8)) drop-shadow(0 0 12px rgba(255,255,0,0.6)) drop-shadow(0 0 18px rgba(255,255,0,0.4))',
-                              border: 'none'
-                            }} 
-                          />
-                        }
-                        style={{ position: 'absolute', left: '200px', top: '38px', paddingLeft: '12px', paddingRight: '12px', width: '80px', height: '32px', minWidth: '80px', maxWidth: '80px', border: '1px solid rgba(255, 255, 0, 0.6)', outline: 'none', boxShadow: '0 0 8px rgba(255, 255, 0, 0.3), 0 0 16px rgba(255, 255, 0, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible', borderRadius: '8px', filter: 'brightness(1.2) saturate(1.4)', transition: 'all 0.2s ease' }}
-                        title="Stars"
-                        aria-haspopup="dialog"
-                        aria-expanded={showSoulSkyPopover}
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          try { sfx.play('click', 0.45); } catch {}; 
-                          try { trackAnalytics('stars_clicked', { location: 'hud_controls' }); } catch {}; 
-                          // Change beam color to yellow when Stars button is clicked
-                          try { onBeamColorChange?.('yellow'); } catch {}
-                          if (showSoulSkyPopover) { 
-                            try { sfx.play('close', 0.4); } catch {}; 
-                            setShowSoulSkyPopover(false); 
-                            return; 
-                          }
-                          openSoulSkyPopover(); 
-                        }}
-                        onMouseEnter={(e) => { 
-                          try { sfx.play('hover', 0.35); } catch {};
-                          // Enhanced glow for button
-                          try { 
-                            e.currentTarget.style.boxShadow = '0 0 16px rgba(255, 255, 0, 0.6), 0 0 32px rgba(255, 255, 0, 0.4), 0 0 48px rgba(255, 255, 0, 0.3)';
-                            e.currentTarget.style.borderColor = 'rgba(255, 255, 0, 0.9)';
-                            e.currentTarget.style.transform = 'scale(1.05)';
-                            // Enhanced glow for stars image
-                            const img = e.currentTarget.querySelector('img');
-                            if (img) {
-                              img.style.filter = 'brightness(0) saturate(100%) invert(89%) sepia(58%) saturate(2618%) hue-rotate(356deg) brightness(140%) contrast(120%) drop-shadow(0 0 8px rgba(255,255,0,0.8)) drop-shadow(0 0 16px rgba(255,255,0,0.6))';
-                            }
-                          } catch {} 
-                        }}
-                        onMouseLeave={(e) => { 
-                          // Reset to normal glow
-                          try { 
-                            e.currentTarget.style.boxShadow = '0 0 8px rgba(255, 255, 0, 0.3), 0 0 16px rgba(255, 255, 0, 0.2)';
-                            e.currentTarget.style.borderColor = 'rgba(255, 255, 0, 0.6)';
-                            e.currentTarget.style.transform = 'scale(1)';
-                            // Reset stars image glow
-                            const img = e.currentTarget.querySelector('img');
-                            if (img) {
-                              img.style.filter = 'brightness(0) saturate(100%) invert(89%) sepia(58%) saturate(2618%) hue-rotate(356deg) brightness(104%) contrast(97%)';
-                            }
-                          } catch {} 
-                        }}
-                      />
                       {/* Store (gem) button placed to the right of Lyrics */}
                       <button
                         type="button"
