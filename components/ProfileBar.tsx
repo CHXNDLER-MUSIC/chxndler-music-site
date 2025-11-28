@@ -245,6 +245,7 @@ export default function ProfileBar({
   
   // Chxndler popout state
   const [isChxndlerPopoutOpen, setIsChxndlerPopoutOpen] = useState(false);
+  const [chxndlerActiveTab, setChxndlerActiveTab] = useState<"CHXNDLER" | "WE BELIEVE">("CHXNDLER");
   const [isJourneyModalOpen, setIsJourneyModalOpen] = useState(false);
   const [flippedTier, setFlippedTier] = useState<string | null>(null);
 
@@ -907,6 +908,40 @@ export default function ProfileBar({
             CHXNDLER
           </div>
           
+          {/* Tabs */}
+          <div className="flex justify-center mb-4">
+            <div className="flex bg-black/30 rounded-lg p-1">
+              <button
+                onClick={() => setChxndlerActiveTab("CHXNDLER")}
+                className={`px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 ${
+                  chxndlerActiveTab === "CHXNDLER"
+                    ? "bg-pink-500/20 text-pink-300 border border-pink-400/50"
+                    : "text-white/70 hover:text-white"
+                }`}
+                style={{
+                  textShadow: chxndlerActiveTab === "CHXNDLER" ? '0 0 8px rgba(255,105,180,0.8)' : 'none',
+                  boxShadow: chxndlerActiveTab === "CHXNDLER" ? '0 0 15px rgba(255,105,180,0.3)' : 'none'
+                }}
+              >
+                CHXNDLER
+              </button>
+              <button
+                onClick={() => setChxndlerActiveTab("WE BELIEVE")}
+                className={`px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 ${
+                  chxndlerActiveTab === "WE BELIEVE"
+                    ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/50"
+                    : "text-white/70 hover:text-white"
+                }`}
+                style={{
+                  textShadow: chxndlerActiveTab === "WE BELIEVE" ? '0 0 8px rgba(0,255,255,0.8)' : 'none',
+                  boxShadow: chxndlerActiveTab === "WE BELIEVE" ? '0 0 15px rgba(0,255,255,0.3)' : 'none'
+                }}
+              >
+                WE BELIEVE
+              </button>
+            </div>
+          </div>
+          
           {/* Thin pink neon line */}
           <div 
             className="w-full h-px mb-4"
@@ -916,17 +951,47 @@ export default function ProfileBar({
             }}
           />
           
-          <div 
-            className="text-center px-4"
-            style={{ 
-              fontSize: 14, 
-              color: '#FFFFFF !important', 
-              textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
-              lineHeight: 1.6
-            }}
-          >
-            CHXNDLER is an alien from the Heartverse, exploring earth in search of love. They create dreamy electronic pop to understand what it means to be human. Their music becomes a signal drifting through the cosmos, guiding wanderers, dreamers, and lovers toward a place to call home.
-          </div>
+          {/* Tab Content */}
+          {chxndlerActiveTab === "CHXNDLER" && (
+            <div 
+              className="text-center px-4"
+              style={{ 
+                fontSize: 14, 
+                color: '#FFFFFF !important', 
+                textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
+                lineHeight: 1.6
+              }}
+            >
+              CHXNDLER is an alien from the Heartverse, exploring earth in search of love. They create dreamy electronic pop to understand what it means to be human. Their music becomes a signal drifting through the cosmos, guiding wanderers, dreamers, and lovers toward a place to call home.
+            </div>
+          )}
+          
+          {chxndlerActiveTab === "WE BELIEVE" && (
+            <>
+              {/* We Believe Content */}
+              <div 
+                className="text-left space-y-3 px-4"
+                style={{ 
+                  fontSize: 14, 
+                  color: '#FFFFFF !important', 
+                  textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
+                }}
+              >
+                <div className="flex items-start">
+                  <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>•</span>
+                  <span>We believe being your <span style={{ color: '#0099FF !important', textShadow: '0 0 5px #0099FF, 0 0 10px #0099FF, 0 0 15px #0099FF, 0 0 20px #0099FF', fontWeight: 'inherit !important' }}>truest self</span> is the beginning of freedom.</span>
+                </div>
+                <div className="flex items-start">
+                  <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>•</span>
+                  <span>We believe <span style={{ color: '#FFD700 !important', textShadow: '0 0 5px #FFD700, 0 0 10px #FFD700, 0 0 15px #FFD700, 0 0 20px #FFD700', fontWeight: 'inherit !important' }}>passion</span> is sacred and should be pursued loudly.</span>
+                </div>
+                <div className="flex items-start">
+                  <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>•</span>
+                  <span>We believe <span style={{ color: '#FF1493 !important', textShadow: '0 0 5px #FF1493, 0 0 10px #FF1493, 0 0 15px #FF1493, 0 0 20px #FF1493', fontWeight: 'inherit !important' }}>love</span> is the force that connects every soul.</span>
+                </div>
+              </div>
+            </>
+          )}
           </div>
         </div>
       )}
