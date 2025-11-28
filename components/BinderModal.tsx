@@ -1471,7 +1471,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                   marginTop: '-4px' 
                 }}
               >
-                Earn the cards that reflect your journey as you move through the Heartverse.
+                Earn the cards that reflect your journey in the Heartverse.
               </div>
             )}
           </div>

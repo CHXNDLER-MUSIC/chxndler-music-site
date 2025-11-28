@@ -32,7 +32,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   const badgeCategories: BadgeCategory[] = [
     {
       id: "soul-star",
-      name: "⭐️ SOUL STAR",
+      name: "SOUL STAR",
       emoji: "⭐️",
       badges: [
         { name: "Soul Star", description: "First reflection", progress: 0, current: 0, total: 1 },
@@ -46,7 +46,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     },
     {
       id: "achievements",
-      name: "🏆 ACHIEVEMENTS",
+      name: "ACHIEVEMENTS",
       emoji: "🏆",
       badges: [
         { name: "First Listen", progress: 100, current: 1, total: 1, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/First%20Listen.png?updatedAt=1763736238402" }, // Completed
@@ -64,7 +64,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     },
     {
       id: "elemental-streak",
-      name: "💠 ELEMENTAL STREAK BADGES",
+      name: "ELEMENTAL STREAK",
       emoji: "💠",
       badges: [
         { name: "❤️ HEART" },
@@ -99,7 +99,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     },
     {
       id: "listening",
-      name: "🎵 LISTENING BADGES",
+      name: "LISTENING",
       emoji: "🎵",
       badges: [
         { name: "Deep Listener", description: "10 unique tracks", progress: 70, current: 7, total: 10, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Deep%20Listener.png?updatedAt=1763736238450" },
@@ -111,7 +111,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     },
     {
       id: "heartcoin",
-      name: "HEARTCOIN BADGES",
+      name: "HEART COIN",
       emoji: "💰",
       badges: [
         { name: "First HeartCoin", progress: 100, current: 1, total: 1, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/First%20HeartCoin.png?updatedAt=1763736238400" }, // Completed
@@ -122,7 +122,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     },
     {
       id: "community",
-      name: "🌐 COMMUNITY",
+      name: "COMMUNITY",
       emoji: "🌐",
       badges: [
         { name: "Portal Opener", description: "Invite 1 friend", progress: 0, current: 0, total: 1 },
@@ -254,13 +254,49 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     }
 
     return (
-      <HeartversePopup 
-        isOpen={open} 
-        onClose={onClose} 
-        title="BADGE DETAILS"
+      <div
+        className="fixed inset-0 z-[2147483647] modal-no-drag"
+        aria-modal="true"
+        role="dialog"
+        aria-label="BADGE DETAILS"
+        style={{ touchAction: 'none', overscrollBehaviorX: 'none' }}
       >
-        {badgeDetailContent}
-      </HeartversePopup>
+        <div
+          className="absolute inset-0 backdrop-blur-md"
+          onClick={onClose}
+        />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 mx-4 max-w-lg w-full z-[2147483648]">
+          <div className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-yellow-400/60 bg-white/5 shadow-[0_0_26px_rgba(255,255,0,0.35)]">
+            <div
+              className="absolute inset-0 rounded-2xl pointer-events-none"
+              style={{
+                boxShadow: "0 0 40px rgba(255,255,0,0.5), 0 0 80px rgba(255,255,0,0.3), inset 0 0 24px rgba(255,255,0,0.2)",
+              }}
+            />
+
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={onClose}
+              className="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border-2 text-lg font-bold transition-all duration-200 hover:scale-110 text-yellow-400 border-yellow-400"
+              style={{
+                textShadow: "0 0 5px #FFFF00, 0 0 10px #FFFF00, 0 0 15px #FFFF00",
+                boxShadow: "0 0 10px rgba(255, 255, 0, 0.5), 0 0 20px rgba(255, 255, 0, 0.3), inset 0 0 10px rgba(255, 255, 0, 0.1)"
+              }}
+            >
+              ×
+            </button>
+
+            <h2 className="relative text-xl font-bold tracking-wider text-white drop-shadow mb-1">
+              BADGE DETAILS
+            </h2>
+            
+            <div className="relative">
+              {badgeDetailContent}
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -404,13 +440,49 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     }
 
     return (
-      <HeartversePopup 
-        isOpen={open} 
-        onClose={onClose} 
-        title={category.name}
+      <div
+        className="fixed inset-0 z-[2147483647] modal-no-drag"
+        aria-modal="true"
+        role="dialog"
+        aria-label={category.name}
+        style={{ touchAction: 'none', overscrollBehaviorX: 'none' }}
       >
-        {categoryContent}
-      </HeartversePopup>
+        <div
+          className="absolute inset-0 backdrop-blur-md"
+          onClick={onClose}
+        />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 mx-4 max-w-lg w-full z-[2147483648]">
+          <div className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-yellow-400/60 bg-white/5 shadow-[0_0_26px_rgba(255,255,0,0.35)]">
+            <div
+              className="absolute inset-0 rounded-2xl pointer-events-none"
+              style={{
+                boxShadow: "0 0 40px rgba(255,255,0,0.5), 0 0 80px rgba(255,255,0,0.3), inset 0 0 24px rgba(255,255,0,0.2)",
+              }}
+            />
+
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={onClose}
+              className="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border-2 text-lg font-bold transition-all duration-200 hover:scale-110 text-yellow-400 border-yellow-400"
+              style={{
+                textShadow: "0 0 5px #FFFF00, 0 0 10px #FFFF00, 0 0 15px #FFFF00",
+                boxShadow: "0 0 10px rgba(255, 255, 0, 0.5), 0 0 20px rgba(255, 255, 0, 0.3), inset 0 0 10px rgba(255, 255, 0, 0.1)"
+              }}
+            >
+              ×
+            </button>
+
+            <h2 className="relative text-xl font-bold tracking-wider text-white drop-shadow mb-1">
+              {category.name}
+            </h2>
+            
+            <div className="relative">
+              {categoryContent}
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -438,15 +510,15 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
       )}
 
       {/* Badge Categories Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         {badgeCategories.map((category) => (
           <button
             key={category.id}
             onClick={() => setSelectedCategory(category.id)}
-            className="p-4 rounded-lg bg-black/40 border border-white/20 hover:border-white/40 transition-all text-center group"
+            className="relative w-24 h-24 mx-auto rounded-full bg-black/40 border border-white/20 hover:border-white/40 transition-all text-center group flex flex-col items-center justify-center"
           >
-            <div className="text-2xl mb-2">{category.emoji}</div>
-            <div className="text-white font-semibold text-sm group-hover:text-pink-300 transition-colors">
+            <div className="text-2xl mb-1">{category.emoji}</div>
+            <div className="text-white font-semibold text-xs group-hover:text-pink-300 transition-colors px-1 leading-tight">
               {category.name}
             </div>
           </button>
@@ -460,12 +532,48 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   }
 
   return (
-    <HeartversePopup 
-      isOpen={open} 
-      onClose={onClose} 
-      title="BADGES"
+    <div
+      className="fixed inset-0 z-[2147483647] modal-no-drag"
+      aria-modal="true"
+      role="dialog"
+      aria-label="BADGES"
+      style={{ touchAction: 'none', overscrollBehaviorX: 'none' }}
     >
-      {badgesContent}
-    </HeartversePopup>
+      <div
+        className="absolute inset-0 backdrop-blur-md"
+        onClick={onClose}
+      />
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 mx-4 max-w-lg w-full z-[2147483648]">
+        <div className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-yellow-400/60 bg-white/5 shadow-[0_0_26px_rgba(255,255,0,0.35)]">
+          <div
+            className="absolute inset-0 rounded-2xl pointer-events-none"
+            style={{
+              boxShadow: "0 0 40px rgba(255,255,0,0.5), 0 0 80px rgba(255,255,0,0.3), inset 0 0 24px rgba(255,255,0,0.2)",
+            }}
+          />
+
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={onClose}
+            className="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border-2 text-lg font-bold transition-all duration-200 hover:scale-110 text-yellow-400 border-yellow-400"
+            style={{
+              textShadow: "0 0 5px #FFFF00, 0 0 10px #FFFF00, 0 0 15px #FFFF00",
+              boxShadow: "0 0 10px rgba(255, 255, 0, 0.5), 0 0 20px rgba(255, 255, 0, 0.3), inset 0 0 10px rgba(255, 255, 0, 0.1)"
+            }}
+          >
+            ×
+          </button>
+
+          <h2 className="relative text-xl font-bold tracking-wider text-white drop-shadow mb-1">
+            BADGES
+          </h2>
+          
+          <div className="relative">
+            {badgesContent}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

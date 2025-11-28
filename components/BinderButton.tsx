@@ -821,7 +821,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                     marginTop: '-4px' 
                   }}
                 >
-                  Earn the cards that reflect your journey as you move through the Heartverse.
+                  Earn the cards that reflect your journey in the Heartverse.
                 </div>
 
                 {/* Collection Progress - only show in element selection view */}

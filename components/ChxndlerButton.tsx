@@ -155,7 +155,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...re
                 fontWeight: 'bold'
               }}
             >
-              CHXNDLER
+              ABOUT
             </div>
             
             {/* Tabs */}
@@ -215,9 +215,9 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...re
                     }}
                   >
                     <img
-                      src="/elements/chxndler.png"
+                      src="/cockpit/chxndler-picture.png"
                       alt="CHXNDLER"
-                      className="w-full h-full object-contain"
+                      className="w-full h-full object-contain rounded-lg"
                       style={{
                         filter: 'brightness(1.1) saturate(1.2)'
                       }}
@@ -235,19 +235,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...re
                     lineHeight: '1.6'
                   }}
                 >
-                  <div className="mb-4">
-                    <span style={{ 
-                      color: '#FC54AF !important', 
-                      textShadow: '0 0 5px #FC54AF, 0 0 10px #FC54AF, 0 0 15px #FC54AF', 
-                      fontWeight: 'bold' 
-                    }}>
-                      Welcome to the Heartverse
-                    </span>
-                  </div>
-                  <div>
-                    Where music meets emotion and every beat tells a story of connection, 
-                    passion, and the infinite journey of the heart.
-                  </div>
+                  CHXNDLER is an alien from the Heartverse, exploring Earth in search of love. They create dreamy electronic pop to understand what it means to be human. Their music becomes a signal carried through the cosmos, guiding wanderers, dreamers, and lovers toward a place to call home.
                 </div>
               </>
             )}

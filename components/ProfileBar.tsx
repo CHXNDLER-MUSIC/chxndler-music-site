@@ -834,8 +834,8 @@ export default function ProfileBar({
           <div 
             className="text-center mb-3"
             style={{ 
-              color: '#FF69B4 !important', 
-              textShadow: '0 0 8px rgba(255,105,180,0.9), 0 0 15px rgba(255,105,180,0.7), 0 0 20px rgba(255,105,180,0.5)', 
+              color: '#FFFFFF !important', 
+              textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7), 0 0 20px rgba(255,255,255,0.5)', 
               fontSize: '16px',
               fontWeight: 'bold'
             }}
@@ -888,16 +888,38 @@ export default function ProfileBar({
           
           {/* Tab Content */}
           {chxndlerActiveTab === "CHXNDLER" && (
-            <div 
-              className="text-center px-2"
-              style={{ 
-                fontSize: 14, 
-                color: '#FFFFFF !important', 
-                textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
-                lineHeight: 1.6
-              }}
-            >
-              CHXNDLER is an alien from the Heartverse, exploring earth in search of love. They create dreamy electronic pop to understand what it means to be human. Their music becomes a signal drifting through the cosmos, guiding wanderers, dreamers, and lovers toward a place to call home.
+            <div className="flex items-center px-2 space-x-4">
+              {/* CHXNDLER Image */}
+              <div 
+                className="relative flex-shrink-0"
+                style={{
+                  width: '100px',
+                  height: '100px',
+                  filter: 'drop-shadow(0 0 20px rgba(255,105,180,0.6))'
+                }}
+              >
+                <img
+                  src="/cockpit/chxndler-picture.png"
+                  alt="CHXNDLER"
+                  className="w-full h-full object-contain rounded-lg"
+                  style={{
+                    filter: 'brightness(1.1) saturate(1.2)'
+                  }}
+                />
+              </div>
+              
+              {/* Description */}
+              <div 
+                className="flex-1 text-left"
+                style={{ 
+                  fontSize: 13, 
+                  color: '#FFFFFF !important', 
+                  textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
+                  lineHeight: 1.5
+                }}
+              >
+                CHXNDLER is an alien from the Heartverse, exploring Earth in search of love. They create dreamy electronic pop to understand what it means to be human. Their music becomes a signal carried through the cosmos, guiding wanderers, dreamers, and lovers toward a place to call home.
+              </div>
             </div>
           )}
           

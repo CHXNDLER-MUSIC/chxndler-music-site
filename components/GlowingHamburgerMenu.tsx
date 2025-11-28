@@ -51,7 +51,7 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
   };
 
   return (
-    <div ref={menuRef} className="fixed top-2 left-4 z-50">
+    <div ref={menuRef} className="fixed top-2 left-4 z-[2147483647]">
       {/* Hamburger Button */}
       <button
         onClick={toggleMenu}

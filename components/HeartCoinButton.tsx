@@ -22,6 +22,17 @@ interface StoreItem {
 // Physical store items
 const PHYSICAL_ITEMS: StoreItem[] = [
   {
+    id: 'necklace',
+    title: 'Necklace',
+    description: "A symbol of love, connection, and everything this world stands for. It's a keepsake for the people who found home here.",
+    image: 'https://ik.imagekit.io/CHXNDLER/STORE/necklace.png',
+    priceUsd: 18,
+    priceHeartCoins: 12,
+    stripeUrl: 'https://buy.stripe.com/bJe3cw99f28R5x7epp4gg0K',
+    is_released: true,
+    min_tier: 'wanderer'
+  },
+  {
     id: 'pin',
     title: 'PIN',
     description: 'A symbol that you belong here with the people who feel deeply, dream big, and find beauty in being different.',
@@ -84,17 +95,6 @@ const PHYSICAL_ITEMS: StoreItem[] = [
     priceUsd: 30,
     priceHeartCoins: 20,
     stripeUrl: 'https://buy.stripe.com/dRm8wQetz14N5x71CD4gg0L',
-    is_released: true,
-    min_tier: 'wanderer'
-  },
-  {
-    id: 'necklace',
-    title: 'Necklace',
-    description: "A symbol of love, connection, and everything this world stands for. It's a keepsake for the people who found home here.",
-    image: 'https://ik.imagekit.io/CHXNDLER/STORE/necklace.png',
-    priceUsd: 18,
-    priceHeartCoins: 12,
-    stripeUrl: 'https://buy.stripe.com/bJe3cw99f28R5x7epp4gg0K',
     is_released: true,
     min_tier: 'wanderer'
   },
@@ -1254,7 +1254,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               fontSize: '12px'
                             }}
                           >
-                            Earn the cards that reflect your journey as you move through the Heartverse.
+                            Earn the cards that reflect your journey in the Heartverse.
                           </div>
                           
                           <div 

@@ -20,10 +20,10 @@ const SHOW_ORBITS = true;
 
 // Fixed elemental planets configuration - cardinal positions around heart
 const ELEMENTS = [
-  { code: "heart",     label: "💖 Heart",     position: [40, 0, 0] },     // right
-  { code: "water",     label: "🌊 Water",     position: [0, 40, 0] },     // top
-  { code: "lightning", label: "⚡ Lightning", position: [-40, 0, 0] },    // left
-  { code: "darkness",  label: "🌑 Darkness",  position: [0, -40, 0] },    // bottom
+  { code: "heart",     label: "💖 Heart",     position: [80, 0, 0] },     // right
+  { code: "water",     label: "🌊 Water",     position: [0, 80, 0] },     // top
+  { code: "lightning", label: "⚡ Lightning", position: [-80, 0, 0] },    // left
+  { code: "darkness",  label: "🌑 Darkness",  position: [0, -80, 0] },    // bottom
 ] as const;
 
 // Element colors and glow configuration
@@ -46,7 +46,7 @@ function isElementCode(code: string): code is ElementCode {
   return ["heart", "water", "lightning", "darkness"].includes(code);
 }
 
-const elementOrbitRadius = 40;
+const elementOrbitRadius = 80;
 const songOrbitRadius = 12;
 
 // Component to render all 4 elemental planets with textures
@@ -257,54 +257,54 @@ function ElementalPlanetsWithTextures() {
       </group>
       
       {/* Darkness Planet - Purple - ENHANCED VISIBILITY */}
-      <group name="DarknessPlanetGroup" position={[0, -40, 0]}>
+      <group name="DarknessPlanetGroup" position={[0, -80, 0]}>
         <mesh renderOrder={5}>
-          <sphereGeometry args={[20, 32, 32]} />
+          <sphereGeometry args={[40, 32, 32]} />
           <meshStandardMaterial 
             map={textures.darkness || null}
             color={textures.darkness ? "#ffffff" : "#6A4C93"}
             emissive="#6A4C93"
-            emissiveIntensity={1.2}
+            emissiveIntensity={2.0}
             metalness={0.1}
             roughness={0.2}
           />
         </mesh>
         {/* Atmospheric glow - MADE MORE VISIBLE */}
         <mesh renderOrder={-1}>
-          <sphereGeometry args={[24, 16, 16]} />
+          <sphereGeometry args={[50, 16, 16]} />
           <meshBasicMaterial
             color="#6A4C93"
             transparent
-            opacity={0.6}
+            opacity={0.8}
             blending={AdditiveBlending}
             depthWrite={false}
           />
         </mesh>
         {/* EXTRA VISIBLE OUTER GLOW */}
         <mesh renderOrder={-2}>
-          <sphereGeometry args={[30, 16, 16]} />
+          <sphereGeometry args={[60, 16, 16]} />
           <meshBasicMaterial
             color="#6A4C93"
             transparent
-            opacity={0.3}
+            opacity={0.5}
             blending={AdditiveBlending}
             depthWrite={false}
           />
         </mesh>
-        <Html position={[0, 30, 0]} center>
+        <Html position={[0, 60, 0]} center>
           <div style={{ 
             color: "#6A4C93", 
-            fontSize: "24px", 
+            fontSize: "32px", 
             fontWeight: "bold",
-            textShadow: "0 0 10px #6A4C93, 2px 2px 8px rgba(0,0,0,0.8)",
+            textShadow: "0 0 20px #6A4C93, 4px 4px 12px rgba(0,0,0,0.9)",
             pointerEvents: "none",
             textAlign: "center",
             fontFamily: "Arial, sans-serif",
             letterSpacing: "2px",
-            background: "rgba(0,0,0,0.3)",
-            padding: "4px 8px",
-            borderRadius: "6px",
-            border: "1px solid rgba(106,76,147,0.5)"
+            background: "rgba(0,0,0,0.7)",
+            padding: "8px 16px",
+            borderRadius: "8px",
+            border: "2px solid rgba(106,76,147,0.8)"
           }}>
             🌑 DARKNESS
           </div>
@@ -772,20 +772,20 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
           <ElementalPlanetsWithTextures />
           
           {/* EMERGENCY DEBUG SPHERES - SHOULD BE VISIBLE */}
-          <mesh position={[40, 0, 0]} renderOrder={10}>
-            <sphereGeometry args={[5, 16, 16]} />
+          <mesh position={[80, 0, 0]} renderOrder={10}>
+            <sphereGeometry args={[15, 16, 16]} />
             <meshBasicMaterial color="#FF0000" />
           </mesh>
-          <mesh position={[0, 40, 0]} renderOrder={10}>
-            <sphereGeometry args={[5, 16, 16]} />
+          <mesh position={[0, 80, 0]} renderOrder={10}>
+            <sphereGeometry args={[15, 16, 16]} />
             <meshBasicMaterial color="#00FF00" />
           </mesh>
-          <mesh position={[-40, 0, 0]} renderOrder={10}>
-            <sphereGeometry args={[5, 16, 16]} />
+          <mesh position={[-80, 0, 0]} renderOrder={10}>
+            <sphereGeometry args={[15, 16, 16]} />
             <meshBasicMaterial color="#0000FF" />
           </mesh>
-          <mesh position={[0, -40, 0]} renderOrder={10}>
-            <sphereGeometry args={[5, 16, 16]} />
+          <mesh position={[0, -80, 0]} renderOrder={10}>
+            <sphereGeometry args={[15, 16, 16]} />
             <meshBasicMaterial color="#FFFF00" />
           </mesh>
           
