@@ -415,6 +415,7 @@ export default function ProfileBar({
                   onCodeClick?.();
                   break;
                 case "JOURNEY":
+                case "MY JOURNEY":
                   try { onCloseBlueDisplay?.(); } catch {}
                   setIsJourneyModalOpen(true);
                   break;
@@ -545,6 +546,7 @@ export default function ProfileBar({
                   // Update through ProfileContext
                   updateProfile({ heartcoin_balance: newAmount });
                 }}
+                onClose={() => setActivePanel(null)}
               />
               
               {/* Heart Coin Count */}

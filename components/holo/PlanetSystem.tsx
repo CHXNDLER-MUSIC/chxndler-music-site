@@ -92,54 +92,54 @@ function ElementalPlanetsWithTextures() {
   return (
     <group name="ElementalPlanetsWithTextures">
       {/* Heart Planet - Pink - ENHANCED VISIBILITY */}
-      <group name="HeartPlanetGroup" position={[40, 0, 0]}>
+      <group name="HeartPlanetGroup" position={[80, 0, 0]}>
         <mesh renderOrder={5}>
-          <sphereGeometry args={[20, 32, 32]} />
+          <sphereGeometry args={[40, 32, 32]} />
           <meshStandardMaterial 
             map={textures.heart || null}
             color={textures.heart ? "#ffffff" : "#FC54AF"}
             emissive="#FC54AF"
-            emissiveIntensity={1.2}
+            emissiveIntensity={2.0}
             metalness={0.1}
             roughness={0.2}
           />
         </mesh>
         {/* Atmospheric glow - MADE MORE VISIBLE */}
         <mesh renderOrder={-1}>
-          <sphereGeometry args={[24, 16, 16]} />
+          <sphereGeometry args={[50, 16, 16]} />
           <meshBasicMaterial
             color="#FC54AF"
             transparent
-            opacity={0.6}
+            opacity={0.8}
             blending={AdditiveBlending}
             depthWrite={false}
           />
         </mesh>
         {/* EXTRA VISIBLE OUTER GLOW */}
         <mesh renderOrder={-2}>
-          <sphereGeometry args={[30, 16, 16]} />
+          <sphereGeometry args={[60, 16, 16]} />
           <meshBasicMaterial
             color="#FC54AF"
             transparent
-            opacity={0.3}
+            opacity={0.5}
             blending={AdditiveBlending}
             depthWrite={false}
           />
         </mesh>
-        <Html position={[0, 30, 0]} center>
+        <Html position={[0, 60, 0]} center>
           <div style={{ 
             color: "#FC54AF", 
-            fontSize: "24px", 
+            fontSize: "32px", 
             fontWeight: "bold",
-            textShadow: "0 0 10px #FC54AF, 2px 2px 8px rgba(0,0,0,0.8)",
+            textShadow: "0 0 20px #FC54AF, 4px 4px 12px rgba(0,0,0,0.9)",
             pointerEvents: "none",
             textAlign: "center",
             fontFamily: "Arial, sans-serif",
             letterSpacing: "2px",
-            background: "rgba(0,0,0,0.3)",
-            padding: "4px 8px",
-            borderRadius: "6px",
-            border: "1px solid rgba(252,84,175,0.5)"
+            background: "rgba(0,0,0,0.7)",
+            padding: "8px 16px",
+            borderRadius: "8px",
+            border: "2px solid rgba(252,84,175,0.8)"
           }}>
             💖 HEART
           </div>
@@ -147,54 +147,54 @@ function ElementalPlanetsWithTextures() {
       </group>
       
       {/* Water Planet - Blue - ENHANCED VISIBILITY */}
-      <group name="WaterPlanetGroup" position={[0, 40, 0]}>
+      <group name="WaterPlanetGroup" position={[0, 80, 0]}>
         <mesh renderOrder={5}>
-          <sphereGeometry args={[20, 32, 32]} />
+          <sphereGeometry args={[40, 32, 32]} />
           <meshStandardMaterial 
             map={textures.water || null}
             color={textures.water ? "#ffffff" : "#38B6FF"}
             emissive="#38B6FF"
-            emissiveIntensity={1.2}
+            emissiveIntensity={2.0}
             metalness={0.1}
             roughness={0.2}
           />
         </mesh>
         {/* Atmospheric glow - MADE MORE VISIBLE */}
         <mesh renderOrder={-1}>
-          <sphereGeometry args={[24, 16, 16]} />
+          <sphereGeometry args={[50, 16, 16]} />
           <meshBasicMaterial
             color="#38B6FF"
             transparent
-            opacity={0.6}
+            opacity={0.8}
             blending={AdditiveBlending}
             depthWrite={false}
           />
         </mesh>
         {/* EXTRA VISIBLE OUTER GLOW */}
         <mesh renderOrder={-2}>
-          <sphereGeometry args={[30, 16, 16]} />
+          <sphereGeometry args={[60, 16, 16]} />
           <meshBasicMaterial
             color="#38B6FF"
             transparent
-            opacity={0.3}
+            opacity={0.5}
             blending={AdditiveBlending}
             depthWrite={false}
           />
         </mesh>
-        <Html position={[0, 30, 0]} center>
+        <Html position={[0, 60, 0]} center>
           <div style={{ 
             color: "#38B6FF", 
-            fontSize: "24px", 
+            fontSize: "32px", 
             fontWeight: "bold",
-            textShadow: "0 0 10px #38B6FF, 2px 2px 8px rgba(0,0,0,0.8)",
+            textShadow: "0 0 20px #38B6FF, 4px 4px 12px rgba(0,0,0,0.9)",
             pointerEvents: "none",
             textAlign: "center",
             fontFamily: "Arial, sans-serif",
             letterSpacing: "2px",
-            background: "rgba(0,0,0,0.3)",
-            padding: "4px 8px",
-            borderRadius: "6px",
-            border: "1px solid rgba(56,182,255,0.5)"
+            background: "rgba(0,0,0,0.7)",
+            padding: "8px 16px",
+            borderRadius: "8px",
+            border: "2px solid rgba(56,182,255,0.8)"
           }}>
             🌊 WATER
           </div>
@@ -202,52 +202,56 @@ function ElementalPlanetsWithTextures() {
       </group>
       
       {/* Lightning Planet - Yellow - ENHANCED VISIBILITY */}
-      <group name="LightningPlanetGroup" position={[-40, 0, 0]}>
+      <group name="LightningPlanetGroup" position={[-80, 0, 0]}>
         <mesh renderOrder={5}>
-          <sphereGeometry args={[20, 32, 32]} />
+          <sphereGeometry args={[40, 32, 32]} />
           <meshStandardMaterial 
             map={textures.lightning || null}
             color={textures.lightning ? "#ffffff" : "#F2EF1D"}
             emissive="#F2EF1D"
-            emissiveIntensity={1.2}
+            emissiveIntensity={2.0}
             metalness={0.1}
             roughness={0.2}
           />
         </mesh>
         {/* Atmospheric glow - MADE MORE VISIBLE */}
         <mesh renderOrder={-1}>
-          <sphereGeometry args={[24, 16, 16]} />
+          <sphereGeometry args={[50, 16, 16]} />
           <meshBasicMaterial
             color="#F2EF1D"
             transparent
-            opacity={0.6}
+            opacity={0.8}
             blending={AdditiveBlending}
             depthWrite={false}
           />
         </mesh>
         {/* EXTRA VISIBLE OUTER GLOW */}
         <mesh renderOrder={-2}>
-          <sphereGeometry args={[30, 16, 16]} />
+          <sphereGeometry args={[60, 16, 16]} />
           <meshBasicMaterial
             color="#F2EF1D"
             transparent
-            opacity={0.3}
+            opacity={0.5}
             blending={AdditiveBlending}
             depthWrite={false}
           />
         </mesh>
-        <Html position={[0, 25, 0]} center>
+        <Html position={[0, 60, 0]} center>
           <div style={{ 
             color: "#F2EF1D", 
             fontSize: "32px", 
             fontWeight: "bold",
-            textShadow: "4px 4px 8px black",
+            textShadow: "0 0 20px #F2EF1D, 4px 4px 12px rgba(0,0,0,0.9)",
             pointerEvents: "none",
             textAlign: "center",
             fontFamily: "Arial, sans-serif",
-            letterSpacing: "2px"
+            letterSpacing: "2px",
+            background: "rgba(0,0,0,0.7)",
+            padding: "8px 16px",
+            borderRadius: "8px",
+            border: "2px solid rgba(242,239,29,0.8)"
           }}>
-            LIGHTNING
+            ⚡ LIGHTNING
           </div>
         </Html>
       </group>
@@ -287,18 +291,22 @@ function ElementalPlanetsWithTextures() {
             depthWrite={false}
           />
         </mesh>
-        <Html position={[0, 25, 0]} center>
+        <Html position={[0, 30, 0]} center>
           <div style={{ 
             color: "#6A4C93", 
-            fontSize: "32px", 
+            fontSize: "24px", 
             fontWeight: "bold",
-            textShadow: "4px 4px 8px black",
+            textShadow: "0 0 10px #6A4C93, 2px 2px 8px rgba(0,0,0,0.8)",
             pointerEvents: "none",
             textAlign: "center",
             fontFamily: "Arial, sans-serif",
-            letterSpacing: "2px"
+            letterSpacing: "2px",
+            background: "rgba(0,0,0,0.3)",
+            padding: "4px 8px",
+            borderRadius: "6px",
+            border: "1px solid rgba(106,76,147,0.5)"
           }}>
-            DARKNESS
+            🌑 DARKNESS
           </div>
         </Html>
       </group>
