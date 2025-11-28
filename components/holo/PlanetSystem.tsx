@@ -51,13 +51,14 @@ const songOrbitRadius = 12;
 
 // Component to render all 4 elemental planets with textures
 function ElementalPlanetsWithTextures() {
-  console.log("🪐 ElementalPlanetsWithTextures is rendering!");
+  console.log("🚨🪐 ELEMENTAL PLANETS WITH TEXTURES IS RENDERING! 🪐🚨");
   console.log("📍 Planet positions:", {
     heart: [40, 0, 0],
     water: [0, 40, 0], 
     lightning: [-40, 0, 0],
     darkness: [0, -40, 0]
   });
+  console.log("🔧 Planet sizes: radius 20, text 32px, glow radius 24");
   
   // Use React state for texture loading to avoid useLoader hook issues
   const [textures, setTextures] = React.useState<{[key: string]: any}>({});
@@ -92,37 +93,37 @@ function ElementalPlanetsWithTextures() {
       {/* Heart Planet - Pink */}
       <group position={[40, 0, 0]}>
         <mesh>
-          <sphereGeometry args={[12, 32, 32]} />
+          <sphereGeometry args={[20, 32, 32]} />
           <meshStandardMaterial 
             map={textures.heart || null}
             color={textures.heart ? "#ffffff" : "#FC54AF"}
             emissive="#FC54AF"
-            emissiveIntensity={0.3}
+            emissiveIntensity={0.6}
             metalness={0.1}
             roughness={0.2}
           />
         </mesh>
         {/* Atmospheric glow */}
         <mesh renderOrder={-1}>
-          <sphereGeometry args={[14.4, 16, 16]} />
+          <sphereGeometry args={[24, 16, 16]} />
           <meshBasicMaterial
             color="#FC54AF"
             transparent
-            opacity={0.2}
+            opacity={0.3}
             blending={AdditiveBlending}
             depthWrite={false}
           />
         </mesh>
-        <Html position={[0, 15, 0]} center>
+        <Html position={[0, 25, 0]} center>
           <div style={{ 
             color: "#FC54AF", 
-            fontSize: "18px", 
+            fontSize: "32px", 
             fontWeight: "bold",
-            textShadow: "2px 2px 4px black",
+            textShadow: "4px 4px 8px black",
             pointerEvents: "none",
             textAlign: "center",
             fontFamily: "Arial, sans-serif",
-            letterSpacing: "1px"
+            letterSpacing: "2px"
           }}>
             HEART
           </div>
@@ -132,37 +133,37 @@ function ElementalPlanetsWithTextures() {
       {/* Water Planet - Blue */}
       <group position={[0, 40, 0]}>
         <mesh>
-          <sphereGeometry args={[8, 32, 32]} />
+          <sphereGeometry args={[20, 32, 32]} />
           <meshStandardMaterial 
             map={textures.water || null}
             color={textures.water ? "#ffffff" : "#38B6FF"}
             emissive="#38B6FF"
-            emissiveIntensity={0.3}
+            emissiveIntensity={0.6}
             metalness={0.1}
             roughness={0.2}
           />
         </mesh>
         {/* Atmospheric glow */}
         <mesh renderOrder={-1}>
-          <sphereGeometry args={[9.6, 16, 16]} />
+          <sphereGeometry args={[24, 16, 16]} />
           <meshBasicMaterial
             color="#38B6FF"
             transparent
-            opacity={0.2}
+            opacity={0.3}
             blending={AdditiveBlending}
             depthWrite={false}
           />
         </mesh>
-        <Html position={[0, 12, 0]} center>
+        <Html position={[0, 25, 0]} center>
           <div style={{ 
             color: "#38B6FF", 
-            fontSize: "18px", 
+            fontSize: "32px", 
             fontWeight: "bold",
-            textShadow: "2px 2px 4px black",
+            textShadow: "4px 4px 8px black",
             pointerEvents: "none",
             textAlign: "center",
             fontFamily: "Arial, sans-serif",
-            letterSpacing: "1px"
+            letterSpacing: "2px"
           }}>
             WATER
           </div>
@@ -172,37 +173,37 @@ function ElementalPlanetsWithTextures() {
       {/* Lightning Planet - Yellow */}
       <group position={[-40, 0, 0]}>
         <mesh>
-          <sphereGeometry args={[8, 32, 32]} />
+          <sphereGeometry args={[20, 32, 32]} />
           <meshStandardMaterial 
             map={textures.lightning || null}
             color={textures.lightning ? "#ffffff" : "#F2EF1D"}
             emissive="#F2EF1D"
-            emissiveIntensity={0.3}
+            emissiveIntensity={0.6}
             metalness={0.1}
             roughness={0.2}
           />
         </mesh>
         {/* Atmospheric glow */}
         <mesh renderOrder={-1}>
-          <sphereGeometry args={[9.6, 16, 16]} />
+          <sphereGeometry args={[24, 16, 16]} />
           <meshBasicMaterial
             color="#F2EF1D"
             transparent
-            opacity={0.2}
+            opacity={0.3}
             blending={AdditiveBlending}
             depthWrite={false}
           />
         </mesh>
-        <Html position={[0, 12, 0]} center>
+        <Html position={[0, 25, 0]} center>
           <div style={{ 
             color: "#F2EF1D", 
-            fontSize: "18px", 
+            fontSize: "32px", 
             fontWeight: "bold",
-            textShadow: "2px 2px 4px black",
+            textShadow: "4px 4px 8px black",
             pointerEvents: "none",
             textAlign: "center",
             fontFamily: "Arial, sans-serif",
-            letterSpacing: "1px"
+            letterSpacing: "2px"
           }}>
             LIGHTNING
           </div>
@@ -212,37 +213,37 @@ function ElementalPlanetsWithTextures() {
       {/* Darkness Planet - Purple */}
       <group position={[0, -40, 0]}>
         <mesh>
-          <sphereGeometry args={[8, 32, 32]} />
+          <sphereGeometry args={[20, 32, 32]} />
           <meshStandardMaterial 
             map={textures.darkness || null}
             color={textures.darkness ? "#ffffff" : "#6A4C93"}
             emissive="#6A4C93"
-            emissiveIntensity={0.3}
+            emissiveIntensity={0.6}
             metalness={0.1}
             roughness={0.2}
           />
         </mesh>
         {/* Atmospheric glow */}
         <mesh renderOrder={-1}>
-          <sphereGeometry args={[9.6, 16, 16]} />
+          <sphereGeometry args={[24, 16, 16]} />
           <meshBasicMaterial
             color="#6A4C93"
             transparent
-            opacity={0.2}
+            opacity={0.3}
             blending={AdditiveBlending}
             depthWrite={false}
           />
         </mesh>
-        <Html position={[0, 12, 0]} center>
+        <Html position={[0, 25, 0]} center>
           <div style={{ 
             color: "#6A4C93", 
-            fontSize: "18px", 
+            fontSize: "32px", 
             fontWeight: "bold",
-            textShadow: "2px 2px 4px black",
+            textShadow: "4px 4px 8px black",
             pointerEvents: "none",
             textAlign: "center",
             fontFamily: "Arial, sans-serif",
-            letterSpacing: "1px"
+            letterSpacing: "2px"
           }}>
             DARKNESS
           </div>

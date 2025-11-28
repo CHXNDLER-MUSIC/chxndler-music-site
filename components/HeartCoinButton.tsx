@@ -147,6 +147,74 @@ const PHYSICAL_ITEMS: StoreItem[] = [
 // Combine all items
 const ALL_STORE_ITEMS = [...PHYSICAL_ITEMS];
 
+// Sample card data for each element
+const ELEMENT_CARDS = {
+  lightning: [
+    {
+      id: 'blue-acoustic',
+      name: 'BLUE (ACOUSTIC)',
+      element: 'LIGHTNING',
+      rarity: 'COMMON',
+      description: 'You were the match to ignite the ash in my heart.',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/LIGHTNING.png',
+      digitalCost: 20,
+      physicalCost: 30,
+      stats: {
+        coldSpark: 60,
+        frozenPulse: 40
+      }
+    }
+  ],
+  darkness: [
+    {
+      id: 'shadow-realm',
+      name: 'SHADOW REALM',
+      element: 'DARKNESS',
+      rarity: 'RARE',
+      description: 'In the depths of darkness, we find our true strength.',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/DARKNESS.png',
+      digitalCost: 25,
+      physicalCost: 35,
+      stats: {
+        voidEnergy: 70,
+        shadowStrike: 50
+      }
+    }
+  ],
+  water: [
+    {
+      id: 'flowing-dreams',
+      name: 'FLOWING DREAMS',
+      element: 'WATER',
+      rarity: 'COMMON',
+      description: 'Like water, emotions flow and reshape everything they touch.',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/WATER.png',
+      digitalCost: 15,
+      physicalCost: 25,
+      stats: {
+        tidalWave: 55,
+        healing: 45
+      }
+    }
+  ],
+  heart: [
+    {
+      id: 'eternal-love',
+      name: 'ETERNAL LOVE',
+      element: 'HEART',
+      rarity: 'LEGENDARY',
+      description: 'The strongest force in the Heartverse, binding all souls together.',
+      image: 'https://ik.imagekit.io/CHXNDLER/card/HEART.png',
+      digitalCost: 50,
+      physicalCost: 75,
+      stats: {
+        loveStrike: 80,
+        empathy: 60
+      }
+    }
+  ]
+};
+
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   asChild?: boolean;
   onHoverSound?: () => void;
@@ -166,8 +234,19 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onOpenJournal, onOpenBinder, heartCoins: externalHeartCoins = 0, onHeartCoinsChange, isActive = false, journalCompleted = false, onJournalCompleted, ...restProps }: Props) {
   const { profile, refreshProfile } = useProfile();
   const [open, setOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'EARN' | 'USE' | 'SEND'>('EARN');
+  const [activeTab, setActiveTab] = useState<'EARN' | 'USE'>('EARN');
   const [activeUseTab, setActiveUseTab] = useState<'MERCH' | 'CARDS'>('MERCH');
+  const [selectedCardElement, setSelectedCardElement] = useState<string | null>(null);
+  const [showPhysicalForm, setShowPhysicalForm] = useState(false);
+  const [currentMerchIndex, setCurrentMerchIndex] = useState(0);
+  const [shippingInfo, setShippingInfo] = useState({
+    fullName: '',
+    street: '',
+    city: '',
+    state: '',
+    zip: '',
+    country: ''
+  });
   const [heartCoins, setHeartCoins] = useState(externalHeartCoins);
   const [selectedItem, setSelectedItem] = useState<StoreItem | null>(null);
   const [showItemDetail, setShowItemDetail] = useState(false);
@@ -617,7 +696,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             
             {/* Tabs */}
             <div className="flex justify-center mb-2 space-x-1">
-              {(['EARN', 'USE', 'SEND'] as const).map((tab) => (
+              {(['EARN', 'USE'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => {
@@ -1010,9 +1089,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
                   {/* MERCH Tab Content */}
                   {activeUseTab === 'MERCH' && (
-                    <div>
+                    <div className="px-2">
                       <div 
-                        className="text-sm font-bold mb-3"
+                        className="text-sm font-bold mb-3 text-center"
                         style={{ 
                           color: '#FFFFFF', 
                           textShadow: '0 0 4px rgba(255,255,255,0.8)' 
@@ -1020,45 +1099,116 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       >
                         🛍️ HEARTVERSE COLLECTION
                       </div>
-                      <div className="space-y-2 max-h-48 overflow-y-auto">
-                        {PHYSICAL_ITEMS.map((item) => (
+                      
+                      {/* Current Item Display */}
+                      <div className="mb-4">
+                        {PHYSICAL_ITEMS[currentMerchIndex] && (
                           <div 
-                            key={item.id}
-                            onClick={() => window.open(item.stripeUrl, '_blank')}
-                            className="flex items-center gap-3 p-2 rounded-lg border border-white/30 bg-white/10 hover:bg-white/20 cursor-pointer transition-all duration-200"
+                            className="rounded-lg border border-white/30 bg-white/10 p-4 transition-all duration-200"
                             style={{
-                              boxShadow: '0 0 8px rgba(255,255,255,0.2)'
+                              boxShadow: '0 0 12px rgba(255,255,255,0.3)'
                             }}
                           >
-                            <div className="relative w-10 h-10 flex-shrink-0">
-                              <img
-                                src={item.image}
-                                alt={item.title}
-                                className="w-full h-full object-cover rounded"
-                              />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="font-semibold text-white text-sm truncate">{item.title}</div>
-                              <div className="text-xs text-white/80 truncate">{item.description}</div>
-                            </div>
-                            <div className="flex flex-col items-end text-xs">
-                              <div className="flex items-center gap-1 font-bold text-green-400 mb-1">
-                                <span>${item.priceUsd % 1 === 0 ? item.priceUsd.toFixed(0) : item.priceUsd.toFixed(1)}</span>
-                              </div>
-                              <div className="flex items-center gap-1 font-bold text-[#F2EF1D]">
-                                <span>{item.priceHeartCoins}</span>
+                            {/* Image and Title */}
+                            <div className="flex items-start gap-4 mb-3">
+                              <div className="relative w-16 h-16 flex-shrink-0">
                                 <img
-                                  src="/elements/heart-coin.png"
-                                  alt="Heart Coin"
-                                  className="w-3 h-3 object-contain"
-                                  style={{
-                                    filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 2px #FC54AF)'
-                                  }}
+                                  src={PHYSICAL_ITEMS[currentMerchIndex].image}
+                                  alt={PHYSICAL_ITEMS[currentMerchIndex].title}
+                                  className="w-full h-full object-cover rounded"
                                 />
                               </div>
+                              <div className="flex-1">
+                                <div 
+                                  className="font-bold text-white text-lg"
+                                  style={{
+                                    textShadow: '0 0 4px rgba(255,255,255,0.6)'
+                                  }}
+                                >
+                                  {PHYSICAL_ITEMS[currentMerchIndex].title}
+                                </div>
+                                <div className="flex items-center gap-3 mt-1">
+                                  <div className="flex items-center gap-1 font-bold text-green-400">
+                                    <span>${PHYSICAL_ITEMS[currentMerchIndex].priceUsd % 1 === 0 ? PHYSICAL_ITEMS[currentMerchIndex].priceUsd.toFixed(0) : PHYSICAL_ITEMS[currentMerchIndex].priceUsd.toFixed(1)}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1 font-bold text-[#F2EF1D]">
+                                    <span>{PHYSICAL_ITEMS[currentMerchIndex].priceHeartCoins}</span>
+                                    <img
+                                      src="/elements/heart-coin.png"
+                                      alt="Heart Coin"
+                                      className="w-4 h-4 object-contain"
+                                      style={{
+                                        filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 2px #FC54AF)'
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
                             </div>
+                            
+                            {/* Description */}
+                            <div 
+                              className="text-sm text-white/90 mb-4 leading-relaxed"
+                              style={{
+                                textShadow: '0 0 2px rgba(255,255,255,0.4)'
+                              }}
+                            >
+                              {PHYSICAL_ITEMS[currentMerchIndex].description}
+                            </div>
+                            
+                            {/* Buy Button */}
+                            <button
+                              onClick={() => window.open(PHYSICAL_ITEMS[currentMerchIndex].stripeUrl, '_blank')}
+                              className="w-full px-4 py-2 rounded border border-white/60 bg-white/20 hover:bg-white/30 cursor-pointer transition-all duration-200 text-white font-semibold"
+                              style={{
+                                textShadow: '0 0 4px rgba(255,255,255,0.6)',
+                                boxShadow: '0 0 8px rgba(255,255,255,0.2)'
+                              }}
+                            >
+                              BUY NOW
+                            </button>
                           </div>
-                        ))}
+                        )}
+                      </div>
+                      
+                      {/* Navigation Arrows */}
+                      <div className="flex justify-between items-center">
+                        <button
+                          onClick={() => {
+                            try { sfx.play('click', 0.6); } catch {}
+                            setCurrentMerchIndex(prev => prev > 0 ? prev - 1 : PHYSICAL_ITEMS.length - 1);
+                          }}
+                          className="flex items-center justify-center w-10 h-10 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 transition-all duration-200"
+                          style={{
+                            boxShadow: '0 0 8px rgba(255,255,255,0.3)'
+                          }}
+                        >
+                          <span className="text-white text-lg font-bold">←</span>
+                        </button>
+                        
+                        <div className="text-center">
+                          <div 
+                            className="text-xs text-white/80"
+                            style={{
+                              textShadow: '0 0 4px rgba(255,255,255,0.4)'
+                            }}
+                          >
+                            {currentMerchIndex + 1} of {PHYSICAL_ITEMS.length}
+                          </div>
+                        </div>
+                        
+                        <button
+                          onClick={() => {
+                            try { sfx.play('click', 0.6); } catch {}
+                            setCurrentMerchIndex(prev => prev < PHYSICAL_ITEMS.length - 1 ? prev + 1 : 0);
+                          }}
+                          className="flex items-center justify-center w-10 h-10 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 transition-all duration-200"
+                          style={{
+                            boxShadow: '0 0 8px rgba(255,255,255,0.3)'
+                          }}
+                        >
+                          <span className="text-white text-lg font-bold">→</span>
+                        </button>
                       </div>
                     </div>
                   )}
@@ -1066,15 +1216,321 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   {/* CARDS Tab Content */}
                   {activeUseTab === 'CARDS' && (
                     <div>
-                      <div 
-                        className="text-center text-white/80 text-sm mt-8"
-                        style={{ 
-                          color: '#FFFFFF', 
-                          textShadow: '0 0 4px rgba(255,255,255,0.6)' 
-                        }}
-                      >
-                        Digital cards coming soon...
-                      </div>
+                      {!selectedCardElement ? (
+                        <>
+                          <div 
+                            className="text-sm mb-3 text-center"
+                            style={{ 
+                              color: '#FFFFFF', 
+                              textShadow: '0 0 4px rgba(255,255,255,0.8)',
+                              fontSize: '12px'
+                            }}
+                          >
+                            Earn the cards that reflect your journey as you move through the Heartverse.
+                          </div>
+                          
+                          <div 
+                            className="text-center mb-2"
+                            style={{ 
+                              color: '#FFFFFF', 
+                              fontSize: '14px',
+                              textShadow: '0 0 4px rgba(255,255,255,0.6)',
+                              marginTop: '-12px'
+                            }}
+                          >
+                            SELECT AN ELEMENT TO VIEW CARDS
+                          </div>
+
+                          <div className="grid grid-cols-4 gap-2 justify-center px-2" style={{ marginTop: '-8px' }}>
+                            {['lightning', 'darkness', 'water', 'heart'].map((element, index) => {
+                              const counts = [12, 9, 5, 22];
+                              return (
+                                <div
+                                  key={element}
+                                  className="text-center cursor-pointer group w-20"
+                                  onClick={() => {
+                                    try { sfx.play('click', 0.7); } catch {}
+                                    setSelectedCardElement(element);
+                                  }}
+                                >
+                                  <div 
+                                    className="w-full h-28 rounded-lg border-2 border-white/60 hover:border-white/80 relative overflow-hidden transition-all duration-300 group-hover:scale-105"
+                                    style={{
+                                      boxShadow: '0 0 15px rgba(255,255,255,0.3)',
+                                    }}
+                                  >
+                                    <img
+                                      src={`https://ik.imagekit.io/CHXNDLER/card/${element.toUpperCase()}.png`}
+                                      alt={`${element} Card`}
+                                      className="w-full h-full object-cover rounded-lg"
+                                      draggable={false}
+                                    />
+                                    {/* Holographic effect */}
+                                    <div 
+                                      className="absolute inset-0 opacity-20"
+                                      style={{
+                                        background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%)',
+                                        animation: 'shimmer 3s ease-in-out infinite'
+                                      }}
+                                    />
+                                    {/* Show card count for this element */}
+                                    <div 
+                                      className="absolute top-1 right-1 bg-black/70 rounded px-1 py-0.5"
+                                      style={{ 
+                                        color: '#FFFFFF', 
+                                        textShadow: '0 0 4px rgba(255,255,255,0.6)',
+                                        fontSize: '8px',
+                                        fontWeight: 'bold'
+                                      }}
+                                    >
+                                      {counts[index]}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </>
+                      ) : (
+                        /* Card Detail View */
+                        <div>
+                          {/* Back button */}
+                          <div className="flex items-center mb-4">
+                            <button
+                              onClick={() => {
+                                try { sfx.play('close', 0.6); } catch {}
+                                setSelectedCardElement(null);
+                              }}
+                              className="flex items-center text-white hover:text-gray-300 transition-colors"
+                              style={{ fontSize: '14px' }}
+                            >
+                              <span className="mr-2">←</span>
+                              Back to Elements
+                            </button>
+                          </div>
+
+                          {/* Filter dropdowns */}
+                          <div className="flex gap-2 mb-4">
+                            <select className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-1">
+                              <option>All</option>
+                            </select>
+                            <select className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-1">
+                              <option>All</option>
+                            </select>
+                          </div>
+
+                          {/* Card display */}
+                          {ELEMENT_CARDS[selectedCardElement as keyof typeof ELEMENT_CARDS]?.map(card => (
+                            <div key={card.id} className="flex gap-4">
+                              {/* Card image */}
+                              <div className="w-32 h-44 rounded-lg border-2 border-yellow-500/80 overflow-hidden flex-shrink-0">
+                                <img
+                                  src={card.image}
+                                  alt={card.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+
+                              {/* Card details */}
+                              <div className="flex-1">
+                                {!showPhysicalForm ? (
+                                  <>
+                                    <h2 
+                                      className="text-xl font-bold mb-2"
+                                      style={{ 
+                                        color: '#FFD700', 
+                                        textShadow: '0 0 6px rgba(255,215,0,0.8)' 
+                                      }}
+                                    >
+                                      {card.name}
+                                    </h2>
+                                    
+                                    <div className="flex items-center gap-4 mb-3">
+                                      <span 
+                                        className="text-sm"
+                                        style={{ 
+                                          color: '#FFFFFF', 
+                                          textShadow: '0 0 4px rgba(255,255,255,0.6)' 
+                                        }}
+                                      >
+                                        Element: <span style={{ color: '#FFD700' }}>{card.element}</span>
+                                      </span>
+                                      
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-blue-400">★</span>
+                                        <span 
+                                          className="text-sm font-bold"
+                                          style={{ 
+                                            color: '#00BFFF', 
+                                            textShadow: '0 0 4px rgba(0,191,255,0.8)' 
+                                          }}
+                                        >
+                                          {card.rarity}
+                                        </span>
+                                        <span className="text-blue-400">★</span>
+                                      </div>
+                                    </div>
+
+                                    <p 
+                                      className="text-sm mb-4"
+                                      style={{ 
+                                        color: '#FFFFFF', 
+                                        textShadow: '0 0 4px rgba(255,255,255,0.6)' 
+                                      }}
+                                    >
+                                      {card.description}
+                                    </p>
+                                  </>
+                                ) : (
+                                  /* Shipping Form */
+                                  <div className="space-y-3">
+                                    <h2 
+                                      className="text-lg font-bold mb-4"
+                                      style={{ 
+                                        color: '#FFFFFF', 
+                                        textShadow: '0 0 6px rgba(255,255,255,0.8)' 
+                                      }}
+                                    >
+                                      Shipping Information
+                                    </h2>
+
+                                    <div>
+                                      <input
+                                        type="text"
+                                        placeholder="FULL NAME"
+                                        value={shippingInfo.fullName}
+                                        onChange={(e) => setShippingInfo({...shippingInfo, fullName: e.target.value})}
+                                        className="w-full p-2 bg-black/60 border border-white/40 rounded text-white text-sm placeholder-white/60"
+                                        style={{
+                                          boxShadow: '0 0 10px rgba(255,255,255,0.2)'
+                                        }}
+                                      />
+                                    </div>
+
+                                    <div>
+                                      <input
+                                        type="text"
+                                        placeholder="STREET"
+                                        value={shippingInfo.street}
+                                        onChange={(e) => setShippingInfo({...shippingInfo, street: e.target.value})}
+                                        className="w-full p-2 bg-black/60 border border-white/40 rounded text-white text-sm placeholder-white/60"
+                                        style={{
+                                          boxShadow: '0 0 10px rgba(255,255,255,0.2)'
+                                        }}
+                                      />
+                                    </div>
+
+                                    <div>
+                                      <input
+                                        type="text"
+                                        placeholder="CITY"
+                                        value={shippingInfo.city}
+                                        onChange={(e) => setShippingInfo({...shippingInfo, city: e.target.value})}
+                                        className="w-full p-2 bg-black/60 border border-white/40 rounded text-white text-sm placeholder-white/60"
+                                        style={{
+                                          boxShadow: '0 0 10px rgba(255,255,255,0.2)'
+                                        }}
+                                      />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                      <input
+                                        type="text"
+                                        placeholder="STATE"
+                                        value={shippingInfo.state}
+                                        onChange={(e) => setShippingInfo({...shippingInfo, state: e.target.value})}
+                                        className="w-full p-2 bg-black/60 border border-white/40 rounded text-white text-sm placeholder-white/60"
+                                        style={{
+                                          boxShadow: '0 0 10px rgba(255,255,255,0.2)'
+                                        }}
+                                      />
+                                      <input
+                                        type="text"
+                                        placeholder="ZIP"
+                                        value={shippingInfo.zip}
+                                        onChange={(e) => setShippingInfo({...shippingInfo, zip: e.target.value})}
+                                        className="w-full p-2 bg-black/60 border border-white/40 rounded text-white text-sm placeholder-white/60"
+                                        style={{
+                                          boxShadow: '0 0 10px rgba(255,255,255,0.2)'
+                                        }}
+                                      />
+                                    </div>
+
+                                    <div>
+                                      <input
+                                        type="text"
+                                        placeholder="COUNTRY"
+                                        value={shippingInfo.country}
+                                        onChange={(e) => setShippingInfo({...shippingInfo, country: e.target.value})}
+                                        className="w-full p-2 bg-black/60 border border-white/40 rounded text-white text-sm placeholder-white/60"
+                                        style={{
+                                          boxShadow: '0 0 10px rgba(255,255,255,0.2)'
+                                        }}
+                                      />
+                                    </div>
+
+                                    <button 
+                                      className="w-full mt-4 px-4 py-2 rounded border border-green-500/60 bg-green-500/20 hover:bg-green-500/30 transition-colors"
+                                      style={{ 
+                                        color: '#90EE90', 
+                                        textShadow: '0 0 4px rgba(144,238,144,0.8)',
+                                        fontWeight: 'bold'
+                                      }}
+                                      onClick={() => {
+                                        try { sfx.play('click', 0.8); } catch {}
+                                        // Handle confirm order logic here
+                                        console.log('Order confirmed:', shippingInfo);
+                                      }}
+                                    >
+                                      CONFIRM ORDER
+                                    </button>
+                                  </div>
+                                )}
+
+                                {/* Purchase buttons */}
+                                <div className="flex gap-2 mt-4">
+                                  <button 
+                                    className="flex items-center gap-2 px-3 py-2 rounded border border-blue-500/60 bg-blue-500/20 hover:bg-blue-500/30 transition-colors"
+                                    style={{ 
+                                      color: '#00BFFF', 
+                                      textShadow: '0 0 4px rgba(0,191,255,0.8)' 
+                                    }}
+                                    onClick={() => {
+                                      try { sfx.play('click', 0.7); } catch {}
+                                      setShowPhysicalForm(false);
+                                    }}
+                                  >
+                                    <img src="/elements/heart-coin.png" alt="Heart Coin" className="w-4 h-4" />
+                                    {card.digitalCost} DIGITAL
+                                  </button>
+                                  
+                                  <button 
+                                    className={`flex items-center gap-2 px-3 py-2 rounded border transition-colors ${
+                                      showPhysicalForm 
+                                        ? 'border-purple-400/80 bg-purple-400/30' 
+                                        : 'border-purple-500/60 bg-purple-500/20 hover:bg-purple-500/30'
+                                    }`}
+                                    style={{ 
+                                      color: showPhysicalForm ? '#E6E6FA' : '#DA70D6', 
+                                      textShadow: showPhysicalForm 
+                                        ? '0 0 6px rgba(230,230,250,0.8)' 
+                                        : '0 0 4px rgba(218,112,214,0.8)',
+                                      boxShadow: showPhysicalForm ? '0 0 15px rgba(218,112,214,0.4)' : 'none'
+                                    }}
+                                    onClick={() => {
+                                      try { sfx.play('click', 0.7); } catch {}
+                                      setShowPhysicalForm(!showPhysicalForm);
+                                    }}
+                                  >
+                                    <img src="/elements/heart-coin.png" alt="Heart Coin" className="w-4 h-4" />
+                                    {card.physicalCost} PHYSICAL
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </>
@@ -1143,53 +1599,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             </div>
           )}
 
-          {/* SEND Tab Content */}
-          {activeTab === 'SEND' && (
-            <div className="p-4">
-              <div 
-                className="text-base text-center mb-4"
-                style={{ 
-                  color: '#FFFFFF', 
-                  textShadow: '0 0 4px rgba(255,255,255,0.8)', 
-                  fontSize: '14px',
-                  lineHeight: 1.3
-                }}
-              >
-                Share Heart coins with friends and spread the love across the Heartverse.
-              </div>
-              
-              <div className="text-center">
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    try { sfx.play('click', 0.8); } catch {}
-                    // Placeholder: dispatch a custom event for a future send flow
-                    window.dispatchEvent(new CustomEvent('openSendHeartCoins'));
-                  }}
-                  className="px-4 py-2 text-sm rounded border transition-all duration-200"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.30) 100%)',
-                    color: '#FFFFFF',
-                    borderColor: 'rgba(255,255,255,0.60)',
-                    textShadow: '0 0 6px rgba(255,255,255,0.85)',
-                    boxShadow: '0 0 10px rgba(255,255,255,0.45), 0 0 20px rgba(255,255,255,0.25)',
-                    fontWeight: 700
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.40) 100%)';
-                    e.currentTarget.style.boxShadow = '0 0 15px rgba(255,255,255,0.65), 0 0 25px rgba(255,255,255,0.35)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.30) 100%)';
-                    e.currentTarget.style.boxShadow = '0 0 10px rgba(255,255,255,0.45), 0 0 20px rgba(255,255,255,0.25)';
-                  }}
-                >
-                  SEND HEART COINS
-                </button>
-              </div>
-            </div>
-          )}
           
           </div>
         </div>

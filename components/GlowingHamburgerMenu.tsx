@@ -20,12 +20,11 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
   const journeyTitle = getJourneyTitle(!!user);
   
   const menuItems = [
-    { label: "ABOUT", href: undefined },
+    { label: "CHXNDLER", href: undefined },
     { label: journeyTitle, href: undefined },
     { label: "JOURNAL", href: undefined },
     { label: "BINDER", href: undefined },
     { label: "BADGES", href: undefined },
-    { label: "CHXNDLER", href: undefined },
     { label: "STORE", href: undefined },
   ];
 
@@ -143,22 +142,13 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-200 bg-gradient-to-r from-transparent via-[#FC54AF] to-transparent" />
                   
                   <span className="relative z-10 flex items-center gap-2 -ml-3">
-                    {item.label === "ABOUT" && (
-                      <Image
-                        src="/elements/about.png"
-                        alt="About"
-                        width={32}
-                        height={32}
-                        className="brightness-0 invert group-hover:brightness-100 group-hover:invert-0 transition-all duration-200"
-                      />
-                    )}
                     {(item.label === "JOURNEY" || item.label === "MY JOURNEY") && (
                       <Image
                         src="/elements/journey.png"
                         alt="Journey"
                         width={32}
                         height={32}
-                        className="brightness-0 invert group-hover:brightness-100 group-hover:invert-0 transition-all duration-200"
+                        className="transition-all duration-200"
                       />
                     )}
                     {item.label === "JOURNAL" && (
@@ -167,7 +157,7 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
                         alt="Journal"
                         width={32}
                         height={32}
-                        className="brightness-0 invert group-hover:brightness-100 group-hover:invert-0 transition-all duration-200"
+                        className="transition-all duration-200"
                       />
                     )}
                     {item.label === "BINDER" && (
@@ -176,7 +166,7 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
                         alt="Binder"
                         width={32}
                         height={32}
-                        className="brightness-0 invert group-hover:brightness-100 group-hover:invert-0 transition-all duration-200"
+                        className="transition-all duration-200"
                       />
                     )}
                     {item.label === "BADGES" && (
@@ -185,7 +175,7 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
                         alt="Badges"
                         width={32}
                         height={32}
-                        className="brightness-0 invert group-hover:brightness-100 group-hover:invert-0 transition-all duration-200"
+                        className="transition-all duration-200"
                       />
                     )}
                     {item.label === "STORE" && (
@@ -194,7 +184,7 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
                         alt="Store"
                         width={32}
                         height={32}
-                        className="brightness-0 invert group-hover:brightness-100 group-hover:invert-0 transition-all duration-200"
+                        className="transition-all duration-200"
                       />
                     )}
                     {item.label}

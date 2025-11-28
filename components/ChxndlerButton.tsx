@@ -11,6 +11,7 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 
 export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...restProps }: Props) {
   const [internalOpen, setInternalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"WE BELIEVE" | "CHXNDLER">("CHXNDLER");
   
   // Use external open state if provided, otherwise use internal state
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
@@ -157,6 +158,40 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...re
               CHXNDLER
             </div>
             
+            {/* Tabs */}
+            <div className="flex justify-center mb-4">
+              <div className="flex bg-black/30 rounded-lg p-1">
+                <button
+                  onClick={() => setActiveTab("CHXNDLER")}
+                  className={`px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 ${
+                    activeTab === "CHXNDLER"
+                      ? "bg-pink-500/20 text-pink-300 border border-pink-400/50"
+                      : "text-white/70 hover:text-white"
+                  }`}
+                  style={{
+                    textShadow: activeTab === "CHXNDLER" ? '0 0 8px rgba(252,84,175,0.8)' : 'none',
+                    boxShadow: activeTab === "CHXNDLER" ? '0 0 15px rgba(252,84,175,0.3)' : 'none'
+                  }}
+                >
+                  CHXNDLER
+                </button>
+                <button
+                  onClick={() => setActiveTab("WE BELIEVE")}
+                  className={`px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 ${
+                    activeTab === "WE BELIEVE"
+                      ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/50"
+                      : "text-white/70 hover:text-white"
+                  }`}
+                  style={{
+                    textShadow: activeTab === "WE BELIEVE" ? '0 0 8px rgba(0,255,255,0.8)' : 'none',
+                    boxShadow: activeTab === "WE BELIEVE" ? '0 0 15px rgba(0,255,255,0.3)' : 'none'
+                  }}
+                >
+                  WE BELIEVE
+                </button>
+              </div>
+            </div>
+            
             {/* Pink neon line */}
             <div 
               className="w-full h-px mb-6"
@@ -166,51 +201,96 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...re
               }}
             />
 
-            {/* CHXNDLER Image */}
-            <div className="flex justify-center mb-6">
-              <div 
-                className="relative"
-                style={{
-                  width: '200px',
-                  height: '200px',
-                  filter: 'drop-shadow(0 0 20px rgba(252,84,175,0.6))'
-                }}
-              >
-                <img
-                  src="/elements/chxndler.png"
-                  alt="CHXNDLER"
-                  className="w-full h-full object-contain"
-                  style={{
-                    filter: 'brightness(1.1) saturate(1.2)'
-                  }}
-                />
-              </div>
-            </div>
+            {/* Tab Content */}
+            {activeTab === "CHXNDLER" && (
+              <>
+                {/* CHXNDLER Image */}
+                <div className="flex justify-center mb-6">
+                  <div 
+                    className="relative"
+                    style={{
+                      width: '200px',
+                      height: '200px',
+                      filter: 'drop-shadow(0 0 20px rgba(252,84,175,0.6))'
+                    }}
+                  >
+                    <img
+                      src="/elements/chxndler.png"
+                      alt="CHXNDLER"
+                      className="w-full h-full object-contain"
+                      style={{
+                        filter: 'brightness(1.1) saturate(1.2)'
+                      }}
+                    />
+                  </div>
+                </div>
 
-            {/* Description */}
-            <div 
-              className="text-center"
-              style={{ 
-                fontSize: '16px', 
-                color: '#FFFFFF !important', 
-                textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
-                lineHeight: '1.6'
-              }}
-            >
-              <div className="mb-4">
-                <span style={{ 
-                  color: '#FC54AF !important', 
-                  textShadow: '0 0 5px #FC54AF, 0 0 10px #FC54AF, 0 0 15px #FC54AF', 
-                  fontWeight: 'bold' 
-                }}>
-                  Welcome to the Heartverse
-                </span>
-              </div>
-              <div>
-                Where music meets emotion and every beat tells a story of connection, 
-                passion, and the infinite journey of the heart.
-              </div>
-            </div>
+                {/* Description */}
+                <div 
+                  className="text-center"
+                  style={{ 
+                    fontSize: '16px', 
+                    color: '#FFFFFF !important', 
+                    textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
+                    lineHeight: '1.6'
+                  }}
+                >
+                  <div className="mb-4">
+                    <span style={{ 
+                      color: '#FC54AF !important', 
+                      textShadow: '0 0 5px #FC54AF, 0 0 10px #FC54AF, 0 0 15px #FC54AF', 
+                      fontWeight: 'bold' 
+                    }}>
+                      Welcome to the Heartverse
+                    </span>
+                  </div>
+                  <div>
+                    Where music meets emotion and every beat tells a story of connection, 
+                    passion, and the infinite journey of the heart.
+                  </div>
+                </div>
+              </>
+            )}
+
+            {activeTab === "WE BELIEVE" && (
+              <>
+                {/* We Believe Header */}
+                <div 
+                  className="text-center mb-6"
+                  style={{ 
+                    fontSize: 18, 
+                    color: '#FFFFFF !important', 
+                    textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7), 0 0 20px rgba(255,255,255,0.5)',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  We Believe
+                </div>
+                
+                {/* We Believe Content */}
+                <div 
+                  className="text-left space-y-4"
+                  style={{ 
+                    fontSize: 14, 
+                    color: '#FFFFFF !important', 
+                    textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
+                  }}
+                >
+                  <div className="flex items-start">
+                    <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>•</span>
+                    <span>We believe being your <span style={{ color: '#0099FF !important', textShadow: '0 0 5px #0099FF, 0 0 10px #0099FF, 0 0 15px #0099FF, 0 0 20px #0099FF', fontWeight: 'inherit !important' }}>truest self</span> is the beginning of freedom.</span>
+                  </div>
+                  <div className="flex items-start">
+                    <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>•</span>
+                    <span>We believe <span style={{ color: '#FFD700 !important', textShadow: '0 0 5px #FFD700, 0 0 10px #FFD700, 0 0 15px #FFD700, 0 0 20px #FFD700', fontWeight: 'inherit !important' }}>passion</span> is sacred and should be pursued loudly.</span>
+                  </div>
+                  <div className="flex items-start">
+                    <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>•</span>
+                    <span>We believe <span style={{ color: '#FF1493 !important', textShadow: '0 0 5px #FF1493, 0 0 10px #FF1493, 0 0 15px #FF1493, 0 0 20px #FF1493', fontWeight: 'inherit !important' }}>love</span> is the force that connects every soul.</span>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
