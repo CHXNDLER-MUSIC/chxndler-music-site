@@ -496,7 +496,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             style={{
               width: 'min(120vw, 700px)',
               height: '200px',
-              background: 'radial-gradient(ellipse 80% 100% at 50% 0%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.4) 30%, rgba(255,255,255,0.1) 60%, transparent 100%)',
+              background: 'radial-gradient(ellipse 80% 100% at 50% 0%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.6) 30%, rgba(255,255,255,0.2) 60%, transparent 100%)',
               filter: 'blur(100px)'
             }}
           />
@@ -951,16 +951,19 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
           {/* USE Tab Content */}
           {activeTab === 'USE' && (
-            <div className="p-4">
+            <div className="pl-2 pr-6 py-4">
               {!showItemDetail ? (
                 <>
                   <div 
-                    className="text-base text-center mb-4"
+                    className="text-base text-left mb-4"
                     style={{ 
                       color: '#FFFFFF', 
                       textShadow: '0 0 4px rgba(255,255,255,0.8)', 
                       fontSize: '14px',
-                      lineHeight: 1.3
+                      lineHeight: 1,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      width: '100%'
                     }}
                   >
                     Spend your Heart coins on digital collectibles and special items.

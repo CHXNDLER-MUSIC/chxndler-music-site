@@ -5,23 +5,25 @@ import GlowingHamburgerMenu from "./GlowingHamburgerMenu";
 import CodeButton from "./CodeButton";
 import ChxndlerButton from "./ChxndlerButton";
 import CodeModal from "./CodeModal";
+import JourneyModal from "./JourneyModal";
 
 export default function GlowingHamburgerMenuWrapper() {
   const [codeOpen, setCodeOpen] = useState(false);
   const [chxndlerOpen, setChxndlerOpen] = useState(false);
+  const [journeyOpen, setJourneyOpen] = useState(false);
 
   const handleItemClick = (label: string) => {
     console.log(`Menu item clicked: ${label}`);
     
     switch (label) {
       case "ABOUT":
+        console.log('Setting codeOpen to true');
         setCodeOpen(true);
         break;
       // Handle dynamic journey titles:
       case "JOURNEY":
       case "MY JOURNEY":
-        // openJourney();
-        console.log(`Journey clicked: ${label}`);
+        setJourneyOpen(true);
         break;
       // case "JOURNAL":
       //   openJournal();
@@ -49,7 +51,15 @@ export default function GlowingHamburgerMenuWrapper() {
       {/* CodeModal for ABOUT functionality */}
       <CodeModal 
         open={codeOpen} 
-        onClose={() => setCodeOpen(false)} 
+        onClose={() => {
+          console.log('CodeModal closing');
+          setCodeOpen(false);
+        }} 
+      />
+      {/* JourneyModal for MY JOURNEY functionality */}
+      <JourneyModal 
+        open={journeyOpen} 
+        onClose={() => setJourneyOpen(false)} 
       />
       {/* Hidden ChxndlerButton to handle the modal functionality */}
       <ChxndlerButton

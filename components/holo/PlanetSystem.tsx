@@ -52,6 +52,12 @@ const songOrbitRadius = 12;
 // Component to render all 4 elemental planets with textures
 function ElementalPlanetsWithTextures() {
   console.log("🪐 ElementalPlanetsWithTextures is rendering!");
+  console.log("📍 Planet positions:", {
+    heart: [40, 0, 0],
+    water: [0, 40, 0], 
+    lightning: [-40, 0, 0],
+    darkness: [0, -40, 0]
+  });
   
   // Use React state for texture loading to avoid useLoader hook issues
   const [textures, setTextures] = React.useState<{[key: string]: any}>({});
@@ -86,7 +92,7 @@ function ElementalPlanetsWithTextures() {
       {/* Heart Planet - Pink */}
       <group position={[40, 0, 0]}>
         <mesh>
-          <sphereGeometry args={[8, 32, 32]} />
+          <sphereGeometry args={[12, 32, 32]} />
           <meshStandardMaterial 
             map={textures.heart || null}
             color={textures.heart ? "#ffffff" : "#FC54AF"}
@@ -98,7 +104,7 @@ function ElementalPlanetsWithTextures() {
         </mesh>
         {/* Atmospheric glow */}
         <mesh renderOrder={-1}>
-          <sphereGeometry args={[9.6, 16, 16]} />
+          <sphereGeometry args={[14.4, 16, 16]} />
           <meshBasicMaterial
             color="#FC54AF"
             transparent
@@ -107,7 +113,7 @@ function ElementalPlanetsWithTextures() {
             depthWrite={false}
           />
         </mesh>
-        <Html position={[0, 12, 0]} center>
+        <Html position={[0, 15, 0]} center>
           <div style={{ 
             color: "#FC54AF", 
             fontSize: "18px", 

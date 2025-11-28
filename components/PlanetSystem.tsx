@@ -2,6 +2,7 @@
 import React, { useMemo, useRef } from "react";
 import { Group, Mesh, AdditiveBlending, DoubleSide, Vector3 } from "three";
 import { useFrame } from "@react-three/fiber";
+import { Html } from "@react-three/drei";
 import * as THREE from "three";
 import HeartStarPlanet from "./HeartStarPlanet";
 
@@ -180,13 +181,36 @@ export const PlanetSystem: React.FC<PlanetSystemProps> = ({
 
       {/* Render elemental planets BEFORE song planets */}
       {ELEMENTAL_PLANETS.map((p) => (
-        <ElementPlanet
-          key={p.type}
-          type={p.type}
-          color={p.color}
-          position={p.position}
-          radius={p.radius}
-        />
+        <group key={p.type}>
+          <ElementPlanet
+            type={p.type}
+            color={p.color}
+            position={p.position}
+            radius={p.radius}
+          />
+          {/* Add text label above the planet */}
+          <Html
+            position={[p.position[0], p.position[1] + p.radius + 1.5, p.position[2]]}
+            center
+            distanceFactor={10}
+          >
+            <div style={{
+              color: '#ffffff',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              textAlign: 'center',
+              textTransform: 'uppercase',
+              textShadow: '0 0 8px rgba(255, 255, 255, 0.8)',
+              backgroundColor: 'rgba(0, 0, 0, 0.3)',
+              padding: '4px 8px',
+              borderRadius: '4px',
+              border: `1px solid ${p.color}`,
+              backdropFilter: 'blur(4px)'
+            }}>
+              {p.type}
+            </div>
+          </Html>
+        </group>
       ))}
 
       {/* Render song planets orbiting around their elemental planets */}

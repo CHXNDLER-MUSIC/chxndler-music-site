@@ -118,6 +118,8 @@ export default function HeartCoinModal({ open, onClose }: Props) {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 6;
 
   async function signInWithGoogle() {
     setError(null);
@@ -177,6 +179,20 @@ export default function HeartCoinModal({ open, onClose }: Props) {
     window.open(stripeUrl, '_blank');
   };
 
+  const totalPages = Math.ceil(storeItems.length / itemsPerPage);
+  const currentItems = storeItems.slice(
+    currentPage * itemsPerPage,
+    (currentPage + 1) * itemsPerPage
+  );
+
+  const handlePrevPage = () => {
+    setCurrentPage(prev => Math.max(0, prev - 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage(prev => Math.min(totalPages - 1, prev + 1));
+  };
+
   return (
     <HeartversePopup 
       isOpen={open} 
@@ -185,8 +201,8 @@ export default function HeartCoinModal({ open, onClose }: Props) {
     >
       <div className="relative">
         {/* Store Items Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[70vh] overflow-y-auto pr-2">
-          {storeItems.map((item, index) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[60vh] overflow-y-auto pr-2">
+          {currentItems.map((item, index) => (
             <div key={index} className="text-center space-y-4 p-4 bg-black/20 rounded-lg border border-white/10 hover:border-[#F2EF1D]/30 transition-all duration-300">
               <h3 className="text-lg font-bold text-white tracking-wider">
                 {item.name.toUpperCase()}
@@ -246,6 +262,53 @@ export default function HeartCoinModal({ open, onClose }: Props) {
             </div>
           ))}
         </div>
+
+        {/* Navigation Arrows */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-4 mt-6 pt-4 border-t border-white/10">
+            <button
+              onClick={handlePrevPage}
+              disabled={currentPage === 0}
+              className={`p-3 rounded-full border-2 transition-all duration-300 ${
+                currentPage === 0
+                  ? 'border-white/20 text-white/30 cursor-not-allowed'
+                  : 'border-[#F2EF1D] text-[#F2EF1D] hover:bg-[#F2EF1D] hover:text-black hover:shadow-[0_0_15px_rgba(242,239,29,0.6)]'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+
+            <div className="flex items-center gap-2">
+              {Array.from({ length: totalPages }).map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentPage(index)}
+                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                    index === currentPage
+                      ? 'bg-[#F2EF1D] shadow-[0_0_8px_rgba(242,239,29,0.8)]'
+                      : 'bg-white/30 hover:bg-white/50'
+                  }`}
+                />
+              ))}
+            </div>
+
+            <button
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages - 1}
+              className={`p-3 rounded-full border-2 transition-all duration-300 ${
+                currentPage === totalPages - 1
+                  ? 'border-white/20 text-white/30 cursor-not-allowed'
+                  : 'border-[#F2EF1D] text-[#F2EF1D] hover:bg-[#F2EF1D] hover:text-black hover:shadow-[0_0_15px_rgba(242,239,29,0.6)]'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
     </HeartversePopup>
   );

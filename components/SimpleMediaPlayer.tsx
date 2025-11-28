@@ -159,51 +159,34 @@ export default function MediaPlayer({
               {gateResult.reason}
             </div>
           )}
-          <div className="mt-2 h-16 w-full relative overflow-hidden rounded-lg bg-gradient-to-b from-black/30 to-black/10 outline-none ring-0 border-0" style={{ boxShadow: 'none' }}>
-            {/* Audio Waveform using SVG for smooth curves */}
-            <svg 
-              className="w-full h-full" 
-              viewBox="0 0 800 100" 
-              preserveAspectRatio="none"
-              style={{ background: 'transparent' }}
+          <div 
+            className="mt-2 h-16 w-full relative overflow-hidden rounded-lg bg-black outline-none ring-0 border-0" 
+            style={{ 
+              boxShadow: 'none',
+              border: 'none !important',
+              outline: 'none !important'
+            }}
+          >
+            {/* Simple progress bar without SVG */}
+            <div 
+              className="absolute top-1/2 left-0 w-full h-[2px] -translate-y-1/2"
+              style={{
+                border: 'none !important',
+                outline: 'none !important',
+                boxShadow: 'none !important'
+              }}
             >
-              {/* Background grid lines for audio feel */}
-              <defs>
-                <pattern id="grid" width="20" height="10" patternUnits="userSpaceOnUse">
-                  <path d="M 20 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="0.5"/>
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#grid)" />
-              
-              {/* Background waveform (faint) */}
-              <path
-                d={`M 0 50 ${waveformData.map((amp, i) => {
-                  const x = (i / (waveformData.length - 1)) * 800;
-                  const y1 = 50 - (amp * 35);
-                  const y2 = 50 + (amp * 35);
-                  return `L ${x} ${y1} L ${x} ${y2}`;
-                }).join(' ')} L 800 50`}
-                fill="none"
-                stroke="rgba(255,255,255,0.12)"
-                strokeWidth="0.8"
-                opacity="0.8"
+              <div 
+                className="h-full bg-white rounded-full" 
+                style={{ 
+                  width: `${progress * 100}%`,
+                  filter: 'none',
+                  outline: 'none !important',
+                  border: 'none !important',
+                  boxShadow: 'none !important'
+                }}
               />
-              
-              {/* Played portion as a thin glowing light beam */}
-              {/* Core beam */}
-              <line
-                x1="0"
-                y1="50"
-                x2={`${progress * 800}`}
-                y2="50"
-                stroke="white"
-                strokeWidth="1.6"
-                opacity="0.95"
-                strokeLinecap="round"
-              />
-              
-              {/* Animated indicator removed: element icon now serves as the playhead */}
-            </svg>
+            </div>
             
             {/* Time cursor with element icon */}
             <div

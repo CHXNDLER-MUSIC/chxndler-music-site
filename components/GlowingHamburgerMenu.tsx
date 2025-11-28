@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useProfile } from "@/contexts/ProfileContext";
+import Image from "next/image";
 
 interface GlowingHamburgerMenuProps {
   onItemClick?: (label: string) => void;
@@ -141,7 +142,63 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
                   {/* Hover glow effect */}
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-200 bg-gradient-to-r from-transparent via-[#FC54AF] to-transparent" />
                   
-                  <span className="relative z-10">{item.label}</span>
+                  <span className="relative z-10 flex items-center gap-2 -ml-3">
+                    {item.label === "ABOUT" && (
+                      <Image
+                        src="/elements/about.png"
+                        alt="About"
+                        width={32}
+                        height={32}
+                        className="brightness-0 invert group-hover:brightness-100 group-hover:invert-0 transition-all duration-200"
+                      />
+                    )}
+                    {(item.label === "JOURNEY" || item.label === "MY JOURNEY") && (
+                      <Image
+                        src="/elements/journey.png"
+                        alt="Journey"
+                        width={32}
+                        height={32}
+                        className="brightness-0 invert group-hover:brightness-100 group-hover:invert-0 transition-all duration-200"
+                      />
+                    )}
+                    {item.label === "JOURNAL" && (
+                      <Image
+                        src="/elements/journal.png"
+                        alt="Journal"
+                        width={32}
+                        height={32}
+                        className="brightness-0 invert group-hover:brightness-100 group-hover:invert-0 transition-all duration-200"
+                      />
+                    )}
+                    {item.label === "BINDER" && (
+                      <Image
+                        src="/elements/binder.png"
+                        alt="Binder"
+                        width={32}
+                        height={32}
+                        className="brightness-0 invert group-hover:brightness-100 group-hover:invert-0 transition-all duration-200"
+                      />
+                    )}
+                    {item.label === "BADGES" && (
+                      <Image
+                        src="/elements/badges.png"
+                        alt="Badges"
+                        width={32}
+                        height={32}
+                        className="brightness-0 invert group-hover:brightness-100 group-hover:invert-0 transition-all duration-200"
+                      />
+                    )}
+                    {item.label === "STORE" && (
+                      <Image
+                        src="/elements/store.png"
+                        alt="Store"
+                        width={32}
+                        height={32}
+                        className="brightness-0 invert group-hover:brightness-100 group-hover:invert-0 transition-all duration-200"
+                      />
+                    )}
+                    {item.label}
+                  </span>
                 </button>
                 
                 {/* Pink Divider Line */}
