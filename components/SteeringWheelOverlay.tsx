@@ -548,7 +548,7 @@ export default function SteeringWheelOverlay({
                 >
                   <span className="sr-only">Power Button</span>
                   <span className="power-glyph" aria-hidden>
-                    <img src="/elements/power.png" alt="" className="power-icon" onError={(e)=>{ try { const img = e.currentTarget; img.onerror = null; img.src = '/elements/lightning.png'; } catch {} }} />
+                    <img src="/elements/power.webp" alt="" className="power-icon" onError={(e)=>{ try { const img = e.currentTarget; img.onerror = null; img.src = '/elements/lightning.webp'; } catch {} }} />
                   </span>
                 </button>
               ) : null}
@@ -577,11 +577,11 @@ export default function SteeringWheelOverlay({
             <div style={{ pointerEvents: showUI && !isDimmingOverlayActive && isUIUnlocked ? 'auto' : 'none' }}>
               <HoloHubMenu
                 items={[
-                LINKS.instagram ? { id: 'ig', label: 'Instagram', href: LINKS.instagram, icon: '/elements/instagram.png', color: '#E1306C' } : null,
-                LINKS.tiktok ? { id: 'tt', label: 'TikTok', href: LINKS.tiktok, icon: '/elements/tiktok.png', color: '#69C9D0' } : null,
-                LINKS.youtube ? { id: 'yt', label: 'YouTube', href: LINKS.youtube, icon: '/elements/youtube.png', color: '#FF0000' } : null,
-                LINKS.spotify ? { id: 'sp', label: 'Spotify', href: LINKS.spotify, icon: '/elements/spotify.png', color: '#1DB954' } : null,
-                LINKS.apple ? { id: 'am', label: 'Apple Music', href: LINKS.apple, icon: '/elements/apple.png', color: '#FC54AF' } : null,
+                LINKS.instagram ? { id: 'ig', label: 'Instagram', href: LINKS.instagram, icon: '/elements/instagram.webp', color: '#E1306C' } : null,
+                LINKS.tiktok ? { id: 'tt', label: 'TikTok', href: LINKS.tiktok, icon: '/elements/tiktok.webp', color: '#69C9D0' } : null,
+                LINKS.youtube ? { id: 'yt', label: 'YouTube', href: LINKS.youtube, icon: '/elements/youtube.webp', color: '#FF0000' } : null,
+                LINKS.spotify ? { id: 'sp', label: 'Spotify', href: LINKS.spotify, icon: '/elements/spotify.webp', color: '#1DB954' } : null,
+                LINKS.apple ? { id: 'am', label: 'Apple Music', href: LINKS.apple, icon: '/elements/apple.webp', color: '#FC54AF' } : null,
               ].filter(Boolean) as any}
                 radius={90}
                 hubColor={activeBeamColor === 'yellow' ? "#F2EF1D" : "#F2EF1D"}
@@ -670,7 +670,7 @@ export default function SteeringWheelOverlay({
           return (
             <div style={{ pointerEvents: showUI && !isDimmingOverlayActive && isUIUnlocked ? 'auto' : 'none' }}>
               {/* Signal button for Twitch stream */}
-              <HoloJoinButton size={joinSize} hubColor="#FC54AF" onClick={handleSignalToggle} label="Live Stream" iconSrc="/elements/antennas.png" isActive={joinAlienOpen} />
+              <HoloJoinButton size={joinSize} hubColor="#FC54AF" onClick={handleSignalToggle} label="Live Stream" iconSrc="/elements/antennas.webp" isActive={joinAlienOpen} />
             </div>
           );
         })()}
@@ -799,10 +799,10 @@ export default function SteeringWheelOverlay({
         <span className="glyph" aria-hidden>
           {isStart ? (
             <img
-              src="/elements/start.png?v=20250915c"
+              src="/elements/start.webp?v=20250915c"
               alt="Start"
               className="chx-icon"
-              onError={(e) => { try { const img = e.currentTarget; img.onerror = null; img.src = '/elements/start.png'; } catch {} }}
+              onError={(e) => { try { const img = e.currentTarget; img.onerror = null; img.src = '/elements/start.webp'; } catch {} }}
             />
           ) : (
             playing ? (

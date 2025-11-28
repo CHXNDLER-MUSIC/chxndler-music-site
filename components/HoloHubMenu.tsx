@@ -376,7 +376,7 @@ export default function HoloHubMenu({
         <span className="hub-glyph mask-element-comms" aria-hidden>
           {/* Comms hologram icon (fill tighter in ring) */}
           <img
-            src="/elements/comms.png"
+            src="/elements/comms.webp"
             alt=""
             className="hub-icon"
             style={{ width: Math.round(hubSize*0.88), height: Math.round(hubSize*0.88) }}

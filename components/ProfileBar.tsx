@@ -212,12 +212,12 @@ export default function ProfileBar({
   // Element mapping for icons
   const getElementIcon = (element: string | null) => {
     const iconMap: Record<string, string> = {
-      'heart': '/elements/heart.png',
-      'water': '/elements/water.png', 
-      'lightning': '/elements/lightning.png',
-      'darkness': '/elements/darkness.png'
+      'heart': '/elements/heart.webp',
+      'water': '/elements/water.webp', 
+      'lightning': '/elements/lightning.webp',
+      'darkness': '/elements/darkness.webp'
     };
-    return iconMap[element || ''] || '/elements/elemental.png';
+    return iconMap[element || ''] || '/elements/elementals.webp';
   };
 
   async function updateElement(element: string) {
@@ -439,11 +439,12 @@ export default function ProfileBar({
                   break;
                 case "STORE":
                   try { onCloseBlueDisplay?.(); } catch {}
-                  // Open HeartCoinButton modal directly on USE tab
+                  // Open HeartCoinButton modal directly on USE tab with MERCH sub-tab
                   setActivePanel('heartcoins');
                   // Store the initial tab preference for HeartCoinButton
                   if (typeof window !== 'undefined') {
-                    window.heartCoinInitialTab = 'USE';
+                    (window as any).heartCoinInitialTab = 'USE';
+                    (window as any).heartCoinInitialUseTab = 'MERCH';
                   }
                   break;
               }
@@ -470,11 +471,6 @@ export default function ProfileBar({
                 className="font-medium text-lg relative flex-shrink-0 ml-2 transition-all duration-200 cursor-pointer bg-transparent border-none focus:outline-none disabled:opacity-50 rounded"
                 style={{ 
                   color: getUsernameColor(currentElement),
-                  textShadow: `
-                    0 0 10px ${getUsernameColor(currentElement)},
-                    0 0 20px ${getUsernameColor(currentElement)},
-                    0 0 30px ${getUsernameColor(currentElement)}
-                  `,
                   filter: 'brightness(1.2)',
                   padding: '0',
                   background: 'transparent',
@@ -485,21 +481,11 @@ export default function ProfileBar({
                   if (!loading) {
                     try { sfx.play('hover', 0.8); } catch {}
                     e.currentTarget.style.transform = 'scale(1.05)';
-                    e.currentTarget.style.textShadow = `
-                      0 0 15px ${getUsernameColor(currentElement)},
-                      0 0 25px ${getUsernameColor(currentElement)},
-                      0 0 35px ${getUsernameColor(currentElement)}
-                    `;
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!loading) {
                     e.currentTarget.style.transform = 'scale(1)';
-                    e.currentTarget.style.textShadow = `
-                      0 0 10px ${getUsernameColor(currentElement)},
-                      0 0 20px ${getUsernameColor(currentElement)},
-                      0 0 30px ${getUsernameColor(currentElement)}
-                    `;
                   }
                 }}
               >
@@ -590,11 +576,11 @@ export default function ProfileBar({
 
       {activePanel === 'badges' && (
         <div 
-          className="fixed inset-x-0 z-[250]" 
+          className="fixed inset-x-0 z-[250] animate-in fade-in duration-300" 
           style={{ top: '64px', bottom: '0' }} // Position below the profile bar
         >
           <div 
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-in fade-in duration-300"
             onClick={() => {
               setActivePanel(null);
               try { onOpenBlueDisplay?.(); } catch {}
@@ -602,8 +588,15 @@ export default function ProfileBar({
           />
           <div className="relative h-full flex items-start justify-center pt-8">
             <div 
-              className="w-full max-w-4xl mx-4 rounded-2xl p-6 backdrop-blur-md border-2 border-[#FC54AF]/60 bg-white/5 shadow-[0_0_26px_rgba(56,182,255,0.35)]"
-              style={{ maxHeight: 'calc(100vh - 120px)', overflow: 'auto' }}
+              className="w-full max-w-4xl mx-4 rounded-2xl p-6 backdrop-blur-md border-2 border-[#FC54AF]/60 bg-white/5 shadow-[0_0_26px_rgba(56,182,255,0.35)] animate-in slide-in-from-top-4 zoom-in-95 fade-in duration-500 animate-pulse"
+              style={{ 
+                maxHeight: 'calc(100vh - 120px)', 
+                overflow: 'auto',
+                transform: 'scale(1.02)',
+                transition: 'transform 0.3s ease-out',
+                animationDuration: '1s',
+                animationIterationCount: '2'
+              }}
               onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
             >
               <BadgesModal 
@@ -900,7 +893,7 @@ export default function ProfileBar({
                   }}
                 >
                   <img
-                    src="/cockpit/chxndler-picture.png"
+                    src="/cockpit/chxndler-picture.webp"
                     alt="CHXNDLER"
                     className="w-full h-full object-contain rounded-lg"
                     style={{

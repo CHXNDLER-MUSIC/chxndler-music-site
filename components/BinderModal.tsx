@@ -656,7 +656,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
         className="fixed inset-0 z-[2147483646] flex items-center justify-center"
         style={{
           pointerEvents: 'none',
-          paddingTop: '300px'
+          paddingTop: '120px'
         }}
       >
         <div
@@ -673,14 +673,14 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
       <div 
         className="fixed inset-0 z-[2147483647] flex items-center justify-center"
         style={{
-          paddingTop: '300px'
+          paddingTop: '120px'
         }}
       >
         <div
           className="binder-hologram-container"
           style={{
             width: 'min(92vw, 700px)',
-            height: '38vh',
+            height: '50vh',
             display: 'flex',
             flexDirection: 'column',
             padding: '10px 14px 0px 14px',
@@ -1465,10 +1465,10 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                 style={{ 
                   whiteSpace: 'pre-wrap', 
                   lineHeight: 1.2, 
-                  fontSize: 9, 
+                  fontSize: 12, 
                   color: '#FF69B4', 
                   textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,105,180,0.6)', 
-                  marginTop: '-4px' 
+                  marginTop: '2px' 
                 }}
               >
                 Earn the cards that reflect your journey in the Heartverse.
@@ -1611,6 +1611,38 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                               </div>
                             </div>
                           )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                {/* Second row of 5 locked slots */}
+                <div className="grid gap-2 grid-cols-5 mt-3">
+                  {Array.from({ length: 5 }, (_, index) => {
+                    const slotIndex = index + 5; // Slots 5-9
+                    
+                    return (
+                      <div
+                        key={`locked-slot-${slotIndex}`}
+                        className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300"
+                        style={{
+                          boxShadow: '0 0 5px rgba(255,105,180,0.1)',
+                          aspectRatio: '2/3'
+                        }}
+                      >
+                        <div className="relative h-full w-full flex items-center justify-center">
+                          <div 
+                            className="text-center"
+                            style={{
+                              color: 'rgba(255,105,180,0.4)',
+                              fontSize: '10px',
+                              fontWeight: 'bold',
+                              letterSpacing: '0.5px'
+                            }}
+                          >
+                            LOCKED
+                          </div>
                         </div>
                       </div>
                     );

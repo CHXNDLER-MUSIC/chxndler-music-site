@@ -9,7 +9,7 @@ export default function HoloJoinButton({
   hubColor = "#FC54AF",
   size = 72,
   label = "Signal",
-  iconSrc = "/elements/antennas.png",
+  iconSrc = "/elements/antennas.webp",
   isActive = false,
 }: {
   onClick?: () => void;

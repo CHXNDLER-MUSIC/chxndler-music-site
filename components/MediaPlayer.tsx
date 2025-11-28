@@ -1693,7 +1693,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                   </svg>
                 </div>
               )}
-              <img src="/elements/antennas.png" alt="Antennas" className="antennas-image" />
+              <img src="/elements/antennas.webp" alt="Antennas" className="antennas-image" />
             </div>
 
             <div className="volume-button-wrap">

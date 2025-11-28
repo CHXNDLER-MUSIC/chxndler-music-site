@@ -68,7 +68,7 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
 
   const SpotifyIcon = (
     <img
-      src="/elements/spotify.png"
+      src="/elements/spotify.webp"
       alt="Spotify"
       width={iconSize}
       height={iconSize}
@@ -77,7 +77,7 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
   );
   const AppleIcon = (
     <img
-      src="/elements/apple.png"
+      src="/elements/apple.webp"
       alt="Apple Music"
       width={iconSize}
       height={iconSize}

@@ -382,7 +382,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
                 }}
               >
                 <img
-                  src={`/elements/${todaysElement.name}.png`}
+                  src={`/elements/${todaysElement.name}.webp`}
                   alt="Today's Element"
                   className="w-full h-full object-cover"
                   draggable={false}

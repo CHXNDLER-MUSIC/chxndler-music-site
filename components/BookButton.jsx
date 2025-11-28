@@ -25,7 +25,7 @@ export default function BookButton() {
         onClick={handleBookClick}
       >
         <img 
-          src="/elements/book.png" 
+          src="/elements/binder.webp" 
           alt="Your Book" 
           className="w-full h-full object-contain group-hover:scale-110 transition-transform"
         />

@@ -8,22 +8,22 @@ import { useAudioGate } from "./AudioGateWrapper";
 
 // Song element icon mapping
 const SONG_ELEMENTS: { [key: string]: string } = {
-  'alone': '/elements/darkness.png',      // darkness for "Alone"
-  'baby': '/elements/baby.png',           // baby icon for "Baby" track
-  'be-my-bee': '/elements/heart.png',     // heart for "Be My Bee" (love theme)  
-  'ocean-girl': '/elements/water.png',    // water for "Ocean Girl"
-  'night-drive': '/elements/lightning.png', // lightning for energy/drive
-  'starlight': '/elements/lightning.png', // lightning for celestial energy
-  'horizon': '/elements/water.png',       // water for "Sun meets sea"
-  'afterglow': '/elements/lightning.png', // lightning for glow/energy
-  'midnight': '/elements/darkness.png',   // darkness for "Midnight"
-  'tidal': '/elements/water.png',         // water for "Tidal"
-  'drift': '/elements/water.png',         // water for "Waves of weightless time"
+  'alone': '/elements/darkness.webp',      // darkness for "Alone"
+  'baby': '/elements/heart.webp',          // no baby icon asset; use heart
+  'be-my-bee': '/elements/heart.webp',     // heart for "Be My Bee" (love theme)  
+  'ocean-girl': '/elements/water.webp',    // water for "Ocean Girl"
+  'night-drive': '/elements/lightning.webp', // lightning for energy/drive
+  'starlight': '/elements/lightning.webp', // lightning for celestial energy
+  'horizon': '/elements/water.webp',       // water for "Sun meets sea"
+  'afterglow': '/elements/lightning.webp', // lightning for glow/energy
+  'midnight': '/elements/darkness.webp',   // darkness for "Midnight"
+  'tidal': '/elements/water.webp',         // water for "Tidal"
+  'drift': '/elements/water.webp',         // water for "Waves of weightless time"
 };
 
 function getSongIcon(title: string): string {
   const songId = title.toLowerCase().replace(/\s+/g, '-');
-  return SONG_ELEMENTS[songId] || '/elements/music.png'; // default to music icon
+  return SONG_ELEMENTS[songId] || '/elements/music.webp'; // default to music icon
 }
 
 function getSongElement(title: string): Element {
@@ -70,7 +70,7 @@ export default function MediaPlayer({
 
   const elementColor = getSongElementColor(title);
   const iconSrc = getSongIcon(title);
-  const isDefaultMusicIcon = iconSrc.endsWith('/elements/music.png');
+  const isDefaultMusicIcon = iconSrc.endsWith('/elements/music.webp');
   const [animationTime, setAnimationTime] = useState(0);
 
   // Handle gated play attempt

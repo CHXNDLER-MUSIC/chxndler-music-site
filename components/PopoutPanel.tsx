@@ -126,7 +126,7 @@ export default function PopoutPanel({
             }}
           >
             <img 
-              src="/elements/text.png" 
+              src="/elements/text.webp" 
               alt="Text" 
               style={{
                 width: '100%',

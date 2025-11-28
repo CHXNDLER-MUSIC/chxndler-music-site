@@ -30,7 +30,7 @@ const tierData: Record<TierType, TierData> = {
     name: 'WANDERER',
     color: '#00FFFF',
     glowColor: 'rgba(0, 255, 255, 0.8)',
-    image: '/elements/wanderer.png',
+    image: '/elements/wanderer.webp',
     priceRange: '0 - 4',
     backMessage: 'You have just arrived, drawn by the signal.',
     benefits: [
@@ -43,7 +43,7 @@ const tierData: Record<TierType, TierData> = {
     name: 'DREAMER', 
     color: '#FFD700',
     glowColor: 'rgba(255, 215, 0, 0.8)',
-    image: '/elements/dreamer.png',
+    image: '/elements/dreamer.webp',
     priceRange: '5 - 24',
     backMessage: 'You begin to awaken to the magic.',
     benefits: [
@@ -56,7 +56,7 @@ const tierData: Record<TierType, TierData> = {
     name: 'LOVER',
     color: '#FF69B4',
     glowColor: 'rgba(255, 105, 180, 0.8)',
-    image: '/elements/lover.png',
+    image: '/elements/lover.webp',
     priceRange: '25+',
     backMessage: 'The ones who feel the Heartverse inside them.',
     benefits: [

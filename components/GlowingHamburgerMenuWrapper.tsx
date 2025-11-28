@@ -6,11 +6,13 @@ import CodeButton from "./CodeButton";
 import ChxndlerButton from "./ChxndlerButton";
 import CodeModal from "./CodeModal";
 import JourneyModal from "./JourneyModal";
+import BinderModal from "./BinderModal";
 
 export default function GlowingHamburgerMenuWrapper() {
   const [codeOpen, setCodeOpen] = useState(false);
   const [chxndlerOpen, setChxndlerOpen] = useState(false);
   const [journeyOpen, setJourneyOpen] = useState(false);
+  const [binderOpen, setBinderOpen] = useState(false);
 
   useEffect(() => {
     console.log('codeOpen state changed to:', codeOpen);
@@ -25,6 +27,9 @@ export default function GlowingHamburgerMenuWrapper() {
       case "JOURNEY":
       case "MY JOURNEY":
         setJourneyOpen(true);
+        break;
+      case "BINDER":
+        setBinderOpen(true);
         break;
       // case "JOURNAL":
       //   openJournal();
@@ -49,6 +54,13 @@ export default function GlowingHamburgerMenuWrapper() {
   return (
     <>
       <GlowingHamburgerMenu onItemClick={handleItemClick} />
+      {/* Binder popout */}
+      {binderOpen && (
+        <BinderModal 
+          open={binderOpen}
+          onClose={() => setBinderOpen(false)}
+        />
+      )}
       {/* Direct Code Popup for ABOUT functionality */}
       {codeOpen && (
         <div 

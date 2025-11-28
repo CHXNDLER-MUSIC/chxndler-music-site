@@ -6743,23 +6743,6 @@ export default function HUDPanel({
                       </svg>
                     </button>
                     {/* Removed top CHXNDLER logo per request */}
-                    {/* Brand photo near the top; reduce top margin to move higher */}
-                    <div style={{ margin: '0 0 8px 0' }}>
-                      <img
-                        src="/cockpit/chxndler-picture.png"
-                        alt="CHXNDLER"
-                        style={{
-                          display: 'block',
-                          // Slightly smaller than full width and centered
-                          width: '65%',
-                          margin: '0 auto',
-                          height: 'auto',
-                          borderRadius: 10,
-                          boxShadow: '0 6px 18px rgba(0,0,0,0.35)',
-                          border: '1px solid rgba(242,239,29,0.35)'
-                        }}
-                      />
-                    </div>
                     {/* Scrollable content area */}
                     <div
                       className="holo-scrollbar-yellow"

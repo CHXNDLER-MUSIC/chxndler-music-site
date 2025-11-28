@@ -509,7 +509,7 @@ export default function JoinAliens({ visible = true } = {}) {
         }}
       >
         <img 
-          src="/elements/phone.png" 
+          src="/elements/phone.webp" 
           alt="Phone" 
           style={{
             width: '100%',
@@ -1200,7 +1200,7 @@ export default function JoinAliens({ visible = true } = {}) {
             }}
           >
             <img 
-              src="/elements/venmo.png" 
+              src="/elements/venmo.webp" 
               alt="Venmo" 
               style={{
                 width: '38px',
@@ -1247,7 +1247,7 @@ export default function JoinAliens({ visible = true } = {}) {
             }}
           >
             <img 
-              src="/elements/credit-card.png" 
+              src="/elements/credit-card.webp" 
               alt="Credit Card" 
               style={{
                 width: '48px',
@@ -1321,7 +1321,7 @@ export default function JoinAliens({ visible = true } = {}) {
             }}
           >
             <img 
-              src="/elements/venmo.png" 
+              src="/elements/venmo.webp" 
               alt="Venmo" 
               style={{
                 width: '38px',
@@ -1368,7 +1368,7 @@ export default function JoinAliens({ visible = true } = {}) {
             }}
           >
             <img 
-              src="/elements/credit-card.png" 
+              src="/elements/credit-card.webp" 
               alt="Credit Card" 
               style={{
                 width: '48px',
@@ -1439,7 +1439,7 @@ export default function JoinAliens({ visible = true } = {}) {
             }}
           >
             <img 
-              src="/elements/venmo.png" 
+              src="/elements/venmo.webp" 
               alt="Venmo" 
               style={{
                 width: '38px',
@@ -1486,7 +1486,7 @@ export default function JoinAliens({ visible = true } = {}) {
             }}
           >
             <img 
-              src="/elements/credit-card.png" 
+              src="/elements/credit-card.webp" 
               alt="Credit Card" 
               style={{
                 width: '48px',

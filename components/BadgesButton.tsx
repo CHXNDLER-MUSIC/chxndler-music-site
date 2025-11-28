@@ -200,10 +200,10 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
 
   const getElementalElements = () => {
     return [
-      { name: 'HEART', emoji: '❤️', image: '/elements/heart.png', color: '#ff6b9d' },
-      { name: 'WATER', emoji: '💧', image: '/elements/water.png', color: '#4dd0e1' },
-      { name: 'LIGHTNING', emoji: '⚡', image: '/elements/lightning.png', color: '#ffeb3b' },
-      { name: 'DARKNESS', emoji: '🌑', image: '/elements/darkness.png', color: '#9c27b0' }
+      { name: 'HEART', emoji: '❤️', image: '/elements/heart.webp', color: '#ff6b9d' },
+      { name: 'WATER', emoji: '💧', image: '/elements/water.webp', color: '#4dd0e1' },
+      { name: 'LIGHTNING', emoji: '⚡', image: '/elements/lightning.webp', color: '#ffeb3b' },
+      { name: 'DARKNESS', emoji: '🌑', image: '/elements/darkness.webp', color: '#9c27b0' }
     ];
   };
 

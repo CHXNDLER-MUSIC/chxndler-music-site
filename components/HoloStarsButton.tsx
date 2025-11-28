@@ -63,7 +63,7 @@ export default function HoloStarsButton({
         onHoverSound={() => sfx.play('hover', 0.35)}
         className="custom-stars-style"
       >
-        <img src="/elements/stars.png" alt="Stars" className="star-image" />
+        <img src="/elements/journal.webp" alt="Stars" className="star-image" />
       </SharedButton>
 
       {/* Unified Soul Star Journal */}

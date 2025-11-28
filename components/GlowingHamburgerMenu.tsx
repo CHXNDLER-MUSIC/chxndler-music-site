@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useProfile } from "@/contexts/ProfileContext";
 import Image from "next/image";
+import { sfx } from "@/lib/sfx";
 
 interface GlowingHamburgerMenuProps {
   onItemClick?: (label: string) => void;
@@ -42,10 +43,12 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
   }, []);
 
   const toggleMenu = () => {
+    sfx.play('click', 0.7);
     setIsOpen(!isOpen);
   };
 
   const handleItemClick = (label: string) => {
+    sfx.play('click', 0.7);
     onItemClick?.(label);
     setIsOpen(false);
   };
@@ -128,8 +131,19 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
             {menuItems.map((item, index) => (
               <React.Fragment key={item.label}>
                 <button
-                  onClick={() => handleItemClick(item.label)}
-                  className="w-full px-6 py-3 text-left text-white font-semibold tracking-wide transition-all duration-200 hover:bg-cyan-500/10 hover:text-cyan-300 relative group"
+                  onClick={(e) => {
+                    if (item.label === "BADGES") {
+                      // Add special pop-out effect for badges
+                      e.currentTarget.style.transform = 'scale(1.1)';
+                      e.currentTarget.style.transition = 'all 0.15s ease-out';
+                      setTimeout(() => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.transition = 'all 0.2s ease-in';
+                      }, 150);
+                    }
+                    handleItemClick(item.label);
+                  }}
+                  className="w-full px-6 py-2 text-left text-white font-semibold tracking-wide transition-all duration-200 hover:bg-cyan-500/10 hover:text-cyan-300 relative group"
                   style={{
                     textShadow: "0 0 10px rgba(252, 84, 175, 0.3)",
                   }}
@@ -137,10 +151,10 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
                   {/* Hover glow effect */}
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-200 bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
                   
-                  <span className="relative z-10 flex items-center gap-2 -ml-3">
+                  <span className="relative z-10 flex items-center gap-1 -ml-1">
                     {item.label === "ABOUT" && (
                       <Image
-                        src="/elements/about.png"
+                        src="/elements/about.webp"
                         alt="About"
                         width={32}
                         height={32}
@@ -149,7 +163,7 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
                     )}
                     {(item.label === "JOURNEY" || item.label === "MY JOURNEY") && (
                       <Image
-                        src="/elements/journey.png"
+                        src="/elements/journey.webp"
                         alt="Journey"
                         width={32}
                         height={32}
@@ -158,7 +172,7 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
                     )}
                     {item.label === "JOURNAL" && (
                       <Image
-                        src="/elements/journal.png"
+                        src="/elements/journal.webp"
                         alt="Journal"
                         width={32}
                         height={32}
@@ -167,7 +181,7 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
                     )}
                     {item.label === "BINDER" && (
                       <Image
-                        src="/elements/binder.png"
+                        src="/elements/binder.webp"
                         alt="Binder"
                         width={32}
                         height={32}
@@ -176,11 +190,14 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
                     )}
                     {item.label === "BADGES" && (
                       <Image
-                        src="/elements/badges.png"
+                        src="/elements/badges.webp"
                         alt="Badges"
                         width={32}
                         height={32}
-                        className="transition-all duration-200"
+                        className="transition-all duration-200 group-hover:scale-110 group-hover:drop-shadow-lg"
+                        style={{
+                          filter: 'drop-shadow(0 0 6px rgba(255, 215, 0, 0.6))'
+                        }}
                       />
                     )}
                     {item.label === "STORE" && (

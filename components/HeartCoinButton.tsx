@@ -276,7 +276,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   useEffect(() => {
     if (typeof window !== 'undefined' && (window as any).heartCoinInitialTab) {
       setActiveTab((window as any).heartCoinInitialTab);
-      // Clear the preference after using it
+      // Check for initial USE sub-tab preference
+      if ((window as any).heartCoinInitialUseTab) {
+        setActiveUseTab((window as any).heartCoinInitialUseTab);
+        // Clear the USE tab preference after using it
+        delete (window as any).heartCoinInitialUseTab;
+      }
+      // Clear the main tab preference after using it
       delete (window as any).heartCoinInitialTab;
     }
   }, [open]); // Run when modal opens
@@ -327,7 +333,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const todaysElement = getTodaysElement();
 
   const getElementIcon = (element: string) => {
-    return `/elements/${element}.png`;
+    return `/elements/${element}.webp`;
   };
 
   const handleElementTap = () => {
@@ -577,7 +583,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         {...restProps}
       >
         <img
-          src="/elements/heart-coin.png"
+          src="/elements/heart-coin.webp"
           alt="Heart Coins"
           className="w-full h-full object-cover rounded"
           style={{
@@ -690,7 +696,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           {/* Heart Coin Balance - Top Left */}
           <div className="absolute top-3 left-4 flex items-center space-x-2">
             <img
-              src="/elements/heart-coin.png"
+              src="/elements/heart-coin.webp"
               alt="Heart Coin"
               className="w-10 h-10"
             />
@@ -824,7 +830,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 </button>
                 <span className="text-sm flex items-center" style={{ color: dailyQuests.elementTapped ? '#666' : '#90EE90', textShadow: dailyQuests.elementTapped ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' }}>
                   {dailyQuests.elementTapped ? '✓ +1' : '+1'}
-                  <img src="/elements/heart-coin.png" alt="HeartCoin" className="w-6 h-6 ml-1" />
+                  <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
                 </span>
               </div>
             </div>
@@ -856,7 +862,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 </button>
                 <span className="text-sm flex items-center" style={{ color: dailyQuests.journalEntry ? '#666' : '#90EE90', textShadow: dailyQuests.journalEntry ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' }}>
                   {dailyQuests.journalEntry ? '✓ +1' : '+1'}
-                  <img src="/elements/heart-coin.png" alt="HeartCoin" className="w-6 h-6 ml-1" />
+                  <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
                 </span>
               </div>
             </div>
@@ -1028,7 +1034,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 )}
                 <span className="text-sm flex items-center" style={{ color: dailyQuests.checkedIn ? '#666' : '#90EE90', textShadow: dailyQuests.checkedIn ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' }}>
                   {dailyQuests.checkedIn ? '✓ +1-5' : '+1-5'} 
-                  <img src="/elements/heart-coin.png" alt="HeartCoin" className="w-6 h-6 ml-1" />
+                  <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
                 </span>
               </div>
 
@@ -1122,9 +1128,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         {PHYSICAL_ITEMS[currentMerchIndex] && (
                           <div 
                             className="rounded-lg p-4 transition-all duration-200"
-                            style={{
-                              boxShadow: '0 0 12px rgba(255,255,255,0.3)'
-                            }}
                           >
                             {/* Image and Title */}
                             <div className="flex items-start gap-4 mb-3">
@@ -1148,10 +1151,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   className="text-xs text-white/90 mb-1"
                                   style={{
                                     textShadow: '0 0 2px rgba(255,255,255,0.4)',
-                                    whiteSpace: 'nowrap',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    lineHeight: '1'
+                                    lineHeight: '1.3'
                                   }}
                                 >
                                   {PHYSICAL_ITEMS[currentMerchIndex].description}
@@ -1163,7 +1163,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   <div className="flex items-center gap-1 font-bold text-[#F2EF1D]">
                                     <span>{PHYSICAL_ITEMS[currentMerchIndex].priceHeartCoins}</span>
                                     <img
-                                      src="/elements/heart-coin.png"
+                                      src="/elements/heart-coin.webp"
                                       alt="Heart Coin"
                                       className="w-4 h-4 object-contain"
                                       style={{
@@ -1520,7 +1520,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     {/* Current Heart Coins */}
                                     <div className="flex flex-col items-center space-y-2 mb-4">
                                       <div className="flex items-center gap-2">
-                                        <img src="/elements/heart-coin.png" alt="Heart Coin" className="w-12 h-12" />
+                                        <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
                                         <div 
                                           className="text-xl font-bold"
                                           style={{ 
@@ -1536,7 +1536,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     {/* Cost */}
                                     <div className="flex flex-col items-center space-y-2 mb-4">
                                       <div className="flex items-center gap-2">
-                                        <img src="/elements/heart-coin.png" alt="Heart Coin" className="w-8 h-8" />
+                                        <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-8 h-8" />
                                         <div 
                                           className="text-lg font-bold"
                                           style={{ 
@@ -1612,7 +1612,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       setShowPhysicalForm(false);
                                     }}
                                   >
-                                    <img src="/elements/heart-coin.png" alt="Heart Coin" className="w-4 h-4" />
+                                    <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-4 h-4" />
                                     {card.digitalCost} DIGITAL
                                   </button>
                                   
@@ -1635,7 +1635,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       setShowDigitalForm(false);
                                     }}
                                   >
-                                    <img src="/elements/heart-coin.png" alt="Heart Coin" className="w-4 h-4" />
+                                    <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-4 h-4" />
                                     {card.physicalCost} PHYSICAL
                                   </button>
                                 </div>
@@ -1673,7 +1673,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     <div className="flex items-center justify-center gap-2 mb-4">
                       <span className="text-lg font-bold text-[#F2EF1D]">{selectedItem.priceHeartCoins}</span>
                       <img
-                        src="/elements/heart-coin.png"
+                        src="/elements/heart-coin.webp"
                         alt="Heart Coin"
                         className="w-6 h-6 object-contain"
                         style={{

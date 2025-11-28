@@ -162,7 +162,10 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...re
             <div className="flex justify-center mb-4">
               <div className="flex bg-black/30 rounded-lg p-1">
                 <button
-                  onClick={() => setActiveTab("CHXNDLER")}
+                  onClick={() => {
+                    sfx.play('click', 0.7);
+                    setActiveTab("CHXNDLER");
+                  }}
                   className={`px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 ${
                     activeTab === "CHXNDLER"
                       ? "bg-pink-500/20 text-pink-300 border border-pink-400/50"
@@ -194,7 +197,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...re
             
             {/* Pink neon line */}
             <div 
-              className="w-full h-px mb-6"
+              className="w-full h-px mb-0"
               style={{
                 background: 'linear-gradient(90deg, transparent, rgba(252,84,175,0.8) 20%, rgba(252,84,175,1) 50%, rgba(252,84,175,0.8) 80%, transparent)',
                 boxShadow: '0 0 4px rgba(252,84,175,0.6)'
@@ -205,7 +208,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...re
             {activeTab === "CHXNDLER" && (
               <>
                 {/* CHXNDLER Image */}
-                <div className="flex justify-center mb-6">
+                <div className="flex justify-center mb-0">
                   <div 
                     className="relative"
                     style={{
@@ -215,7 +218,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...re
                     }}
                   >
                     <img
-                      src="/cockpit/chxndler-picture.png"
+                      src="/cockpit/chxndler-picture.webp"
                       alt="CHXNDLER"
                       className="w-full h-full object-contain rounded-lg"
                       style={{
@@ -227,7 +230,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...re
 
                 {/* Description */}
                 <div 
-                  className="text-center"
+                  className="text-center -mt-4"
                   style={{ 
                     fontSize: '16px', 
                     color: '#FFFFFF !important', 

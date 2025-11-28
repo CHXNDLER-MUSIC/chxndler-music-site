@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import heartStarClean from "@/public/heartstar_clean.png";
+// Use public asset path instead of missing import
 
 export default function HeartStarPlanet({ size = 180 }: { size?: number }) {
   return (
@@ -129,7 +129,7 @@ export default function HeartStarPlanet({ size = 180 }: { size?: number }) {
         }}
       >
         <Image
-          src={heartStarClean}
+          src="/textures/center-planet.webp"
           alt="Heart Star"
           width={size}
           height={size * 1.3}
