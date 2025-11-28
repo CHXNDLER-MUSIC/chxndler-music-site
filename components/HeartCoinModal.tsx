@@ -225,7 +225,7 @@ export default function HeartCoinModal({ open, onClose }: Props) {
               </div>
               
               {/* Description */}
-              <div className="text-white/80 text-xs leading-relaxed px-2">
+              <div className="text-white/80 text-xs leading-relaxed px-2 break-words">
                 {item.description.toUpperCase()}
               </div>
               
@@ -237,7 +237,6 @@ export default function HeartCoinModal({ open, onClose }: Props) {
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-sm font-bold text-[#F2EF1D]">{item.heartCoin}</span>
                   <img
                     src="/elements/heart-coin.png"
                     alt="Heart Coin"
@@ -246,6 +245,7 @@ export default function HeartCoinModal({ open, onClose }: Props) {
                       filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 2px #FC54AF)'
                     }}
                   />
+                  <span className="text-sm font-bold text-[#F2EF1D]">{item.heartCoin}</span>
                 </div>
               </div>
               

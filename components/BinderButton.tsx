@@ -17,7 +17,7 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 export default function BinderButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onBeamColorChange, isActive = false, ...restProps }: Props) {
   const [open, setOpen] = useState(false);
   const [cardOpen, setCardOpen] = useState(false);
-  const [showFullCollection, setShowFullCollection] = useState(false);
+  const [showFullCollection, setShowFullCollection] = useState(true);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [selectedRarity, setSelectedRarity] = useState<string>('All');
   const [selectedCardName, setSelectedCardName] = useState<string>('All');
@@ -497,36 +497,8 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
           </button>
           
           {/* Header */}
-          <div className="flex justify-between items-center mb-3">
-            <button
-              onClick={() => {
-                try { sfx.play('click', 0.6); } catch {}
-                setShowFullCollection(!showFullCollection);
-                setSelectedElement(null);
-                setSelectedCardName('All');
-                setPreselectedCard(null);
-                setCurrentCardIndex(0);
-              }}
-              className="px-3 py-1 text-[10px] font-bold rounded border border-pink-400/60 hover:border-pink-400/80 transition-all duration-200"
-              style={{
-                background: 'rgba(255,105,180,0.1)',
-                color: '#FFB6C1',
-                textShadow: '0 0 4px rgba(255,182,193,0.8)',
-                boxShadow: '0 0 8px rgba(255,105,180,0.3)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(255,105,180,0.2)';
-                e.currentTarget.style.boxShadow = '0 0 12px rgba(255,105,180,0.5)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(255,105,180,0.1)';
-                e.currentTarget.style.boxShadow = '0 0 8px rgba(255,105,180,0.3)';
-              }}
-            >
-              {showFullCollection ? 'BACK TO BINDER' : 'FULL COLLECTION'}
-            </button>
+          <div className="flex justify-center items-center mb-3">
             <div 
-              className="absolute left-1/2 transform -translate-x-1/2"
               style={{ 
                 color: '#FF69B4', 
                 textShadow: '0 0 8px rgba(255,105,180,0.6)', 
@@ -536,7 +508,6 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
             >
               DIGITAL CARD BINDER
             </div>
-            <div className="w-32"></div>
           </div>
           
           {/* Thin pink neon line */}

@@ -2677,41 +2677,6 @@ export default function HUDPanel({
                           </svg>
                         </div>
                       )}
-                      {/* Store (gem) button placed to the right of Lyrics */}
-                      <button
-                        type="button"
-                        ref={storeBtnRef}
-                        className="gem-btn-waveform-hud"
-                        style={{ marginTop: 1 }}
-                        title="Open Store"
-                        data-id="store"
-                        data-song={isHome ? 'CHXNDLER' : (currentSong?.title || '')}
-                        aria-haspopup="dialog"
-                        aria-expanded={showStorePopover}
-                        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          e.preventDefault();
-                          try {
-                            const songSlug = isHome ? 'homepage' : (slug || active || 'unknown');
-                            const songTitle = isHome ? 'CHXNDLER' : (currentSong?.title || track?.title || 'Unknown');
-                            trackAnalytics('store_button_clicked', { song_slug: String(songSlug || ''), payload: { song_title: songTitle, location: isHome ? 'hud_store_button_home' : 'hud_store_button' } });
-                          } catch {}
-                          if (showStorePopover) { try { sfx.play('close', 0.4); } catch {}; setShowStorePopover(false); return; }
-                          openStorePopover();
-                        }}
-                      >
-                        <img
-                          src="/elements/store.png"
-                          alt="Store"
-                          width="20"
-                          height="20"
-                          style={{
-                            display: 'block',
-                            filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.85)) drop-shadow(0 0 16px rgba(255,255,255,0.55))'
-                          }}
-                        />
-                      </button>
 
                       {/* Streaming: Spotify, Apple, YouTube moved left into top controls */}
                       {(() => {
@@ -3980,53 +3945,6 @@ export default function HUDPanel({
                         </h3>
                       </div>
 
-                      {/* FULL COLLECTION Button */}
-                      <div style={{
-                        marginBottom: 6,
-                        textAlign: 'center',
-                        position: 'relative',
-                        zIndex: 1
-                      }}>
-                        <button
-                          aria-label="View Full Collection"
-                          title="View Full Collection"
-                          onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                          onClick={() => {
-                            try { sfx.play('click', 0.4); } catch {}
-                            setShowFullCollection(true);
-                            setCurrentCardIndex(0);
-                          }}
-                          style={{
-                            padding: '8px 16px',
-                            borderRadius: 8,
-                            background: 'linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85))',
-                            border: '1px solid rgba(255,255,255,0.3)',
-                            color: '#FC54AF',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            fontSize: 12,
-                            fontWeight: 700,
-                            letterSpacing: '0.5px',
-                            textShadow: '0 0 8px rgba(252,84,175,0.6)',
-                            boxShadow: '0 0 20px rgba(255,255,255,0.8), 0 0 40px rgba(255,255,255,0.4), 0 2px 8px rgba(255,255,255,0.2)',
-                            filter: 'drop-shadow(0 0 12px rgba(255,255,255,0.7))'
-                          }}
-                          onMouseOver={(e) => {
-                            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,1), rgba(255,255,255,0.95))';
-                            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.5)';
-                            e.currentTarget.style.transform = 'translateY(-1px)';
-                            e.currentTarget.style.boxShadow = '0 0 25px rgba(255,255,255,0.9), 0 0 50px rgba(255,255,255,0.5), 0 4px 12px rgba(255,255,255,0.3)';
-                          }}
-                          onMouseOut={(e) => {
-                            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85))';
-                            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)';
-                            e.currentTarget.style.transform = 'translateY(0px)';
-                            e.currentTarget.style.boxShadow = '0 0 20px rgba(255,255,255,0.8), 0 0 40px rgba(255,255,255,0.4), 0 2px 8px rgba(255,255,255,0.2)';
-                          }}
-                        >
-                          FULL COLLECTION
-                        </button>
-                      </div>
                       
                       {/* Card slots grid */}
                       <div style={{

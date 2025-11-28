@@ -126,18 +126,22 @@ function ElementalPlanetsWithTextures() {
             depthWrite={false}
           />
         </mesh>
-        <Html position={[0, 25, 0]} center>
+        <Html position={[0, 30, 0]} center>
           <div style={{ 
             color: "#FC54AF", 
-            fontSize: "32px", 
+            fontSize: "24px", 
             fontWeight: "bold",
-            textShadow: "4px 4px 8px black",
+            textShadow: "0 0 10px #FC54AF, 2px 2px 8px rgba(0,0,0,0.8)",
             pointerEvents: "none",
             textAlign: "center",
             fontFamily: "Arial, sans-serif",
-            letterSpacing: "2px"
+            letterSpacing: "2px",
+            background: "rgba(0,0,0,0.3)",
+            padding: "4px 8px",
+            borderRadius: "6px",
+            border: "1px solid rgba(252,84,175,0.5)"
           }}>
-            HEART
+            💖 HEART
           </div>
         </Html>
       </group>
@@ -177,18 +181,22 @@ function ElementalPlanetsWithTextures() {
             depthWrite={false}
           />
         </mesh>
-        <Html position={[0, 25, 0]} center>
+        <Html position={[0, 30, 0]} center>
           <div style={{ 
             color: "#38B6FF", 
-            fontSize: "32px", 
+            fontSize: "24px", 
             fontWeight: "bold",
-            textShadow: "4px 4px 8px black",
+            textShadow: "0 0 10px #38B6FF, 2px 2px 8px rgba(0,0,0,0.8)",
             pointerEvents: "none",
             textAlign: "center",
             fontFamily: "Arial, sans-serif",
-            letterSpacing: "2px"
+            letterSpacing: "2px",
+            background: "rgba(0,0,0,0.3)",
+            padding: "4px 8px",
+            borderRadius: "6px",
+            border: "1px solid rgba(56,182,255,0.5)"
           }}>
-            WATER
+            🌊 WATER
           </div>
         </Html>
       </group>
@@ -550,7 +558,7 @@ function InvalidateOnState() {
 }
 
 export default function PlanetSystem({ showAll = false, hideUntilPlaying = false }: { showAll?: boolean; hideUntilPlaying?: boolean }) {
-  console.log("🌟 PlanetSystem is rendering with props:", { showAll, hideUntilPlaying });
+  console.log("🌟🌟🌟 HOLO PLANETSYSTEM.TSX IS RENDERING!!! 🌟🌟🌟", { showAll, hideUntilPlaying });
   // Mark 3D system as active so global key handlers can avoid interfering
   React.useEffect(() => {
     try { (window as any).__CHX_3D_ACTIVE = true; } catch {}
@@ -745,6 +753,12 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
               <HeartStarPlanet size={180} />
             </group>
           )}
+          
+          {/* EMERGENCY TEST SPHERE - SHOULD BE VISIBLE AT CENTER */}
+          <mesh position={[0, 0, 0]} renderOrder={50}>
+            <sphereGeometry args={[10, 16, 16]} />
+            <meshBasicMaterial color="#FF0000" />
+          </mesh>
           
           {/* 4 ELEMENTAL PLANETS WITH TEXTURES - ALWAYS VISIBLE - FORCED RENDERING */}
           <ElementalPlanetsWithTextures />

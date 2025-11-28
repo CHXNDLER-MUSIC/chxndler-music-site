@@ -1756,8 +1756,8 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(35, width / height, 0.1, 120);
-    // Slightly farther default to better frame homepage planets
-    camera.position.set(0, 1.2, 20.0);
+    // Zoomed out even further for wider view
+    camera.position.set(0, 1.2, 40.0);
     camera.lookAt(0, -2, 0); // Look below center to shift display higher
     cameraRef.current = camera;
 
@@ -2440,6 +2440,66 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
           // Removed pink atmosphere and outer glow to eliminate aura
 
           centralPlanetRef.current = { id: 'heart', mesh: heartMesh, originalSat: null };
+
+          // ADD 4 ELEMENTAL PLANETS AROUND THE HEART
+          try {
+            console.log("🚨🪐 ADDING ELEMENTAL PLANETS TO RAW SYSTEM! 🪐🚨");
+            
+            const elementalPlanets = [
+              { name: 'WATER', color: '#38B6FF', position: [20, 0, 0] },
+              { name: 'LIGHTNING', color: '#F2EF1D', position: [0, 20, 0] },
+              { name: 'HEART', color: '#FC54AF', position: [-20, 0, 0] },
+              { name: 'DARKNESS', color: '#6A4C93', position: [0, -20, 0] }
+            ];
+
+            elementalPlanets.forEach(planet => {
+              // Create sphere geometry - VISIBLE BUT SMALL SIZE
+              const sphereGeo = new THREE.SphereGeometry(1.0, 16, 16);
+              
+              // Create enhanced material with emissive properties
+              const sphereMat = new THREE.MeshStandardMaterial({ 
+                color: planet.color,
+                emissive: new THREE.Color(planet.color),
+                emissiveIntensity: 0.4,
+                metalness: 0.1,
+                roughness: 0.3,
+                transparent: false
+              });
+              
+              // Create main planet mesh
+              const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
+              sphereMesh.position.set(planet.position[0], planet.position[1], planet.position[2]);
+              sys.add(sphereMesh);
+              
+              // Add inner glow effect - VISIBLE SIZE
+              const innerGlowGeo = new THREE.SphereGeometry(1.5, 12, 12);
+              const innerGlowMat = new THREE.MeshBasicMaterial({
+                color: planet.color,
+                transparent: true,
+                opacity: 0.4,
+                depthWrite: false
+              });
+              const innerGlowMesh = new THREE.Mesh(innerGlowGeo, innerGlowMat);
+              innerGlowMesh.position.copy(sphereMesh.position);
+              sys.add(innerGlowMesh);
+              
+              // Add outer atmospheric glow - VISIBLE SIZE
+              const outerGlowGeo = new THREE.SphereGeometry(2.2, 12, 12);
+              const outerGlowMat = new THREE.MeshBasicMaterial({
+                color: planet.color,
+                transparent: true,
+                opacity: 0.15,
+                depthWrite: false
+              });
+              const outerGlowMesh = new THREE.Mesh(outerGlowGeo, outerGlowMat);
+              outerGlowMesh.position.copy(sphereMesh.position);
+              sys.add(outerGlowMesh);
+              
+              console.log(`Enhanced ${planet.name} planet at position:`, planet.position);
+            });
+          } catch (error) {
+            console.error("Failed to add elemental planets:", error);
+          }
         } catch {}
       }
     }

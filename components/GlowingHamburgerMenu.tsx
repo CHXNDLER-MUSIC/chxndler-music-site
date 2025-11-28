@@ -55,14 +55,10 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
       {/* Hamburger Button */}
       <button
         onClick={toggleMenu}
-        className="relative w-12 h-12 rounded-full bg-black/60 backdrop-blur-sm border border-white/30 flex items-center justify-center transition-all duration-300 hover:scale-105 animate-pulse"
+        className="relative w-12 h-12 rounded-full bg-black/60 backdrop-blur-sm border-2 border-white flex items-center justify-center transition-all duration-300 hover:scale-105"
         style={{
-          boxShadow: `
-            0 0 30px rgba(255, 255, 255, 0.6),
-            0 0 60px rgba(255, 255, 255, 0.4),
-            0 0 100px rgba(255, 255, 255, 0.2),
-            inset 0 0 20px rgba(255, 255, 255, 0.2)
-          `,
+          borderColor: '#FFFFFF',
+          filter: 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.8))',
         }}
         aria-label={isOpen ? "Close menu" : "Open menu"}
       >

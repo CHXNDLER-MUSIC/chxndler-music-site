@@ -747,35 +747,8 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
           </button>
           
           {/* Header */}
-          <div className="flex justify-between items-center mb-3 flex-shrink-0">
-            <button
-              onClick={() => {
-                try { sfx.play('click', 0.6); } catch {}
-                setShowFullCollection(!showFullCollection);
-                setSelectedElement(null);
-                setSelectedCardName('All');
-                setCurrentCardIndex(0);
-              }}
-              className="px-3 py-1 text-[10px] font-bold rounded border border-pink-400/60 hover:border-pink-400/80 transition-all duration-200"
-              style={{
-                background: 'rgba(255,105,180,0.1)',
-                color: '#FFB6C1',
-                textShadow: '0 0 4px rgba(255,182,193,0.8)',
-                boxShadow: '0 0 8px rgba(255,105,180,0.3)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(255,105,180,0.2)';
-                e.currentTarget.style.boxShadow = '0 0 12px rgba(255,105,180,0.5)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(255,105,180,0.1)';
-                e.currentTarget.style.boxShadow = '0 0 8px rgba(255,105,180,0.3)';
-              }}
-            >
-              {showFullCollection ? 'BACK TO BINDER' : 'FULL COLLECTION'}
-            </button>
+          <div className="flex justify-center items-center mb-3 flex-shrink-0">
             <div 
-              className="absolute left-1/2 transform -translate-x-1/2"
               style={{ 
                 color: '#FF69B4', 
                 textShadow: '0 0 8px rgba(255,105,180,0.6)', 
@@ -785,7 +758,6 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
             >
               DIGITAL CARD BINDER
             </div>
-            <div className="w-32"></div>
           </div>
           
           {/* Thin pink neon line */}

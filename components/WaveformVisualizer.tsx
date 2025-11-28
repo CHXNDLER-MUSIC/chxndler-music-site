@@ -41,7 +41,7 @@ export default function WaveformVisualizer({
   currentTime,
   onProgressClick,
   width = "100%",
-  height = 18,
+  height = 10,
   className = ""
 }: WaveformVisualizerProps) {
   const elementColor = ELEMENT_COLORS[element]?.stroke || '#FFFFFF';
@@ -86,9 +86,9 @@ export default function WaveformVisualizer({
         position: 'relative',
         width,
         height,
-        cursor: onProgressClick ? 'pointer' : 'default',
-        marginTop: '8px',
-        marginBottom: '4px'
+        cursor: onProgressClick ? `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23${elementColor.slice(1)}' stroke='%23ffffff' stroke-width='0.5'/%3E%3C/svg%3E") 12 12, pointer` : 'default',
+        marginTop: '-2px',
+        marginBottom: '-2px'
       }}
     >
       <svg 
@@ -109,56 +109,96 @@ export default function WaveformVisualizer({
             <stop offset="100%" stopColor={hexToRgba(elementColor, 0.8)} />
           </linearGradient>
           <filter id="waveformGlow">
-            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
             <feMerge>
+              <feMergeNode in="coloredBlur"/>
               <feMergeNode in="coloredBlur"/>
               <feMergeNode in="coloredBlur"/>
               <feMergeNode in="coloredBlur"/>
               <feMergeNode in="SourceGraphic"/>
             </feMerge>
           </filter>
+          <filter id="neonGlow">
+            <feGaussianBlur stdDeviation="2" result="innerGlow"/>
+            <feGaussianBlur stdDeviation="6" result="outerGlow"/>
+            <feMerge>
+              <feMergeNode in="outerGlow"/>
+              <feMergeNode in="outerGlow"/>
+              <feMergeNode in="innerGlow"/>
+              <feMergeNode in="innerGlow"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
         </defs>
         
-        {/* Full white bar with bright glow */}
+        {/* Outer neon glow */}
         <line 
-          x1="5" 
+          x1="2" 
           y1={centerY} 
-          x2="95" 
+          x2="98" 
+          y2={centerY} 
+          stroke="#FFFFFF" 
+          strokeWidth="12" 
+          opacity="0.8" 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          filter="url(#neonGlow)" 
+        />
+        {/* Main neon white bar */}
+        <line 
+          x1="2" 
+          y1={centerY} 
+          x2="98" 
+          y2={centerY} 
+          stroke="#FFFFFF" 
+          strokeWidth="8" 
+          opacity="1" 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          filter="url(#waveformGlow)" 
+        />
+        {/* Inner bright core */}
+        <line 
+          x1="2" 
+          y1={centerY} 
+          x2="98" 
           y2={centerY} 
           stroke="#FFFFFF" 
           strokeWidth="6" 
           opacity="1" 
           strokeLinecap="round" 
           strokeLinejoin="round" 
-          filter="url(#waveformGlow)" 
-        />
-        {/* Additional bright line for visibility */}
-        <line 
-          x1="5" 
-          y1={centerY} 
-          x2="95" 
-          y2={centerY} 
-          stroke="#FFFFFF" 
-          strokeWidth="3" 
-          opacity="1" 
-          strokeLinecap="round" 
-          strokeLinejoin="round" 
         />
         
-        {/* Current position indicator heart - always visible */}
+        {/* Current position indicator heart - always visible with enhanced visibility */}
         <path 
-          d={`M ${Math.max(5, progressX)} ${centerY + 2} 
-              L ${Math.max(5, progressX) - 2} ${centerY - 1.2}
-              C ${Math.max(5, progressX) - 2} ${centerY - 3}, ${Math.max(5, progressX) - 0.5} ${centerY - 3}, ${Math.max(5, progressX) - 0.5} ${centerY - 1.8}
-              C ${Math.max(5, progressX) - 0.5} ${centerY - 1.2}, ${Math.max(5, progressX)} ${centerY - 0.7}, ${Math.max(5, progressX)} ${centerY - 0.7}
-              C ${Math.max(5, progressX)} ${centerY - 0.7}, ${Math.max(5, progressX) + 0.5} ${centerY - 1.2}, ${Math.max(5, progressX) + 0.5} ${centerY - 1.8}
-              C ${Math.max(5, progressX) + 0.5} ${centerY - 3}, ${Math.max(5, progressX) + 2} ${centerY - 3}, ${Math.max(5, progressX) + 2} ${centerY - 1.2}
-              L ${Math.max(5, progressX)} ${centerY + 2} Z`}
+          d={`M ${Math.max(2, progressX)} ${centerY + 4} 
+              L ${Math.max(2, progressX) - 1.5} ${centerY - 1}
+              C ${Math.max(2, progressX) - 1.5} ${centerY - 4}, ${Math.max(2, progressX) - 0.3} ${centerY - 4}, ${Math.max(2, progressX) - 0.3} ${centerY - 2.5}
+              C ${Math.max(2, progressX) - 0.3} ${centerY - 1.8}, ${Math.max(2, progressX)} ${centerY - 1}, ${Math.max(2, progressX)} ${centerY - 1}
+              C ${Math.max(2, progressX)} ${centerY - 1}, ${Math.max(2, progressX) + 0.3} ${centerY - 1.8}, ${Math.max(2, progressX) + 0.3} ${centerY - 2.5}
+              C ${Math.max(2, progressX) + 0.3} ${centerY - 4}, ${Math.max(2, progressX) + 1.5} ${centerY - 4}, ${Math.max(2, progressX) + 1.5} ${centerY - 1}
+              L ${Math.max(2, progressX)} ${centerY + 4} Z`}
           fill="#FFFFFF" 
           stroke={elementColor} 
-          strokeWidth="1" 
+          strokeWidth="2" 
           opacity="1" 
           filter="url(#waveformGlow)" 
+        />
+        
+        {/* Additional heart shadow for depth */}
+        <path 
+          d={`M ${Math.max(2, progressX)} ${centerY + 4} 
+              L ${Math.max(2, progressX) - 1.5} ${centerY - 1}
+              C ${Math.max(2, progressX) - 1.5} ${centerY - 4}, ${Math.max(2, progressX) - 0.3} ${centerY - 4}, ${Math.max(2, progressX) - 0.3} ${centerY - 2.5}
+              C ${Math.max(2, progressX) - 0.3} ${centerY - 1.8}, ${Math.max(2, progressX)} ${centerY - 1}, ${Math.max(2, progressX)} ${centerY - 1}
+              C ${Math.max(2, progressX)} ${centerY - 1}, ${Math.max(2, progressX) + 0.3} ${centerY - 1.8}, ${Math.max(2, progressX) + 0.3} ${centerY - 2.5}
+              C ${Math.max(2, progressX) + 0.3} ${centerY - 4}, ${Math.max(2, progressX) + 1.5} ${centerY - 4}, ${Math.max(2, progressX) + 1.5} ${centerY - 1}
+              L ${Math.max(2, progressX)} ${centerY + 4} Z`}
+          fill="none" 
+          stroke={elementColor} 
+          strokeWidth="3" 
+          opacity="0.8" 
         />
       </svg>
     </div>

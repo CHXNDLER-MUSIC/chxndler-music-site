@@ -229,9 +229,11 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   // Journal completion tracking
   journalCompleted?: boolean;
   onJournalCompleted?: () => void;
+  // Modal close callback
+  onClose?: () => void;
 };
 
-export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onOpenJournal, onOpenBinder, heartCoins: externalHeartCoins = 0, onHeartCoinsChange, isActive = false, journalCompleted = false, onJournalCompleted, ...restProps }: Props) {
+export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onOpenJournal, onOpenBinder, heartCoins: externalHeartCoins = 0, onHeartCoinsChange, isActive = false, journalCompleted = false, onJournalCompleted, onClose, ...restProps }: Props) {
   const { profile, refreshProfile, setIsJournalOpen } = useProfile();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'EARN' | 'USE'>('EARN');
@@ -269,6 +271,24 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   useEffect(() => {
     setHeartCoins(externalHeartCoins);
   }, [externalHeartCoins]);
+
+  // Check for initial tab preference from hamburger menu
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).heartCoinInitialTab) {
+      setActiveTab((window as any).heartCoinInitialTab);
+      // Clear the preference after using it
+      delete (window as any).heartCoinInitialTab;
+    }
+  }, [open]); // Run when modal opens
+
+  // Open modal when isActive becomes true (for hamburger menu integration)
+  useEffect(() => {
+    if (isActive && !open) {
+      setOpen(true);
+    } else if (!isActive && open) {
+      setOpen(false);
+    }
+  }, [isActive, open]);
 
   // Helper function to update heart coins
   const updateHeartCoins = async (newAmount: number) => {
@@ -649,6 +669,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               try { sfx.play('close', 0.8); } catch {}
               setOpen(false);
               try { onOpenBlueDisplay?.(); } catch {}
+              try { onClose?.(); } catch {}
             }}
             className="absolute top-2 right-4 text-white hover:text-gray-200 cursor-pointer w-8 h-8 rounded-full border border-white/80 flex items-center justify-center"
             style={{ 
@@ -1507,29 +1528,33 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
                                     {/* Current Heart Coins */}
                                     <div className="flex flex-col items-center space-y-2 mb-4">
-                                      <img src="/elements/heart-coin.png" alt="Heart Coin" className="w-12 h-12" />
-                                      <div 
-                                        className="text-xl font-bold"
-                                        style={{ 
-                                          color: '#FFFFFF', 
-                                          textShadow: '0 0 6px rgba(255,255,255,0.8)' 
-                                        }}
-                                      >
-                                        {heartCoins}
+                                      <div className="flex items-center gap-2">
+                                        <img src="/elements/heart-coin.png" alt="Heart Coin" className="w-12 h-12" />
+                                        <div 
+                                          className="text-xl font-bold"
+                                          style={{ 
+                                            color: '#FFFFFF', 
+                                            textShadow: '0 0 6px rgba(255,255,255,0.8)' 
+                                          }}
+                                        >
+                                          {heartCoins}
+                                        </div>
                                       </div>
                                     </div>
 
                                     {/* Cost */}
                                     <div className="flex flex-col items-center space-y-2 mb-4">
-                                      <img src="/elements/heart-coin.png" alt="Heart Coin" className="w-8 h-8" />
-                                      <div 
-                                        className="text-lg font-bold"
-                                        style={{ 
-                                          color: '#FFFFFF', 
-                                          textShadow: '0 0 4px rgba(255,255,255,0.6)' 
-                                        }}
-                                      >
-                                        {card.digitalCost}
+                                      <div className="flex items-center gap-2">
+                                        <img src="/elements/heart-coin.png" alt="Heart Coin" className="w-8 h-8" />
+                                        <div 
+                                          className="text-lg font-bold"
+                                          style={{ 
+                                            color: '#FFFFFF', 
+                                            textShadow: '0 0 4px rgba(255,255,255,0.6)' 
+                                          }}
+                                        >
+                                          {card.digitalCost}
+                                        </div>
                                       </div>
                                     </div>
 
