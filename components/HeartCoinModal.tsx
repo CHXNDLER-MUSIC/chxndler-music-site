@@ -197,19 +197,19 @@ export default function HeartCoinModal({ open, onClose }: Props) {
     <HeartversePopup 
       isOpen={open} 
       onClose={onClose} 
-      title="THE HEARTVERSE COLLECTION"
+      title=""
     >
       <div className="relative">
         {/* Store Items Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[60vh] overflow-y-auto pr-2">
           {currentItems.map((item, index) => (
-            <div key={index} className="text-center space-y-4 p-4 bg-black/20 rounded-lg border border-white/10 hover:border-[#F2EF1D]/30 transition-all duration-300">
+            <div key={index} className="text-center space-y-4 p-4 bg-black/20 rounded-lg transition-all duration-300">
               <h3 className="text-lg font-bold text-white tracking-wider">
                 {item.name.toUpperCase()}
               </h3>
               
               {/* Item Images */}
-              <div className="relative h-32 w-full flex items-center justify-center">
+              <div className="relative h-48 w-full flex items-center justify-center">
                 <img
                   src={item.image}
                   alt={item.name}

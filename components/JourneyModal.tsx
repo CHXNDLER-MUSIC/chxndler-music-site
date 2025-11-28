@@ -97,7 +97,7 @@ export default function JourneyModal({ open, onClose }: JourneyModalProps) {
         style={{
           zIndex: 2147483646,
           pointerEvents: 'none',
-          paddingTop: '220px'
+          paddingTop: '-300px'
         }}
       >
         <div
@@ -111,10 +111,9 @@ export default function JourneyModal({ open, onClose }: JourneyModalProps) {
       </div>
       
       <div 
-        className="fixed inset-0 z-[2147483647] flex items-center justify-center"
+        className="fixed inset-0 z-[2147483647] flex justify-center"
         style={{
-          paddingTop: '220px',
-          backdropFilter: 'blur(5px)'
+          paddingTop: '20px'
         }}
         onClick={handleClose}
       >

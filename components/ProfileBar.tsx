@@ -879,7 +879,7 @@ export default function ProfileBar({
           
           {/* Thin pink neon line */}
           <div 
-            className="w-full h-px mb-4"
+            className="w-full h-px"
             style={{
               background: 'linear-gradient(90deg, transparent, rgba(255,105,180,0.8) 20%, rgba(255,105,180,1) 50%, rgba(255,105,180,0.8) 80%, transparent)',
               boxShadow: '0 0 4px rgba(255,105,180,0.6)'
@@ -888,29 +888,30 @@ export default function ProfileBar({
           
           {/* Tab Content */}
           {chxndlerActiveTab === "CHXNDLER" && (
-            <div className="flex items-center px-2 space-x-4">
+            <div className="text-center px-2">
               {/* CHXNDLER Image */}
-              <div 
-                className="relative flex-shrink-0"
-                style={{
-                  width: '100px',
-                  height: '100px',
-                  filter: 'drop-shadow(0 0 20px rgba(255,105,180,0.6))'
-                }}
-              >
-                <img
-                  src="/cockpit/chxndler-picture.png"
-                  alt="CHXNDLER"
-                  className="w-full h-full object-contain rounded-lg"
+              <div className="flex justify-center">
+                <div 
+                  className="relative"
                   style={{
-                    filter: 'brightness(1.1) saturate(1.2)'
+                    width: '120px',
+                    height: '120px',
+                    filter: 'drop-shadow(0 0 20px rgba(255,105,180,0.6))'
                   }}
-                />
+                >
+                  <img
+                    src="/cockpit/chxndler-picture.png"
+                    alt="CHXNDLER"
+                    className="w-full h-full object-contain rounded-lg"
+                    style={{
+                      filter: 'brightness(1.1) saturate(1.2)'
+                    }}
+                  />
+                </div>
               </div>
               
               {/* Description */}
               <div 
-                className="flex-1 text-left"
                 style={{ 
                   fontSize: 13, 
                   color: '#FFFFFF !important', 

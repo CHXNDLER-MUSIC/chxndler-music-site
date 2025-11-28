@@ -1116,28 +1116,19 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   {/* MERCH Tab Content */}
                   {activeUseTab === 'MERCH' && (
                     <div className="px-2">
-                      <div 
-                        className="text-sm font-bold mb-3 text-center"
-                        style={{ 
-                          color: '#FFFFFF', 
-                          textShadow: '0 0 4px rgba(255,255,255,0.8)' 
-                        }}
-                      >
-                        🛍️ HEARTVERSE COLLECTION
-                      </div>
                       
                       {/* Current Item Display */}
                       <div className="mb-4">
                         {PHYSICAL_ITEMS[currentMerchIndex] && (
                           <div 
-                            className="rounded-lg border border-white/30 bg-white/10 p-4 transition-all duration-200"
+                            className="rounded-lg p-4 transition-all duration-200"
                             style={{
                               boxShadow: '0 0 12px rgba(255,255,255,0.3)'
                             }}
                           >
                             {/* Image and Title */}
                             <div className="flex items-start gap-4 mb-3">
-                              <div className="relative w-16 h-16 flex-shrink-0">
+              <div className="relative w-28 h-28 flex-shrink-0">
                                 <img
                                   src={PHYSICAL_ITEMS[currentMerchIndex].image}
                                   alt={PHYSICAL_ITEMS[currentMerchIndex].title}

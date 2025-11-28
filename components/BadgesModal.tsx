@@ -515,7 +515,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           <button
             key={category.id}
             onClick={() => setSelectedCategory(category.id)}
-            className="relative w-24 h-24 mx-auto rounded-full bg-black/40 border border-white/20 hover:border-white/40 transition-all text-center group flex flex-col items-center justify-center"
+            className="relative w-24 h-24 mx-auto rounded-full bg-black/40 border border-white/20 hover:border-white/40 hover:scale-105 transition-all duration-200 text-center group flex flex-col items-center justify-center"
           >
             <div className="text-2xl mb-1">{category.emoji}</div>
             <div className="text-white font-semibold text-xs group-hover:text-pink-300 transition-colors px-1 leading-tight">
