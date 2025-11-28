@@ -499,7 +499,7 @@ export default function ProfileBar({
                   try { onCloseBlueDisplay?.(); } catch {}
                   togglePanel('badges');
                   break;
-                case "CHXNDLER":
+                case "ABOUT":
                   try { onCloseBlueDisplay?.(); } catch {}
                   setIsChxndlerPopoutOpen(true);
                   break;

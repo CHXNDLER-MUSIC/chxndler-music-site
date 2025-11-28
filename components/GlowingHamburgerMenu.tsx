@@ -20,7 +20,7 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
   const journeyTitle = getJourneyTitle(!!user);
   
   const menuItems = [
-    { label: "CHXNDLER", href: undefined },
+    { label: "ABOUT", href: undefined },
     { label: journeyTitle, href: undefined },
     { label: "JOURNAL", href: undefined },
     { label: "BINDER", href: undefined },
@@ -133,7 +133,7 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
               <React.Fragment key={item.label}>
                 <button
                   onClick={() => handleItemClick(item.label)}
-                  className="w-full px-6 py-3 text-left text-white font-semibold tracking-wide transition-all duration-200 hover:bg-[#FC54AF]/10 hover:text-[#FC54AF] hover:scale-105 hover:tracking-wider relative group"
+                  className="w-full px-6 py-3 text-left text-white font-semibold tracking-wide transition-all duration-200 hover:bg-[#FC54AF]/10 hover:text-[#FC54AF] hover:tracking-wider relative group"
                   style={{
                     textShadow: "0 0 10px rgba(252, 84, 175, 0.3)",
                   }}
@@ -142,6 +142,15 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-200 bg-gradient-to-r from-transparent via-[#FC54AF] to-transparent" />
                   
                   <span className="relative z-10 flex items-center gap-2 -ml-3">
+                    {item.label === "ABOUT" && (
+                      <Image
+                        src="/elements/about.png"
+                        alt="About"
+                        width={32}
+                        height={32}
+                        className="transition-all duration-200"
+                      />
+                    )}
                     {(item.label === "JOURNEY" || item.label === "MY JOURNEY") && (
                       <Image
                         src="/elements/journey.png"
