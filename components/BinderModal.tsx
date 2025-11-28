@@ -657,7 +657,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
         className="fixed inset-0 z-[2147483646] flex items-center justify-center"
         style={{
           pointerEvents: 'none',
-          paddingTop: '-40px'
+          paddingTop: '-80px'
         }}
       >
         <div
@@ -674,7 +674,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
       <div 
         className="fixed inset-0 z-[2147483647] flex items-center justify-center"
         style={{
-          paddingTop: '-40px'
+          paddingTop: '-80px'
         }}
       >
         <div
@@ -784,8 +784,8 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                 <div 
                   className="rounded-lg shadow-2xl cursor-pointer"
                   style={{
-                    width: 'min(280px, 40vw)',
-                    height: 'min(420px, 45vh)',
+                    width: 'min(320px, 50vw)',
+                    height: 'min(480px, 55vh)',
                     boxShadow: '0 0 40px rgba(255,105,180,0.8), 0 0 80px rgba(255,105,180,0.5), 0 0 120px rgba(255,105,180,0.3)',
                     border: '2px solid rgba(255,105,180,0.6)',
                     perspective: '1000px'
@@ -832,27 +832,27 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                       }}
                       draggable={false}
                     />
-                  </div>
-                </div>
-                
-                {/* Close button */}
-                <button
-                  onClick={() => {
-                    try { sfx.play('close', 0.8); } catch {}
-                    setCardOpen(false);
-                    setIsCardFlipped(false);
-                  }}
-                  className="absolute top-4 right-4 w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200"
+                    
+                    {/* Close button - positioned on top of card image */}
+                    <button
+                      onClick={() => {
+                        try { sfx.play('close', 0.8); } catch {}
+                        setCardOpen(false);
+                        setIsCardFlipped(false);
+                      }}
+                      className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 z-10"
                   style={{
                     boxShadow: '0 0 15px rgba(255,105,180,0.6)',
                     backdropFilter: 'blur(10px)',
                   }}
-                >
-                  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-                    <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                </button>
+                    >
+                      <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true">
+                        <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -1188,7 +1188,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                                   }
                                 }
                               }}
-                              className={`flex items-center gap-1 px-2 py-1 rounded border bg-pink-500/10 transition-all duration-200 text-xs ${
+                              className={`flex items-center justify-center gap-1 px-3 py-0.5 rounded border bg-pink-500/10 transition-all duration-200 text-xs min-h-6 ${
                                 (purchaseState === 'digital-preview' && hasEnoughBalance('digital'))
                                   ? 'border-green-400/60 hover:border-green-400/80 hover:bg-green-500/20'
                                   : 'border-pink-400/40 hover:border-pink-400/70 hover:bg-pink-500/20'
@@ -1200,7 +1200,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                               <img
                                 src="/elements/heart-coin.webp"
                                 alt="Heart Coin"
-                                className="w-3 h-3"
+                                className="w-3 h-3 flex-shrink-0"
                                 draggable={false}
                               />
                               <span 
@@ -1211,14 +1211,14 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                               </span>
                               {(purchaseState === 'digital-preview' && hasEnoughBalance('digital')) ? (
                                 <span 
-                                  className="text-green-300 font-semibold text-xs"
+                                  className="text-green-300 font-semibold text-xs whitespace-nowrap"
                                   style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)' }}
                                 >
                                   CONFIRM
                                 </span>
                               ) : (
                                 <span 
-                                  className="text-pink-200 font-medium text-xs"
+                                  className="text-pink-200 font-medium text-xs whitespace-nowrap"
                                   style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
                                 >
                                   DIGITAL
@@ -1232,7 +1232,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                                 try { sfx.play('click', 0.6); } catch {}
                                 handlePurchaseClick('physical');
                               }}
-                              className="flex items-center gap-1 px-2 py-1 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
+                              className="flex items-center justify-center gap-1 px-3 py-0.5 rounded border border-pink-400/40 hover:border-pink-400/70 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs min-h-6"
                               style={{
                                 boxShadow: '0 0 8px rgba(255,105,180,0.3)',
                               }}
@@ -1240,7 +1240,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                               <img
                                 src="/elements/heart-coin.webp"
                                 alt="Heart Coin"
-                                className="w-3 h-3"
+                                className="w-3 h-3 flex-shrink-0"
                                 draggable={false}
                               />
                               <span 
@@ -1250,7 +1250,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                                 {physicalCost}
                               </span>
                               <span 
-                                className="text-pink-200 font-medium text-xs"
+                                className="text-pink-200 font-medium text-xs whitespace-nowrap"
                                 style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
                               >
                                 PHYSICAL
@@ -1806,7 +1806,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                     })}
                   </div>
                   
-                  {/* Right arrow to go back to first page - positioned within popup on the right side */}
+                  {/* Right arrow to go to next page - positioned within popup on the right side */}
                   <div 
                     className="absolute right-2 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
@@ -1819,8 +1819,8 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                         try { sfx.play('click', 0.7); } catch {}
                         const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth'];
                         const currentIndex = pages.indexOf(binderPage);
-                        if (currentIndex > 0) {
-                          setBinderPage(pages[currentIndex - 1] as any);
+                        if (currentIndex < pages.length - 1) {
+                          setBinderPage(pages[currentIndex + 1] as any);
                         }
                       }}
                       style={{
@@ -2533,6 +2533,26 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
             </>
           )}
 
+          {/* Page Number Display - Bottom Center */}
+          {!showFullCollection && (
+            <div 
+              className="absolute bottom-2 left-1/2 transform -translate-x-1/2"
+              style={{
+                color: '#FF69B4',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                textShadow: '0 0 4px rgba(255,105,180,0.6)',
+                pointerEvents: 'none'
+              }}
+            >
+              {binderPage === 'first' ? '1' : 
+               binderPage === 'second' ? '2' : 
+               binderPage === 'third' ? '3' : 
+               binderPage === 'fourth' ? '4' : 
+               binderPage === 'fifth' ? '5' : 
+               binderPage === 'sixth' ? '6' : '1'} / 6
+            </div>
+          )}
           </div>
         </div>
       </div>

@@ -439,12 +439,12 @@ export default function ProfileBar({
                   break;
                 case "STORE":
                   try { onCloseBlueDisplay?.(); } catch {}
-                  // Open HeartCoinButton modal directly on USE tab with MERCH sub-tab
+                  // Open HeartCoinButton modal directly on USE tab with CARDS sub-tab
                   setActivePanel('heartcoins');
                   // Store the initial tab preference for HeartCoinButton
                   if (typeof window !== 'undefined') {
                     (window as any).heartCoinInitialTab = 'USE';
-                    (window as any).heartCoinInitialUseTab = 'MERCH';
+                    (window as any).heartCoinInitialUseTab = 'CARDS';
                   }
                   break;
               }

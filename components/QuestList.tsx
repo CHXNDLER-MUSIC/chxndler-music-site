@@ -346,7 +346,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
             textShadow: '0 0 8px rgba(0,255,255,0.6)' 
           }}
         >
-          ⭐ SECTION 1 — DAILY QUESTS
+          ⭐ DAILY QUESTS
         </h3>
 
         {/* Quest 1: Tap Element of the Day */}
@@ -468,7 +468,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
             textShadow: '0 0 8px rgba(0,255,255,0.6)' 
           }}
         >
-          ⭐ SECTION 2 — BONUS QUESTS
+          ⭐ BONUS QUESTS
         </h3>
 
         {/* Quest 1: Invite a Friend */}

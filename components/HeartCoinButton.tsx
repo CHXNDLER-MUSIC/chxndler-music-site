@@ -634,7 +634,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               backdropFilter: 'blur(12px) saturate(140%)',
               color: '#FFFFFF',
               position: 'relative',
-              overflow: 'auto'
+              overflow: 'hidden auto',
+              overflowX: 'hidden'
             }}
         >
           {/* Soft bottom glow */}
@@ -1340,9 +1341,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
                           {/* Card display */}
                           {ELEMENT_CARDS[selectedCardElement as keyof typeof ELEMENT_CARDS]?.map(card => (
-                            <div key={card.id} className="flex gap-4">
+                            <div key={card.id} className="flex gap-2 max-w-full overflow-hidden">
                               {/* Card image */}
-                              <div className="w-32 h-44 rounded-lg border-2 border-yellow-500/80 overflow-hidden flex-shrink-0">
+                              <div className="w-20 h-28 rounded-lg border-2 border-yellow-500/80 overflow-hidden flex-shrink-0">
                                 <img
                                   src={card.image}
                                   alt={card.name}
@@ -1351,11 +1352,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               </div>
 
                               {/* Card details */}
-                              <div className="flex-1">
+                              <div className="flex-1 min-w-0 overflow-hidden">
                                 {!showPhysicalForm && !showDigitalForm ? (
                                   <>
                                     <h2 
-                                      className="text-xl font-bold mb-2"
+                                      className="text-base font-bold mb-1 truncate"
                                       style={{ 
                                         color: '#FFD700', 
                                         textShadow: '0 0 6px rgba(255,215,0,0.8)' 
@@ -1364,7 +1365,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       {card.name}
                                     </h2>
                                     
-                                    <div className="flex items-center gap-4 mb-3">
+                                    <div className="flex items-center gap-2 mb-2 flex-wrap text-xs">
                                       <span 
                                         className="text-sm"
                                         style={{ 
@@ -1391,7 +1392,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     </div>
 
                                     <p 
-                                      className="text-sm mb-4"
+                                      className="text-xs mb-2 line-clamp-2"
                                       style={{ 
                                         color: '#FFFFFF', 
                                         textShadow: '0 0 4px rgba(255,255,255,0.6)' 
@@ -1592,9 +1593,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 )}
 
                                 {/* Purchase buttons */}
-                                <div className="flex gap-2 mt-4">
+                                <div className="flex gap-1 mt-2 flex-wrap">
                                   <button 
-                                    className={`flex items-center gap-2 px-3 py-2 rounded border transition-colors ${
+                                    className={`flex items-center gap-1 px-2 py-1 rounded border transition-colors text-sm ${
                                       showDigitalForm 
                                         ? 'border-blue-400/80 bg-blue-400/30' 
                                         : 'border-blue-500/60 bg-blue-500/20 hover:bg-blue-500/30'
@@ -1612,12 +1613,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       setShowPhysicalForm(false);
                                     }}
                                   >
-                                    <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-4 h-4" />
-                                    {card.digitalCost} DIGITAL
+                                    <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-4 h-4" />{card.digitalCost} DIGITAL
                                   </button>
                                   
                                   <button 
-                                    className={`flex items-center gap-2 px-3 py-2 rounded border transition-colors ${
+                                    className={`flex items-center gap-1 px-2 py-1 rounded border transition-colors text-sm ${
                                       showPhysicalForm 
                                         ? 'border-purple-400/80 bg-purple-400/30' 
                                         : 'border-purple-500/60 bg-purple-500/20 hover:bg-purple-500/30'
@@ -1635,8 +1635,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       setShowDigitalForm(false);
                                     }}
                                   >
-                                    <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-4 h-4" />
-                                    {card.physicalCost} PHYSICAL
+                                    <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-4 h-4" />{card.physicalCost} PHYSICAL
                                   </button>
                                 </div>
                               </div>
