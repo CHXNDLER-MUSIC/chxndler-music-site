@@ -1062,26 +1062,25 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
           {/* USE Tab Content */}
           {activeTab === 'USE' && (
-            <div className="pl-2 pr-6 py-2">
+            <div className="pl-1 pr-4 py-2">
               {!showItemDetail ? (
                 <>
                   <div 
-                    className="text-base text-left mb-1"
+                    className="text-base text-center mb-3 -ml-4"
                     style={{ 
                       color: '#FFFFFF', 
                       textShadow: '0 0 4px rgba(255,255,255,0.8)', 
-                      fontSize: '12px',
+                      fontSize: '11px',
                       lineHeight: 1,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      width: '100%'
+                      width: '100%',
+                      whiteSpace: 'nowrap'
                     }}
                   >
-                    Spend your Heart coins on digital collectibles and special items.
+                    Trade your HEART coins for rare collectibles and CHXNDLER cards
                   </div>
 
                   {/* Sub-tabs for USE */}
-                  <div className="flex justify-center mb-4 space-x-2">
+                  <div className="flex justify-center mb-1 space-x-3">
                     {(['MERCH', 'CARDS'] as const).map((tab) => (
                       <button
                         key={tab}
@@ -1089,7 +1088,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           try { sfx.play('click', 0.6); } catch {}
                           setActiveUseTab(tab);
                         }}
-                        className="px-3 py-1 text-xs rounded border transition-all duration-200"
+                        className="px-8 py-2 text-sm rounded border transition-all duration-200"
                         style={{
                           background: activeUseTab === tab 
                             ? 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.6) 100%)'
@@ -1098,8 +1097,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           borderColor: activeUseTab === tab ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.4)',
                           textShadow: activeUseTab === tab ? '0 0 6px rgba(255,255,255,0.8)' : 'none',
                           boxShadow: activeUseTab === tab ? '0 0 10px rgba(255,255,255,0.5), 0 0 20px rgba(255,255,255,0.3)' : 'none',
-                          fontWeight: 600,
-                          fontSize: '10px'
+                          fontWeight: 700,
+                          fontSize: '14px'
                         }}
                         onMouseEnter={(e) => {
                           if (activeUseTab !== tab) {
@@ -1124,20 +1123,47 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     <div className="px-2">
                       
                       {/* Current Item Display */}
-                      <div className="mb-4">
+                      <div className="mb-2">
                         {PHYSICAL_ITEMS[currentMerchIndex] && (
                           <div 
-                            className="rounded-lg p-4 transition-all duration-200"
+                            className="rounded-lg px-4 pt-2 pb-4 transition-all duration-200"
                           >
-                            {/* Image and Title */}
-                            <div className="flex items-start gap-4 mb-3">
-              <div className="relative w-28 h-28 flex-shrink-0">
-                                <img
-                                  src={PHYSICAL_ITEMS[currentMerchIndex].image}
-                                  alt={PHYSICAL_ITEMS[currentMerchIndex].title}
-                                  className="w-full h-full object-cover rounded"
-                                />
+                            {/* Image and Title with Navigation */}
+                            <div className="flex items-start gap-1 mb-3">
+                              {/* Left Arrow */}
+                              <button
+                                onClick={() => {
+                                  try { sfx.play('click', 0.6); } catch {}
+                                  setCurrentMerchIndex(prev => prev > 0 ? prev - 1 : PHYSICAL_ITEMS.length - 1);
+                                }}
+                                className="flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 transition-all duration-200 flex-shrink-0 mt-8 -ml-3"
+                                style={{
+                                  boxShadow: '0 0 8px rgba(255,255,255,0.3)'
+                                }}
+                              >
+                                <span className="text-white text-sm font-bold">←</span>
+                              </button>
+                              
+                              {/* Item Image */}
+                              <div className="flex flex-col items-center">
+                                <div className="relative w-28 h-28 flex-shrink-0">
+                                  <img
+                                    src={PHYSICAL_ITEMS[currentMerchIndex].image}
+                                    alt={PHYSICAL_ITEMS[currentMerchIndex].title}
+                                    className="w-full h-full object-cover rounded"
+                                  />
+                                </div>
+                                <div 
+                                  className="text-xs text-white/80 mt-2 text-center"
+                                  style={{
+                                    textShadow: '0 0 4px rgba(255,255,255,0.4)'
+                                  }}
+                                >
+                                  {currentMerchIndex + 1} of {PHYSICAL_ITEMS.length}
+                                </div>
                               </div>
+                              
+                              {/* Item Details */}
                               <div className="flex-1">
                                 <div 
                                   className="font-bold text-white text-lg mb-1"
@@ -1173,6 +1199,20 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   </div>
                                 </div>
                               </div>
+                              
+                              {/* Right Arrow */}
+                              <button
+                                onClick={() => {
+                                  try { sfx.play('click', 0.6); } catch {}
+                                  setCurrentMerchIndex(prev => prev < PHYSICAL_ITEMS.length - 1 ? prev + 1 : 0);
+                                }}
+                                className="flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 transition-all duration-200 flex-shrink-0 mt-8 -mr-3"
+                                style={{
+                                  boxShadow: '0 0 8px rgba(255,255,255,0.3)'
+                                }}
+                              >
+                                <span className="text-white text-sm font-bold">→</span>
+                              </button>
                             </div>
                             
                             {/* Buy Button */}
@@ -1188,46 +1228,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             </button>
                           </div>
                         )}
-                      </div>
-                      
-                      {/* Navigation Arrows */}
-                      <div className="flex justify-between items-center">
-                        <button
-                          onClick={() => {
-                            try { sfx.play('click', 0.6); } catch {}
-                            setCurrentMerchIndex(prev => prev > 0 ? prev - 1 : PHYSICAL_ITEMS.length - 1);
-                          }}
-                          className="flex items-center justify-center w-10 h-10 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 transition-all duration-200"
-                          style={{
-                            boxShadow: '0 0 8px rgba(255,255,255,0.3)'
-                          }}
-                        >
-                          <span className="text-white text-lg font-bold">←</span>
-                        </button>
-                        
-                        <div className="text-center">
-                          <div 
-                            className="text-xs text-white/80"
-                            style={{
-                              textShadow: '0 0 4px rgba(255,255,255,0.4)'
-                            }}
-                          >
-                            {currentMerchIndex + 1} of {PHYSICAL_ITEMS.length}
-                          </div>
-                        </div>
-                        
-                        <button
-                          onClick={() => {
-                            try { sfx.play('click', 0.6); } catch {}
-                            setCurrentMerchIndex(prev => prev < PHYSICAL_ITEMS.length - 1 ? prev + 1 : 0);
-                          }}
-                          className="flex items-center justify-center w-10 h-10 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 transition-all duration-200"
-                          style={{
-                            boxShadow: '0 0 8px rgba(255,255,255,0.3)'
-                          }}
-                        >
-                          <span className="text-white text-lg font-bold">→</span>
-                        </button>
                       </div>
                     </div>
                   )}

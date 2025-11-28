@@ -657,7 +657,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
         className="fixed inset-0 z-[2147483646] flex items-center justify-center"
         style={{
           pointerEvents: 'none',
-          paddingTop: '5px'
+          paddingTop: '-20px'
         }}
       >
         <div
@@ -674,7 +674,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
       <div 
         className="fixed inset-0 z-[2147483647] flex items-center justify-center"
         style={{
-          paddingTop: '5px'
+          paddingTop: '-20px'
         }}
       >
         <div
@@ -1466,7 +1466,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                 style={{ 
                   whiteSpace: 'pre-wrap', 
                   lineHeight: 1.2, 
-                  fontSize: 12, 
+                  fontSize: 14, 
                   color: '#FF69B4', 
                   textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,105,180,0.6)', 
                   marginTop: '2px' 
@@ -1484,8 +1484,8 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
             {!showFullCollection ? (
               binderPage === 'first' ? (
                 // User's Binder - First Page - Show 5 initial slots
-              <div>
-                <div className="grid gap-2 grid-cols-6">
+              <div className="relative">
+                <div className="grid gap-2 grid-cols-5">
                   {Array.from({ length: 5 }, (_, index) => {
                     // Check if there's a collected card for this slot
                     const collectedCard = profile?.cards?.[index];
@@ -1640,34 +1640,6 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                       </div>
                     );
                   })}
-                  
-                  {/* Arrow button positioned after the locked containers */}
-                  <div className="flex items-center justify-center">
-                    <div 
-                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
-                      onClick={() => {
-                        try { sfx.play('click', 0.7); } catch {}
-                        setBinderPage(binderPage === 'first' ? 'second' : 'first');
-                      }}
-                      style={{
-                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
-                        backdropFilter: 'blur(10px)',
-                      }}
-                    >
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        width="16" 
-                        height="16" 
-                        fill="currentColor"
-                        style={{
-                          transform: binderPage === 'second' ? 'rotate(180deg)' : 'rotate(0deg)',
-                          transition: 'transform 0.3s ease'
-                        }}
-                      >
-                        <path d="M7 10l5 5 5-5z"/>
-                      </svg>
-                    </div>
-                  </div>
                 </div>
                 
                 {/* Second row of 5 locked slots */}
@@ -1701,10 +1673,67 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                     );
                   })}
                 </div>
+                
+                {/* Right arrow to go to second page - positioned to the right and centered between rows */}
+                <div 
+                  className="absolute right-[-60px] top-1/2 transform -translate-y-1/2 z-10"
+                  style={{
+                    pointerEvents: 'auto'
+                  }}
+                >
+                  <div 
+                    className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
+                    onClick={() => {
+                      try { sfx.play('click', 0.7); } catch {}
+                      setBinderPage('second');
+                    }}
+                    style={{
+                      boxShadow: '0 0 15px rgba(255,105,180,0.3)',
+                      backdropFilter: 'blur(10px)',
+                    }}
+                  >
+                    <svg 
+                      viewBox="0 0 24 24" 
+                      width="16" 
+                      height="16" 
+                      fill="currentColor"
+                    >
+                      <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
+                    </svg>
+                  </div>
+                </div>
               </div>
               ) : (
                 // User's Binder - Second Page - Show 10 locked slots
-                <div>
+                <div className="relative">
+                  {/* Left arrow to go back to first page */}
+                  <div 
+                    className="absolute left-[-60px] top-1/2 transform -translate-y-1/2 z-10"
+                    style={{
+                      pointerEvents: 'auto'
+                    }}
+                  >
+                    <div 
+                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
+                      onClick={() => {
+                        try { sfx.play('click', 0.7); } catch {}
+                        setBinderPage('first');
+                      }}
+                      style={{
+                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
+                        backdropFilter: 'blur(10px)',
+                      }}
+                    >
+                      <svg 
+                        viewBox="0 0 24 24" 
+                        width="16" 
+                        height="16" 
+                        fill="currentColor"
+                      >
+                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                      </svg>
+                    </div>
+                  </div>
                   {/* Two rows of 5 locked containers each */}
                   <div className="grid gap-2 grid-cols-5">
                     {Array.from({ length: 5 }, (_, index) => {
@@ -1767,6 +1796,35 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                         </div>
                       );
                     })}
+                  </div>
+                  
+                  {/* Right arrow to go back to first page - positioned to the right and centered between rows */}
+                  <div 
+                    className="absolute right-[-60px] top-1/2 transform -translate-y-1/2 z-10"
+                    style={{
+                      pointerEvents: 'auto'
+                    }}
+                  >
+                    <div 
+                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
+                      onClick={() => {
+                        try { sfx.play('click', 0.7); } catch {}
+                        setBinderPage('first');
+                      }}
+                      style={{
+                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
+                        backdropFilter: 'blur(10px)',
+                      }}
+                    >
+                      <svg 
+                        viewBox="0 0 24 24" 
+                        width="16" 
+                        height="16" 
+                        fill="currentColor"
+                      >
+                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
+                      </svg>
+                    </div>
                   </div>
                 </div>
               )
