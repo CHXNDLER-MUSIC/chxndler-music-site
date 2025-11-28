@@ -22,9 +22,9 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
   const menuItems = [
     { label: "ABOUT", href: undefined },
     { label: journeyTitle, href: undefined },
-    { label: "JOURNAL", href: undefined },
     { label: "BINDER", href: undefined },
     { label: "BADGES", href: undefined },
+    { label: "JOURNAL", href: undefined },
     { label: "STORE", href: undefined },
   ];
 
@@ -133,13 +133,13 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
               <React.Fragment key={item.label}>
                 <button
                   onClick={() => handleItemClick(item.label)}
-                  className="w-full px-6 py-3 text-left text-white font-semibold tracking-wide transition-all duration-200 hover:bg-[#FC54AF]/10 hover:text-[#FC54AF] hover:tracking-wider relative group"
+                  className="w-full px-6 py-3 text-left text-white font-semibold tracking-wide transition-all duration-200 hover:bg-cyan-500/10 hover:text-cyan-300 relative group"
                   style={{
                     textShadow: "0 0 10px rgba(252, 84, 175, 0.3)",
                   }}
                 >
                   {/* Hover glow effect */}
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-200 bg-gradient-to-r from-transparent via-[#FC54AF] to-transparent" />
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-200 bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
                   
                   <span className="relative z-10 flex items-center gap-2 -ml-3">
                     {item.label === "ABOUT" && (

@@ -232,12 +232,13 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onOpenJournal, onOpenBinder, heartCoins: externalHeartCoins = 0, onHeartCoinsChange, isActive = false, journalCompleted = false, onJournalCompleted, ...restProps }: Props) {
-  const { profile, refreshProfile } = useProfile();
+  const { profile, refreshProfile, setIsJournalOpen } = useProfile();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'EARN' | 'USE'>('EARN');
   const [activeUseTab, setActiveUseTab] = useState<'MERCH' | 'CARDS'>('MERCH');
   const [selectedCardElement, setSelectedCardElement] = useState<string | null>(null);
   const [showPhysicalForm, setShowPhysicalForm] = useState(false);
+  const [showDigitalForm, setShowDigitalForm] = useState(false);
   const [currentMerchIndex, setCurrentMerchIndex] = useState(0);
   const [shippingInfo, setShippingInfo] = useState({
     fullName: '',
@@ -327,7 +328,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       
       // Close heart coin display and open journal
       setOpen(false);
-      try { onOpenJournal?.(); } catch {}
+      try { 
+        // Use the ProfileContext journal state to open the journal popup
+        setIsJournalOpen(true);
+        onOpenJournal?.(); 
+      } catch {}
     }
   };
 
@@ -1333,7 +1338,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
                               {/* Card details */}
                               <div className="flex-1">
-                                {!showPhysicalForm ? (
+                                {!showPhysicalForm && !showDigitalForm ? (
                                   <>
                                     <h2 
                                       className="text-xl font-bold mb-2"
@@ -1381,7 +1386,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       {card.description}
                                     </p>
                                   </>
-                                ) : (
+                                ) : showPhysicalForm ? (
                                   /* Shipping Form */
                                   <div className="space-y-3">
                                     <h2 
@@ -1485,18 +1490,107 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       CONFIRM ORDER
                                     </button>
                                   </div>
+                                ) : (
+                                  /* Digital Purchase Form */
+                                  <div className="text-center space-y-4">
+                                    <h2 
+                                      className="text-lg font-bold mb-4"
+                                      style={{ 
+                                        color: '#FFFFFF', 
+                                        textShadow: '0 0 6px rgba(255,255,255,0.8)' 
+                                      }}
+                                    >
+                                      {profile?.username || 'User'}
+                                    </h2>
+
+                                    {/* Current Heart Coins */}
+                                    <div className="flex flex-col items-center space-y-2 mb-4">
+                                      <img src="/elements/heart-coin.png" alt="Heart Coin" className="w-12 h-12" />
+                                      <div 
+                                        className="text-xl font-bold"
+                                        style={{ 
+                                          color: '#FFFFFF', 
+                                          textShadow: '0 0 6px rgba(255,255,255,0.8)' 
+                                        }}
+                                      >
+                                        {heartCoins}
+                                      </div>
+                                    </div>
+
+                                    {/* Cost */}
+                                    <div className="flex flex-col items-center space-y-2 mb-4">
+                                      <img src="/elements/heart-coin.png" alt="Heart Coin" className="w-8 h-8" />
+                                      <div 
+                                        className="text-lg font-bold"
+                                        style={{ 
+                                          color: '#FFFFFF', 
+                                          textShadow: '0 0 4px rgba(255,255,255,0.6)' 
+                                        }}
+                                      >
+                                        {card.digitalCost}
+                                      </div>
+                                    </div>
+
+                                    {/* Status Message */}
+                                    <div 
+                                      className="text-sm mb-4"
+                                      style={{ 
+                                        color: heartCoins >= card.digitalCost ? '#90EE90' : '#FF6B6B', 
+                                        textShadow: heartCoins >= card.digitalCost 
+                                          ? '0 0 4px rgba(144,238,144,0.8)' 
+                                          : '0 0 4px rgba(255,107,107,0.8)'
+                                      }}
+                                    >
+                                      {heartCoins >= card.digitalCost 
+                                        ? 'You can purchase this card!' 
+                                        : 'You need more heart coins'}
+                                    </div>
+
+                                    <button 
+                                      className="w-full px-4 py-2 rounded border transition-colors"
+                                      style={{ 
+                                        backgroundColor: heartCoins >= card.digitalCost 
+                                          ? 'rgba(0,255,0,0.2)' 
+                                          : 'rgba(255,0,0,0.2)',
+                                        borderColor: heartCoins >= card.digitalCost 
+                                          ? 'rgba(0,255,0,0.6)' 
+                                          : 'rgba(255,0,0,0.6)',
+                                        color: heartCoins >= card.digitalCost ? '#90EE90' : '#FF6B6B',
+                                        textShadow: heartCoins >= card.digitalCost 
+                                          ? '0 0 4px rgba(144,238,144,0.8)' 
+                                          : '0 0 4px rgba(255,107,107,0.8)',
+                                        fontWeight: 'bold'
+                                      }}
+                                      disabled={heartCoins < card.digitalCost}
+                                      onClick={() => {
+                                        try { sfx.play('click', 0.8); } catch {}
+                                        // Handle digital purchase logic here
+                                        console.log('Digital purchase confirmed');
+                                      }}
+                                    >
+                                      CONFIRM
+                                    </button>
+                                  </div>
                                 )}
 
                                 {/* Purchase buttons */}
                                 <div className="flex gap-2 mt-4">
                                   <button 
-                                    className="flex items-center gap-2 px-3 py-2 rounded border border-blue-500/60 bg-blue-500/20 hover:bg-blue-500/30 transition-colors"
+                                    className={`flex items-center gap-2 px-3 py-2 rounded border transition-colors ${
+                                      showDigitalForm 
+                                        ? 'border-blue-400/80 bg-blue-400/30' 
+                                        : 'border-blue-500/60 bg-blue-500/20 hover:bg-blue-500/30'
+                                    }`}
                                     style={{ 
-                                      color: '#00BFFF', 
-                                      textShadow: '0 0 4px rgba(0,191,255,0.8)' 
+                                      color: showDigitalForm ? '#87CEEB' : '#00BFFF', 
+                                      textShadow: showDigitalForm 
+                                        ? '0 0 6px rgba(135,206,235,0.8)' 
+                                        : '0 0 4px rgba(0,191,255,0.8)',
+                                      boxShadow: showDigitalForm ? '0 0 15px rgba(0,191,255,0.4)' : 'none'
                                     }}
                                     onClick={() => {
                                       try { sfx.play('click', 0.7); } catch {}
+                                      setShowDigitalForm(!showDigitalForm);
                                       setShowPhysicalForm(false);
                                     }}
                                   >
@@ -1520,6 +1614,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     onClick={() => {
                                       try { sfx.play('click', 0.7); } catch {}
                                       setShowPhysicalForm(!showPhysicalForm);
+                                      setShowDigitalForm(false);
                                     }}
                                   >
                                     <img src="/elements/heart-coin.png" alt="Heart Coin" className="w-4 h-4" />

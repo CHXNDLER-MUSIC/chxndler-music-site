@@ -68,8 +68,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <link rel="icon" href="/logo.png" sizes="any" />
-        <link rel="icon" href="/logo.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <link rel="icon" href="/icons/chxndler-192.png" sizes="192x192" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#000000" />
+        <link rel="mask-icon" href="/icons/safari-pinned-tab.svg" color="#FC54AF" />
         {/* Fonts: Orbitron (lyrics page) and Exo 2 (lyrics popover) */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

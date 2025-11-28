@@ -59,6 +59,7 @@ function ElementalPlanetsWithTextures() {
     darkness: [0, -40, 0]
   });
   console.log("🔧 Planet sizes: radius 20, text 32px, glow radius 24");
+  console.log("🔍 Component is executing - planets should be visible!");
   
   // Use React state for texture loading to avoid useLoader hook issues
   const [textures, setTextures] = React.useState<{[key: string]: any}>({});
@@ -89,23 +90,34 @@ function ElementalPlanetsWithTextures() {
   }, []);
 
   return (
-    <group>
-      {/* Heart Planet - Pink */}
-      <group position={[40, 0, 0]}>
-        <mesh>
+    <group name="ElementalPlanetsWithTextures">
+      {/* Heart Planet - Pink - ENHANCED VISIBILITY */}
+      <group name="HeartPlanetGroup" position={[40, 0, 0]}>
+        <mesh renderOrder={5}>
           <sphereGeometry args={[20, 32, 32]} />
           <meshStandardMaterial 
             map={textures.heart || null}
             color={textures.heart ? "#ffffff" : "#FC54AF"}
             emissive="#FC54AF"
-            emissiveIntensity={0.6}
+            emissiveIntensity={1.2}
             metalness={0.1}
             roughness={0.2}
           />
         </mesh>
-        {/* Atmospheric glow */}
+        {/* Atmospheric glow - MADE MORE VISIBLE */}
         <mesh renderOrder={-1}>
           <sphereGeometry args={[24, 16, 16]} />
+          <meshBasicMaterial
+            color="#FC54AF"
+            transparent
+            opacity={0.6}
+            blending={AdditiveBlending}
+            depthWrite={false}
+          />
+        </mesh>
+        {/* EXTRA VISIBLE OUTER GLOW */}
+        <mesh renderOrder={-2}>
+          <sphereGeometry args={[30, 16, 16]} />
           <meshBasicMaterial
             color="#FC54AF"
             transparent
@@ -130,22 +142,33 @@ function ElementalPlanetsWithTextures() {
         </Html>
       </group>
       
-      {/* Water Planet - Blue */}
-      <group position={[0, 40, 0]}>
-        <mesh>
+      {/* Water Planet - Blue - ENHANCED VISIBILITY */}
+      <group name="WaterPlanetGroup" position={[0, 40, 0]}>
+        <mesh renderOrder={5}>
           <sphereGeometry args={[20, 32, 32]} />
           <meshStandardMaterial 
             map={textures.water || null}
             color={textures.water ? "#ffffff" : "#38B6FF"}
             emissive="#38B6FF"
-            emissiveIntensity={0.6}
+            emissiveIntensity={1.2}
             metalness={0.1}
             roughness={0.2}
           />
         </mesh>
-        {/* Atmospheric glow */}
+        {/* Atmospheric glow - MADE MORE VISIBLE */}
         <mesh renderOrder={-1}>
           <sphereGeometry args={[24, 16, 16]} />
+          <meshBasicMaterial
+            color="#38B6FF"
+            transparent
+            opacity={0.6}
+            blending={AdditiveBlending}
+            depthWrite={false}
+          />
+        </mesh>
+        {/* EXTRA VISIBLE OUTER GLOW */}
+        <mesh renderOrder={-2}>
+          <sphereGeometry args={[30, 16, 16]} />
           <meshBasicMaterial
             color="#38B6FF"
             transparent
@@ -170,22 +193,33 @@ function ElementalPlanetsWithTextures() {
         </Html>
       </group>
       
-      {/* Lightning Planet - Yellow */}
-      <group position={[-40, 0, 0]}>
-        <mesh>
+      {/* Lightning Planet - Yellow - ENHANCED VISIBILITY */}
+      <group name="LightningPlanetGroup" position={[-40, 0, 0]}>
+        <mesh renderOrder={5}>
           <sphereGeometry args={[20, 32, 32]} />
           <meshStandardMaterial 
             map={textures.lightning || null}
             color={textures.lightning ? "#ffffff" : "#F2EF1D"}
             emissive="#F2EF1D"
-            emissiveIntensity={0.6}
+            emissiveIntensity={1.2}
             metalness={0.1}
             roughness={0.2}
           />
         </mesh>
-        {/* Atmospheric glow */}
+        {/* Atmospheric glow - MADE MORE VISIBLE */}
         <mesh renderOrder={-1}>
           <sphereGeometry args={[24, 16, 16]} />
+          <meshBasicMaterial
+            color="#F2EF1D"
+            transparent
+            opacity={0.6}
+            blending={AdditiveBlending}
+            depthWrite={false}
+          />
+        </mesh>
+        {/* EXTRA VISIBLE OUTER GLOW */}
+        <mesh renderOrder={-2}>
+          <sphereGeometry args={[30, 16, 16]} />
           <meshBasicMaterial
             color="#F2EF1D"
             transparent
@@ -210,22 +244,33 @@ function ElementalPlanetsWithTextures() {
         </Html>
       </group>
       
-      {/* Darkness Planet - Purple */}
-      <group position={[0, -40, 0]}>
-        <mesh>
+      {/* Darkness Planet - Purple - ENHANCED VISIBILITY */}
+      <group name="DarknessPlanetGroup" position={[0, -40, 0]}>
+        <mesh renderOrder={5}>
           <sphereGeometry args={[20, 32, 32]} />
           <meshStandardMaterial 
             map={textures.darkness || null}
             color={textures.darkness ? "#ffffff" : "#6A4C93"}
             emissive="#6A4C93"
-            emissiveIntensity={0.6}
+            emissiveIntensity={1.2}
             metalness={0.1}
             roughness={0.2}
           />
         </mesh>
-        {/* Atmospheric glow */}
+        {/* Atmospheric glow - MADE MORE VISIBLE */}
         <mesh renderOrder={-1}>
           <sphereGeometry args={[24, 16, 16]} />
+          <meshBasicMaterial
+            color="#6A4C93"
+            transparent
+            opacity={0.6}
+            blending={AdditiveBlending}
+            depthWrite={false}
+          />
+        </mesh>
+        {/* EXTRA VISIBLE OUTER GLOW */}
+        <mesh renderOrder={-2}>
+          <sphereGeometry args={[30, 16, 16]} />
           <meshBasicMaterial
             color="#6A4C93"
             transparent
@@ -701,8 +746,26 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
             </group>
           )}
           
-          {/* 4 ELEMENTAL PLANETS WITH TEXTURES - ALWAYS VISIBLE */}
-          {true && <ElementalPlanetsWithTextures />}
+          {/* 4 ELEMENTAL PLANETS WITH TEXTURES - ALWAYS VISIBLE - FORCED RENDERING */}
+          <ElementalPlanetsWithTextures />
+          
+          {/* EMERGENCY DEBUG SPHERES - SHOULD BE VISIBLE */}
+          <mesh position={[40, 0, 0]} renderOrder={10}>
+            <sphereGeometry args={[5, 16, 16]} />
+            <meshBasicMaterial color="#FF0000" />
+          </mesh>
+          <mesh position={[0, 40, 0]} renderOrder={10}>
+            <sphereGeometry args={[5, 16, 16]} />
+            <meshBasicMaterial color="#00FF00" />
+          </mesh>
+          <mesh position={[-40, 0, 0]} renderOrder={10}>
+            <sphereGeometry args={[5, 16, 16]} />
+            <meshBasicMaterial color="#0000FF" />
+          </mesh>
+          <mesh position={[0, -40, 0]} renderOrder={10}>
+            <sphereGeometry args={[5, 16, 16]} />
+            <meshBasicMaterial color="#FFFF00" />
+          </mesh>
           
           {/* Single song focus mode - show individual planet */}
           {shouldShowSingle && focusId && (() => {
