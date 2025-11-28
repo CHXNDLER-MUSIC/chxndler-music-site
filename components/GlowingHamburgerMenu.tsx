@@ -61,7 +61,6 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
         className="relative w-12 h-12 rounded-full bg-black/60 backdrop-blur-sm border-2 border-white flex items-center justify-center transition-all duration-300 hover:scale-105"
         style={{
           borderColor: '#FFFFFF',
-          filter: 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.8))',
         }}
         aria-label={isOpen ? "Close menu" : "Open menu"}
       >

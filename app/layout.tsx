@@ -87,14 +87,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="dns-prefetch" href="https://i.ytimg.com" />
         <link rel="dns-prefetch" href="https://www.google.com" />
 
-        <link rel="preload" as="image" href="/elements/instagram.png" />
-        <link rel="preload" as="image" href="/elements/tiktok.png" />
-        <link rel="preload" as="image" href="/elements/youtube.png" />
-        <link rel="preload" as="image" href="/elements/spotify.png" />
-        <link rel="preload" as="image" href="/elements/apple.png" />
+        <link rel="preload" as="image" href="/elements/instagram.webp" />
+        <link rel="preload" as="image" href="/elements/tiktok.webp" />
+        <link rel="preload" as="image" href="/elements/youtube.webp" />
+        <link rel="preload" as="image" href="/elements/spotify.webp" />
+        <link rel="preload" as="image" href="/elements/apple.webp" />
         {/* Preload cockpit frame and light beam base so they render instantly */}
-        <link rel="preload" as="image" href="/cockpit/cockpit.png?v=2" />
-        <link rel="preload" as="image" href="/cockpit/lightbeam-base.png?v=2" />
+        <link rel="preload" as="image" href="/cockpit/cockpit.webp?v=2" />
+        <link rel="preload" as="image" href="/cockpit/lightbeam-base.webp?v=2" />
         {/* Preload the steering wheel video; use as=fetch for broad browser support */}
         <link rel="preload" as="fetch" href="/cockpit/wheel_less_transparent.webm" type="video/webm" />
         {/* Remove sky video preloads (assets may not exist; dynamic sky handles loading) */}

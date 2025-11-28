@@ -68,7 +68,7 @@ export default function ElementalButton({ asChild = false, children, onClick, on
         {...restProps}
       >
         <img
-          src={committedElement ? `/elements/${committedElement}.png` : (element ? `/elements/${element}.png` : "/elements/elemental.png")}
+          src={committedElement ? `/elements/${committedElement}.webp` : (element ? `/elements/${element}.webp` : "/elements/elementals.webp")}
           alt={committedElement ? committedElement.charAt(0).toUpperCase() + committedElement.slice(1) : (element ? element.charAt(0).toUpperCase() + element.slice(1) : "Elemental")}
           className="w-full h-full object-contain rounded"
           draggable={false}
@@ -245,7 +245,7 @@ THE ELEMENTS OF THE HEARTVERSE
                   }}
                 >
                   <img
-                    src="/elements/darkness.png"
+                    src="/elements/darkness.webp"
                     alt="Darkness"
                     className="w-12 h-12 object-contain"
                     draggable={false}
@@ -269,7 +269,7 @@ THE ELEMENTS OF THE HEARTVERSE
                   }}
                 >
                   <img
-                    src="/elements/heart.png"
+                    src="/elements/heart.webp"
                     alt="Heart"
                     className="w-12 h-12 object-contain"
                     draggable={false}
@@ -293,7 +293,7 @@ THE ELEMENTS OF THE HEARTVERSE
                   }}
                 >
                   <img
-                    src="/elements/water.png"
+                    src="/elements/water.webp"
                     alt="Water"
                     className="w-12 h-12 object-contain"
                     draggable={false}
@@ -317,7 +317,7 @@ THE ELEMENTS OF THE HEARTVERSE
                   }}
                 >
                   <img
-                    src="/elements/lightning.png"
+                    src="/elements/lightning.webp"
                     alt="Lightning"
                     className="w-12 h-12 object-contain"
                     draggable={false}

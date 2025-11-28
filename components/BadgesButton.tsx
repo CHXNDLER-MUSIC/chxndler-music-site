@@ -277,7 +277,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
         {...rest}
       >
         <img
-          src="/elements/badges.png"
+          src="/elements/badges.webp"
           alt="Badges"
           className="w-full h-full object-contain rounded"
           style={{

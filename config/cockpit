@@ -3,7 +3,7 @@ export const BUILD_TAG = "Cockpit v3.2 — integrated";
 
 export const PATHS = {
   cockpit: "/cockpit/cockpit.webp?v=" + Date.now(),
-  fallbackBackdrop: "/cockpit/ocean-girl.webp",
+  fallbackBackdrop: "/cockpit/ocean-girl.png",
   logoFallback: "/logo/CHXNDLER_Logo.png",
 };
 
@@ -13,21 +13,21 @@ export const PLAYLIST = [
     title: "OCEAN GIRL",
     src: "/tracks/ocean-girl.mp3",
     cover: "https://ik.imagekit.io/CHXNDLER/cover/ocean-girl.png?updatedAt=1762361386944",
-    backdrop: "/cockpit/ocean-girl.webp",
+    backdrop: "/cockpit/ocean-girl.png",
   },
   {
     id: "ocean-girl-acoustic",
     title: "OCEAN GIRL — Acoustic",
     src: "/tracks/ocean-girl-acoustic.mp3",
     cover: "https://ik.imagekit.io/CHXNDLER/cover/ocean-girl-acoustic.png?updatedAt=1762361387474",
-    backdrop: "/cockpit/ocean-girl-acoustic.webp",
+    backdrop: "/cockpit/ocean-girl-acoustic.png",
   },
   {
     id: "ocean-girl-remix",
     title: "OCEAN GIRL — Remix",
     src: "/tracks/ocean-girl-remix.mp3",
     cover: "https://ik.imagekit.io/CHXNDLER/cover/ocean-girl-remix.png?updatedAt=1762361386891",
-    backdrop: "/cockpit/ocean-girl-remix.webp",
+    backdrop: "/cockpit/ocean-girl-remix.png",
   },
 ];
 

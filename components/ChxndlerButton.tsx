@@ -11,7 +11,7 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 
 export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...restProps }: Props) {
   const [internalOpen, setInternalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"WE BELIEVE" | "CHXNDLER">("CHXNDLER");
+  const [activeTab, setActiveTab] = useState<"WE BELIEVE" | "CHXNDLER">("WE BELIEVE");
   
   // Use external open state if provided, otherwise use internal state
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
@@ -79,8 +79,8 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...re
             className="chxndler-hologram-container relative"
             style={{
               width: 'min(92vw, 500px)',
-              minHeight: '400px',
-              padding: '20px',
+              minHeight: '300px',
+              padding: '20px 20px 6px 20px',
               borderRadius: 18,
               background: 'rgba(0,0,0,0.8)',
               border: '1px solid rgba(252,84,175,0.6)',
@@ -164,6 +164,23 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...re
                 <button
                   onClick={() => {
                     sfx.play('click', 0.7);
+                    setActiveTab("WE BELIEVE");
+                  }}
+                  className={`px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 ${
+                    activeTab === "WE BELIEVE"
+                      ? "bg-pink-500/20 text-pink-300 border border-pink-400/50"
+                      : "text-white/70 hover:text-white"
+                  }`}
+                  style={{
+                    textShadow: 'none',
+                    boxShadow: activeTab === "WE BELIEVE" ? '0 0 15px rgba(252,84,175,0.3)' : 'none'
+                  }}
+                >
+                  WE BELIEVE
+                </button>
+                <button
+                  onClick={() => {
+                    sfx.play('click', 0.7);
                     setActiveTab("CHXNDLER");
                   }}
                   className={`px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 ${
@@ -172,25 +189,11 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...re
                       : "text-white/70 hover:text-white"
                   }`}
                   style={{
-                    textShadow: activeTab === "CHXNDLER" ? '0 0 8px rgba(252,84,175,0.8)' : 'none',
+                    textShadow: 'none',
                     boxShadow: activeTab === "CHXNDLER" ? '0 0 15px rgba(252,84,175,0.3)' : 'none'
                   }}
                 >
                   CHXNDLER
-                </button>
-                <button
-                  onClick={() => setActiveTab("WE BELIEVE")}
-                  className={`px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 ${
-                    activeTab === "WE BELIEVE"
-                      ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/50"
-                      : "text-white/70 hover:text-white"
-                  }`}
-                  style={{
-                    textShadow: activeTab === "WE BELIEVE" ? '0 0 8px rgba(0,255,255,0.8)' : 'none',
-                    boxShadow: activeTab === "WE BELIEVE" ? '0 0 15px rgba(0,255,255,0.3)' : 'none'
-                  }}
-                >
-                  WE BELIEVE
                 </button>
               </div>
             </div>
@@ -207,30 +210,9 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...re
             {/* Tab Content */}
             {activeTab === "CHXNDLER" && (
               <>
-                {/* CHXNDLER Image */}
-                <div className="flex justify-center mb-0">
-                  <div 
-                    className="relative"
-                    style={{
-                      width: '200px',
-                      height: '200px',
-                      filter: 'drop-shadow(0 0 20px rgba(252,84,175,0.6))'
-                    }}
-                  >
-                    <img
-                      src="/cockpit/chxndler-picture.webp"
-                      alt="CHXNDLER"
-                      className="w-full h-full object-contain rounded-lg"
-                      style={{
-                        filter: 'brightness(1.1) saturate(1.2)'
-                      }}
-                    />
-                  </div>
-                </div>
-
                 {/* Description */}
                 <div 
-                  className="text-center -mt-4"
+                  className="text-center mt-4"
                   style={{ 
                     fontSize: '16px', 
                     color: '#FFFFFF !important', 
@@ -260,7 +242,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...re
                 
                 {/* We Believe Content */}
                 <div 
-                  className="text-left space-y-4"
+                  className="text-left space-y-4 pl-4"
                   style={{ 
                     fontSize: 14, 
                     color: '#FFFFFF !important', 
@@ -268,16 +250,16 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...re
                   }}
                 >
                   <div className="flex items-start">
-                    <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>•</span>
-                    <span>We believe being your <span style={{ color: '#0099FF !important', textShadow: '0 0 5px #0099FF, 0 0 10px #0099FF, 0 0 15px #0099FF, 0 0 20px #0099FF', fontWeight: 'inherit !important' }}>truest self</span> is the beginning of freedom.</span>
+                    <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>♥</span>
+                    <span>We believe being your <span style={{ color: '#00CED1 !important', fontWeight: 'bold !important' }}>truest self</span> is the beginning of freedom.</span>
                   </div>
                   <div className="flex items-start">
-                    <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>•</span>
-                    <span>We believe <span style={{ color: '#FFD700 !important', textShadow: '0 0 5px #FFD700, 0 0 10px #FFD700, 0 0 15px #FFD700, 0 0 20px #FFD700', fontWeight: 'inherit !important' }}>passion</span> is sacred and should be pursued loudly.</span>
+                    <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>♥</span>
+                    <span>We believe <span style={{ color: '#FFD700 !important', fontWeight: 'inherit !important' }}>passion</span> is sacred and should be pursued loudly.</span>
                   </div>
                   <div className="flex items-start">
-                    <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>•</span>
-                    <span>We believe <span style={{ color: '#FF1493 !important', textShadow: '0 0 5px #FF1493, 0 0 10px #FF1493, 0 0 15px #FF1493, 0 0 20px #FF1493', fontWeight: 'inherit !important' }}>love</span> is the force that connects every soul.</span>
+                    <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>♥</span>
+                    <span>We believe <span style={{ color: '#FF1493 !important', fontWeight: 'inherit !important' }}>love</span> is the force that connects every soul.</span>
                   </div>
                 </div>
               </>

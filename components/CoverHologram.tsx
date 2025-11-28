@@ -835,7 +835,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                           <div className="flex items-center gap-2">
                             <span className="text-lg text-[#F2EF1D] font-bold">{userProfile.hearts}</span>
                             <img
-                              src="/elements/heart-coin.png"
+                              src="/elements/heart-coin.webp"
                               alt="Heart Coin"
                               className="w-6 h-6 object-contain"
                               style={{
@@ -901,7 +901,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                           }}
                         >
                           <Image
-                            src="/elements/elementals.png?v=20241027"
+                            src="/elements/elementals.webp?v=20241027"
                             alt=""
                             fill
                             sizes="36px"
@@ -932,7 +932,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                           <div className="flex items-center gap-2">
                             <span className="text-[#F2EF1D] font-bold">20</span>
                             <img
-                              src="/elements/heart-coin.png"
+                              src="/elements/heart-coin.webp"
                               alt="Heart Coin"
                               className="w-4 h-4 object-contain"
                               style={{
@@ -963,7 +963,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                           <div className="flex items-center gap-2">
                             <span className="text-[#F2EF1D] font-bold">30</span>
                             <img
-                              src="/elements/heart-coin.png"
+                              src="/elements/heart-coin.webp"
                               alt="Heart Coin"
                               className="w-4 h-4 object-contain"
                               style={{
@@ -1152,7 +1152,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
           <div style={{ marginBottom: 8, display: 'grid', placeItems: 'center', position: 'relative' }}>
             <div style={{ position: 'relative', width: '58%', maxWidth: 280 }} id="elemental-container">
               <img
-                src="/elements/elementals.png?v=20241027"
+                src="/elements/elementals.webp?v=20241027"
                 alt="Elementals"
                 className="elt-img"
                 style={{ display: 'block', width: '100%', height: 'auto', background: 'transparent' }}

@@ -249,7 +249,7 @@ main {
 
 /* Cockpit background (responsive frame that adapts to screen size) */
 .cockpit-bg{
-  background-image: url("/cockpit/cockpit.png?v=2");
+  background-image: url("/cockpit/cockpit.webp?v=2");
   background-position: center;
   /* Responsive background sizing for better mobile experience */
   background-size: cover;
@@ -257,7 +257,7 @@ main {
 
 /* Light beam base background */
 .lightbeam-base-bg{
-  background-image: url("/cockpit/lightbeam-base.png?v=2");
+  background-image: url("/cockpit/lightbeam-base.webp?v=2");
   /* Position base directly beneath the blue button by aligning to beam bottom */
   /* beam bottom from viewport bottom: calc(var(--display-touch-top) - var(--beam-height) - 30px) */
   /* convert to top-origin for background-position: 100% - bottom */
@@ -578,12 +578,12 @@ main {
 /* .windshield-clip { clip-path: ellipse(65% 45% at 50% 52%); } */
 
 /* Element icon background classes - stable URLs for caching */
-.bg-element-chxndler { background-image: url('/elements/chxndler.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
-.bg-element-heart { background-image: url('/elements/heart.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
-.bg-element-lightning { background-image: url('/elements/lightning.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
-.bg-element-darkness { background-image: url('/elements/darkness.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
-.bg-element-water { background-image: url('/elements/water.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
-.bg-element-music { position: relative; background-image: url('/elements/music.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-chxndler { background-image: url('/elements/logo.webp'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-heart { background-image: url('/elements/heart.webp'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-lightning { background-image: url('/elements/lightning.webp'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-darkness { background-image: url('/elements/darkness.webp'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-water { background-image: url('/elements/water.webp'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-music { position: relative; background-image: url('/elements/music.webp'); background-size: contain; background-repeat: no-repeat; background-position: center; }
 
 /* Neon white glow for music.png wherever used as a background */
 .bg-element-music::before {
@@ -593,8 +593,8 @@ main {
   border-radius: inherit;
   pointer-events: none;
   /* Use the icon shape as a mask so the glow follows silhouette */
-  -webkit-mask-image: url('/elements/music.png');
-  mask-image: url('/elements/music.png');
+  -webkit-mask-image: url('/elements/music.webp');
+  mask-image: url('/elements/music.webp');
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
   -webkit-mask-size: contain; mask-size: contain;
   -webkit-mask-position: center; mask-position: center;
@@ -613,22 +613,22 @@ main {
 }
 
 /* Fallback: any plain <img> pointing to music.png gets the neon glow */
-img[src$="/elements/music.png"] {
+img[src$="/elements/music.webp"] {
   filter: drop-shadow(0 0 10px #FFFFFF) drop-shadow(0 0 24px rgba(255,255,255,0.9)) drop-shadow(0 0 48px rgba(255,255,255,0.6));
 }
-.bg-element-instagram { background-image: url('/elements/instagram.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
-.bg-element-tiktok { background-image: url('/elements/tiktok.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
-.bg-element-youtube { background-image: url('/elements/youtube.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
-.bg-element-spotify { background-image: url('/elements/spotify.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
-.bg-element-apple { background-image: url('/elements/apple.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
-.bg-element-comms { background-image: url('/elements/comms.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
-.bg-element-join { background-image: url('/elements/join.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
-.bg-element-power { background-image: url('/elements/power.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
-.bg-element-start { background-image: url('/elements/start.png?v=20250915c'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-instagram { background-image: url('/elements/instagram.webp'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-tiktok { background-image: url('/elements/tiktok.webp'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-youtube { background-image: url('/elements/youtube.webp'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-spotify { background-image: url('/elements/spotify.webp'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-apple { background-image: url('/elements/apple.webp'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-comms { background-image: url('/elements/comms.webp'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-join { background-image: url('/elements/join.webp'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-power { background-image: url('/elements/power.webp'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.bg-element-start { background-image: url('/elements/start.webp?v=20250915c'); background-size: contain; background-repeat: no-repeat; background-position: center; }
 
 /* Mask image classes for stable URLs */
-.mask-element-power::before { -webkit-mask-image: url('/elements/power.png'); mask-image: url('/elements/power.png'); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-size: contain; mask-size: contain; -webkit-mask-position: center; mask-position: center; }
-.mask-element-comms::before { -webkit-mask-image: url('/elements/comms.png'); mask-image: url('/elements/comms.png'); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-size: contain; mask-size: contain; -webkit-mask-position: center; mask-position: center; }
+.mask-element-power::before { -webkit-mask-image: url('/elements/power.webp'); mask-image: url('/elements/power.webp'); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-size: contain; mask-size: contain; -webkit-mask-position: center; mask-position: center; }
+.mask-element-comms::before { -webkit-mask-image: url('/elements/comms.webp'); mask-image: url('/elements/comms.webp'); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-size: contain; mask-size: contain; -webkit-mask-position: center; mask-position: center; }
 
 /* Light beam animation keyframes */
 @keyframes beamFlow {
@@ -1359,7 +1359,7 @@ img[src$="/elements/music.png"] {
 
 /* Apply the glow to any explicit class or any <img> using heart-coin.png */
 .heart-coin-glow,
-img[src$="/elements/heart-coin.png"]{
+img[src$="/elements/heart-coin.webp"]{
   /* two layers for a fuller glow */
   filter: drop-shadow(0 0 12px var(--heart-coin-glow-color)) drop-shadow(0 0 26px var(--heart-coin-glow-color));
   transition: transform 0.18s ease; /* smooth grow on hover */
@@ -1976,4 +1976,3 @@ button:hover > .heart-coin-glow,
   width: calc(100% - 2rem) !important;
   margin: 0 !important;
 }
-

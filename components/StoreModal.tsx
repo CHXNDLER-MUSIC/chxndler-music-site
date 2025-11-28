@@ -325,7 +325,7 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
             <div className="flex items-center gap-2">
               <span className="text-lg font-bold text-[#F2EF1D]">{item.priceHeartCoins}</span>
               <img
-                src="/elements/heart-coin.png"
+                src="/elements/heart-coin.webp"
                 alt="Heart Coin"
                 className="w-6 h-6 object-contain"
                 style={{
@@ -357,7 +357,7 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
                 <div className="flex items-center justify-center gap-2 text-lg font-semibold text-white">
                   <span>{profile?.heartcoin_balance ?? 0}</span>
                   <img
-                    src="/elements/heart-coin.png"
+                    src="/elements/heart-coin.webp"
                     alt="Heart Coin"
                     className="w-5 h-5 object-contain"
                     style={{

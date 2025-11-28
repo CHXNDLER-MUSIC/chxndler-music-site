@@ -238,7 +238,7 @@ export default function HeartCoinModal({ open, onClose }: Props) {
                 </div>
                 <div className="flex items-center gap-1">
                   <img
-                    src="/elements/heart-coin.png"
+                    src="/elements/heart-coin.webp"
                     alt="Heart Coin"
                     className="w-4 h-4 object-contain"
                     style={{

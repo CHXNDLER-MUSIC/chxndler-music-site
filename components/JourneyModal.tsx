@@ -113,7 +113,7 @@ export default function JourneyModal({ open, onClose }: JourneyModalProps) {
       <div 
         className="fixed inset-0 z-[2147483647] flex justify-center"
         style={{
-          paddingTop: '40px'
+          paddingTop: '60px'
         }}
         onClick={handleClose}
       >
@@ -121,7 +121,7 @@ export default function JourneyModal({ open, onClose }: JourneyModalProps) {
           className="journey-container"
           style={{
             width: 'min(90vw, 700px)',
-            height: '50vh',
+            height: '45vh',
             padding: '15px',
             borderRadius: 15,
             background: 'rgba(0,0,0,0.7)',
@@ -211,7 +211,7 @@ export default function JourneyModal({ open, onClose }: JourneyModalProps) {
         </div>
         
         {/* Three Tier Buttons */}
-        <div className="flex justify-center gap-6 h-4/5">
+        <div className="flex justify-center gap-6 h-3/4">
           {(Object.keys(tierData) as TierType[]).map((tier) => {
             const data = tierData[tier];
             const isFlipped = flippedTier === tier;
@@ -221,7 +221,7 @@ export default function JourneyModal({ open, onClose }: JourneyModalProps) {
                 key={tier}
                 className="tier-card"
                 style={{
-                  width: '185px',
+                  width: '165px',
                   height: '100%',
                   perspective: '1000px',
                   cursor: 'pointer'
@@ -312,7 +312,7 @@ export default function JourneyModal({ open, onClose }: JourneyModalProps) {
                         {data.priceRange}
                       </div>
                       <img 
-                        src="/elements/heart-coin.png"
+                        src="/elements/heart-coin.webp"
                         alt="Heart Coin"
                         style={{
                           width: '48px',

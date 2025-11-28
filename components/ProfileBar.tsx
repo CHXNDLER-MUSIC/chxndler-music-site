@@ -455,7 +455,7 @@ export default function ProfileBar({
         {/* Main Flex Layout */}
         <div className="flex items-center justify-between h-full pl-16 sm:pl-20 pr-2 min-w-0">
           {/* Left Side */}
-          <div className="flex items-center min-w-0 overflow-hidden flex-1">
+          <div className="flex items-center flex-1 min-w-0">
             {/* Username - Clickable */}
             <div className="relative">
               <button 
@@ -495,7 +495,7 @@ export default function ProfileBar({
             </div>
 
             {/* Elemental Button - Right of LOG IN button */}
-            <div className="ml-4">
+            <div className="ml-3 flex-shrink-0">
               <ElementalButton 
                 onHoverSound={() => sfx.play('hover', 0.8)}
                 onCloseBlueDisplay={onCloseBlueDisplay}
@@ -512,7 +512,7 @@ export default function ProfileBar({
 
 
           {/* Right Side */}
-          <div className="flex items-center flex-shrink-0 mr-0">
+          <div className="flex items-center flex-shrink-0 mr-0 space-x-2">
 
 
 
@@ -1099,7 +1099,7 @@ export default function ProfileBar({
                 }}
               >
                 <img
-                  src="/elements/heart-coin.png"
+                  src="/elements/heart-coin.webp"
                   alt="Heart Coin"
                   className="w-full h-full object-cover"
                   draggable={false}

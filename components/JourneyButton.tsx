@@ -356,7 +356,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
                             {data.priceRange}
                           </div>
                           <img 
-                            src="/elements/heart-coin.png"
+                            src="/elements/heart-coin.webp"
                             alt="Heart Coin"
                             style={{
                               width: '48px',

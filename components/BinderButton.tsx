@@ -389,7 +389,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
         {...restProps}
       >
         <img
-          src="/elements/binder.png"
+          src="/elements/binder.webp"
           alt="Binder"
           className="w-full h-full object-cover rounded"
           style={{
@@ -750,7 +750,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                               }}
                             >
                               <img
-                                src="/elements/heart-coin.png"
+                                src="/elements/heart-coin.webp"
                                 alt="Heart Coin"
                                 className="w-3 h-3"
                                 draggable={false}
@@ -781,7 +781,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                               }}
                             >
                               <img
-                                src="/elements/heart-coin.png"
+                                src="/elements/heart-coin.webp"
                                 alt="Heart Coin"
                                 className="w-3 h-3"
                                 draggable={false}

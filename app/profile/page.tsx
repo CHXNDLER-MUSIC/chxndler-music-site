@@ -83,7 +83,7 @@ export default function ProfilePage() {
     <main className="mx-auto max-w-xl p-6">
       <div className="flex items-center justify-between mb-6">
         <img 
-          src="/elements/start.png" 
+          src="/elements/start.webp" 
           alt="Element Icon" 
           className="w-8 h-8 object-contain"
         />
@@ -148,4 +148,3 @@ export default function ProfilePage() {
     </main>
   );
 }
-

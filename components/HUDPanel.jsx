@@ -58,7 +58,7 @@ import { sfx } from "@/lib/sfx";
 // Constants to prevent recreating URLs on every render
 const DEFAULT_COVER = 'https://ik.imagekit.io/CHXNDLER/cover/chxndler.png?updatedAt=1762361376662';
 const DEFAULT_CARD = 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910';
-const FALLBACK_COVER = '/elements/logo.png';
+const FALLBACK_COVER = '/elements/logo.webp';
 
 function ElementIcon({ name, size = 18, glow = true }) {
   if (!name) return null;
@@ -251,6 +251,7 @@ export default function HUDPanel({
   const [brandLoading, setBrandLoading] = useState(false);
   const [brandError, setBrandError] = useState(null);
   const [brandContent, setBrandContent] = useState('');
+  const [brandActiveTab, setBrandActiveTab] = useState('chxndler'); // 'chxndler' or 'believe'
   const brandScrollRef = useRef(null);
 
   // SOUL SKY popover state (similar to other popovers)
@@ -3112,7 +3113,7 @@ export default function HUDPanel({
                               }}
                             >
                               <img
-                                src="/elements/binder.png"
+                                src="/elements/binder.webp"
                                 alt="Binder"
                                 style={{ 
                                   width: '100%', 
@@ -3230,7 +3231,7 @@ export default function HUDPanel({
                             title="HEARTVERSE Code"
                             onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                             onClick={() => {
-                              try { sfx.play('click', 0.4); } catch {}
+                              try { sfx.play('click.mp3', 0.4); } catch {}
                               setShowHeartverseCode(!showHeartverseCode);
                             }}
                             style={{
@@ -3546,7 +3547,7 @@ export default function HUDPanel({
                                 <div className="neon-blue" style={{ fontSize: 12, fontWeight: 800, letterSpacing: '.02em', color: '#19E3FF' }}>The Wanderer</div>
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: '#19E3FF' }}>
                                   <span className="neon-blue heart-tier-range" style={{ fontSize: 13, fontWeight: 900, letterSpacing: '.02em' }}>0–4</span>
-                                  <img src="/elements/heart-coin.png" alt="HEART" width={26} height={26} className="heart-tier-icon heart-coin-glow" style={{ display: 'block', width: 26, height: 26, objectFit: 'contain', transform: 'translateY(0.5px) scale(1.08)' }} />
+                                  <img src="/elements/heart-coin.webp" alt="HEART" width={26} height={26} className="heart-tier-icon heart-coin-glow" style={{ display: 'block', width: 26, height: 26, objectFit: 'contain', transform: 'translateY(0.5px) scale(1.08)' }} />
                                 </div>
                               </div>
                               {/* Back */}
@@ -3607,7 +3608,7 @@ export default function HUDPanel({
                                 <div className="neon-yellow" style={{ fontSize: 12, fontWeight: 800, letterSpacing: '.02em', color: '#FFD400' }}>The Dreamer</div>
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: '#FFD400' }}>
                                   <span className="neon-yellow heart-tier-range" style={{ fontSize: 13, fontWeight: 900, letterSpacing: '.02em' }}>5–24</span>
-                                  <img src="/elements/heart-coin.png" alt="HEART" width={26} height={26} className="heart-tier-icon heart-coin-glow" style={{ display: 'block', width: 26, height: 26, objectFit: 'contain', transform: 'translateY(0.5px) scale(1.08)' }} />
+                                  <img src="/elements/heart-coin.webp" alt="HEART" width={26} height={26} className="heart-tier-icon heart-coin-glow" style={{ display: 'block', width: 26, height: 26, objectFit: 'contain', transform: 'translateY(0.5px) scale(1.08)' }} />
                                 </div>
                               </div>
                               {/* Back */}
@@ -3668,7 +3669,7 @@ export default function HUDPanel({
                                 <div className="neon-pink" style={{ fontSize: 12, fontWeight: 800, letterSpacing: '.02em', color: '#FF4FD8' }}>The Lover</div>
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: '#2196F3' }}>
                                   <span className="neon-pink heart-tier-range" style={{ fontSize: 13, fontWeight: 900, letterSpacing: '.02em' }}>25+</span>
-                                  <img src="/elements/heart-coin.png" alt="HEART" width={26} height={26} className="heart-tier-icon heart-coin-glow" style={{ display: 'block', width: 26, height: 26, objectFit: 'contain', transform: 'translateY(0.5px) scale(1.08)' }} />
+                                  <img src="/elements/heart-coin.webp" alt="HEART" width={26} height={26} className="heart-tier-icon heart-coin-glow" style={{ display: 'block', width: 26, height: 26, objectFit: 'contain', transform: 'translateY(0.5px) scale(1.08)' }} />
                                 </div>
                               </div>
                               {/* Back */}
@@ -3753,7 +3754,7 @@ export default function HUDPanel({
                     {/* Header with heart coin icon */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, paddingRight: 40 }}>
                       <img
-                        src="/elements/heart-coin.png"
+                        src="/elements/heart-coin.webp"
                         alt="HEART Coin"
                         width={32}
                         height={32}
@@ -5103,7 +5104,7 @@ export default function HUDPanel({
                                     style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer', lineHeight: 0 }}
                                   >
                                     <img
-                                      src="/elements/heart-coin.png"
+                                      src="/elements/heart-coin.webp"
                                       alt="HEART Coin"
                                       width={22}
                                       height={22}
@@ -5121,7 +5122,7 @@ export default function HUDPanel({
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                                     <div style={{ fontSize: 16, fontWeight: 800, color: '#FFD9EF', textShadow: '0 0 10px rgba(33,150,243,0.85)' }}>{item.title}</div>
                                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                                      <img src="/elements/heart-coin.png" alt="Heart Coin" width={18} height={18} style={{ width: 18, height: 18, objectFit: 'contain', filter: 'drop-shadow(0 0 6px rgba(252,84,175,0.65))' }} />
+                                      <img src="/elements/heart-coin.webp" alt="Heart Coin" width={18} height={18} style={{ width: 18, height: 18, objectFit: 'contain', filter: 'drop-shadow(0 0 6px rgba(252,84,175,0.65))' }} />
                                       <span style={{ fontSize: 14, fontWeight: 700, color: '#FFF' }}>{heartCoinsCount}</span>
                                     </div>
                                   </div>
@@ -5490,7 +5491,7 @@ export default function HUDPanel({
                     {/* Heart Coin Balance */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', gap: '12px' }}>
                       <img
-                        src="/elements/heart-coin.png"
+                        src="/elements/heart-coin.webp"
                         alt="Heart Coin"
                         style={{
                           width: '40px',
@@ -6743,6 +6744,75 @@ export default function HUDPanel({
                       </svg>
                     </button>
                     {/* Removed top CHXNDLER logo per request */}
+                    {/* Tab Navigation */}
+                    <div style={{
+                      display: 'flex',
+                      borderBottom: '1px solid rgba(242,239,29,0.3)',
+                      marginBottom: '12px'
+                    }}>
+                      <button
+                        onClick={() => {
+                          try { sfx.play('click.mp3', 0.4); } catch {}
+                          setBrandActiveTab('believe');
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '8px 12px',
+                          background: brandActiveTab === 'believe' ? 'rgba(242,239,29,0.2)' : 'transparent',
+                          border: 'none',
+                          color: brandActiveTab === 'believe' ? '#F2EF1D' : 'rgba(242,239,29,0.7)',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          borderBottom: brandActiveTab === 'believe' ? '2px solid #F2EF1D' : '2px solid transparent',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          try { sfx.play('hover', 0.25); } catch {}
+                          if (brandActiveTab !== 'believe') {
+                            e.target.style.color = 'rgba(242,239,29,0.9)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (brandActiveTab !== 'believe') {
+                            e.target.style.color = 'rgba(242,239,29,0.7)';
+                          }
+                        }}
+                      >
+                        WE BELIEVE
+                      </button>
+                      <button
+                        onClick={() => {
+                          try { sfx.play('click.mp3', 0.4); } catch {}
+                          setBrandActiveTab('chxndler');
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '8px 12px',
+                          background: brandActiveTab === 'chxndler' ? 'rgba(242,239,29,0.2)' : 'transparent',
+                          border: 'none',
+                          color: brandActiveTab === 'chxndler' ? '#F2EF1D' : 'rgba(242,239,29,0.7)',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          borderBottom: brandActiveTab === 'chxndler' ? '2px solid #F2EF1D' : '2px solid transparent',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          try { sfx.play('hover', 0.25); } catch {}
+                          if (brandActiveTab !== 'chxndler') {
+                            e.target.style.color = 'rgba(242,239,29,0.9)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (brandActiveTab !== 'chxndler') {
+                            e.target.style.color = 'rgba(242,239,29,0.7)';
+                          }
+                        }}
+                      >
+                        CHXNDLER
+                      </button>
+                    </div>
                     {/* Scrollable content area */}
                     <div
                       className="holo-scrollbar-yellow"
@@ -6757,12 +6827,60 @@ export default function HUDPanel({
                       }}
                       tabIndex={0}
                     >
-                      {brandLoading ? (
-                        <div style={{ fontSize: 16, opacity: .99, color: '#F2EF1D', textShadow: '0 0 4px rgba(242,239,29,0.8), 0 0 8px rgba(242,239,29,0.4)' }}>Loading…</div>
-                      ) : brandError ? (
-                        <div style={{ fontSize: 16, color: '#ff7b7b' }}>{brandError}</div>
+                      {brandActiveTab === 'chxndler' ? (
+                        brandLoading ? (
+                          <div style={{ fontSize: 16, opacity: .99, color: '#F2EF1D', textShadow: '0 0 4px rgba(242,239,29,0.8), 0 0 8px rgba(242,239,29,0.4)' }}>Loading…</div>
+                        ) : brandError ? (
+                          <div style={{ fontSize: 16, color: '#ff7b7b' }}>{brandError}</div>
+                        ) : (
+                          <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: 12, color: '#F2EF1D', textShadow: '0 0 3px rgba(242,239,29,0.85), 0 0 6px rgba(242,239,29,0.35)', textTransform: 'none' }}>{brandContent || ''}</div>
+                        )
                       ) : (
-                        <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: 12, color: '#F2EF1D', textShadow: '0 0 3px rgba(242,239,29,0.85), 0 0 6px rgba(242,239,29,0.35)', textTransform: 'none' }}>{brandContent || ''}</div>
+                        <div style={{ 
+                          padding: '12px',
+                          background: 'linear-gradient(135deg, rgba(33,150,243,0.15), rgba(25,227,255,0.08))',
+                          border: '1px solid rgba(33,150,243,0.4)',
+                          borderRadius: '12px',
+                          boxShadow: '0 0 25px rgba(33,150,243,0.25), 0 8px 32px rgba(0,0,0,0.3)'
+                        }}>
+                          <div style={{ 
+                            fontSize: 18, 
+                            fontWeight: 800, 
+                            color: '#FFFFFF', 
+                            marginBottom: 16,
+                            textAlign: 'center',
+                            letterSpacing: '0.02em',
+                            textShadow: '0 0 12px rgba(33,150,243,0.5)'
+                          }}>
+                            HEARTVERSE CODE
+                          </div>
+                          
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            {/* We Believe Section */}
+                            <div>
+                              <div style={{ 
+                                fontSize: 16, 
+                                fontWeight: 700, 
+                                color: '#19E3FF', 
+                                marginBottom: 8,
+                                textShadow: '0 0 8px rgba(25,227,255,0.4)'
+                              }}>
+                                We Believe
+                              </div>
+                              <ul style={{ margin: 0, paddingLeft: 16, listStyle: 'disc', color: '#F2EF1D' }}>
+                                <li style={{ fontSize: 13, lineHeight: 1.5, marginBottom: 6 }}>
+                                  We believe being your <span style={{ color: '#0099FF', textShadow: '0 0 8px #0099FF', fontWeight: 600 }}>truest self</span> is the beginning of freedom.
+                                </li>
+                                <li style={{ fontSize: 13, lineHeight: 1.5, marginBottom: 6 }}>
+                                  We believe <span style={{ color: '#FFD700', textShadow: '0 0 8px #FFD700', fontWeight: 600 }}>passion</span> is sacred and should be pursued loudly.
+                                </li>
+                                <li style={{ fontSize: 13, lineHeight: 1.5, marginBottom: 6 }}>
+                                  We believe <span style={{ color: '#FF1493', textShadow: '0 0 8px #FF1493', fontWeight: 600 }}>love</span> is the force that connects every soul.
+                                </li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>,

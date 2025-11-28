@@ -51,6 +51,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
   const [selectedCard, setSelectedCard] = useState<{name: string, image: string, rarity: string, element: string} | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isCardFlipped, setIsCardFlipped] = useState(false);
+  const [binderPage, setBinderPage] = useState<'first' | 'second'>('first');
   // Purchase flow state machine
   const [selectedPurchaseType, setSelectedPurchaseType] = useState<'digital' | 'physical' | null>(null);
   const [purchaseState, setPurchaseState] = useState<'idle' | 'insufficient' | 'digital-preview' | 'confirm-digital' | 'physical-form' | 'success'>('idle');
@@ -656,7 +657,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
         className="fixed inset-0 z-[2147483646] flex items-center justify-center"
         style={{
           pointerEvents: 'none',
-          paddingTop: '120px'
+          paddingTop: '5px'
         }}
       >
         <div
@@ -673,7 +674,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
       <div 
         className="fixed inset-0 z-[2147483647] flex items-center justify-center"
         style={{
-          paddingTop: '120px'
+          paddingTop: '5px'
         }}
       >
         <div
@@ -769,8 +770,8 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
             }}
           />
 
-          {/* Scrollable content container */}
-          <div className="flex-1 overflow-y-auto" style={{ maxHeight: 'calc(100% - 80px)' }}>
+          {/* Content container */}
+          <div className="flex-1" style={{ maxHeight: 'calc(100% - 80px)' }}>
 
           {/* Card popup - fills entire content area when open */}
           {cardOpen && (
@@ -783,8 +784,8 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                 <div 
                   className="rounded-lg shadow-2xl cursor-pointer"
                   style={{
-                    width: 'min(320px, 70vw)',
-                    height: 'min(480px, 80vh)',
+                    width: 'min(280px, 40vw)',
+                    height: 'min(420px, 45vh)',
                     boxShadow: '0 0 40px rgba(255,105,180,0.8), 0 0 80px rgba(255,105,180,0.5), 0 0 120px rgba(255,105,180,0.3)',
                     border: '2px solid rgba(255,105,180,0.6)',
                     perspective: '1000px'
@@ -1197,7 +1198,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                               }}
                             >
                               <img
-                                src="/elements/heart-coin.png"
+                                src="/elements/heart-coin.webp"
                                 alt="Heart Coin"
                                 className="w-3 h-3"
                                 draggable={false}
@@ -1237,7 +1238,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                               }}
                             >
                               <img
-                                src="/elements/heart-coin.png"
+                                src="/elements/heart-coin.webp"
                                 alt="Heart Coin"
                                 className="w-3 h-3"
                                 draggable={false}
@@ -1397,7 +1398,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                           {profile?.display_name || profile?.username || 'User'}
                         </h2>
                         <img
-                          src="/elements/heart-coin.png"
+                          src="/elements/heart-coin.webp"
                           alt="Heart Coin"
                           className="w-5 h-5"
                           draggable={false}
@@ -1413,7 +1414,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                       {/* Element: Heart Coin PNG then 20 */}
                       <div className="flex items-center gap-2 mt-2 mb-2">
                         <img
-                          src="/elements/heart-coin.png"
+                          src="/elements/heart-coin.webp"
                           alt="Heart Coin"
                           className="w-4 h-4"
                           draggable={false}
@@ -1481,13 +1482,17 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
           {/* Dynamic Content - Binder Cards or Full Collection */}
           <div className="relative mt-1">
             {!showFullCollection ? (
-              // User's Binder - Show 5 initial slots
+              binderPage === 'first' ? (
+                // User's Binder - First Page - Show 5 initial slots
               <div>
-                <div className="grid gap-2 grid-cols-5">
+                <div className="grid gap-2 grid-cols-6">
                   {Array.from({ length: 5 }, (_, index) => {
                     // Check if there's a collected card for this slot
                     const collectedCard = profile?.cards?.[index];
                     const hasCard = !!collectedCard?.cards;
+                    
+                    // Lock the last two slots (indices 3 and 4)
+                    const isLockedSlot = index === 3 || index === 4;
                     
                     // Show CHXNDLER card in first slot if no card is there
                     const isFirstSlotWithChxndler = index === 0 && !hasCard;
@@ -1496,11 +1501,17 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                       <div
                         key={`slot-${index}`}
                         className={`rounded-lg border backdrop-blur-sm transition-all duration-300 ${
-                          hasCard || isFirstSlotWithChxndler
+                          isLockedSlot
+                            ? 'border-white/5 cursor-default'
+                            : hasCard || isFirstSlotWithChxndler
                             ? 'border-white/10 cursor-pointer hover:scale-105' 
                             : 'border-white/5 cursor-default'
                         }`}
                         onClick={() => {
+                          if (isLockedSlot) {
+                            // Do nothing for locked slots
+                            return;
+                          }
                           if (hasCard && collectedCard?.cards) {
                             try { sfx.play('click', 0.8); } catch {}
                             setSelectedCard({
@@ -1583,6 +1594,20 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                                 );
                               })()}
                             </>
+                          ) : isLockedSlot ? (
+                            <div className="w-full h-28 bg-gradient-to-br from-pink-500/5 to-purple-500/5 rounded mb-1 border-2 border-dashed border-pink-400/20 flex items-center justify-center">
+                              <div 
+                                className="text-xs font-bold text-center"
+                                style={{ 
+                                  color: 'rgba(255,105,180,0.4)', 
+                                  textShadow: '0 0 4px rgba(255,105,180,0.3)',
+                                  fontSize: '10px',
+                                  letterSpacing: '0.5px'
+                                }}
+                              >
+                                LOCKED
+                              </div>
+                            </div>
                           ) : isFirstSlotWithChxndler ? (
                             <>
                               <img
@@ -1615,6 +1640,34 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                       </div>
                     );
                   })}
+                  
+                  {/* Arrow button positioned after the locked containers */}
+                  <div className="flex items-center justify-center">
+                    <div 
+                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
+                      onClick={() => {
+                        try { sfx.play('click', 0.7); } catch {}
+                        setBinderPage(binderPage === 'first' ? 'second' : 'first');
+                      }}
+                      style={{
+                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
+                        backdropFilter: 'blur(10px)',
+                      }}
+                    >
+                      <svg 
+                        viewBox="0 0 24 24" 
+                        width="16" 
+                        height="16" 
+                        fill="currentColor"
+                        style={{
+                          transform: binderPage === 'second' ? 'rotate(180deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.3s ease'
+                        }}
+                      >
+                        <path d="M7 10l5 5 5-5z"/>
+                      </svg>
+                    </div>
+                  </div>
                 </div>
                 
                 {/* Second row of 5 locked slots */}
@@ -1649,6 +1702,74 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                   })}
                 </div>
               </div>
+              ) : (
+                // User's Binder - Second Page - Show 10 locked slots
+                <div>
+                  {/* Two rows of 5 locked containers each */}
+                  <div className="grid gap-2 grid-cols-5">
+                    {Array.from({ length: 5 }, (_, index) => {
+                      const slotIndex = index + 10; // Slots 10-14
+                      
+                      return (
+                        <div
+                          key={`locked-slot-${slotIndex}`}
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300"
+                          style={{
+                            boxShadow: '0 0 5px rgba(255,105,180,0.1)',
+                            aspectRatio: '2/3'
+                          }}
+                        >
+                          <div className="relative h-full w-full flex items-center justify-center">
+                            <div 
+                              className="text-center"
+                              style={{
+                                color: 'rgba(255,105,180,0.4)',
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                letterSpacing: '0.5px'
+                              }}
+                            >
+                              LOCKED
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Second row of 5 locked slots */}
+                  <div className="grid gap-2 grid-cols-5 mt-3">
+                    {Array.from({ length: 5 }, (_, index) => {
+                      const slotIndex = index + 15; // Slots 15-19
+                      
+                      return (
+                        <div
+                          key={`locked-slot-${slotIndex}`}
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300"
+                          style={{
+                            boxShadow: '0 0 5px rgba(255,105,180,0.1)',
+                            aspectRatio: '2/3'
+                          }}
+                        >
+                          <div className="relative h-full w-full flex items-center justify-center">
+                            <div 
+                              className="text-center"
+                              style={{
+                                color: 'rgba(255,105,180,0.4)',
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                letterSpacing: '0.5px'
+                              }}
+                            >
+                              LOCKED
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )
             ) : (
               // Full Collection View
               <>
