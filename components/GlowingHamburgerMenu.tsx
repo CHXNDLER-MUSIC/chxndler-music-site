@@ -150,7 +150,7 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
                   {/* Hover glow effect */}
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-200 bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
                   
-                  <span className="relative z-10 flex items-center gap-1 -ml-1">
+                  <span className="relative z-10 flex items-center gap-1 -ml-2">
                     {item.label === "ABOUT" && (
                       <Image
                         src="/elements/about.webp"

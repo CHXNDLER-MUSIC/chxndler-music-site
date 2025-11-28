@@ -5,6 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import * as THREE from "three";
 import HeartStarPlanet from "./HeartStarPlanet";
+import { getElementalPlanetTexture } from "@/lib/elementalPlanets";
 
 type ElementKey = "water" | "heart" | "lightning" | "darkness";
 
@@ -58,36 +59,21 @@ const ElementPlanet: React.FC<{
   // Load the appropriate texture for each element
   React.useEffect(() => {
     const textureLoader = new THREE.TextureLoader();
-    let texturePath: string;
+    const texturePath = getElementalPlanetTexture(type);
     
-    switch (type) {
-      case "heart":
-        texturePath = "https://ik.imagekit.io/CHXNDLER/Planets/heart.png";
-        break;
-      case "lightning":
-        texturePath = "https://ik.imagekit.io/CHXNDLER/Planets/lightning";
-        break;
-      case "water":
-        texturePath = "https://ik.imagekit.io/CHXNDLER/Planets/water";
-        break;
-      case "darkness":
-        texturePath = "https://ik.imagekit.io/CHXNDLER/Planets/darkness";
-        break;
-      default:
-        texturePath = "https://ik.imagekit.io/CHXNDLER/Planets/heart.png";
+    if (texturePath) {
+      textureLoader.load(
+        texturePath,
+        (loadedTexture) => {
+          loadedTexture.wrapS = loadedTexture.wrapT = THREE.RepeatWrapping;
+          setTexture(loadedTexture);
+        },
+        undefined,
+        (error) => {
+          console.warn(`Failed to load texture for ${type}:`, error);
+        }
+      );
     }
-    
-    textureLoader.load(
-      texturePath,
-      (loadedTexture) => {
-        loadedTexture.wrapS = loadedTexture.wrapT = THREE.RepeatWrapping;
-        setTexture(loadedTexture);
-      },
-      undefined,
-      (error) => {
-        console.warn(`Failed to load texture for ${type}:`, error);
-      }
-    );
   }, [type]);
   
   return (
