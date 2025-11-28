@@ -111,7 +111,6 @@ interface ProfileBarProps {
   savedAlienName?: string; // Name from HUD signup flow
   savedAlienElement?: string; // Element from HUD signup flow
   profileRefreshTrigger?: number; // Increment this to trigger profile refresh
-  todaysPrompt?: any; // Today's soul prompt
 }
 
 export default function ProfileBar({
@@ -124,8 +123,7 @@ export default function ProfileBar({
   onBeamColorChange,
   savedAlienName,
   savedAlienElement,
-  profileRefreshTrigger = 0,
-  todaysPrompt
+  profileRefreshTrigger = 0
 }: ProfileBarProps) {
   // Use global UI state for profile bar visibility
   const { hasEnteredHeartverse } = useUIState();
@@ -436,7 +434,7 @@ export default function ProfileBar({
 
   if (loading) {
     return (
-      <div className="fixed top-0 left-0 right-0 z-[200] h-16 bg-black/80 backdrop-blur-md border-b border-white/10">
+      <div className="fixed top-0 left-0 right-0 z-[200] h-16 bg-black/40 backdrop-blur-lg border-b border-white/20">
         <div className="flex items-center justify-between h-full px-6">
           <div className="animate-pulse flex items-center space-x-4">
             <div className="w-10 h-10 bg-white/20 rounded-full"></div>
@@ -467,7 +465,7 @@ export default function ProfileBar({
 
   return (
     <div 
-      className="fixed top-0 left-0 right-0 z-[200] h-16 bg-black/80 backdrop-blur-md border-b border-white/10 transition-opacity duration-500 ease-in-out"
+      className="fixed top-0 left-0 right-0 z-[200] h-16 bg-black/40 backdrop-blur-lg border-b border-white/20 transition-opacity duration-500 ease-in-out"
     >
       <div className="relative h-full">
         {/* Hamburger Menu - Far Top Left */}
@@ -1293,7 +1291,6 @@ export default function ProfileBar({
       <SoulStarJournal 
         isOpen={isJournalOpen} 
         onClose={() => setIsJournalOpen(false)}
-        prompt={todaysPrompt}
       />
 
       {/* Journey Modal - Triggered by hamburger menu JOURNEY option */}

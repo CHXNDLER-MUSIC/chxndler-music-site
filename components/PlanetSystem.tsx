@@ -29,12 +29,12 @@ type PlanetSystemProps = {
   showDebug?: boolean;
 };
 
-// Elemental planets configuration as per requirements
+// Elemental planets configuration as per requirements - ENHANCED VISIBILITY
 const ELEMENTAL_PLANETS = [
-  { type: "water" as ElementKey, color: "#38B6FF", radius: 2.0, position: [6, 0, 0] as [number, number, number] },
-  { type: "heart" as ElementKey, color: "#FC54AF", radius: 2.0, position: [-6, 0, 0] as [number, number, number] },
-  { type: "lightning" as ElementKey, color: "#F2EF1D", radius: 2.0, position: [0, 6, 0] as [number, number, number] },
-  { type: "darkness" as ElementKey, color: "#000000", radius: 2.0, position: [0, -6, 0] as [number, number, number] }
+  { type: "water" as ElementKey, color: "#38B6FF", radius: 3.0, position: [8, 0, 0] as [number, number, number] },
+  { type: "heart" as ElementKey, color: "#FC54AF", radius: 3.0, position: [-8, 0, 0] as [number, number, number] },
+  { type: "lightning" as ElementKey, color: "#F2EF1D", radius: 3.0, position: [0, 8, 0] as [number, number, number] },
+  { type: "darkness" as ElementKey, color: "#6A4C93", radius: 3.0, position: [0, -8, 0] as [number, number, number] }
 ];
 
 // Orbit helper function as requested
@@ -98,18 +98,29 @@ const ElementPlanet: React.FC<{
           map={texture}
           color={texture ? "#ffffff" : color}
           emissive={color}
-          emissiveIntensity={0.3}
+          emissiveIntensity={1.5}
           metalness={0.1}
           roughness={0.2}
         />
       </mesh>
-      {/* Add atmospheric glow */}
+      {/* Add atmospheric glow - ENHANCED */}
       <mesh renderOrder={-1}>
-        <sphereGeometry args={[radius * 1.2, 16, 16]} />
+        <sphereGeometry args={[radius * 1.3, 16, 16]} />
         <meshBasicMaterial
           color={color}
           transparent
-          opacity={0.2}
+          opacity={0.8}
+          blending={AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+      {/* Add EXTRA outer glow */}
+      <mesh renderOrder={-2}>
+        <sphereGeometry args={[radius * 1.6, 16, 16]} />
+        <meshBasicMaterial
+          color={color}
+          transparent
+          opacity={0.4}
           blending={AdditiveBlending}
           depthWrite={false}
         />
@@ -164,6 +175,10 @@ export const PlanetSystem: React.FC<PlanetSystemProps> = ({
   songs,
   showDebug = false,
 }) => {
+  console.log("🚨🚨🚨 MAIN PLANETSYSTEM.TSX IS RENDERING!!! 🚨🚨🚨");
+  console.log("Songs passed:", songs?.length || 0);
+  console.log("ELEMENTAL_PLANETS:", ELEMENTAL_PLANETS);
+  
   const timeRef = useRef(0);
 
   useFrame((state, delta) => {
@@ -179,7 +194,7 @@ export const PlanetSystem: React.FC<PlanetSystemProps> = ({
         <HeartStarPlanet size={180} />
       </group>
 
-      {/* Render elemental planets BEFORE song planets */}
+      {/* Render elemental planets BEFORE song planets - ENHANCED VISIBILITY */}
       {ELEMENTAL_PLANETS.map((p) => (
         <group key={p.type}>
           <ElementPlanet
@@ -190,26 +205,31 @@ export const PlanetSystem: React.FC<PlanetSystemProps> = ({
           />
           {/* Add text label above the planet */}
           <Html
-            position={[p.position[0], p.position[1] + p.radius + 1.5, p.position[2]]}
+            position={[p.position[0], p.position[1] + p.radius + 2, p.position[2]]}
             center
-            distanceFactor={10}
+            distanceFactor={5}
           >
             <div style={{
-              color: '#ffffff',
-              fontSize: '14px',
+              color: p.color,
+              fontSize: '24px',
               fontWeight: 'bold',
               textAlign: 'center',
               textTransform: 'uppercase',
-              textShadow: '0 0 8px rgba(255, 255, 255, 0.8)',
-              backgroundColor: 'rgba(0, 0, 0, 0.3)',
-              padding: '4px 8px',
-              borderRadius: '4px',
-              border: `1px solid ${p.color}`,
-              backdropFilter: 'blur(4px)'
+              textShadow: `0 0 12px ${p.color}`,
+              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              border: `2px solid ${p.color}`,
+              backdropFilter: 'blur(8px)'
             }}>
               {p.type}
             </div>
           </Html>
+          {/* DEBUG SPHERE - SHOULD BE CLEARLY VISIBLE */}
+          <mesh position={[p.position[0], p.position[1] + 5, p.position[2]]}>
+            <sphereGeometry args={[1, 8, 8]} />
+            <meshBasicMaterial color="#FF0000" />
+          </mesh>
         </group>
       ))}
 

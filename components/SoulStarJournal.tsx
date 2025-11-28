@@ -4,12 +4,27 @@ import { useState, useEffect } from "react";
 import { useProfile } from "@/contexts/ProfileContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { sfx } from "@/lib/sfx";
-import type { SoulPrompt } from "@/lib/getTodaySoulPrompt";
+
+interface DailyPrompt {
+  prompt_date: string;
+  element: string;
+  intention: {
+    id: string;
+    text: string;
+    element: string;
+    prompt_type: string;
+  };
+  reflection: {
+    id: string;
+    text: string;
+    element: string;
+    prompt_type: string;
+  };
+}
 
 interface SoulStarJournalProps {
   isOpen: boolean;
   onClose: () => void;
-  prompt: SoulPrompt | null;
   openWelcomeHome?: () => void;
 }
 
@@ -38,9 +53,10 @@ const ELEMENT_EMOJIS = {
   darkness: "🌑",
 };
 
-export default function SoulStarJournal({ isOpen, onClose, prompt, openWelcomeHome }: SoulStarJournalProps) {
-  const { saveJournalEntry, journalEntries, profile, user } = useProfile();
+export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: SoulStarJournalProps) {
+  const { saveJournalEntry, journalEntries, profile, user, getDailyPrompts } = useProfile();
   const [showHistory, setShowHistory] = useState(false);
+  const [dailyPrompt, setDailyPrompt] = useState<DailyPrompt | null>(null);
   const [journalState, setJournalState] = useState<JournalState>({
     intentionResponse: "",
     reflectionResponse: "",
@@ -59,12 +75,28 @@ export default function SoulStarJournal({ isOpen, onClose, prompt, openWelcomeHo
     day: 'numeric'
   });
 
+  // Load daily prompt when opened
+  useEffect(() => {
+    if (isOpen) {
+      loadDailyPrompt();
+    }
+  }, [isOpen]);
+
   // Load existing entry on mount
   useEffect(() => {
     if (isOpen && profile?.element && journalEntries) {
       loadExistingEntry();
     }
   }, [isOpen, profile?.element, journalEntries]);
+
+  const loadDailyPrompt = async () => {
+    try {
+      const prompt = await getDailyPrompts();
+      setDailyPrompt(prompt);
+    } catch (error) {
+      console.error('Failed to load daily prompt:', error);
+    }
+  };
 
   const loadExistingEntry = () => {
     if (!profile?.element) return;
@@ -113,7 +145,7 @@ export default function SoulStarJournal({ isOpen, onClose, prompt, openWelcomeHo
       }
     }
 
-    if (!prompt) return;
+    if (!dailyPrompt) return;
 
     // Validate input
     if (!journalState.soulStar.trim()) {
@@ -137,7 +169,7 @@ export default function SoulStarJournal({ isOpen, onClose, prompt, openWelcomeHo
             user_id: user.id,
             entry_date: today,
             element: profile.element,
-            prompt_id: prompt.id,
+            prompt_id: null, // Using new daily prompt system
             intention_response: journalState.intentionResponse,
             reflection_response: journalState.reflectionResponse,
             soul_star: journalState.soulStar.trim(),
@@ -179,7 +211,7 @@ export default function SoulStarJournal({ isOpen, onClose, prompt, openWelcomeHo
 
   if (!isOpen) return null;
 
-  if (!prompt) {
+  if (!dailyPrompt) {
     return (
       <div 
         className="fixed inset-0 z-[2147483647] flex items-center justify-center"
@@ -196,8 +228,9 @@ export default function SoulStarJournal({ isOpen, onClose, prompt, openWelcomeHo
     );
   }
 
-  const elementTheme = ELEMENT_COLORS.lightning;
-  const elementEmoji = ELEMENT_EMOJIS[profile?.element as keyof typeof ELEMENT_EMOJIS] || "💖";
+  const currentElement = dailyPrompt.element as keyof typeof ELEMENT_COLORS;
+  const elementTheme = ELEMENT_COLORS[currentElement] || ELEMENT_COLORS.heart;
+  const elementEmoji = ELEMENT_EMOJIS[currentElement] || "💖";
 
   return (
     <div 
@@ -398,23 +431,74 @@ export default function SoulStarJournal({ isOpen, onClose, prompt, openWelcomeHo
                   textShadow: `0 0 4px ${elementTheme.glow}`
                 }}
               >
-                {elementEmoji} {profile?.element} element
+                {elementEmoji} {dailyPrompt.element} element
               </span>
             </div>
 
+            {/* Intention & Reflection Section */}
+            {dailyPrompt && (
+              <div className="mb-4 space-y-3">
+                {/* Intention */}
+                <div 
+                  className="p-4 rounded-lg"
+                  style={{
+                    background: `${elementTheme.color}08`,
+                    border: `1px solid ${elementTheme.color}30`,
+                    borderLeft: `4px solid ${elementTheme.color}`
+                  }}
+                >
+                  <div 
+                    className="text-sm font-semibold mb-2 uppercase tracking-wider"
+                    style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
+                  >
+                    ✨ Today's Intention
+                  </div>
+                  <div 
+                    className="text-sm leading-relaxed"
+                    style={{ color: '#FFFFFF' }}
+                  >
+                    {dailyPrompt.intention.text}
+                  </div>
+                </div>
 
-            {/* Soul Star Response */}
+                {/* Reflection Prompt */}
+                <div 
+                  className="p-4 rounded-lg"
+                  style={{
+                    background: `${elementTheme.color}08`,
+                    border: `1px solid ${elementTheme.color}30`,
+                    borderLeft: `4px solid ${elementTheme.color}`
+                  }}
+                >
+                  <div 
+                    className="text-sm font-semibold mb-2 uppercase tracking-wider"
+                    style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
+                  >
+                    💭 Prompt
+                  </div>
+                  <div 
+                    className="text-sm leading-relaxed"
+                    style={{ color: '#FFFFFF' }}
+                  >
+                    {dailyPrompt.reflection.text}
+                  </div>
+                </div>
+              </div>
+            )}
+
+
+            {/* Reflection Response */}
             <div className="mb-4">
               <label 
                 className="block text-sm font-semibold mb-2"
                 style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
               >
-                Your Soul Star
+                💭 Your Reflection
               </label>
               <textarea
-                value={journalState.soulStar}
-                onChange={(e) => setJournalState(prev => ({ ...prev, soulStar: e.target.value }))}
-                placeholder="Let your soul speak... What resonates with you today?"
+                value={journalState.reflectionResponse}
+                onChange={(e) => setJournalState(prev => ({ ...prev, reflectionResponse: e.target.value }))}
+                placeholder="Reflect on today's prompt... What insights arise?"
                 className="w-full h-20 p-3 rounded-lg text-white placeholder-white/50 resize-none focus:outline-none transition-all"
                 style={{
                   background: 'rgba(0,0,0,0.6)',
@@ -431,6 +515,7 @@ export default function SoulStarJournal({ isOpen, onClose, prompt, openWelcomeHo
                 }}
               />
             </div>
+
 
             {/* Messages */}
             {journalState.errorMessage && (

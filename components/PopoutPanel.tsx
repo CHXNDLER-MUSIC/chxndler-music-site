@@ -114,6 +114,28 @@ export default function PopoutPanel({
             }}
           />
           
+          {/* Text button */}
+          <button
+            className="absolute top-2 left-4 hover:opacity-80 cursor-pointer w-8 h-8 rounded-full border flex items-center justify-center overflow-hidden"
+            style={{ 
+              borderColor: `${glowColor}80`,
+              boxShadow: `0 0 15px ${glowColor}80, 0 0 25px ${glowColor}50, 0 0 35px ${glowColor}30`,
+              background: `${glowColor}10`,
+              backdropFilter: 'blur(2px)',
+              padding: 0
+            }}
+          >
+            <img 
+              src="/elements/text.png" 
+              alt="Text" 
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover'
+              }}
+            />
+          </button>
+
           {/* Close button */}
           <button
             onClick={handleCloseClick}

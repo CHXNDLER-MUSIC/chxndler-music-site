@@ -740,7 +740,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             
             {/* Thin pink neon line */}
             <div 
-              className="w-full h-px mb-2"
+              className="w-full h-px mb-1"
               style={{
                 background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8) 20%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.8) 80%, transparent)',
                 boxShadow: '0 0 4px rgba(255,255,255,0.6)'
@@ -1035,15 +1035,15 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
           {/* USE Tab Content */}
           {activeTab === 'USE' && (
-            <div className="pl-2 pr-6 py-4">
+            <div className="pl-2 pr-6 py-2">
               {!showItemDetail ? (
                 <>
                   <div 
-                    className="text-base text-left mb-4"
+                    className="text-base text-left mb-1"
                     style={{ 
                       color: '#FFFFFF', 
                       textShadow: '0 0 4px rgba(255,255,255,0.8)', 
-                      fontSize: '14px',
+                      fontSize: '12px',
                       lineHeight: 1,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -1125,14 +1125,26 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               </div>
                               <div className="flex-1">
                                 <div 
-                                  className="font-bold text-white text-lg"
+                                  className="font-bold text-white text-lg mb-1"
                                   style={{
                                     textShadow: '0 0 4px rgba(255,255,255,0.6)'
                                   }}
                                 >
                                   {PHYSICAL_ITEMS[currentMerchIndex].title}
                                 </div>
-                                <div className="flex items-center gap-3 mt-1">
+                                <div 
+                                  className="text-xs text-white/90 mb-1"
+                                  style={{
+                                    textShadow: '0 0 2px rgba(255,255,255,0.4)',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    lineHeight: '1'
+                                  }}
+                                >
+                                  {PHYSICAL_ITEMS[currentMerchIndex].description}
+                                </div>
+                                <div className="flex items-center gap-3">
                                   <div className="flex items-center gap-1 font-bold text-green-400">
                                     <span>${PHYSICAL_ITEMS[currentMerchIndex].priceUsd % 1 === 0 ? PHYSICAL_ITEMS[currentMerchIndex].priceUsd.toFixed(0) : PHYSICAL_ITEMS[currentMerchIndex].priceUsd.toFixed(1)}</span>
                                   </div>
@@ -1149,16 +1161,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                            
-                            {/* Description */}
-                            <div 
-                              className="text-sm text-white/90 mb-4 leading-relaxed"
-                              style={{
-                                textShadow: '0 0 2px rgba(255,255,255,0.4)'
-                              }}
-                            >
-                              {PHYSICAL_ITEMS[currentMerchIndex].description}
                             </div>
                             
                             {/* Buy Button */}
