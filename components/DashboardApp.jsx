@@ -1149,6 +1149,31 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [uiUnlocked, homeMode, isPlaying]);
 
+  // Listen for tour skip event to trigger warp effect
+  React.useEffect(() => {
+    const handleTourSkipped = () => {
+      console.log('Tour skipped - triggering warp effect');
+      if (!isWarping) {
+        setIsWarping(true);
+        setHomeIntroEnabled(true);
+        setPendingOverlayReveal(true);
+        setUiUnlocked(true);
+        setAllowWarp(true);
+        setSky(SPACE_SKY);
+        setNextSky(null);
+        setLandingRevealReady(true);
+        setWarpActive(true);
+        
+        // Store warp context for post-warp handling
+        window.postWarpUser = null;
+        window.postWarpProfileComplete = false;
+      }
+    };
+
+    window.addEventListener('tour:skipped', handleTourSkipped);
+    return () => window.removeEventListener('tour:skipped', handleTourSkipped);
+  }, [isWarping]);
+
   // Enable SFX globally only after Start unlocks the UI
   React.useEffect(() => {
     try { sfx.setEnabled(!!uiUnlocked); } catch {}

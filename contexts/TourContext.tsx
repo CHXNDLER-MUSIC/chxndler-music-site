@@ -73,6 +73,13 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     markCompleted();
     markDisabled();
     try { await updateProfile({ has_seen_tour: true }); } catch {}
+    
+    // Trigger warp effect when skipping tour
+    try {
+      window.dispatchEvent(new CustomEvent('tour:skipped'));
+    } catch (e) {
+      console.log('Could not dispatch tour:skipped event:', e);
+    }
   }, [markCompleted, markDisabled, updateProfile]);
 
   const restart = useCallback(() => {
@@ -109,11 +116,13 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   // Listen to a global event for explicit start (emitted on ENTER THE HEARTVERSE if needed)
   useEffect(() => {
     const onEntered = () => {
-      if (!isDisabled() && !isCompleted()) setWelcomeVisible(true);
+      // Clear any previous tour state to ensure welcome shows when explicitly entering heartverse
+      clearDisabled();
+      setWelcomeVisible(true);
     };
     window.addEventListener("heartverse:entered", onEntered);
     return () => window.removeEventListener("heartverse:entered", onEntered);
-  }, [start, isCompleted, isDisabled]);
+  }, [clearDisabled]);
 
   const value = useMemo(() => ({ active, start, skip, restart, disable, enable }), [active, start, skip, restart, disable, enable]);
 

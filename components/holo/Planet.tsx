@@ -18,6 +18,7 @@ export default function Planet({
   isMoon,
   isMuted = false,
   ringBaseOverride,
+  isHighlighted = false,
 }: {
   song: Song;
   isMain: boolean;
@@ -25,6 +26,7 @@ export default function Planet({
   isMoon: boolean;
   isMuted?: boolean;
   ringBaseOverride?: number;
+  isHighlighted?: boolean;
 }) {
   // Toggle to render planets with physically based materials and realistic textures
   const REALISTIC_PLANETS = true;
@@ -39,6 +41,7 @@ export default function Planet({
   const mainRingRef = useRef<Mesh>(null);
   const mainRingRef2 = useRef<Mesh>(null);
   const sprinkleRef = useRef<any>(null);
+  const highlightRef = useRef<Mesh>(null);
 
   const angleRef = useRef(Math.random() * Math.PI * 2);
   const orbitRadiusRef = useRef(song.planet.orbitRadius);
@@ -703,6 +706,14 @@ export default function Planet({
       phaseOffsetRef.current += (targetPhase - phaseOffsetRef.current) * phaseLerp;
       if (phaseOffsetRef.current > Math.PI) phaseOffsetRef.current -= Math.PI * 2;
       if (phaseOffsetRef.current < -Math.PI) phaseOffsetRef.current += Math.PI * 2;
+    }
+
+    // Animate highlight glow
+    if (highlightRef.current && isHighlighted) {
+      const material = highlightRef.current.material as any;
+      if (material) {
+        material.opacity = 0.2 + Math.sin(state.clock.elapsedTime * 4) * 0.15;
+      }
     }
   });
 
@@ -1750,6 +1761,20 @@ export default function Planet({
             />
           </mesh>
         </group>
+      )}
+
+      {/* Pulsing glow effect for highlighted planets */}
+      {isHighlighted && (
+        <mesh ref={highlightRef} scale={1.5} renderOrder={10}>
+          <sphereGeometry args={[1, 32, 32]} />
+          <meshBasicMaterial
+            color={color}
+            transparent
+            opacity={0.2}
+            depthWrite={false}
+            blending={AdditiveBlending}
+          />
+        </mesh>
       )}
     </group>
   );

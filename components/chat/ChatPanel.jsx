@@ -52,24 +52,58 @@ export default function ChatPanel({ isOpen, onClose }) {
   const { profile, user } = useProfile();
   const { userBadges } = useBadges();
   
-  // Real song collection data from BinderModal
+  // Real song collection data from BinderModal - exact match
   const songCollection = [
-    { name: 'MR. BRIGHTSIDE', element: 'DARKNESS', rarity: 'Common' },
-    { name: 'CHEERLEADER (ACOUSTIC)', element: 'HEART', rarity: 'Common' },
-    { name: 'ALONE', element: 'DARKNESS', rarity: 'Common' },
-    { name: 'LITTLE BLACK HEART', element: 'DARKNESS', rarity: 'Common' },
-    { name: 'ALWAYS ON MY MIND', element: 'HEART', rarity: 'Common' },
-    { name: 'BE MY BEE', element: 'HEART', rarity: 'Common' },
-    { name: 'BLUE', element: 'LIGHTNING', rarity: 'Common' },
-    { name: 'BRAIN FREEZE', element: 'LIGHTNING', rarity: 'Common' },
-    { name: 'GAME BOY HEART', element: 'LIGHTNING', rarity: 'Common' },
-    { name: 'HOME', element: 'LIGHTNING', rarity: 'Common' },
-    { name: 'OCEAN GIRL', element: 'WATER', rarity: 'Common' },
-    { name: 'LETTING GO', element: 'WATER', rarity: 'Common' },
-    { name: 'WATER', element: 'WATER', rarity: 'Rare' },
-    { name: 'HEART', element: 'HEART', rarity: 'Rare' },
-    { name: 'LIGHTNING', element: 'LIGHTNING', rarity: 'Rare' },
-    { name: 'DARKNESS', element: 'DARKNESS', rarity: 'Rare' },
+    { name: 'MR. BRIGHTSIDE', element: 'DARKNESS', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'CHEERLEADER (ACOUSTIC)', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'I MIGHT FALL IN LOVE WITH YOU (ACOUSTIC)', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'MAKE BELIEVE', element: '', rarity: 'Common', is_released: false, min_tier: 'wanderer' },
+    { name: 'ALONE', element: 'DARKNESS', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'ALONE (ACOUSTIC)', element: 'DARKNESS', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'LITTLE BLACK HEART (ACOUSTIC)', element: 'DARKNESS', rarity: 'Common', is_released: true, min_tier: 'dreamer' },
+    { name: 'LITTLE BLACK HEART', element: 'DARKNESS', rarity: 'Common', is_released: true, min_tier: 'dreamer' },
+    { name: 'AMERICAN DREAM', element: 'DARKNESS', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'PARIS', element: 'DARKNESS', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'PINK MOON', element: 'DARKNESS', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'ALWAYS ON MY MIND', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'ALWAYS ON MY MIND (REMIX)', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'BE MY BEE', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'BE MY BEE (ACOUSTIC)', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'CHEERLEADER', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'COLLIDE', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'dreamer' },
+    { name: 'COLORS OF OUR HOME (BLUMA Game Soundtrack)', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'COLORS OF OUR HOME (ACOUSTIC)', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'COLORS OF OUR HOME', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'I MIGHT FALL IN LOVE WITH YOU', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'LOVE ME', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'LOVE ME (ACOUSTIC)', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'SOMEBODY TO LOVE', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'lover' },
+    { name: 'TIENES UN AMIGO', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'WE\'RE JUST FRIENDS', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'WE\'RE JUST FRIENDS (ACOUSTIC)', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'WE\'RE JUST FRIENDS (DMVRCO REMIX)', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'WE\'RE JUST FRIENDS (mickey jas REMIX)', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'BABY', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'BLUE (ACOUSTIC)', element: 'LIGHTNING', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'BLUE', element: 'LIGHTNING', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'BRAIN FREEZE', element: 'LIGHTNING', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'FEELING THIS', element: 'LIGHTNING', rarity: 'Common', is_released: true, min_tier: 'dreamer' },
+    { name: 'GAME BOY HEART', element: 'LIGHTNING', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'HOME', element: 'LIGHTNING', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'HOME (ACOUSTIC)', element: 'LIGHTNING', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'HOUSE PARTY', element: 'LIGHTNING', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'HOUSE PARTY (ACOUSTIC)', element: 'LIGHTNING', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'KID FOREVER', element: 'LIGHTNING', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'POKÉMON', element: 'LIGHTNING', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'LETTING GO', element: 'WATER', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'OCEAN GIRL', element: 'WATER', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'OCEAN GIRL (ACOUSTIC)', element: 'WATER', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'OCEAN GIRL (REMIX)', element: 'WATER', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
+    { name: 'WATER', element: 'WATER', rarity: 'Rare', is_released: true, min_tier: 'lover' },
+    { name: 'HEART', element: 'HEART', rarity: 'Rare', is_released: true, min_tier: 'lover' },
+    { name: 'LIGHTNING', element: 'LIGHTNING', rarity: 'Rare', is_released: true, min_tier: 'lover' },
+    { name: 'DARKNESS', element: 'DARKNESS', rarity: 'Rare', is_released: true, min_tier: 'lover' },
+    { name: 'CHXNDLER', element: 'ALL', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
   ];
 
   // Helper function to get element color and icon
@@ -132,6 +166,7 @@ export default function ChatPanel({ isOpen, onClose }) {
   }, [selectedUser, isUserPanelCollapsed]);
   const [showUserBadges, setShowUserBadges] = useState(false);
   const [showUserBinder, setShowUserBinder] = useState(false);
+  const [showSendHeartCoin, setShowSendHeartCoin] = useState(false);
   const [badgeStartIndex, setBadgeStartIndex] = useState(0);
   const [binderStartIndex, setBinderStartIndex] = useState(0);
   const channelRef = useRef(null);
@@ -475,6 +510,7 @@ export default function ChatPanel({ isOpen, onClose }) {
       setSelectedUser(null);
       setShowUserBadges(false);
       setShowUserBinder(false);
+      setShowSendHeartCoin(false);
       return;
     }
     
@@ -498,6 +534,7 @@ export default function ChatPanel({ isOpen, onClose }) {
       setSelectedUser(user);
       setShowUserBadges(false); // Reset badge view when switching users
       setShowUserBinder(false); // Reset binder view when switching users
+      setShowSendHeartCoin(false); // Reset heart coin view when switching users
       setIsUserPanelCollapsed(true); // Auto-collapse left panel when profile opens
       console.log('🔥 Set selected user:', user);
     } else {
@@ -576,7 +613,7 @@ export default function ChatPanel({ isOpen, onClose }) {
             <div
               className={`w-full h-full border-r-2 border-yellow-400/50 flex flex-col ${
                 selectedUser 
-                  ? 'max-w-[95vw] sm:max-w-[85vw] md:max-w-[75vw] lg:max-w-[60vw] xl:max-w-[50vw]' 
+                  ? 'w-screen max-w-none' 
                   : 'max-w-[90vw] sm:max-w-[32rem]'
               } min-w-[18rem]`}
               style={{
@@ -848,9 +885,17 @@ export default function ChatPanel({ isOpen, onClose }) {
                                   console.log('Click audio creation failed:', error);
                                 }
                                 if (showUserBadges) {
-                                  setBadgeStartIndex(0); // Reset to first page when closing
+                                  // If badges are already showing, hide them
+                                  setBadgeStartIndex(0);
+                                  setShowUserBadges(false);
+                                } else {
+                                  // Show badges and hide other panels
+                                  setBadgeStartIndex(0);
+                                  setShowUserBadges(true);
+                                  setShowUserBinder(false);
+                                  setShowSendHeartCoin(false);
+                                  setBinderStartIndex(0);
                                 }
-                                setShowUserBadges(!showUserBadges);
                               }}
                               className="hover:scale-110 transition-transform"
                               title="View Badges"
@@ -874,9 +919,17 @@ export default function ChatPanel({ isOpen, onClose }) {
                                   console.log('Click audio creation failed:', error);
                                 }
                                 if (showUserBinder) {
-                                  setBinderStartIndex(0); // Reset to first page when closing
+                                  // If binder is already showing, hide it
+                                  setBinderStartIndex(0);
+                                  setShowUserBinder(false);
+                                } else {
+                                  // Show binder and hide other panels
+                                  setBinderStartIndex(0);
+                                  setShowUserBinder(true);
+                                  setShowUserBadges(false);
+                                  setShowSendHeartCoin(false);
+                                  setBadgeStartIndex(0);
                                 }
-                                setShowUserBinder(!showUserBinder);
                               }}
                               className="hover:scale-110 transition-transform"
                               title="View Cards"
@@ -902,7 +955,12 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 } catch (error) {
                                   console.log('Click audio creation failed:', error);
                                 }
-                                console.log('Send heart coin to:', selectedUser.name);
+                                // Show send heart coin interface and hide others
+                                setShowSendHeartCoin(true);
+                                setShowUserBadges(false);
+                                setShowUserBinder(false);
+                                setBadgeStartIndex(0);
+                                setBinderStartIndex(0);
                               }}
                             >
                               <span className="text-xs">💖</span>
@@ -925,6 +983,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                             setSelectedUser(null);
                             setShowUserBadges(false);
                             setShowUserBinder(false);
+                            setShowSendHeartCoin(false);
                           }}
                           className="text-white/70 hover:text-white transition-colors text-sm px-1 py-1 rounded flex-shrink-0 ml-1"
                           style={{
@@ -974,30 +1033,41 @@ export default function ChatPanel({ isOpen, onClose }) {
 
                             {/* Badges Grid */}
                             <div className="flex-1 grid grid-cols-5 gap-2">
-                              {/* Display completed user badges */}
-                              {userBadges && userBadges.length > 0 ? (
-                                userBadges.slice(badgeStartIndex, badgeStartIndex + 5).map((userBadge, index) => (
-                                  <div key={badgeStartIndex + index} className="flex flex-col items-center">
-                                    <div className="w-12 h-12 bg-yellow-400/20 rounded-full mb-1 flex items-center justify-center">
-                                      {userBadge.badge?.icon_url ? (
-                                        <img 
-                                          src={userBadge.badge.icon_url} 
-                                          alt={userBadge.badge.name} 
-                                          className="w-8 h-8 rounded-full" 
-                                        />
-                                      ) : (
-                                        <span className="text-sm">🏆</span>
-                                      )}
+                              {/* Display completed user badges and empty slots */}
+                              {Array.from({ length: 5 }, (_, index) => {
+                                const badgeIndex = badgeStartIndex + index;
+                                const userBadge = userBadges && userBadges[badgeIndex];
+                                
+                                if (userBadge) {
+                                  // Show actual badge
+                                  return (
+                                    <div key={badgeIndex} className="flex flex-col items-center">
+                                      <div className="w-12 h-12 bg-yellow-400/20 rounded-full mb-1 flex items-center justify-center">
+                                        {userBadge.badge?.icon_url ? (
+                                          <img 
+                                            src={userBadge.badge.icon_url} 
+                                            alt={userBadge.badge.name} 
+                                            className="w-8 h-8 rounded-full" 
+                                          />
+                                        ) : (
+                                          <span className="text-sm">🏆</span>
+                                        )}
+                                      </div>
+                                      <span className="text-xs text-white/70 text-center">{userBadge.badge?.name || 'Badge'}</span>
                                     </div>
-                                    <span className="text-xs text-white/70 text-center">{userBadge.badge?.name || 'Badge'}</span>
-                                  </div>
-                                ))
-                              ) : (
-                                // Show message when no badges earned yet
-                                <div className="col-span-5 text-center text-white/50 text-xs py-4">
-                                  No badges earned yet
-                                </div>
-                              )}
+                                  );
+                                } else {
+                                  // Show greyed out placeholder
+                                  return (
+                                    <div key={`placeholder-${badgeIndex}`} className="flex flex-col items-center">
+                                      <div className="w-12 h-12 bg-gray-600/20 rounded-full mb-1 flex items-center justify-center border-2 border-gray-600/30">
+                                        <span className="text-gray-500/50 text-sm">○</span>
+                                      </div>
+                                      <span className="text-xs text-gray-500/50 text-center">Empty</span>
+                                    </div>
+                                  );
+                                }
+                              })}
                             </div>
 
                             {/* Right Arrow */}
@@ -1059,16 +1129,21 @@ export default function ChatPanel({ isOpen, onClose }) {
 
                             {/* Cards Grid */}
                             <div className="flex-1 grid grid-cols-5 gap-2">
-                              {/* Display sample cards */}
-                              {sampleCards.slice(binderStartIndex, binderStartIndex + 5).map((card, index) => (
-                                <div key={binderStartIndex + index} className="relative p-1 rounded bg-black/30">
-                                  <div className="absolute top-0.5 right-0.5 text-xs text-yellow-300">★</div>
-                                  <div className={`w-full h-16 bg-${card.color}/20 rounded mb-1 flex items-center justify-center`}>
-                                    <span className="text-sm">{card.icon}</span>
+                              {/* Display real song cards */}
+                              {songCollection.slice(binderStartIndex, binderStartIndex + 5).map((song, index) => {
+                                const elementDisplay = getElementDisplay(song.element);
+                                return (
+                                  <div key={binderStartIndex + index} className="relative p-1 rounded bg-black/30">
+                                    <div className={`absolute top-0.5 right-0.5 text-xs ${song.rarity === 'Rare' ? 'text-yellow-300' : 'text-gray-400'}`}>
+                                      {song.rarity === 'Rare' ? '★' : '●'}
+                                    </div>
+                                    <div className={`w-full h-16 bg-${elementDisplay.color}/20 rounded mb-1 flex items-center justify-center`}>
+                                      <span className="text-sm">{elementDisplay.icon}</span>
+                                    </div>
+                                    <span className="text-xs text-white/70 block truncate text-center">{song.name}</span>
                                   </div>
-                                  <span className="text-xs text-white/70 block truncate text-center">{card.name}</span>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
 
                             {/* Right Arrow */}
@@ -1085,13 +1160,67 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 }
                                 setBinderStartIndex(Math.min(Math.max(0, songCollection.length - 5), binderStartIndex + 5));
                               }}
-                              disabled={binderStartIndex + 5 >= sampleCards.length}
+                              disabled={binderStartIndex + 5 >= songCollection.length}
                               className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
                               style={{
                                 textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
                               }}
                             >
                               ▶
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Send Heart Coin Section */}
+                      {showSendHeartCoin && (
+                        <div className="pt-2 border-t border-white/20">
+                          <h4 className="text-sm text-white/80 font-semibold mb-3 flex items-center">
+                            <span className="text-sm mr-2">💖</span>
+                            Send Heart Coin
+                          </h4>
+                          <div className="flex flex-col items-center space-y-4 p-4 bg-black/20 rounded-lg border border-pink-400/30">
+                            {/* Current Heart Coins Display */}
+                            <div className="flex items-center space-x-2">
+                              <img 
+                                src="/elements/heart-coin.webp" 
+                                alt="Heart Coins" 
+                                className="w-8 h-8"
+                              />
+                              <span className="text-lg text-pink-400 font-bold">{profile?.heartcoin_balance || 42}</span>
+                            </div>
+                            
+                            {/* Send Button */}
+                            <button 
+                              onClick={() => {
+                                try {
+                                  const audio = new Audio('/audio/click.mp3');
+                                  audio.volume = 0.3;
+                                  audio.play().catch(error => {
+                                    console.log('Click audio play failed:', error);
+                                  });
+                                } catch (error) {
+                                  console.log('Click audio creation failed:', error);
+                                }
+                                console.log('Sending 1 heart coin to:', selectedUser.name);
+                                // TODO: Implement actual heart coin sending logic
+                                setShowSendHeartCoin(false); // Hide interface after sending
+                              }}
+                              className="flex items-center space-x-2 px-4 py-2 bg-pink-500/20 border border-pink-400/60 hover:border-pink-400/80 rounded-lg transition-all duration-200 hover:bg-pink-500/30"
+                              style={{
+                                background: 'rgba(255, 105, 180, 0.1)',
+                                color: '#FF69B4',
+                                textShadow: '0 0 8px rgba(255, 105, 180, 0.6)',
+                                boxShadow: '0 0 15px rgba(255, 105, 180, 0.3)',
+                              }}
+                            >
+                              <span className="text-sm font-bold">SEND</span>
+                              <img 
+                                src="/elements/heart-coin.webp" 
+                                alt="Heart Coin" 
+                                className="w-4 h-4"
+                              />
+                              <span className="text-sm font-bold">1</span>
                             </button>
                           </div>
                         </div>

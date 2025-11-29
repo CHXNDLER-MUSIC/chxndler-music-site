@@ -613,8 +613,8 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
   // Treat "showAll" as homepage-only when no main selection exists
   const isHomeOverview = !!showAll && !mainId;
   // FORCE homepage mode only for real home overview
-  const actualShouldShowAll = true; // FORCE SHOW ALL for debugging
-  const actualShouldHide = false; // Never hide for debugging
+  const actualShouldShowAll = isHomeOverview; // Show all only on homepage when no main selection
+  const actualShouldHide = hideUntilPlaying && !planetsVisible; // Hide planets until playing starts
   
   // DEBUG: Log the visibility conditions  
   console.log("🔥 Planet visibility debug:", {
@@ -706,6 +706,7 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
     // Fade logic: when a song is selected (showAll=false) but not yet playing, hide the planets.
     <div
       className="absolute inset-0"
+      data-planet-system="true"
       style={{
         // DEBUG: Force opacity to 1 to debug visibility issue
         opacity: 1,
@@ -825,9 +826,14 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
           songs={songs}
           onClose={() => setIsMinimapVisible(false)}
           onPlanetClick={(planetId: string) => {
+            console.log('🌟 PlanetSystem received planet click:', planetId);
             setHighlightedPlanetId(planetId);
+            console.log('🌟 Set highlightedPlanetId to:', planetId);
             // Auto-remove highlight after 4 seconds
-            setTimeout(() => setHighlightedPlanetId(null), 4000);
+            setTimeout(() => {
+              console.log('🌟 Removing highlight for:', planetId);
+              setHighlightedPlanetId(null);
+            }, 4000);
           }}
         />
       )}

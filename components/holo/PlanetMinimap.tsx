@@ -101,7 +101,14 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
   const [selectedPlanet, setSelectedPlanet] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    setPortalContainer(document.body);
+    // Find the parent container of the 3D display instead of document.body
+    const planetSystemContainer = document.querySelector('[data-planet-system]');
+    if (planetSystemContainer) {
+      setPortalContainer(planetSystemContainer as HTMLElement);
+    } else {
+      // Fallback to document.body if container not found
+      setPortalContainer(document.body);
+    }
   }, []);
 
   const handleClose = () => {
@@ -125,15 +132,19 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
       darkness: []
     };
 
-    // Group song planets by their designated element
-    SONG_PLANETS.forEach((songPlanet) => {
-      if (distribution[songPlanet.element]) {
-        distribution[songPlanet.element].push(songPlanet);
+    // Group song planets by their designated element - use actual songs prop instead of hardcoded array
+    songs.forEach((song) => {
+      // Find corresponding planet data from SONG_PLANETS for visual/element info
+      const songPlanet = SONG_PLANETS.find(sp => sp.id === song.id);
+      if (songPlanet) {
+        if (distribution[songPlanet.element]) {
+          distribution[songPlanet.element].push(songPlanet);
+        }
       }
     });
 
     return distribution;
-  }, []);
+  }, [songs]);
 
   // Convert 3D positions to 2D minimap coordinates (top-down view)
   const convertTo2D = (position: [number, number, number]): { x: number; y: number } => {
@@ -155,16 +166,16 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
 
   const minimapContent = (
     <div 
-      className={`fixed bg-black/80 backdrop-blur-sm border-4 border-cyan-400 rounded-lg transition-all duration-300 ${
+      className={`absolute bg-black/80 backdrop-blur-sm border-4 border-cyan-400 rounded-lg transition-all duration-300 ${
         isCollapsed ? 'w-12 h-12' : 'w-60 h-60'
       }`} 
       style={{ 
-        top: '4rem',
-        right: '4rem',
+        top: '1rem',
+        right: '1rem',
         zIndex: 999999, 
         boxShadow: '0 0 20px rgba(56, 182, 255, 0.8)',
         pointerEvents: 'auto',
-        position: 'fixed'
+        position: 'absolute'
       }}
     >
       {/* Toggle Collapse Button */}
@@ -272,13 +283,17 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
                 }}
                 title={songPlanet.title + (isReleased ? "" : " (Unreleased)")}
                 onClick={() => {
+                  console.log('🎯 Planet clicked:', songPlanet.id, songPlanet.title);
                   sfx.play('close', 0.5);
                   setSelectedPlanet(songPlanet.title + (isReleased ? "" : " (Unreleased)"));
                   // Auto-hide the selected planet name after 3 seconds
                   setTimeout(() => setSelectedPlanet(null), 3000);
                   // Call the callback to highlight planet in 3D view
                   if (onPlanetClick) {
+                    console.log('🚀 Calling onPlanetClick with:', songPlanet.id);
                     onPlanetClick(songPlanet.id);
+                  } else {
+                    console.log('❌ No onPlanetClick callback provided');
                   }
                 }}
               >
