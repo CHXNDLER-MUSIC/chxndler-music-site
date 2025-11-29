@@ -28,7 +28,6 @@ export default function UserList({ users, onUserClick, loading }) {
         >
           <span className="text-cyan-400 text-xs">👥</span>
         </div>
-        <p className="text-xs text-white/60 text-center">No users yet</p>
       </div>
     );
   }

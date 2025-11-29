@@ -87,33 +87,6 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "T
   return (
     <div className="border-t border-cyan-400/20 p-3">
       <form onSubmit={handleSubmit} className="space-y-2">
-        {/* Text Input */}
-        <div className="w-full">
-          <input
-            type="text"
-            placeholder="Quick text..."
-            disabled={disabled}
-            className="w-full px-4 py-2 text-sm rounded-lg transition-all duration-200 focus:outline-none"
-            style={{
-              background: 'rgba(0, 0, 0, 0.7)',
-              border: '2px solid rgba(0, 255, 255, 0.5)',
-              color: '#00FFFF',
-              textShadow: '0 0 8px #00FFFF',
-              boxShadow: '0 0 15px rgba(0, 255, 255, 0.3), inset 0 0 15px rgba(0, 255, 255, 0.1)',
-            }}
-            onFocus={(e) => {
-              e.target.style.border = '2px solid #00FFFF';
-              e.target.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.6), inset 0 0 20px rgba(0, 255, 255, 0.2)';
-              e.target.style.textShadow = '0 0 12px #00FFFF';
-            }}
-            onBlur={(e) => {
-              e.target.style.border = '2px solid rgba(0, 255, 255, 0.5)';
-              e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3), inset 0 0 15px rgba(0, 255, 255, 0.1)';
-              e.target.style.textShadow = '0 0 8px #00FFFF';
-            }}
-          />
-        </div>
-
 
         {/* Message Input */}
         <div className="flex items-end space-x-2">
@@ -132,11 +105,12 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "T
               className="w-full resize-none rounded-lg px-3 py-2 text-sm transition-all duration-200 focus:outline-none"
               style={{
                 background: 'rgba(0, 0, 0, 0.6)',
-                border: `2px solid ${isFocused ? '#00FFFF' : 'rgba(255, 255, 255, 0.2)'}`,
-                color: '#FFFFFF',
+                border: `2px solid ${isFocused ? '#F2EF1D' : 'rgba(242, 239, 29, 0.3)'}`,
+                color: '#F2EF1D',
+                textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
                 boxShadow: isFocused 
-                  ? '0 0 20px rgba(0, 255, 255, 0.3), inset 0 0 20px rgba(0, 255, 255, 0.1)' 
-                  : 'none'
+                  ? '0 0 20px rgba(242, 239, 29, 0.4), inset 0 0 20px rgba(242, 239, 29, 0.1)' 
+                  : '0 0 10px rgba(242, 239, 29, 0.2)'
               }}
               onInput={(e) => {
                 // Auto-resize textarea
@@ -165,27 +139,22 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "T
             className="px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             style={{
               background: disabled || !message.trim() 
-                ? 'rgba(128, 128, 128, 0.3)'
-                : 'linear-gradient(45deg, #FC54AF, #38B6FF)',
-              color: disabled || !message.trim() ? '#888' : '#FFFFFF',
+                ? 'rgba(128, 128, 128, 0.1)'
+                : 'transparent',
+              color: '#F2EF1D',
+              textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
               border: disabled || !message.trim()
-                ? '1px solid rgba(128, 128, 128, 0.3)'
-                : '1px solid transparent',
+                ? '2px solid rgba(128, 128, 128, 0.3)'
+                : '2px solid #F2EF1D',
               boxShadow: disabled || !message.trim()
                 ? 'none'
-                : '0 0 20px rgba(252, 84, 175, 0.4)'
+                : '0 0 20px rgba(242, 239, 29, 0.4), inset 0 0 10px rgba(242, 239, 29, 0.1)'
             }}
           >
             {disabled ? 'Chat Disabled' : 'Send'}
           </button>
         </div>
 
-        {/* Help text */}
-        {!disabled && (
-          <p className="text-xs text-white/40 text-center">
-            **bold** • *italic* • `code` • Enter to send • Shift+Enter for new line
-          </p>
-        )}
       </form>
     </div>
   );

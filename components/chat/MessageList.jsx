@@ -77,9 +77,6 @@ export default function MessageList({ messages, onUserClick, loading }) {
       {messages.length === 0 && !loading && (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <p className="text-white/60 text-sm">
-              Welcome to the live chat!
-            </p>
           </div>
         </div>
       )}

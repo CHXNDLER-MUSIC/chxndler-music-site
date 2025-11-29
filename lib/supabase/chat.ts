@@ -6,7 +6,8 @@ export const ELEMENT_COLORS = {
   heart: '#FC54AF',
   water: '#38B6FF', 
   lightning: '#F2EF1D',
-  darkness: 'linear-gradient(135deg, #1a1a2e 0%, #000000 100%)'
+  darkness: 'linear-gradient(135deg, #1a1a2e 0%, #000000 100%)',
+  alien: '#00FF00'
 } as const;
 
 export type ElementType = keyof typeof ELEMENT_COLORS;

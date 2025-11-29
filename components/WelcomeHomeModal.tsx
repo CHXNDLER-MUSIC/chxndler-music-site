@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { sfx } from "@/lib/sfx";
@@ -18,7 +18,44 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   
   const { updateProfile } = useProfile();
+  
+  // Audio refs for playing both tracks when not logged in
+  const welcomeAudioRef = useRef<HTMLAudioElement | null>(null);
+  const spaceMusicAudioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Play both audio tracks when modal opens for non-logged in users
+  useEffect(() => {
+    if (open) {
+      // Play both tracks simultaneously
+      const playWelcomeTrack = () => {
+        if (welcomeAudioRef.current) {
+          welcomeAudioRef.current.volume = 0.7;
+          welcomeAudioRef.current.play().catch(console.error);
+        }
+      };
+
+      const playSpaceMusic = () => {
+        if (spaceMusicAudioRef.current) {
+          spaceMusicAudioRef.current.volume = 0.5;
+          spaceMusicAudioRef.current.play().catch(console.error);
+        }
+      };
+
+      // Start both tracks
+      playWelcomeTrack();
+      playSpaceMusic();
+    } else {
+      // Stop both tracks when modal closes
+      if (welcomeAudioRef.current) {
+        welcomeAudioRef.current.pause();
+        welcomeAudioRef.current.currentTime = 0;
+      }
+      if (spaceMusicAudioRef.current) {
+        spaceMusicAudioRef.current.pause();
+        spaceMusicAudioRef.current.currentTime = 0;
+      }
+    }
+  }, [open]);
 
   async function signInWithGoogle() {
     setError(null);
@@ -277,6 +314,19 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
         </div>
         </div>
       </div>
+      
+      {/* Hidden audio elements for playing both tracks */}
+      <audio 
+        ref={welcomeAudioRef} 
+        src="https://ik.imagekit.io/CHXNDLER/tracks/welcome-to-the-heartverse.mp3?updatedAt=1762392390137"
+        preload="auto"
+      />
+      <audio 
+        ref={spaceMusicAudioRef} 
+        src="https://ik.imagekit.io/CHXNDLER/tracks/space-music.mp3?updatedAt=1762392378623"
+        preload="auto"
+        loop
+      />
     </>,
     document.body
   );

@@ -33,8 +33,9 @@ export default function ChatPanel({ isOpen, onClose }) {
     
     // Generate and store alien name for this session
     if (!alienName) {
-      const alienNumber = Math.floor(Math.random() * 9999) + 1;
-      const newAlienName = `ALIEN [${alienNumber}]`;
+      const alienNumber = Math.floor(Math.random() * 99999999) + 1;
+      const paddedNumber = alienNumber.toString().padStart(8, '0');
+      const newAlienName = `ALIEN${paddedNumber}`;
       setAlienName(newAlienName);
       return newAlienName;
     }
@@ -51,8 +52,9 @@ export default function ChatPanel({ isOpen, onClose }) {
   // Initialize anonymous user immediately
   useEffect(() => {
     if (!user && isOpen) {
-      const alienNumber = Math.floor(Math.random() * 9999) + 1;
-      const alienName = `ALIEN [${alienNumber}]`;
+      const alienNumber = Math.floor(Math.random() * 99999999) + 1;
+      const paddedNumber = alienNumber.toString().padStart(8, '0');
+      const alienName = `ALIEN${paddedNumber}`;
       
       console.log('🚀 IMMEDIATE: Adding anonymous user:', alienName);
       
@@ -275,11 +277,36 @@ export default function ChatPanel({ isOpen, onClose }) {
   const handleSendMessage = async (messageText) => {
     try {
       const displayName = getDisplayName();
+      console.log('🔥 Sending message:', { messageText, displayName, user: !!user });
+      
       const message = await chatService.sendMessage(messageText, 'message', displayName);
+      console.log('🔥 Message result:', message);
+      
       if (message) {
         // For anonymous users, add message locally since it won't come through real-time
         if (!user) {
-          setMessages(prev => [...prev, message]);
+          console.log('🔥 Adding anonymous message locally');
+          setMessages(prev => {
+            const newMessages = [...prev, message];
+            console.log('🔥 Updated messages:', newMessages);
+            return newMessages;
+          });
+          
+          // Ensure anonymous user is in the users list
+          setChatUsers(prev => {
+            const existingAnonymous = prev.find(u => u.id === 'anonymous');
+            if (!existingAnonymous) {
+              console.log('🔥 Adding anonymous user to list');
+              return [{
+                id: 'anonymous',
+                name: displayName,
+                element: 'alien',
+                avatar_badge_id: null,
+                last_seen: new Date().toISOString()
+              }, ...prev];
+            }
+            return prev;
+          });
         }
       } else {
         console.error('Failed to send message');
@@ -397,9 +424,10 @@ export default function ChatPanel({ isOpen, onClose }) {
                   <h2 
                     className="text-lg font-bold whitespace-nowrap"
                     style={{
-                      color: '#F2EF1D',
-                      textShadow: '0 0 10px #F2EF1D, 0 0 20px #F2EF1D',
-                      letterSpacing: '0.05em'
+                      color: '#F2EF1D !important',
+                      textShadow: '0 0 10px #F2EF1D, 0 0 20px #F2EF1D, 0 0 30px #F2EF1D',
+                      letterSpacing: '0.05em',
+                      fontWeight: 'bold'
                     }}
                   >
                     HEART SIGNAL LIVE
@@ -416,11 +444,13 @@ export default function ChatPanel({ isOpen, onClose }) {
                 
                 <button
                   onClick={handleClose}
-                  className="text-white/70 hover:text-white transition-colors p-1 flex-shrink-0"
+                  className="text-yellow-400 hover:text-yellow-300 transition-colors p-1 flex-shrink-0"
                   style={{
-                    background: 'rgba(255, 255, 255, 0.1)',
+                    background: 'rgba(242, 239, 29, 0.1)',
                     borderRadius: '4px',
-                    border: '1px solid rgba(255, 255, 255, 0.2)'
+                    border: '1px solid rgba(242, 239, 29, 0.3)',
+                    color: '#F2EF1D',
+                    textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
                   }}
                 >
                   ×

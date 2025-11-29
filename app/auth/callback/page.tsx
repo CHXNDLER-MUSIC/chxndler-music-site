@@ -10,7 +10,20 @@ export default function AuthCallbackPage() {
   const handleSuccessfulAuth = async (session: any) => {
     console.log('🎉 AUTH SUCCESS! User:', session.user.id, 'Email:', session.user.email);
 
-    // Ensure a profile exists; if none, create a minimal one
+    // Check if this came from an email signup flow by looking for profileSetup parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const isFromEmailSignup = urlParams.get('profileSetup') === '1';
+
+    console.log('🔍 Auth callback context:', { isFromEmailSignup, searchParams: window.location.search });
+
+    // If this came from email signup, always go to name prompt regardless of existing profile
+    if (isFromEmailSignup) {
+      console.log('📧 Detected email signup flow - redirecting to name prompt');
+      router.push('/?completeProfile=1');
+      return;
+    }
+
+    // For other auth flows, check if profile exists and is complete
     let needsName = false;
     try {
       const { data: existing, status } = await supabaseClient
@@ -150,10 +163,15 @@ export default function AuthCallbackPage() {
             // We have a valid session despite the expired link error - treat as success
             console.warn('⚠️ Ignoring Supabase auth error because a session already exists:', errorMsg, errorDescription);
             
-            // Continue with normal success flow based on auth type
-            const authType = hashParams.get("type");
-            // Fallback: if we had a session despite an error, conservatively send to completeProfile
+            // Check if this came from an email signup flow
+            const urlParams = new URLSearchParams(window.location.search);
+            const isFromEmailSignup = urlParams.get('profileSetup') === '1';
+            
+            // If from email signup, always show name prompt. Otherwise, conservatively send to completeProfile
             clearTimeout(timeoutId);
+            if (isFromEmailSignup) {
+              console.log('📧 Detected email signup flow in error fallback - redirecting to name prompt');
+            }
             router.push('/?completeProfile=1');
             return;
           }
