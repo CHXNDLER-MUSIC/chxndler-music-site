@@ -67,8 +67,8 @@ interface PhysicalCardOrder {
 export default function BinderModal({ open, onClose, preselectedCard, pulsingCards = false }: Props) {
   const { profile, updateProfile } = useProfile();
   const [cardOpen, setCardOpen] = useState(false);
-  const [showFullCollection, setShowFullCollection] = useState(false);
-  const [selectedElement, setSelectedElement] = useState<string | null>(null);
+  const [showFullCollection, setShowFullCollection] = useState(true);
+  const [selectedElement, setSelectedElement] = useState<string | null>('DARKNESS');
   const [selectedRarity, setSelectedRarity] = useState<string>('All');
   const [selectedCardName, setSelectedCardName] = useState<string>('All');
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
@@ -326,6 +326,16 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
     if (selectedCardName !== 'All') {
       filteredSongs = filteredSongs.filter(song => song.name === selectedCardName);
     }
+    
+    // Sort to ensure elemental cards (where name matches element) appear first
+    filteredSongs = filteredSongs.sort((a, b) => {
+      const aIsElemental = a.name === a.element;
+      const bIsElemental = b.name === b.element;
+      
+      if (aIsElemental && !bIsElemental) return -1;
+      if (!aIsElemental && bIsElemental) return 1;
+      return 0; // Keep original order for same type
+    });
     
     // Convert to card format with images
     let cards = filteredSongs.map(song => ({
@@ -828,15 +838,34 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
               <div 
                 className="relative flex items-center justify-center w-full h-full"
               >
+                {/* Back arrow - positioned at top left of card */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    try { sfx.play('close', 0.8); } catch {}
+                    setCardOpen(false);
+                    setIsCardFlipped(false);
+                  }}
+                  className="absolute top-4 left-4 w-8 h-8 rounded-full bg-black/60 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 z-20"
+                  style={{
+                    boxShadow: '0 0 15px rgba(255,105,180,0.6)',
+                    backdropFilter: 'blur(10px)',
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+                    <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+
                 {/* Flippable Card */}
                 <div 
-                  className="rounded-lg shadow-2xl cursor-pointer"
+                  className="rounded-3xl shadow-2xl cursor-pointer"
                   style={{
-                    width: 'min(400px, 60vw)',
-                    height: 'min(560px, 65vh)',
+                    width: 'min(320px, 50vw)',
+                    height: 'min(448px, 55vh)',
                     boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
                     border: '2px solid rgba(255,255,255,0.1)',
-                    borderRadius: '12px',
+                    borderRadius: '24px',
                     perspective: '1000px',
                     animation: 'pulseGlow 2s ease-in-out infinite alternate'
                   }}
@@ -860,7 +889,7 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
                     <img
                       src={selectedCard?.image || "https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910"}
                       alt={selectedCard?.name || "Card"}
-                      className="w-full h-full rounded-lg object-contain"
+                      className="w-full h-full rounded-3xl object-contain"
                       style={{
                         position: 'absolute',
                         backfaceVisibility: 'hidden',
@@ -873,7 +902,7 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
                     <img
                       src="https://ik.imagekit.io/CHXNDLER/card/back.png?updatedAt=1762388351170"
                       alt="Card Back"
-                      className="w-full h-full rounded-lg object-contain"
+                      className="w-full h-full rounded-3xl object-contain"
                       style={{
                         position: 'absolute',
                         backfaceVisibility: 'hidden',
@@ -882,24 +911,6 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
                       }}
                       draggable={false}
                     />
-                    
-                    {/* Back arrow - positioned at top left of binder popup */}
-                    <button
-                      onClick={() => {
-                        try { sfx.play('close', 0.8); } catch {}
-                        setCardOpen(false);
-                        setIsCardFlipped(false);
-                      }}
-                      className="absolute top-2 left-2 w-6 h-6 rounded-full bg-black/60 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 z-10"
-                  style={{
-                    boxShadow: '0 0 15px rgba(255,105,180,0.6)',
-                    backdropFilter: 'blur(10px)',
-                  }}
-                    >
-                      <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true">
-                        <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </button>
                   </div>
                 </div>
               </div>

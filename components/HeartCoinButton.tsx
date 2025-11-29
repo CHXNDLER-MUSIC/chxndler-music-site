@@ -198,9 +198,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     zip: '',
     country: ''
   });
-  const [heartCoins, setHeartCoins] = useState(externalHeartCoins);
+  const [heartCoins, setHeartCoins] = useState(0);
   const [selectedItem, setSelectedItem] = useState<StoreItem | null>(null);
   const [showItemDetail, setShowItemDetail] = useState(false);
+  const [showHeartCoinPurchase, setShowHeartCoinPurchase] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [dailyQuests, setDailyQuests] = useState({
     elementTapped: false,
@@ -221,10 +222,17 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     setDailyQuests(prev => ({ ...prev, journalEntry: journalCompleted }));
   }, [journalCompleted]);
 
-  // Update local state when external heartCoins change
+  // Update local state when external heartCoins change or profile loads
   useEffect(() => {
-    setHeartCoins(externalHeartCoins);
-  }, [externalHeartCoins]);
+    // If no profile (not logged in), always show 0
+    if (!profile?.id) {
+      setHeartCoins(0);
+      return;
+    }
+    // Prefer profile balance over external prop
+    const currentBalance = profile?.heartcoin_balance ?? externalHeartCoins;
+    setHeartCoins(currentBalance);
+  }, [externalHeartCoins, profile?.heartcoin_balance, profile?.id]);
 
   // Check for initial tab preference from hamburger menu
   const [isFromHamburger, setIsFromHamburger] = useState(false);
@@ -769,7 +777,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   textShadow: '0 0 8px rgba(255,255,255,0.8)' 
                 }}
               >
-                {heartCoins}
+                {profile?.id ? heartCoins : 0}
               </div>
             </div>
           </div>
@@ -1226,39 +1234,175 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               
                               {/* Item Details */}
                               <div className="flex-1">
-                                <div 
-                                  className="font-bold text-white text-lg mb-1"
-                                  style={{
-                                    textShadow: '0 0 4px rgba(255,255,255,0.6)'
-                                  }}
-                                >
-                                  {PHYSICAL_ITEMS[currentMerchIndex].title}
-                                </div>
-                                <div 
-                                  className="text-xs text-white/90 mb-1"
-                                  style={{
-                                    textShadow: '0 0 2px rgba(255,255,255,0.4)',
-                                    lineHeight: '1.3'
-                                  }}
-                                >
-                                  {PHYSICAL_ITEMS[currentMerchIndex].description}
-                                </div>
-                                <div className="flex items-center gap-3">
-                                  <div className="flex items-center gap-1 font-bold text-green-400">
-                                    <span>${PHYSICAL_ITEMS[currentMerchIndex].priceUsd % 1 === 0 ? PHYSICAL_ITEMS[currentMerchIndex].priceUsd.toFixed(0) : PHYSICAL_ITEMS[currentMerchIndex].priceUsd.toFixed(1)}</span>
-                                  </div>
-                                  <div className="flex items-center gap-1 font-bold text-[#F2EF1D]">
-                                    <span>{PHYSICAL_ITEMS[currentMerchIndex].priceHeartCoins}</span>
-                                    <img
-                                      src="/elements/heart-coin.webp"
-                                      alt="Heart Coin"
-                                      className="w-4 h-4 object-contain"
+                                {showHeartCoinPurchase ? (
+                                  /* HeartCoin Purchase Confirmation */
+                                  <div className="text-center">
+                                    <div 
+                                      className="font-bold text-white text-lg mb-3"
                                       style={{
-                                        filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 2px #FC54AF)'
+                                        textShadow: '0 0 4px rgba(255,255,255,0.6)'
                                       }}
-                                    />
+                                    >
+                                      {profile?.username || 'User'}
+                                    </div>
+                                    
+                                    {/* Current Heart Coins */}
+                                    <div className="flex flex-col items-center space-y-2 mb-3">
+                                      <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
+                                      <div 
+                                        className="text-xl font-bold"
+                                        style={{ 
+                                          color: '#FFFFFF', 
+                                          textShadow: '0 0 6px rgba(255,255,255,0.8)' 
+                                        }}
+                                      >
+                                        {profile?.id ? heartCoins : 0}
+                                      </div>
+                                    </div>
+
+                                    {/* Cost */}
+                                    <div className="flex flex-col items-center space-y-2 mb-3">
+                                      <div className="text-sm text-white/90">COST</div>
+                                      <div className="flex items-center gap-2">
+                                        <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-8 h-8" />
+                                        <div 
+                                          className="text-lg font-bold"
+                                          style={{ 
+                                            color: '#FFFFFF', 
+                                            textShadow: '0 0 4px rgba(255,255,255,0.6)' 
+                                          }}
+                                        >
+                                          {selectedItem?.priceHeartCoins}
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Status Message and Confirm Button */}
+                                    {(profile?.id ? heartCoins : 0) >= (selectedItem?.priceHeartCoins || 0) ? (
+                                      <>
+                                        <div 
+                                          className="text-sm mb-3"
+                                          style={{ 
+                                            color: '#90EE90', 
+                                            textShadow: '0 0 4px rgba(144,238,144,0.8)'
+                                          }}
+                                        >
+                                          You can purchase this item!
+                                        </div>
+                                        <button 
+                                          className="w-full px-4 py-2 rounded border transition-colors"
+                                          style={{ 
+                                            backgroundColor: 'rgba(0,255,0,0.2)',
+                                            borderColor: 'rgba(0,255,0,0.6)',
+                                            color: '#90EE90',
+                                            textShadow: '0 0 4px rgba(144,238,144,0.8)',
+                                            fontWeight: 'bold'
+                                          }}
+                                          onClick={() => {
+                                            if (selectedItem) {
+                                              handlePurchaseWithHeartCoins(selectedItem);
+                                            }
+                                          }}
+                                          disabled={isProcessing}
+                                        >
+                                          {isProcessing ? 'PROCESSING...' : 'CONFIRM'}
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <div 
+                                          className="text-sm mb-3"
+                                          style={{ 
+                                            color: '#FF6B6B', 
+                                            textShadow: '0 0 4px rgba(255,107,107,0.8)'
+                                          }}
+                                        >
+                                          You do not have enough heart coins
+                                        </div>
+                                        <button 
+                                          className="w-full px-4 py-2 rounded border transition-colors cursor-not-allowed"
+                                          style={{ 
+                                            backgroundColor: 'rgba(255,0,0,0.2)',
+                                            borderColor: 'rgba(255,0,0,0.6)',
+                                            color: '#FF6B6B',
+                                            textShadow: '0 0 4px rgba(255,107,107,0.8)',
+                                            fontWeight: 'bold'
+                                          }}
+                                          disabled
+                                        >
+                                          CONFIRM
+                                        </button>
+                                      </>
+                                    )}
+
+                                    {/* Back Button */}
+                                    <button 
+                                      className="w-full px-4 py-1 rounded border border-gray-500/60 bg-gray-500/20 hover:bg-gray-500/30 transition-colors mt-2 text-white text-xs"
+                                      onClick={() => {
+                                        try { sfx.play('close', 0.4); } catch {}
+                                        setShowHeartCoinPurchase(false);
+                                        setSelectedItem(null);
+                                      }}
+                                    >
+                                      BACK
+                                    </button>
                                   </div>
-                                </div>
+                                ) : (
+                                  /* Normal Item Details */
+                                  <>
+                                    <div 
+                                      className="font-bold text-white text-lg mb-1"
+                                      style={{
+                                        textShadow: '0 0 4px rgba(255,255,255,0.6)'
+                                      }}
+                                    >
+                                      {PHYSICAL_ITEMS[currentMerchIndex].title}
+                                    </div>
+                                    <div 
+                                      className="text-xs text-white/90 mb-1"
+                                      style={{
+                                        textShadow: '0 0 2px rgba(255,255,255,0.4)',
+                                        lineHeight: '1.3'
+                                      }}
+                                    >
+                                      {PHYSICAL_ITEMS[currentMerchIndex].description}
+                                    </div>
+                                    
+                                    {/* Buy Buttons */}
+                                    <div className="flex gap-2 mt-2">
+                                      <button
+                                        onClick={() => window.open(PHYSICAL_ITEMS[currentMerchIndex].stripeUrl, '_blank')}
+                                        className="flex-1 px-3 py-1 rounded border border-white/60 bg-white/20 hover:bg-white/30 cursor-pointer transition-all duration-200 text-white font-semibold text-xs"
+                                        style={{
+                                          textShadow: '0 0 4px rgba(255,255,255,0.6)',
+                                          boxShadow: '0 0 8px rgba(255,255,255,0.2)'
+                                        }}
+                                      >
+                                        PAY WITH ${PHYSICAL_ITEMS[currentMerchIndex].priceUsd % 1 === 0 ? PHYSICAL_ITEMS[currentMerchIndex].priceUsd.toFixed(0) : PHYSICAL_ITEMS[currentMerchIndex].priceUsd.toFixed(1)}
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          try { sfx.play('click', 0.6); } catch {}
+                                          setSelectedItem(PHYSICAL_ITEMS[currentMerchIndex]);
+                                          setShowHeartCoinPurchase(true);
+                                        }}
+                                        className="flex-1 px-3 py-1 rounded border border-yellow-500/60 bg-yellow-500/20 hover:bg-yellow-500/30 cursor-pointer transition-all duration-200 text-white font-semibold flex items-center justify-center gap-1 text-xs"
+                                        style={{
+                                          textShadow: '0 0 4px rgba(255,255,255,0.6)',
+                                          boxShadow: '0 0 8px rgba(255,215,0,0.2)'
+                                        }}
+                                      >
+                                        PAY WITH
+                                        <img
+                                          src="/elements/heart-coin.webp"
+                                          alt="Heart Coin"
+                                          className="w-4 h-4"
+                                        />
+                                        {PHYSICAL_ITEMS[currentMerchIndex].priceHeartCoins}
+                                      </button>
+                                    </div>
+                                  </>
+                                )}
                               </div>
                               
                               {/* Right Arrow */}
@@ -1275,18 +1419,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 <span className="text-white text-sm font-bold">→</span>
                               </button>
                             </div>
-                            
-                            {/* Buy Button */}
-                            <button
-                              onClick={() => window.open(PHYSICAL_ITEMS[currentMerchIndex].stripeUrl, '_blank')}
-                              className="w-full px-4 py-2 rounded border border-white/60 bg-white/20 hover:bg-white/30 cursor-pointer transition-all duration-200 text-white font-semibold"
-                              style={{
-                                textShadow: '0 0 4px rgba(255,255,255,0.6)',
-                                boxShadow: '0 0 8px rgba(255,255,255,0.2)'
-                              }}
-                            >
-                              BUY NOW
-                            </button>
                           </div>
                         )}
                       </div>
@@ -1620,7 +1752,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                             textShadow: '0 0 6px rgba(255,255,255,0.8)' 
                                           }}
                                         >
-                                          {heartCoins}
+                                          {profile?.id ? heartCoins : 0}
                                         </div>
                                       </div>
                                     </div>
@@ -1651,7 +1783,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                           : '0 0 4px rgba(255,107,107,0.8)'
                                       }}
                                     >
-                                      {heartCoins >= card.digitalCost 
+                                      {(profile?.id ? heartCoins : 0) >= card.digitalCost 
                                         ? 'You can purchase this card!' 
                                         : 'You need more heart coins'}
                                     </div>
@@ -1659,19 +1791,19 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     <button 
                                       className="w-full px-4 py-2 rounded border transition-colors"
                                       style={{ 
-                                        backgroundColor: heartCoins >= card.digitalCost 
+                                        backgroundColor: (profile?.id ? heartCoins : 0) >= card.digitalCost 
                                           ? 'rgba(0,255,0,0.2)' 
                                           : 'rgba(255,0,0,0.2)',
-                                        borderColor: heartCoins >= card.digitalCost 
+                                        borderColor: (profile?.id ? heartCoins : 0) >= card.digitalCost 
                                           ? 'rgba(0,255,0,0.6)' 
                                           : 'rgba(255,0,0,0.6)',
-                                        color: heartCoins >= card.digitalCost ? '#90EE90' : '#FF6B6B',
-                                        textShadow: heartCoins >= card.digitalCost 
+                                        color: (profile?.id ? heartCoins : 0) >= card.digitalCost ? '#90EE90' : '#FF6B6B',
+                                        textShadow: (profile?.id ? heartCoins : 0) >= card.digitalCost 
                                           ? '0 0 4px rgba(144,238,144,0.8)' 
                                           : '0 0 4px rgba(255,107,107,0.8)',
                                         fontWeight: 'bold'
                                       }}
-                                      disabled={heartCoins < card.digitalCost}
+                                      disabled={(profile?.id ? heartCoins : 0) < card.digitalCost}
                                       onClick={() => {
                                         try { sfx.play('click', 0.8); } catch {}
                                         // Handle digital purchase logic here
@@ -1774,10 +1906,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     </div>
                     
                     <div className="text-xs text-white/80 mb-4">
-                      Your balance: {profile?.heartcoin_balance || 0} Heart Coins
+                      Your balance: {profile?.id ? (profile?.heartcoin_balance || 0) : 0} Heart Coins
                     </div>
                     
-                    {(profile?.heartcoin_balance || 0) >= selectedItem.priceHeartCoins ? (
+                    {(profile?.id ? (profile?.heartcoin_balance || 0) : 0) >= selectedItem.priceHeartCoins ? (
                       <button
                         onClick={() => handlePurchaseWithHeartCoins(selectedItem)}
                         disabled={isProcessing}
@@ -1794,7 +1926,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       </button>
                     ) : (
                       <div className="text-sm text-red-400 bg-red-400/20 px-3 py-2 rounded border border-red-400/40">
-                        You need {selectedItem.priceHeartCoins - (profile?.heartcoin_balance || 0)} more Heart Coins
+                        You need {selectedItem.priceHeartCoins - (profile?.id ? (profile?.heartcoin_balance || 0) : 0)} more Heart Coins
                       </div>
                     )}
                   </div>

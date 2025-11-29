@@ -230,26 +230,47 @@ export default function HeartCoinModal({ open, onClose }: Props) {
               </div>
               
               {/* Price and Heart Coins */}
-              <div className="flex items-center justify-center gap-4 text-center">
+              <div className="flex items-center justify-between w-full px-2">
+                {/* Left side - User heart coins */}
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-xs font-bold text-white/80">USER</span>
+                  <div className="flex items-center gap-1">
+                    <img
+                      src="/elements/heart-coin.webp"
+                      alt="Heart Coin"
+                      className="w-4 h-4 object-contain"
+                      style={{
+                        filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 2px #FC54AF)'
+                      }}
+                    />
+                    <span className="text-sm font-bold text-[#F2EF1D]">0</span>
+                  </div>
+                </div>
+
+                {/* Right side - Cost */}
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-xs font-bold text-white/80">COST</span>
+                  <div className="flex items-center gap-1">
+                    <img
+                      src="/elements/heart-coin.webp"
+                      alt="Heart Coin"
+                      className="w-4 h-4 object-contain"
+                      style={{
+                        filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 2px #FC54AF)'
+                      }}
+                    />
+                    <span className="text-sm font-bold text-[#F2EF1D]">{item.heartCoin}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Purchase Button */}
+              <div className="flex justify-center">
                 <button
                   onClick={() => handlePurchase(item.stripeUrl)}
                   className="px-3 py-2 rounded-lg font-bold text-sm text-green-400 hover:bg-green-500/20 hover:scale-105 transition-all duration-200"
                 >
                   PAY WITH ${item.cost % 1 === 0 ? item.cost.toFixed(0) : item.cost.toFixed(1)}
-                </button>
-                <button
-                  onClick={() => handlePurchase(item.stripeUrl)}
-                  className="flex items-center gap-1 hover:scale-105 transition-transform duration-200 cursor-pointer"
-                >
-                  <img
-                    src="/elements/heart-coin.webp"
-                    alt="Heart Coin"
-                    className="w-4 h-4 object-contain"
-                    style={{
-                      filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 2px #FC54AF)'
-                    }}
-                  />
-                  <span className="text-sm font-bold text-[#F2EF1D]">{item.heartCoin}</span>
                 </button>
               </div>
               

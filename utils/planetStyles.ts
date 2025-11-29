@@ -22,9 +22,9 @@ export const ELEMENT_STYLES: Record<ElementKey, {
     innerGlow: "#FFFFC2",
   },
   darkness: {
-    coreColor: "#000000",
-    rimColor: "#111111",
-    innerGlow: "#141526",
+    coreColor: "#6A4C93",
+    rimColor: "#9C7BB8",
+    innerGlow: "#3A2B5C",
   },
 };
 

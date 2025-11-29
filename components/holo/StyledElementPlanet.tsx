@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useRef, useMemo } from "react";
+import React, { useRef, useMemo, useState, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Mesh, AdditiveBlending } from "three";
+import { Mesh, AdditiveBlending, TextureLoader } from "three";
+import * as THREE from "three";
 import { ELEMENT_STYLES, ElementKey } from "@/utils/planetStyles";
+import { getElementalPlanetTexture } from "@/lib/elementalPlanets";
 
 interface StyledElementPlanetProps {
   elementKey: ElementKey;
@@ -16,11 +18,38 @@ export default function StyledElementPlanet({
   position,
   radius = 1.5
 }: StyledElementPlanetProps) {
+  console.log(`🌍 Rendering StyledElementPlanet: ${elementKey} at position:`, position, `radius: ${radius}`);
+  
   const planetRef = useRef<Mesh>(null);
   const glowRef = useRef<Mesh>(null);
   const time = useRef(0);
+  const [texture, setTexture] = useState<THREE.Texture | null>(null);
   
   const styles = ELEMENT_STYLES[elementKey];
+  console.log(`🎨 Element styles for ${elementKey}:`, styles);
+
+  // Load the appropriate texture for each element
+  useEffect(() => {
+    const textureLoader = new TextureLoader();
+    const texturePath = getElementalPlanetTexture(elementKey);
+    
+    console.log(`🖼️ Loading texture for ${elementKey}: ${texturePath}`);
+    
+    if (texturePath) {
+      textureLoader.load(
+        texturePath,
+        (loadedTexture) => {
+          loadedTexture.wrapS = loadedTexture.wrapT = THREE.RepeatWrapping;
+          console.log(`✅ Successfully loaded texture for ${elementKey}`);
+          setTexture(loadedTexture);
+        },
+        undefined,
+        (error) => {
+          console.error(`❌ Failed to load texture for ${elementKey}:`, error);
+        }
+      );
+    }
+  }, [elementKey]);
   
   // Different animation behaviors per element
   const animations = useMemo(() => {
@@ -105,9 +134,10 @@ export default function StyledElementPlanet({
       <mesh ref={planetRef} renderOrder={1}>
         <sphereGeometry args={[radius, 32, 32]} />
         <meshStandardMaterial
-          color={styles.coreColor}
+          map={texture}
+          color={texture ? "#ffffff" : styles.coreColor}
           emissive={elementKey === "darkness" ? styles.rimColor : styles.innerGlow}
-          emissiveIntensity={animations.baseEmissive}
+          emissiveIntensity={texture ? animations.baseEmissive * 0.5 : animations.baseEmissive}
           roughness={elementKey === "darkness" ? 0.1 : 0.3}
           metalness={elementKey === "darkness" ? 0.8 : 0.2}
           transparent={false}

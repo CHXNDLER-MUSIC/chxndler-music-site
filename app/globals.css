@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom cursor styling */
+* {
+  cursor: url('/elements/cursor.webp'), auto;
+}
+
+/* Ensure cursor works on interactive elements */
+a, button, input, select, textarea, [role="button"], [tabindex]:not([tabindex="-1"]) {
+  cursor: url('/elements/cursor.webp'), pointer;
+}
+
 /* Removed global position: relative rule that was causing click blocking issues */
 
 /* Local fonts (place files in /public/fonts) */
@@ -35,12 +45,9 @@
   font-style: normal;
   font-display: swap;
 }
-/* Orbitron — optional local files for accent headings */
-@font-face { font-family: 'OrbitronLocal'; src: url('/fonts/orbitron-400.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
-@font-face { font-family: 'OrbitronLocal'; src: url('/fonts/orbitron-600.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; }
-@font-face { font-family: 'OrbitronLocal'; src: url('/fonts/orbitron-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
+/* Orbitron — using Google Fonts instead of local files */
 :root {
-  --font-orbitron: OrbitronLocal;
+  --font-orbitron: 'Orbitron', sans-serif;
   /* Breakpoint-Specific Beam Positioning System */
   
   /* Mobile First: Phone Layout (320px - 767px) */

@@ -291,8 +291,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
         <div 
           className="fixed inset-0 z-[2147483646] flex items-center justify-center"
           style={{
-            pointerEvents: 'none',
-            paddingTop: '400px'
+            pointerEvents: 'none'
           }}
         >
           <div
@@ -309,22 +308,31 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       {/* Badges Modal */}
       {isActive && (
         <div 
-          className="fixed inset-0 z-[2147483647] flex items-center justify-center"
-          style={{
-            paddingTop: '300px'
+          className="fixed inset-0 z-[2147483647] flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              try { sfx.play('close', 0.8); } catch {}
+              onClick?.({} as any);
+              setSelectedCategory(null);
+              setSelectedBadge(null);
+              setElementFilter(null);
+              try { onOpenBlueDisplay?.(); } catch {}
+            }
           }}
         >
           <div
-            className="badges-hologram-container"
+            className="badges-hologram-container flex flex-col"
             style={{
               width: 'min(92vw, 700px)',
-              height: '35vh',
+              maxWidth: '700px',
+              minHeight: 'min(60vh, 500px)',
+              maxHeight: '90vh',
               padding: '10px 14px 14px 14px',
               borderRadius: 18,
-              background: 'rgba(0,0,0,0.6)',
+              background: 'rgba(0,0,0,0.8)',
               border: '1px solid rgba(255,255,0,0.55)',
               boxShadow: '0 -8px 25px rgba(255,255,0,0.4), 0 -4px 15px rgba(255,255,0,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(255,255,0,0.45)',
-              backdropFilter: 'blur(12px) saturate(140%)',
+              backdropFilter: 'blur(8px) saturate(120%)',
               color: '#FFFF00',
               position: 'relative'
             }}
@@ -432,7 +440,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
             />
 
             {/* Content */}
-            <div className="relative mt-1">
+            <div className="relative mt-1 flex-1 overflow-auto">
               {!selectedCategory ? (
                 // Main Categories View
                 <>
@@ -450,9 +458,9 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                     Choose a category to explore your badges and track your progress through the Heartverse.
                   </div>
                   
-                  <div className="flex flex-col items-center justify-center gap-1 w-full" style={{ marginTop: '-8px' }}>
+                  <div className="flex flex-col items-center justify-center gap-3 w-full">
                     {/* First row: Soul Star, Achievements, Elemental Streak */}
-                    <div className="flex justify-center items-center gap-4 ml-3">
+                    <div className="flex justify-center items-center gap-6">
                       {badgeCategories.slice(0, 3).map((category) => (
                         <div
                           key={category.id}
@@ -494,7 +502,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                     </div>
                     
                     {/* Second row: Listening, HeartCoin, Community */}
-                    <div className="flex justify-center items-center gap-4">
+                    <div className="flex justify-center items-center gap-6">
                       {badgeCategories.slice(3, 6).map((category) => (
                         <div
                           key={category.id}
@@ -662,7 +670,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                       
                       {/* Only show badges if not elemental-streak OR if element filter is selected */}
                       {(category.id !== 'elemental-streak' || elementFilter) && (
-                        <div className={`flex flex-wrap justify-center max-h-28 overflow-y-auto overflow-x-hidden p-2 ${category.id === 'heartcoin' ? 'gap-8' : 'gap-5'}`} style={{ scrollbarWidth: 'thin', marginTop: '-8px' }}>
+                        <div className={`flex flex-wrap justify-center max-h-64 overflow-y-auto overflow-x-hidden p-2 ${category.id === 'heartcoin' ? 'gap-8' : 'gap-5'}`} style={{ scrollbarWidth: 'thin', marginTop: '-8px' }}>
                           {filterBadgesByElement(category.badges).map((badge, index) => (
                             <div key={index} className="flex flex-col items-center space-y-2">
                             <div className="relative">

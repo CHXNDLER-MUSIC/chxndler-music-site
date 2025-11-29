@@ -86,7 +86,8 @@ export default function WhatShouldWeCallYouModal() {
   useEffect(() => {
     if (!showNamePrompt) return;
     if (!authChecked) return;
-    if (!currentUser || !profile) {
+    // Only close if we have a user but they already have a complete profile (with name)
+    if (currentUser && profile && profile.name && profile.name.trim() !== '') {
       closeNamePrompt();
     }
   }, [showNamePrompt, authChecked, currentUser, profile, closeNamePrompt]);

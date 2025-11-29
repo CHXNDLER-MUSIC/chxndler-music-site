@@ -47,9 +47,9 @@ export default function GlowingHamburgerMenuWrapper() {
         setChxndlerOpen(true);
         break;
       case "STORE":
-        // Set initial tab preference to EARN for heart coins
+        // Set initial tab preference to USE for heart coins
         if (typeof window !== 'undefined') {
-          (window as any).heartCoinInitialTab = 'EARN';
+          (window as any).heartCoinInitialTab = 'USE';
         }
         setHeartCoinOpen(true);
         break;

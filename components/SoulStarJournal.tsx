@@ -220,7 +220,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
     return (
       <div 
         className="fixed inset-0 z-[2147483647] flex items-center justify-center"
-        style={{ marginTop: '280px' }}
+        style={{ marginTop: '200px' }}
       >
         <div 
           className="absolute inset-0 bg-black/70 backdrop-blur-sm"
@@ -240,7 +240,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
   return (
     <div 
       className="fixed inset-0 z-[2147483647] flex items-center justify-center"
-      style={{ marginTop: '280px' }}
+      style={{ marginTop: '200px' }}
     >
       {/* Background blur */}
       <div 

@@ -129,99 +129,122 @@ export default function MediaPlayer({
   }, [isPlaying]);
   return (
     <motion.div
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[min(92vw,680px)] backdrop-blur-md rounded-2xl p-3"
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[min(92vw,680px)]"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      <div className="flex items-center gap-3">
-        <button
-          onClick={handleToggle}
-          className={`rounded-xl px-3 py-2 transition-all duration-200 ${
-            gateResult.allowed 
-              ? "bg-white/10 hover:bg-white/20" 
-              : "bg-red-500/20 cursor-not-allowed opacity-60"
-          }`}
-          aria-label={
-            !gateResult.allowed 
-              ? gateResult.reason || "Locked"
-              : isPlaying ? "Pause" : "Play"
-          }
-          title={!gateResult.allowed ? gateResult.reason : undefined}
-        >
-          {!gateResult.allowed ? "🔒" : isPlaying ? "⏸" : "▶️"}
-        </button>
-        <div className="flex-1">
-          <div className="text-white/90 text-sm truncate">
-            {title}
-          </div>
-          {!gateResult.allowed && (
-            <div className="text-red-300 text-xs mt-1 truncate">
-              {gateResult.reason}
-            </div>
-          )}
-          <div 
-            className="mt-2 h-16 w-full relative overflow-hidden rounded-lg bg-black outline-none ring-0 border-0" 
-            style={{ 
-              boxShadow: 'none',
-              border: 'none !important',
-              outline: 'none !important'
-            }}
+      {/* Main player container */}
+      <div className="backdrop-blur-md rounded-2xl p-3 mb-2">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleToggle}
+            className={`rounded-xl px-3 py-2 transition-all duration-200 ${
+              gateResult.allowed 
+                ? "bg-white/10 hover:bg-white/20" 
+                : "bg-red-500/20 cursor-not-allowed opacity-60"
+            }`}
+            aria-label={
+              !gateResult.allowed 
+                ? gateResult.reason || "Locked"
+                : isPlaying ? "Pause" : "Play"
+            }
+            title={!gateResult.allowed ? gateResult.reason : undefined}
           >
-            {/* Simple progress bar without SVG */}
-            <div 
-              className="absolute top-1/2 left-0 w-full h-[2px] -translate-y-1/2"
-              style={{
-                border: 'none !important',
-                outline: 'none !important',
-                boxShadow: 'none !important'
-              }}
-            >
-              <div 
-                className="h-full bg-white rounded-full" 
-                style={{ 
-                  width: `${progress * 100}%`,
-                  filter: 'none',
-                  outline: 'none !important',
-                  border: 'none !important',
-                  boxShadow: 'none !important'
-                }}
-              />
+            {!gateResult.allowed ? "🔒" : isPlaying ? "⏸" : "▶️"}
+          </button>
+          <div className="flex-1">
+            <div className="text-white/90 text-sm truncate">
+              {title}
             </div>
-            
-            {/* Time cursor with element icon */}
-            <div
-              className="absolute top-0 h-full flex flex-col items-center justify-center pointer-events-none z-10"
-              style={{
-                left: `${Math.max(0, Math.min(100, progress * 100))}%`,
-                transform: 'translateX(-50%)',
-                width: '32px',
+            {!gateResult.allowed && (
+              <div className="text-red-300 text-xs mt-1 truncate">
+                {gateResult.reason}
+              </div>
+            )}
+            {/* Cover art container */}
+            <div 
+              className="mt-2 h-16 w-full relative overflow-hidden rounded-lg outline-none ring-0 border-0" 
+              style={{ 
+                background: 'transparent',
+                backgroundImage: 'none',
+                backgroundColor: 'transparent',
+                boxShadow: 'none',
+                border: 'none !important',
+                outline: 'none !important'
               }}
             >
-              {/* Vertical cursor line removed per design */}
-              
-              {/* Element-shaped cursor icon */}
-              <img
-                src={iconSrc}
-                alt={`${title} element`}
-                className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 transform w-[3rem] h-[3rem] min-w-[3rem] min-h-[3rem] brightness-150 saturate-125"
+              {/* Time cursor with element icon */}
+              <div
+                className="absolute top-0 h-full flex flex-col items-center justify-center pointer-events-none z-10"
                 style={{
-                  filter: 'none'
-                }}
-              />
-              
-              {/* Time display */}
-              <div 
-                className="absolute -bottom-6 text-xs font-mono px-2 py-1 rounded"
-                style={{ 
-                  background: `${elementColor}22`,
-                  color: elementColor,
+                  left: `${Math.max(0, Math.min(100, progress * 100))}%`,
+                  transform: 'translateX(-50%)',
+                  width: '32px',
                 }}
               >
-                {Math.floor(progress * 100)}%
+                {/* Element-shaped cursor icon */}
+                <img
+                  src={iconSrc}
+                  alt={`${title} element`}
+                  className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 transform w-[3rem] h-[3rem] min-w-[3rem] min-h-[3rem] brightness-150 saturate-125"
+                  style={{
+                    filter: 'none'
+                  }}
+                />
+                
+                {/* Time display */}
+                <div 
+                  className="absolute -bottom-6 text-xs font-mono px-2 py-1 rounded"
+                  style={{ 
+                    background: `${elementColor}22`,
+                    color: elementColor,
+                  }}
+                >
+                  {Math.floor(progress * 100)}%
+                </div>
               </div>
+            </div>
+
+            {/* Neon white progress bar directly below cover art */}
+            <div className="mt-2 w-full h-1 bg-white/10 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-white rounded-full transition-all duration-300"
+                style={{ 
+                  width: `${progress * 100}%`,
+                  boxShadow: '0 0 8px rgba(255, 255, 255, 0.8), 0 0 16px rgba(255, 255, 255, 0.4)',
+                  filter: 'brightness(1.2) drop-shadow(0 0 4px rgba(255, 255, 255, 0.6))'
+                }}
+              />
             </div>
           </div>
         </div>
+      </div>
+      
+      {/* Progress bar completely outside the main container */}
+      <div 
+        className="w-full h-[2px] relative"
+        style={{
+          background: 'transparent',
+          backgroundImage: 'none',
+          backgroundColor: 'transparent',
+          border: 'none !important',
+          outline: 'none !important',
+          boxShadow: 'none !important'
+        }}
+      >
+        <div 
+          className="h-full bg-white rounded-full" 
+          style={{ 
+            width: `${progress * 100}%`,
+            background: '#ffffff',
+            backgroundImage: 'none',
+            backgroundColor: '#ffffff',
+            filter: 'none',
+            outline: 'none !important',
+            border: 'none !important',
+            boxShadow: 'none !important'
+          }}
+        />
       </div>
     </motion.div>
   );

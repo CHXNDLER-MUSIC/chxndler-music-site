@@ -31,12 +31,12 @@ type PlanetSystemProps = {
   showDebug?: boolean;
 };
 
-// Elemental planets configuration as per requirements - ENHANCED VISIBILITY
+// Elemental planets in four corners around central heart planet
 const ELEMENTAL_PLANETS = [
-  { type: "water" as ElementKey, color: "#38B6FF", radius: 3.0, position: [12, 0, 0] as [number, number, number] },
-  { type: "heart" as ElementKey, color: "#FC54AF", radius: 3.0, position: [-12, 0, 0] as [number, number, number] },
-  { type: "lightning" as ElementKey, color: "#F2EF1D", radius: 3.0, position: [0, 0, 12] as [number, number, number] },
-  { type: "darkness" as ElementKey, color: "#6A4C93", radius: 3.0, position: [0, 0, -12] as [number, number, number] }
+  { type: "water" as ElementKey, color: "#38B6FF", radius: 2.5, position: [15, 0, 15] as [number, number, number] },
+  { type: "heart" as ElementKey, color: "#FC54AF", radius: 2.5, position: [-15, 0, 15] as [number, number, number] },
+  { type: "lightning" as ElementKey, color: "#F2EF1D", radius: 2.5, position: [15, 0, -15] as [number, number, number] },
+  { type: "darkness" as ElementKey, color: "#6A4C93", radius: 2.5, position: [-15, 0, -15] as [number, number, number] }
 ];
 
 // Orbit helper function as requested
@@ -48,73 +48,6 @@ function orbitAround(parentPosition: [number, number, number], time: number, dis
   ];
 }
 
-// ElementPlanet component with texture mapping
-const ElementPlanet: React.FC<{
-  type: ElementKey;
-  color: string;
-  position: [number, number, number];
-  radius: number;
-}> = ({ type, color, position, radius }) => {
-  const [texture, setTexture] = React.useState<THREE.Texture | null>(null);
-  
-  // Load the appropriate texture for each element
-  React.useEffect(() => {
-    const textureLoader = new THREE.TextureLoader();
-    const texturePath = getElementalPlanetTexture(type);
-    
-    if (texturePath) {
-      textureLoader.load(
-        texturePath,
-        (loadedTexture) => {
-          loadedTexture.wrapS = loadedTexture.wrapT = THREE.RepeatWrapping;
-          setTexture(loadedTexture);
-        },
-        undefined,
-        (error) => {
-          console.warn(`Failed to load texture for ${type}:`, error);
-        }
-      );
-    }
-  }, [type]);
-  
-  return (
-    <group position={position}>
-      <mesh>
-        <sphereGeometry args={[radius, 32, 32]} />
-        <meshStandardMaterial
-          map={texture}
-          color={texture ? "#ffffff" : color}
-          emissive={color}
-          emissiveIntensity={1.5}
-          metalness={0.1}
-          roughness={0.2}
-        />
-      </mesh>
-      {/* Add atmospheric glow - ENHANCED */}
-      <mesh renderOrder={-1}>
-        <sphereGeometry args={[radius * 1.3, 16, 16]} />
-        <meshBasicMaterial
-          color={color}
-          transparent
-          opacity={0.8}
-          blending={AdditiveBlending}
-          depthWrite={false}
-        />
-      </mesh>
-      {/* Add EXTRA outer glow */}
-      <mesh renderOrder={-2}>
-        <sphereGeometry args={[radius * 1.6, 16, 16]} />
-        <meshBasicMaterial
-          color={color}
-          transparent
-          opacity={0.4}
-          blending={AdditiveBlending}
-          depthWrite={false}
-        />
-      </mesh>
-    </group>
-  );
-};
 
 // SongPlanet component that orbits around elemental planets
 const SongPlanet: React.FC<{
@@ -131,7 +64,7 @@ const SongPlanet: React.FC<{
   
   // Calculate orbit parameters
   const speed = 0.5 + (songIndex * 0.1); // Vary speed slightly per song
-  const distance = 3.5;
+  const distance = 5.0; // Distance from elemental planet
   
   // Get orbiting position
   const pos = orbitAround(basePos, elapsedTime * speed, distance);
@@ -176,14 +109,23 @@ export const PlanetSystem: React.FC<PlanetSystemProps> = ({
 
   return (
     <group>
-      {/* Central heart planet as the sun at [0,0,0] */}
+      {/* Central heart star planet at [0,0,0] */}
       <group position={[0, 0, 0]}>
-        <HeartStarPlanet size={180} />
+        <HeartStarPlanet size={80} />
       </group>
 
-      {/* Render elemental planets BEFORE song planets - ENHANCED VISIBILITY */}
+      {/* Render elemental planets */}
       {ELEMENTAL_PLANETS.map((p) => (
         <group key={p.type}>
+          {/* Simple fallback sphere */}
+          <mesh position={p.position}>
+            <sphereGeometry args={[p.radius, 32, 32]} />
+            <meshStandardMaterial
+              color={p.color}
+              emissive={p.color}
+              emissiveIntensity={0.8}
+            />
+          </mesh>
           <StyledElementPlanet
             elementKey={p.type}
             position={p.position}
@@ -197,25 +139,20 @@ export const PlanetSystem: React.FC<PlanetSystemProps> = ({
           >
             <div style={{
               color: p.color,
-              fontSize: '24px',
+              fontSize: '18px',
               fontWeight: 'bold',
               textAlign: 'center',
               textTransform: 'uppercase',
-              textShadow: `0 0 12px ${p.color}`,
-              backgroundColor: 'rgba(0, 0, 0, 0.7)',
-              padding: '8px 16px',
-              borderRadius: '8px',
-              border: `2px solid ${p.color}`,
-              backdropFilter: 'blur(8px)'
+              textShadow: `0 0 8px ${p.color}`,
+              backgroundColor: 'rgba(0, 0, 0, 0.6)',
+              padding: '4px 12px',
+              borderRadius: '6px',
+              border: `1px solid ${p.color}`,
+              backdropFilter: 'blur(4px)'
             }}>
               {p.type}
             </div>
           </Html>
-          {/* DEBUG SPHERE - SHOULD BE CLEARLY VISIBLE */}
-          <mesh position={[p.position[0], p.position[1] + 8, p.position[2]]}>
-            <sphereGeometry args={[2, 8, 8]} />
-            <meshBasicMaterial color="#FF0000" transparent opacity={0.8} />
-          </mesh>
         </group>
       ))}
 

@@ -923,7 +923,7 @@ export default function ProfileBar({
               <div 
                 className="text-left space-y-3"
                 style={{ 
-                  fontSize: 14, 
+                  fontSize: 12, 
                   color: '#FFFFFF !important', 
                   textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
                 }}
