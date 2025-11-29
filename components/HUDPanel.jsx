@@ -2614,7 +2614,7 @@ export default function HUDPanel({
                         zIndex: 2,
                         borderRadius: '8px',
                         padding: '4px 8px',
-                        backgroundColor: 'rgba(25,227,255,0.05)'
+                        backgroundColor: 'transparent'
                       }}>
                       <button 
                         onClick={handlePlayPause}
@@ -6954,7 +6954,7 @@ export default function HUDPanel({
               const liveTime = (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
               
               return (
-                <div className="border-2 border-[#19E3FF]/80 bg-cyan-400/10 backdrop-blur-xl rounded-[10px]" style={{
+                <div className="border-0 bg-transparent backdrop-blur-xl rounded-[10px]" style={{
                   marginTop: 2,
                   paddingLeft: 8,
                   paddingRight: 8,

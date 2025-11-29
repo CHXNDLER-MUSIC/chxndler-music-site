@@ -5,6 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import * as THREE from "three";
 import HeartStarPlanet from "./HeartStarPlanet";
+import StyledElementPlanet from "./holo/StyledElementPlanet";
 import { getElementalPlanetTexture } from "@/lib/elementalPlanets";
 
 type ElementKey = "water" | "heart" | "lightning" | "darkness";
@@ -183,9 +184,8 @@ export const PlanetSystem: React.FC<PlanetSystemProps> = ({
       {/* Render elemental planets BEFORE song planets - ENHANCED VISIBILITY */}
       {ELEMENTAL_PLANETS.map((p) => (
         <group key={p.type}>
-          <ElementPlanet
-            type={p.type}
-            color={p.color}
+          <StyledElementPlanet
+            elementKey={p.type}
             position={p.position}
             radius={p.radius}
           />
