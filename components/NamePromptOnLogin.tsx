@@ -24,16 +24,22 @@ export default function NamePromptOnLogin() {
     const shouldComplete = searchParams.get('completeProfile') === '1';
     const urlHasCompleteProfile = typeof window !== 'undefined' && window.location.search.includes('completeProfile=1');
     
+    // ALSO check for welcome parameter - this happens when user clicks magic link but is already logged in
+    const isWelcomeFromMagicLink = searchParams.get('welcome') === '1';
+    const urlHasWelcome = typeof window !== 'undefined' && window.location.search.includes('welcome=1');
+    
     console.log('🔍 NamePromptOnLogin check:', { 
       mounted, 
       shouldComplete, 
       urlHasCompleteProfile,
+      isWelcomeFromMagicLink,
+      urlHasWelcome,
       searchParamsString: searchParams.toString(),
       url: typeof window !== 'undefined' ? window.location.href : 'server-side'
     });
     
-    if (!shouldComplete && !urlHasCompleteProfile) {
-      console.log('🚫 No completeProfile parameter found, not opening modal');
+    if (!shouldComplete && !urlHasCompleteProfile && !isWelcomeFromMagicLink && !urlHasWelcome) {
+      console.log('🚫 No completeProfile or welcome parameter found, not opening modal');
       return;
     }
 
