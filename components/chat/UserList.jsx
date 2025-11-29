@@ -126,10 +126,10 @@ function UserListItem({ user, onClick }) {
             style={{
               color: elementColor,
               textShadow: `0 0 6px ${elementColor}80`,
-              maxWidth: '85px'
+              maxWidth: '120px'
             }}
           >
-            {displayName.length > 10 ? displayName.slice(0, 9) + '…' : displayName}
+            {displayName.length > 14 ? displayName.slice(0, 13) + '…' : displayName}
           </p>
         </div>
       </div>

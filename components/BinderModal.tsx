@@ -800,7 +800,7 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
           
           {/* Thin pink neon line */}
           <div 
-            className="w-full h-px mb-4 flex-shrink-0"
+            className="w-full h-px flex-shrink-0"
             style={{
               background: 'linear-gradient(90deg, transparent, rgba(255,105,180,0.8) 20%, rgba(255,105,180,1) 50%, rgba(255,105,180,0.8) 80%, transparent)',
               boxShadow: '0 0 4px rgba(255,105,180,0.6)'
@@ -913,7 +913,7 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
             return (
               <>
                 {/* Horizontal layout with card image and text */}
-                <div className="flex flex-row items-start gap-2 w-full overflow-visible mb-4">
+                <div className="flex flex-row items-start gap-2 w-full overflow-visible">
                   {/* Left navigation arrow */}
                   {cards.length > 1 && (
                     <button
@@ -982,9 +982,6 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
                                       ? 'border border-pink-400/70 text-pink-100 shadow-[0_0_18px_rgba(252,84,175,0.7)]'
                                       : 'border border-pink-400/70 text-pink-100 shadow-[0_0_18px_rgba(252,84,175,0.7)]'
                               }`}>
-                                {gateState === 'comingSoon'
-                                  ? "Coming Soon"
-                                  : `Reach ${getTierDisplayName(currentCard.min_tier)} to unlock`}
                               </div>
                             </div>
                           )}
@@ -1093,7 +1090,6 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
                                          ? '0 0 4px rgba(255,182,193,0.6)'
                                          : '0 0 4px rgba(234,179,8,0.6)'
                                    }}>
-                                Reach {getTierDisplayName(currentCard.min_tier)} to unlock
                               </div>
                             </div>
                           );
@@ -1379,57 +1375,6 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
 
 
 
-          <div className="flex justify-between items-center mb-4">            
-            {!selectedElement && !showFullCollection && (
-              <div className="flex flex-col items-center gap-2 flex-1">
-                <div 
-                  className="text-center"
-                  style={{ 
-                    whiteSpace: 'pre-wrap', 
-                    lineHeight: 1.2, 
-                    fontSize: 14, 
-                    color: '#FF69B4', 
-                    textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,105,180,0.6)', 
-                    marginTop: '2px' 
-                  }}
-                >
-                  Earn the cards that reflect your journey in the Heartverse.
-                </div>
-              </div>
-            )}
-            {!selectedElement && showFullCollection && (
-              <div className="flex flex-col items-center gap-2 flex-1">
-                <div 
-                  className="text-center"
-                  style={{ 
-                    whiteSpace: 'pre-wrap', 
-                    lineHeight: 1.2, 
-                    fontSize: 14, 
-                    color: '#FF69B4', 
-                    textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,105,180,0.6)', 
-                    marginTop: '2px' 
-                  }}
-                >
-                  Earn the cards that reflect your journey in the Heartverse.
-                </div>
-                <button
-                  onClick={() => {
-                    try { sfx.play('click', 0.7); } catch {}
-                    setShowFullCollection(false);
-                    setSelectedElement(null);
-                  }}
-                  className="px-3 py-1 rounded border border-pink-400/60 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
-                  style={{
-                    color: '#FFB6C1',
-                    textShadow: '0 0 4px rgba(255,182,193,0.6)',
-                    boxShadow: '0 0 8px rgba(255,105,180,0.3)',
-                  }}
-                >
-                  Back to Binder
-                </button>
-              </div>
-            )}
-          </div>
 
 
 
@@ -1533,9 +1478,6 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
                                                 ? 'border border-pink-400/70 text-pink-100 shadow-[0_0_15px_rgba(252,84,175,0.7)]'
                                                 : 'border border-pink-400/70 text-pink-100 shadow-[0_0_15px_rgba(252,84,175,0.7)]'
                                         }`}>
-                                          {gateState === 'comingSoon'
-                                            ? "Coming Soon"
-                                            : `Reach ${getTierDisplayName(cardData.min_tier)} to unlock`}
                                         </div>
                                       </div>
                                     )}

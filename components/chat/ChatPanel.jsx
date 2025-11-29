@@ -331,58 +331,68 @@ export default function ChatPanel({ isOpen, onClose }) {
    * Handle sending a new message
    */
   const handleSendMessage = async (messageText) => {
-    try {
-      const displayName = getDisplayName();
-      console.log('🔥 Sending message:', { messageText, displayName, user: !!user });
+    const displayName = getDisplayName();
+    console.log('🔥 Sending message:', { messageText, displayName, user: !!user });
+    
+    // For anonymous users, always add message locally first
+    if (!user) {
+      const anonymousMessage = {
+        id: `anonymous-${Date.now()}`,
+        user_id: 'anonymous',
+        message: messageText.trim(),
+        message_type: 'message',
+        created_at: new Date().toISOString(),
+        user_profile: {
+          name: displayName,
+          element: 'alien',
+          avatar_badge_id: null
+        }
+      };
       
-      const message = await chatService.sendMessage(messageText, 'message', displayName);
-      console.log('🔥 Message result:', message);
-      console.log('🔥 Message is truthy?', !!message);
+      console.log('🔥 Adding anonymous message locally:', anonymousMessage);
+      setMessages(prev => {
+        const newMessages = [...prev, anonymousMessage];
+        console.log('🔥 Updated messages:', newMessages);
+        return newMessages;
+      });
       
-      // For anonymous users, always add the message locally even if service returns null
-      if (message || !user) {
-        const finalMessage = message || {
-          id: `anonymous-${Date.now()}`,
-          user_id: 'anonymous',
-          message: messageText.trim(),
-          message_type: 'message',
-          created_at: new Date().toISOString(),
-          user_profile: {
+      // Ensure anonymous user is in the users list
+      setChatUsers(prev => {
+        const existingAnonymous = prev.find(u => u.id === 'anonymous');
+        if (!existingAnonymous) {
+          console.log('🔥 Adding anonymous user to list');
+          return [{
+            id: 'anonymous',
             name: displayName,
             element: 'alien',
-            avatar_badge_id: null
-          }
-        };
-        // For anonymous users, always add message locally
-        if (!user) {
-          console.log('🔥 Adding anonymous message locally');
-          setMessages(prev => {
-            const newMessages = [...prev, finalMessage];
-            console.log('🔥 Updated messages:', newMessages);
-            return newMessages;
-          });
-          
-          // Ensure anonymous user is in the users list
-          setChatUsers(prev => {
-            const existingAnonymous = prev.find(u => u.id === 'anonymous');
-            if (!existingAnonymous) {
-              console.log('🔥 Adding anonymous user to list');
-              return [{
-                id: 'anonymous',
-                name: displayName,
-                element: 'alien',
-                avatar_badge_id: null,
-                last_seen: new Date().toISOString()
-              }, ...prev];
-            }
-            return prev;
-          });
+            avatar_badge_id: null,
+            last_seen: new Date().toISOString()
+          }, ...prev];
         }
-      } else {
-        console.error('Failed to send message - both service and fallback failed');
+        return prev;
+      });
+      
+      // Try to send to service in background (optional)
+      try {
+        const message = await chatService.sendMessage(messageText, 'message', displayName);
+        console.log('🔥 Background service result:', message);
+      } catch (error) {
+        console.log('🔥 Background service failed (expected for anonymous):', error);
+      }
+      
+      return; // Exit early for anonymous users
+    }
+    
+    // For authenticated users, try service first
+    try {
+      const message = await chatService.sendMessage(messageText, 'message', displayName);
+      console.log('🔥 Authenticated user message result:', message);
+      
+      if (!message) {
+        console.error('Failed to send message for authenticated user');
       }
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('Error sending message for authenticated user:', error);
     }
   };
 
@@ -403,24 +413,36 @@ export default function ChatPanel({ isOpen, onClose }) {
    */
   const handleUserClick = (userId) => {
     console.log('🔥 User clicked:', userId);
+    
+    // Toggle profile - if clicking on same user, close profile
+    if (selectedUser && selectedUser.id === userId) {
+      console.log('🔥 Closing profile for same user');
+      setSelectedUser(null);
+      setShowUserBadges(false);
+      setShowUserBinder(false);
+      return;
+    }
+    
     let user = chatUsers.find(u => u.id === userId);
     console.log('🔥 Found user in chatUsers:', user);
     console.log('🔥 Current chatUsers:', chatUsers);
     
-    // If user not found in chatUsers (like fallback alien), create one
-    if (!user && userId === 'anonymous') {
+    // For anonymous users, always use the consistent alien name
+    if (userId === 'anonymous') {
       user = {
         id: 'anonymous',
-        name: alienName || 'ALIEN00000000',
+        name: alienName, // Always use the stored alien name
         element: 'alien',
         avatar_badge_id: null,
         last_seen: new Date().toISOString()
       };
-      console.log('🔥 Created fallback user:', user);
+      console.log('🔥 Using consistent alien user:', user);
     }
     
     if (user) {
       setSelectedUser(user);
+      setShowUserBadges(false); // Reset badge view when switching users
+      setShowUserBinder(false); // Reset binder view when switching users
       console.log('🔥 Set selected user:', user);
     } else {
       console.log('🔥 No user found for ID:', userId);
@@ -564,7 +586,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                 {/* User List */}
                 <div 
                   className={`border-r border-cyan-400/20 transition-all duration-300 ease-in-out ${
-                    isUserPanelCollapsed ? 'w-8' : 'w-40'
+                    isUserPanelCollapsed ? 'w-8' : 'w-48'
                   }`}
                 >
                   {/* Collapse Toggle Button */}
@@ -673,9 +695,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                   {/* Profile View - shown above message input when user is selected */}
                   {console.log('🔥 Rendering profile check - selectedUser:', selectedUser)}
                   {selectedUser && (
-                    <div className="border-t border-yellow-400/30 px-3 py-2">
+                    <div className="border-t border-yellow-400/30 px-3 pt-1 pb-2">
                       {/* Profile Header with Icons */}
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center space-x-2">
                           {/* User Icon */}
                           <div 
@@ -842,38 +864,38 @@ export default function ChatPanel({ isOpen, onClose }) {
                       
                       {/* User Binder - shown when binder button is clicked */}
                       {showUserBinder && (
-                        <div className="mt-3 pt-3 border-t border-white/20">
+                        <div className="mt-2 pt-2 border-t border-white/20">
                           <h4 className="text-xs text-white/80 font-semibold mb-2 flex items-center">
                             <img src="/elements/binder.webp" alt="Cards" className="w-3 h-3 mr-1" />
                             CARD COLLECTION
                           </h4>
                           <div className="grid grid-cols-2 gap-2">
-                            {/* Sample cards - replace with actual user cards */}
+                            {/* Actual Song Cards - matching main binder */}
                             <div className="relative p-2 rounded bg-gradient-to-br from-purple-900/30 to-pink-900/30 border border-purple-400/40">
                               <div className="absolute top-1 right-1 text-xs text-purple-300">★</div>
                               <div className="w-full h-12 bg-purple-400/20 rounded mb-1 flex items-center justify-center">
                                 <span className="text-xs text-purple-200">💜</span>
                               </div>
-                              <div className="text-xs text-white/90 font-medium truncate">Heart Queen</div>
-                              <div className="text-xs text-purple-300">#001</div>
+                              <div className="text-xs text-white/90 font-medium truncate">CHEERLEADER</div>
+                              <div className="text-xs text-purple-300">HEART</div>
                             </div>
                             
                             <div className="relative p-2 rounded bg-gradient-to-br from-blue-900/30 to-cyan-900/30 border border-blue-400/40">
-                              <div className="absolute top-1 right-1 text-xs text-blue-300">★★</div>
+                              <div className="absolute top-1 right-1 text-xs text-blue-300">★</div>
                               <div className="w-full h-12 bg-blue-400/20 rounded mb-1 flex items-center justify-center">
                                 <span className="text-xs text-blue-200">⚡</span>
                               </div>
-                              <div className="text-xs text-white/90 font-medium truncate">Lightning Soul</div>
-                              <div className="text-xs text-blue-300">#045</div>
+                              <div className="text-xs text-white/90 font-medium truncate">BLUE</div>
+                              <div className="text-xs text-blue-300">LIGHTNING</div>
                             </div>
                             
-                            <div className="relative p-2 rounded bg-gradient-to-br from-green-900/30 to-emerald-900/30 border border-green-400/40">
-                              <div className="absolute top-1 right-1 text-xs text-green-300">★★★</div>
-                              <div className="w-full h-12 bg-green-400/20 rounded mb-1 flex items-center justify-center">
-                                <span className="text-xs text-green-200">🌱</span>
+                            <div className="relative p-2 rounded bg-gradient-to-br from-pink-900/30 to-purple-900/30 border border-pink-400/40">
+                              <div className="absolute top-1 right-1 text-xs text-pink-300">★</div>
+                              <div className="w-full h-12 bg-pink-400/20 rounded mb-1 flex items-center justify-center">
+                                <span className="text-xs text-pink-200">💜</span>
                               </div>
-                              <div className="text-xs text-white/90 font-medium truncate">Nature's Call</div>
-                              <div className="text-xs text-green-300">#087</div>
+                              <div className="text-xs text-white/90 font-medium truncate">ALWAYS ON MY MIND</div>
+                              <div className="text-xs text-pink-300">HEART</div>
                             </div>
                             
                             {/* Empty slot */}
