@@ -53,7 +53,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
   const centralPlanetRef = useRef<{ id: string | null; mesh: THREE.Mesh | null; originalSat: Sat | null }>({ id: null, mesh: null, originalSat: null });
   // Camera animation for smooth focus transitions
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const targetCameraPos = useRef<THREE.Vector3>(new THREE.Vector3(0, 50, 300.0));
+  const targetCameraPos = useRef<THREE.Vector3>(new THREE.Vector3(0, 200, 1000.0));
   const targetCameraLookAt = useRef<THREE.Vector3>(new THREE.Vector3(0, 0, 0));
   const cameraTransitionSpeed = useRef<number>(0.08);
   
@@ -1756,9 +1756,9 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
     const height = Math.max(1, mount.clientHeight || 340);
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(35, width / height, 0.1, 1000); // Increased far plane
-    // Zoomed out even further for wider view
-    camera.position.set(0, 50, 300.0); // MUCH further back to see water planet
+    const camera = new THREE.PerspectiveCamera(35, width / height, 0.1, 5000); // MASSIVE far plane
+    // EXTREME zoom out for complete system view
+    camera.position.set(0, 200, 1000.0); // EXTREMELY far back
     camera.lookAt(0, 0, 0); // Look at center
     cameraRef.current = camera;
 
@@ -2374,8 +2374,8 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
     
     // Reset camera to overview position when showing all planets
     if (effectiveShowAll || !focusId) {
-      // Zoom out a touch more on homepage overview
-      targetCameraPos.current.set(0, 1.2, 20.0);
+      // EXTREME zoom out for complete system overview
+      targetCameraPos.current.set(0, 200, 1000.0);
       targetCameraLookAt.current.set(0, 0, 0);
       cameraTransitionSpeed.current = 0.08;
       
@@ -2804,17 +2804,20 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
     };
     
     // Set camera to focus on the central planet with cinematic positioning
-    const planetColor = new THREE.Color(enhancedPlanetData.color || '#38B6FF');
-    const isWarmColor = planetColor.r > 0.6 || (planetColor.r + planetColor.g) > 1.0;
-    
-    // Dynamic camera positioning based on planet characteristics - better framing for HUD display
-    const baseDistance = 18.0; // Increased distance for better framing in HUD
-    const focusDistance = baseDistance * (isWarmColor ? 1.0 : 0.95); // Slightly closer for warm colors to show detail
-    const heightOffset = isWarmColor ? 1.8 : 1.5; // Adjusted height for better viewing angle
-    
-    // Set target camera position - focused on selected planet
-    targetCameraPos.current.set(0, heightOffset, focusDistance);
-    targetCameraLookAt.current.set(0, 0, 1.2); // Look directly at central planet position
+    // ONLY set focused camera if not in showAll mode
+    if (!showAll) {
+      const planetColor = new THREE.Color(enhancedPlanetData.color || '#38B6FF');
+      const isWarmColor = planetColor.r > 0.6 || (planetColor.r + planetColor.g) > 1.0;
+      
+      // Dynamic camera positioning based on planet characteristics - better framing for HUD display
+      const baseDistance = 18.0; // Increased distance for better framing in HUD
+      const focusDistance = baseDistance * (isWarmColor ? 1.0 : 0.95); // Slightly closer for warm colors to show detail
+      const heightOffset = isWarmColor ? 1.8 : 1.5; // Adjusted height for better viewing angle
+      
+      // Set target camera position - focused on selected planet
+      targetCameraPos.current.set(0, heightOffset, focusDistance);
+      targetCameraLookAt.current.set(0, 0, 1.2); // Look directly at central planet position
+    }
     
     // Immediate focus with faster initial transition for dramatic effect
     cameraTransitionSpeed.current = 0.25; // Start with fast transition for immediate focus

@@ -103,67 +103,35 @@ function UserListItem({ user, onClick }) {
       }}
     >
       <div className="flex flex-col items-center space-y-1">
-        {/* Avatar */}
-        <div 
-          className="relative w-8 h-8 rounded-full flex items-center justify-center"
-          style={{
-            background: `${elementColor}20`,
-            border: `2px solid ${elementColor}`,
-            boxShadow: `0 0 15px ${elementColor}60`
-          }}
-        >
-          {user.avatar_badge_id ? (
-            // Custom badge avatar (you'll need to fetch badge details)
-            <div 
-              className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center"
-              style={{ color: elementColor }}
-            >
-              🏆
-            </div>
-          ) : user.element ? (
-            // Element icon
-            <ElementIcon 
-              name={user.element} 
-              width={20} 
-              height={20}
-              className="filter brightness-0 saturate-100%"
-              style={{
-                filter: `brightness(0) saturate(100%) invert(1)`,
-                opacity: 0.9
-              }}
-            />
-          ) : (
-            // Default avatar
-            <div 
-              className="w-5 h-5 rounded-full"
-              style={{ 
-                background: `linear-gradient(45deg, ${elementColor}, #FFFFFF)`,
-                opacity: 0.8
-              }}
-            />
-          )}
-
-          {/* Online indicator */}
+        {/* Username with icon */}
+        <div className="flex items-center space-x-1 w-full justify-center">
+          {/* Small user icon */}
           <div 
-            className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-black"
+            className="w-3 h-3 rounded-full flex items-center justify-center flex-shrink-0"
             style={{
-              background: 'linear-gradient(45deg, #00FF00, #32CD32)',
-              boxShadow: '0 0 6px rgba(0, 255, 0, 0.8)'
+              background: 'rgba(0, 255, 0, 0.2)',
+              border: '1px solid rgba(0, 255, 0, 0.5)',
+              boxShadow: '0 0 4px rgba(0, 255, 0, 0.3)'
             }}
-          />
+          >
+            {user.id === 'anonymous' ? (
+              <span style={{ fontSize: '8px' }}>👽</span>
+            ) : (
+              <span style={{ fontSize: '8px' }}>👤</span>
+            )}
+          </div>
+          
+          <p 
+            className="text-xs font-medium leading-tight truncate"
+            style={{
+              color: elementColor,
+              textShadow: `0 0 6px ${elementColor}80`,
+              maxWidth: '85px'
+            }}
+          >
+            {displayName.length > 10 ? displayName.slice(0, 9) + '…' : displayName}
+          </p>
         </div>
-
-        {/* Username */}
-        <p 
-          className="text-xs font-medium text-center leading-tight truncate w-full"
-          style={{
-            color: elementColor,
-            textShadow: `0 0 6px ${elementColor}80`,
-            maxWidth: '60px'
-          }}
-        >
-          {displayName.length > 8 ? displayName.slice(0, 7) + '…' : displayName}
-        </p>
       </div>
     </button>
   );

@@ -20,8 +20,15 @@ export default function ChatPanel({ isOpen, onClose }) {
   // Debug logging
   console.log('🔥 ChatPanel render:', { isOpen, profile: !!profile, user: !!user });
 
-  // Store alien name consistently for the session
-  const [alienName, setAlienName] = useState(null);
+  // Store alien name consistently for the session - initialize immediately
+  const [alienName, setAlienName] = useState(() => {
+    // Generate alien name once on component mount
+    const alienNumber = Math.floor(Math.random() * 99999999) + 1;
+    const paddedNumber = alienNumber.toString().padStart(8, '0');
+    const newAlienName = `ALIEN${paddedNumber}`;
+    console.log('🔥 Generated initial alien name:', newAlienName);
+    return newAlienName;
+  });
 
   /**
    * Get display name for user - logged in name or anonymous alien name
@@ -31,17 +38,8 @@ export default function ChatPanel({ isOpen, onClose }) {
       return profile.name;
     }
     
-    // Generate and store alien name for this session
-    if (!alienName) {
-      const alienNumber = Math.floor(Math.random() * 99999999) + 1;
-      const paddedNumber = alienNumber.toString().padStart(8, '0');
-      const newAlienName = `ALIEN${paddedNumber}`;
-      console.log('🔥 Generated new alien name:', newAlienName);
-      setAlienName(newAlienName);
-      return newAlienName;
-    }
-    
-    console.log('🔥 Using existing alien name:', alienName);
+    // Always return the pre-initialized alien name
+    console.log('🔥 Using stored alien name:', alienName);
     return alienName;
   };
   const [messages, setMessages] = useState([]);
@@ -51,6 +49,8 @@ export default function ChatPanel({ isOpen, onClose }) {
   const [hasJoined, setHasJoined] = useState(false);
   const [typingUsers, setTypingUsers] = useState([]);
   const [isUserPanelCollapsed, setIsUserPanelCollapsed] = useState(false); // Start expanded so user can see their alien name
+  const [showUserBadges, setShowUserBadges] = useState(false);
+  const [showUserBinder, setShowUserBinder] = useState(false);
   const channelRef = useRef(null);
 
   // Initialize anonymous user immediately when chat opens
@@ -337,13 +337,27 @@ export default function ChatPanel({ isOpen, onClose }) {
       
       const message = await chatService.sendMessage(messageText, 'message', displayName);
       console.log('🔥 Message result:', message);
+      console.log('🔥 Message is truthy?', !!message);
       
-      if (message) {
-        // For anonymous users, add message locally since it won't come through real-time
+      // For anonymous users, always add the message locally even if service returns null
+      if (message || !user) {
+        const finalMessage = message || {
+          id: `anonymous-${Date.now()}`,
+          user_id: 'anonymous',
+          message: messageText.trim(),
+          message_type: 'message',
+          created_at: new Date().toISOString(),
+          user_profile: {
+            name: displayName,
+            element: 'alien',
+            avatar_badge_id: null
+          }
+        };
+        // For anonymous users, always add message locally
         if (!user) {
           console.log('🔥 Adding anonymous message locally');
           setMessages(prev => {
-            const newMessages = [...prev, message];
+            const newMessages = [...prev, finalMessage];
             console.log('🔥 Updated messages:', newMessages);
             return newMessages;
           });
@@ -365,7 +379,7 @@ export default function ChatPanel({ isOpen, onClose }) {
           });
         }
       } else {
-        console.error('Failed to send message');
+        console.error('Failed to send message - both service and fallback failed');
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -388,9 +402,28 @@ export default function ChatPanel({ isOpen, onClose }) {
    * Handle user profile click
    */
   const handleUserClick = (userId) => {
-    const user = chatUsers.find(u => u.id === userId);
+    console.log('🔥 User clicked:', userId);
+    let user = chatUsers.find(u => u.id === userId);
+    console.log('🔥 Found user in chatUsers:', user);
+    console.log('🔥 Current chatUsers:', chatUsers);
+    
+    // If user not found in chatUsers (like fallback alien), create one
+    if (!user && userId === 'anonymous') {
+      user = {
+        id: 'anonymous',
+        name: alienName || 'ALIEN00000000',
+        element: 'alien',
+        avatar_badge_id: null,
+        last_seen: new Date().toISOString()
+      };
+      console.log('🔥 Created fallback user:', user);
+    }
+    
     if (user) {
       setSelectedUser(user);
+      console.log('🔥 Set selected user:', user);
+    } else {
+      console.log('🔥 No user found for ID:', userId);
     }
   };
 
@@ -531,7 +564,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                 {/* User List */}
                 <div 
                   className={`border-r border-cyan-400/20 transition-all duration-300 ease-in-out ${
-                    isUserPanelCollapsed ? 'w-8' : 'w-32'
+                    isUserPanelCollapsed ? 'w-8' : 'w-40'
                   }`}
                 >
                   {/* Collapse Toggle Button */}
@@ -638,58 +671,221 @@ export default function ChatPanel({ isOpen, onClose }) {
                   )}
                   
                   {/* Profile View - shown above message input when user is selected */}
+                  {console.log('🔥 Rendering profile check - selectedUser:', selectedUser)}
                   {selectedUser && (
-                    <div className="border-t border-yellow-400/30 p-3">
+                    <div className="border-t border-yellow-400/30 px-3 py-2">
+                      {/* Profile Header with Icons */}
                       <div className="flex items-center justify-between mb-2">
-                        <h3 
-                          className="text-sm font-bold"
-                          style={{
-                            color: '#F2EF1D',
-                            textShadow: '0 0 8px #F2EF1D'
-                          }}
-                        >
-                          {selectedUser.name || 'Anonymous'}
-                        </h3>
-                        <button
-                          onClick={() => setSelectedUser(null)}
-                          className="text-white/70 hover:text-white transition-colors text-xs px-2 py-1 rounded"
-                          style={{
-                            background: 'rgba(255, 255, 255, 0.1)',
-                            border: '1px solid rgba(255, 255, 255, 0.2)'
-                          }}
-                        >
-                          ×
-                        </button>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        {/* Avatar */}
-                        <div 
-                          className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
-                          style={{
-                            background: 'rgba(0, 255, 0, 0.2)',
-                            border: '1px solid rgba(0, 255, 0, 0.5)',
-                            boxShadow: '0 0 8px rgba(0, 255, 0, 0.3)'
-                          }}
-                        >
-                          {selectedUser.id === 'anonymous' ? (
-                            <span className="text-xs">👽</span>
-                          ) : (
-                            <span className="text-xs">👤</span>
-                          )}
-                        </div>
-                        
-                        {/* Mini profile info */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-2">
-                            <span className="text-xs text-white/90 truncate font-medium">
-                              {selectedUser.name || 'Anonymous'}
-                            </span>
-                            <span className="inline-block w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
-                            <span className="text-xs text-green-400">Online</span>
+                        <div className="flex items-center space-x-2">
+                          {/* User Icon */}
+                          <div 
+                            className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                            style={{
+                              background: 'rgba(0, 255, 0, 0.2)',
+                              border: '1px solid rgba(0, 255, 0, 0.5)',
+                              boxShadow: '0 0 8px rgba(0, 255, 0, 0.3)'
+                            }}
+                          >
+                            {selectedUser.id === 'anonymous' ? (
+                              <span className="text-xs">👽</span>
+                            ) : (
+                              <span className="text-xs">👤</span>
+                            )}
+                          </div>
+                          
+                          <h3 
+                            className="text-sm font-bold"
+                            style={{
+                              color: '#F2EF1D',
+                              textShadow: '0 0 8px #F2EF1D'
+                            }}
+                          >
+                            {selectedUser.id === 'anonymous' ? getDisplayName() : (selectedUser.name || 'Anonymous')}
+                          </h3>
+                          
+                          {/* Action Icons */}
+                          <div className="flex items-center space-x-1">
+                            {/* Heart Coins */}
+                            <div className="flex items-center space-x-1 px-2 py-1 rounded-full bg-black/20 border border-pink-400/30">
+                              <img 
+                                src="/elements/heart-coin.webp" 
+                                alt="Heart Coins" 
+                                className="w-3 h-3"
+                              />
+                              <span className="text-xs text-pink-400 font-bold">0</span>
+                            </div>
+                            
+                            {/* Send Heart Coin Button */}
+                            <button 
+                              className="w-6 h-6 rounded flex items-center justify-center bg-black/20 border border-pink-400/30 hover:bg-pink-400/20 transition-colors"
+                              title="Send Heart Coin"
+                              onClick={() => {
+                                // TODO: Implement heart coin sending
+                                console.log('Send heart coin to:', selectedUser.name);
+                              }}
+                            >
+                              <span className="text-xs">💖</span>
+                            </button>
+                            
+                            {/* Badges Button */}
+                            <button 
+                              className="w-6 h-6 rounded flex items-center justify-center bg-black/20 border border-purple-400/30 hover:bg-purple-400/10 transition-colors"
+                              onClick={() => setShowUserBadges(!showUserBadges)}
+                              title="View Badges"
+                            >
+                              <img 
+                                src="/elements/badges.webp" 
+                                alt="Badges" 
+                                className="w-4 h-4"
+                              />
+                            </button>
+                            
+                            {/* Binder Button */}
+                            <button 
+                              className="w-6 h-6 rounded flex items-center justify-center bg-black/20 border border-blue-400/30 hover:bg-blue-400/10 transition-colors"
+                              title="View Cards"
+                              onClick={() => setShowUserBinder(!showUserBinder)}
+                            >
+                              <img 
+                                src="/elements/binder.webp" 
+                                alt="Cards" 
+                                className="w-4 h-4"
+                              />
+                            </button>
                           </div>
                         </div>
+                        
+                        {/* Total Heart Coins - top right */}
+                        <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-1 px-2 py-1 rounded bg-black/30 border border-pink-400/40">
+                            <span className="text-xs text-white/80 font-medium">TOTAL</span>
+                            <img 
+                              src="/elements/heart-coin.webp" 
+                              alt="Total Heart Coins" 
+                              className="w-4 h-4"
+                            />
+                            <span className="text-sm text-pink-400 font-bold">42</span>
+                          </div>
+                          
+                          <button
+                            onClick={() => {
+                              setSelectedUser(null);
+                              setShowUserBadges(false);
+                              setShowUserBinder(false);
+                            }}
+                            className="text-white/70 hover:text-white transition-colors text-xs px-2 py-1 rounded"
+                            style={{
+                              background: 'rgba(255, 255, 255, 0.1)',
+                              border: '1px solid rgba(255, 255, 255, 0.2)'
+                            }}
+                          >
+                            ×
+                          </button>
+                        </div>
                       </div>
+                      
+                      
+                      {/* User Badges - shown when badges button is clicked */}
+                      {showUserBadges && (
+                        <div className="mt-3 pt-3 border-t border-white/20">
+                          <h4 className="text-xs text-white/80 font-semibold mb-2 flex items-center">
+                            <img src="/elements/badges.webp" alt="Badges" className="w-3 h-3 mr-1" />
+                            BADGES EARNED
+                          </h4>
+                          <div className="grid grid-cols-3 gap-2">
+                            {/* Sample badges - replace with actual user badges */}
+                            <div className="flex flex-col items-center p-2 rounded bg-black/30 border border-purple-400/30">
+                              <div className="w-6 h-6 rounded flex items-center justify-center bg-purple-400/20">
+                                <span className="text-xs">🏆</span>
+                              </div>
+                              <span className="text-xs text-white/70 mt-1 text-center">First Message</span>
+                            </div>
+                            
+                            <div className="flex flex-col items-center p-2 rounded bg-black/30 border border-green-400/30">
+                              <div className="w-6 h-6 rounded flex items-center justify-center bg-green-400/20">
+                                <span className="text-xs">👽</span>
+                              </div>
+                              <span className="text-xs text-white/70 mt-1 text-center">Alien Visitor</span>
+                            </div>
+                            
+                            <div className="flex flex-col items-center p-2 rounded bg-black/30 border border-yellow-400/30">
+                              <div className="w-6 h-6 rounded flex items-center justify-center bg-yellow-400/20">
+                                <span className="text-xs">⭐</span>
+                              </div>
+                              <span className="text-xs text-white/70 mt-1 text-center">Signal Explorer</span>
+                            </div>
+                            
+                            {/* Locked badge placeholder */}
+                            <div className="flex flex-col items-center p-2 rounded bg-black/20 border border-gray-500/30 opacity-50">
+                              <div className="w-6 h-6 rounded flex items-center justify-center bg-gray-500/20">
+                                <span className="text-xs">🔒</span>
+                              </div>
+                              <span className="text-xs text-white/50 mt-1 text-center">Mystery</span>
+                            </div>
+                            
+                            <div className="flex flex-col items-center p-2 rounded bg-black/20 border border-gray-500/30 opacity-50">
+                              <div className="w-6 h-6 rounded flex items-center justify-center bg-gray-500/20">
+                                <span className="text-xs">🔒</span>
+                              </div>
+                              <span className="text-xs text-white/50 mt-1 text-center">Secret</span>
+                            </div>
+                            
+                            <div className="flex flex-col items-center p-2 rounded bg-black/20 border border-gray-500/30 opacity-50">
+                              <div className="w-6 h-6 rounded flex items-center justify-center bg-gray-500/20">
+                                <span className="text-xs">🔒</span>
+                              </div>
+                              <span className="text-xs text-white/50 mt-1 text-center">Hidden</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* User Binder - shown when binder button is clicked */}
+                      {showUserBinder && (
+                        <div className="mt-3 pt-3 border-t border-white/20">
+                          <h4 className="text-xs text-white/80 font-semibold mb-2 flex items-center">
+                            <img src="/elements/binder.webp" alt="Cards" className="w-3 h-3 mr-1" />
+                            CARD COLLECTION
+                          </h4>
+                          <div className="grid grid-cols-2 gap-2">
+                            {/* Sample cards - replace with actual user cards */}
+                            <div className="relative p-2 rounded bg-gradient-to-br from-purple-900/30 to-pink-900/30 border border-purple-400/40">
+                              <div className="absolute top-1 right-1 text-xs text-purple-300">★</div>
+                              <div className="w-full h-12 bg-purple-400/20 rounded mb-1 flex items-center justify-center">
+                                <span className="text-xs text-purple-200">💜</span>
+                              </div>
+                              <div className="text-xs text-white/90 font-medium truncate">Heart Queen</div>
+                              <div className="text-xs text-purple-300">#001</div>
+                            </div>
+                            
+                            <div className="relative p-2 rounded bg-gradient-to-br from-blue-900/30 to-cyan-900/30 border border-blue-400/40">
+                              <div className="absolute top-1 right-1 text-xs text-blue-300">★★</div>
+                              <div className="w-full h-12 bg-blue-400/20 rounded mb-1 flex items-center justify-center">
+                                <span className="text-xs text-blue-200">⚡</span>
+                              </div>
+                              <div className="text-xs text-white/90 font-medium truncate">Lightning Soul</div>
+                              <div className="text-xs text-blue-300">#045</div>
+                            </div>
+                            
+                            <div className="relative p-2 rounded bg-gradient-to-br from-green-900/30 to-emerald-900/30 border border-green-400/40">
+                              <div className="absolute top-1 right-1 text-xs text-green-300">★★★</div>
+                              <div className="w-full h-12 bg-green-400/20 rounded mb-1 flex items-center justify-center">
+                                <span className="text-xs text-green-200">🌱</span>
+                              </div>
+                              <div className="text-xs text-white/90 font-medium truncate">Nature's Call</div>
+                              <div className="text-xs text-green-300">#087</div>
+                            </div>
+                            
+                            {/* Empty slot */}
+                            <div className="p-2 rounded bg-black/20 border border-gray-500/30 opacity-50 flex items-center justify-center h-20">
+                              <div className="text-center">
+                                <div className="text-xs text-white/50">Empty Slot</div>
+                                <div className="text-xs text-white/30">Find more cards!</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                       
