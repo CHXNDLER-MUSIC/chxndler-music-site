@@ -587,7 +587,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                   <div className="h-full flex flex-col">
                     <button
                       onClick={() => setIsUserPanelCollapsed(!isUserPanelCollapsed)}
-                      className="w-full p-2 hover:bg-yellow-400/10 transition-colors duration-200 border-b border-cyan-400/20 flex flex-col items-center justify-center relative"
+                      className="w-full p-2 hover:bg-yellow-400/10 transition-colors duration-200 border-b border-cyan-400/20 flex flex-col items-end justify-center relative"
                       style={{
                         color: '#F2EF1D',
                         textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
@@ -687,38 +687,58 @@ export default function ChatPanel({ isOpen, onClose }) {
                   {/* Profile View - shown above message input when user is selected */}
                   {console.log('🔥 Rendering profile check - selectedUser:', selectedUser)}
                   {selectedUser && (
-                    <div className="border-t border-yellow-400/30 px-3" style={{ paddingTop: 0, paddingBottom: 0, marginTop: '-8px' }}>
+                    <div className="border-t border-yellow-400/30 px-3 pt-1 pb-2">
                       {/* Profile Header with Icons */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          {/* User Icon */}
-                          <div 
-                            className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                            style={{
-                              background: 'rgba(0, 255, 0, 0.2)',
-                              border: '1px solid rgba(0, 255, 0, 0.5)',
-                              boxShadow: '0 0 8px rgba(0, 255, 0, 0.3)'
-                            }}
-                          >
-                            {selectedUser.id === 'anonymous' ? (
-                              <span className="text-xs">👽</span>
-                            ) : (
-                              <span className="text-xs">👤</span>
-                            )}
+                      <div className="flex flex-col space-y-2">
+                        {/* Top row: User info and close button */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2 flex-1 min-w-0">
+                            {/* User Icon */}
+                            <div 
+                              className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                              style={{
+                                background: 'rgba(0, 255, 0, 0.2)',
+                                border: '1px solid rgba(0, 255, 0, 0.5)',
+                                boxShadow: '0 0 8px rgba(0, 255, 0, 0.3)'
+                              }}
+                            >
+                              {selectedUser.id === 'anonymous' ? (
+                                <span className="text-xs">👽</span>
+                              ) : (
+                                <span className="text-xs">👤</span>
+                              )}
+                            </div>
+                            
+                            <h3 
+                              className="text-sm font-bold truncate flex-1"
+                              style={{
+                                color: '#F2EF1D',
+                                textShadow: '0 0 8px #F2EF1D'
+                              }}
+                            >
+                              {/* Always use global alien name for anonymous sessions */}
+                              {alienName}
+                            </h3>
                           </div>
                           
-                          <h3 
-                            className="text-sm font-bold truncate"
+                          <button
+                            onClick={() => {
+                              setSelectedUser(null);
+                              setShowUserBadges(false);
+                              setShowUserBinder(false);
+                            }}
+                            className="text-white/70 hover:text-white transition-colors text-xs px-2 py-1 rounded flex-shrink-0"
                             style={{
-                              color: '#F2EF1D',
-                              textShadow: '0 0 8px #F2EF1D',
-                              maxWidth: '200px'
+                              background: 'rgba(255, 255, 255, 0.1)',
+                              border: '1px solid rgba(255, 255, 255, 0.2)'
                             }}
                           >
-                            {/* Always use global alien name for anonymous sessions */}
-                            {alienName}
-                          </h3>
-                          
+                            ×
+                          </button>
+                        </div>
+                        
+                        {/* Bottom row: Action buttons and totals */}
+                        <div className="flex items-center justify-between">
                           {/* Action Icons */}
                           <div className="flex items-center space-x-1">
                             {/* Heart Coins */}
@@ -769,10 +789,8 @@ export default function ChatPanel({ isOpen, onClose }) {
                               />
                             </button>
                           </div>
-                        </div>
-                        
-                        {/* Total Heart Coins - top right */}
-                        <div className="flex items-center space-x-2">
+                          
+                          {/* Total Heart Coins */}
                           <div className="flex items-center space-x-1 px-2 py-1 rounded bg-black/30 border border-pink-400/40">
                             <span className="text-xs text-white/80 font-medium">TOTAL</span>
                             <img 
@@ -782,21 +800,6 @@ export default function ChatPanel({ isOpen, onClose }) {
                             />
                             <span className="text-sm text-pink-400 font-bold">42</span>
                           </div>
-                          
-                          <button
-                            onClick={() => {
-                              setSelectedUser(null);
-                              setShowUserBadges(false);
-                              setShowUserBinder(false);
-                            }}
-                            className="text-white/70 hover:text-white transition-colors text-xs px-2 py-1 rounded"
-                            style={{
-                              background: 'rgba(255, 255, 255, 0.1)',
-                              border: '1px solid rgba(255, 255, 255, 0.2)'
-                            }}
-                          >
-                            ×
-                          </button>
                         </div>
                       </div>
                       
@@ -905,13 +908,15 @@ export default function ChatPanel({ isOpen, onClose }) {
                     </div>
                   )}
                       
-                  {/* Message Input - always shown */}
-                  <MessageInput 
-                    onSendMessage={handleSendMessage}
-                    onTyping={handleTyping}
-                    disabled={loading}
-                    placeholder="Type a message..."
-                  />
+                  {/* Message Input - hidden when user profile is open */}
+                  {!selectedUser && (
+                    <MessageInput 
+                      onSendMessage={handleSendMessage}
+                      onTyping={handleTyping}
+                      disabled={loading}
+                      placeholder="Type a message..."
+                    />
+                  )}
                 </div>
               </div>
 

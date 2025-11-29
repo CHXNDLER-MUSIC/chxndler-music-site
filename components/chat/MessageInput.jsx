@@ -169,7 +169,7 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "T
           <button
             type="submit"
             disabled={disabled || !message.trim()}
-            className="px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            className="px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex-shrink-0"
             style={{
               background: disabled || !message.trim() 
                 ? 'rgba(128, 128, 128, 0.1)'
