@@ -59,6 +59,13 @@ export default function GlowingHamburgerMenuWrapper() {
       case "BADGES":
         setBadgesOpen(true);
         break;
+      case "STORE":
+        // Set initial tab preference to USE tab for heart coin modal
+        if (typeof window !== 'undefined') {
+          (window as any).heartCoinInitialTab = 'USE';
+        }
+        setHeartCoinOpen(true);
+        break;
       case "CHXNDLER":
         setChxndlerOpen(true);
         break;

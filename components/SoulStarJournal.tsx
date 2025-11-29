@@ -335,18 +335,17 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
         />
 
 
-        {/* Journal Button - Top Left */}
-        <button
-          className="absolute top-3 left-4 px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-200"
+        {/* Full Log Text - Top Left */}
+        <span
+          className="absolute top-3 left-4 text-xs font-semibold"
           style={{
-            background: `${elementTheme.color}20`,
-            border: `1px solid ${elementTheme.color}60`,
             color: elementTheme.color,
-            textShadow: `0 0 4px ${elementTheme.glow}`
+            textShadow: `0 0 4px ${elementTheme.glow}`,
+            opacity: 0.8
           }}
         >
-          JOURNAL
-        </button>
+          FULL LOG
+        </span>
 
         {/* Close button */}
         <button

@@ -140,7 +140,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <OnboardingEntryGate />
             <StoreProvider />
             {/* Opens the name prompt when returning from auth with completeProfile=1 */}
-            <NamePromptOnLogin />
+            <Suspense fallback={null}>
+              <NamePromptOnLogin />
+            </Suspense>
             <WhatShouldWeCallYouModal />
             <WhatElementAreYouModal />
             {children}

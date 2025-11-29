@@ -10,6 +10,39 @@ import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import ProfileModal from './ProfileModal';
 
+// Global alien name storage - persists across component remounts
+let globalAlienName = null;
+
+// Function to get or create alien name
+const getGlobalAlienName = () => {
+  if (globalAlienName) {
+    return globalAlienName;
+  }
+  
+  // Check session storage first
+  if (typeof window !== 'undefined') {
+    const stored = sessionStorage.getItem('alienName');
+    if (stored) {
+      globalAlienName = stored;
+      return stored;
+    }
+  }
+  
+  // Generate new alien name
+  const alienNumber = Math.floor(Math.random() * 99999999) + 1;
+  const paddedNumber = alienNumber.toString().padStart(8, '0');
+  const newAlienName = `ALIEN${paddedNumber}`;
+  
+  // Store globally and in session storage
+  globalAlienName = newAlienName;
+  if (typeof window !== 'undefined') {
+    sessionStorage.setItem('alienName', newAlienName);
+  }
+  
+  console.log('🔥 Generated global alien name:', newAlienName);
+  return newAlienName;
+};
+
 /**
  * Main Chat Panel Component
  * Slides in from the left side when live streaming is active
@@ -20,30 +53,8 @@ export default function ChatPanel({ isOpen, onClose }) {
   // Debug logging
   console.log('🔥 ChatPanel render:', { isOpen, profile: !!profile, user: !!user });
 
-  // Store alien name consistently for the session - initialize immediately
-  const alienName = useMemo(() => {
-    // Check if we have a stored alien name first
-    if (typeof window !== 'undefined') {
-      const stored = sessionStorage.getItem('alienName');
-      if (stored) {
-        console.log('🔥 Using stored alien name from session:', stored);
-        return stored;
-      }
-    }
-    
-    // Generate alien name once on component mount
-    const alienNumber = Math.floor(Math.random() * 99999999) + 1;
-    const paddedNumber = alienNumber.toString().padStart(8, '0');
-    const newAlienName = `ALIEN${paddedNumber}`;
-    console.log('🔥 Generated new alien name:', newAlienName);
-    
-    // Store in session storage
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('alienName', newAlienName);
-    }
-    
-    return newAlienName;
-  }, []); // Empty dependency array means this only runs once
+  // Use the global alien name function
+  const alienName = getGlobalAlienName();
 
   /**
    * Get display name for user - logged in name or anonymous alien name
@@ -659,7 +670,6 @@ export default function ChatPanel({ isOpen, onClose }) {
                     onUserClick={handleUserClick}
                     loading={loading}
                   />
-                  
                   {/* Typing Indicators */}
                   {typingUsers.length > 0 && (
                     <div className="px-3 py-2 border-t border-cyan-400/20">
@@ -674,11 +684,10 @@ export default function ChatPanel({ isOpen, onClose }) {
                       </div>
                     </div>
                   )}
-                  
                   {/* Profile View - shown above message input when user is selected */}
                   {console.log('🔥 Rendering profile check - selectedUser:', selectedUser)}
                   {selectedUser && (
-                    <div className="border-t border-yellow-400/30 px-3" style={{ paddingTop: 0, paddingBottom: 0, marginTop: '-1px' }}>
+                    <div className="border-t border-yellow-400/30 px-3" style={{ paddingTop: 0, paddingBottom: 0, marginTop: '-8px' }}>
                       {/* Profile Header with Icons */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
@@ -706,8 +715,8 @@ export default function ChatPanel({ isOpen, onClose }) {
                               maxWidth: '200px'
                             }}
                           >
-                            {/* Force use of stored alien name for all anonymous users */}
-                            {(!user || !profile?.id) ? alienName : (profile?.name || selectedUser.name || 'Anonymous')}
+                            {/* Always use global alien name for anonymous sessions */}
+                            {alienName}
                           </h3>
                           
                           {/* Action Icons */}

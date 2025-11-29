@@ -2911,7 +2911,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
     >
       {/* 2D Minimap overlay - show when displaying all planets */}
       {showAll && (
-        <PlanetMinimap currentMainId={mainId} hoverId={hoverId} />
+        <PlanetMinimap currentMainId={mainId} hoverId={hoverId} songs={songs} />
       )}
     </div>
   );

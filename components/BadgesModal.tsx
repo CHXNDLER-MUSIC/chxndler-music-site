@@ -618,9 +618,9 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         </div>
       )}
 
-      {/* Badge Categories Grid - 7 categories layout */}
+      {/* Badge Categories Grid - 6 categories layout */}
       {!loading && !error && (
-        <div className="grid grid-cols-3 gap-4 justify-items-center max-w-md mx-auto">
+        <div className="grid grid-cols-3 gap-4 justify-items-center max-w-sm mx-auto">
           {(badgeCategories.length > 0 ? badgeCategories : fallbackCategories).map((category) => (
           <button
             key={category.id}
@@ -648,7 +648,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
 
   return (
     <div
-      className="fixed inset-0 z-[2147483647] modal-no-drag flex items-start justify-center pt-16 p-4"
+      className="fixed inset-0 z-[2147483647] modal-no-drag flex items-start justify-center pt-8 p-4"
       aria-modal="true"
       role="dialog"
       aria-label="BADGES"

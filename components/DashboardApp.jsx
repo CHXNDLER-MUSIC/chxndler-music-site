@@ -43,6 +43,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   
+  // UI store for profile refresh trigger and name modal (must be before useEffect)
+  const { profileRefreshTrigger, openNamePrompt } = useUIStore();
+  
   // Authentication error handling
   const [authError, setAuthError] = useState(null);
   
@@ -101,9 +104,6 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       router.replace(newUrl);
     }
   }, [searchParams, router, openNamePrompt]);
-
-  // UI store for profile refresh trigger and name modal
-  const { profileRefreshTrigger, openNamePrompt } = useUIStore();
   
   // Profile context for user and profile data
   const { profile } = useProfile();

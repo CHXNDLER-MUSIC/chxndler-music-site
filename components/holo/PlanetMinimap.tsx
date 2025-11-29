@@ -10,9 +10,16 @@ interface ElementPosition {
   glowColor: string;
 }
 
+interface Song {
+  id: string;
+  title: string;
+  [key: string]: any;
+}
+
 interface PlanetMinimapProps {
   currentMainId?: string | null;
   hoverId?: string | null;
+  songs?: Song[];
 }
 
 // Element configurations matching PlanetSystemRaw.tsx ACTUAL positions - MORE SPREAD OUT
@@ -23,7 +30,30 @@ const ELEMENTS: ElementPosition[] = [
   { code: "darkness",  label: "Darkness", position: [0, -35, 0],  color: "#6A4C93", glowColor: "#6A4C93" },
 ];
 
-export default function PlanetMinimap({ currentMainId, hoverId }: PlanetMinimapProps) {
+export default function PlanetMinimap({ currentMainId, hoverId, songs = [] }: PlanetMinimapProps) {
+  const [isCollapsed, setIsCollapsed] = React.useState(false);
+
+  // Distribute songs among elements (3 songs per element)
+  const songsPerElement = React.useMemo(() => {
+    const distribution: { [key: string]: Song[] } = {
+      water: [],
+      lightning: [],
+      heart: [],
+      darkness: []
+    };
+
+    // Distribute songs evenly among elements
+    songs.forEach((song, index) => {
+      const elementKeys = Object.keys(distribution);
+      const elementKey = elementKeys[index % elementKeys.length];
+      if (distribution[elementKey].length < 3) {
+        distribution[elementKey].push(song);
+      }
+    });
+
+    return distribution;
+  }, [songs]);
+
   // Convert 3D positions to 2D minimap coordinates
   const convertTo2D = (position: [number, number, number]): { x: number; y: number } => {
     const [x, y, z] = position;
@@ -42,7 +72,20 @@ export default function PlanetMinimap({ currentMainId, hoverId }: PlanetMinimapP
   }, []);
 
   return (
-    <div className="fixed top-4 right-4 z-50 w-40 h-40 bg-black/60 backdrop-blur-sm border-2 border-cyan-400/50 rounded-lg p-2">
+    <div className={`fixed top-4 right-4 z-50 bg-black/60 backdrop-blur-sm border-2 border-cyan-400/50 rounded-lg transition-all duration-300 ${
+      isCollapsed ? 'w-12 h-12' : 'w-40 h-40'
+    }`}>
+      {/* Collapse/Expand Button */}
+      <button
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        className="absolute top-1 right-1 z-10 w-6 h-6 bg-cyan-400/20 hover:bg-cyan-400/40 border border-cyan-400/50 rounded text-cyan-400 text-xs font-bold transition-colors duration-200 flex items-center justify-center"
+        title={isCollapsed ? "Expand minimap" : "Collapse minimap"}
+      >
+        {isCollapsed ? '+' : '−'}
+      </button>
+      
+      {!isCollapsed && (
+        <div className="relative w-full h-full p-2">
       {/* Minimap background */}
       <div className="relative w-full h-full bg-gradient-radial from-blue-900/20 to-transparent rounded">
         
@@ -94,29 +137,18 @@ export default function PlanetMinimap({ currentMainId, hoverId }: PlanetMinimapP
 
         {/* Orbiting song planets around each elemental planet */}
         {ELEMENTS.map((element) => {
-          const songPlanetsPerElement = 3;
           const orbitRadius = 15; // TIGHTER orbits - matches PlanetSystemRaw.tsx
-          const songPlanets = [];
+          const elementSongs = songsPerElement[element.code] || [];
           
-          for (let i = 0; i < songPlanetsPerElement; i++) {
-            const angle = (i / songPlanetsPerElement) * Math.PI * 2;
+          return elementSongs.map((song, i) => {
+            const angle = (i / Math.max(elementSongs.length, 3)) * Math.PI * 2;
             const x = element.position[0] + Math.cos(angle) * orbitRadius;
             const y = element.position[1] + Math.sin(angle) * orbitRadius * 0.3;
             const z = element.position[2] + Math.sin(angle) * orbitRadius * 0.5;
             
             const pos2D = convertTo2D([x, y, z]);
             
-            // Sample song names for each element
-            const songNames = {
-              water: ['Ocean Dreams', 'River Flow', 'Deep Currents'],
-              lightning: ['Electric Storm', 'Thunder Strike', 'Power Surge'],
-              heart: ['Love Song', 'Heartbeat', 'Emotional'],
-              darkness: ['Shadow Dance', 'Midnight', 'Eclipse']
-            };
-            
-            const songName = songNames[element.code]?.[i] || `${element.code} Song ${i + 1}`;
-
-            songPlanets.push(
+            return (
               <div
                 key={`${element.code}-song-${i}`}
                 className="absolute w-1.5 h-1.5 rounded-full transform -translate-x-1/2 -translate-y-1/2 cursor-pointer hover:scale-150 transition-all duration-200 group"
@@ -127,18 +159,16 @@ export default function PlanetMinimap({ currentMainId, hoverId }: PlanetMinimapP
                   border: `1px solid ${element.color}`,
                   boxShadow: `0 0 4px ${element.glowColor}30`,
                 }}
-                title={songName} // Simple tooltip
+                title={song.title} // Simple tooltip
               >
                 {/* Advanced tooltip */}
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-black/80 text-white text-[8px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
-                  {songName}
+                  {song.title}
                   <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-black/80"></div>
                 </div>
               </div>
             );
-          }
-          
-          return songPlanets;
+          });
         })}
 
         {/* Orbit paths for each elemental planet */}
@@ -185,6 +215,15 @@ export default function PlanetMinimap({ currentMainId, hoverId }: PlanetMinimapP
           ● ACTIVE
         </div>
       </div>
+        </div>
+      )}
+      
+      {/* Collapsed state indicator */}
+      {isCollapsed && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-3 h-3 bg-cyan-400 rounded-full animate-pulse"></div>
+        </div>
+      )}
     </div>
   );
 }

@@ -60,16 +60,41 @@ export function useProfile(): UseProfileReturn {
         return;
       }
 
-      // Fetch profile with new onboarding field
-      const { data: profileData, error: profileError } = await supabaseClient
+      // Fetch profile - try with onboarding field first, fallback if column doesn't exist
+      let { data: profileData, error: profileError } = await supabaseClient
         .from('profiles')
         .select('id, email, phone, display_name, element, has_completed_onboarding, created_at, updated_at')
         .eq('id', currentUser.id)
         .maybeSingle();
 
+      // If error suggests column doesn't exist, try without the onboarding field
+      if (profileError && (
+        profileError.message?.includes('has_completed_onboarding') || 
+        profileError.code === 'PGRST116' ||
+        profileError.message?.includes('column') ||
+        profileError.message?.includes('does not exist')
+      )) {
+        const fallbackResult = await supabaseClient
+          .from('profiles')
+          .select('id, email, phone, display_name, element, created_at, updated_at')
+          .eq('id', currentUser.id)
+          .maybeSingle();
+        profileData = fallbackResult.data;
+        profileError = fallbackResult.error;
+        
+        // If we got data without the column, add the missing field with default value
+        if (profileData && !profileError) {
+          profileData = {
+            ...profileData,
+            has_completed_onboarding: Boolean(profileData.display_name && profileData.element)
+          } as Profile;
+        }
+      }
+
       if (profileError) {
         console.error('Error fetching profile:', profileError);
-        setError(profileError.message);
+        const errorMessage = profileError?.message || 'Failed to load profile data';
+        setError(errorMessage);
         setProfile(null);
         return;
       }
@@ -77,17 +102,48 @@ export function useProfile(): UseProfileReturn {
       if (!profileData) {
         // No profile exists yet - wait for trigger to create it or create manually
         try {
-          const { data: newProfile, error: createError } = await supabaseClient
+          // Try to insert with onboarding field, fallback without it
+          let insertData = {
+            id: currentUser.id,
+            email: currentUser.email || null,
+            display_name: null,
+            element: null
+          };
+
+          // Try with onboarding field first
+          let { data: newProfile, error: createError } = await supabaseClient
             .from('profiles')
             .insert({
-              id: currentUser.id,
-              email: currentUser.email || null,
-              display_name: null,
-              element: null,
+              ...insertData,
               has_completed_onboarding: false
             })
             .select('id, email, phone, display_name, element, has_completed_onboarding, created_at, updated_at')
             .single();
+
+          // If error suggests column doesn't exist, try without onboarding field
+          if (createError && (
+            createError.message?.includes('has_completed_onboarding') || 
+            createError.code === 'PGRST116' ||
+            createError.message?.includes('column') ||
+            createError.message?.includes('does not exist')
+          )) {
+            const fallbackResult = await supabaseClient
+              .from('profiles')
+              .insert(insertData)
+              .select('id, email, phone, display_name, element, created_at, updated_at')
+              .single();
+            
+            newProfile = fallbackResult.data;
+            createError = fallbackResult.error;
+            
+            // Add missing field with default value
+            if (newProfile && !createError) {
+              newProfile = {
+                ...newProfile,
+                has_completed_onboarding: false
+              } as Profile;
+            }
+          }
 
           if (createError) {
             console.error('Error creating profile:', createError);
@@ -124,15 +180,44 @@ export function useProfile(): UseProfileReturn {
     }
 
     try {
-      const { data, error } = await supabaseClient
+      // Filter out has_completed_onboarding from updates if column doesn't exist
+      const updateData = { ...updates, updated_at: new Date().toISOString() };
+      
+      let { data, error } = await supabaseClient
         .from('profiles')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', user.id)
         .select('id, email, phone, display_name, element, has_completed_onboarding, created_at, updated_at')
         .single();
+
+      // If error suggests column doesn't exist, try without onboarding field
+      if (error && (
+        error.message?.includes('has_completed_onboarding') || 
+        error.code === 'PGRST116' ||
+        error.message?.includes('column') ||
+        error.message?.includes('does not exist')
+      )) {
+        // Remove has_completed_onboarding from update data if it exists
+        const { has_completed_onboarding, ...updateDataWithoutOnboarding } = updateData;
+        
+        const fallbackResult = await supabaseClient
+          .from('profiles')
+          .update(updateDataWithoutOnboarding)
+          .eq('id', user.id)
+          .select('id, email, phone, display_name, element, created_at, updated_at')
+          .single();
+          
+        data = fallbackResult.data;
+        error = fallbackResult.error;
+        
+        // Add missing field with computed value
+        if (data && !error) {
+          data = {
+            ...data,
+            has_completed_onboarding: Boolean(data.display_name && data.element)
+          } as Profile;
+        }
+      }
 
       if (error) {
         throw new Error(error.message);
