@@ -1486,8 +1486,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       >
         <PrewarmThree />
         <AmbientSpace 
-          ambientSrc={profile ? "https://ik.imagekit.io/CHXNDLER/tracks/welcome-home.mp3?updatedAt=1764380932148" : "https://ik.imagekit.io/CHXNDLER/tracks/welcome-to-the-heartverse.mp3?updatedAt=1762392390137"} 
-          introSrc={homeMode && homeIntroEnabled && !welcomeHasPlayed ? "https://ik.imagekit.io/CHXNDLER/tracks/welcome-home.mp3?updatedAt=1764380932148" : undefined} 
+          ambientSrc={!profile ? "https://ik.imagekit.io/CHXNDLER/tracks/space-music.mp3?updatedAt=1762392378623" : "https://ik.imagekit.io/CHXNDLER/tracks/welcome-home.mp3?updatedAt=1764380932148"} 
+          introSrc={homeMode && homeIntroEnabled && !welcomeHasPlayed ? (!profile ? "https://ik.imagekit.io/CHXNDLER/tracks/welcome-to-the-heartverse.mp3?updatedAt=1762392390137" : "https://ik.imagekit.io/CHXNDLER/tracks/welcome-home.mp3?updatedAt=1764380932148") : undefined} 
           playingMusic={isPlaying} 
           suspend={ambientSuspended} 
           userSelectedSong={userSelected} 

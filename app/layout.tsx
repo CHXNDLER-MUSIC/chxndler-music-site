@@ -1,6 +1,6 @@
 import "./globals.css";
 import "../styles/glow.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import React from "react";
 import ClickTracker from "@/components/ClickTracker";
 import AnalyticsWidget from "@/components/AnalyticsWidget";
@@ -44,7 +44,6 @@ export const metadata: Metadata = {
     images: ["/icons/chxndler-og-1200x630.png"],
   },
   manifest: "/manifest.webmanifest",
-  themeColor: "#FC54AF",
   icons: {
     icon: [
       { url: "/icons/chxndler-192.webp", sizes: "192x192", type: "image/webp" },
@@ -61,6 +60,13 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  themeColor: "#FC54AF",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const gaId = process.env.NEXT_PUBLIC_GA_ID;
   const mpId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
@@ -69,7 +75,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.webp" />
         <link rel="icon" href="/icons/chxndler-192.webp" sizes="192x192" />
         <link rel="manifest" href="/manifest.webmanifest" />
@@ -133,7 +138,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <LazyLoadEnhancer />
             <OnboardingEntryGate />
             {/* Opens the name prompt when returning from auth with completeProfile=1 */}
-            <NamePromptOnLogin />
+            <Suspense fallback={null}>
+              <NamePromptOnLogin />
+            </Suspense>
             <WhatShouldWeCallYouModal />
             <WhatElementAreYouModal />
             <StoreProvider />

@@ -1,12 +1,4 @@
-'use client';
-
-import { Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
-
-function NotFoundInner() {
-  const searchParams = useSearchParams();
-  // TODO: keep or recreate whatever logic was using searchParams here
-
+export default function NotFoundPage() {
   return (
     <main className="min-h-screen flex items-center justify-center">
       <div className="text-center">
@@ -16,14 +8,6 @@ function NotFoundInner() {
         </p>
       </div>
     </main>
-  );
-}
-
-export default function NotFoundPage() {
-  return (
-    <Suspense fallback={null}>
-      <NotFoundInner />
-    </Suspense>
   );
 }
 

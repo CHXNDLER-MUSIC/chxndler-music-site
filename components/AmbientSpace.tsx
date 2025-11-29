@@ -23,8 +23,23 @@ export default function AmbientSpace({
   const [needEnable, setNeedEnable] = useState(false);
   const rafRef = useRef<number|undefined>(undefined);
   // Intro VO should play only once per session (first ambient trigger)
-  const introPendingRef = useRef<boolean>(!!introSrc);
-  const introConsumedRef = useRef<boolean>(false);
+  // Use sessionStorage to persist intro consumption across component remounts
+  const getIntroSessionKey = (src: string) => `intro_consumed_${src.split('/').pop()?.split('?')[0]}`;
+  const isIntroConsumedForSession = (src: string) => {
+    try {
+      return sessionStorage.getItem(getIntroSessionKey(src)) === 'true';
+    } catch {
+      return false;
+    }
+  };
+  const markIntroConsumedForSession = (src: string) => {
+    try {
+      sessionStorage.setItem(getIntroSessionKey(src), 'true');
+    } catch {}
+  };
+  
+  const introPendingRef = useRef<boolean>(!!introSrc && !isIntroConsumedForSession(introSrc || ''));
+  const introConsumedRef = useRef<boolean>(isIntroConsumedForSession(introSrc || ''));
   const introPlayingRef = useRef<boolean>(false);
   // Plays welcome VO alongside the first ambient start only
   const lastTimeRef = useRef<number>(0);
@@ -100,7 +115,9 @@ export default function AmbientSpace({
     const intro = introRef.current;
     if (!introSrc || !intro || !amb) return;
     // Only (re)pend if we haven't already consumed it this session
-    if (!introConsumedRef.current) {
+    const consumed = isIntroConsumedForSession(introSrc);
+    introConsumedRef.current = consumed;
+    if (!consumed) {
       introPendingRef.current = true;
     }
     // Do not auto-play; will be started via ambient:play
@@ -161,7 +178,15 @@ export default function AmbientSpace({
         try { amb.currentTime = 0; } catch {}
         setAmbient();
         const p1 = amb.play().catch(()=>{});
-        const p2 = intro.play().then(() => { introPendingRef.current = false; introConsumedRef.current = true; }).catch(() => { introPendingRef.current = false; introConsumedRef.current = true; });
+        const p2 = intro.play().then(() => { 
+          introPendingRef.current = false; 
+          introConsumedRef.current = true;
+          markIntroConsumedForSession(introSrc);
+        }).catch(() => { 
+          introPendingRef.current = false; 
+          introConsumedRef.current = true;
+          markIntroConsumedForSession(introSrc);
+        });
         void p1; void p2;
         return;
       }
@@ -280,7 +305,15 @@ export default function AmbientSpace({
           try { intro.addEventListener('play', handleIntroPlay); } catch {}
           try { intro.addEventListener('ended', handleIntroEnded, { once: true } as any); } catch {}
           const p1 = amb.play().catch(()=>{});
-          const p2 = intro.play().then(() => { introPendingRef.current = false; introConsumedRef.current = true; }).catch(() => { introPendingRef.current = false; introConsumedRef.current = true; });
+          const p2 = intro.play().then(() => { 
+          introPendingRef.current = false; 
+          introConsumedRef.current = true;
+          markIntroConsumedForSession(introSrc);
+        }).catch(() => { 
+          introPendingRef.current = false; 
+          introConsumedRef.current = true;
+          markIntroConsumedForSession(introSrc);
+        });
           void p1; void p2;
           return cancelFade();
         }
@@ -514,6 +547,8 @@ export default function AmbientSpace({
         try { intro.volume = 0.9; } catch {}
         toPlay.push(intro.play().catch(()=>{}));
         introPendingRef.current = false;
+        introConsumedRef.current = true;
+        markIntroConsumedForSession(introSrc);
       }
       await Promise.allSettled(toPlay);
       if (playingMusic) { introPendingRef.current = false; }

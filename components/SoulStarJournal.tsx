@@ -578,6 +578,35 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
               />
             </div>
 
+            {/* Soul Star - Main Journal Entry */}
+            <div className="mb-6">
+              <label 
+                className="block text-sm font-semibold mb-2"
+                style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
+              >
+                🌟 Your Soul Star
+              </label>
+              <textarea
+                value={journalState.soulStar}
+                onChange={(e) => setJournalState(prev => ({ ...prev, soulStar: e.target.value }))}
+                placeholder="Write your soul's message for today... What wants to be expressed?"
+                className="w-full h-24 p-3 rounded-lg text-white placeholder-white/50 resize-none focus:outline-none transition-all"
+                style={{
+                  background: 'rgba(0,0,0,0.6)',
+                  border: `1px solid ${elementTheme.color}40`,
+                  boxShadow: `0 0 10px ${elementTheme.color}20`,
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = `${elementTheme.color}80`;
+                  e.target.style.boxShadow = `0 0 15px ${elementTheme.glow}`;
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = `${elementTheme.color}40`;
+                  e.target.style.boxShadow = `0 0 10px ${elementTheme.color}20`;
+                }}
+              />
+            </div>
+
 
             {/* Messages */}
             {journalState.errorMessage && (
