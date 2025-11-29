@@ -34,6 +34,7 @@ import CoverCard from "@/components/CoverCard";
 import CoverHologram from "@/components/CoverHologram";
 import { buildPlanetSongs } from "@/lib/planets";
 import SongDropdown from "@/components/SongDropdown";
+import SimpleWaveform from "@/components/SimpleWaveform";
 import WaveformVisualizer, { ELEMENT_COLORS } from "@/components/WaveformVisualizer";
 import DevErrorLogger from "@/components/DevErrorLogger";
 // Lazy-load 3D systems on client only to avoid early evaluation issues
@@ -6937,6 +6938,10 @@ export default function HUDPanel({
           overflow: 'visible', // Ensure waveform can overflow below
           borderBottom: '1px solid rgba(33,150,243,0.25)'
         }}>
+            {/* Waveform visualization above the dropdown */}
+            <div className="mb-2">
+              <SimpleWaveform className="opacity-70 hover:opacity-100 transition-opacity duration-300" />
+            </div>
             <SongDropdown
               items={resolvedSongs}
               initialActiveId={active || resolvedSongs[0]?.id}

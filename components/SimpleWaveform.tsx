@@ -1,14 +1,12 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 interface SimpleWaveformProps {
-  audioRef?: React.RefObject<HTMLAudioElement>;
   className?: string;
 }
 
 const SimpleWaveform: React.FC<SimpleWaveformProps> = ({ 
-  audioRef,
   className = ""
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -16,18 +14,40 @@ const SimpleWaveform: React.FC<SimpleWaveformProps> = ({
   const animationIdRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const audioEl = audioRef?.current;
-    
-    if (!canvas || !audioEl) return;
+    if (!canvas) return;
+
+    // Find any playing audio element on the page
+    const findActiveAudio = () => {
+      const audioElements = document.querySelectorAll('audio');
+      for (const audio of audioElements) {
+        if (!audio.paused && audio.currentTime > 0) {
+          return audio;
+        }
+      }
+      // If no audio is playing, try to find the main holo audio
+      return document.querySelector('audio[data-holo-audio="1"]') as HTMLAudioElement || null;
+    };
+
+    const audioEl = findActiveAudio();
+    if (!audioEl) return;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const setupAudioContext = async () => {
+    const setupAudioContext = async (targetAudio: HTMLAudioElement) => {
       try {
+        // Clean up previous connections
+        if (analyserRef.current) {
+          analyserRef.current.disconnect();
+        }
+        if (sourceRef.current) {
+          sourceRef.current.disconnect();
+        }
+
         // Create audio context if it doesn't exist
         if (!audioContextRef.current) {
           const AudioCtor: typeof AudioContext = 
@@ -37,12 +57,10 @@ const SimpleWaveform: React.FC<SimpleWaveformProps> = ({
 
         const audioContext = audioContextRef.current;
         
-        // Create source if it doesn't exist
-        if (!sourceRef.current) {
-          sourceRef.current = audioContext.createMediaElementSource(audioEl);
-          // Connect source to destination to maintain audio output
-          sourceRef.current.connect(audioContext.destination);
-        }
+        // Create new source for the target audio
+        sourceRef.current = audioContext.createMediaElementSource(targetAudio);
+        // Connect source to destination to maintain audio output
+        sourceRef.current.connect(audioContext.destination);
 
         // Create analyser
         const analyser = audioContext.createAnalyser();
@@ -52,11 +70,13 @@ const SimpleWaveform: React.FC<SimpleWaveformProps> = ({
         // Connect source to analyser
         sourceRef.current.connect(analyser);
         analyserRef.current = analyser;
+        setIsConnected(true);
 
         // Start drawing
         draw();
       } catch (error) {
         console.warn("Failed to setup audio context:", error);
+        setIsConnected(false);
       }
     };
 
@@ -110,48 +130,29 @@ const SimpleWaveform: React.FC<SimpleWaveformProps> = ({
       ctx.stroke();
     };
 
-    const handlePlay = () => {
-      if (audioContextRef.current?.state === "suspended") {
-        audioContextRef.current.resume();
-      }
-      if (!analyserRef.current) {
-        setupAudioContext();
-      } else {
-        draw();
-      }
-    };
-
-    const handlePause = () => {
-      if (animationIdRef.current) {
-        cancelAnimationFrame(animationIdRef.current);
-        animationIdRef.current = null;
-      }
-    };
-
-    // Listen for audio events
-    audioEl.addEventListener("play", handlePlay);
-    audioEl.addEventListener("pause", handlePause);
-    audioEl.addEventListener("ended", handlePause);
-
-    // Setup on mount if audio is already playing
-    if (!audioEl.paused) {
-      handlePlay();
+    // Try to connect to the audio element
+    if (audioEl && !isConnected) {
+      setupAudioContext(audioEl);
     }
 
+    // Periodic check for new audio elements
+    const intervalId = setInterval(() => {
+      const currentAudio = findActiveAudio();
+      if (currentAudio && currentAudio !== audioEl) {
+        setupAudioContext(currentAudio);
+      }
+    }, 2000);
+
     return () => {
-      audioEl.removeEventListener("play", handlePlay);
-      audioEl.removeEventListener("pause", handlePause);
-      audioEl.removeEventListener("ended", handlePause);
-      
+      clearInterval(intervalId);
       if (animationIdRef.current) {
         cancelAnimationFrame(animationIdRef.current);
       }
-      
       if (analyserRef.current) {
         try { analyserRef.current.disconnect(); } catch {}
       }
     };
-  }, [audioRef]);
+  }, [isConnected]);
 
   // Cleanup on unmount
   useEffect(() => {

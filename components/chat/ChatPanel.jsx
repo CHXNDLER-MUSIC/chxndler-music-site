@@ -408,6 +408,17 @@ export default function ChatPanel({ isOpen, onClose }) {
   const handleUserClick = (userId) => {
     console.log('🔥 User clicked:', userId);
     
+    // Play click sound
+    try {
+      const audio = new Audio('/click.mp3');
+      audio.volume = 0.3;
+      audio.play().catch(error => {
+        console.log('Click audio play failed:', error);
+      });
+    } catch (error) {
+      console.log('Click audio creation failed:', error);
+    }
+    
     // Toggle profile - if clicking on same user, close profile
     if (selectedUser && selectedUser.id === userId) {
       console.log('🔥 Closing profile for same user');
@@ -688,7 +699,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                 </div>
 
                 {/* Messages Area */}
-                <div className="flex-1 flex flex-col">
+                <div className={`flex flex-col transition-all duration-300 ${selectedUser ? 'flex-1' : 'flex-1'}`}>
                   {/* Always show messages */}
                   <MessageList 
                     messages={messages}
@@ -709,301 +720,257 @@ export default function ChatPanel({ isOpen, onClose }) {
                       </div>
                     </div>
                   )}
-                  {/* Profile View - shown above message input when user is selected */}
-                  {console.log('🔥 Rendering profile check - selectedUser:', selectedUser)}
-                  {selectedUser && (
-                    <div className="border-t border-yellow-400/30 px-1" style={{ marginTop: '-4px' }}>
-                      {/* Profile Header with Icons */}
-                      <div className="flex flex-col">
-                        {/* Top row: User info and close button */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2 flex-1 min-w-0">
-                            {/* User Icon */}
-                            {selectedUser.id === 'anonymous' ? (
-                              <img src="/elements/alien.webp" alt="Alien" className="w-5 h-5 flex-shrink-0" />
-                            ) : (
-                              <div 
-                                className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                                style={{
-                                  background: 'rgba(242, 239, 29, 0.2)',
-                                  border: '1px solid rgba(242, 239, 29, 0.5)',
-                                  boxShadow: '0 0 8px rgba(242, 239, 29, 0.3)'
-                                }}
-                              >
-                                <span className="text-xs">👤</span>
-                              </div>
-                            )}
-                            
-                            <h3 
-                              className="text-sm font-bold truncate flex-1"
+
+                  {/* Message Input - shown when no profile is selected */}
+                  {!selectedUser && (
+                    <MessageInput 
+                      onSendMessage={handleSendMessage}
+                      onTyping={handleTyping}
+                    />
+                  )}
+                </div>
+
+                {/* Profile Panel - full right side when user is selected */}
+                {selectedUser && (
+                  <div className="w-80 border-l border-yellow-400/30 flex flex-col">
+                    {/* Profile Header */}
+                    <div className="p-3 border-b border-yellow-400/30">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2 flex-1 min-w-0">
+                          {/* User Icon */}
+                          {selectedUser.id === 'anonymous' ? (
+                            <img src="/elements/alien.webp" alt="Alien" className="w-6 h-6 flex-shrink-0" />
+                          ) : (
+                            <div 
+                              className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
                               style={{
-                                color: '#F2EF1D',
-                                textShadow: '0 0 8px #F2EF1D'
+                                background: 'rgba(242, 239, 29, 0.2)',
+                                border: '1px solid rgba(242, 239, 29, 0.5)',
+                                boxShadow: '0 0 8px rgba(242, 239, 29, 0.3)'
                               }}
                             >
-                              {selectedUser.id === 'anonymous' ? alienName : selectedUser.name}
-                            </h3>
-                          </div>
+                              <span className="text-sm">👤</span>
+                            </div>
+                          )}
                           
-                          <button
-                            onClick={() => {
-                              try {
-                                const audio = new Audio('/close.mp3');
-                                audio.volume = 0.5;
-                                audio.play().catch(error => {
-                                  console.log('Close audio play failed:', error);
-                                });
-                              } catch (error) {
-                                console.log('Close audio creation failed:', error);
-                              }
-                              setSelectedUser(null);
-                              setShowUserBadges(false);
-                              setShowUserBinder(false);
-                            }}
-                            className="text-white/70 hover:text-white transition-colors text-xs px-1 py-1 rounded flex-shrink-0 ml-1"
+                          <h3 
+                            className="text-base font-bold truncate flex-1"
                             style={{
-                              background: 'rgba(255, 255, 255, 0.1)',
-                              border: '1px solid rgba(255, 255, 255, 0.2)'
+                              color: '#F2EF1D',
+                              textShadow: '0 0 8px #F2EF1D'
                             }}
                           >
-                            ×
-                          </button>
+                            {selectedUser.id === 'anonymous' ? alienName : selectedUser.name}
+                          </h3>
                         </div>
                         
-                        {/* Bottom row: Action buttons and totals */}
-                        <div className="flex items-center justify-between mt-2">
-                          {/* Action Icons */}
-                          <div className="flex items-center space-x-1">
-                            {/* Heart Coins */}
-                            <div className="flex items-center space-x-1 px-2 py-1 rounded-full bg-black/20 border border-pink-400/30">
-                              <img 
-                                src="/elements/heart-coin.webp" 
-                                alt="Heart Coins" 
-                                className="w-3 h-3"
-                              />
-                              <span className="text-xs text-pink-400 font-bold">{selectedUser.heart_coins || 0}</span>
-                            </div>
-                            
-                            {/* Send Heart Coin Button */}
-                            <button 
-                              className="w-6 h-6 rounded flex items-center justify-center bg-black/20 border border-pink-400/30 hover:bg-pink-400/20 transition-colors"
-                              title="Send Heart Coin"
-                              onClick={() => {
-                                try {
-                                  const audio = new Audio('/click.mp3');
-                                  audio.volume = 0.3;
-                                  audio.play().catch(error => {
-                                    console.log('Click audio play failed:', error);
-                                  });
-                                } catch (error) {
-                                  console.log('Click audio creation failed:', error);
-                                }
-                                // TODO: Implement heart coin sending
-                                console.log('Send heart coin to:', selectedUser.name);
-                              }}
-                            >
-                              <span className="text-xs">💖</span>
-                            </button>
-                            
-                            {/* Badges Button */}
-                            <button 
-                              className="w-6 h-6 rounded flex items-center justify-center bg-black/20 border border-purple-400/30 hover:bg-purple-400/10 transition-colors"
-                              onClick={() => {
-                                try {
-                                  const audio = new Audio('/click.mp3');
-                                  audio.volume = 0.3;
-                                  audio.play().catch(error => {
-                                    console.log('Click audio play failed:', error);
-                                  });
-                                } catch (error) {
-                                  console.log('Click audio creation failed:', error);
-                                }
-                                setShowUserBadges(!showUserBadges);
-                              }}
-                              title="View Badges"
-                            >
-                              <img 
-                                src="/elements/badges.webp" 
-                                alt="Badges" 
-                                className="w-4 h-4"
-                              />
-                            </button>
-                            
-                            {/* Binder Button */}
-                            <button 
-                              className="w-6 h-6 rounded flex items-center justify-center bg-black/20 border border-blue-400/30 hover:bg-blue-400/10 transition-colors"
-                              title="View Cards"
-                              onClick={() => {
-                                try {
-                                  const audio = new Audio('/click.mp3');
-                                  audio.volume = 0.3;
-                                  audio.play().catch(error => {
-                                    console.log('Click audio play failed:', error);
-                                  });
-                                } catch (error) {
-                                  console.log('Click audio creation failed:', error);
-                                }
-                                setShowUserBinder(!showUserBinder);
-                              }}
-                            >
-                              <img 
-                                src="/elements/binder.webp" 
-                                alt="Cards" 
-                                className="w-4 h-4"
-                              />
-                            </button>
-                          </div>
-                          
-                          {/* Total Heart Coins */}
-                          <div className="flex items-center space-x-1 px-2 py-1 rounded bg-black/30 border border-pink-400/40">
-                            <span className="text-xs text-white/80 font-medium">TOTAL</span>
+                        {/* Close Profile Button */}
+                        <button
+                          onClick={() => {
+                            try {
+                              const audio = new Audio('/close.mp3');
+                              audio.volume = 0.5;
+                              audio.play().catch(error => {
+                                console.log('Close audio play failed:', error);
+                              });
+                            } catch (error) {
+                              console.log('Close audio creation failed:', error);
+                            }
+                            setSelectedUser(null);
+                            setShowUserBadges(false);
+                            setShowUserBinder(false);
+                          }}
+                          className="text-white/70 hover:text-white transition-colors text-sm px-1 py-1 rounded flex-shrink-0 ml-1"
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.1)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)'
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Profile Content - scrollable */}
+                    <div className="flex-1 overflow-y-auto p-3 space-y-4">
+                      {/* Action buttons */}
+                      <div className="flex items-center justify-between">
+                        {/* Action Icons */}
+                        <div className="flex items-center space-x-2">
+                          {/* Heart Coins Display */}
+                          <div className="flex items-center space-x-1 px-2 py-1 rounded-full bg-black/20 border border-pink-400/30">
                             <img 
                               src="/elements/heart-coin.webp" 
-                              alt="Total Heart Coins" 
+                              alt="Heart Coins" 
                               className="w-4 h-4"
                             />
-                            <span className="text-sm text-pink-400 font-bold">{selectedUser.total_heart_coins || 42}</span>
+                            <span className="text-sm text-pink-400 font-bold">{selectedUser.heart_coins || 0}</span>
                           </div>
+                          
+                          {/* Send Heart Coin Button */}
+                          <button 
+                            className="w-8 h-8 rounded flex items-center justify-center bg-black/20 border border-pink-400/30 hover:bg-pink-400/20 transition-colors"
+                            title="Send Heart Coin"
+                            onClick={() => {
+                              try {
+                                const audio = new Audio('/click.mp3');
+                                audio.volume = 0.3;
+                                audio.play().catch(error => {
+                                  console.log('Click audio play failed:', error);
+                                });
+                              } catch (error) {
+                                console.log('Click audio creation failed:', error);
+                              }
+                              console.log('Send heart coin to:', selectedUser.name);
+                            }}
+                          >
+                            <span className="text-sm">💖</span>
+                          </button>
+                        </div>
+
+                        {/* Total Heart Coins */}
+                        <div className="flex items-center space-x-1 px-2 py-1 rounded bg-black/30 border border-pink-400/40">
+                          <span className="text-xs text-white/80 font-medium">TOTAL</span>
+                          <img 
+                            src="/elements/heart-coin.webp" 
+                            alt="Total Heart Coins" 
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm text-pink-400 font-bold">{selectedUser.total_heart_coins || 42}</span>
                         </div>
                       </div>
-                      
-                      
-                      {/* User Badges - shown when badges button is clicked */}
+
+                      {/* Badges and Binder buttons */}
+                      <div className="flex items-center space-x-2">
+                        <button 
+                          className="flex-1 flex items-center justify-center space-x-2 p-3 rounded bg-black/20 border border-purple-400/30 hover:bg-purple-400/10 transition-colors"
+                          onClick={() => {
+                            try {
+                              const audio = new Audio('/click.mp3');
+                              audio.volume = 0.3;
+                              audio.play().catch(error => {
+                                console.log('Click audio play failed:', error);
+                              });
+                            } catch (error) {
+                              console.log('Click audio creation failed:', error);
+                            }
+                            setShowUserBadges(!showUserBadges);
+                          }}
+                          title="View Badges"
+                        >
+                          <img 
+                            src="/elements/badges.webp" 
+                            alt="Badges" 
+                            className="w-5 h-5"
+                          />
+                          <span className="text-sm text-white/80">BADGES</span>
+                        </button>
+                        
+                        <button 
+                          className="flex-1 flex items-center justify-center space-x-2 p-3 rounded bg-black/20 border border-blue-400/30 hover:bg-blue-400/10 transition-colors"
+                          title="View Cards"
+                          onClick={() => {
+                            try {
+                              const audio = new Audio('/click.mp3');
+                              audio.volume = 0.3;
+                              audio.play().catch(error => {
+                                console.log('Click audio play failed:', error);
+                              });
+                            } catch (error) {
+                              console.log('Click audio creation failed:', error);
+                            }
+                            setShowUserBinder(!showUserBinder);
+                          }}
+                        >
+                          <img 
+                            src="/elements/binder.webp" 
+                            alt="Cards" 
+                            className="w-5 h-5"
+                          />
+                          <span className="text-sm text-white/80">BINDER</span>
+                        </button>
+                      </div>
+
+                      {/* Badges Section */}
                       {showUserBadges && (
-                        <div className="mt-3 pt-3 border-t border-white/20">
-                          <h4 className="text-xs text-white/80 font-semibold mb-2 flex items-center">
-                            <img src="/elements/badges.webp" alt="Badges" className="w-3 h-3 mr-1" />
-                            BADGES EARNED
+                        <div className="pt-2 border-t border-white/20">
+                          <h4 className="text-sm text-white/80 font-semibold mb-3 flex items-center">
+                            <img src="/elements/badges.webp" alt="Badges" className="w-4 h-4 mr-2" />
+                            User Badges
                           </h4>
                           <div className="grid grid-cols-3 gap-2">
-                            {/* Sample badges - replace with actual user badges */}
+                            {/* Sample badges */}
                             <div className="flex flex-col items-center p-2 rounded bg-black/30 border border-purple-400/30">
-                              <div className="w-6 h-6 rounded flex items-center justify-center bg-purple-400/20">
-                                <span className="text-xs">🏆</span>
+                              <div className="w-8 h-8 rounded flex items-center justify-center bg-purple-400/20">
+                                <span className="text-sm">🏆</span>
                               </div>
-                              <span className="text-xs text-white/70 mt-1 text-center">First Message</span>
+                              <span className="text-xs text-white/70 mt-1">Winner</span>
                             </div>
                             
                             <div className="flex flex-col items-center p-2 rounded bg-black/30 border border-green-400/30">
-                              <div className="w-6 h-6 rounded flex items-center justify-center bg-green-400/20">
-                                <img src="/elements/alien.webp" alt="Alien" className="w-4 h-4" />
+                              <div className="w-8 h-8 rounded flex items-center justify-center bg-green-400/20">
+                                <img src="/elements/alien.webp" alt="Alien" className="w-5 h-5" />
                               </div>
-                              <span className="text-xs text-white/70 mt-1 text-center">Alien Visitor</span>
+                              <span className="text-xs text-white/70 mt-1">Alien</span>
                             </div>
                             
                             <div className="flex flex-col items-center p-2 rounded bg-black/30 border border-yellow-400/30">
-                              <div className="w-6 h-6 rounded flex items-center justify-center bg-yellow-400/20">
-                                <span className="text-xs">⭐</span>
+                              <div className="w-8 h-8 rounded flex items-center justify-center bg-yellow-400/20">
+                                <span className="text-sm">⭐</span>
                               </div>
-                              <span className="text-xs text-white/70 mt-1 text-center">Signal Explorer</span>
-                            </div>
-                            
-                            {/* Locked badge placeholder */}
-                            <div className="flex flex-col items-center p-2 rounded bg-black/20 border border-gray-500/30 opacity-50">
-                              <div className="w-6 h-6 rounded flex items-center justify-center bg-gray-500/20">
-                                <span className="text-xs">🔒</span>
-                              </div>
-                              <span className="text-xs text-white/50 mt-1 text-center">Mystery</span>
-                            </div>
-                            
-                            <div className="flex flex-col items-center p-2 rounded bg-black/20 border border-gray-500/30 opacity-50">
-                              <div className="w-6 h-6 rounded flex items-center justify-center bg-gray-500/20">
-                                <span className="text-xs">🔒</span>
-                              </div>
-                              <span className="text-xs text-white/50 mt-1 text-center">Secret</span>
-                            </div>
-                            
-                            <div className="flex flex-col items-center p-2 rounded bg-black/20 border border-gray-500/30 opacity-50">
-                              <div className="w-6 h-6 rounded flex items-center justify-center bg-gray-500/20">
-                                <span className="text-xs">🔒</span>
-                              </div>
-                              <span className="text-xs text-white/50 mt-1 text-center">Hidden</span>
+                              <span className="text-xs text-white/70 mt-1">Star</span>
                             </div>
                           </div>
                         </div>
                       )}
-                      
-                      {/* User Binder - shown when binder button is clicked */}
+
+                      {/* Binder Section */}
                       {showUserBinder && (
-                        <div className="mt-2 pt-2 border-t border-white/20">
-                          <h4 className="text-xs text-white/80 font-semibold mb-2 flex items-center">
-                            <img src="/elements/binder.webp" alt="Cards" className="w-3 h-3 mr-1" />
-                            CARD COLLECTION
+                        <div className="pt-2 border-t border-white/20">
+                          <h4 className="text-sm text-white/80 font-semibold mb-3 flex items-center">
+                            <img src="/elements/binder.webp" alt="Cards" className="w-4 h-4 mr-2" />
+                            Card Collection
                           </h4>
                           <div className="grid grid-cols-2 gap-2">
-                            {/* Actual Song Cards - matching main binder */}
-                            <div className="relative p-2 rounded bg-gradient-to-br from-purple-900/30 to-pink-900/30 border border-purple-400/40">
+                            {/* Sample cards */}
+                            <div className="relative p-2 rounded bg-black/30 border border-purple-400/30">
                               <div className="absolute top-1 right-1 text-xs text-purple-300">★</div>
-                              <div className="w-full h-12 bg-purple-400/20 rounded mb-1 flex items-center justify-center">
-                                <span className="text-xs text-purple-200">💜</span>
+                              <div className="w-full h-16 bg-purple-400/20 rounded mb-1 flex items-center justify-center">
+                                <span className="text-sm text-purple-200">💜</span>
                               </div>
-                              <div className="text-xs text-white/90 font-medium truncate">CHEERLEADER</div>
-                              <div className="text-xs text-purple-300">HEART</div>
+                              <span className="text-xs text-white/70 block truncate">Nightcore Dreams</span>
                             </div>
                             
-                            <div className="relative p-2 rounded bg-gradient-to-br from-blue-900/30 to-cyan-900/30 border border-blue-400/40">
+                            <div className="relative p-2 rounded bg-black/30 border border-blue-400/30">
                               <div className="absolute top-1 right-1 text-xs text-blue-300">★</div>
-                              <div className="w-full h-12 bg-blue-400/20 rounded mb-1 flex items-center justify-center">
-                                <span className="text-xs text-blue-200">⚡</span>
+                              <div className="w-full h-16 bg-blue-400/20 rounded mb-1 flex items-center justify-center">
+                                <span className="text-sm text-blue-200">⚡</span>
                               </div>
-                              <div className="text-xs text-white/90 font-medium truncate">BLUE</div>
-                              <div className="text-xs text-blue-300">LIGHTNING</div>
-                            </div>
-                            
-                            <div className="relative p-2 rounded bg-gradient-to-br from-pink-900/30 to-purple-900/30 border border-pink-400/40">
-                              <div className="absolute top-1 right-1 text-xs text-pink-300">★</div>
-                              <div className="w-full h-12 bg-pink-400/20 rounded mb-1 flex items-center justify-center">
-                                <span className="text-xs text-pink-200">💜</span>
-                              </div>
-                              <div className="text-xs text-white/90 font-medium truncate">ALWAYS ON MY MIND</div>
-                              <div className="text-xs text-pink-300">HEART</div>
-                            </div>
-                            
-                            {/* Empty slot */}
-                            <div className="p-2 rounded bg-black/20 border border-gray-500/30 opacity-50 flex items-center justify-center h-20">
-                              <div className="text-center">
-                                <div className="text-xs text-white/50">Empty Slot</div>
-                                <div className="text-xs text-white/30">Find more cards!</div>
-                              </div>
+                              <span className="text-xs text-white/70 block truncate">Electric Pulse</span>
                             </div>
                           </div>
                         </div>
                       )}
                     </div>
-                  )}
-                      
-                  {/* Message Input - hidden when user profile is open */}
-                  {!selectedUser && (
-                    <MessageInput 
-                      onSendMessage={handleSendMessage}
-                      onTyping={handleTyping}
-                      disabled={loading}
-                      placeholder="Type a message..."
-                    />
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
-
-              {/* Holographic scan lines overlay */}
-              <div 
-                className="absolute inset-0 pointer-events-none opacity-10"
-                style={{
-                  background: `
-                    repeating-linear-gradient(
-                      0deg,
-                      transparent,
-                      transparent 2px,
-                      rgba(0, 255, 255, 0.1) 2px,
-                      rgba(0, 255, 255, 0.1) 4px
-                    )
-                  `,
-                  animation: 'scan 3s linear infinite'
-                }}
-              />
             </div>
           </motion.div>
+        )}
 
-
+      {/* Scanner Effect */}
+      {isOpen && (
+        <>
+          <div 
+            className="fixed inset-0 pointer-events-none z-[105]"
+            style={{
+              background: 'linear-gradient(90deg, transparent 0%, rgba(242, 239, 29, 0.1) 50%, transparent 100%)',
+              width: '2px',
+              height: '100vh',
+              animation: 'scan 8s linear infinite'
+            }}
+          />
           <style jsx>{`
             @keyframes scan {
               0% { transform: translateY(-100%); }
