@@ -44,7 +44,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const searchParams = useSearchParams();
   
   // UI store for profile refresh trigger and name modal (must be before useEffect)
-  const { profileRefreshTrigger, openNamePrompt } = useUIStore();
+  const { profileRefreshTrigger, openNamePrompt, openNamePromptFromAuth } = useUIStore();
   
   // Authentication error handling
   const [authError, setAuthError] = useState(null);
@@ -94,8 +94,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // Check if we should show the name prompt (from auth callback)
     const shouldShowNamePrompt = searchParams.get('showNamePrompt');
     if (shouldShowNamePrompt === '1') {
-      // Open name prompt modal
-      openNamePrompt();
+      // Open name prompt modal from auth callback
+      openNamePromptFromAuth();
       
       // Clean up URL parameter
       const newParams = new URLSearchParams(searchParams.toString());

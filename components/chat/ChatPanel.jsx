@@ -82,6 +82,21 @@ export default function ChatPanel({ isOpen, onClose }) {
   const [hasJoined, setHasJoined] = useState(false);
   const [typingUsers, setTypingUsers] = useState([]);
   const [isUserPanelCollapsed, setIsUserPanelCollapsed] = useState(false); // Start expanded so user can see their alien name
+  
+  // Auto-collapse user panel on small screens when profile is selected
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handleResize = () => {
+        if (window.innerWidth < 768 && selectedUser && !isUserPanelCollapsed) {
+          setIsUserPanelCollapsed(true);
+        }
+      };
+      
+      handleResize(); // Check on mount
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, [selectedUser, isUserPanelCollapsed]);
   const [showUserBadges, setShowUserBadges] = useState(false);
   const [showUserBinder, setShowUserBinder] = useState(false);
   const channelRef = useRef(null);
@@ -516,14 +531,18 @@ export default function ChatPanel({ isOpen, onClose }) {
 
           {/* Chat Panel */}
           <motion.div
-            className="fixed left-0 top-0 bottom-0 z-[110] flex"
+            className="fixed left-0 top-0 bottom-0 z-[110] flex max-w-[100vw] overflow-hidden"
             variants={panelVariants}
             initial="closed"
             animate="open"
             exit="closed"
           >
             <div
-              className="w-[32rem] h-full border-r-2 border-yellow-400/50 flex flex-col"
+              className={`w-full h-full border-r-2 border-yellow-400/50 flex flex-col ${
+                selectedUser 
+                  ? 'max-w-[95vw] sm:max-w-[85vw] md:max-w-[75vw] lg:max-w-[60vw] xl:max-w-[50vw]' 
+                  : 'max-w-[90vw] sm:max-w-[32rem]'
+              } min-w-[18rem]`
               style={{
                 background: `
                   linear-gradient(135deg, 
@@ -590,8 +609,8 @@ export default function ChatPanel({ isOpen, onClose }) {
               <div className="flex-1 flex">
                 {/* User List */}
                 <div 
-                  className={`border-r border-cyan-400/20 transition-all duration-300 ease-in-out ${
-                    isUserPanelCollapsed ? 'w-8' : 'w-48'
+                  className={`border-r border-cyan-400/20 transition-all duration-300 ease-in-out flex-shrink-0 ${
+                    isUserPanelCollapsed ? 'w-8' : selectedUser ? 'w-32 sm:w-40 md:w-48' : 'w-48'
                   }`}
                 >
                   {/* Collapse Toggle Button */}
@@ -599,7 +618,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                     <button
                       onClick={() => {
                         try {
-                          const audio = new Audio('/close.mp3');
+                          const audio = new Audio('/audio/close.mp3');
                           audio.volume = 0.5;
                           audio.play().catch(error => {
                             console.log('Collapse audio play failed:', error);
@@ -732,36 +751,121 @@ export default function ChatPanel({ isOpen, onClose }) {
 
                 {/* Profile Panel - full right side when user is selected */}
                 {selectedUser && (
-                  <div className="w-80 border-l border-yellow-400/30 flex flex-col">
+                  <div className="w-full max-w-72 min-w-44 sm:min-w-56 border-l border-yellow-400/30 flex flex-col overflow-hidden">
                     {/* Profile Header */}
-                    <div className="p-3 border-b border-yellow-400/30">
+                    <div className="p-2 sm:p-3 border-b border-yellow-400/30">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2 flex-1 min-w-0">
-                          {/* User Icon */}
-                          {selectedUser.id === 'anonymous' ? (
-                            <img src="/elements/alien.webp" alt="Alien" className="w-6 h-6 flex-shrink-0" />
-                          ) : (
-                            <div 
-                              className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
-                              style={{
-                                background: 'rgba(242, 239, 29, 0.2)',
-                                border: '1px solid rgba(242, 239, 29, 0.5)',
-                                boxShadow: '0 0 8px rgba(242, 239, 29, 0.3)'
+                        <div className="flex flex-col flex-1 min-w-0">
+                          {/* User Icon and Name Row */}
+                          <div className="flex items-center justify-between space-x-2">
+                            <div className="flex items-center space-x-2 flex-1 min-w-0">
+                              {/* User Icon */}
+                              {selectedUser.id === 'anonymous' ? (
+                                <img src="/elements/alien.webp" alt="Alien" className="w-6 h-6 flex-shrink-0" />
+                              ) : (
+                                <div 
+                                  className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
+                                  style={{
+                                    background: 'rgba(242, 239, 29, 0.2)',
+                                    border: '1px solid rgba(242, 239, 29, 0.5)',
+                                    boxShadow: '0 0 8px rgba(242, 239, 29, 0.3)'
+                                  }}
+                                >
+                                  <span className="text-sm">👤</span>
+                                </div>
+                              )}
+                              
+                              <h3 
+                                className="text-base font-bold truncate flex-1"
+                                style={{
+                                  color: '#F2EF1D',
+                                  textShadow: '0 0 8px #F2EF1D'
+                                }}
+                              >
+                                {selectedUser.id === 'anonymous' ? alienName : selectedUser.name}
+                              </h3>
+                            </div>
+                            
+                            {/* Total Heart Coins */}
+                            <div className="flex items-center space-x-1 px-2 py-1 rounded bg-black/30 border border-pink-400/40 flex-shrink-0">
+                              <span className="text-xs text-white/80 font-medium">TOTAL</span>
+                              <img 
+                                src="/elements/heart-coin.webp" 
+                                alt="Total Heart Coins" 
+                                className="w-4 h-4"
+                              />
+                              <span className="text-sm text-pink-400 font-bold">{selectedUser.total_heart_coins || 42}</span>
+                            </div>
+                          </div>
+                          
+                          {/* Badges, Binder Icons, and Send Heart Coin Row */}
+                          <div className="flex items-center space-x-3 mt-2 ml-8">
+                            <button 
+                              onClick={() => {
+                                try {
+                                  const audio = new Audio('/audio/click.mp3');
+                                  audio.volume = 0.3;
+                                  audio.play().catch(error => {
+                                    console.log('Click audio play failed:', error);
+                                  });
+                                } catch (error) {
+                                  console.log('Click audio creation failed:', error);
+                                }
+                                setShowUserBadges(!showUserBadges);
+                              }}
+                              className="hover:scale-110 transition-transform"
+                              title="View Badges"
+                            >
+                              <img 
+                                src="/elements/badges.webp" 
+                                alt="Badges" 
+                                className="w-5 h-5"
+                              />
+                            </button>
+                            
+                            <button 
+                              onClick={() => {
+                                try {
+                                  const audio = new Audio('/audio/click.mp3');
+                                  audio.volume = 0.3;
+                                  audio.play().catch(error => {
+                                    console.log('Click audio play failed:', error);
+                                  });
+                                } catch (error) {
+                                  console.log('Click audio creation failed:', error);
+                                }
+                                setShowUserBinder(!showUserBinder);
+                              }}
+                              className="hover:scale-110 transition-transform"
+                              title="View Cards"
+                            >
+                              <img 
+                                src="/elements/binder.webp" 
+                                alt="Cards" 
+                                className="w-5 h-5"
+                              />
+                            </button>
+                            
+                            {/* Send Heart Coin Button */}
+                            <button 
+                              className="w-6 h-6 rounded flex items-center justify-center bg-black/20 border border-pink-400/30 hover:bg-pink-400/20 transition-colors hover:scale-110"
+                              title="Send Heart Coin"
+                              onClick={() => {
+                                try {
+                                  const audio = new Audio('/audio/click.mp3');
+                                  audio.volume = 0.3;
+                                  audio.play().catch(error => {
+                                    console.log('Click audio play failed:', error);
+                                  });
+                                } catch (error) {
+                                  console.log('Click audio creation failed:', error);
+                                }
+                                console.log('Send heart coin to:', selectedUser.name);
                               }}
                             >
-                              <span className="text-sm">👤</span>
-                            </div>
-                          )}
-                          
-                          <h3 
-                            className="text-base font-bold truncate flex-1"
-                            style={{
-                              color: '#F2EF1D',
-                              textShadow: '0 0 8px #F2EF1D'
-                            }}
-                          >
-                            {selectedUser.id === 'anonymous' ? alienName : selectedUser.name}
-                          </h3>
+                              <span className="text-xs">💖</span>
+                            </button>
+                          </div>
                         </div>
                         
                         {/* Close Profile Button */}
@@ -792,104 +896,8 @@ export default function ChatPanel({ isOpen, onClose }) {
                     </div>
 
                     {/* Profile Content - scrollable */}
-                    <div className="flex-1 overflow-y-auto p-3 space-y-4">
-                      {/* Action buttons */}
-                      <div className="flex items-center justify-between">
-                        {/* Action Icons */}
-                        <div className="flex items-center space-x-2">
-                          {/* Heart Coins Display */}
-                          <div className="flex items-center space-x-1 px-2 py-1 rounded-full bg-black/20 border border-pink-400/30">
-                            <img 
-                              src="/elements/heart-coin.webp" 
-                              alt="Heart Coins" 
-                              className="w-4 h-4"
-                            />
-                            <span className="text-sm text-pink-400 font-bold">{selectedUser.heart_coins || 0}</span>
-                          </div>
-                          
-                          {/* Send Heart Coin Button */}
-                          <button 
-                            className="w-8 h-8 rounded flex items-center justify-center bg-black/20 border border-pink-400/30 hover:bg-pink-400/20 transition-colors"
-                            title="Send Heart Coin"
-                            onClick={() => {
-                              try {
-                                const audio = new Audio('/click.mp3');
-                                audio.volume = 0.3;
-                                audio.play().catch(error => {
-                                  console.log('Click audio play failed:', error);
-                                });
-                              } catch (error) {
-                                console.log('Click audio creation failed:', error);
-                              }
-                              console.log('Send heart coin to:', selectedUser.name);
-                            }}
-                          >
-                            <span className="text-sm">💖</span>
-                          </button>
-                        </div>
+                    <div className="flex-1 overflow-y-auto p-2 sm:p-3 space-y-2 sm:space-y-4">
 
-                        {/* Total Heart Coins */}
-                        <div className="flex items-center space-x-1 px-2 py-1 rounded bg-black/30 border border-pink-400/40">
-                          <span className="text-xs text-white/80 font-medium">TOTAL</span>
-                          <img 
-                            src="/elements/heart-coin.webp" 
-                            alt="Total Heart Coins" 
-                            className="w-4 h-4"
-                          />
-                          <span className="text-sm text-pink-400 font-bold">{selectedUser.total_heart_coins || 42}</span>
-                        </div>
-                      </div>
-
-                      {/* Badges and Binder buttons */}
-                      <div className="flex items-center space-x-2">
-                        <button 
-                          className="flex-1 flex items-center justify-center space-x-2 p-3 rounded bg-black/20 border border-purple-400/30 hover:bg-purple-400/10 transition-colors"
-                          onClick={() => {
-                            try {
-                              const audio = new Audio('/click.mp3');
-                              audio.volume = 0.3;
-                              audio.play().catch(error => {
-                                console.log('Click audio play failed:', error);
-                              });
-                            } catch (error) {
-                              console.log('Click audio creation failed:', error);
-                            }
-                            setShowUserBadges(!showUserBadges);
-                          }}
-                          title="View Badges"
-                        >
-                          <img 
-                            src="/elements/badges.webp" 
-                            alt="Badges" 
-                            className="w-5 h-5"
-                          />
-                          <span className="text-sm text-white/80">BADGES</span>
-                        </button>
-                        
-                        <button 
-                          className="flex-1 flex items-center justify-center space-x-2 p-3 rounded bg-black/20 border border-blue-400/30 hover:bg-blue-400/10 transition-colors"
-                          title="View Cards"
-                          onClick={() => {
-                            try {
-                              const audio = new Audio('/click.mp3');
-                              audio.volume = 0.3;
-                              audio.play().catch(error => {
-                                console.log('Click audio play failed:', error);
-                              });
-                            } catch (error) {
-                              console.log('Click audio creation failed:', error);
-                            }
-                            setShowUserBinder(!showUserBinder);
-                          }}
-                        >
-                          <img 
-                            src="/elements/binder.webp" 
-                            alt="Cards" 
-                            className="w-5 h-5"
-                          />
-                          <span className="text-sm text-white/80">BINDER</span>
-                        </button>
-                      </div>
 
                       {/* Badges Section */}
                       {showUserBadges && (

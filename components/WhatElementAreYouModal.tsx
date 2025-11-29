@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useUIStore } from "@/store/useUIStore";
+import { useProfile as useNewProfile } from "@/hooks/useProfile";
 import { useProfile } from "@/contexts/ProfileContext";
 import type { Element } from "@/lib/planets";
 import { ELEMENT_COLORS } from "@/lib/planets";
@@ -18,6 +19,7 @@ const ELEMENTS: { key: Element; name: string; label: string; description: string
 export default function WhatElementAreYouModal() {
   const { showElementSelection, closeElementSelection, triggerProfileRefresh, openNamePrompt } = useUIStore();
   const { updateProfileNameAndElement, profile } = useProfile();
+  const { completeOnboarding, refreshProfile } = useNewProfile();
   const [selectedElement, setSelectedElement] = useState<Element | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,10 +77,13 @@ export default function WhatElementAreYouModal() {
       // Use the new updateProfileNameAndElement method with pretty label
       await updateProfileNameAndElement(currentName, selectedElementData.label);
       
-      console.log('🎉 Profile completed! Element selected:', selectedElementData.label);
+      // Complete onboarding now that both name and element are set
+      await completeOnboarding(currentName);
       
-      // Force a reload of the page to ensure all components reflect the updated profile
-      window.location.reload();
+      // Refresh profile to ensure UI updates
+      await refreshProfile();
+      
+      console.log('🎉 Profile completed! Element selected:', selectedElementData.label);
       
       closeElementSelection();
       // Trigger profile refresh to update the UI with new element

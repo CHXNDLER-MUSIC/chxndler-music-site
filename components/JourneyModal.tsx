@@ -198,7 +198,7 @@ export default function JourneyModal({ open, onClose }: JourneyModalProps) {
               marginBottom: '8px'
             }}
           >
-            {tierData[displayTier].name.toUpperCase()}
+            {user ? tierData[displayTier].name.toUpperCase() : 'WANDERER'}
           </div>
           <div 
             style={{ 

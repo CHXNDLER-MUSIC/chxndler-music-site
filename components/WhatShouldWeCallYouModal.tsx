@@ -77,17 +77,14 @@ export default function WhatShouldWeCallYouModal() {
       const audio = new Audio('/audio/join-alien.mp3');
       audio.play().catch(e => console.log('Audio play failed:', e));
       
-      // Complete onboarding with the new system
-      await completeOnboarding(trimmedName);
-      // Also update the legacy profile context
+      // Save the name but don't complete onboarding yet - still need element selection
       await updateProfileName(trimmedName);
       // Refresh profile to ensure UI updates
       await refreshProfile();
       
-      // Close name prompt - user has completed onboarding
+      // Close name prompt and open element selection
       closeNamePrompt();
-      
-      // No longer need element selection since onboarding is complete with just the name
+      openElementSelection();
     } catch (e: any) {
       setError(e?.message || "Failed to save name");
     } finally {

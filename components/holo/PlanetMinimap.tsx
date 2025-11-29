@@ -144,9 +144,9 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
   }, []);
 
   return (
-    <div className={`fixed top-4 right-4 z-50 bg-black/60 backdrop-blur-sm border-2 border-cyan-400/50 rounded-lg transition-all duration-300 ${
+    <div className={`fixed top-4 right-4 bg-black/80 backdrop-blur-sm border-4 border-cyan-400 rounded-lg transition-all duration-300 ${
       isCollapsed ? 'w-12 h-12' : 'w-60 h-60'
-    }`}>
+    }`} style={{ zIndex: 9999, boxShadow: '0 0 20px rgba(56, 182, 255, 0.8)' }}>
       {/* Toggle Collapse Button */}
       <button
         onClick={handleToggleCollapse}
