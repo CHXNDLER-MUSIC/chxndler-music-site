@@ -189,7 +189,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
             user_id: user.id,
             entry_date: today,
             element: profile.element,
-            prompt_id: null, // Using new daily prompt system
+            prompt_id: dailyPrompt.id, // Connect to daily prompt
             intention_response: journalState.intentionResponse,
             reflection_response: journalState.reflectionResponse,
             soul_star: journalState.soulStar.trim(),
@@ -272,10 +272,23 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
         className="absolute"
         style={{
           width: 'min(120vw, 800px)',
-          height: '200px',
-          background: `radial-gradient(ellipse 80% 100% at 50% 0%, ${elementTheme.glow} 0%, ${elementTheme.color}40 30%, ${elementTheme.color}10 60%, transparent 100%)`,
-          filter: 'blur(100px)',
-          transform: 'translateY(60px)'
+          height: '250px',
+          background: `radial-gradient(ellipse 90% 100% at 50% 0%, ${elementTheme.glow} 0%, ${elementTheme.color}50 25%, ${elementTheme.color}20 50%, transparent 100%)`,
+          filter: 'blur(120px)',
+          transform: 'translateY(40px)'
+        }}
+      />
+      
+      {/* Additional ambient glow layer */}
+      <div 
+        className="absolute"
+        style={{
+          width: 'min(100vw, 700px)',
+          height: '400px',
+          background: `radial-gradient(ellipse 70% 80% at 50% 20%, ${elementTheme.glow}30 0%, ${elementTheme.color}20 40%, transparent 70%)`,
+          filter: 'blur(80px)',
+          transform: 'translateY(-20px)',
+          zIndex: -2
         }}
       />
       
@@ -294,8 +307,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
             ? `2px solid ${elementTheme.color}`
             : `2px solid ${elementTheme.color}`,
           boxShadow: hasPendingReflection && !showHistory
-            ? `0 -8px 30px ${elementTheme.glow}, 0 -4px 20px ${elementTheme.color}60, 0 12px 35px rgba(0,0,0,0.4), 0 0 30px ${elementTheme.glow}, 0 0 50px ${elementTheme.color}40`
-            : `0 -8px 25px ${elementTheme.glow}, 0 -4px 15px ${elementTheme.color}40, 0 12px 30px rgba(0,0,0,0.4), 0 0 24px ${elementTheme.glow}`,
+            ? `0 -12px 40px ${elementTheme.glow}, 0 -6px 25px ${elementTheme.color}80, 0 16px 50px rgba(0,0,0,0.6), 0 0 40px ${elementTheme.glow}, 0 0 80px ${elementTheme.color}60, 0 0 120px ${elementTheme.color}30`
+            : `0 -10px 35px ${elementTheme.glow}, 0 -5px 20px ${elementTheme.color}60, 0 14px 40px rgba(0,0,0,0.5), 0 0 35px ${elementTheme.glow}, 0 0 60px ${elementTheme.color}40, 0 0 100px ${elementTheme.color}20`,
           backdropFilter: 'blur(16px) saturate(140%)',
           color: '#FFFFFF'
         }}
@@ -304,13 +317,13 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
         <div 
           className="absolute"
           style={{
-            top: '-10px',
+            top: '-15px',
             left: '50%',
             transform: 'translateX(-50%)',
-            width: '80%',
-            height: '20px',
-            background: `radial-gradient(ellipse 70% 100% at 50% 100%, ${elementTheme.glow} 0%, ${elementTheme.color}30 50%, transparent 100%)`,
-            filter: 'blur(25px)',
+            width: '90%',
+            height: '30px',
+            background: `radial-gradient(ellipse 80% 100% at 50% 100%, ${elementTheme.glow} 0%, ${elementTheme.color}50 40%, ${elementTheme.color}20 70%, transparent 100%)`,
+            filter: 'blur(35px)',
             pointerEvents: 'none',
             zIndex: -1
           }}
@@ -547,43 +560,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
             )}
 
 
-            {/* Reflection Response */}
-            <div className="mb-4">
-              <label 
-                className="block text-sm font-semibold mb-2"
-                style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
-              >
-                💭 Your Reflection
-              </label>
-              <textarea
-                value={journalState.reflectionResponse}
-                onChange={(e) => setJournalState(prev => ({ ...prev, reflectionResponse: e.target.value }))}
-                placeholder="Reflect on today's prompt... What insights arise?"
-                className="w-full h-20 p-3 rounded-lg text-white placeholder-white/50 resize-none focus:outline-none transition-all"
-                style={{
-                  background: 'rgba(0,0,0,0.6)',
-                  border: `1px solid ${elementTheme.color}40`,
-                  boxShadow: `0 0 10px ${elementTheme.color}20`,
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = `${elementTheme.color}80`;
-                  e.target.style.boxShadow = `0 0 15px ${elementTheme.glow}`;
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = `${elementTheme.color}40`;
-                  e.target.style.boxShadow = `0 0 10px ${elementTheme.color}20`;
-                }}
-              />
-            </div>
-
             {/* Soul Star - Main Journal Entry */}
             <div className="mb-6">
-              <label 
-                className="block text-sm font-semibold mb-2"
-                style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
-              >
-                🌟 Your Soul Star
-              </label>
               <textarea
                 value={journalState.soulStar}
                 onChange={(e) => setJournalState(prev => ({ ...prev, soulStar: e.target.value }))}

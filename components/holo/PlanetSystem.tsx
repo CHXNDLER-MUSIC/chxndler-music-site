@@ -18,12 +18,12 @@ type ElementCode = "heart" | "water" | "lightning" | "darkness";
 // DIAGNOSTIC MODE - Set to true to show orbit rings, bounding boxes, and labels
 const SHOW_ORBITS = true;
 
-// Fixed elemental planets configuration - VERY CLOSE TO CENTER
+// Fixed elemental planets configuration - ALL AT SAME HORIZONTAL LEVEL (Y=0)
 const ELEMENTS = [
   { code: "heart",     label: "💖 Heart",     position: [25, 0, 0] },     // right
-  { code: "water",     label: "🌊 Water",     position: [0, 25, 0] },     // top
+  { code: "water",     label: "🌊 Water",     position: [0, 0, 25] },     // back
   { code: "lightning", label: "⚡ Lightning", position: [-25, 0, 0] },    // left
-  { code: "darkness",  label: "🌑 Darkness",  position: [0, -25, 0] },    // bottom
+  { code: "darkness",  label: "🌑 Darkness",  position: [0, 0, -25] },    // front
 ] as const;
 
 // Element colors and glow configuration
@@ -51,15 +51,6 @@ const songOrbitRadius = 8;
 
 // Component to render all 4 elemental planets with textures
 function ElementalPlanetsWithTextures() {
-  console.log("🚨🪐 ELEMENTAL PLANETS WITH TEXTURES IS RENDERING! 🪐🚨");
-  console.log("📍 Planet positions:", {
-    heart: [40, 0, 0],
-    water: [0, 40, 0], 
-    lightning: [-40, 0, 0],
-    darkness: [0, -40, 0]
-  });
-  console.log("🔧 Planet sizes: radius 20, text 32px, glow radius 24");
-  console.log("🔍 Component is executing - planets should be visible!");
   
   // Use React state for texture loading to avoid useLoader hook issues
   const [textures, setTextures] = React.useState<{[key: string]: any}>({});
@@ -68,7 +59,7 @@ function ElementalPlanetsWithTextures() {
     const loader = new TextureLoader();
     const textureUrls = {
       heart: "/textures/planet_heart.webp",
-      lightning: "/textures/planet_lightning.webp",
+      lightning: "/elements/lightning.webp",
       water: "/textures/planet_water.webp", 
       darkness: "/textures/planet_darkness.webp",
       center: "/textures/center-planet.webp"
@@ -80,7 +71,6 @@ function ElementalPlanetsWithTextures() {
         url,
         (texture) => {
           setTextures(prev => ({ ...prev, [key]: texture }));
-          console.log(`✅ Loaded ${key} planet texture`);
         },
         undefined,
         (error) => {
@@ -157,8 +147,8 @@ function ElementalPlanetsWithTextures() {
         </Html>
       </group>
       
-      {/* Water Planet - Blue - TOP OF CENTER */}
-      <group name="WaterPlanetGroup" position={[0, 30, 0]}>
+      {/* Water Planet - Blue - BACK OF CENTER */}
+      <group name="WaterPlanetGroup" position={[0, 0, 30]}>
         <mesh renderOrder={5}>
           <planeGeometry args={[16, 16]} />
           <meshStandardMaterial 
@@ -227,8 +217,8 @@ function ElementalPlanetsWithTextures() {
         </Html>
       </group>
       
-      {/* Darkness Planet - Purple - BOTTOM OF CENTER */}
-      <group name="DarknessPlanetGroup" position={[0, -30, 0]}>
+      {/* Darkness Planet - Purple - FRONT OF CENTER */}
+      <group name="DarknessPlanetGroup" position={[0, 0, -30]}>
         <mesh renderOrder={5}>
           <planeGeometry args={[16, 16]} />
           <meshStandardMaterial 
@@ -280,8 +270,6 @@ function ElementPlanetWithGlow({
   const color = elementColors[element];
   const glowColor = elementGlows[element];
   
-  console.log(`ElementPlanetWithGlow: ${element} at position:`, position, `color: ${color}`);
-  
   return (
     <group position={position}>
       {/* Glow background - renderOrder 2 */}
@@ -308,11 +296,6 @@ function ElementPlanetWithGlow({
         />
       </mesh>
       
-      {/* HUGE DEBUG SPHERE ABOVE */}
-      <mesh renderOrder={10} position={[0, 8, 0]}>
-        <sphereGeometry args={[3, 16, 16]} />
-        <meshBasicMaterial color="#FF0000" />
-      </mesh>
       
       {/* Element label - always visible */}
       <Html position={[0, 22, 0]} center>
@@ -414,12 +397,9 @@ function SongOrbitGroup({
   );
 }
 
-// Fixed elemental system with proper hierarchy
-function FixedElementalSystem({ songs, mainId, hoverId }: { songs: any[]; mainId: string | null; hoverId: string | null }) {
+// Orbital elemental system with proper hierarchy
+function OrbitalElementalSystem({ songs, mainId, hoverId }: { songs: any[]; mainId: string | null; hoverId: string | null }) {
   const systemRef = useRef<ThreeGroup>(null);
-  
-  // DEBUG: Log when this component renders
-  console.log("🚀 FixedElementalSystem RENDERING! Songs count:", songs?.length || 0, "mainId:", mainId, "hoverId:", hoverId);
   
   // Group cards by element using song.planet.element
   const cardsByElement: Record<ElementCode, any[]> = React.useMemo(() => {
@@ -430,97 +410,114 @@ function FixedElementalSystem({ songs, mainId, hoverId }: { songs: any[]; mainId
       darkness: [],
     };
     
-    console.log("🔍 All songs:", songs.length, songs.map(s => ({ id: s.id, title: s.title, element: s.planet?.element, status: s.status })));
-    
     // Only process released songs
     const releasedSongs = songs.filter(song => song.status !== "locked" && song.status !== "coming_soon");
-    console.log("✅ Released songs:", releasedSongs.length);
     
     releasedSongs.forEach(song => {
-      // Use planet.element as the authoritative source
       const element = song.planet?.element ?? "heart";
-      console.log(`📍 Song "${song.title}" → element: ${element}`);
       if (isElementCode(element)) {
         grouped[element].push(song);
       } else {
-        console.warn(`⚠️ Unknown element "${element}" for song "${song.title}", defaulting to heart`);
         grouped.heart.push(song);
       }
-    });
-    
-    console.log("📊 Songs grouped by element:", {
-      heart: grouped.heart.length,
-      water: grouped.water.length, 
-      lightning: grouped.lightning.length,
-      darkness: grouped.darkness.length
     });
     
     return grouped;
   }, [songs]);
   
-  // Element planets orbit around the heart
+  // Elemental planets orbit around the center heart
   useFrame(() => {
     if (systemRef.current) {
-      systemRef.current.rotation.y += 0.0003;
+      systemRef.current.rotation.y += 0.0008; // Slower orbit for better visibility
     }
   });
   
   return (
-    <group ref={systemRef}>
-      {/* MASSIVE DEBUG MARKER THAT SHOULD BE VISIBLE */}
-      <mesh position={[0, 0, 0]} renderOrder={100}>
-        <sphereGeometry args={[25, 16, 16]} />
-        <meshBasicMaterial color="#00FF00" wireframe={true} />
-      </mesh>
-      
-      {/* Diagnostic central orbit ring */}
-      {SHOW_ORBITS && (
-        <mesh rotation={[-Math.PI / 2, 0, 0]} renderOrder={0}>
-          <ringGeometry args={[elementOrbitRadius - 0.2, elementOrbitRadius + 0.2, 64]} />
-          <meshBasicMaterial 
-            color="#ffffff" 
-            transparent={true} 
-            opacity={0.1}
-            depthWrite={false}
+    <group ref={systemRef} name="OrbitalElementalSystem">
+      {/* Center Heart Planet - Fixed at origin */}
+      <group position={[0, 0, 0]} name="CenterHeart">
+        <mesh renderOrder={6}>
+          <sphereGeometry args={[12, 32, 32]} />
+          <meshStandardMaterial 
+            color="#FC54AF"
+            emissive="#FC54AF"
+            emissiveIntensity={2.0}
+            metalness={0.2}
+            roughness={0.3}
           />
         </mesh>
-      )}
-      
+        <sprite scale={[30, 30, 1]} renderOrder={5}>
+          <spriteMaterial
+            transparent={true}
+            color="#FC54AF"
+            opacity={0.4}
+            blending={AdditiveBlending}
+          />
+        </sprite>
+        <Html position={[0, 20, 0]} center>
+          <div style={{ 
+            color: "#FC54AF", 
+            fontSize: "20px", 
+            fontWeight: "bold",
+            textShadow: "0 0 30px #FC54AF",
+            pointerEvents: "none",
+            textAlign: "center"
+          }}>
+            💖 HEART CENTER
+          </div>
+        </Html>
+      </group>
+
+      {/* Orbiting elemental planets */}
       {ELEMENTS.map((element) => {
         const cardsForThisElement = cardsByElement[element.code];
-        const orbitRef = useRef<ThreeGroup>(null);
-        
-        console.log(`🪐 Rendering element ${element.code} at position:`, element.position, `with ${cardsForThisElement.length} songs`);
+        const orbitRadius = 60; // Distance from center
         
         return (
-          <group key={element.code} name={`element-${element.code}`}>
-            {/* MASSIVE DEBUG CUBE FOR EACH ELEMENT */}
-            <mesh position={element.position as [number, number, number]} renderOrder={200}>
-              <boxGeometry args={[10, 10, 10]} />
-              <meshBasicMaterial color={elementColors[element.code]} wireframe={false} />
-            </mesh>
-            
-            {/* Element planet with glow */}
-            <ElementPlanetWithGlow
-              element={element.code}
-              position={element.position as [number, number, number]}
-              orbitRef={orbitRef}
-            />
-            
-            {/* Add the new ElementalPlanet component */}
-            <ElementalPlanet
-              element={element.code}
-              position={element.position as [number, number, number]}
-              size={12}
-              glowIntensity={1.8}
-            />
-            
-            {/* Song planets orbiting this element */}
-            <group position={element.position as [number, number, number]}>
+          <group key={element.code} name={`element-orbit-${element.code}`}>
+            {/* Individual elemental planet at fixed orbital position */}
+            <group position={element.position as [number, number, number]} name={`element-${element.code}`}>
+              {/* Elemental planet sphere */}
+              <mesh renderOrder={4}>
+                <sphereGeometry args={[8, 32, 32]} />
+                <meshStandardMaterial 
+                  color={elementColors[element.code]}
+                  emissive={elementColors[element.code]}
+                  emissiveIntensity={1.8}
+                  metalness={element.code === 'water' ? 0.8 : element.code === 'darkness' ? 0.9 : 0.3}
+                  roughness={element.code === 'lightning' ? 0.8 : element.code === 'water' ? 0.1 : 0.4}
+                />
+              </mesh>
+              
+              {/* Elemental planet glow */}
+              <sprite scale={[20, 20, 1]} renderOrder={3}>
+                <spriteMaterial
+                  transparent={true}
+                  color={elementGlows[element.code]}
+                  opacity={element.code === 'lightning' ? 0.7 : 0.5}
+                  blending={AdditiveBlending}
+                />
+              </sprite>
+              
+              {/* Element label */}
+              <Html position={[0, 15, 0]} center>
+                <div style={{ 
+                  color: elementColors[element.code], 
+                  fontSize: '16px', 
+                  fontWeight: 'bold',
+                  textShadow: `0 0 20px ${elementColors[element.code]}`,
+                  pointerEvents: 'none',
+                  textAlign: 'center'
+                }}>
+                  {element.label}
+                </div>
+              </Html>
+              
+              {/* Song planets orbiting this element */}
               <SongOrbitGroup
                 cards={cardsForThisElement}
                 elementCode={element.code}
-                elementPosition={element.position as [number, number, number]}
+                elementPosition={[0, 0, 0]} // Relative to the element planet
                 mainId={mainId}
                 hoverId={hoverId}
               />
@@ -698,7 +695,7 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         // Pull the camera back and widen FOV so the full system fits
         // Elevated viewpoint: camera positioned above to look down at the planet system
         // Zoom out more when showing all planets for better overview
-        camera={{ position: [0.2, 30, actualShouldShowAll ? 220 : 120], fov: actualShouldShowAll ? 140 : 85 }}
+        camera={{ position: [0.2, 30, actualShouldShowAll ? 280 : 150], fov: actualShouldShowAll ? 160 : 95 }}
         // Prefer safer GL settings on mobile to avoid flicker when layers repaint
         gl={{
           antialias: false,
@@ -738,27 +735,10 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         {/* Enlarge full-system view when showing all planets */}
         <group scale={actualShouldShowAll ? 1.45 : 1}>
         <SystemGroup>
-          {/* Heart Star planet at the center - always visible as the core */}
-          {actualShouldShowAll && (
-            <group renderOrder={0}>
-              <HeartStarPlanet size={180} />
-            </group>
-          )}
           
-          {/* EMERGENCY TEST SPHERE - SHOULD BE VISIBLE AT CENTER */}
-          <mesh position={[0, 0, 0]} renderOrder={50}>
-            <sphereGeometry args={[10, 16, 16]} />
-            <meshBasicMaterial color="#FF0000" />
-          </mesh>
-          
-          {/* 5 ELEMENTAL PLANETS WITH TEXTURES */}
+          {/* ORBITAL ELEMENTAL SYSTEM - Heart center with 4 elements orbiting */}
           {actualShouldShowAll && (
-            <ElementalPlanetsWithTextures />
-          )}
-          
-          {/* 4 ELEMENTAL PLANETS WITH SONGS ORBITING THEM */}
-          {actualShouldShowAll && (
-            <FixedElementalSystem 
+            <OrbitalElementalSystem 
               songs={songs}
               mainId={mainId}
               hoverId={hoverId}

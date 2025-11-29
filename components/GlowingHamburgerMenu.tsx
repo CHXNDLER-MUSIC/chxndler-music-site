@@ -16,6 +16,7 @@ const getJourneyTitle = (isLoggedIn: boolean) => {
 
 export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [badgesPoppedOut, setBadgesPoppedOut] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { profile, user } = useProfile();
   const { hasPendingReflection } = useDailyReflectionStatus();
@@ -143,23 +144,19 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
                 <button
                   onClick={(e) => {
                     if (item.label === "BADGES") {
-                      // Add special pop-out effect for badges
-                      const target = e.currentTarget;
-                      target.style.transform = 'scale(1.1)';
-                      target.style.transition = 'all 0.15s ease-out';
-                      setTimeout(() => {
-                        // Check if element is still mounted and accessible
-                        if (target && target.style) {
-                          target.style.transform = 'scale(1)';
-                          target.style.transition = 'all 0.2s ease-in';
-                        }
-                      }, 150);
+                      // Trigger pop-out animation
+                      setBadgesPoppedOut(true);
+                      setTimeout(() => setBadgesPoppedOut(false), 200);
                     }
                     handleItemClick(item.label);
                   }}
                   className={`w-full px-6 py-2 text-left text-white font-semibold tracking-wide transition-all duration-200 hover:bg-cyan-500/10 hover:text-cyan-300 relative group ${
                     item.label === "JOURNAL" && hasPendingReflection 
                       ? 'bg-gradient-to-r from-pink-500/10 via-transparent to-pink-500/10' 
+                      : ''
+                  } ${
+                    item.label === "BADGES" && badgesPoppedOut 
+                      ? 'scale-110 shadow-lg shadow-yellow-500/50' 
                       : ''
                   }`}
                   style={{

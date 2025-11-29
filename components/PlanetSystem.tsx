@@ -31,7 +31,7 @@ type PlanetSystemProps = {
   showDebug?: boolean;
 };
 
-// Elemental planets in four corners around central heart planet
+// Elemental planets in four corners around central heart planet - all at Y=0 for same horizontal level
 const ELEMENTAL_PLANETS = [
   { type: "water" as ElementKey, color: "#38B6FF", radius: 2.5, position: [15, 0, 15] as [number, number, number] },
   { type: "heart" as ElementKey, color: "#FC54AF", radius: 2.5, position: [-15, 0, 15] as [number, number, number] },

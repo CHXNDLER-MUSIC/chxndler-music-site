@@ -14,11 +14,17 @@ export default function NamePromptOnLogin() {
   useEffect(() => {
     // Only react when explicit completeProfile flag is true
     const shouldComplete = searchParams.get('completeProfile') === '1';
+    console.log('🎯 NamePromptOnLogin: URL params check:', { 
+      shouldComplete, 
+      searchParams: searchParams.toString(),
+      url: window.location.href 
+    });
     
     if (!shouldComplete) return;
 
     // Open prompt exactly once per arrival
     try { 
+      console.log('🚀 NamePromptOnLogin: Opening name prompt from auth callback');
       openNamePromptFromAuth(); 
       
       // Clean up URL after a short delay to allow modal state to settle

@@ -112,6 +112,10 @@ export async function GET(request: NextRequest) {
     if (!dailyPrompt) {
       console.log(`No daily prompt found for ${today}, creating one for element: ${element}`);
       
+      // For now, manually set today to be "darkness" element
+      // Later this could be manually configured or use a different system
+      const todayElement = 'darkness'; // Override calculated element for manual control
+      
       // Calculate prompt indices based on days since cycle start
       const cycleStartTime = CYCLE_START_DATE.getTime();
       const currentTime = new Date(today).getTime();
@@ -121,16 +125,16 @@ export async function GET(request: NextRequest) {
       const intentionPromptIndex = Math.floor(daysSinceStart / 4); // Changes every 4 days (full element cycle)
       const reflectionPromptIndex = Math.floor(daysSinceStart / 4) + 1; // Offset by 1 for variety
       
-      // Get the prompts from soul_prompts table
-      const intentionPrompt = await getOrderedPrompt('intention', element, intentionPromptIndex);
-      const reflectionPrompt = await getOrderedPrompt('reflection', element, reflectionPromptIndex);
+      // Get the prompts from soul_prompts table using the override element
+      const intentionPrompt = await getOrderedPrompt('intention', todayElement, intentionPromptIndex);
+      const reflectionPrompt = await getOrderedPrompt('reflection', todayElement, reflectionPromptIndex);
 
       // Create the daily prompt entry
       const { data: newDailyPrompt, error: insertError } = await supabase
         .from('soul_daily_prompts')
         .insert({
           prompt_date: today,
-          element: element,
+          element: todayElement, // Use the manual override
           intention_prompt_id: intentionPrompt.id,
           reflection_prompt_id: reflectionPrompt.id
         })
@@ -181,7 +185,7 @@ export async function GET(request: NextRequest) {
     
     // Fallback to hardcoded prompts if database fails
     const today = new Date().toISOString().split('T')[0];
-    const element = getElementForDate(today);
+    const element = 'darkness'; // Manual override for today
     
     const hardcodedPrompts = {
       heart: {

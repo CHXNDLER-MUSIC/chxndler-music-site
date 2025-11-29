@@ -314,28 +314,8 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
     
     let filteredSongs = songCollection;
     
-    // Filter by element
-    filteredSongs = filteredSongs.filter(song => song.element === selectedElement);
-    
-    // Filter by rarity
-    if (selectedRarity !== 'All') {
-      filteredSongs = filteredSongs.filter(song => song.rarity === selectedRarity);
-    }
-    
-    // Filter by card name
-    if (selectedCardName !== 'All') {
-      filteredSongs = filteredSongs.filter(song => song.name === selectedCardName);
-    }
-    
-    // Sort to ensure elemental cards (where name matches element) appear first
-    filteredSongs = filteredSongs.sort((a, b) => {
-      const aIsElemental = a.name === a.element;
-      const bIsElemental = b.name === b.element;
-      
-      if (aIsElemental && !bIsElemental) return -1;
-      if (!aIsElemental && bIsElemental) return 1;
-      return 0; // Keep original order for same type
-    });
+    // Only show the card that matches the selected element name exactly
+    filteredSongs = filteredSongs.filter(song => song.name === selectedElement);
     
     // Convert to card format with images
     let cards = filteredSongs.map(song => ({
@@ -367,18 +347,10 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
   const getAvailableCardNames = () => {
     if (!selectedElement) return [];
     
-    let filteredSongs = songCollection;
+    // Only show the card that matches the selected element name exactly
+    const elementCard = songCollection.find(song => song.name === selectedElement);
     
-    // Filter by element
-    filteredSongs = filteredSongs.filter(song => song.element === selectedElement);
-    
-    // Filter by rarity if not 'All'
-    if (selectedRarity !== 'All') {
-      filteredSongs = filteredSongs.filter(song => song.rarity === selectedRarity);
-    }
-    
-    // Return unique card names
-    return ['All', ...filteredSongs.map(song => song.name)];
+    return elementCard ? ['All', selectedElement] : ['All'];
   };
 
   // Helper functions for purchase flow

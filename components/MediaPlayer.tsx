@@ -1136,6 +1136,37 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           
         </div>
 
+        {/* New glowing white track line below cover art */}
+        <div className="mt-4 w-full h-2 bg-white/5 rounded-full overflow-hidden relative">
+          <div 
+            className="h-full bg-white rounded-full transition-all duration-300 ease-out relative"
+            style={{ 
+              width: `${liveDuration > 0 ? (currentTime / liveDuration) * 100 : 0}%`,
+              boxShadow: '0 0 12px rgba(255, 255, 255, 0.9), 0 0 24px rgba(255, 255, 255, 0.5), 0 0 36px rgba(255, 255, 255, 0.2)',
+              filter: 'brightness(1.3) drop-shadow(0 0 6px rgba(255, 255, 255, 0.8))',
+              background: 'linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(255,255,255,0.95) 50%, rgba(255,255,255,1) 100%)'
+            }}
+          >
+            {/* Animated glow pulse effect */}
+            <div 
+              className="absolute inset-0 rounded-full animate-pulse"
+              style={{
+                background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)',
+                animation: 'pulse 2s ease-in-out infinite alternate'
+              }}
+            />
+          </div>
+          
+          {/* Background glow for the entire track */}
+          <div 
+            className="absolute inset-0 rounded-full"
+            style={{
+              background: 'linear-gradient(90deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.1) 100%)',
+              boxShadow: 'inset 0 0 8px rgba(255,255,255,0.2)'
+            }}
+          />
+        </div>
+
         {/* Song dropdown row (above waveform) */}
         <div className="song-dropdown-row">
           <button 

@@ -350,7 +350,7 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
                 (() => {
                   const gateState = getItemGateState(item);
                   if (!profile || gateState === 'comingSoon' || gateState === 'lockedTier') return 'bg-gray-600/50 cursor-not-allowed text-gray-400';
-                  return 'text-[#F2EF1D] hover:bg-[#F2EF1D]/20 hover:scale-105';
+                  return 'text-green-400 hover:bg-green-400/20 hover:scale-105';
                 })()
               }`}
             >

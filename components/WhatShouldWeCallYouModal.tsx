@@ -19,6 +19,12 @@ export default function WhatShouldWeCallYouModal() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [shouldStartTourAfterEnter, setShouldStartTourAfterEnter] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Check authentication and prefill name when modal opens
   useEffect(() => {
@@ -109,6 +115,7 @@ export default function WhatShouldWeCallYouModal() {
   }, [shouldStartTourAfterEnter, profile?.name, profile?.element, startTour, updateProfile]);
 
   // Early returns come after all hooks
+  if (!mounted) return null;
   if (!showNamePrompt) return null;
   if (typeof document === 'undefined') return null;
 
