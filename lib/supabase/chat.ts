@@ -1,0 +1,386 @@
+import { supabaseClient } from '@/lib/supabaseClient';
+import type { RealtimeChannel } from '@supabase/supabase-js';
+
+// Element color mappings
+export const ELEMENT_COLORS = {
+  heart: '#FC54AF',
+  water: '#38B6FF', 
+  lightning: '#F2EF1D',
+  darkness: 'linear-gradient(135deg, #1a1a2e 0%, #000000 100%)'
+} as const;
+
+export type ElementType = keyof typeof ELEMENT_COLORS;
+
+export interface ChatMessage {
+  id: string;
+  user_id: string;
+  message: string;
+  stream_session_id: string;
+  message_type: 'message' | 'join' | 'leave';
+  created_at: string;
+  
+  // Joined user profile data
+  user_profile?: {
+    name: string | null;
+    element: string | null;
+    avatar_badge_id: string | null;
+  };
+}
+
+export interface ChatUser {
+  id: string;
+  name: string | null;
+  element: ElementType | null;
+  avatar_badge_id: string | null;
+  last_seen: string;
+}
+
+export class ChatService {
+  private channel: RealtimeChannel | null = null;
+  private currentSessionId: string | null = null;
+
+  /**
+   * Get the current stream session ID
+   */
+  async getCurrentStreamSession(): Promise<string> {
+    if (this.currentSessionId) {
+      return this.currentSessionId;
+    }
+
+    try {
+      const { data, error } = await supabaseClient.rpc('get_current_stream_session');
+      if (error) throw error;
+      
+      this.currentSessionId = data;
+      return data;
+    } catch (error) {
+      console.error('Error getting stream session:', error);
+      // Fallback: generate session ID client-side
+      const fallback = `stream_${new Date().getFullYear()}_${String(new Date().getMonth() + 1).padStart(2, '0')}_${String(new Date().getDate()).padStart(2, '0')}_${String(new Date().getHours()).padStart(2, '0')}`;
+      this.currentSessionId = fallback;
+      return fallback;
+    }
+  }
+
+  /**
+   * Subscribe to real-time chat messages
+   */
+  async subscribeToChat(
+    onMessage: (message: ChatMessage) => void,
+    onError?: (error: any) => void
+  ): Promise<RealtimeChannel> {
+    try {
+      const sessionId = await this.getCurrentStreamSession();
+      
+      // Unsubscribe from existing channel
+      if (this.channel) {
+        await supabaseClient.removeChannel(this.channel);
+      }
+
+      this.channel = supabaseClient
+        .channel(`chat:${sessionId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'chat_messages',
+            filter: `stream_session_id=eq.${sessionId}`
+          },
+          async (payload) => {
+            try {
+              // Fetch complete message with user profile data
+              const { data: messageWithProfile, error } = await supabaseClient
+                .from('chat_messages')
+                .select(`
+                  *,
+                  user_profile:profiles!user_id (
+                    name,
+                    element,
+                    avatar_badge_id
+                  )
+                `)
+                .eq('id', payload.new.id)
+                .single();
+
+              if (error) {
+                console.error('Error fetching message with profile:', error);
+                return;
+              }
+
+              onMessage(messageWithProfile as ChatMessage);
+            } catch (error) {
+              console.error('Error processing new message:', error);
+              onError?.(error);
+            }
+          }
+        )
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('✅ Chat subscription active');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('❌ Chat subscription error');
+            onError?.('Chat subscription failed');
+          }
+        });
+
+      return this.channel;
+    } catch (error) {
+      console.error('Error subscribing to chat:', error);
+      onError?.(error);
+      throw error;
+    }
+  }
+
+  /**
+   * Send a chat message
+   */
+  async sendMessage(message: string, messageType: 'message' | 'join' | 'leave' = 'message'): Promise<ChatMessage | null> {
+    try {
+      const sessionId = await this.getCurrentStreamSession();
+      
+      const { data, error } = await supabaseClient
+        .from('chat_messages')
+        .insert({
+          message: message.trim(),
+          stream_session_id: sessionId,
+          message_type: messageType
+        })
+        .select(`
+          *,
+          user_profile:profiles!user_id (
+            name,
+            element,
+            avatar_badge_id
+          )
+        `)
+        .single();
+
+      if (error) {
+        console.error('Error sending message:', error);
+        return null;
+      }
+
+      return data as ChatMessage;
+    } catch (error) {
+      console.error('Error in sendMessage:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Send a user join message
+   */
+  async sendJoinMessage(displayName: string): Promise<ChatMessage | null> {
+    return this.sendMessage(`✨ ${displayName} has entered the room`, 'join');
+  }
+
+  /**
+   * Send a user leave message
+   */
+  async sendLeaveMessage(displayName: string): Promise<ChatMessage | null> {
+    return this.sendMessage(`👋 ${displayName} has left the room`, 'leave');
+  }
+
+  /**
+   * Load recent chat messages for the current session
+   */
+  async loadRecentMessages(limit: number = 50): Promise<ChatMessage[]> {
+    try {
+      const sessionId = await this.getCurrentStreamSession();
+      
+      const { data, error } = await supabaseClient
+        .from('chat_messages')
+        .select(`
+          *,
+          user_profile:profiles!user_id (
+            name,
+            element,
+            avatar_badge_id
+          )
+        `)
+        .eq('stream_session_id', sessionId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('Error loading messages:', error);
+        return [];
+      }
+
+      return (data || []).reverse() as ChatMessage[];
+    } catch (error) {
+      console.error('Error in loadRecentMessages:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get list of users currently in the chat
+   */
+  async getChatUsers(): Promise<ChatUser[]> {
+    try {
+      const sessionId = await this.getCurrentStreamSession();
+      
+      // Get unique users from recent messages (last 30 minutes)
+      const thirtyMinutesAgo = new Date();
+      thirtyMinutesAgo.setMinutes(thirtyMinutesAgo.getMinutes() - 30);
+      
+      const { data, error } = await supabaseClient
+        .from('chat_messages')
+        .select(`
+          user_id,
+          created_at,
+          user_profile:profiles!user_id (
+            name,
+            element,
+            avatar_badge_id
+          )
+        `)
+        .eq('stream_session_id', sessionId)
+        .gte('created_at', thirtyMinutesAgo.toISOString())
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error getting chat users:', error);
+        return [];
+      }
+
+      // Remove duplicates and format data
+      const uniqueUsers = new Map<string, ChatUser>();
+      
+      for (const message of data || []) {
+        if (!message.user_profile || uniqueUsers.has(message.user_id)) continue;
+        
+        uniqueUsers.set(message.user_id, {
+          id: message.user_id,
+          name: message.user_profile.name,
+          element: message.user_profile.element as ElementType | null,
+          avatar_badge_id: message.user_profile.avatar_badge_id,
+          last_seen: message.created_at
+        });
+      }
+
+      return Array.from(uniqueUsers.values());
+    } catch (error) {
+      console.error('Error in getChatUsers:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Check if user is currently live streaming
+   */
+  async checkLiveStatus(): Promise<boolean> {
+    try {
+      // Check your profile's twitch_live_status
+      // Replace 'your-user-id' with your actual Supabase user ID or use a settings table
+      const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('twitch_live_status')
+        .eq('email', 'chxndlerthealien@gmail.com') // Replace with your email or use a better identifier
+        .single();
+
+      if (error) {
+        console.error('Error checking live status:', error);
+        return false;
+      }
+
+      return data?.twitch_live_status || false;
+    } catch (error) {
+      console.error('Error in checkLiveStatus:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Update user avatar badge
+   */
+  async updateAvatarBadge(badgeId: string | null): Promise<boolean> {
+    try {
+      const { error } = await supabaseClient
+        .from('profiles')
+        .update({ avatar_badge_id: badgeId })
+        .eq('id', (await supabaseClient.auth.getSession()).data.session?.user.id);
+
+      if (error) {
+        console.error('Error updating avatar badge:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error in updateAvatarBadge:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Cleanup - unsubscribe from chat
+   */
+  async unsubscribe(): Promise<void> {
+    if (this.channel) {
+      await supabaseClient.removeChannel(this.channel);
+      this.channel = null;
+    }
+  }
+
+  /**
+   * Clean up old messages (admin function)
+   */
+  async cleanupOldMessages(): Promise<boolean> {
+    try {
+      const { error } = await supabaseClient.rpc('cleanup_old_chat_messages');
+      
+      if (error) {
+        console.error('Error cleaning up messages:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error in cleanupOldMessages:', error);
+      return false;
+    }
+  }
+}
+
+// Singleton instance
+export const chatService = new ChatService();
+
+// Utility functions
+export function getElementColor(element: string | null | undefined): string {
+  if (!element) return '#FFFFFF';
+  const normalizedElement = element.toLowerCase() as ElementType;
+  return ELEMENT_COLORS[normalizedElement] || '#FFFFFF';
+}
+
+export function getElementIcon(element: string | null | undefined): string {
+  if (!element) return '/elements/chxndler.webp';
+  const normalizedElement = element.toLowerCase();
+  return `/elements/${normalizedElement}.webp`;
+}
+
+export function formatChatTimestamp(timestamp: string): string {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+
+  if (diffMins < 1) return 'now';
+  if (diffMins < 60) return `${diffMins}m`;
+  if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h`;
+  
+  return date.toLocaleDateString();
+}
+
+export function sanitizeMessage(message: string): string {
+  // Basic sanitization - remove potential XSS
+  return message
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .trim()
+    .slice(0, 500); // Max length
+}

@@ -327,7 +327,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
               maxWidth: '700px',
               minHeight: 'min(60vh, 500px)',
               maxHeight: '90vh',
-              padding: '10px 14px 14px 14px',
+              padding: '10px 14px 8px 14px',
               borderRadius: 18,
               background: 'rgba(0,0,0,0.8)',
               border: '1px solid rgba(255,255,0,0.55)',
@@ -448,11 +448,11 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                     className="text-center mb-4"
                     style={{ 
                       whiteSpace: 'pre-wrap', 
-                      lineHeight: 1.2, 
-                      fontSize: 9, 
+                      lineHeight: 1.3, 
+                      fontSize: 11, 
                       color: '#FFFF00', 
                       textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,255,0,0.6)', 
-                      marginTop: '-4px' 
+                      marginTop: '4px' 
                     }}
                   >
                     Choose a category to explore your badges and track your progress through the Heartverse.
