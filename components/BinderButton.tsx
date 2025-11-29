@@ -965,8 +965,8 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                           onClick={() => {
                             try { sfx.play('click', 0.7); } catch {}
                             setSelectedElement(element);
-                            setSelectedCardName('All');
-                            // Set the element's representative card as preselected (e.g., "LIGHTNING" card for LIGHTNING element)
+                            // When clicking an element container, directly filter to that specific element card
+                            setSelectedCardName(element.toUpperCase());
                             setPreselectedCard(element.toUpperCase());
                             setCurrentCardIndex(0);
                           }}

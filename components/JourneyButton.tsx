@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { sfx } from "@/lib/sfx";
+import { useProfile } from "@/contexts/ProfileContext";
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   asChild?: boolean;
@@ -76,6 +77,12 @@ function getUserTier(cumulativeHeartCoins: number): TierType {
 export default function JourneyButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, cumulativeHeartCoins = 0, isActive = false, ...restProps }: Props) {
   const [open, setOpen] = useState(false);
   const [flippedTier, setFlippedTier] = useState<TierType | null>(null);
+  const { user } = useProfile();
+  
+  // For non-logged-in users, force display to show WANDERER
+  const effectiveHeartCoins = user ? cumulativeHeartCoins : 0;
+  const currentTier = getUserTier(effectiveHeartCoins);
+  const displayTier = user ? currentTier : 'wanderer';
 
   const handleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
     try { onClick?.(e); } catch {}
@@ -104,7 +111,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
         <button
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className={`journey-neon ${getUserTier(cumulativeHeartCoins)} font-medium transition-all duration-200 whitespace-nowrap focus:outline-none focus:ring-0 h-12 flex items-center justify-center px-3`}
+        className={`journey-neon ${displayTier} font-medium transition-all duration-200 whitespace-nowrap focus:outline-none focus:ring-0 h-12 flex items-center justify-center px-3`}
         style={{
           fontSize: '14px',
           transition: 'all 0.3s ease',
@@ -124,7 +131,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
         }}
         {...restProps}
       >
-        {tierData[getUserTier(cumulativeHeartCoins)].name}
+        {tierData[displayTier].name}
         </button>
       </div>
       
@@ -144,7 +151,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
               style={{
                 width: 'min(120vw, 700px)',
                 height: '200px',
-                background: `radial-gradient(ellipse 80% 100% at 50% 0%, ${tierData[getUserTier(cumulativeHeartCoins)].glowColor} 0%, ${tierData[getUserTier(cumulativeHeartCoins)].glowColor.replace('0.8', '0.4')} 30%, ${tierData[getUserTier(cumulativeHeartCoins)].glowColor.replace('0.8', '0.1')} 60%, transparent 100%)`,
+                background: `radial-gradient(ellipse 80% 100% at 50% 0%, ${tierData[displayTier].glowColor} 0%, ${tierData[displayTier].glowColor.replace('0.8', '0.4')} 30%, ${tierData[displayTier].glowColor.replace('0.8', '0.1')} 60%, transparent 100%)`,
                 filter: 'blur(100px)'
               }}
             />
@@ -165,10 +172,10 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
                 padding: '15px',
                 borderRadius: 15,
                 background: 'rgba(0,0,0,0.7)',
-                border: `2px solid ${tierData[getUserTier(cumulativeHeartCoins)].color}`,
+                border: `2px solid ${tierData[displayTier].color}`,
                 backdropFilter: 'blur(15px)',
                 position: 'relative',
-                boxShadow: `0 -8px 25px ${tierData[getUserTier(cumulativeHeartCoins)].glowColor}, 0 -4px 15px ${tierData[getUserTier(cumulativeHeartCoins)].glowColor.replace('0.8', '0.6')}, 0 12px 30px rgba(0,0,0,0.4), 0 0 24px ${tierData[getUserTier(cumulativeHeartCoins)].glowColor}`
+                boxShadow: `0 -8px 25px ${tierData[displayTier].glowColor}, 0 -4px 15px ${tierData[displayTier].glowColor.replace('0.8', '0.6')}, 0 12px 30px rgba(0,0,0,0.4), 0 0 24px ${tierData[displayTier].glowColor}`
               }}
             >
             
@@ -181,7 +188,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
                 transform: 'translateX(-50%)',
                 width: '120%',
                 height: '30px',
-                background: `radial-gradient(ellipse 60% 100% at 50% 0%, ${tierData[getUserTier(cumulativeHeartCoins)].glowColor} 0%, ${tierData[getUserTier(cumulativeHeartCoins)].glowColor.replace('0.8', '0.3')} 40%, transparent 80%)`,
+                background: `radial-gradient(ellipse 60% 100% at 50% 0%, ${tierData[displayTier].glowColor} 0%, ${tierData[displayTier].glowColor.replace('0.8', '0.3')} 40%, transparent 80%)`,
                 filter: 'blur(30px)',
                 pointerEvents: 'none',
                 zIndex: -1
@@ -197,7 +204,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
                 transform: 'translateX(-50%)',
                 width: '80%',
                 height: '20px',
-                background: `radial-gradient(ellipse 70% 100% at 50% 100%, ${tierData[getUserTier(cumulativeHeartCoins)].glowColor.replace('0.8', '0.4')} 0%, ${tierData[getUserTier(cumulativeHeartCoins)].glowColor.replace('0.8', '0.2')} 50%, transparent 100%)`,
+                background: `radial-gradient(ellipse 70% 100% at 50% 100%, ${tierData[displayTier].glowColor.replace('0.8', '0.4')} 0%, ${tierData[displayTier].glowColor.replace('0.8', '0.2')} 50%, transparent 100%)`,
                 filter: 'blur(25px)',
                 pointerEvents: 'none',
                 zIndex: -1
@@ -215,10 +222,10 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
               className="absolute top-4 right-4 cursor-pointer w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
               style={{ 
                 fontSize: '16px',
-                background: `rgba(${tierData[getUserTier(cumulativeHeartCoins)].color === '#00FFFF' ? '0,255,255' : tierData[getUserTier(cumulativeHeartCoins)].color === '#FFD700' ? '255,215,0' : '255,105,180'},0.2)`,
-                border: `1px solid ${tierData[getUserTier(cumulativeHeartCoins)].color}`,
-                color: tierData[getUserTier(cumulativeHeartCoins)].color,
-                boxShadow: `0 0 10px ${tierData[getUserTier(cumulativeHeartCoins)].glowColor.replace('0.8', '0.3')}`,
+                background: `rgba(${tierData[displayTier].color === '#00FFFF' ? '0,255,255' : tierData[displayTier].color === '#FFD700' ? '255,215,0' : '255,105,180'},0.2)`,
+                border: `1px solid ${tierData[displayTier].color}`,
+                color: tierData[displayTier].color,
+                boxShadow: `0 0 10px ${tierData[displayTier].glowColor.replace('0.8', '0.3')}`,
                 backdropFilter: 'blur(2px)'
               }}
             >
@@ -232,14 +239,14 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
             <div className="text-center mb-4">
               <div 
                 style={{ 
-                  color: tierData[getUserTier(cumulativeHeartCoins)].color, 
+                  color: tierData[displayTier].color, 
                   fontSize: '20px',
                   fontWeight: 'bold',
-                  textShadow: `0 0 12px ${tierData[getUserTier(cumulativeHeartCoins)].glowColor}, 0 0 20px ${tierData[getUserTier(cumulativeHeartCoins)].glowColor}, 0 0 30px ${tierData[getUserTier(cumulativeHeartCoins)].glowColor}`,
+                  textShadow: `0 0 12px ${tierData[displayTier].glowColor}, 0 0 20px ${tierData[displayTier].glowColor}, 0 0 30px ${tierData[displayTier].glowColor}`,
                   marginBottom: '8px'
                 }}
               >
-                {tierData[getUserTier(cumulativeHeartCoins)].name.toUpperCase()}
+                {tierData[displayTier].name.toUpperCase()}
               </div>
               <div 
                 style={{ 

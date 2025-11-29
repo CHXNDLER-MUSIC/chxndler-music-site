@@ -712,11 +712,11 @@ export default function ChatPanel({ isOpen, onClose }) {
                   {/* Profile View - shown above message input when user is selected */}
                   {console.log('🔥 Rendering profile check - selectedUser:', selectedUser)}
                   {selectedUser && (
-                    <div className="border-t border-yellow-400/30 px-1 py-0" style={{ marginTop: '-2px' }}>
+                    <div className="border-t border-yellow-400/30 px-1" style={{ marginTop: '-4px' }}>
                       {/* Profile Header with Icons */}
                       <div className="flex flex-col">
                         {/* Top row: User info and close button */}
-                        <div className="flex items-center justify-between pt-1">
+                        <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-2 flex-1 min-w-0">
                             {/* User Icon */}
                             {selectedUser.id === 'anonymous' ? (
@@ -789,6 +789,15 @@ export default function ChatPanel({ isOpen, onClose }) {
                               className="w-6 h-6 rounded flex items-center justify-center bg-black/20 border border-pink-400/30 hover:bg-pink-400/20 transition-colors"
                               title="Send Heart Coin"
                               onClick={() => {
+                                try {
+                                  const audio = new Audio('/click.mp3');
+                                  audio.volume = 0.3;
+                                  audio.play().catch(error => {
+                                    console.log('Click audio play failed:', error);
+                                  });
+                                } catch (error) {
+                                  console.log('Click audio creation failed:', error);
+                                }
                                 // TODO: Implement heart coin sending
                                 console.log('Send heart coin to:', selectedUser.name);
                               }}
@@ -799,7 +808,18 @@ export default function ChatPanel({ isOpen, onClose }) {
                             {/* Badges Button */}
                             <button 
                               className="w-6 h-6 rounded flex items-center justify-center bg-black/20 border border-purple-400/30 hover:bg-purple-400/10 transition-colors"
-                              onClick={() => setShowUserBadges(!showUserBadges)}
+                              onClick={() => {
+                                try {
+                                  const audio = new Audio('/click.mp3');
+                                  audio.volume = 0.3;
+                                  audio.play().catch(error => {
+                                    console.log('Click audio play failed:', error);
+                                  });
+                                } catch (error) {
+                                  console.log('Click audio creation failed:', error);
+                                }
+                                setShowUserBadges(!showUserBadges);
+                              }}
                               title="View Badges"
                             >
                               <img 
@@ -813,7 +833,18 @@ export default function ChatPanel({ isOpen, onClose }) {
                             <button 
                               className="w-6 h-6 rounded flex items-center justify-center bg-black/20 border border-blue-400/30 hover:bg-blue-400/10 transition-colors"
                               title="View Cards"
-                              onClick={() => setShowUserBinder(!showUserBinder)}
+                              onClick={() => {
+                                try {
+                                  const audio = new Audio('/click.mp3');
+                                  audio.volume = 0.3;
+                                  audio.play().catch(error => {
+                                    console.log('Click audio play failed:', error);
+                                  });
+                                } catch (error) {
+                                  console.log('Click audio creation failed:', error);
+                                }
+                                setShowUserBinder(!showUserBinder);
+                              }}
                             >
                               <img 
                                 src="/elements/binder.webp" 

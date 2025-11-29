@@ -3,6 +3,29 @@
 import { ElementIcon } from '@/lib/elementIcons';
 import { getElementColor } from '@/lib/supabase/chat';
 
+// Import the global alien name function from ChatPanel
+const getGlobalAlienName = () => {
+  // Check if we already have a stored name
+  if (typeof window !== 'undefined') {
+    const stored = sessionStorage.getItem('alienName');
+    if (stored) {
+      return stored;
+    }
+  }
+  
+  // Generate new alien name only if none exists
+  const alienNumber = Math.floor(Math.random() * 99999999) + 1;
+  const paddedNumber = alienNumber.toString().padStart(8, '0');
+  const newAlienName = `ALIEN${paddedNumber}`;
+  
+  // Store in session storage
+  if (typeof window !== 'undefined') {
+    sessionStorage.setItem('alienName', newAlienName);
+  }
+  
+  return newAlienName;
+};
+
 /**
  * UserList Component
  * Shows active users in the chat with element-themed styling
@@ -10,10 +33,10 @@ import { getElementColor } from '@/lib/supabase/chat';
 export default function UserList({ users, onUserClick, loading }) {
   console.log('🔥 UserList received:', { users, userCount: users?.length, loading });
   
-  // Force add an anonymous user if no users exist
+  // Force add an anonymous user if no users exist - use global alien name for consistency
   const displayUsers = users?.length > 0 ? users : [{
     id: 'anonymous',
-    name: 'ALIEN' + Math.floor(Math.random() * 99999999).toString().padStart(8, '0'),
+    name: getGlobalAlienName(), // Use the global alien name function for consistency
     element: 'alien',
     avatar_badge_id: null,
     last_seen: new Date().toISOString()
@@ -50,7 +73,7 @@ export default function UserList({ users, onUserClick, loading }) {
           key="emergency-alien"
           user={{
             id: 'anonymous',
-            name: 'ALIEN' + Math.floor(Math.random() * 99999999).toString().padStart(8, '0'),
+            name: getGlobalAlienName(), // Use the global alien name function for consistency
             element: 'alien',
             avatar_badge_id: null,
             last_seen: new Date().toISOString()

@@ -349,7 +349,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   }
 
   if (selectedCategory) {
-    const allCategories = badgeCategories.length > 0 ? badgeCategories : fallbackCategories;
+    const allCategories = fallbackCategories;
     const category = allCategories.find(cat => cat.id === selectedCategory);
     if (!category) return null;
     
@@ -610,7 +610,9 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
       {/* Badge Categories Grid - 6 categories layout */}
       {!loading && !error && (
         <div className="grid grid-cols-3 gap-4 justify-items-center max-w-lg mx-auto">
-          {fallbackCategories.map((category) => (
+          {(() => {
+            console.log("BadgesModal: Rendering categories:", fallbackCategories.length, fallbackCategories.map(c => c.name));
+            return fallbackCategories.map((category) => (
           <button
             key={category.id}
             onClick={() => setSelectedCategory(category.id)}
@@ -625,7 +627,8 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
               {category.name}
             </div>
           </button>
-        ))}
+        ));
+          })()}
         </div>
       )}
     </>

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { sfx } from "@/lib/sfx";
 
 interface ElementPosition {
   code: "heart" | "water" | "lightning" | "darkness";
@@ -34,18 +35,8 @@ const ELEMENTS: ElementPosition[] = [
 export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onClose }: PlanetMinimapProps) {
   const [isCollapsed, setIsCollapsed] = React.useState(false);
 
-  const playCloseSound = () => {
-    try {
-      const audio = new Audio('/audio/close.mp3');
-      audio.volume = 0.5;
-      audio.play();
-    } catch (error) {
-      console.warn('Could not play close sound:', error);
-    }
-  };
-
   const handleClose = () => {
-    playCloseSound();
+    sfx.play('close', 0.8);
     if (onClose) {
       onClose();
     }
@@ -75,11 +66,11 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
   // Convert 3D positions to 2D minimap coordinates
   const convertTo2D = (position: [number, number, number]): { x: number; y: number } => {
     const [x, y, z] = position;
-    // Scale down and center in minimap (assuming 160px minimap size)
-    const scale = 2.5;
+    // Scale down and center in minimap (240px minimap size)
+    const scale = 3.0;
     return {
-      x: 80 + (x * scale), // Center at 80px + scaled X
-      y: 80 + (y * scale) - (z * scale)  // Center at 80px + Y offset - inverted scaled Z
+      x: 120 + (x * scale), // Center at 120px + scaled X
+      y: 120 + (y * scale) - (z * scale)  // Center at 120px + Y offset - inverted scaled Z
     };
   };
 
@@ -91,7 +82,7 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
 
   return (
     <div className={`fixed top-4 right-4 z-50 bg-black/60 backdrop-blur-sm border-2 border-cyan-400/50 rounded-lg transition-all duration-300 ${
-      isCollapsed ? 'w-12 h-12' : 'w-40 h-40'
+      isCollapsed ? 'w-12 h-12' : 'w-60 h-60'
     }`}>
       {/* Close Button */}
       <button
@@ -192,7 +183,7 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
         {/* Orbit paths for each elemental planet */}
         {ELEMENTS.map((element) => {
           const elementPos2D = convertTo2D(element.position);
-          const orbitRadiusScaled = 15 * 2.5; // TIGHTER orbit rings
+          const orbitRadiusScaled = 15 * 3.0; // TIGHTER orbit rings
           
           return (
             <div
