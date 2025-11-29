@@ -76,6 +76,10 @@ export default function WhatElementAreYouModal() {
       await updateProfileNameAndElement(currentName, selectedElementData.label);
       
       console.log('🎉 Profile completed! Element selected:', selectedElementData.label);
+      
+      // Force a reload of the page to ensure all components reflect the updated profile
+      window.location.reload();
+      
       closeElementSelection();
       // Trigger profile refresh to update the UI with new element
       triggerProfileRefresh();

@@ -1932,7 +1932,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       {typeof document !== 'undefined' ? createPortal(
         <audio
           ref={audioRef}
-          src={cur.src}
+          src={cur?.src || ''}
           controls={false}
           className="media-dock-audio"
           data-audio-player="1"

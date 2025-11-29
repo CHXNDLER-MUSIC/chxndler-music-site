@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useUIStore } from "@/store/useUIStore";
+import { useProfile as useNewProfile } from "@/hooks/useProfile";
 import { useProfile } from "@/contexts/ProfileContext";
 import { useTour } from "@/contexts/TourContext";
 
@@ -11,6 +12,7 @@ export default function WhatShouldWeCallYouModal() {
   const { showNamePrompt, namePromptFromAuth, closeNamePrompt, openElementSelection } = useUIStore();
   
   const { updateProfileName, updateProfile, profile } = useProfile();
+  const { completeOnboarding, refreshProfile } = useNewProfile();
   const { start: startTour } = useTour();
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -75,11 +77,17 @@ export default function WhatShouldWeCallYouModal() {
       const audio = new Audio('/audio/join-alien.mp3');
       audio.play().catch(e => console.log('Audio play failed:', e));
       
-      // Use the new updateProfileName function 
+      // Complete onboarding with the new system
+      await completeOnboarding(trimmedName);
+      // Also update the legacy profile context
       await updateProfileName(trimmedName);
-      // Close and advance to element selection after saving name
+      // Refresh profile to ensure UI updates
+      await refreshProfile();
+      
+      // Close name prompt - user has completed onboarding
       closeNamePrompt();
-      openElementSelection();
+      
+      // No longer need element selection since onboarding is complete with just the name
     } catch (e: any) {
       setError(e?.message || "Failed to save name");
     } finally {

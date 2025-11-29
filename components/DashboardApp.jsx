@@ -87,7 +87,20 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       newParams.delete('magic_link_expired');
       router.replace(`/?${newParams.toString()}`);
     }
-  }, [searchParams, router]);
+    
+    // Check if we should show the name prompt (from auth callback)
+    const shouldShowNamePrompt = searchParams.get('showNamePrompt');
+    if (shouldShowNamePrompt === '1') {
+      // Open name prompt modal
+      openNamePrompt();
+      
+      // Clean up URL parameter
+      const newParams = new URLSearchParams(searchParams.toString());
+      newParams.delete('showNamePrompt');
+      const newUrl = newParams.toString() ? `/?${newParams.toString()}` : '/';
+      router.replace(newUrl);
+    }
+  }, [searchParams, router, openNamePrompt]);
 
   // UI store for profile refresh trigger and name modal
   const { profileRefreshTrigger, openNamePrompt } = useUIStore();

@@ -1793,51 +1793,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
     scene.add(sys);
     groupRef.current = sys;
 
-    // ADD 4 MASSIVE ELEMENTAL PLANETS DIRECTLY NEXT TO CENTER
-    const elementalPlanets = [
-      { name: 'WATER', color: 0x38B6FF, position: [35, 0, 0] },
-      { name: 'LIGHTNING', color: 0xF2EF1D, position: [0, 35, 0] },
-      { name: 'HEART', color: 0xFC54AF, position: [-35, 0, 0] },
-      { name: 'DARKNESS', color: 0x6A4C93, position: [0, -35, 0] }
-    ];
-
-    elementalPlanets.forEach((planet, index) => {
-      const planetGeo = new THREE.SphereGeometry(8.0, 32, 32); // Moderate size for better balance
-      
-      // Load texture for this planet
-      const textureLoader = new THREE.TextureLoader();
-      const textureMap = {
-        'WATER': '/textures/planet_water.webp',
-        'LIGHTNING': '/textures/planet_lightning.webp', 
-        'HEART': '/textures/planet_heart.webp',
-        'DARKNESS': '/textures/planet_darkness.webp'
-      };
-      
-      const textureUrl = textureMap[planet.name as keyof typeof textureMap];
-      
-      const planetMat = new THREE.MeshPhongMaterial({
-        map: textureUrl ? textureLoader.load(textureUrl) : null,
-        color: textureUrl ? 0xffffff : planet.color, // White when using texture
-        emissive: planet.color,
-        emissiveIntensity: textureUrl ? 1.0 : 2.0, // Less emissive when textured
-        shininess: 30
-      });
-      
-      console.log(`Loading texture for ${planet.name} (set 1): ${textureUrl}`);
-      const planetMesh = new THREE.Mesh(planetGeo, planetMat);
-      planetMesh.position.set(planet.position[0], planet.position[1], planet.position[2]);
-      sys.add(planetMesh);
-
-      // Add huge debug cube above each planet
-      const cubeGeo = new THREE.BoxGeometry(3, 3, 3);
-      const cubeMat = new THREE.MeshBasicMaterial({ 
-        color: planet.color, 
-        wireframe: false 
-      });
-      const cubeMesh = new THREE.Mesh(cubeGeo, cubeMat);
-      cubeMesh.position.set(planet.position[0], planet.position[1] + 5, planet.position[2]);
-      sys.add(cubeMesh);
-    });
+    // Elemental planets now created in the proper location with orbital mechanics
 
     // Main planet placeholder (real one created when songs available)
     const mainGeo = new THREE.SphereGeometry(1.6, 48, 48);
@@ -2228,7 +2184,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
           sys.rotation.y += spinSpeedRef.current;
         }
       }
-      // Animate orbiting song planets
+      // Animate orbiting song planets and elemental planets
       if (sys) {
         sys.traverse((child) => {
           if (child.userData && child.userData.isOrbitingSong) {
@@ -2238,15 +2194,42 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
             // Update orbit angle
             data.orbitAngle += data.orbitSpeed;
             
+            // Find the current position of the elemental planet this song orbits around
+            let elementPosition = data.elementPosition; // fallback to original position
+            sys.traverse((elementChild) => {
+              if (elementChild.userData && elementChild.userData.isElementalPlanet && 
+                  elementChild.userData.elementName === data.elementName.toUpperCase()) {
+                elementPosition = [elementChild.position.x, elementChild.position.y, elementChild.position.z];
+              }
+            });
+            
             // Calculate new position
-            const x = data.elementPosition[0] + Math.cos(data.orbitAngle) * data.orbitRadius;
-            const y = data.elementPosition[1] + Math.sin(data.orbitAngle) * data.orbitRadius * 0.3;
-            const z = data.elementPosition[2] + Math.sin(data.orbitAngle) * data.orbitRadius * 0.5;
+            const x = elementPosition[0] + Math.cos(data.orbitAngle) * data.orbitRadius;
+            const y = elementPosition[1] + Math.sin(data.orbitAngle) * data.orbitRadius * 0.3;
+            const z = elementPosition[2] + Math.sin(data.orbitAngle) * data.orbitRadius * 0.5;
             
             child.position.set(x, y, z);
             
             // Add gentle rotation to song planets
             child.rotation.y += 0.02;
+          }
+          
+          // Animate elemental planets orbiting around center heart planet
+          if (child.userData && child.userData.isElementalPlanet) {
+            const data = child.userData;
+            
+            // Update orbit angle
+            data.orbitAngle += data.orbitSpeed;
+            
+            // Calculate new position around center (0,0,0)
+            const x = Math.cos(data.orbitAngle) * data.orbitRadius;
+            const y = 0; // Keep elemental planets on same Y plane
+            const z = Math.sin(data.orbitAngle) * data.orbitRadius;
+            
+            child.position.set(x, y, z);
+            
+            // Add gentle rotation to elemental planets
+            child.rotation.y += 0.005;
           }
         });
       }
@@ -2503,7 +2486,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
           const heartMesh = new THREE.Mesh(heartGeo, heartMat);
           heartMesh.position.set(0, 0, 0);
           heartMesh.rotation.z = Math.PI; // Ensure heart point faces downward
-          heartMesh.scale.set(1.1, 1.0, 0.85);
+          heartMesh.scale.set(2.0, 1.8, 1.5);
           heartMesh.visible = true;
           sys.add(heartMesh);
 
@@ -2553,6 +2536,18 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
               // Create main planet mesh
               const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
               sphereMesh.position.set(planet.position[0], planet.position[1], planet.position[2]);
+              
+              // Add orbital animation data
+              const orbitRadius = 35; // Distance from center
+              const initialAngle = Math.atan2(planet.position[2], planet.position[0]); // Current angle based on position
+              sphereMesh.userData = {
+                isElementalPlanet: true,
+                orbitRadius: orbitRadius,
+                orbitAngle: initialAngle,
+                orbitSpeed: 0.002, // Slow orbital speed for elemental planets
+                elementName: planet.name
+              };
+              
               sys.add(sphereMesh);
               
               // Add inner glow effect - VISIBLE SIZE
@@ -2584,13 +2579,13 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
               // ADD ORBITING SONG PLANETS AROUND THIS ELEMENTAL PLANET
               const elementName = planet.name.toLowerCase();
               const songPlanetsPerElement = 3; // Number of song planets per element
-              const orbitRadius = 15; // MUCH tighter orbit around elemental planet
+              const songOrbitRadius = 15; // MUCH tighter orbit around elemental planet
               
               for (let i = 0; i < songPlanetsPerElement; i++) {
                 const angle = (i / songPlanetsPerElement) * Math.PI * 2;
-                const x = planet.position[0] + Math.cos(angle) * orbitRadius;
-                const y = planet.position[1] + Math.sin(angle) * orbitRadius * 0.3; // Elliptical orbit
-                const z = planet.position[2] + Math.sin(angle) * orbitRadius * 0.5;
+                const x = planet.position[0] + Math.cos(angle) * songOrbitRadius;
+                const y = planet.position[1] + Math.sin(angle) * songOrbitRadius * 0.3; // Elliptical orbit
+                const z = planet.position[2] + Math.sin(angle) * songOrbitRadius * 0.5;
                 
                 // Create small song planet
                 const songGeo = new THREE.SphereGeometry(5.0, 16, 16);
@@ -2607,7 +2602,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
                 songMesh.userData = { 
                   elementName: elementName,
                   orbitAngle: angle,
-                  orbitRadius: orbitRadius,
+                  orbitRadius: songOrbitRadius,
                   elementPosition: [...planet.position],
                   isOrbitingSong: true,
                   orbitSpeed: 0.01 + Math.random() * 0.01 // Random orbit speed
@@ -2691,51 +2686,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
       return lay?.ringIndex ?? 0;
     }));
 
-    // Create planets: in homepage mode render ALL, otherwise render ONLY the focused planet
-    const renderList = effectiveShowAll ? songsToUse : songsToUse.filter(s => s.id === focusId);
-    renderList.forEach((song, idx) => {
-      const id = song.id;
-      const lay = layout ? (layout as any)[id] : undefined;
-      const spacingMul = 1.0; // consistent spacing with layout
-      const rBase = lay?.orbitRadius ?? (idx % 2 ? 4.2 : 6.0);
-      const r = rBase * spacingMul;
-      const speed = 0.08 + (lay ? (0.016 * (lay.ringIndex ?? 0)) : 0) + (0.02 * ((idx % 5))); // slower, ring-based
-      const a0 = lay?.angle0 ?? (Math.random() * Math.PI * 2);
-      const isOutermostRing = (lay?.ringIndex ?? 0) === maxRingIndex;
-      
-      // Use the full planet data with all realistic properties
-      const planetData = song.planet || {
-        radius: 0.8,
-        color: '#38B6FF',
-        type: 'terrestrial'
-      };
-      
-      // Emphasize current song slightly
-      if (!effectiveShowAll && id === focusId) {
-        planetData.radius *= 1.25;
-      } else if (effectiveShowAll) {
-        planetData.radius *= 0.95;
-      }
-      
-      addSatLocal(id, planetData, r, speed, a0, isOutermostRing);
-    });
-    // After building, compute a focus rotation so the selected planet is front-center
-    if (focusId) {
-      try {
-        const sat = satsRef.current.find(s => s.id === focusId);
-        if (sat) {
-          const cur = sys.rotation.y;
-          const desired = Math.PI / 2 - sat.a;
-          let delta = ((desired - cur + Math.PI) % (Math.PI * 2));
-          if (delta < 0) delta += Math.PI * 2;
-          delta -= Math.PI;
-          focusTargetRy.current = cur + delta;
-        }
-      } catch {}
-    } else {
-      // Clear focus when showing all planets (homepage mode)
-      focusTargetRy.current = null;
-    }
+    // Old orbital planet system removed - now using elemental planets with orbiting song planets
     // Update main planet
     // const mainEntry = focusId ? songs.find(s => s.id === focusId) : null;
     const main = mainRef.current.mesh;

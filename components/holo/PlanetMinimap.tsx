@@ -17,10 +17,10 @@ interface PlanetMinimapProps {
 
 // Element configurations matching PlanetSystemRaw.tsx ACTUAL positions - MORE SPREAD OUT
 const ELEMENTS: ElementPosition[] = [
-  { code: "water",     label: "🌊 Water", position: [35, 0, 0],   color: "#38B6FF", glowColor: "#38B6FF" },
-  { code: "lightning", label: "⚡ Lightning", position: [0, 35, 0],  color: "#F2EF1D", glowColor: "#F2EF1D" },
-  { code: "heart",     label: "💖 Heart", position: [-35, 0, 0],   color: "#FC54AF", glowColor: "#FC54AF" },
-  { code: "darkness",  label: "🌑 Darkness", position: [0, -35, 0],  color: "#6A4C93", glowColor: "#6A4C93" },
+  { code: "water",     label: "Water", position: [35, 0, 0],   color: "#38B6FF", glowColor: "#38B6FF" },
+  { code: "lightning", label: "Lightning", position: [0, 35, 0],  color: "#F2EF1D", glowColor: "#F2EF1D" },
+  { code: "heart",     label: "Heart", position: [-35, 0, 0],   color: "#FC54AF", glowColor: "#FC54AF" },
+  { code: "darkness",  label: "Darkness", position: [0, -35, 0],  color: "#6A4C93", glowColor: "#6A4C93" },
 ];
 
 export default function PlanetMinimap({ currentMainId, hoverId }: PlanetMinimapProps) {
@@ -58,7 +58,7 @@ export default function PlanetMinimap({ currentMainId, hoverId }: PlanetMinimapP
           }}
         >
           <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold text-white" style={{textShadow: "0 0 4px black"}}>
-            💖 CENTER
+            CENTER
           </div>
         </div>
 

@@ -11,7 +11,7 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 
 export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...restProps }: Props) {
   const [internalOpen, setInternalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"WE BELIEVE" | "CHXNDLER">("WE BELIEVE");
+  const [activeTab, setActiveTab] = useState<"WE BELIEVE" | "CHXNDLER" | "ELEMENTS">("WE BELIEVE");
   
   // Use external open state if provided, otherwise use internal state
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
@@ -166,7 +166,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...re
                     sfx.play('click', 0.7);
                     setActiveTab("WE BELIEVE");
                   }}
-                  className={`px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 ${
+                  className={`px-3 py-2 rounded-md text-xs font-semibold transition-all duration-200 ${
                     activeTab === "WE BELIEVE"
                       ? "bg-pink-500/20 text-pink-300 border border-pink-400/50"
                       : "text-white/70 hover:text-white"
@@ -183,7 +183,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...re
                     sfx.play('click', 0.7);
                     setActiveTab("CHXNDLER");
                   }}
-                  className={`px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 ${
+                  className={`px-3 py-2 rounded-md text-xs font-semibold transition-all duration-200 ${
                     activeTab === "CHXNDLER"
                       ? "bg-pink-500/20 text-pink-300 border border-pink-400/50"
                       : "text-white/70 hover:text-white"
@@ -194,6 +194,23 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...re
                   }}
                 >
                   CHXNDLER
+                </button>
+                <button
+                  onClick={() => {
+                    sfx.play('click', 0.7);
+                    setActiveTab("ELEMENTS");
+                  }}
+                  className={`px-3 py-2 rounded-md text-xs font-semibold transition-all duration-200 ${
+                    activeTab === "ELEMENTS"
+                      ? "bg-pink-500/20 text-pink-300 border border-pink-400/50"
+                      : "text-white/70 hover:text-white"
+                  }`}
+                  style={{
+                    textShadow: 'none',
+                    boxShadow: activeTab === "ELEMENTS" ? '0 0 15px rgba(252,84,175,0.3)' : 'none'
+                  }}
+                >
+                  ELEMENTS
                 </button>
               </div>
             </div>
@@ -247,6 +264,52 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...re
                   <div className="flex items-start">
                     <span className="mr-3" style={{ color: '#FF1493 !important', textShadow: '0 0 8px rgba(255,20,147,0.9), 0 0 15px rgba(255,20,147,0.7)' }}>♥</span>
                     <span>We believe <span style={{ color: '#FF1493 !important', fontWeight: 'inherit !important', textShadow: '0 0 10px #FF1493, 0 0 20px #FF1493, 0 0 30px #FF1493', filter: 'brightness(1.8) saturate(2.0)' }}>love</span> is the force that connects every soul.</span>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {activeTab === "ELEMENTS" && (
+              <>
+                {/* Elements Content */}
+                <div 
+                  className="text-center mt-4"
+                  style={{ 
+                    fontSize: '16px', 
+                    color: '#FFFFFF !important', 
+                    textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
+                    lineHeight: '1.6'
+                  }}
+                >
+                  The Elements are the foundational forces that shape the Heartverse. Each element carries its own energy, purpose, and wisdom, guiding souls on their journey of self-discovery. Together, they form the cosmic blueprint for understanding love, passion, truth, and connection.
+                </div>
+                <div 
+                  className="text-left space-y-2 pl-2 mt-4"
+                  style={{ 
+                    fontSize: 14, 
+                    color: '#FFFFFF !important', 
+                    textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)'
+                  }}
+                >
+                  <div className="flex items-start">
+                    <span className="mr-3" style={{ color: '#FF1493 !important', textShadow: '0 0 8px rgba(255,20,147,0.9), 0 0 15px rgba(255,20,147,0.7)' }}>♦</span>
+                    <span><span style={{ color: '#FF1493 !important', fontWeight: 'bold !important', textShadow: '0 0 10px #FF1493, 0 0 20px #FF1493' }}>Love</span> - The universal force connecting all souls</span>
+                  </div>
+                  <div className="flex items-start">
+                    <span className="mr-3" style={{ color: '#FFFF00 !important', textShadow: '0 0 8px rgba(255,255,0,0.9), 0 0 15px rgba(255,255,0,0.7)' }}>♦</span>
+                    <span><span style={{ color: '#FFFF00 !important', fontWeight: 'bold !important', textShadow: '0 0 10px #FFFF00, 0 0 20px #FFFF00' }}>Passion</span> - Sacred fire that drives authentic expression</span>
+                  </div>
+                  <div className="flex items-start">
+                    <span className="mr-3" style={{ color: '#00E5FF !important', textShadow: '0 0 8px rgba(0,229,255,0.9), 0 0 15px rgba(0,229,255,0.7)' }}>♦</span>
+                    <span><span style={{ color: '#00E5FF !important', fontWeight: 'bold !important', textShadow: '0 0 10px #00E5FF, 0 0 20px #00E5FF' }}>Truth</span> - The clarity found in being your authentic self</span>
+                  </div>
+                  <div className="flex items-start">
+                    <span className="mr-3" style={{ color: '#32CD32 !important', textShadow: '0 0 8px rgba(50,205,50,0.9), 0 0 15px rgba(50,205,50,0.7)' }}>♦</span>
+                    <span><span style={{ color: '#32CD32 !important', fontWeight: 'bold !important', textShadow: '0 0 10px #32CD32, 0 0 20px #32CD32' }}>Growth</span> - Evolution through challenges and transformation</span>
+                  </div>
+                  <div className="flex items-start">
+                    <span className="mr-3" style={{ color: '#9A00FF !important', textShadow: '0 0 8px rgba(154,0,255,0.9), 0 0 15px rgba(154,0,255,0.7)' }}>♦</span>
+                    <span><span style={{ color: '#9A00FF !important', fontWeight: 'bold !important', textShadow: '0 0 10px #9A00FF, 0 0 20px #9A00FF' }}>Mystery</span> - The infinite unknown that inspires wonder</span>
                   </div>
                 </div>
               </>

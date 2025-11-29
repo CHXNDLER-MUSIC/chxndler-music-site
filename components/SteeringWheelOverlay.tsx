@@ -6,6 +6,7 @@ import LumaKeyVideo from "@/components/LumaKeyVideo";
 import HoloJoinButton from "@/components/HoloJoinButton";
 import JoinAliens from "@/components/JoinAliens";
 import { LINKS } from "@/config/cockpit";
+import { useProfile } from "@/hooks/useProfile";
 
 export default function SteeringWheelOverlay({
   onLaunch,
@@ -57,6 +58,20 @@ export default function SteeringWheelOverlay({
   
   // Use the uiUnlocked prop passed from DashboardApp instead of reading from window
   const isUIUnlocked = uiUnlocked;
+  
+  // Get user and profile data to determine welcome text
+  const { user, profile, needsOnboarding } = useProfile();
+  
+  // Determine welcome text based on user status
+  const getWelcomeText = () => {
+    if (!user) {
+      return "Enter the Heartverse";
+    }
+    if (needsOnboarding) {
+      return "Enter the Heartverse";
+    }
+    return "Welcome Home";
+  };
   
 
   // Set mounted after component mounts to prevent immediate hover sounds
@@ -765,7 +780,7 @@ export default function SteeringWheelOverlay({
               whiteSpace: 'nowrap'
             }}
           >
-            Enter the Heartverse
+            {getWelcomeText()}
           </div>
         </div>
       )}

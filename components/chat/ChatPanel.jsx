@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { chatService } from '@/lib/supabase/chat';
 import { useProfile } from '@/contexts/ProfileContext';
@@ -21,7 +21,7 @@ export default function ChatPanel({ isOpen, onClose }) {
   console.log('🔥 ChatPanel render:', { isOpen, profile: !!profile, user: !!user });
 
   // Store alien name consistently for the session - initialize immediately
-  const [alienName, setAlienName] = useState(() => {
+  const alienName = useMemo(() => {
     // Check if we have a stored alien name first
     if (typeof window !== 'undefined') {
       const stored = sessionStorage.getItem('alienName');
@@ -43,7 +43,7 @@ export default function ChatPanel({ isOpen, onClose }) {
     }
     
     return newAlienName;
-  });
+  }, []); // Empty dependency array means this only runs once
 
   /**
    * Get display name for user - logged in name or anonymous alien name
@@ -678,7 +678,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                   {/* Profile View - shown above message input when user is selected */}
                   {console.log('🔥 Rendering profile check - selectedUser:', selectedUser)}
                   {selectedUser && (
-                    <div className="border-t border-yellow-400/30 px-3" style={{ paddingTop: 0, paddingBottom: 0, marginTop: 0 }}>
+                    <div className="border-t border-yellow-400/30 px-3" style={{ paddingTop: 0, paddingBottom: 0, marginTop: '-1px' }}>
                       {/* Profile Header with Icons */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
@@ -706,13 +706,8 @@ export default function ChatPanel({ isOpen, onClose }) {
                               maxWidth: '200px'
                             }}
                           >
-                            {(() => {
-                              const profileName = selectedUser.id === 'anonymous' ? alienName : (selectedUser.name || 'Anonymous');
-                              console.log('🔥 Profile displaying name:', profileName);
-                              console.log('🔥 Selected user:', selectedUser);
-                              console.log('🔥 Stored alien name:', alienName);
-                              return profileName;
-                            })()}
+                            {/* Force use of stored alien name for all anonymous users */}
+                            {(!user || !profile?.id) ? alienName : (profile?.name || selectedUser.name || 'Anonymous')}
                           </h3>
                           
                           {/* Action Icons */}

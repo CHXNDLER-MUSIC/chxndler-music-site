@@ -21,45 +21,51 @@ export default function AuthCallbackPage() {
       allParams: Object.fromEntries(urlParams.entries())
     });
 
-    // If this came from email signup, always go to name prompt regardless of existing profile
-    if (isFromEmailSignup) {
-      console.log('📧 Detected email signup flow - redirecting to name prompt');
-      router.push('/?completeProfile=1');
-      return;
-    }
-
-    // For other auth flows, check if profile exists and is complete
-    let needsName = false;
+    // For all auth flows, check profile completeness using has_completed_onboarding
+    let needsOnboarding = false;
     try {
-      const { data: existing, status } = await supabaseClient
+      const { data: existing, error } = await supabaseClient
         .from('profiles')
-        .select('id, name, email')
+        .select('id, display_name, has_completed_onboarding')
         .eq('id', session.user.id)
         .maybeSingle();
 
-      if (!existing || status === 406) {
-        // Create a bare profile row
+      if (error) {
+        console.warn('⚠️ Profile fetch failed:', error);
+        needsOnboarding = true;
+      } else if (!existing) {
+        // No profile exists yet - create one and mark as needing onboarding
         await supabaseClient
           .from('profiles')
-          .insert({ id: session.user.id, email: session.user.email || null, name: null })
+          .insert({ 
+            id: session.user.id, 
+            email: session.user.email || null, 
+            display_name: null,
+            has_completed_onboarding: false
+          })
           .throwOnError();
-        needsName = true;
+        needsOnboarding = true;
       } else {
-        needsName = !existing.name || existing.name.trim() === '';
+        // Profile exists - check if onboarding is complete
+        needsOnboarding = !existing.has_completed_onboarding || 
+                          !existing.display_name || 
+                          existing.display_name.trim() === '';
       }
     } catch (e) {
-      console.warn('⚠️ Profile fetch/create failed; defaulting to needsName flow if uncertain:', e);
-      needsName = true;
+      console.warn('⚠️ Profile check failed; defaulting to onboarding flow:', e);
+      needsOnboarding = true;
     }
 
-    // Redirect back to cockpit with an explicit flag to show the name prompt once
-    if (needsName) {
-      router.push('/?completeProfile=1');
+    // Redirect based on onboarding status
+    if (needsOnboarding) {
+      console.log('📝 User needs onboarding - redirecting to name prompt');
+      router.push('/?showNamePrompt=1');
       return;
     }
 
-    // Otherwise, proceed to normal welcome path for returning users
-    router.push('/?welcome=1');
+    // User has completed onboarding - proceed to normal home
+    console.log('✅ User onboarding complete - redirecting to home');
+    router.push('/');
   };
 
   useEffect(() => {
