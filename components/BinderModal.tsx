@@ -867,7 +867,6 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
                     border: '2px solid rgba(255,255,255,0.1)',
                     borderRadius: '24px',
                     perspective: '1000px',
-                    animation: 'pulseGlow 2s ease-in-out infinite alternate'
                   }}
                   onClick={() => {
                     try { sfx.play('flip', 0.45); } catch {}
@@ -1461,39 +1460,28 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
                     </div>
                   ) : purchaseState === 'digital-preview' && selectedPurchaseType === 'digital' ? (
                     <div className="flex flex-col text-left">
-                      {/* Title: [user name] Heart Coin PNG [# of current heart coins] */}
-                      <div className="flex items-center justify-start gap-1 mb-2">
+                      {/* Title: User name on left, Cost + heart coin + amount on right */}
+                      <div className="flex items-center justify-between mb-2">
                         <h2 className="text-xl font-bold text-yellow-300">
                           {profile?.display_name || profile?.username || 'User'}
                         </h2>
-                        <img
-                          src="/elements/heart-coin.webp"
-                          alt="Heart Coin"
-                          className="w-5 h-5"
-                          draggable={false}
-                        />
-                        <span 
-                          className="text-yellow-300 font-bold text-xl"
-                          style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
-                        >
-                          {profile?.heartcoin_balance || 0}
-                        </span>
-                      </div>
-                      
-                      {/* Element: Heart Coin PNG then 20 */}
-                      <div className="flex items-center gap-2 mt-2 mb-2">
-                        <img
-                          src="/elements/heart-coin.webp"
-                          alt="Heart Coin"
-                          className="w-4 h-4"
-                          draggable={false}
-                        />
-                        <span 
-                          className="text-yellow-300 font-bold text-lg"
-                          style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
-                        >
-                          {digitalCost}
-                        </span>
+                        <div className="flex flex-col items-end">
+                          <div className="text-sm text-gray-300 mb-1">Cost</div>
+                          <div className="flex items-center gap-1">
+                            <img
+                              src="/elements/heart-coin.webp"
+                              alt="Heart Coin"
+                              className="w-4 h-4"
+                              draggable={false}
+                            />
+                            <span 
+                              className="text-yellow-300 font-bold text-lg"
+                              style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}
+                            >
+                              {digitalCost}
+                            </span>
+                          </div>
+                        </div>
                       </div>
 
                       {/* Common rarity display */}

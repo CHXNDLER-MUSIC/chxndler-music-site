@@ -10,6 +10,7 @@ import { useTour } from "@/contexts/TourContext";
 export default function WhatShouldWeCallYouModal() {
   // Hooks (fixed order; all at top)
   const { showNamePrompt, namePromptFromAuth, closeNamePrompt, openElementSelection } = useUIStore();
+  
   const { updateProfileName, updateProfile, profile } = useProfile();
   const { start: startTour } = useTour();
   const [name, setName] = useState("");

@@ -78,9 +78,110 @@ export async function GET(request: NextRequest) {
     const today = new Date().toISOString().split('T')[0];
     const element = getElementForDate(today);
 
-    // TEMPORARY: Since soul_prompts table doesn't exist, return hardcoded prompts
-    // TODO: Create soul_prompts table in Supabase and remove this temporary fix
-    console.log('Using temporary hardcoded prompts for element:', element);
+    // Check if soul_daily_prompts entry exists for today
+    let { data: dailyPrompt, error: dailyError } = await supabase
+      .from('soul_daily_prompts')
+      .select(`
+        id,
+        prompt_date,
+        element,
+        intention_prompt_id,
+        reflection_prompt_id,
+        intention:soul_prompts!intention_prompt_id (
+          id,
+          text,
+          element,
+          prompt_type
+        ),
+        reflection:soul_prompts!reflection_prompt_id (
+          id,
+          text,
+          element,
+          prompt_type
+        )
+      `)
+      .eq('prompt_date', today)
+      .maybeSingle();
+
+    if (dailyError && dailyError.code !== 'PGRST116') {
+      console.error('Error fetching daily prompt:', dailyError);
+      throw new Error(`Failed to fetch daily prompt: ${dailyError.message}`);
+    }
+
+    // If no daily prompt exists, create one
+    if (!dailyPrompt) {
+      console.log(`No daily prompt found for ${today}, creating one for element: ${element}`);
+      
+      // Calculate prompt indices based on days since cycle start
+      const cycleStartTime = CYCLE_START_DATE.getTime();
+      const currentTime = new Date(today).getTime();
+      const daysSinceStart = Math.floor((currentTime - cycleStartTime) / (1000 * 60 * 60 * 24));
+      
+      // Use a different index for intention vs reflection to add variety
+      const intentionPromptIndex = Math.floor(daysSinceStart / 4); // Changes every 4 days (full element cycle)
+      const reflectionPromptIndex = Math.floor(daysSinceStart / 4) + 1; // Offset by 1 for variety
+      
+      // Get the prompts from soul_prompts table
+      const intentionPrompt = await getOrderedPrompt('intention', element, intentionPromptIndex);
+      const reflectionPrompt = await getOrderedPrompt('reflection', element, reflectionPromptIndex);
+
+      // Create the daily prompt entry
+      const { data: newDailyPrompt, error: insertError } = await supabase
+        .from('soul_daily_prompts')
+        .insert({
+          prompt_date: today,
+          element: element,
+          intention_prompt_id: intentionPrompt.id,
+          reflection_prompt_id: reflectionPrompt.id
+        })
+        .select(`
+          id,
+          prompt_date,
+          element,
+          intention_prompt_id,
+          reflection_prompt_id,
+          intention:soul_prompts!intention_prompt_id (
+            id,
+            text,
+            element,
+            prompt_type
+          ),
+          reflection:soul_prompts!reflection_prompt_id (
+            id,
+            text,
+            element,
+            prompt_type
+          )
+        `)
+        .single();
+
+      if (insertError) {
+        console.error('Error creating daily prompt:', insertError);
+        throw new Error(`Failed to create daily prompt: ${insertError.message}`);
+      }
+
+      dailyPrompt = newDailyPrompt;
+    }
+
+    // Ensure we have valid prompt data
+    if (!dailyPrompt?.intention || !dailyPrompt?.reflection) {
+      console.error('Invalid daily prompt data:', dailyPrompt);
+      throw new Error('Invalid daily prompt structure');
+    }
+
+    return NextResponse.json({
+      prompt_date: dailyPrompt.prompt_date,
+      element: dailyPrompt.element,
+      intention: Array.isArray(dailyPrompt.intention) ? dailyPrompt.intention[0] : dailyPrompt.intention,
+      reflection: Array.isArray(dailyPrompt.reflection) ? dailyPrompt.reflection[0] : dailyPrompt.reflection,
+    });
+
+  } catch (error) {
+    console.error('Error in daily prompts API:', error);
+    
+    // Fallback to hardcoded prompts if database fails
+    const today = new Date().toISOString().split('T')[0];
+    const element = getElementForDate(today);
     
     const hardcodedPrompts = {
       heart: {
@@ -149,12 +250,5 @@ export async function GET(request: NextRequest) {
       intention: prompts.intention,
       reflection: prompts.reflection,
     });
-
-  } catch (error) {
-    console.error('Error in daily prompts API:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
   }
 }

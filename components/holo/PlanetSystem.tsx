@@ -464,6 +464,14 @@ function FixedElementalSystem({ songs, mainId, hoverId }: { songs: any[]; mainId
               orbitRef={orbitRef}
             />
             
+            {/* Add the new ElementalPlanet component */}
+            <ElementalPlanet
+              element={element.code}
+              position={element.position as [number, number, number]}
+              size={12}
+              glowIntensity={1.8}
+            />
+            
             {/* Song planets orbiting this element */}
             <group position={element.position as [number, number, number]}>
               <SongOrbitGroup

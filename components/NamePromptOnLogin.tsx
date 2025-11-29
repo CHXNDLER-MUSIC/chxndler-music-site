@@ -14,15 +14,27 @@ export default function NamePromptOnLogin() {
   useEffect(() => {
     // Only react when explicit completeProfile flag is true
     const shouldComplete = searchParams.get('completeProfile') === '1';
+    
     if (!shouldComplete) return;
 
-    // Open prompt exactly once per arrival, then clean up the URL
-    try { openNamePromptFromAuth(); } catch {}
-    try {
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete('completeProfile');
-      router.replace(`/?${params.toString()}`);
-    } catch {}
+    // Open prompt exactly once per arrival
+    try { 
+      openNamePromptFromAuth(); 
+      
+      // Clean up URL after a short delay to allow modal state to settle
+      setTimeout(() => {
+        try {
+          const params = new URLSearchParams(searchParams.toString());
+          params.delete('completeProfile');
+          const newUrl = params.toString() ? `/?${params.toString()}` : '/';
+          router.replace(newUrl);
+        } catch (e) {
+          console.warn('Failed to clean up URL parameters:', e);
+        }
+      }, 100);
+    } catch (e) {
+      console.warn('Failed to open name prompt from auth:', e);
+    }
   }, [searchParams, openNamePromptFromAuth, router]);
 
   return null;
