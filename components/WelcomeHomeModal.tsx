@@ -131,21 +131,35 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
     }
   }
 
-  if (!open) return null;
-
   if (typeof document === 'undefined') return null;
 
   return createPortal(
     <>
-      {/* Hologram base glow - wider and stronger */}
-      <div 
-        className="fixed inset-0 flex items-center justify-center"
-        style={{
-          zIndex: 2147483648,
-          pointerEvents: 'none',
-          paddingTop: '200px'
-        }}
-      >
+      {/* Always render audio elements so they persist when modal closes */}
+      <audio 
+        ref={welcomeAudioRef} 
+        src="https://ik.imagekit.io/CHXNDLER/tracks/welcome-to-the-heartverse.mp3?updatedAt=1762392390137"
+        preload="auto"
+      />
+      <audio 
+        ref={spaceMusicAudioRef} 
+        src="https://ik.imagekit.io/CHXNDLER/tracks/space-music.mp3?updatedAt=1762392378623"
+        preload="auto"
+        loop
+      />
+      
+      {/* Only show modal UI when open */}
+      {open && (
+        <>
+          {/* Hologram base glow - wider and stronger */}
+          <div 
+            className="fixed inset-0 flex items-center justify-center"
+            style={{
+              zIndex: 2147483648,
+              pointerEvents: 'none',
+              paddingTop: '200px'
+            }}
+          >
         <div
           style={{
             width: 'min(120vw, 700px)',
@@ -319,19 +333,8 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
         </div>
         </div>
       </div>
-      
-      {/* Hidden audio elements for playing both tracks */}
-      <audio 
-        ref={welcomeAudioRef} 
-        src="https://ik.imagekit.io/CHXNDLER/tracks/welcome-to-the-heartverse.mp3?updatedAt=1762392390137"
-        preload="auto"
-      />
-      <audio 
-        ref={spaceMusicAudioRef} 
-        src="https://ik.imagekit.io/CHXNDLER/tracks/space-music.mp3?updatedAt=1762392378623"
-        preload="auto"
-        loop
-      />
+        </>
+      )}
     </>,
     document.body
   );

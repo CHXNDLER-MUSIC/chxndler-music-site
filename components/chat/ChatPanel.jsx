@@ -463,7 +463,7 @@ export default function ChatPanel({ isOpen, onClose }) {
             exit="closed"
           >
             <div
-              className="w-[28rem] h-full border-r-2 border-yellow-400/50 flex flex-col"
+              className="w-[32rem] h-full border-r-2 border-yellow-400/50 flex flex-col"
               style={{
                 background: `
                   linear-gradient(135deg, 
@@ -531,7 +531,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                 {/* User List */}
                 <div 
                   className={`border-r border-cyan-400/20 transition-all duration-300 ease-in-out ${
-                    isUserPanelCollapsed ? 'w-8' : 'w-20'
+                    isUserPanelCollapsed ? 'w-8' : 'w-32'
                   }`}
                 >
                   {/* Collapse Toggle Button */}
@@ -615,124 +615,91 @@ export default function ChatPanel({ isOpen, onClose }) {
 
                 {/* Messages Area */}
                 <div className="flex-1 flex flex-col">
-                  {selectedUser ? (
-                    /* User Profile View */
-                    <div className="flex-1 flex flex-col">
-                      {/* Profile Header */}
-                      <div className="p-4 border-b border-cyan-400/20 flex items-center justify-between">
+                  {/* Always show messages */}
+                  <MessageList 
+                    messages={messages}
+                    onUserClick={handleUserClick}
+                    loading={loading}
+                  />
+                  
+                  {/* Typing Indicators */}
+                  {typingUsers.length > 0 && (
+                    <div className="px-3 py-2 border-t border-cyan-400/20">
+                      <div className="text-xs text-white/60">
+                        {typingUsers.map(user => user.display_name).join(', ')} 
+                        {typingUsers.length === 1 ? ' is' : ' are'} typing
+                        <span className="inline-flex ml-1">
+                          <span className="animate-pulse">.</span>
+                          <span className="animate-pulse" style={{animationDelay: '0.2s'}}>.</span>
+                          <span className="animate-pulse" style={{animationDelay: '0.4s'}}>.</span>
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Profile View - shown above message input when user is selected */}
+                  {selectedUser && (
+                    <div className="border-t border-yellow-400/30 p-3">
+                      <div className="flex items-center justify-between mb-2">
                         <h3 
-                          className="text-lg font-bold"
+                          className="text-sm font-bold"
                           style={{
-                            color: '#00FFFF',
-                            textShadow: '0 0 10px #00FFFF'
+                            color: '#F2EF1D',
+                            textShadow: '0 0 8px #F2EF1D'
                           }}
                         >
                           {selectedUser.name || 'Anonymous'}
                         </h3>
                         <button
                           onClick={() => setSelectedUser(null)}
-                          className="text-white/70 hover:text-white transition-colors p-1 rounded"
+                          className="text-white/70 hover:text-white transition-colors text-xs px-2 py-1 rounded"
                           style={{
                             background: 'rgba(255, 255, 255, 0.1)',
                             border: '1px solid rgba(255, 255, 255, 0.2)'
                           }}
                         >
-                          ← Back to Chat
+                          ×
                         </button>
                       </div>
                       
-                      {/* Profile Content */}
-                      <div className="flex-1 p-4 overflow-y-auto">
-                        <div className="text-center">
-                          <div 
-                            className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
-                            style={{
-                              background: 'rgba(0, 255, 255, 0.2)',
-                              border: '2px solid rgba(0, 255, 255, 0.5)',
-                              boxShadow: '0 0 20px rgba(0, 255, 255, 0.3)'
-                            }}
-                          >
-                            {selectedUser.id === 'anonymous' ? (
-                              <span className="text-2xl">👽</span>
-                            ) : (
-                              <span className="text-2xl">👤</span>
-                            )}
-                          </div>
-                          
-                          <p className="text-white/80 text-sm mb-6">
-                            {selectedUser.id === 'anonymous' 
-                              ? `${selectedUser.name} - A mysterious entity exploring the Heart Signal dimensions.`
-                              : `Profile for ${selectedUser.name}`}
-                          </p>
-                          
-                          {/* Profile Stats */}
-                          <div className="space-y-3 text-left">
-                            <div className="flex justify-between items-center p-3 rounded-lg" style={{ background: 'linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(0, 255, 255, 0.05))', border: '1px solid rgba(0, 255, 255, 0.2)' }}>
-                              <span className="text-white/70 text-sm">Status:</span>
-                              <span className="text-green-400 text-sm font-semibold">
-                                <span className="inline-block w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
-                                Connected
-                              </span>
-                            </div>
-                            
-                            <div className="flex justify-between items-center p-3 rounded-lg" style={{ background: 'linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(0, 255, 255, 0.05))', border: '1px solid rgba(0, 255, 255, 0.2)' }}>
-                              <span className="text-white/70 text-sm">Identity:</span>
-                              <span className="text-purple-400 text-sm font-semibold">
-                                {selectedUser.id === 'anonymous' ? 'Interdimensional Visitor' : (selectedUser.element || 'Unknown')}
-                              </span>
-                            </div>
-                            
-                            <div className="flex justify-between items-center p-3 rounded-lg" style={{ background: 'linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(0, 255, 255, 0.05))', border: '1px solid rgba(0, 255, 255, 0.2)' }}>
-                              <span className="text-white/70 text-sm">Origin:</span>
-                              <span className="text-white/90 text-sm font-semibold">
-                                {selectedUser.id === 'anonymous' ? 'Unknown Dimension' : 'Heart Signal Universe'}
-                              </span>
-                            </div>
-
-                            {selectedUser.id === 'anonymous' && (
-                              <div className="mt-6 p-4 rounded-lg" style={{ background: 'linear-gradient(135deg, rgba(252, 84, 175, 0.1), rgba(56, 182, 255, 0.1))', border: '1px solid rgba(252, 84, 175, 0.3)' }}>
-                                <p className="text-pink-300 text-xs text-center leading-relaxed">
-                                  ✨ This ALIEN visitor carries the essence of distant worlds, temporarily connected to our Heart Signal frequency. Their presence here is both mysterious and welcome. ✨
-                                </p>
-                              </div>
-                            )}
+                      <div className="flex items-center space-x-2">
+                        {/* Avatar */}
+                        <div 
+                          className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
+                          style={{
+                            background: 'rgba(0, 255, 0, 0.2)',
+                            border: '1px solid rgba(0, 255, 0, 0.5)',
+                            boxShadow: '0 0 8px rgba(0, 255, 0, 0.3)'
+                          }}
+                        >
+                          {selectedUser.id === 'anonymous' ? (
+                            <span className="text-xs">👽</span>
+                          ) : (
+                            <span className="text-xs">👤</span>
+                          )}
+                        </div>
+                        
+                        {/* Mini profile info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-white/90 truncate font-medium">
+                              {selectedUser.name || 'Anonymous'}
+                            </span>
+                            <span className="inline-block w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
+                            <span className="text-xs text-green-400">Online</span>
                           </div>
                         </div>
                       </div>
                     </div>
-                  ) : (
-                    /* Normal Chat View */
-                    <>
-                      <MessageList 
-                        messages={messages}
-                        onUserClick={handleUserClick}
-                        loading={loading}
-                      />
-                      
-                      {/* Typing Indicators */}
-                      {typingUsers.length > 0 && (
-                        <div className="px-3 py-2 border-t border-cyan-400/20">
-                          <div className="text-xs text-white/60">
-                            {typingUsers.map(user => user.display_name).join(', ')} 
-                            {typingUsers.length === 1 ? ' is' : ' are'} typing
-                            <span className="inline-flex ml-1">
-                              <span className="animate-pulse">.</span>
-                              <span className="animate-pulse" style={{animationDelay: '0.2s'}}>.</span>
-                              <span className="animate-pulse" style={{animationDelay: '0.4s'}}>.</span>
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Message Input */}
-                      <MessageInput 
-                        onSendMessage={handleSendMessage}
-                        onTyping={handleTyping}
-                        disabled={loading}
-                        placeholder="Type a message..."
-                      />
-                    </>
                   )}
+                      
+                  {/* Message Input - always shown */}
+                  <MessageInput 
+                    onSendMessage={handleSendMessage}
+                    onTyping={handleTyping}
+                    disabled={loading}
+                    placeholder="Type a message..."
+                  />
                 </div>
               </div>
 

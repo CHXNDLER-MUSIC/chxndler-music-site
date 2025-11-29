@@ -34,7 +34,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
     { label: "JOURNAL", href: undefined },
     { label: "BINDER", href: undefined },
     { label: "BADGES", href: undefined },
-    { label: "SIGNAL", href: undefined },
+    { label: "STORE", href: undefined },
   ];
 
   useEffect(() => {
@@ -176,7 +176,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                     item.label === "JOURNAL" ? "menu-journal" :
                     item.label === "BINDER" ? "menu-binder" :
                     item.label === "BADGES" ? "menu-badges" :
-                    item.label === "SIGNAL" ? "menu-signal" :
+                    item.label === "STORE" ? "menu-store" :
                     `menu-${item.label.toLowerCase().replace(/ /g, '-')}`
                   }
                   className={`w-full px-6 py-2 text-left text-white font-semibold tracking-wide transition-all duration-200 hover:bg-cyan-500/10 hover:text-cyan-300 relative group ${
@@ -255,10 +255,10 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                         }}
                       />
                     )}
-                    {item.label === "SIGNAL" && (
+                    {item.label === "STORE" && (
                       <Image
                         src="/elements/signal.webp"
-                        alt="Signal"
+                        alt="Store"
                         width={32}
                         height={32}
                         className="transition-all duration-200"

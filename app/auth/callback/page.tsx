@@ -14,7 +14,12 @@ export default function AuthCallbackPage() {
     const urlParams = new URLSearchParams(window.location.search);
     const isFromEmailSignup = urlParams.get('profileSetup') === '1';
 
-    console.log('🔍 Auth callback context:', { isFromEmailSignup, searchParams: window.location.search });
+    console.log('🔍 Auth callback context:', { 
+      isFromEmailSignup, 
+      searchParams: window.location.search,
+      fullUrl: window.location.href,
+      allParams: Object.fromEntries(urlParams.entries())
+    });
 
     // If this came from email signup, always go to name prompt regardless of existing profile
     if (isFromEmailSignup) {

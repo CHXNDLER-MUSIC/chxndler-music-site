@@ -6,6 +6,7 @@ import { playerStore } from "@/store/usePlayerStore";
 import { computePlanetLayout } from "@/lib/planetLayout";
 import { buildPlanetSongs } from "@/lib/planets";
 import type { PlanetType, WeatherSystem, PlanetGeometry } from "@/lib/planets";
+import PlanetMinimap from "@/components/holo/PlanetMinimap";
 
 type Sat = {
   id: string;
@@ -52,7 +53,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
   const centralPlanetRef = useRef<{ id: string | null; mesh: THREE.Mesh | null; originalSat: Sat | null }>({ id: null, mesh: null, originalSat: null });
   // Camera animation for smooth focus transitions
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const targetCameraPos = useRef<THREE.Vector3>(new THREE.Vector3(0, 1.2, 16.0));
+  const targetCameraPos = useRef<THREE.Vector3>(new THREE.Vector3(0, 50, 300.0));
   const targetCameraLookAt = useRef<THREE.Vector3>(new THREE.Vector3(0, 0, 0));
   const cameraTransitionSpeed = useRef<number>(0.08);
   
@@ -1755,10 +1756,10 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
     const height = Math.max(1, mount.clientHeight || 340);
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(35, width / height, 0.1, 120);
+    const camera = new THREE.PerspectiveCamera(35, width / height, 0.1, 1000); // Increased far plane
     // Zoomed out even further for wider view
-    camera.position.set(0, 1.2, 40.0);
-    camera.lookAt(0, -2, 0); // Look below center to shift display higher
+    camera.position.set(0, 50, 300.0); // MUCH further back to see water planet
+    camera.lookAt(0, 0, 0); // Look at center
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -1801,11 +1802,11 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
     ];
 
     elementalPlanets.forEach((planet, index) => {
-      const planetGeo = new THREE.SphereGeometry(2.0, 32, 32);
+      const planetGeo = new THREE.SphereGeometry(15.0, 32, 32); // MUCH LARGER for visibility
       const planetMat = new THREE.MeshPhongMaterial({
         color: planet.color,
         emissive: planet.color,
-        emissiveIntensity: 0.3,
+        emissiveIntensity: 2.0, // MUCH BRIGHTER
         shininess: 30
       });
       const planetMesh = new THREE.Mesh(planetGeo, planetMat);
@@ -2484,14 +2485,14 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
             ];
 
             elementalPlanets.forEach(planet => {
-              // Create sphere geometry - VISIBLE BUT SMALL SIZE
-              const sphereGeo = new THREE.SphereGeometry(1.0, 16, 16);
+              // Create sphere geometry - MASSIVE SIZE FOR VISIBILITY
+              const sphereGeo = new THREE.SphereGeometry(25.0, 32, 32);
               
               // Create enhanced material with emissive properties
               const sphereMat = new THREE.MeshStandardMaterial({ 
                 color: planet.color,
                 emissive: new THREE.Color(planet.color),
-                emissiveIntensity: 0.4,
+                emissiveIntensity: 3.0, // EXTREMELY BRIGHT
                 metalness: 0.1,
                 roughness: 0.3,
                 transparent: false
@@ -2865,6 +2866,11 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
         opacity: isHomeOverview ? 1 : (planetsVisible && effectiveMode !== 'hidden' ? 1 : 0),
         transition: 'opacity 400ms ease-in-out'
       }}
-    />
+    >
+      {/* 2D Minimap overlay - show when displaying all planets */}
+      {showAll && (
+        <PlanetMinimap currentMainId={mainId} hoverId={hoverId} />
+      )}
+    </div>
   );
 }

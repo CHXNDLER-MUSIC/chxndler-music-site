@@ -29,15 +29,19 @@ export default function NamePromptOnLogin() {
       shouldComplete, 
       urlHasCompleteProfile,
       searchParamsString: searchParams.toString(),
-      url: window.location.href 
+      url: typeof window !== 'undefined' ? window.location.href : 'server-side'
     });
     
-    if (!shouldComplete && !urlHasCompleteProfile) return;
+    if (!shouldComplete && !urlHasCompleteProfile) {
+      console.log('🚫 No completeProfile parameter found, not opening modal');
+      return;
+    }
 
     console.log('✅ Opening name prompt from auth');
     // Open prompt exactly once per arrival - use a small delay to ensure all components are ready
     const timeoutId = setTimeout(() => {
       try { 
+        console.log('🔄 Calling openNamePromptFromAuth...');
         openNamePromptFromAuth(); 
         console.log('✅ openNamePromptFromAuth called successfully');
       } catch (e) {
@@ -51,11 +55,12 @@ export default function NamePromptOnLogin() {
         const params = new URLSearchParams(searchParams.toString());
         params.delete('completeProfile');
         const newUrl = params.toString() ? `/?${params.toString()}` : '/';
+        console.log('🧹 Cleaning up URL from', window.location.href, 'to', newUrl);
         router.replace(newUrl);
       } catch (e) {
         console.warn('Failed to clean up URL parameters:', e);
       }
-    }, 500);
+    }, 2000); // Increased delay so you can see the modal
 
     return () => {
       clearTimeout(timeoutId);

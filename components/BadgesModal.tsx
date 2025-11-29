@@ -3,6 +3,7 @@
 import { useState } from "react";
 import HeartversePopup from "@/components/HeartversePopup";
 import { useProfile } from "@/contexts/ProfileContext";
+import { useBadges } from "@/hooks/useBadges";
 
 type BadgeCategory = {
   id: string;
@@ -26,10 +27,12 @@ type Props = {
 
 export default function BadgesModal({ open, onClose, embedded = false }: Props) {
   const { profile } = useProfile();
+  const { badgeCategories, loading, error } = useBadges();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedBadge, setSelectedBadge] = useState<{name: string; description?: string; progress?: number; current?: number; total?: number; icon_url?: string} | null>(null);
 
-  const badgeCategories: BadgeCategory[] = [
+  // Fallback categories if Supabase data isn't available
+  const fallbackCategories: BadgeCategory[] = [
     {
       id: "soul-star",
       name: "SOUL STAR",
@@ -344,7 +347,8 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   }
 
   if (selectedCategory) {
-    const category = badgeCategories.find(cat => cat.id === selectedCategory);
+    const allCategories = badgeCategories.length > 0 ? badgeCategories : fallbackCategories;
+    const category = allCategories.find(cat => cat.id === selectedCategory);
     if (!category) return null;
     
     const categoryContent = (
@@ -586,9 +590,24 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         </div>
       )}
 
+      {/* Loading State */}
+      {loading && (
+        <div className="text-center text-white/60">
+          Loading badges...
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && !loading && (
+        <div className="text-center text-red-400 text-sm">
+          Error loading badges: {error}
+        </div>
+      )}
+
       {/* Badge Categories Grid - 6 categories in 3x2 layout */}
-      <div className="grid grid-cols-3 gap-4 justify-items-center max-w-md mx-auto">
-        {badgeCategories.map((category) => (
+      {!loading && !error && (
+        <div className="grid grid-cols-3 gap-4 justify-items-center max-w-md mx-auto">
+          {(badgeCategories.length > 0 ? badgeCategories : fallbackCategories).map((category) => (
           <button
             key={category.id}
             onClick={() => setSelectedCategory(category.id)}
@@ -604,7 +623,8 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             </div>
           </button>
         ))}
-      </div>
+        </div>
+      )}
     </>
   );
 

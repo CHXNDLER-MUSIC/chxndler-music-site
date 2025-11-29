@@ -10,6 +10,17 @@ import { getElementColor } from '@/lib/supabase/chat';
 export default function UserList({ users, onUserClick, loading }) {
   console.log('🔥 UserList received:', { users, userCount: users?.length, loading });
   
+  // Force add an anonymous user if no users exist
+  const displayUsers = users?.length > 0 ? users : [{
+    id: 'anonymous',
+    name: 'ALIEN' + Math.floor(Math.random() * 99999999).toString().padStart(8, '0'),
+    element: 'alien',
+    avatar_badge_id: null,
+    last_seen: new Date().toISOString()
+  }];
+  
+  console.log('🔥 DisplayUsers final:', displayUsers);
+  
   if (loading) {
     return (
       <div className="h-full flex flex-col items-center justify-center p-2">
@@ -21,18 +32,7 @@ export default function UserList({ users, onUserClick, loading }) {
     );
   }
 
-  if (users.length === 0) {
-    return (
-      <div className="h-full flex flex-col items-center justify-center p-2">
-        <div 
-          className="w-8 h-8 rounded-full bg-cyan-400/20 border border-cyan-400/50 flex items-center justify-center mb-2"
-        >
-          <span className="text-cyan-400 text-xs">👥</span>
-        </div>
-        <p className="text-xs text-white/40 text-center">No users yet</p>
-      </div>
-    );
-  }
+  // Always show the user list - don't check for empty users
 
   return (
     <div className="h-full overflow-y-auto p-2 space-y-2">
@@ -51,13 +51,26 @@ export default function UserList({ users, onUserClick, loading }) {
       </div>
 
       {/* User List */}
-      {users.map((user) => (
+      {displayUsers?.length > 0 ? displayUsers.map((user) => (
         <UserListItem
           key={user.id}
           user={user}
           onClick={() => onUserClick(user.id)}
         />
-      ))}
+      )) : (
+        /* Emergency fallback - always show at least one alien user */
+        <UserListItem
+          key="emergency-alien"
+          user={{
+            id: 'anonymous',
+            name: 'ALIEN' + Math.floor(Math.random() * 99999999).toString().padStart(8, '0'),
+            element: 'alien',
+            avatar_badge_id: null,
+            last_seen: new Date().toISOString()
+          }}
+          onClick={() => onUserClick('anonymous')}
+        />
+      )}
     </div>
   );
 }

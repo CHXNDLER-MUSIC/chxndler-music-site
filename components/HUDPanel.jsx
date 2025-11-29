@@ -7124,11 +7124,11 @@ export default function HUDPanel({
 
             {/* Title */}
             <h2 style={{
-              color: '#00FFFF',
+              color: '#F2EF1D',
               fontSize: '28px',
               fontWeight: 'bold',
               marginBottom: '20px',
-              textShadow: '0 0 20px #00FFFF, 0 0 30px #00FFFF',
+              textShadow: '0 0 20px #F2EF1D, 0 0 30px #F2EF1D',
               letterSpacing: '0.1em'
             }}>
               SUPPORT THE SIGNAL
@@ -7146,11 +7146,11 @@ export default function HUDPanel({
             
             {/* Venmo Username */}
             <p style={{
-              color: '#00FFFF',
+              color: '#F2EF1D',
               fontSize: '24px',
               fontWeight: 'bold',
               marginBottom: '30px',
-              textShadow: '0 0 15px #00FFFF',
+              textShadow: '0 0 15px #F2EF1D',
               letterSpacing: '0.05em'
             }}>
               @chxndlerthealien
@@ -7174,31 +7174,31 @@ export default function HUDPanel({
               style={{
                 padding: '16px 32px',
                 background: 'transparent',
-                border: '3px solid #00FFFF',
+                border: '3px solid #F2EF1D',
                 borderRadius: '12px',
-                color: '#00FFFF',
+                color: '#F2EF1D',
                 fontSize: '18px',
                 fontWeight: 'bold',
                 cursor: 'pointer',
                 transition: 'all 300ms ease',
-                boxShadow: '0 0 30px rgba(0, 255, 255, 0.6)',
+                boxShadow: '0 0 30px rgba(242, 239, 29, 0.6)',
                 width: '100%',
-                textShadow: '0 0 15px #00FFFF',
+                textShadow: '0 0 15px #F2EF1D',
                 letterSpacing: '0.1em',
                 textTransform: 'uppercase'
               }}
               onMouseEnter={(e) => {
                 try { sfx.play('hover', 0.3); } catch {}
                 e.target.style.transform = 'scale(1.05)';
-                e.target.style.background = 'rgba(0, 255, 255, 0.1)';
-                e.target.style.boxShadow = '0 0 50px rgba(0, 255, 255, 0.8), inset 0 0 20px rgba(0, 255, 255, 0.2)';
-                e.target.style.textShadow = '0 0 25px #00FFFF, 0 0 35px #00FFFF';
+                e.target.style.background = 'rgba(242, 239, 29, 0.1)';
+                e.target.style.boxShadow = '0 0 50px rgba(242, 239, 29, 0.8), inset 0 0 20px rgba(242, 239, 29, 0.2)';
+                e.target.style.textShadow = '0 0 25px #F2EF1D, 0 0 35px #F2EF1D';
               }}
               onMouseLeave={(e) => {
                 e.target.style.transform = 'scale(1)';
                 e.target.style.background = 'transparent';
-                e.target.style.boxShadow = '0 0 30px rgba(0, 255, 255, 0.6)';
-                e.target.style.textShadow = '0 0 15px #00FFFF';
+                e.target.style.boxShadow = '0 0 30px rgba(242, 239, 29, 0.6)';
+                e.target.style.textShadow = '0 0 15px #F2EF1D';
               }}
             >
               Send via Venmo

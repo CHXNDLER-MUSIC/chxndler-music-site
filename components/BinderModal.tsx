@@ -1130,39 +1130,7 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
                   {/* Card info positioned to the right */}
                   {purchaseState === 'idle' ? (
                     <div className="flex flex-col text-left">
-                      <h2 className="text-xl font-bold text-yellow-300 mb-1">
-                        {currentCard.title}
-                      </h2>
                       
-                      {/* Element and rarity info - positioned between title and one-liner */}
-                      <div className="flex items-center gap-3 mb-1 text-xs">
-                        {currentCard.element && (
-                          <div 
-                            style={{ 
-                              color: '#FFB6C1', 
-                              textShadow: '0 0 4px rgba(255,182,193,0.6)'
-                            }}
-                          >
-                            Element: <span style={{ 
-                              color: getElementColor(currentCard.element),
-                              textShadow: `0 0 4px ${getElementColor(currentCard.element)}80`
-                            }}>{currentCard.element}</span>
-                          </div>
-                        )}
-                        
-                        <div 
-                          style={{ 
-                            color: currentCard.rarity === 'Rare' ? '#FF69B4' : '#87CEEB',
-                            textShadow: '0 0 4px currentColor'
-                          }}
-                        >
-                          ★ {currentCard.rarity.toUpperCase()} ★
-                        </div>
-                      </div>
-                      
-                      <p className="text-sm text-pink-200 opacity-90">
-                        {getCardOneLiner(currentCard.name)}
-                      </p>
 
                       {/* Purchase buttons positioned below text */}
                       {(() => {
