@@ -87,71 +87,33 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "T
   return (
     <div className="border-t border-cyan-400/20 p-3">
       <form onSubmit={handleSubmit} className="space-y-2">
-        {/* Formatting and Emoji Toolbar */}
-        <div className="flex items-center justify-between">
-          {/* Formatting buttons */}
-          <div className="flex space-x-1">
-            <ToolbarButton
-              onClick={() => insertFormatting('bold')}
-              title="Bold (**text**)"
-              disabled={disabled}
-            >
-              <strong>B</strong>
-            </ToolbarButton>
-            
-            <ToolbarButton
-              onClick={() => insertFormatting('italic')}
-              title="Italic (*text*)"
-              disabled={disabled}
-            >
-              <em>I</em>
-            </ToolbarButton>
-            
-            <ToolbarButton
-              onClick={() => insertFormatting('code')}
-              title="Code (`text`)"
-              disabled={disabled}
-            >
-              <code>&lt;/&gt;</code>
-            </ToolbarButton>
-          </div>
-
-          {/* Emoji button */}
-          <ToolbarButton
-            onClick={() => setShowEmojis(!showEmojis)}
-            title="Add emoji"
+        {/* Text Input */}
+        <div className="w-full">
+          <input
+            type="text"
+            placeholder="Quick text..."
             disabled={disabled}
-            isActive={showEmojis}
-          >
-            😊
-          </ToolbarButton>
+            className="w-full px-4 py-2 text-sm rounded-lg transition-all duration-200 focus:outline-none"
+            style={{
+              background: 'rgba(0, 0, 0, 0.7)',
+              border: '2px solid rgba(0, 255, 255, 0.5)',
+              color: '#00FFFF',
+              textShadow: '0 0 8px #00FFFF',
+              boxShadow: '0 0 15px rgba(0, 255, 255, 0.3), inset 0 0 15px rgba(0, 255, 255, 0.1)',
+            }}
+            onFocus={(e) => {
+              e.target.style.border = '2px solid #00FFFF';
+              e.target.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.6), inset 0 0 20px rgba(0, 255, 255, 0.2)';
+              e.target.style.textShadow = '0 0 12px #00FFFF';
+            }}
+            onBlur={(e) => {
+              e.target.style.border = '2px solid rgba(0, 255, 255, 0.5)';
+              e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3), inset 0 0 15px rgba(0, 255, 255, 0.1)';
+              e.target.style.textShadow = '0 0 8px #00FFFF';
+            }}
+          />
         </div>
 
-        {/* Emoji Picker */}
-        {showEmojis && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="grid grid-cols-8 gap-1 p-2 rounded-lg"
-            style={{
-              background: 'rgba(0, 0, 0, 0.8)',
-              border: '1px solid rgba(0, 255, 255, 0.3)'
-            }}
-          >
-            {quickEmojis.map((emoji) => (
-              <button
-                key={emoji}
-                type="button"
-                onClick={() => insertEmoji(emoji)}
-                className="p-1 rounded hover:bg-white/10 transition-colors text-lg"
-                title={`Insert ${emoji}`}
-              >
-                {emoji}
-              </button>
-            ))}
-          </motion.div>
-        )}
 
         {/* Message Input */}
         <div className="flex items-end space-x-2">

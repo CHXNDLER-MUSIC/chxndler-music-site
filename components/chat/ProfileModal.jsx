@@ -147,7 +147,7 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
       >
         {/* Backdrop */}
         <div 
-          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          className="absolute inset-0 bg-black/20 backdrop-blur-sm"
           onClick={onClose}
         />
 
@@ -232,7 +232,7 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
               </div>
 
               {/* Avatar Badge Selection (Own Profile Only) */}
-              {isOwnProfile && editingAvatar && (
+              {isOwnProfile && editingAvatar && user.id !== 'anonymous' && (
                 <div className="p-4 border-b border-white/20">
                   <h3 className="text-sm font-semibold text-white mb-3">Choose Avatar Badge</h3>
                   <div className="grid grid-cols-4 gap-2 max-h-32 overflow-y-auto">
@@ -418,7 +418,11 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
                           <span className="text-2xl">🏆</span>
                         </div>
                         <p className="text-white/60">
-                          {isOwnProfile ? "You haven't earned any badges yet!" : `${displayName} has no badges to display.`}
+                          {user.id === 'anonymous' 
+                            ? `${displayName} carries no earthly achievements.`
+                            : isOwnProfile 
+                              ? "You haven't earned any badges yet!" 
+                              : `${displayName} has no badges to display.`}
                         </p>
                       </div>
                     )}

@@ -246,7 +246,7 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
           </form>
           
           {/* Single Send Heart Signal Button */}
-          <div className="flex justify-center">
+          <div className="flex justify-center mt-2">
             <button
               onClick={() => {
                 if (email.length > 0 && !message) {
@@ -254,7 +254,7 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
                 }
               }}
               disabled={loading || email.length === 0}
-              className="inline-flex items-center justify-center rounded-lg px-6 py-2 text-sm font-medium transition disabled:opacity-50 mb-2"
+              className="inline-flex items-center justify-center rounded-lg px-8 py-2 text-sm font-medium transition disabled:opacity-50 mb-2"
             style={message ? {
               background: 'rgba(0,255,0,0.2)',
               border: '1px solid rgba(0,255,0,0.6)',

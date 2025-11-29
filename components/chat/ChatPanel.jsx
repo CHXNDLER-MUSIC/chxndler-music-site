@@ -57,6 +57,34 @@ export default function ChatPanel({ isOpen, onClose }) {
     }
   }, [isOpen]);
 
+  // Ensure anonymous users appear immediately when chat opens
+  useEffect(() => {
+    if (isOpen) {
+      const displayName = getDisplayName();
+      console.log('🔥 Chat opened - user state:', { user: !!user, profile: !!profile, displayName });
+      
+      // Force add anonymous user immediately for any non-authenticated user
+      if (!user) {
+        console.log('🔥 FORCE Adding anonymous user to list:', displayName);
+        
+        // Always add/update the anonymous user entry
+        setChatUsers(prev => {
+          console.log('🔥 Current users before update:', prev);
+          const filteredUsers = prev.filter(u => u.id !== 'anonymous'); // Remove any existing anonymous
+          const newUsers = [{
+            id: 'anonymous',
+            name: displayName,
+            element: null,
+            avatar_badge_id: null,
+            last_seen: new Date().toISOString()
+          }, ...filteredUsers];
+          console.log('🔥 New users after update:', newUsers);
+          return newUsers;
+        });
+      }
+    }
+  }, [isOpen, user]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -127,13 +155,44 @@ export default function ChatPanel({ isOpen, onClose }) {
             console.log('🔥 Updated messages:', newMessages);
             return newMessages;
           });
-          setChatUsers(prev => [...prev, {
-            id: 'anonymous',
-            name: displayName,
-            element: null,
-            avatar_badge_id: null,
-            last_seen: new Date().toISOString()
-          }]);
+          
+          // Add anonymous user to chat users list if not already present
+          setChatUsers(prev => {
+            const existingAnonymous = prev.find(u => u.id === 'anonymous');
+            if (existingAnonymous) {
+              // Update existing anonymous user
+              return prev.map(u => 
+                u.id === 'anonymous' 
+                  ? { ...u, name: displayName, last_seen: new Date().toISOString() }
+                  : u
+              );
+            } else {
+              // Add new anonymous user
+              return [...prev, {
+                id: 'anonymous',
+                name: displayName,
+                element: null,
+                avatar_badge_id: null,
+                last_seen: new Date().toISOString()
+              }];
+            }
+          });
+        } else if (!user) {
+          // Fallback: ensure anonymous user is in list even if sync message fails
+          const displayName = getDisplayName();
+          setChatUsers(prev => {
+            const existingAnonymous = prev.find(u => u.id === 'anonymous');
+            if (!existingAnonymous) {
+              return [...prev, {
+                id: 'anonymous',
+                name: displayName,
+                element: null,
+                avatar_badge_id: null,
+                last_seen: new Date().toISOString()
+              }];
+            }
+            return prev;
+          });
         }
         
         setHasJoined(true);
@@ -199,6 +258,22 @@ export default function ChatPanel({ isOpen, onClose }) {
     }
   };
 
+  /**
+   * Handle close with sound effect
+   */
+  const handleClose = () => {
+    try {
+      const audio = new Audio('/close.mp3');
+      audio.volume = 0.5;
+      audio.play().catch(error => {
+        console.log('Audio play failed:', error);
+      });
+    } catch (error) {
+      console.log('Audio creation failed:', error);
+    }
+    onClose();
+  };
+
   // Panel variants for smooth sliding animation
   const panelVariants = {
     closed: {
@@ -252,13 +327,13 @@ export default function ChatPanel({ isOpen, onClose }) {
             exit="closed"
           >
             <div
-              className="w-80 h-full bg-black/80 backdrop-blur-xl border-r-2 border-cyan-400/50 flex flex-col"
+              className="w-80 h-full bg-black/60 backdrop-blur-xl border-r-2 border-cyan-400/50 flex flex-col"
               style={{
                 background: `
                   linear-gradient(135deg, 
-                    rgba(0, 0, 0, 0.95) 0%,
-                    rgba(0, 20, 40, 0.9) 50%,
-                    rgba(0, 0, 0, 0.95) 100%
+                    rgba(0, 0, 0, 0.7) 0%,
+                    rgba(0, 20, 40, 0.6) 50%,
+                    rgba(0, 0, 0, 0.7) 100%
                   )
                 `,
                 boxShadow: `
@@ -268,29 +343,38 @@ export default function ChatPanel({ isOpen, onClose }) {
               }}
             >
               {/* Header */}
-              <div className="p-4 border-b border-cyan-400/30 flex items-center justify-between">
-                <div className="flex items-center space-x-3">
+              <div className="p-4 border-b border-cyan-400/30 flex items-center">
+                <div className="flex items-center space-x-3 flex-1 mr-4">
                   <div 
-                    className="w-3 h-3 rounded-full animate-pulse"
+                    className="w-3 h-3 rounded-full animate-pulse flex-shrink-0"
                     style={{
                       background: 'linear-gradient(45deg, #FC54AF, #38B6FF)',
                       boxShadow: '0 0 15px rgba(252, 84, 175, 0.6)'
                     }}
                   />
                   <h2 
-                    className="text-lg font-bold"
+                    className="text-lg font-bold whitespace-nowrap"
                     style={{
                       color: '#00FFFF',
-                      textShadow: '0 0 10px #00FFFF, 0 0 20px #00FFFF'
+                      textShadow: '0 0 10px #00FFFF, 0 0 20px #00FFFF',
+                      letterSpacing: '0.05em'
                     }}
                   >
-                    LIVE CHAT
+                    HEART SIGNAL LIVE
                   </h2>
+                  {/* Extended glow line */}
+                  <div 
+                    className="flex-1 h-px ml-4"
+                    style={{
+                      background: 'linear-gradient(90deg, rgba(0, 255, 255, 0.6), rgba(0, 255, 255, 0.2), transparent)',
+                      boxShadow: '0 0 8px rgba(0, 255, 255, 0.4)'
+                    }}
+                  />
                 </div>
                 
                 <button
-                  onClick={onClose}
-                  className="text-white/70 hover:text-white transition-colors p-1"
+                  onClick={handleClose}
+                  className="text-white/70 hover:text-white transition-colors p-1 flex-shrink-0"
                   style={{
                     background: 'rgba(255, 255, 255, 0.1)',
                     borderRadius: '4px',
@@ -314,18 +398,108 @@ export default function ChatPanel({ isOpen, onClose }) {
 
                 {/* Messages Area */}
                 <div className="flex-1 flex flex-col">
-                  <MessageList 
-                    messages={messages}
-                    onUserClick={handleUserClick}
-                    loading={loading}
-                  />
-                  
-                  {/* Message Input */}
-                  <MessageInput 
-                    onSendMessage={handleSendMessage}
-                    disabled={loading}
-                    placeholder="Type a message..."
-                  />
+                  {selectedUser ? (
+                    /* User Profile View */
+                    <div className="flex-1 flex flex-col">
+                      {/* Profile Header */}
+                      <div className="p-4 border-b border-cyan-400/20 flex items-center justify-between">
+                        <h3 
+                          className="text-lg font-bold"
+                          style={{
+                            color: '#00FFFF',
+                            textShadow: '0 0 10px #00FFFF'
+                          }}
+                        >
+                          {selectedUser.name || 'Anonymous'}
+                        </h3>
+                        <button
+                          onClick={() => setSelectedUser(null)}
+                          className="text-white/70 hover:text-white transition-colors p-1 rounded"
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.1)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)'
+                          }}
+                        >
+                          ← Back to Chat
+                        </button>
+                      </div>
+                      
+                      {/* Profile Content */}
+                      <div className="flex-1 p-4 overflow-y-auto">
+                        <div className="text-center">
+                          <div 
+                            className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
+                            style={{
+                              background: 'rgba(0, 255, 255, 0.2)',
+                              border: '2px solid rgba(0, 255, 255, 0.5)',
+                              boxShadow: '0 0 20px rgba(0, 255, 255, 0.3)'
+                            }}
+                          >
+                            {selectedUser.id === 'anonymous' ? (
+                              <span className="text-2xl">👽</span>
+                            ) : (
+                              <span className="text-2xl">👤</span>
+                            )}
+                          </div>
+                          
+                          <p className="text-white/80 text-sm mb-6">
+                            {selectedUser.id === 'anonymous' 
+                              ? `${selectedUser.name} - A mysterious entity exploring the Heart Signal dimensions.`
+                              : `Profile for ${selectedUser.name}`}
+                          </p>
+                          
+                          {/* Profile Stats */}
+                          <div className="space-y-3 text-left">
+                            <div className="flex justify-between items-center p-3 rounded-lg" style={{ background: 'linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(0, 255, 255, 0.05))', border: '1px solid rgba(0, 255, 255, 0.2)' }}>
+                              <span className="text-white/70 text-sm">Status:</span>
+                              <span className="text-green-400 text-sm font-semibold">
+                                <span className="inline-block w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+                                Connected
+                              </span>
+                            </div>
+                            
+                            <div className="flex justify-between items-center p-3 rounded-lg" style={{ background: 'linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(0, 255, 255, 0.05))', border: '1px solid rgba(0, 255, 255, 0.2)' }}>
+                              <span className="text-white/70 text-sm">Identity:</span>
+                              <span className="text-purple-400 text-sm font-semibold">
+                                {selectedUser.id === 'anonymous' ? 'Interdimensional Visitor' : (selectedUser.element || 'Unknown')}
+                              </span>
+                            </div>
+                            
+                            <div className="flex justify-between items-center p-3 rounded-lg" style={{ background: 'linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(0, 255, 255, 0.05))', border: '1px solid rgba(0, 255, 255, 0.2)' }}>
+                              <span className="text-white/70 text-sm">Origin:</span>
+                              <span className="text-white/90 text-sm font-semibold">
+                                {selectedUser.id === 'anonymous' ? 'Unknown Dimension' : 'Heart Signal Universe'}
+                              </span>
+                            </div>
+
+                            {selectedUser.id === 'anonymous' && (
+                              <div className="mt-6 p-4 rounded-lg" style={{ background: 'linear-gradient(135deg, rgba(252, 84, 175, 0.1), rgba(56, 182, 255, 0.1))', border: '1px solid rgba(252, 84, 175, 0.3)' }}>
+                                <p className="text-pink-300 text-xs text-center leading-relaxed">
+                                  ✨ This ALIEN visitor carries the essence of distant worlds, temporarily connected to our Heart Signal frequency. Their presence here is both mysterious and welcome. ✨
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Normal Chat View */
+                    <>
+                      <MessageList 
+                        messages={messages}
+                        onUserClick={handleUserClick}
+                        loading={loading}
+                      />
+                      
+                      {/* Message Input */}
+                      <MessageInput 
+                        onSendMessage={handleSendMessage}
+                        disabled={loading}
+                        placeholder="Type a message..."
+                      />
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -348,13 +522,6 @@ export default function ChatPanel({ isOpen, onClose }) {
             </div>
           </motion.div>
 
-          {/* Profile Modal */}
-          <ProfileModal
-            user={selectedUser}
-            isOpen={!!selectedUser}
-            onClose={() => setSelectedUser(null)}
-            isOwnProfile={selectedUser?.id === user?.id}
-          />
 
           <style jsx>{`
             @keyframes scan {

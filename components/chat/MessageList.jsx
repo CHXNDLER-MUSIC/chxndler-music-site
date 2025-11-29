@@ -85,9 +85,6 @@ export default function MessageList({ messages, onUserClick, loading }) {
             <p className="text-white/60 text-sm">
               Welcome to the live chat!
             </p>
-            <p className="text-white/40 text-xs mt-1">
-              Be the first to say hello 👋
-            </p>
           </div>
         </div>
       )}
