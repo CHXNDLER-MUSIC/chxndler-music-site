@@ -592,6 +592,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               <p className="text-sm">You have no relics yet</p>
               <p className="text-xs text-white/40 mt-1">Complete special missions to earn relics</p>
             </div>
+          </div>
 
           {/* Start Tour Button */}
           <div className="mt-6 pt-4" style={{

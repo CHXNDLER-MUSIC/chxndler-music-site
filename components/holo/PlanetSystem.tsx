@@ -12,43 +12,23 @@ import { buildPlanetSongs } from "@/lib/planets";
 import { getEntriesByRing, getPlanetEntry } from "@/lib/planetRegistry";
 import { Html } from "@react-three/drei";
 import PlanetMinimap from "@/components/holo/PlanetMinimap";
-
-// Define element types and guards
-type ElementCode = "heart" | "water" | "lightning" | "darkness";
+import { PLANET_CONFIGS, getPlanetsByType, getPlanetsByElement, getPlanetsByParent, ELEMENT_POSITIONS, ELEMENT_COLORS, type ElementType } from "@/lib/planetConfig";
 
 // DIAGNOSTIC MODE - Set to true to show orbit rings, bounding boxes, and labels
 const SHOW_ORBITS = true;
 
-// Fixed elemental planets configuration - Arranged in cardinal directions around center
-const ELEMENTS = [
-  { code: "heart",     label: "💖 Heart",     position: [25, 0, 0] },      // right
-  { code: "water",     label: "🌊 Water",     position: [0, 0, 25] },      // back
-  { code: "lightning", label: "⚡ Lightning", position: [-25, 0, 0] },     // left  
-  { code: "darkness",  label: "🌑 Darkness",  position: [0, 0, -25] },     // front
-] as const;
-
-// Element colors and glow configuration
-const elementColors: Record<ElementCode, string> = {
-  heart: "#FC54AF",
-  water: "#38B6FF", 
-  lightning: "#F2EF1D",
-  darkness: "#000000"
-};
-
-const elementGlows: Record<ElementCode, string> = {
-  heart: "#FC54AF",
-  water: "#38B6FF", 
-  lightning: "#F2EF1D",
-  darkness: "#6A4C93" // purple-blue rim for darkness
-};
+// Get element planet configs from unified config
+const ELEMENT_PLANETS = getPlanetsByType('element');
 
 // Type guard for element codes
-function isElementCode(code: string): code is ElementCode {
+function isElementCode(code: string): code is ElementType {
   return ["heart", "water", "lightning", "darkness"].includes(code);
 }
 
 const elementOrbitRadius = 60;
-const songOrbitRadius = 8;
+// Import orbit radius from config
+import { SONG_ORBIT_RADIUS } from "@/lib/planetConfig";
+const songOrbitRadius = SONG_ORBIT_RADIUS;
 
 // Component to render all 4 elemental planets with textures
 function ElementalPlanetsWithTextures() {
@@ -341,7 +321,7 @@ function SongOrbitGroup({
   highlightedPlanetId
 }: { 
   cards: any[]; 
-  elementCode: ElementCode; 
+  elementCode: ElementType; 
   elementPosition: [number, number, number];
   mainId: string | null;
   hoverId: string | null;
@@ -367,7 +347,7 @@ function SongOrbitGroup({
         <mesh rotation={[-Math.PI / 2, 0, 0]} renderOrder={0}>
           <ringGeometry args={[songOrbitRadius - 0.1, songOrbitRadius + 0.1, 32]} />
           <meshBasicMaterial 
-            color={elementColors[elementCode]} 
+            color={ELEMENT_COLORS[elementCode]} 
             transparent={true} 
             opacity={0.2}
             depthWrite={false}
@@ -478,25 +458,24 @@ function OrbitalElementalSystem({ songs, mainId, hoverId }: { songs: any[]; main
       </group>
 
       {/* Orbiting elemental planets */}
-      {ELEMENTS.map((element) => {
-        const cardsForThisElement = cardsByElement[element.code];
-        const orbitRadius = 60; // Distance from center
+      {ELEMENT_PLANETS.map((element) => {
+        const cardsForThisElement = cardsByElement[element.element!];
         
-        console.log(`🪐 Rendering ${element.code} planet at ${element.position} with ${cardsForThisElement.length} songs`);
+        console.log(`🪐 Rendering ${element.element} planet at ${element.position} with ${cardsForThisElement.length} songs`);
         
         return (
-          <group key={element.code} name={`element-orbit-${element.code}`}>
+          <group key={element.id} name={`element-orbit-${element.element}`}>
             {/* Individual elemental planet at fixed orbital position */}
-            <group position={element.position as [number, number, number]} name={`element-${element.code}`}>
-              {/* Elemental planet sphere - MASSIVE for visibility */}
+            <group position={element.position as [number, number, number]} name={`element-${element.element}`}>
+              {/* Elemental planet sphere - Using consistent size from config */}
               <mesh renderOrder={4}>
-                <sphereGeometry args={[50, 32, 32]} />
+                <sphereGeometry args={[element.size * 15, 32, 32]} />
                 <meshStandardMaterial 
-                  color={elementColors[element.code]}
-                  emissive={elementColors[element.code]}
-                  emissiveIntensity={5.0}
-                  metalness={element.code === 'water' ? 0.8 : element.code === 'darkness' ? 0.9 : 0.3}
-                  roughness={element.code === 'lightning' ? 0.8 : element.code === 'water' ? 0.1 : 0.4}
+                  color={element.color}
+                  emissive={element.color}
+                  emissiveIntensity={element.element === 'darkness' ? 3.0 : 5.0}
+                  metalness={element.element === 'water' ? 0.8 : element.element === 'darkness' ? 0.9 : 0.3}
+                  roughness={element.element === 'lightning' ? 0.8 : element.element === 'water' ? 0.1 : 0.4}
                 />
               </mesh>
               

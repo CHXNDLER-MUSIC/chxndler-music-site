@@ -17,6 +17,7 @@ import NeonWaveform from "@/components/NeonWaveform";
 import SharedModal from "@/components/SharedModal";
 import AnimatedLyrics from "@/components/AnimatedLyrics";
 import SongProgressBar from "@/components/SongProgressBar";
+import TrackProgressBar from "@/components/TrackProgressBar";
 
 type Props = {
   onSkyChange: (webm: string, mp4: string, key: string) => void;
@@ -1188,6 +1189,16 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               background: 'linear-gradient(90deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.1) 100%)',
               boxShadow: 'inset 0 0 8px rgba(255,255,255,0.2)'
             }}
+          />
+        </div>
+
+        {/* Track Progress Bar - positioned above song dropdown */}
+        <div className="relative w-full" style={{ marginBottom: '8px' }}>
+          <TrackProgressBar 
+            audioRef={audioRef}
+            selectedSong={cur}
+            currentTime={currentTime}
+            duration={liveDuration}
           />
         </div>
 
