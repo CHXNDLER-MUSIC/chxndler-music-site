@@ -95,10 +95,10 @@ export default function HeartverseSystemWrapper({
           }
           return [1, 2];
         })()}
-        // Responsive camera settings
+        // Responsive camera settings - zoomed out significantly to see all planets
         camera={{ 
-          position: [0, 50, showAll ? 200 : 150], 
-          fov: showAll ? 120 : 90 
+          position: [0, 80, showAll ? 350 : 280], 
+          fov: showAll ? 140 : 110 
         }}
         // Performance optimizations for mobile
         gl={{

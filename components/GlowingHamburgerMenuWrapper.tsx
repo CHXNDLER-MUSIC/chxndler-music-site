@@ -7,7 +7,7 @@ import ChxndlerButton from "./ChxndlerButton";
 import CodeModal from "./CodeModal";
 import JourneyModal from "./JourneyModal";
 import BinderModal from "./BinderModal";
-import BadgesModal from "./BadgesModal";
+import BadgesButton from "./BadgesButton";
 import HeartCoinButton from "./HeartCoinButton";
 import SoulStarJournal from "./SoulStarJournal";
 
@@ -74,12 +74,11 @@ export default function GlowingHamburgerMenuWrapper() {
         />
       )}
       {/* Badges popout */}
-      {badgesOpen && (
-        <BadgesModal 
-          open={badgesOpen}
-          onClose={() => setBadgesOpen(false)}
-        />
-      )}
+      <BadgesButton
+        style={{ display: 'none' }}
+        isActive={badgesOpen}
+        onClick={() => setBadgesOpen(!badgesOpen)}
+      />
       {/* Direct Code Popup for ABOUT functionality */}
       {codeOpen && (
         <div 
