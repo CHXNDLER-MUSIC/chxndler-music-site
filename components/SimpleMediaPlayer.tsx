@@ -203,11 +203,9 @@ export default function MediaPlayer({
               <img
                 src={iconSrc}
                 alt={`${title} element`}
-                className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 transform w-[2rem] h-[2rem] min-w-[2rem] min-h-[2rem] brightness-150 saturate-125"
+                className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 transform w-[3rem] h-[3rem] min-w-[3rem] min-h-[3rem] brightness-150 saturate-125"
                 style={{
-                  filter: isDefaultMusicIcon
-                    ? 'drop-shadow(0 0 10px #FFFFFF) drop-shadow(0 0 24px rgba(255,255,255,0.9)) drop-shadow(0 0 48px rgba(255,255,255,0.6))'
-                    : `drop-shadow(0 0 14px ${elementColor}) drop-shadow(0 0 32px ${elementColor}AA) drop-shadow(0 0 64px ${elementColor}55)`
+                  filter: 'none'
                 }}
               />
               

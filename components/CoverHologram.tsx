@@ -607,7 +607,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
         // Make the cover touch the sides of the blue box: no extra padding compensation
         width: size,
       } : { 
-        top: "calc(50% - 100px)", 
+        top: "calc(50% - 120px)", 
         transform: "translateX(-50%)",
         width: "360px"
       }}

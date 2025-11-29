@@ -73,7 +73,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...re
       {open && (
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center p-4"
-          style={{ alignItems: 'center', transform: 'translateY(-120px)' }}
+          style={{ alignItems: 'center', transform: 'translateY(-100px)' }}
         >
           <div
             className="chxndler-hologram-container relative"
@@ -237,15 +237,15 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...re
                   }}
                 >
                   <div className="flex items-start">
-                    <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>♥</span>
+                    <span className="mr-3" style={{ color: '#00BFFF !important', textShadow: '0 0 8px rgba(0,191,255,0.9), 0 0 15px rgba(0,191,255,0.7)' }}>♥</span>
                     <span>We believe being your <span style={{ color: '#00E5FF !important', fontWeight: 'bold !important', textShadow: '0 0 10px #00E5FF, 0 0 20px #00E5FF, 0 0 30px #00E5FF', filter: 'brightness(1.8) saturate(1.8)' }}>truest self</span> is the beginning of freedom.</span>
                   </div>
                   <div className="flex items-start">
-                    <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>♥</span>
+                    <span className="mr-3" style={{ color: '#FFFF00 !important', textShadow: '0 0 8px rgba(255,255,0,0.9), 0 0 15px rgba(255,255,0,0.7)' }}>♥</span>
                     <span>We believe <span style={{ color: '#FFFF00 !important', fontWeight: 'inherit !important', textShadow: '0 0 10px #FFFF00, 0 0 20px #FFFF00, 0 0 30px #FFFF00', filter: 'brightness(1.8) saturate(2.0)' }}>passion</span> is sacred and should be pursued loudly.</span>
                   </div>
                   <div className="flex items-start">
-                    <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>♥</span>
+                    <span className="mr-3" style={{ color: '#FF1493 !important', textShadow: '0 0 8px rgba(255,20,147,0.9), 0 0 15px rgba(255,20,147,0.7)' }}>♥</span>
                     <span>We believe <span style={{ color: '#FF1493 !important', fontWeight: 'inherit !important', textShadow: '0 0 10px #FF1493, 0 0 20px #FF1493, 0 0 30px #FF1493', filter: 'brightness(1.8) saturate(2.0)' }}>love</span> is the force that connects every soul.</span>
                   </div>
                 </div>

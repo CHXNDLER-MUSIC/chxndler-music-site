@@ -618,7 +618,7 @@ export default function ProfileBar({
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center"
           style={{
-            paddingTop: '300px'
+            paddingTop: '120px'
           }}
         >
           <div
@@ -752,7 +752,7 @@ export default function ProfileBar({
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center"
           style={{
-            paddingTop: '300px'
+            paddingTop: '120px'
           }}
         >
           <div

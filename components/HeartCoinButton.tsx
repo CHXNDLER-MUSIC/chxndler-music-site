@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { sfx } from "@/lib/sfx";
 import Image from "next/image";
 import { useProfile } from '@/contexts/ProfileContext';
+import { supabaseClient } from "@/lib/supabaseClient";
 
 // Store item interface
 interface StoreItem {
@@ -16,6 +17,20 @@ interface StoreItem {
   stripeUrl: string;
   is_released?: boolean;
   min_tier?: string;
+}
+
+// Card interface for Supabase data
+interface Card {
+  id: string;
+  card_name: string;
+  element: string;
+  rarity: string;
+  artwork_url: string;
+  description: string;
+  is_released?: boolean;
+  min_tier?: string;
+  digitalCost?: number;
+  physicalCost?: number;
 }
 
 
@@ -147,73 +162,6 @@ const PHYSICAL_ITEMS: StoreItem[] = [
 // Combine all items
 const ALL_STORE_ITEMS = [...PHYSICAL_ITEMS];
 
-// Sample card data for each element
-const ELEMENT_CARDS = {
-  lightning: [
-    {
-      id: 'blue-acoustic',
-      name: 'BLUE (ACOUSTIC)',
-      element: 'LIGHTNING',
-      rarity: 'COMMON',
-      description: 'You were the match to ignite the ash in my heart.',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/LIGHTNING.png',
-      digitalCost: 20,
-      physicalCost: 30,
-      stats: {
-        coldSpark: 60,
-        frozenPulse: 40
-      }
-    }
-  ],
-  darkness: [
-    {
-      id: 'shadow-realm',
-      name: 'SHADOW REALM',
-      element: 'DARKNESS',
-      rarity: 'RARE',
-      description: 'In the depths of darkness, we find our true strength.',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/DARKNESS.png',
-      digitalCost: 25,
-      physicalCost: 35,
-      stats: {
-        voidEnergy: 70,
-        shadowStrike: 50
-      }
-    }
-  ],
-  water: [
-    {
-      id: 'flowing-dreams',
-      name: 'FLOWING DREAMS',
-      element: 'WATER',
-      rarity: 'COMMON',
-      description: 'Like water, emotions flow and reshape everything they touch.',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/WATER.png',
-      digitalCost: 15,
-      physicalCost: 25,
-      stats: {
-        tidalWave: 55,
-        healing: 45
-      }
-    }
-  ],
-  heart: [
-    {
-      id: 'eternal-love',
-      name: 'ETERNAL LOVE',
-      element: 'HEART',
-      rarity: 'LEGENDARY',
-      description: 'The strongest force in the Heartverse, binding all souls together.',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/HEART.png',
-      digitalCost: 50,
-      physicalCost: 75,
-      stats: {
-        loveStrike: 80,
-        empathy: 60
-      }
-    }
-  ]
-};
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   asChild?: boolean;
@@ -261,6 +209,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     friendInviteConfirm: false,
     checkedIn: false
   });
+  
+  // Cards state
+  const [cards, setCards] = useState<Card[]>([]);
+  const [filteredCards, setFilteredCards] = useState<Card[]>([]);
+  const [selectedRarity, setSelectedRarity] = useState<string>('All');
+  const [isLoadingCards, setIsLoadingCards] = useState(false);
 
   // Update journal completion state when external prop changes
   useEffect(() => {
@@ -295,6 +249,107 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       setOpen(false);
     }
   }, [isActive, open]);
+
+  // Fetch cards from Supabase
+  const fetchCards = async () => {
+    setIsLoadingCards(true);
+    try {
+      const { data, error } = await supabaseClient
+        .from('cards')
+        .select('*')
+        .order('card_name');
+      
+      if (error) throw error;
+      
+      // Add default costs if not in database
+      const cardsWithCosts = data.map(card => ({
+        ...card,
+        digitalCost: card.digitalCost || (card.rarity?.toLowerCase() === 'legendary' ? 50 : 
+                     card.rarity?.toLowerCase() === 'rare' ? 25 : 20),
+        physicalCost: card.physicalCost || (card.rarity?.toLowerCase() === 'legendary' ? 75 :
+                      card.rarity?.toLowerCase() === 'rare' ? 35 : 30)
+      }));
+      
+      setCards(cardsWithCosts);
+    } catch (error) {
+      console.error('Error fetching cards:', error);
+    } finally {
+      setIsLoadingCards(false);
+    }
+  };
+
+  // Filter cards based on selected element and rarity
+  useEffect(() => {
+    let filtered = cards;
+    
+    // Filter by element
+    if (selectedCardElement && selectedCardElement !== 'all') {
+      filtered = filtered.filter(card => 
+        card.element?.toLowerCase() === selectedCardElement.toLowerCase()
+      );
+    }
+    
+    // Filter by rarity
+    if (selectedRarity !== 'All') {
+      filtered = filtered.filter(card => 
+        card.rarity?.toLowerCase() === selectedRarity.toLowerCase()
+      );
+    }
+    
+    setFilteredCards(filtered);
+  }, [cards, selectedCardElement, selectedRarity]);
+
+  // Load cards when the modal opens and CARDS tab is active
+  useEffect(() => {
+    if (open && activeTab === 'USE' && activeUseTab === 'CARDS' && cards.length === 0) {
+      fetchCards();
+    }
+  }, [open, activeTab, activeUseTab]);
+
+  // Helper function to check if card should be blurred based on release status and user tier
+  const shouldBlurCard = (card: Card): boolean => {
+    if (!card.is_released) return true;
+    if (!profile?.tier || !card.min_tier) return false;
+    
+    // Simple tier check - you can expand this based on your tier system
+    const tierOrder = ['wanderer', 'dreamer', 'lover', 'oracle'];
+    const userTierIndex = tierOrder.indexOf(profile.tier.toLowerCase());
+    const requiredTierIndex = tierOrder.indexOf(card.min_tier.toLowerCase());
+    
+    return userTierIndex < requiredTierIndex;
+  };
+
+  // Get unique rarities for filter dropdown
+  const getAvailableRarities = (): string[] => {
+    const rarities = new Set<string>();
+    rarities.add('All');
+    
+    cards.forEach(card => {
+      if (card.rarity) {
+        rarities.add(card.rarity);
+      }
+    });
+    
+    return Array.from(rarities);
+  };
+
+  // Get card counts for each element
+  const getElementCardCounts = () => {
+    const counts: { [key: string]: number } = {
+      lightning: 0,
+      darkness: 0, 
+      water: 0,
+      heart: 0
+    };
+    
+    cards.forEach(card => {
+      if (card.element?.toLowerCase() in counts) {
+        counts[card.element.toLowerCase()]++;
+      }
+    });
+    
+    return counts;
+  };
 
   // Helper function to update heart coins
   const updateHeartCoins = async (newAmount: number) => {
@@ -618,7 +673,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center"
           style={{
-            paddingTop: '240px'
+            paddingTop: '120px'
           }}
         >
           <div
@@ -1263,7 +1318,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
                           <div className="grid grid-cols-4 gap-2 justify-center px-2" style={{ marginTop: '-8px' }}>
                             {['lightning', 'darkness', 'water', 'heart'].map((element, index) => {
-                              const counts = [12, 9, 5, 22];
+                              const elementCounts = getElementCardCounts();
+                              const count = elementCounts[element] || 0;
                               return (
                                 <div
                                   key={element}
@@ -1303,7 +1359,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                         fontWeight: 'bold'
                                       }}
                                     >
-                                      {counts[index]}
+                                      {count}
                                     </div>
                                   </div>
                                 </div>
@@ -1320,6 +1376,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               onClick={() => {
                                 try { sfx.play('close', 0.6); } catch {}
                                 setSelectedCardElement(null);
+                                setSelectedRarity('All');
                               }}
                               className="flex items-center text-white hover:text-gray-300 transition-colors"
                               style={{ fontSize: '14px' }}
@@ -1331,24 +1388,53 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
                           {/* Filter dropdowns */}
                           <div className="flex gap-2 mb-4">
-                            <select className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-1">
-                              <option>All</option>
+                            <select 
+                              value={selectedRarity}
+                              onChange={(e) => setSelectedRarity(e.target.value)}
+                              className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-1"
+                            >
+                              {getAvailableRarities().map(rarity => (
+                                <option key={rarity} value={rarity}>{rarity}</option>
+                              ))}
                             </select>
-                            <select className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-1">
-                              <option>All</option>
+                            <select 
+                              value={selectedCardElement || 'all'}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                setSelectedCardElement(value === 'all' ? null : value);
+                              }}
+                              className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-1"
+                            >
+                              <option value="all">All Elements</option>
+                              <option value="lightning">Lightning</option>
+                              <option value="darkness">Darkness</option>
+                              <option value="water">Water</option>
+                              <option value="heart">Heart</option>
                             </select>
                           </div>
 
                           {/* Card display */}
-                          {ELEMENT_CARDS[selectedCardElement as keyof typeof ELEMENT_CARDS]?.map(card => (
+                          {isLoadingCards ? (
+                            <div className="text-center text-white py-4">Loading cards...</div>
+                          ) : filteredCards.length === 0 ? (
+                            <div className="text-center text-white py-4">No cards found for this selection.</div>
+                          ) : (
+                            filteredCards.map(card => (
                             <div key={card.id} className="flex gap-2 max-w-full overflow-hidden">
                               {/* Card image */}
-                              <div className="w-20 h-28 rounded-lg border-2 border-yellow-500/80 overflow-hidden flex-shrink-0">
+                              <div className="w-20 h-28 rounded-lg border-2 border-yellow-500/80 overflow-hidden flex-shrink-0 relative">
                                 <img
-                                  src={card.image}
-                                  alt={card.name}
-                                  className="w-full h-full object-cover"
+                                  src={card.artwork_url || 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png'}
+                                  alt={card.card_name}
+                                  className={`w-full h-full object-cover ${shouldBlurCard(card) ? 'filter blur-sm opacity-60' : ''}`}
                                 />
+                                {shouldBlurCard(card) && (
+                                  <div className="absolute inset-0 flex items-center justify-center">
+                                    <span className="text-white text-xs font-bold bg-black/70 px-2 py-1 rounded">
+                                      {!card.is_released ? 'UNRELEASED' : 'LOCKED'}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
 
                               {/* Card details */}
@@ -1362,7 +1448,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                         textShadow: '0 0 6px rgba(255,215,0,0.8)' 
                                       }}
                                     >
-                                      {card.name}
+                                      {card.card_name}
                                     </h2>
                                     
                                     <div className="flex items-center gap-2 mb-2 flex-wrap text-xs">
@@ -1640,7 +1726,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 </div>
                               </div>
                             </div>
-                          ))}
+                          ))
+                          )}
                         </div>
                       )}
                     </div>

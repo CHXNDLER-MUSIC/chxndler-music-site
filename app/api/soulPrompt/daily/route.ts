@@ -76,100 +76,78 @@ export async function GET(request: NextRequest) {
   try {
     // Get today's date in YYYY-MM-DD format
     const today = new Date().toISOString().split('T')[0];
-    
-    // Check if daily prompts already exist for today
-    const { data: existingPrompts, error: fetchError } = await supabase
-      .from('soul_daily_prompts')
-      .select(`
-        prompt_date,
-        element,
-        intention_prompt_id,
-        reflection_prompt_id,
-        intention:soul_prompts!intention_prompt_id(id, text, element, prompt_type),
-        reflection:soul_prompts!reflection_prompt_id(id, text, element, prompt_type)
-      `)
-      .eq('prompt_date', today)
-      .maybeSingle();
-
-    if (fetchError) {
-      console.error('Error fetching existing daily prompts:', fetchError);
-      return NextResponse.json(
-        { error: 'Failed to fetch daily prompts' },
-        { status: 500 }
-      );
-    }
-
-    if (existingPrompts) {
-      // Return existing prompts
-      return NextResponse.json({
-        prompt_date: existingPrompts.prompt_date,
-        element: existingPrompts.element,
-        intention: Array.isArray(existingPrompts.intention) 
-          ? existingPrompts.intention[0] 
-          : existingPrompts.intention,
-        reflection: Array.isArray(existingPrompts.reflection) 
-          ? existingPrompts.reflection[0] 
-          : existingPrompts.reflection,
-      });
-    }
-
-    // No existing prompts for today - create new ones using the ordered cycle
     const element = getElementForDate(today);
+
+    // TEMPORARY: Since soul_prompts table doesn't exist, return hardcoded prompts
+    // TODO: Create soul_prompts table in Supabase and remove this temporary fix
+    console.log('Using temporary hardcoded prompts for element:', element);
     
-    // Count how many times this element has appeared in soul_daily_prompts
-    const { data: elementCount, error: countError } = await supabase
-      .from('soul_daily_prompts')
-      .select('element', { count: 'exact', head: true })
-      .eq('element', element);
+    const hardcodedPrompts = {
+      heart: {
+        intention: { 
+          id: 'temp-heart-intention', 
+          text: 'What is one gentle way I can show myself love today?', 
+          element: 'heart', 
+          prompt_type: 'intention' 
+        },
+        reflection: { 
+          id: 'temp-heart-reflection', 
+          text: 'Where did love show up for me today?', 
+          element: 'heart', 
+          prompt_type: 'reflection' 
+        }
+      },
+      water: {
+        intention: { 
+          id: 'temp-water-intention', 
+          text: 'How can I let my emotions move instead of holding them back?', 
+          element: 'water', 
+          prompt_type: 'intention' 
+        },
+        reflection: { 
+          id: 'temp-water-reflection', 
+          text: 'What emotions flowed through me today?', 
+          element: 'water', 
+          prompt_type: 'reflection' 
+        }
+      },
+      lightning: {
+        intention: { 
+          id: 'temp-lightning-intention', 
+          text: 'Where can I channel my energy with purpose today?', 
+          element: 'lightning', 
+          prompt_type: 'intention' 
+        },
+        reflection: { 
+          id: 'temp-lightning-reflection', 
+          text: 'Where did I feel a spark of energy today?', 
+          element: 'lightning', 
+          prompt_type: 'reflection' 
+        }
+      },
+      darkness: {
+        intention: { 
+          id: 'temp-darkness-intention', 
+          text: 'What truth is quietly asking to be acknowledged today?', 
+          element: 'darkness', 
+          prompt_type: 'intention' 
+        },
+        reflection: { 
+          id: 'temp-darkness-reflection', 
+          text: 'What did silence teach me today?', 
+          element: 'darkness', 
+          prompt_type: 'reflection' 
+        }
+      }
+    };
 
-    if (countError) {
-      console.error('Error counting element occurrences:', countError);
-      return NextResponse.json(
-        { error: 'Failed to count element occurrences' },
-        { status: 500 }
-      );
-    }
+    const prompts = hardcodedPrompts[element as keyof typeof hardcodedPrompts];
 
-    // Use the count as the index for which prompt to select next
-    const promptIndex = elementCount || 0;
-    
-    // Get ordered intention and reflection prompts for the element
-    const [intentionPrompt, reflectionPrompt] = await Promise.all([
-      getOrderedPrompt('intention', element, promptIndex),
-      getOrderedPrompt('reflection', element, promptIndex),
-    ]);
-
-    // Insert new daily prompts record
-    const { data: newPrompts, error: insertError } = await supabase
-      .from('soul_daily_prompts')
-      .insert({
-        prompt_date: today,
-        element: element,
-        intention_prompt_id: intentionPrompt.id,
-        reflection_prompt_id: reflectionPrompt.id,
-      })
-      .select(`
-        prompt_date,
-        element,
-        intention_prompt_id,
-        reflection_prompt_id
-      `)
-      .single();
-
-    if (insertError) {
-      console.error('Error inserting daily prompts:', insertError);
-      return NextResponse.json(
-        { error: 'Failed to create daily prompts' },
-        { status: 500 }
-      );
-    }
-
-    // Return the new prompts
     return NextResponse.json({
-      prompt_date: newPrompts.prompt_date,
-      element: newPrompts.element,
-      intention: intentionPrompt,
-      reflection: reflectionPrompt,
+      prompt_date: today,
+      element: element,
+      intention: prompts.intention,
+      reflection: prompts.reflection,
     });
 
   } catch (error) {

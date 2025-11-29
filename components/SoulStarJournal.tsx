@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useProfile } from "@/contexts/ProfileContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { sfx } from "@/lib/sfx";
+import { useDailyReflectionStatus } from "@/hooks/useDailyReflectionStatus";
 
 interface DailyPrompt {
   prompt_date: string;
@@ -55,6 +56,7 @@ const ELEMENT_EMOJIS = {
 
 export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: SoulStarJournalProps) {
   const { saveJournalEntry, journalEntries, profile, user, getDailyPrompts } = useProfile();
+  const { hasPendingReflection, markReflectionComplete } = useDailyReflectionStatus();
   const [showHistory, setShowHistory] = useState(false);
   const [dailyPrompt, setDailyPrompt] = useState<DailyPrompt | null>(null);
   const [journalState, setJournalState] = useState<JournalState>({
@@ -184,6 +186,9 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
       }
 
       if (data) {
+        // Mark reflection as complete to hide notifications
+        markReflectionComplete();
+        
         setJournalState(prev => ({
           ...prev,
           saveMessage: "Signal cast into the stars",
@@ -420,7 +425,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
         ) : (
           /* Today's Journal Interface */
           <>
-            {/* Date and Element */}
+            {/* Date and Element with pending notification */}
             <div className="text-center mb-3">
               <div 
                 className="text-base font-semibold mb-1"
@@ -428,17 +433,33 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
               >
                 {todayFormatted}
               </div>
-              <span 
-                className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
-                style={{
-                  background: `${elementTheme.color}20`,
-                  border: `1px solid ${elementTheme.color}60`,
-                  color: elementTheme.color,
-                  textShadow: `0 0 4px ${elementTheme.glow}`
-                }}
-              >
-                {elementEmoji} {dailyPrompt.element} element
-              </span>
+              <div className="flex justify-center items-center gap-3">
+                <span 
+                  className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
+                  style={{
+                    background: `${elementTheme.color}20`,
+                    border: `1px solid ${elementTheme.color}60`,
+                    color: elementTheme.color,
+                    textShadow: `0 0 4px ${elementTheme.glow}`
+                  }}
+                >
+                  {elementEmoji} {dailyPrompt.element} element
+                </span>
+                {hasPendingReflection && (
+                  <span 
+                    className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider animate-pulse"
+                    style={{
+                      background: 'linear-gradient(45deg, #FF1493, #FF69B4)',
+                      border: '1px solid #FF1493',
+                      color: '#FFFFFF',
+                      textShadow: '0 0 8px #FF1493, 0 0 16px #FF69B4',
+                      boxShadow: '0 0 12px #FF1493, 0 0 24px #FF69B4'
+                    }}
+                  >
+                    ✨ You haven't written today yet
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Intention & Reflection Section */}

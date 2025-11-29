@@ -7,6 +7,7 @@ import ChxndlerButton from "./ChxndlerButton";
 import CodeModal from "./CodeModal";
 import JourneyModal from "./JourneyModal";
 import BinderModal from "./BinderModal";
+import BadgesModal from "./BadgesModal";
 import HeartCoinButton from "./HeartCoinButton";
 import SoulStarJournal from "./SoulStarJournal";
 
@@ -15,6 +16,7 @@ export default function GlowingHamburgerMenuWrapper() {
   const [chxndlerOpen, setChxndlerOpen] = useState(false);
   const [journeyOpen, setJourneyOpen] = useState(false);
   const [binderOpen, setBinderOpen] = useState(false);
+  const [badgesOpen, setBadgesOpen] = useState(false);
   const [heartCoinOpen, setHeartCoinOpen] = useState(false);
   const [journalOpen, setJournalOpen] = useState(false);
 
@@ -38,12 +40,9 @@ export default function GlowingHamburgerMenuWrapper() {
       case "JOURNAL":
         setJournalOpen(true);
         break;
-      // case "BINDER":
-      //   openBinder();
-      //   break;
-      // case "BADGES":
-      //   openBadges();
-      //   break;
+      case "BADGES":
+        setBadgesOpen(true);
+        break;
       case "CHXNDLER":
         setChxndlerOpen(true);
         break;
@@ -74,12 +73,19 @@ export default function GlowingHamburgerMenuWrapper() {
           onClose={() => setBinderOpen(false)}
         />
       )}
+      {/* Badges popout */}
+      {badgesOpen && (
+        <BadgesModal 
+          open={badgesOpen}
+          onClose={() => setBadgesOpen(false)}
+        />
+      )}
       {/* Direct Code Popup for ABOUT functionality */}
       {codeOpen && (
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center"
           style={{
-            paddingTop: '300px'
+            paddingTop: '120px'
           }}
         >
           <div

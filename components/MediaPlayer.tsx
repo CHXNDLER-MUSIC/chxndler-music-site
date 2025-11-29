@@ -1156,7 +1156,194 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           <NeonWaveform audioUrl={cur.src} element={neonElement} />
         </div>
         
-        {/* Waveform section moved above controls */}
+        {/* Lyrics + YouTube + Inline volume controls - moved above waveform */}
+        <div className="waveform-volume" role="group" aria-label="Lyrics, YouTube, and Volume" ref={waveVolRef}>
+            {((cur as any)?.hasLyrics !== false) ? (
+              <Link
+                href={`/lyrics/${cur.slug}`}
+                className="lyrics-link-waveform"
+                title={`Lyrics for ${cur.title}`}
+                aria-label={`View lyrics for ${cur.title}`}
+                data-song={cur.title}
+                data-slug={cur.slug}
+                data-id="lyrics"
+                onMouseEnter={playHover}
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                  <rect x="5" y="5" width="14" height="10" rx="4" ry="4" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                  <circle cx="8" cy="16" r="1.2" fill="currentColor" />
+                  <circle cx="6.2" cy="18" r="1.1" fill="currentColor" />
+                  <rect x="10" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+                  <rect x="13.6" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+                </svg>
+              </Link>
+            ) : (
+              <div
+                className="lyrics-link-unavailable-waveform"
+                title={`Lyrics not available for ${cur.title}`}
+                aria-disabled="true"
+                data-song={cur.title}
+                data-slug={cur.slug}
+                data-id="lyrics"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                  <rect x="5" y="5" width="14" height="10" rx="4" ry="4" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                  <circle cx="8" cy="16" r="1.2" fill="currentColor" />
+                  <circle cx="6.2" cy="18" r="1.1" fill="currentColor" />
+                  <rect x="10" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+                  <rect x="13.6" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+                </svg>
+              </div>
+            )}
+
+            <div className="yt-with-join">
+              {cur.youtube ? (
+                <a
+                  ref={ytBtnRef}
+                  href={cur.youtube}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="youtube-link-waveform"
+                  title={`Open ${cur.title} on YouTube`}
+                  aria-label={`Open ${cur.title} on YouTube`}
+                  data-song={cur.title}
+                  data-slug={cur.slug}
+                  data-id="yt"
+                  onClick={(e) => {
+                    // Intercept default navigation to open inline popout player
+                    try { e.preventDefault(); } catch {}
+                    try { uiClick(); } catch {}
+                    // Pause site audio while video plays
+                    try { const a = audioRef.current; if (a) { a.pause(); setPlaying(false); } } catch {}
+                    // Track analytics
+                    try {
+                      gaTrack('youtube_clicked', {
+                        song_slug: cur.slug,
+                        payload: { song_title: cur.title, location: 'waveform_player', href: cur.youtube }
+                      });
+                    } catch {}
+                    // Build embeddable URL
+                    const toEmbed = (url: string): string | null => {
+                      try {
+                        const u = new URL(url);
+                        const host = u.hostname.replace(/^www\./, '');
+                        if (host === 'youtu.be') {
+                          const id = u.pathname.slice(1);
+                          if (id) return `https://www.youtube.com/embed/${id}`;
+                        }
+                        if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtube-nocookie.com' || host === 'music.youtube.com') {
+                          if (u.pathname === '/watch') {
+                            const id = u.searchParams.get('v');
+                            if (id) return `https://www.youtube.com/embed/${id}`;
+                          }
+                          if (u.pathname.startsWith('/shorts/')) {
+                            const id = u.pathname.split('/')[2];
+                            if (id) return `https://www.youtube.com/embed/${id}`;
+                          }
+                          if (u.pathname.startsWith('/embed/')) {
+                            return `https://${host}/embed/${u.pathname.split('/')[2]}`;
+                          }
+                          if (u.pathname.startsWith('/live/')) {
+                            const id = u.pathname.split('/')[2];
+                            if (id) return `https://www.youtube.com/embed/${id}`;
+                          }
+                        }
+                      } catch {}
+                      return null;
+                    };
+                    const embed = toEmbed(cur.youtube);
+                    if (embed) {
+                      setYtEmbedUrl(`${embed}?autoplay=1&rel=0`);
+                      setShowYouTubePopover(true);
+                    } else {
+                      // Fallback to opening a new tab if we cannot parse embed URL
+                      try { window.open(cur.youtube, '_blank', 'noopener,noreferrer'); } catch {}
+                    }
+                  }}
+                  onMouseEnter={playHover}
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                    <path d="M10 8l6 4-6 4z" fill="currentColor" />
+                  </svg>
+                </a>
+              ) : (
+                <div 
+                  className="youtube-link-unavailable-waveform"
+                  title={`No YouTube link available for ${cur.title}`}
+                  aria-hidden
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                    <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
+                  </svg>
+                </div>
+              )}
+              <img src="/elements/antennas.webp" alt="Antennas" className="antennas-image" />
+            </div>
+
+            <div className="volume-button-wrap">
+              <button
+                ref={waveVolBtnRef}
+                className="waveform-volume-btn"
+                onClick={() => {
+                  const a = audioRef.current; if (!a) return; uiClick();
+                  setShowMainVolumePopover(false);
+                  setShowWaveformVolumePopover(v => {
+                    const next = !v;
+                    if (next && waveVolBtnRef.current) {
+                      const r = waveVolBtnRef.current.getBoundingClientRect();
+                      setWavePopoverPos({ left: r.left + r.width / 2, top: r.bottom + 8 });
+                    }
+                    return next;
+                  });
+                }}
+                aria-haspopup="true"
+                aria-expanded={showWaveformVolumePopover}
+                aria-label="Volume"
+                title="Volume"
+                onMouseEnter={playHover}
+              >
+                <div className="btn-glow"></div>
+                <span className="btn-icon">
+                  {volume === 0 ? (
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
+                      <path d="M16.5 12l3.5 3.5-1.5 1.5L15 13.5 11.5 17H8l-4-4V11l4-4h3.5l3.5 3.5 3.5-3.5 1.5 1.5L16.5 12zM10 8.5L7.5 11H6v2h1.5L10 15.5V8.5z"/>
+                    </svg>
+                  ) : volume < 0.5 ? (
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
+                      <path d="M3 10v4h4l5 5V5L7 10H3zm10.5 2c0-1.77-.77-3.29-2-4.3v8.6c1.23-1.01 2-2.53 2-4.3z"/>
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
+                      <path d="M3 10v4h4l5 5V5L7 10H3zm8 2c0 2.21-1.79 4-4 4v-2c1.1 0 2-.9 2-2s-.9-2-2-2V8c2.21 0 4 1.79 4 4zm4.5 0c0-3.04-1.72-5.64-4.25-6.92l-.75 1.86C12.6 8.2 14 9.96 14 12s-1.4 3.8-3.5 4.06l.75 1.86C18.28 17.64 19.5 15.04 19.5 12z"/>
+                    </svg>
+                  )}
+                </span>
+              </button>
+            </div>
+            
+            {/* Star button */}
+            <button
+              className="star-btn-waveform"
+              title="Star"
+              aria-label="Star"
+              onClick={() => {
+                // Star button functionality can be added here
+                uiClick();
+              }}
+              onMouseEnter={playHover}
+            >
+              <div className="btn-glow"></div>
+              <img 
+                src="/elements/star.png" 
+                alt="Star" 
+                width="16" 
+                height="16"
+                style={{ filter: 'invert(1)' }}
+              />
+            </button>
+          </div>
+        
+        {/* Waveform section - moved below controls */}
         <div className="waveform-wrapper">
           <div 
             className="waveform" 
@@ -1572,192 +1759,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             </div>
           </div>
 
-          {/* Lyrics + YouTube + Inline volume moved into controls so waveform sits below */}
-          <div className="waveform-volume" role="group" aria-label="Lyrics, YouTube, and Volume" ref={waveVolRef}>
-            {((cur as any)?.hasLyrics !== false) ? (
-              <Link
-                href={`/lyrics/${cur.slug}`}
-                className="lyrics-link-waveform"
-                title={`Lyrics for ${cur.title}`}
-                aria-label={`View lyrics for ${cur.title}`}
-                data-song={cur.title}
-                data-slug={cur.slug}
-                data-id="lyrics"
-                onMouseEnter={playHover}
-              >
-                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                  <rect x="5" y="5" width="14" height="10" rx="4" ry="4" fill="none" stroke="currentColor" strokeWidth="1.6" />
-                  <circle cx="8" cy="16" r="1.2" fill="currentColor" />
-                  <circle cx="6.2" cy="18" r="1.1" fill="currentColor" />
-                  <rect x="10" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
-                  <rect x="13.6" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
-                </svg>
-              </Link>
-            ) : (
-              <div
-                className="lyrics-link-unavailable-waveform"
-                title={`Lyrics not available for ${cur.title}`}
-                aria-disabled="true"
-                data-song={cur.title}
-                data-slug={cur.slug}
-                data-id="lyrics"
-              >
-                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                  <rect x="5" y="5" width="14" height="10" rx="4" ry="4" fill="none" stroke="currentColor" strokeWidth="1.6" />
-                  <circle cx="8" cy="16" r="1.2" fill="currentColor" />
-                  <circle cx="6.2" cy="18" r="1.1" fill="currentColor" />
-                  <rect x="10" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
-                  <rect x="13.6" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
-                </svg>
-              </div>
-            )}
-
-            <div className="yt-with-join">
-              {cur.youtube ? (
-                <a
-                  ref={ytBtnRef}
-                  href={cur.youtube}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="youtube-link-waveform"
-                  title={`Open ${cur.title} on YouTube`}
-                  aria-label={`Open ${cur.title} on YouTube`}
-                  data-song={cur.title}
-                  data-slug={cur.slug}
-                  data-id="yt"
-                  onClick={(e) => {
-                    // Intercept default navigation to open inline popout player
-                    try { e.preventDefault(); } catch {}
-                    try { uiClick(); } catch {}
-                    // Pause site audio while video plays
-                    try { const a = audioRef.current; if (a) { a.pause(); setPlaying(false); } } catch {}
-                    // Track analytics
-                    try {
-                      gaTrack('youtube_clicked', {
-                        song_slug: cur.slug,
-                        payload: { song_title: cur.title, location: 'waveform_player', href: cur.youtube }
-                      });
-                    } catch {}
-                    // Build embeddable URL
-                    const toEmbed = (url: string): string | null => {
-                      try {
-                        const u = new URL(url);
-                        const host = u.hostname.replace(/^www\./, '');
-                        if (host === 'youtu.be') {
-                          const id = u.pathname.slice(1);
-                          if (id) return `https://www.youtube.com/embed/${id}`;
-                        }
-                        if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtube-nocookie.com' || host === 'music.youtube.com') {
-                          if (u.pathname === '/watch') {
-                            const id = u.searchParams.get('v');
-                            if (id) return `https://www.youtube.com/embed/${id}`;
-                          }
-                          if (u.pathname.startsWith('/shorts/')) {
-                            const id = u.pathname.split('/')[2];
-                            if (id) return `https://www.youtube.com/embed/${id}`;
-                          }
-                          if (u.pathname.startsWith('/embed/')) {
-                            return `https://${host}/embed/${u.pathname.split('/')[2]}`;
-                          }
-                          if (u.pathname.startsWith('/live/')) {
-                            const id = u.pathname.split('/')[2];
-                            if (id) return `https://www.youtube.com/embed/${id}`;
-                          }
-                        }
-                      } catch {}
-                      return null;
-                    };
-                    const embed = toEmbed(cur.youtube);
-                    if (embed) {
-                      setYtEmbedUrl(`${embed}?autoplay=1&rel=0`);
-                      setShowYouTubePopover(true);
-                    } else {
-                      // Fallback to opening a new tab if we cannot parse embed URL
-                      try { window.open(cur.youtube, '_blank', 'noopener,noreferrer'); } catch {}
-                    }
-                  }}
-                  onMouseEnter={playHover}
-                >
-                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                    <path d="M10 8l6 4-6 4z" fill="currentColor" />
-                  </svg>
-                </a>
-              ) : (
-                <div 
-                  className="youtube-link-unavailable-waveform"
-                  title={`No YouTube link available for ${cur.title}`}
-                  aria-hidden
-                >
-                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                    <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
-                  </svg>
-                </div>
-              )}
-              <img src="/elements/antennas.webp" alt="Antennas" className="antennas-image" />
-            </div>
-
-            <div className="volume-button-wrap">
-              <button
-                ref={waveVolBtnRef}
-                className="waveform-volume-btn"
-                onClick={() => {
-                  const a = audioRef.current; if (!a) return; uiClick();
-                  setShowMainVolumePopover(false);
-                  setShowWaveformVolumePopover(v => {
-                    const next = !v;
-                    if (next && waveVolBtnRef.current) {
-                      const r = waveVolBtnRef.current.getBoundingClientRect();
-                      setWavePopoverPos({ left: r.left + r.width / 2, top: r.bottom + 8 });
-                    }
-                    return next;
-                  });
-                }}
-                aria-haspopup="true"
-                aria-expanded={showWaveformVolumePopover}
-                aria-label="Volume"
-                title="Volume"
-                onMouseEnter={playHover}
-              >
-                <div className="btn-glow"></div>
-                <span className="btn-icon">
-                  {volume === 0 ? (
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
-                      <path d="M16.5 12l3.5 3.5-1.5 1.5L15 13.5 11.5 17H8l-4-4V11l4-4h3.5l3.5 3.5 3.5-3.5 1.5 1.5L16.5 12zM10 8.5L7.5 11H6v2h1.5L10 15.5V8.5z"/>
-                    </svg>
-                  ) : volume < 0.5 ? (
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
-                      <path d="M3 10v4h4l5 5V5L7 10H3zm10.5 2c0-1.77-.77-3.29-2-4.3v8.6c1.23-1.01 2-2.53 2-4.3z"/>
-                    </svg>
-                  ) : (
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
-                      <path d="M3 10v4h4l5 5V5L7 10H3zm8 2c0 2.21-1.79 4-4 4v-2c1.1 0 2-.9 2-2s-.9-2-2-2V8c2.21 0 4 1.79 4 4zm4.5 0c0-3.04-1.72-5.64-4.25-6.92l-.75 1.86C12.6 8.2 14 9.96 14 12s-1.4 3.8-3.5 4.06l.75 1.86C18.28 17.64 19.5 15.04 19.5 12z"/>
-                    </svg>
-                  )}
-                </span>
-              </button>
-            </div>
-            
-            {/* Star button */}
-            <button
-              className="star-btn-waveform"
-              title="Star"
-              aria-label="Star"
-              onClick={() => {
-                // Star button functionality can be added here
-                uiClick();
-              }}
-              onMouseEnter={playHover}
-            >
-              <div className="btn-glow"></div>
-              <img 
-                src="/elements/star.png" 
-                alt="Star" 
-                width="16" 
-                height="16"
-                style={{ filter: 'invert(1)' }}
-              />
-            </button>
-          </div>
         </div>
       </div>
 

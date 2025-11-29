@@ -1,8 +1,11 @@
 "use client";
 
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { sfx } from '@/lib/sfx';
+import { useProfile } from '@/contexts/ProfileContext';
+import BinderModal from './BinderModal';
+import BadgesModal from './BadgesModal';
 
 interface PopoutPanelProps {
   isOpen: boolean;
@@ -27,6 +30,26 @@ export default function PopoutPanel({
 }: PopoutPanelProps) {
   const [showTextChat, setShowTextChat] = useState(false);
   const [chatMessage, setChatMessage] = useState('');
+  const [showProfilePopup, setShowProfilePopup] = useState(false);
+  const [showCardsModal, setShowCardsModal] = useState(false);
+  const [showBadgesModal, setShowBadgesModal] = useState(false);
+  const { profile, loading } = useProfile();
+
+  // Helper function to get element icon path
+  const getElementIcon = (element: string | null) => {
+    const iconMap: Record<string, string> = {
+      'heart': '/elements/heart.webp',
+      'water': '/elements/water.webp', 
+      'lightning': '/elements/lightning.webp',
+      'darkness': '/elements/darkness.webp'
+    };
+    return iconMap[element || ''] || '/elements/elementals.webp';
+  };
+
+  // Get user display info
+  const displayName = profile?.name || 'ALIEN';
+  const userElement = profile?.element || null;
+  const heartCoins = profile?.heartcoin_balance || 0;
 
   if (!isOpen || typeof window === 'undefined') {
     return null;
@@ -96,15 +119,49 @@ export default function PopoutPanel({
                 borderBottom: '1px solid #00BFFF40'
               }}
             >
-              <div 
-                style={{
-                  fontSize: '18px',
-                  fontWeight: 'bold',
-                  textShadow: '0 0 8px #00BFFF80'
-                }}
-              >
-                Signal Chat
+              {/* Left side - User info */}
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
+                  {/* User element icon */}
+                  <div 
+                    className="w-8 h-8 rounded-full overflow-hidden border"
+                    style={{ borderColor: '#00BFFF40' }}
+                  >
+                    <img 
+                      src={getElementIcon(userElement)} 
+                      alt={userElement || 'Element'} 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  {/* User name - clickable */}
+                  <button
+                    onClick={() => {
+                      try { sfx.play('click', 0.4); } catch {}
+                      setShowProfilePopup(true);
+                    }}
+                    className="hover:opacity-80 transition-opacity cursor-pointer bg-transparent border-none p-0"
+                    style={{
+                      color: '#00BFFF',
+                      fontSize: '16px',
+                      fontWeight: 'bold',
+                      textShadow: '0 0 6px #00BFFF60'
+                    }}
+                  >
+                    {displayName}
+                  </button>
+                </div>
+                <div 
+                  style={{
+                    fontSize: '14px',
+                    color: '#00BFFF80',
+                    textShadow: '0 0 4px #00BFFF40'
+                  }}
+                >
+                  Signal Chat
+                </div>
               </div>
+              
+              {/* Right side - Close button */}
               <button
                 onClick={() => {
                   try { sfx.play('close', 0.4); } catch {}
@@ -192,6 +249,162 @@ export default function PopoutPanel({
               >
                 Send
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* User Profile Popup - appears when clicking user name in chat */}
+      {showProfilePopup && (
+        <div 
+          className="fixed z-[2147483649] flex items-center justify-center"
+          style={{
+            left: '50%',
+            top: '15vh',
+            transform: 'translateX(-50%)',
+            pointerEvents: 'auto'
+          }}
+        >
+          <div
+            className="relative"
+            style={{
+              width: 'min(85vw, 400px)',
+              minHeight: '350px',
+              padding: '20px',
+              borderRadius: 18,
+              background: 'rgba(0, 15, 30, 0.9)',
+              border: '2px solid #FFD700',
+              boxShadow: `0 0 20px #FFD700, 0 0 40px #FFD700AA, 0 8px 30px rgba(0,0,0,0.6)`,
+              backdropFilter: 'blur(15px) saturate(150%)',
+              color: '#FFD700'
+            }}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => {
+                try { sfx.play('close', 0.4); } catch {}
+                setShowProfilePopup(false);
+              }}
+              className="absolute top-3 right-3 hover:opacity-70"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#FFD700',
+                cursor: 'pointer',
+                fontSize: '20px'
+              }}
+            >
+              ×
+            </button>
+
+            {/* Profile Content */}
+            <div className="flex flex-col items-center space-y-4">
+              {/* User element icon - large */}
+              <div className="relative">
+                <div 
+                  className="w-20 h-20 rounded-full overflow-hidden border-2 shadow-lg"
+                  style={{ borderColor: '#FFD700' }}
+                >
+                  <img 
+                    src={getElementIcon(userElement)} 
+                    alt={userElement || 'Element'} 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                {/* Element glow effect */}
+                <div 
+                  className="absolute inset-0 rounded-full pointer-events-none"
+                  style={{
+                    boxShadow: '0 0 15px #FFD700AA, 0 0 30px #FFD700, inset 0 0 15px #FFD70040'
+                  }}
+                />
+              </div>
+
+              {/* User name */}
+              <h3 
+                className="text-2xl font-bold text-center"
+                style={{
+                  color: '#FFD700',
+                  textShadow: '0 0 10px #FFD700',
+                  letterSpacing: '0.05em'
+                }}
+              >
+                {displayName}
+              </h3>
+
+              {/* Heart coins display */}
+              <div className="flex items-center space-x-2 bg-black/30 rounded-full px-4 py-2">
+                <img 
+                  src="/elements/heart-coin.webp" 
+                  alt="Heart Coin" 
+                  className="w-6 h-6"
+                />
+                <span 
+                  className="font-bold text-lg"
+                  style={{
+                    color: '#FF69B4',
+                    textShadow: '0 0 8px #FF69B4'
+                  }}
+                >
+                  {heartCoins}
+                </span>
+                <span 
+                  style={{
+                    color: '#FFFFFF',
+                    fontSize: '14px',
+                    textShadow: '0 0 4px #FFFFFF80'
+                  }}
+                >
+                  Heart Coins
+                </span>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex space-x-3 w-full pt-4">
+                {/* Cards button */}
+                <button
+                  onClick={() => {
+                    try { sfx.play('click', 0.4); } catch {}
+                    setShowProfilePopup(false);
+                    setShowCardsModal(true);
+                  }}
+                  className="flex-1 py-3 px-4 rounded-lg border-2 hover:scale-105 transition-all duration-200"
+                  style={{
+                    background: 'rgba(0, 191, 255, 0.1)',
+                    borderColor: '#00BFFF',
+                    color: '#00BFFF',
+                    textShadow: '0 0 6px #00BFFF',
+                    boxShadow: '0 0 10px #00BFFF40'
+                  }}
+                >
+                  <div className="text-center">
+                    <div className="text-lg font-bold">CARDS</div>
+                    <div className="text-xs opacity-80">View Collection</div>
+                  </div>
+                </button>
+
+                {/* Badges button */}
+                <button
+                  onClick={() => {
+                    try { sfx.play('click', 0.4); } catch {}
+                    setShowProfilePopup(false);
+                    setShowBadgesModal(true);
+                  }}
+                  className="flex-1 py-3 px-4 rounded-lg border-2 hover:scale-105 transition-all duration-200"
+                  style={{
+                    background: 'rgba(255, 105, 180, 0.1)',
+                    borderColor: '#FF69B4',
+                    color: '#FF69B4',
+                    textShadow: '0 0 6px #FF69B4',
+                    boxShadow: '0 0 10px #FF69B440'
+                  }}
+                >
+                  <div className="text-center">
+                    <div className="text-lg font-bold">BADGES</div>
+                    <div className="text-xs opacity-80">View Achievements</div>
+                  </div>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -328,6 +541,22 @@ export default function PopoutPanel({
           </div>
         </div>
       </div>
+
+      {/* Cards Modal - opened from profile popup */}
+      {showCardsModal && (
+        <BinderModal 
+          open={showCardsModal}
+          onClose={() => setShowCardsModal(false)}
+        />
+      )}
+
+      {/* Badges Modal - opened from profile popup */}
+      {showBadgesModal && (
+        <BadgesModal 
+          open={showBadgesModal}
+          onClose={() => setShowBadgesModal(false)}
+        />
+      )}
     </>,
     document.body
   );

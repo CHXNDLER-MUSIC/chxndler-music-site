@@ -32,10 +32,10 @@ type PlanetSystemProps = {
 
 // Elemental planets configuration as per requirements - ENHANCED VISIBILITY
 const ELEMENTAL_PLANETS = [
-  { type: "water" as ElementKey, color: "#38B6FF", radius: 3.0, position: [8, 0, 0] as [number, number, number] },
-  { type: "heart" as ElementKey, color: "#FC54AF", radius: 3.0, position: [-8, 0, 0] as [number, number, number] },
-  { type: "lightning" as ElementKey, color: "#F2EF1D", radius: 3.0, position: [0, 8, 0] as [number, number, number] },
-  { type: "darkness" as ElementKey, color: "#6A4C93", radius: 3.0, position: [0, -8, 0] as [number, number, number] }
+  { type: "water" as ElementKey, color: "#38B6FF", radius: 3.0, position: [12, 0, 0] as [number, number, number] },
+  { type: "heart" as ElementKey, color: "#FC54AF", radius: 3.0, position: [-12, 0, 0] as [number, number, number] },
+  { type: "lightning" as ElementKey, color: "#F2EF1D", radius: 3.0, position: [0, 0, 12] as [number, number, number] },
+  { type: "darkness" as ElementKey, color: "#6A4C93", radius: 3.0, position: [0, 0, -12] as [number, number, number] }
 ];
 
 // Orbit helper function as requested
@@ -212,9 +212,9 @@ export const PlanetSystem: React.FC<PlanetSystemProps> = ({
             </div>
           </Html>
           {/* DEBUG SPHERE - SHOULD BE CLEARLY VISIBLE */}
-          <mesh position={[p.position[0], p.position[1] + 5, p.position[2]]}>
-            <sphereGeometry args={[1, 8, 8]} />
-            <meshBasicMaterial color="#FF0000" />
+          <mesh position={[p.position[0], p.position[1] + 8, p.position[2]]}>
+            <sphereGeometry args={[2, 8, 8]} />
+            <meshBasicMaterial color="#FF0000" transparent opacity={0.8} />
           </mesh>
         </group>
       ))}

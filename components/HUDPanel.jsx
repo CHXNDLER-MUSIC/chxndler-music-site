@@ -1118,7 +1118,7 @@ export default function HUDPanel({
         rightEdge = Math.min((typeof window !== 'undefined' ? window.innerWidth : rightEdge), rightEdge + HORIZONTAL_EXPAND) - 8 + 8;
         const width = Math.max(0, rightEdge - leftEdge);
         // Bring the top down more while keeping the bottom aligned to blue display bottom; this also shortens the popover
-        const TOP_INSET = 40; // moved up significantly
+        const TOP_INSET = 60; // bring top down slightly more
         let top = rect.top + TOP_INSET;
         top = Math.max(8, top);
         const height = Math.max(100, rect.height - TOP_INSET);
