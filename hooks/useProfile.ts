@@ -7,9 +7,9 @@ interface Profile {
   id: string;
   email: string | null;
   phone: string | null;
-  display_name: string | null;
+  name: string | null;
   element: string | null;
-  has_completed_onboarding: boolean;
+  profile_complete: boolean;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -47,8 +47,12 @@ export function useProfile(): UseProfileReturn {
       const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
       
       if (sessionError) {
-        console.error('Error getting session:', sessionError);
-        setError(sessionError.message);
+        console.error('Error getting session:', {
+          message: sessionError?.message,
+          status: sessionError?.status,
+          fullError: sessionError
+        });
+        setError(sessionError.message || 'Session error');
         return;
       }
 
@@ -92,7 +96,13 @@ export function useProfile(): UseProfileReturn {
       }
 
       if (profileError) {
-        console.error('Error fetching profile:', profileError);
+        console.error('Error fetching profile:', {
+          message: profileError?.message,
+          code: profileError?.code,
+          details: profileError?.details,
+          hint: profileError?.hint,
+          fullError: profileError
+        });
         const errorMessage = profileError?.message || 'Failed to load profile data';
         setError(errorMessage);
         setProfile(null);
