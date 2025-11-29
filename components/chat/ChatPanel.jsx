@@ -48,6 +48,30 @@ export default function ChatPanel({ isOpen, onClose }) {
   const [hasJoined, setHasJoined] = useState(false);
   const channelRef = useRef(null);
 
+  // Initialize anonymous user immediately
+  useEffect(() => {
+    if (!user && isOpen) {
+      const alienNumber = Math.floor(Math.random() * 9999) + 1;
+      const alienName = `ALIEN [${alienNumber}]`;
+      
+      console.log('🚀 IMMEDIATE: Adding anonymous user:', alienName);
+      
+      // Create the anonymous user object
+      const anonymousUser = {
+        id: 'anonymous',
+        name: alienName,
+        element: 'alien',
+        avatar_badge_id: null,
+        last_seen: new Date().toISOString()
+      };
+      
+      setChatUsers([anonymousUser]);
+      
+      // Store the name for consistency
+      setAlienName(alienName);
+    }
+  }, [user, isOpen]);
+
   // Initialize chat when panel opens
   useEffect(() => {
     if (isOpen) {
@@ -71,13 +95,14 @@ export default function ChatPanel({ isOpen, onClose }) {
         setChatUsers(prev => {
           console.log('🔥 Current users before update:', prev);
           const filteredUsers = prev.filter(u => u.id !== 'anonymous'); // Remove any existing anonymous
-          const newUsers = [{
+          const anonymousUser = {
             id: 'anonymous',
             name: displayName,
-            element: null,
+            element: 'alien',
             avatar_badge_id: null,
             last_seen: new Date().toISOString()
-          }, ...filteredUsers];
+          };
+          const newUsers = [anonymousUser, ...filteredUsers];
           console.log('🔥 New users after update:', newUsers);
           return newUsers;
         });
@@ -105,7 +130,23 @@ export default function ChatPanel({ isOpen, onClose }) {
 
       // Load current chat users
       const users = await chatService.getChatUsers();
-      setChatUsers(users);
+      
+      // If user is not authenticated, preserve the anonymous user
+      if (!user) {
+        const displayName = getDisplayName();
+        const anonymousUser = {
+          id: 'anonymous',
+          name: displayName,
+          element: 'alien',
+          avatar_badge_id: null,
+          last_seen: new Date().toISOString()
+        };
+        
+        // Add anonymous user to the beginning of the list
+        setChatUsers([anonymousUser, ...users]);
+      } else {
+        setChatUsers(users);
+      }
 
       // Subscribe to new messages
       channelRef.current = await chatService.subscribeToChat(
@@ -327,36 +368,37 @@ export default function ChatPanel({ isOpen, onClose }) {
             exit="closed"
           >
             <div
-              className="w-80 h-full bg-black/60 backdrop-blur-xl border-r-2 border-cyan-400/50 flex flex-col"
+              className="w-[28rem] h-full bg-black/20 border-r-2 border-yellow-400/50 flex flex-col"
               style={{
                 background: `
                   linear-gradient(135deg, 
-                    rgba(0, 0, 0, 0.7) 0%,
-                    rgba(0, 20, 40, 0.6) 50%,
-                    rgba(0, 0, 0, 0.7) 100%
+                    rgba(0, 0, 0, 0.3) 0%,
+                    rgba(0, 20, 40, 0.2) 50%,
+                    rgba(0, 0, 0, 0.3) 100%
                   )
                 `,
                 boxShadow: `
-                  0 0 50px rgba(0, 255, 255, 0.3),
-                  inset 0 0 100px rgba(0, 255, 255, 0.1)
+                  0 0 50px rgba(242, 239, 29, 0.2),
+                  inset 0 0 100px rgba(242, 239, 29, 0.05)
                 `,
               }}
             >
               {/* Header */}
-              <div className="p-4 border-b border-cyan-400/30 flex items-center">
+              <div className="p-4 border-b border-yellow-400/30 flex items-center">
                 <div className="flex items-center space-x-3 flex-1 mr-4">
                   <div 
                     className="w-3 h-3 rounded-full animate-pulse flex-shrink-0"
                     style={{
-                      background: 'linear-gradient(45deg, #FC54AF, #38B6FF)',
-                      boxShadow: '0 0 15px rgba(252, 84, 175, 0.6)'
+                      background: '#F2EF1D',
+                      boxShadow: '0 0 15px rgba(242, 239, 29, 0.8)',
+                      animation: 'neonBlink 1s infinite'
                     }}
                   />
                   <h2 
                     className="text-lg font-bold whitespace-nowrap"
                     style={{
-                      color: '#00FFFF',
-                      textShadow: '0 0 10px #00FFFF, 0 0 20px #00FFFF',
+                      color: '#F2EF1D',
+                      textShadow: '0 0 10px #F2EF1D, 0 0 20px #F2EF1D',
                       letterSpacing: '0.05em'
                     }}
                   >
@@ -366,8 +408,8 @@ export default function ChatPanel({ isOpen, onClose }) {
                   <div 
                     className="flex-1 h-px ml-4"
                     style={{
-                      background: 'linear-gradient(90deg, rgba(0, 255, 255, 0.6), rgba(0, 255, 255, 0.2), transparent)',
-                      boxShadow: '0 0 8px rgba(0, 255, 255, 0.4)'
+                      background: 'linear-gradient(90deg, rgba(242, 239, 29, 0.6), rgba(242, 239, 29, 0.2), transparent)',
+                      boxShadow: '0 0 8px rgba(242, 239, 29, 0.4)'
                     }}
                   />
                 </div>
@@ -527,6 +569,16 @@ export default function ChatPanel({ isOpen, onClose }) {
             @keyframes scan {
               0% { transform: translateY(-100%); }
               100% { transform: translateY(100vh); }
+            }
+            @keyframes neonBlink {
+              0%, 50% { 
+                opacity: 1;
+                box-shadow: 0 0 15px rgba(242, 239, 29, 0.8), 0 0 25px rgba(242, 239, 29, 0.6);
+              }
+              25%, 75% { 
+                opacity: 0.3;
+                box-shadow: 0 0 5px rgba(242, 239, 29, 0.4);
+              }
             }
           `}</style>
         </>

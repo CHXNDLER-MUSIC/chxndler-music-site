@@ -180,11 +180,12 @@ export default function WelcomeHomeForm() {
             className="heart-signal-btn inline-flex items-center justify-center rounded-full transition-all duration-300 hover:scale-110 shadow-lg hover:shadow-xl"
             style={{
               background: 'linear-gradient(135deg, #00FFFF, #00E5FF, #00BFFF)',
-              boxShadow: '0 0 25px rgba(0,255,255,0.6), 0 0 50px rgba(0,255,255,0.4)',
+              border: '2px solid #F2EF1D',
+              boxShadow: '0 0 25px rgba(242,239,29,0.6), 0 0 50px rgba(242,239,29,0.4)',
               width: heartSignalSent ? 'auto' : '4rem',
               height: heartSignalSent ? 'auto' : '4rem',
-              padding: heartSignalSent ? '0.75rem 1.5rem' : '0',
-              minWidth: heartSignalSent ? '200px' : '4rem',
+              padding: heartSignalSent ? '0.75rem 2rem' : '0',
+              minWidth: heartSignalSent ? '280px' : '4rem',
             }}
           >
             {heartSignalSent ? (
@@ -200,7 +201,7 @@ export default function WelcomeHomeForm() {
 
       <style jsx>{`
         .heart-signal-btn:hover {
-          box-shadow: 0 0 35px rgba(0,255,255,0.8), 0 0 70px rgba(0,255,255,0.6) !important;
+          box-shadow: 0 0 35px rgba(242,239,29,0.8), 0 0 70px rgba(242,239,29,0.6) !important;
         }
       `}</style>
     </div>

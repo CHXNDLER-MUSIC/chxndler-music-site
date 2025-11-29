@@ -70,7 +70,7 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
   const [showFullCollection, setShowFullCollection] = useState(true);
   const [selectedElement, setSelectedElement] = useState<string | null>('DARKNESS');
   const [selectedRarity, setSelectedRarity] = useState<string>('All');
-  const [selectedCardName, setSelectedCardName] = useState<string>('All');
+  const [selectedCardName, setSelectedCardName] = useState<string>('DARKNESS');
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [selectedCard, setSelectedCard] = useState<{name: string, image: string, rarity: string, element: string} | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -314,8 +314,13 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
     
     let filteredSongs = songCollection;
     
-    // Only show the card that matches the selected element name exactly
-    filteredSongs = filteredSongs.filter(song => song.name === selectedElement);
+    // Filter by element first
+    filteredSongs = filteredSongs.filter(song => song.element === selectedElement);
+    
+    // Then filter by specific card name if not showing all
+    if (selectedCardName !== 'All' && selectedCardName) {
+      filteredSongs = filteredSongs.filter(song => song.name === selectedCardName);
+    }
     
     // Convert to card format with images
     let cards = filteredSongs.map(song => ({
@@ -347,10 +352,12 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
   const getAvailableCardNames = () => {
     if (!selectedElement) return [];
     
-    // Only show the card that matches the selected element name exactly
-    const elementCard = songCollection.find(song => song.name === selectedElement);
+    // Get all cards that belong to the selected element
+    const elementCards = songCollection
+      .filter(song => song.element === selectedElement)
+      .map(song => song.name);
     
-    return elementCard ? ['All', selectedElement] : ['All'];
+    return elementCards;
   };
 
   // Helper functions for purchase flow
@@ -898,7 +905,6 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
                 onClick={() => {
                   try { sfx.play('click', 0.6); } catch {}
                   setSelectedElement(null);
-                  setSelectedCardName('All');
                   setCurrentCardIndex(0);
                 }}
                 className="flex items-center gap-2 text-pink-300 hover:text-pink-200 transition-colors text-xs"
@@ -937,7 +943,11 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
                   value={selectedRarity}
                   onChange={(e) => {
                     setSelectedRarity(e.target.value);
-                    setSelectedCardName('All');
+                    // When rarity changes, set to first available card for the current element
+                    if (selectedElement) {
+                      const elementCards = songCollection.filter(song => song.element === selectedElement);
+                      setSelectedCardName(elementCards.length > 0 ? elementCards[0].name : selectedElement);
+                    }
                     setCurrentCardIndex(0);
                   }}
                   className="px-2 py-1 rounded border border-pink-400/60 bg-black/40 text-pink-200 text-sm"
@@ -2394,8 +2404,9 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
                           onClick={() => {
                             try { sfx.play('click', 0.7); } catch {}
                             setSelectedElement(element);
-                            setSelectedCardName('All');
-                            // Set the element's representative card as preselected (e.g., "LIGHTNING" card for LIGHTNING element)
+                            // Set the first available card for this element
+                            const elementCards = songCollection.filter(song => song.element === element);
+                            setSelectedCardName(elementCards.length > 0 ? elementCards[0].name : element);
                             setCurrentCardIndex(0);
                           }}
                         >

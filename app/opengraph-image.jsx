@@ -19,8 +19,8 @@ export default function OG() {
         }}
       >
         <img
-          src="https://ik.imagekit.io/CHXNDLER/cover/chxndler.png?updatedAt=1762361376662"
-          alt="CHXNDLER Cover Art"
+          src="https://chxndler.world/icons/chxndler-og-1200x630.png"
+          alt="CHXNDLER - The Heartverse"
           style={{
             width: "100%",
             height: "100%",

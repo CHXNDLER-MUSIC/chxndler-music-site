@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { useProfile } from '@/contexts/ProfileContext';
 import HeartversePopup from "@/components/HeartversePopup";
 
 type Props = {
@@ -113,6 +114,7 @@ const storeItems: StoreItem[] = [
 ];
 
 export default function HeartCoinModal({ open, onClose }: Props) {
+  const { profile } = useProfile();
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState<string | null>(null);
@@ -243,7 +245,7 @@ export default function HeartCoinModal({ open, onClose }: Props) {
                         filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 2px #FC54AF)'
                       }}
                     />
-                    <span className="text-sm font-bold text-[#F2EF1D]">0</span>
+                    <span className="text-sm font-bold text-[#F2EF1D]">{profile?.heartcoin_balance || 0}</span>
                   </div>
                 </div>
 

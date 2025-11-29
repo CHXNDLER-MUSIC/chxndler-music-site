@@ -49,15 +49,19 @@ export class ChatService {
 
     try {
       const { data, error } = await supabaseClient.rpc('get_current_stream_session');
-      if (error) throw error;
+      if (error) {
+        console.warn('Stream session RPC not available, using fallback:', error.message || 'Unknown error');
+        throw error;
+      }
       
       this.currentSessionId = data;
+      console.log('✅ Got stream session from DB:', data);
       return data;
     } catch (error) {
-      console.error('Error getting stream session:', error);
       // Fallback: generate session ID client-side
       const fallback = `stream_${new Date().getFullYear()}_${String(new Date().getMonth() + 1).padStart(2, '0')}_${String(new Date().getDate()).padStart(2, '0')}_${String(new Date().getHours()).padStart(2, '0')}`;
       this.currentSessionId = fallback;
+      console.log('⚡ Using fallback session ID:', fallback);
       return fallback;
     }
   }
@@ -178,7 +182,7 @@ export class ChatService {
         .single();
 
       if (error) {
-        console.error('Error sending message:', error);
+        console.warn('Database not accessible for sending message:', error.message || 'Unknown error');
         return null;
       }
 
@@ -232,13 +236,13 @@ export class ChatService {
         .limit(limit);
 
       if (error) {
-        console.error('Error loading messages:', error);
+        console.warn('Database not accessible for chat messages, using empty state:', error.message || 'Unknown error');
         return [];
       }
 
       return (data || []).reverse() as ChatMessage[];
     } catch (error) {
-      console.error('Error in loadRecentMessages:', error);
+      console.warn('Chat messages unavailable, starting fresh session');
       return [];
     }
   }
@@ -270,7 +274,7 @@ export class ChatService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error getting chat users:', error);
+        console.warn('Database not accessible for chat users, using local state:', error.message || 'Unknown error');
         return [];
       }
 
@@ -291,7 +295,7 @@ export class ChatService {
 
       return Array.from(uniqueUsers.values());
     } catch (error) {
-      console.error('Error in getChatUsers:', error);
+      console.warn('Chat users unavailable, relying on local state');
       return [];
     }
   }

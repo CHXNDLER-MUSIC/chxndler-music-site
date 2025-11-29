@@ -552,25 +552,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
                   >
                     {dailyPrompt.intention.text}
                   </div>
-                  <textarea
-                    value={journalState.intentionResponse}
-                    onChange={(e) => setJournalState(prev => ({ ...prev, intentionResponse: e.target.value }))}
-                    placeholder="Set your intention for today..."
-                    className="w-full h-16 p-3 rounded-lg text-white placeholder-white/50 resize-none focus:outline-none transition-all text-sm"
-                    style={{
-                      background: 'rgba(0,0,0,0.6)',
-                      border: `1px solid ${elementTheme.color}40`,
-                      boxShadow: `0 0 10px ${elementTheme.color}20`,
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = `${elementTheme.color}80`;
-                      e.target.style.boxShadow = `0 0 15px ${elementTheme.glow}`;
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = `${elementTheme.color}40`;
-                      e.target.style.boxShadow = `0 0 10px ${elementTheme.color}20`;
-                    }}
-                  />
                 </div>
 
                 {/* Reflection Prompt */}

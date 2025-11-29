@@ -318,13 +318,14 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
                   background: heartSignalSent 
                     ? 'linear-gradient(135deg, #00FF00, #00FF7F, #32FF32)' 
                     : 'linear-gradient(135deg, #00FFFF, #00E5FF, #00BFFF)',
+                  border: '2px solid #F2EF1D',
                   boxShadow: heartSignalSent
                     ? '0 0 25px rgba(0,255,0,0.8), 0 0 50px rgba(0,255,0,0.6)'
-                    : '0 0 25px rgba(0,255,255,0.6), 0 0 50px rgba(0,255,255,0.4)',
+                    : '0 0 25px rgba(242,239,29,0.6), 0 0 50px rgba(242,239,29,0.4)',
                   width: heartSignalSent ? 'auto' : '4rem',
                   height: heartSignalSent ? 'auto' : '4rem',
-                  padding: heartSignalSent ? '0.75rem 1rem' : '0',
-                  minWidth: heartSignalSent ? '120px' : '4rem',
+                  padding: heartSignalSent ? '0.75rem 2rem' : '0',
+                  minWidth: heartSignalSent ? '280px' : '4rem',
                 }}
               >
                 {heartSignalSent ? (
@@ -597,19 +598,19 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
         @keyframes heartPulse {
           0%, 100% { 
             transform: scale(1);
-            box-shadow: 0 0 25px rgba(0,255,255,0.6), 0 0 50px rgba(0,255,255,0.4);
+            box-shadow: 0 0 25px rgba(242,239,29,0.6), 0 0 50px rgba(242,239,29,0.4);
           }
           25% { 
             transform: scale(1.2);
-            box-shadow: 0 0 35px rgba(0,255,255,0.8), 0 0 70px rgba(0,255,255,0.6);
+            box-shadow: 0 0 35px rgba(242,239,29,0.8), 0 0 70px rgba(242,239,29,0.6);
           }
           50% { 
             transform: scale(1.15);
-            box-shadow: 0 0 40px rgba(0,255,255,0.9), 0 0 80px rgba(0,255,255,0.7);
+            box-shadow: 0 0 40px rgba(242,239,29,0.9), 0 0 80px rgba(242,239,29,0.7);
           }
           75% { 
             transform: scale(1.25);
-            box-shadow: 0 0 35px rgba(0,255,255,0.8), 0 0 70px rgba(0,255,255,0.6);
+            box-shadow: 0 0 35px rgba(242,239,29,0.8), 0 0 70px rgba(242,239,29,0.6);
           }
         }
       `}</style>

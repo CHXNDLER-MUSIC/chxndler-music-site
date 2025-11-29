@@ -147,7 +147,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           {/* Large badge display */}
           <div className="flex flex-col items-center space-y-3">
             <div className="relative w-28 h-28 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 flex items-center justify-center">
-              <div className="relative z-10 opacity-60">
+              <div className={`relative z-10 transition-opacity ${selectedBadge.progress === 100 ? 'opacity-100' : 'opacity-60'}`}>
                 {selectedBadge.icon_url ? (
                   <img
                     src={selectedBadge.icon_url}
@@ -201,6 +201,15 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           {/* Progress section */}
           {selectedBadge.progress !== undefined && (
             <div className="space-y-3">
+              {/* Requirement */}
+              {selectedBadge.description && (
+                <div className="text-center">
+                  <span className="text-white/80 text-sm font-medium">
+                    {selectedBadge.description}
+                  </span>
+                </div>
+              )}
+              
               {/* Progress bar */}
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
