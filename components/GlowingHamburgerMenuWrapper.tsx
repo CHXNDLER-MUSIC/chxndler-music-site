@@ -207,6 +207,7 @@ export default function GlowingHamburgerMenuWrapper() {
         style={{ display: 'none' }}
         open={chxndlerOpen}
         onOpenChange={setChxndlerOpen}
+        onOpenWelcomeHome={() => setWelcomeHomeOpen(true)}
       />
       {/* Hidden HeartCoinButton to handle the store modal functionality */}
       <HeartCoinButton

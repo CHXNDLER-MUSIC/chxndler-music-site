@@ -52,6 +52,37 @@ export default function ChatPanel({ isOpen, onClose }) {
   const { profile, user } = useProfile();
   const { userBadges } = useBadges();
   
+  // Real song collection data from BinderModal
+  const songCollection = [
+    { name: 'MR. BRIGHTSIDE', element: 'DARKNESS', rarity: 'Common' },
+    { name: 'CHEERLEADER (ACOUSTIC)', element: 'HEART', rarity: 'Common' },
+    { name: 'ALONE', element: 'DARKNESS', rarity: 'Common' },
+    { name: 'LITTLE BLACK HEART', element: 'DARKNESS', rarity: 'Common' },
+    { name: 'ALWAYS ON MY MIND', element: 'HEART', rarity: 'Common' },
+    { name: 'BE MY BEE', element: 'HEART', rarity: 'Common' },
+    { name: 'BLUE', element: 'LIGHTNING', rarity: 'Common' },
+    { name: 'BRAIN FREEZE', element: 'LIGHTNING', rarity: 'Common' },
+    { name: 'GAME BOY HEART', element: 'LIGHTNING', rarity: 'Common' },
+    { name: 'HOME', element: 'LIGHTNING', rarity: 'Common' },
+    { name: 'OCEAN GIRL', element: 'WATER', rarity: 'Common' },
+    { name: 'LETTING GO', element: 'WATER', rarity: 'Common' },
+    { name: 'WATER', element: 'WATER', rarity: 'Rare' },
+    { name: 'HEART', element: 'HEART', rarity: 'Rare' },
+    { name: 'LIGHTNING', element: 'LIGHTNING', rarity: 'Rare' },
+    { name: 'DARKNESS', element: 'DARKNESS', rarity: 'Rare' },
+  ];
+
+  // Helper function to get element color and icon
+  const getElementDisplay = (element) => {
+    switch(element) {
+      case 'DARKNESS': return { color: 'purple-400', icon: '🌙' };
+      case 'HEART': return { color: 'pink-400', icon: '💖' };
+      case 'LIGHTNING': return { color: 'blue-400', icon: '⚡' };
+      case 'WATER': return { color: 'cyan-400', icon: '🌊' };
+      default: return { color: 'gray-400', icon: '✨' };
+    }
+  };
+  
   // Debug logging
   console.log('🔥 ChatPanel render:', { isOpen, profile: !!profile, user: !!user });
 
@@ -101,6 +132,8 @@ export default function ChatPanel({ isOpen, onClose }) {
   }, [selectedUser, isUserPanelCollapsed]);
   const [showUserBadges, setShowUserBadges] = useState(false);
   const [showUserBinder, setShowUserBinder] = useState(false);
+  const [badgeStartIndex, setBadgeStartIndex] = useState(0);
+  const [binderStartIndex, setBinderStartIndex] = useState(0);
   const channelRef = useRef(null);
 
   // Initialize anonymous user immediately when chat opens
@@ -465,6 +498,7 @@ export default function ChatPanel({ isOpen, onClose }) {
       setSelectedUser(user);
       setShowUserBadges(false); // Reset badge view when switching users
       setShowUserBinder(false); // Reset binder view when switching users
+      setIsUserPanelCollapsed(true); // Auto-collapse left panel when profile opens
       console.log('🔥 Set selected user:', user);
     } else {
       console.log('🔥 No user found for ID:', userId);
@@ -753,7 +787,7 @@ export default function ChatPanel({ isOpen, onClose }) {
 
                 {/* Profile Panel - full right side when user is selected */}
                 {selectedUser && (
-                  <div className="w-full max-w-72 min-w-44 sm:min-w-56 border-l border-yellow-400/30 flex flex-col overflow-hidden">
+                  <div className="w-full max-w-96 min-w-64 sm:min-w-72 border-l border-yellow-400/30 flex flex-col overflow-hidden">
                     {/* Profile Header */}
                     <div className="p-2 sm:p-3 border-b border-yellow-400/30">
                       <div className="flex items-center justify-between">
@@ -789,7 +823,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                             </div>
                             
                             {/* Total Heart Coins */}
-                            <div className="flex items-center space-x-1 px-2 py-1 rounded bg-black/30 border border-pink-400/40 flex-shrink-0">
+                            <div className="flex items-center space-x-1 px-2 py-1 rounded bg-black/30 flex-shrink-0">
                               <span className="text-xs text-white/80 font-medium">TOTAL</span>
                               <img 
                                 src="/elements/heart-coin.webp" 
@@ -813,6 +847,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 } catch (error) {
                                   console.log('Click audio creation failed:', error);
                                 }
+                                if (showUserBadges) {
+                                  setBadgeStartIndex(0); // Reset to first page when closing
+                                }
                                 setShowUserBadges(!showUserBadges);
                               }}
                               className="hover:scale-110 transition-transform"
@@ -835,6 +872,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                                   });
                                 } catch (error) {
                                   console.log('Click audio creation failed:', error);
+                                }
+                                if (showUserBinder) {
+                                  setBinderStartIndex(0); // Reset to first page when closing
                                 }
                                 setShowUserBinder(!showUserBinder);
                               }}
@@ -908,31 +948,80 @@ export default function ChatPanel({ isOpen, onClose }) {
                             <img src="/elements/badges.webp" alt="Badges" className="w-4 h-4 mr-2" />
                             User Badges
                           </h4>
-                          <div className="grid grid-cols-3 gap-2">
-                            {/* Display completed user badges */}
-                            {userBadges && userBadges.length > 0 ? (
-                              userBadges.slice(0, 6).map((userBadge, index) => (
-                                <div key={index} className="flex flex-col items-center p-2 rounded bg-black/30">
-                                  <div className="w-8 h-8 rounded flex items-center justify-center bg-yellow-400/20">
-                                    {userBadge.badge?.icon_url ? (
-                                      <img 
-                                        src={userBadge.badge.icon_url} 
-                                        alt={userBadge.badge.name} 
-                                        className="w-6 h-6" 
-                                      />
-                                    ) : (
-                                      <span className="text-sm">🏆</span>
-                                    )}
+                          <div className="flex items-center space-x-2">
+                            {/* Left Arrow */}
+                            <button 
+                              onClick={() => {
+                                try {
+                                  const audio = new Audio('/audio/click.mp3');
+                                  audio.volume = 0.3;
+                                  audio.play().catch(error => {
+                                    console.log('Click audio play failed:', error);
+                                  });
+                                } catch (error) {
+                                  console.log('Click audio creation failed:', error);
+                                }
+                                setBadgeStartIndex(Math.max(0, badgeStartIndex - 5));
+                              }}
+                              disabled={badgeStartIndex === 0}
+                              className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
+                              style={{
+                                textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
+                              }}
+                            >
+                              ◀
+                            </button>
+
+                            {/* Badges Grid */}
+                            <div className="flex-1 grid grid-cols-5 gap-2">
+                              {/* Display completed user badges */}
+                              {userBadges && userBadges.length > 0 ? (
+                                userBadges.slice(badgeStartIndex, badgeStartIndex + 5).map((userBadge, index) => (
+                                  <div key={badgeStartIndex + index} className="flex flex-col items-center">
+                                    <div className="w-12 h-12 bg-yellow-400/20 rounded-full mb-1 flex items-center justify-center">
+                                      {userBadge.badge?.icon_url ? (
+                                        <img 
+                                          src={userBadge.badge.icon_url} 
+                                          alt={userBadge.badge.name} 
+                                          className="w-8 h-8 rounded-full" 
+                                        />
+                                      ) : (
+                                        <span className="text-sm">🏆</span>
+                                      )}
+                                    </div>
+                                    <span className="text-xs text-white/70 text-center">{userBadge.badge?.name || 'Badge'}</span>
                                   </div>
-                                  <span className="text-xs text-white/70 mt-1 text-center">{userBadge.badge?.name || 'Badge'}</span>
+                                ))
+                              ) : (
+                                // Show message when no badges earned yet
+                                <div className="col-span-5 text-center text-white/50 text-xs py-4">
+                                  No badges earned yet
                                 </div>
-                              ))
-                            ) : (
-                              // Show message when no badges earned yet
-                              <div className="col-span-3 text-center text-white/50 text-xs py-4">
-                                No badges earned yet
-                              </div>
-                            )}
+                              )}
+                            </div>
+
+                            {/* Right Arrow */}
+                            <button 
+                              onClick={() => {
+                                try {
+                                  const audio = new Audio('/audio/click.mp3');
+                                  audio.volume = 0.3;
+                                  audio.play().catch(error => {
+                                    console.log('Click audio play failed:', error);
+                                  });
+                                } catch (error) {
+                                  console.log('Click audio creation failed:', error);
+                                }
+                                setBadgeStartIndex(Math.min(Math.max(0, userBadges.length - 5), badgeStartIndex + 5));
+                              }}
+                              disabled={!userBadges || badgeStartIndex + 5 >= userBadges.length}
+                              className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
+                              style={{
+                                textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
+                              }}
+                            >
+                              ▶
+                            </button>
                           </div>
                         </div>
                       )}
@@ -944,31 +1033,66 @@ export default function ChatPanel({ isOpen, onClose }) {
                             <img src="/elements/binder.webp" alt="Cards" className="w-4 h-4 mr-2" />
                             Card Collection
                           </h4>
-                          <div className="grid grid-cols-3 gap-2">
-                            {/* Sample cards */}
-                            <div className="relative p-1 rounded bg-black/30">
-                              <div className="absolute top-0.5 right-0.5 text-xs text-purple-300">★</div>
-                              <div className="w-full h-10 bg-purple-400/20 rounded mb-1 flex items-center justify-center">
-                                <span className="text-xs text-purple-200">💜</span>
-                              </div>
-                              <span className="text-xs text-white/70 block truncate text-center">Nightcore Dreams</span>
+                          <div className="flex items-center space-x-2">
+                            {/* Left Arrow */}
+                            <button 
+                              onClick={() => {
+                                try {
+                                  const audio = new Audio('/audio/click.mp3');
+                                  audio.volume = 0.3;
+                                  audio.play().catch(error => {
+                                    console.log('Click audio play failed:', error);
+                                  });
+                                } catch (error) {
+                                  console.log('Click audio creation failed:', error);
+                                }
+                                setBinderStartIndex(Math.max(0, binderStartIndex - 5));
+                              }}
+                              disabled={binderStartIndex === 0}
+                              className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
+                              style={{
+                                textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
+                              }}
+                            >
+                              ◀
+                            </button>
+
+                            {/* Cards Grid */}
+                            <div className="flex-1 grid grid-cols-5 gap-2">
+                              {/* Display sample cards */}
+                              {sampleCards.slice(binderStartIndex, binderStartIndex + 5).map((card, index) => (
+                                <div key={binderStartIndex + index} className="relative p-1 rounded bg-black/30">
+                                  <div className="absolute top-0.5 right-0.5 text-xs text-yellow-300">★</div>
+                                  <div className={`w-full h-16 bg-${card.color}/20 rounded mb-1 flex items-center justify-center`}>
+                                    <span className="text-sm">{card.icon}</span>
+                                  </div>
+                                  <span className="text-xs text-white/70 block truncate text-center">{card.name}</span>
+                                </div>
+                              ))}
                             </div>
-                            
-                            <div className="relative p-1 rounded bg-black/30">
-                              <div className="absolute top-0.5 right-0.5 text-xs text-blue-300">★</div>
-                              <div className="w-full h-10 bg-blue-400/20 rounded mb-1 flex items-center justify-center">
-                                <span className="text-xs text-blue-200">⚡</span>
-                              </div>
-                              <span className="text-xs text-white/70 block truncate text-center">Electric Pulse</span>
-                            </div>
-                            
-                            <div className="relative p-1 rounded bg-black/30">
-                              <div className="absolute top-0.5 right-0.5 text-xs text-green-300">★</div>
-                              <div className="w-full h-10 bg-green-400/20 rounded mb-1 flex items-center justify-center">
-                                <span className="text-xs text-green-200">🌊</span>
-                              </div>
-                              <span className="text-xs text-white/70 block truncate text-center">Ocean Girl</span>
-                            </div>
+
+                            {/* Right Arrow */}
+                            <button 
+                              onClick={() => {
+                                try {
+                                  const audio = new Audio('/audio/click.mp3');
+                                  audio.volume = 0.3;
+                                  audio.play().catch(error => {
+                                    console.log('Click audio play failed:', error);
+                                  });
+                                } catch (error) {
+                                  console.log('Click audio creation failed:', error);
+                                }
+                                setBinderStartIndex(Math.min(Math.max(0, songCollection.length - 5), binderStartIndex + 5));
+                              }}
+                              disabled={binderStartIndex + 5 >= sampleCards.length}
+                              className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
+                              style={{
+                                textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
+                              }}
+                            >
+                              ▶
+                            </button>
                           </div>
                         </div>
                       )}

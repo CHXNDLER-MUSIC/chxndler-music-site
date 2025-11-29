@@ -21,6 +21,7 @@ interface SongPlanet {
   atmosphere: string;
   shape: string;
   surfaceElements: string;
+  isReleased?: boolean;
   [key: string]: any;
 }
 
@@ -35,20 +36,21 @@ interface PlanetMinimapProps {
   hoverId?: string | null;
   songs?: Song[];
   onClose?: () => void;
+  onPlanetClick?: (planetId: string) => void;
 }
 
-// Element configurations for proper top-down cross pattern around center
+// Element configurations for proper top-down cross pattern around center (equal distance)
 const ELEMENTS: ElementPosition[] = [
-  { code: "water",     label: "Water", position: [35, 0, 0],    color: "#38B6FF", glowColor: "#38B6FF" },      // Right
-  { code: "lightning", label: "Lightning", position: [0, 0, -35], color: "#F2EF1D", glowColor: "#F2EF1D" },   // Bottom  
-  { code: "heart",     label: "Heart", position: [-35, 0, 0],   color: "#FC54AF", glowColor: "#FC54AF" },      // Left
-  { code: "darkness",  label: "Darkness", position: [0, 0, 35],  color: "#6A4C93", glowColor: "#6A4C93" },     // Top
+  { code: "water",     label: "Water", position: [30, 0, 0],    color: "#38B6FF", glowColor: "#38B6FF" },      // Right
+  { code: "lightning", label: "Lightning", position: [0, 0, -30], color: "#F2EF1D", glowColor: "#F2EF1D" },   // Bottom  
+  { code: "heart",     label: "Heart", position: [-30, 0, 0],   color: "#FC54AF", glowColor: "#FC54AF" },      // Left
+  { code: "darkness",  label: "Darkness", position: [0, 0, 30],  color: "#6A4C93", glowColor: "#6A4C93" },     // Top
 ];
 
 // Comprehensive song planet data with detailed characteristics
 const SONG_PLANETS: SongPlanet[] = [
-  { id: "alone", title: "ALONE", element: "darkness", color: "#000000", surface: "Jagged obsidian crust with deep canyons glowing faint red, fractured tectonic plates", atmosphere: "Thin grey fog, cold starlight reflection, faint aurora in monochrome", shape: "Irregular sphere, fractured into floating chunks", surfaceElements: "Deep cracks, barren plains, no vegetation" },
-  { id: "alone-acoustic", title: "ALONE (ACOUSTIC)", element: "darkness", color: "#000000", surface: "Midnight‑purple cityscape silhouette with glowing teal light between buildings", atmosphere: "Cosmic swirl of turquoise and violet nebula clouds, faint drifting star particles", shape: "Tall vertical city‑pillar formations rising from a flat ledge", surfaceElements: "Skyscraper silhouettes, rooftop ledge, faint cosmic backglow" },
+  { id: "alone", title: "ALONE", element: "darkness", color: "#000000", surface: "Jagged obsidian crust with deep canyons glowing faint red, fractured tectonic plates", atmosphere: "Thin grey fog, cold starlight reflection, faint aurora in monochrome", shape: "Irregular sphere, fractured into floating chunks", surfaceElements: "Deep cracks, barren plains, no vegetation", isReleased: false },
+  { id: "alone-acoustic", title: "ALONE (ACOUSTIC)", element: "darkness", color: "#000000", surface: "Midnight‑purple cityscape silhouette with glowing teal light between buildings", atmosphere: "Cosmic swirl of turquoise and violet nebula clouds, faint drifting star particles", shape: "Tall vertical city‑pillar formations rising from a flat ledge", surfaceElements: "Skyscraper silhouettes, rooftop ledge, faint cosmic backglow", isReleased: false },
   { id: "always-on-my-mind", title: "ALWAYS ON MY MIND", element: "heart", color: "#FC54AF", surface: "Rose-pink velvet plains shimmering under soft light", atmosphere: "Haze of glowing hearts breaking and reforming in slow motion", shape: "Soft rounded orb", surfaceElements: "Fabric-like valleys, glowing heart-shaped lakes" },
   { id: "always-on-my-mind-acoustic", title: "ALWAYS ON MY MIND (ACOUSTIC)", element: "heart", color: "#FC54AF", surface: "Soft twilight-blue suburban terrain with smooth asphalt roads and gently glowing windows", atmosphere: "Calm pastel sky with blue-pink cloud streaks drifting slowly", shape: "Rounded, slightly flattened suburban orb with low rooftops", surfaceElements: "Neighborhood houses, curving roads" },
   { id: "always-on-my-mind-remix", title: "ALWAYS ON MY MIND (REMIX)", element: "heart", color: "#FC54AF", surface: "Neon pink suburban terrain glowing like cotton candy, roads tinted magenta", atmosphere: "Hot pink and orange sunset haze filling the sky with dreamy warmth", shape: "Rounded suburban orb glowing intensely", surfaceElements: "Pink-lit houses, vivid sunset clouds, dangling neon heart charm" },
@@ -93,9 +95,10 @@ const SONG_PLANETS: SongPlanet[] = [
   { id: "were-just-friends-mickey-jas-remix", title: "WE'RE JUST FRIENDS (mickey jas Remix)", element: "heart", color: "#FC54AF", surface: "Soft pastel teal landscape with cotton-candy pink land ridges", atmosphere: "Cool blue dusk sky with soft moonlight and glowing city reflections", shape: "Smooth curved orb with gentle gradient hills", surfaceElements: "pastel skyline, teal palm trees" }
 ];
 
-export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onClose }: PlanetMinimapProps) {
-  const [isCollapsed, setIsCollapsed] = React.useState(false);
+export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onClose, onPlanetClick }: PlanetMinimapProps) {
+  const [isCollapsed, setIsCollapsed] = React.useState(true); // Default to collapsed
   const [portalContainer, setPortalContainer] = React.useState<HTMLElement | null>(null);
+  const [selectedPlanet, setSelectedPlanet] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     setPortalContainer(document.body);
@@ -156,8 +159,8 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
         isCollapsed ? 'w-12 h-12' : 'w-60 h-60'
       }`} 
       style={{ 
-        top: '2rem',
-        right: '2rem',
+        top: '4rem',
+        right: '4rem',
         zIndex: 999999, 
         boxShadow: '0 0 20px rgba(56, 182, 255, 0.8)',
         pointerEvents: 'auto',
@@ -170,8 +173,7 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
         className="absolute top-1 right-1 w-6 h-6 bg-cyan-400/20 hover:bg-cyan-400/40 border border-cyan-400/50 rounded text-cyan-400 text-xs font-bold transition-colors duration-200 flex items-center justify-center"
         style={{ 
           zIndex: 999999, 
-          pointerEvents: 'auto',
-          position: 'relative'
+          pointerEvents: 'auto'
         }}
         title={isCollapsed ? "Expand minimap" : "Collapse minimap"}
       >
@@ -195,7 +197,7 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
           }}
         >
           <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold text-white" style={{textShadow: "0 0 4px black"}}>
-            CENTER
+            Heartverse
           </div>
         </div>
 
@@ -251,6 +253,12 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
               return "rounded-full";
             };
             
+            // Determine colors based on release status
+            const isReleased = songPlanet.isReleased !== false; // Default to released if not specified
+            const planetColor = isReleased 
+              ? (songPlanet.color === "#000000" ? "#6A4C93" : songPlanet.color)
+              : "#666666"; // Grey for unreleased
+            
             return (
               <div
                 key={`${element.code}-song-${i}`}
@@ -258,11 +266,21 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
                 style={{
                   left: `${pos2D.x}px`,
                   top: `${pos2D.y}px`,
-                  backgroundColor: songPlanet.color === "#000000" ? "#6A4C93" : songPlanet.color + "80",
-                  border: `1px solid ${songPlanet.color === "#000000" ? "#6A4C93" : songPlanet.color}`,
-                  boxShadow: `0 0 4px ${songPlanet.color === "#000000" ? "#6A4C93" : songPlanet.color}40`,
+                  backgroundColor: planetColor + "80",
+                  border: `1px solid ${planetColor}`,
+                  boxShadow: `0 0 4px ${planetColor}40`,
                 }}
-                title={songPlanet.title}
+                title={songPlanet.title + (isReleased ? "" : " (Unreleased)")}
+                onClick={() => {
+                  sfx.play('close', 0.5);
+                  setSelectedPlanet(songPlanet.title + (isReleased ? "" : " (Unreleased)"));
+                  // Auto-hide the selected planet name after 3 seconds
+                  setTimeout(() => setSelectedPlanet(null), 3000);
+                  // Call the callback to highlight planet in 3D view
+                  if (onPlanetClick) {
+                    onPlanetClick(songPlanet.id);
+                  }
+                }}
               >
                 {/* Enhanced tooltip with planet details */}
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-black/90 text-white text-[7px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 max-w-48">
@@ -326,6 +344,15 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
           ● ACTIVE
         </div>
       </div>
+        </div>
+      )}
+      
+      {/* Selected planet name display */}
+      {selectedPlanet && (
+        <div className="absolute bottom-2 left-2 right-2 bg-black/90 border border-cyan-400/50 rounded px-2 py-1 text-center z-10">
+          <div className="text-cyan-400 text-xs font-bold">
+            {selectedPlanet}
+          </div>
         </div>
       )}
       

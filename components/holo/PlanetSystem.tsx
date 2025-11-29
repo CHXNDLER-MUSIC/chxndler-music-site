@@ -19,12 +19,12 @@ type ElementCode = "heart" | "water" | "lightning" | "darkness";
 // DIAGNOSTIC MODE - Set to true to show orbit rings, bounding boxes, and labels
 const SHOW_ORBITS = true;
 
-// Fixed elemental planets configuration - Arranged in cardinal directions
+// Fixed elemental planets configuration - Arranged in cardinal directions around center
 const ELEMENTS = [
-  { code: "heart",     label: "💖 Heart",     position: [25, 0, 0] },     // right
-  { code: "water",     label: "🌊 Water",     position: [0, 0, 25] },     // back
-  { code: "lightning", label: "⚡ Lightning", position: [-25, 0, 0] },    // left  
-  { code: "darkness",  label: "🌑 Darkness",  position: [0, -25, 0] },    // below center
+  { code: "heart",     label: "💖 Heart",     position: [25, 0, 0] },      // right
+  { code: "water",     label: "🌊 Water",     position: [0, 0, 25] },      // back
+  { code: "lightning", label: "⚡ Lightning", position: [-25, 0, 0] },     // left  
+  { code: "darkness",  label: "🌑 Darkness",  position: [0, 0, -25] },     // front
 ] as const;
 
 // Element colors and glow configuration
@@ -114,7 +114,7 @@ function ElementalPlanetsWithTextures() {
       </group>
       
       {/* Heart Planet - Pink - RIGHT OF CENTER */}
-      <group name="HeartPlanetGroup" position={[30, 0, 0]}>
+      <group name="HeartPlanetGroup" position={[25, 0, 0]}>
         <mesh renderOrder={5}>
           <planeGeometry args={[16, 16]} />
           <meshStandardMaterial 
@@ -149,7 +149,7 @@ function ElementalPlanetsWithTextures() {
       </group>
       
       {/* Water Planet - Blue - BACK OF CENTER */}
-      <group name="WaterPlanetGroup" position={[0, 0, 30]}>
+      <group name="WaterPlanetGroup" position={[0, 0, 25]}>
         <mesh renderOrder={5}>
           <planeGeometry args={[16, 16]} />
           <meshStandardMaterial 
@@ -184,7 +184,7 @@ function ElementalPlanetsWithTextures() {
       </group>
       
       {/* Lightning Planet - Yellow - LEFT OF CENTER */}
-      <group name="LightningPlanetGroup" position={[-30, 0, 0]}>
+      <group name="LightningPlanetGroup" position={[-25, 0, 0]}>
         <mesh renderOrder={5}>
           <planeGeometry args={[16, 16]} />
           <meshStandardMaterial 
@@ -219,7 +219,7 @@ function ElementalPlanetsWithTextures() {
       </group>
       
       {/* Darkness Planet - Purple - FRONT OF CENTER */}
-      <group name="DarknessPlanetGroup" position={[0, 0, -30]}>
+      <group name="DarknessPlanetGroup" position={[0, 0, -25]}>
         <mesh renderOrder={5}>
           <planeGeometry args={[16, 16]} />
           <meshStandardMaterial 
@@ -337,13 +337,15 @@ function SongOrbitGroup({
   elementCode, 
   elementPosition,
   mainId,
-  hoverId
+  hoverId,
+  highlightedPlanetId
 }: { 
   cards: any[]; 
   elementCode: ElementCode; 
   elementPosition: [number, number, number];
   mainId: string | null;
   hoverId: string | null;
+  highlightedPlanetId: string | null;
 }) {
   const orbitRef = useRef<ThreeGroup>(null);
   
@@ -388,7 +390,8 @@ function SongOrbitGroup({
                 isHover={hoverId === card.id}
                 isMoon={false}
                 isMuted={false}
-                ringBaseOverride={0.6}
+                ringBaseOverride={0.3}
+                isHighlighted={highlightedPlanetId === card.id}
               />
             </mesh>
           </group>
@@ -551,6 +554,7 @@ function OrbitalElementalSystem({ songs, mainId, hoverId }: { songs: any[]; main
                 elementPosition={[0, 0, 0]} // Relative to the element planet
                 mainId={mainId}
                 hoverId={hoverId}
+                highlightedPlanetId={highlightedPlanetId}
               />
             </group>
           </group>
@@ -578,6 +582,7 @@ function InvalidateOnState() {
 
 export default function PlanetSystem({ showAll = false, hideUntilPlaying = false }: { showAll?: boolean; hideUntilPlaying?: boolean }) {
   const [isMinimapVisible, setIsMinimapVisible] = React.useState(true);
+  const [highlightedPlanetId, setHighlightedPlanetId] = React.useState<string | null>(null);
   console.log("🌟🌟🌟 HOLO PLANETSYSTEM.TSX IS RENDERING!!! 🌟🌟🌟", { showAll, hideUntilPlaying });
   // Mark 3D system as active so global key handlers can avoid interfering
   React.useEffect(() => {
@@ -727,7 +732,7 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         // Pull the camera back and widen FOV so the full system fits
         // Elevated viewpoint: camera positioned above to look down at the planet system
         // MAXIMUM zoom out to show ALL elemental planets - EXTREME DISTANCE
-        camera={{ position: [0, 1000, actualShouldShowAll ? 5000 : 350], fov: actualShouldShowAll ? 45 : 130 }}
+        camera={{ position: [0, 1000, actualShouldShowAll ? 5000 : 200], fov: actualShouldShowAll ? 45 : 100 }}
         // Prefer safer GL settings on mobile to avoid flicker when layers repaint
         gl={{
           antialias: false,
@@ -761,6 +766,7 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         {/* Removed magenta secondary light to avoid pink aura */}
         <InvalidateOnState />
         <ZoomOnChange focusId={actualShouldShowAll ? null : focusId} />
+        <MouseWheelZoom focusId={actualShouldShowAll ? null : focusId} />
 
         {/* Very shallow tilt for near-horizontal horizon line */}
         {/* Render the full system: satellites first, focus planet last; previous main becomes a moon */}
@@ -818,6 +824,11 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
           hoverId={hoverId} 
           songs={songs}
           onClose={() => setIsMinimapVisible(false)}
+          onPlanetClick={(planetId: string) => {
+            setHighlightedPlanetId(planetId);
+            // Auto-remove highlight after 4 seconds
+            setTimeout(() => setHighlightedPlanetId(null), 4000);
+          }}
         />
       )}
     </div>
@@ -882,7 +893,7 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
 
   React.useEffect(() => {
     // Update base values based on current mode - MAXIMUM increased for water elemental visibility
-    base.current = { z: isShowAll ? 5000 : 95, fov: isShowAll ? 45 : 75 };
+    base.current = { z: isShowAll ? 5000 : 65, fov: isShowAll ? 45 : 60 };
     
     // Only restart zoom animation if we have a focusId (not in showAll/home mode)
     if (focusId) {
@@ -1012,5 +1023,102 @@ function OverlapManager() {
       }
     });
   });
+  return null;
+}
+
+// Mouse wheel zoom controls component
+function MouseWheelZoom({ focusId }: { focusId: string | null }) {
+  const { camera, invalidate } = useThree();
+  const zoomLevelRef = React.useRef(0); // 0 = normal, negative = zoomed out, positive = zoomed in
+  const animatingRef = React.useRef(false);
+  const targetZoomRef = React.useRef(0);
+  const isShowAll = focusId === null;
+  
+  // Define zoom preset levels with smooth transitions
+  const zoomPresets = React.useMemo(() => {
+    if (isShowAll) {
+      // ShowAll mode: wider range for viewing the entire system
+      return [
+        { level: -2, z: 8000, fov: 35, description: "Maximum wide view" },
+        { level: -1, z: 6000, fov: 40, description: "Wide view" },
+        { level: 0, z: 5000, fov: 45, description: "Normal view" },
+        { level: 1, z: 3500, fov: 50, description: "Closer view" },
+        { level: 2, z: 2000, fov: 60, description: "Close view" }
+      ];
+    } else {
+      // Focus mode: closer range for detailed planet viewing
+      return [
+        { level: -2, z: 300, fov: 45, description: "Wide planet view" },
+        { level: -1, z: 150, fov: 55, description: "Medium planet view" },
+        { level: 0, z: 65, fov: 60, description: "Normal planet view" },
+        { level: 1, z: 35, fov: 70, description: "Close planet view" },
+        { level: 2, z: 15, fov: 85, description: "Very close planet view" }
+      ];
+    }
+  }, [isShowAll]);
+  
+  // Reset zoom level when mode changes
+  React.useEffect(() => {
+    zoomLevelRef.current = 0;
+    targetZoomRef.current = 0;
+  }, [isShowAll]);
+
+  // Handle wheel events
+  React.useEffect(() => {
+    const handleWheel = (event: WheelEvent) => {
+      // Only handle wheel events when mouse is over the canvas
+      const canvas = document.querySelector('canvas');
+      if (!canvas || !canvas.matches(':hover')) return;
+      
+      event.preventDefault();
+      
+      const delta = event.deltaY > 0 ? 1 : -1; // Scroll down = zoom out, scroll up = zoom in
+      const newZoomLevel = Math.max(-2, Math.min(2, zoomLevelRef.current + delta));
+      
+      if (newZoomLevel !== zoomLevelRef.current) {
+        zoomLevelRef.current = newZoomLevel;
+        targetZoomRef.current = newZoomLevel;
+        animatingRef.current = true;
+        invalidate();
+      }
+    };
+
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    return () => window.removeEventListener('wheel', handleWheel);
+  }, [invalidate]);
+
+  // Smooth zoom animation
+  useFrame((_, delta) => {
+    if (!animatingRef.current) return;
+    
+    const currentPreset = zoomPresets.find(p => p.level === targetZoomRef.current);
+    if (!currentPreset) return;
+    
+    const cam = camera as any;
+    const currentZ = cam.position.z;
+    const currentFov = cam.fov;
+    const targetZ = currentPreset.z;
+    const targetFov = currentPreset.fov;
+    
+    // Smooth interpolation
+    const speed = 4.0; // Animation speed
+    const zDiff = targetZ - currentZ;
+    const fovDiff = targetFov - currentFov;
+    
+    if (Math.abs(zDiff) < 0.5 && Math.abs(fovDiff) < 0.5) {
+      // Snap to target when close enough
+      cam.position.z = targetZ;
+      cam.fov = targetFov;
+      cam.updateProjectionMatrix();
+      animatingRef.current = false;
+    } else {
+      // Continue smooth interpolation
+      cam.position.z += zDiff * speed * delta;
+      cam.fov += fovDiff * speed * delta;
+      cam.updateProjectionMatrix();
+      invalidate();
+    }
+  });
+
   return null;
 }

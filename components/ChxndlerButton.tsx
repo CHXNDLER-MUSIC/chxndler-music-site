@@ -7,9 +7,11 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   // External control for the chxndler popout
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  // Function to open welcome home modal
+  onOpenWelcomeHome?: () => void;
 };
 
-export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...restProps }: Props) {
+export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpenWelcomeHome, ...restProps }: Props) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"WE BELIEVE" | "CHXNDLER" | "ELEMENTS">("WE BELIEVE");
   
@@ -318,7 +320,37 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...re
                     lineHeight: '1.6'
                   }}
                 >
-                  Together, they create the emotional ecosystem of the Heartverse — the foundation of every story and song. You align with your Element when you create your profile.
+                  Together, they create the emotional ecosystem of the Heartverse — the foundation of every story and song.
+                </div>
+                <div 
+                  className="text-center mt-4"
+                  style={{ 
+                    fontSize: '12px', 
+                    color: '#FFFFFF !important', 
+                    textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
+                    lineHeight: '1.6'
+                  }}
+                >
+                  You align with your Element when you{' '}
+                  <button
+                    onClick={() => {
+                      try { sfx.play('click', 0.8); } catch {}
+                      onOpenWelcomeHome?.();
+                    }}
+                    className="underline hover:text-pink-300 transition-colors duration-200"
+                    style={{
+                      color: '#00E5FF !important',
+                      textShadow: '0 0 10px #00E5FF, 0 0 20px #00E5FF',
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      cursor: 'pointer',
+                      textDecoration: 'underline'
+                    }}
+                  >
+                    create your profile
+                  </button>
+                  .
                 </div>
               </>
             )}
