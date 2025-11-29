@@ -152,11 +152,9 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
   const handleSaveEntry = async () => {
     // Check if user is logged in
     if (!user?.id || !profile?.element) {
-      setJournalState(prev => ({
-        ...prev,
-        errorMessage: "You need to create an ALIEN profile to submit"
-      }));
-      setTimeout(() => setJournalState(prev => ({ ...prev, errorMessage: "" })), 3000);
+      if (openWelcomeHome) {
+        openWelcomeHome();
+      }
       return;
     }
 
@@ -614,26 +612,53 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
               </button>
 
               {/* Cast into the Stars Button - centered */}
-              <button
-                onClick={handleSaveEntry}
-                disabled={!journalState.soulStar.trim() || journalState.isLoading}
-                className="px-6 py-1 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  background: journalState.soulStar.trim() && !journalState.isLoading ? `${elementTheme.color}30` : `${elementTheme.color}10`,
-                  border: `2px solid ${elementTheme.color}60`,
-                  color: elementTheme.color,
-                  boxShadow: journalState.soulStar.trim() && !journalState.isLoading 
-                    ? `0 0 20px ${elementTheme.glow}, 0 0 40px ${elementTheme.color}40, inset 0 0 10px ${elementTheme.color}20`
-                    : 'none',
-                  textShadow: `0 0 4px ${elementTheme.glow}`
-                }}
-              >
-                {journalState.isLoading 
-                  ? 'CASTING...' 
-                  : journalState.errorMessage 
-                    ? journalState.errorMessage
-                    : 'Cast into the Stars'}
-              </button>
+              {(!user?.id || !profile?.element) ? (
+                <button
+                  onClick={handleSaveEntry}
+                  className="px-6 py-1 rounded-lg font-semibold transition-all duration-200"
+                  style={{
+                    background: `${elementTheme.color}10`,
+                    border: `2px solid ${elementTheme.color}60`,
+                    color: elementTheme.color,
+                    textShadow: `0 0 4px ${elementTheme.glow}`
+                  }}
+                >
+                  You need to create an{' '}
+                  <span
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (openWelcomeHome) {
+                        openWelcomeHome();
+                      }
+                    }}
+                    className="underline cursor-pointer hover:opacity-80"
+                    style={{
+                      textDecoration: 'underline',
+                      textUnderlineOffset: '2px'
+                    }}
+                  >
+                    ALIEN profile
+                  </span>
+                  {' '}to submit a reflection.
+                </button>
+              ) : (
+                <button
+                  onClick={handleSaveEntry}
+                  disabled={!journalState.soulStar.trim() || journalState.isLoading}
+                  className="px-6 py-1 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    background: journalState.soulStar.trim() && !journalState.isLoading ? `${elementTheme.color}30` : `${elementTheme.color}10`,
+                    border: `2px solid ${elementTheme.color}60`,
+                    color: elementTheme.color,
+                    boxShadow: journalState.soulStar.trim() && !journalState.isLoading 
+                      ? `0 0 20px ${elementTheme.glow}, 0 0 40px ${elementTheme.color}40, inset 0 0 10px ${elementTheme.color}20`
+                      : 'none',
+                    textShadow: `0 0 4px ${elementTheme.glow}`
+                  }}
+                >
+                  {journalState.isLoading ? 'CASTING...' : 'Cast into the Stars'}
+                </button>
+              )}
             </div>
           </>
         )}

@@ -113,17 +113,6 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
       ]
     },
     {
-      id: "heartcoin",
-      name: "HEART COIN",
-      emoji: "💰",
-      badges: [
-        { name: "First HeartCoin", progress: 100, current: 1, total: 1, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/First%20HeartCoin.png?updatedAt=1763736238400" },
-        { name: "Treasure Finder", description: "10 HC", progress: 50, current: 5, total: 10 },
-        { name: "Heartflow", description: "50 HC", progress: 10, current: 5, total: 50 },
-        { name: "Cosmic Prosperity", description: "100 HC", progress: 5, current: 5, total: 100 },
-      ]
-    },
-    {
       id: "community",
       name: "COMMUNITY",
       emoji: "🌐",
@@ -620,7 +609,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
 
       {/* Badge Categories Grid - 6 categories layout */}
       {!loading && !error && (
-        <div className="grid grid-cols-3 gap-4 justify-items-center max-w-sm mx-auto">
+        <div className="grid grid-cols-3 gap-4 justify-items-center max-w-lg mx-auto">
           {fallbackCategories.map((category) => (
           <button
             key={category.id}

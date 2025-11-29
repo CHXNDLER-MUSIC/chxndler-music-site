@@ -34,6 +34,7 @@ type Props = {
   open: boolean;
   onClose: () => void;
   preselectedCard?: string | null;
+  preselectedElement?: string | null;
   pulsingCards?: boolean;
 };
 
@@ -64,7 +65,7 @@ interface PhysicalCardOrder {
   created_at?: string;
 }
 
-export default function BinderModal({ open, onClose, preselectedCard, pulsingCards = false }: Props) {
+export default function BinderModal({ open, onClose, preselectedCard, preselectedElement, pulsingCards = false }: Props) {
   const { profile, updateProfile } = useProfile();
   const [cardOpen, setCardOpen] = useState(false);
   const [showFullCollection, setShowFullCollection] = useState(false);
@@ -612,6 +613,30 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
     }
   }, [open, preselectedCard]);
 
+  // Handle preselected element when modal opens
+  useEffect(() => {
+    if (open && preselectedElement) {
+      // Set the element and automatically show the full collection filtered by element
+      setSelectedElement(preselectedElement);
+      setShowFullCollection(true);
+      // Set to 'All' to show all cards of the selected element
+      setSelectedCardName('All');
+      
+      // Find the element's representative card (e.g., "LIGHTNING" card for LIGHTNING element) to start on
+      const elementCards = songCollection.filter(song => song.element === preselectedElement);
+      const representativeCard = elementCards.find(song => song.name === preselectedElement);
+      
+      if (representativeCard) {
+        // Find the index of the representative card in the filtered results
+        const cardIndex = elementCards.findIndex(song => song.name === preselectedElement);
+        setCurrentCardIndex(cardIndex !== -1 ? cardIndex : 0);
+      } else {
+        // If no representative card, start with the first card of that element
+        setCurrentCardIndex(0);
+      }
+    }
+  }, [open, preselectedElement]);
+
   // Reset purchase state when navigating cards
   useEffect(() => {
     resetPurchaseState();
@@ -701,7 +726,7 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
           className="binder-hologram-container"
           style={{
             width: 'min(92vw, 700px)',
-            height: '50vh',
+            height: '45vh',
             display: 'flex',
             flexDirection: 'column',
             padding: '10px 14px 0px 14px',
@@ -1737,9 +1762,8 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
                           onClick={() => {
                             try { sfx.play('click', 0.7); } catch {}
                             setSelectedElement(element);
-                            // Set the first available card for this element
-                            const elementCards = songCollection.filter(song => song.element === element);
-                            setSelectedCardName(elementCards.length > 0 ? elementCards[0].name : element);
+                            // Set to 'All' to show all cards of this element, not just one specific card
+                            setSelectedCardName('All');
                             setCurrentCardIndex(0);
                           }}
                         >
@@ -1787,7 +1811,7 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
           
           {/* Purchase Flow - positioned at bottom of popup */}
           {selectedElement && getFilteredCards()[currentCardIndex] && (
-            <div className="mt-2">
+            <div>
 
               {/* State B: Not enough HeartCoins */}
               {purchaseState === 'insufficient' && selectedPurchaseType === 'digital' && (

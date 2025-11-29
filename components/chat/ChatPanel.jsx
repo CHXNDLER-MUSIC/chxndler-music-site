@@ -421,16 +421,16 @@ export default function ChatPanel({ isOpen, onClose }) {
     console.log('🔥 Found user in chatUsers:', user);
     console.log('🔥 Current chatUsers:', chatUsers);
     
-    // For anonymous users, always use the consistent alien name
+    // For anonymous users, always use the global alien name
     if (userId === 'anonymous') {
       user = {
         id: 'anonymous',
-        name: alienName, // Always use the stored alien name
+        name: getGlobalAlienName(), // Always use the global alien name function
         element: 'alien',
         avatar_badge_id: null,
         last_seen: new Date().toISOString()
       };
-      console.log('🔥 Using consistent alien user:', user);
+      console.log('🔥 Using global alien user:', user);
     }
     
     if (user) {
@@ -712,7 +712,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                   {/* Profile View - shown above message input when user is selected */}
                   {console.log('🔥 Rendering profile check - selectedUser:', selectedUser)}
                   {selectedUser && (
-                    <div className="border-t border-yellow-400/30 px-2 pb-2">
+                    <div className="border-t border-yellow-400/30 px-1 py-0" style={{ marginTop: '-2px' }}>
                       {/* Profile Header with Icons */}
                       <div className="flex flex-col">
                         {/* Top row: User info and close button */}
@@ -741,7 +741,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 textShadow: '0 0 8px #F2EF1D'
                               }}
                             >
-                              {selectedUser.name}
+                              {selectedUser.id === 'anonymous' ? alienName : selectedUser.name}
                             </h3>
                           </div>
                           
