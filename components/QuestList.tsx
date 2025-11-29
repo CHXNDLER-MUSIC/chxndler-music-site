@@ -279,18 +279,18 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
       {/* Celebration Message */}
       {celebrationMessage && (
         <div 
-          className="text-center mb-6 p-4 border border-yellow-500/50 rounded-lg animate-pulse"
+          className="text-center mb-6 p-4 border border-cyan-500/50 rounded-lg animate-pulse"
           style={{ 
-            background: 'radial-gradient(ellipse at center, rgba(255,215,0,0.2) 0%, rgba(255,105,180,0.1) 70%, transparent 100%)',
-            boxShadow: '0 0 25px rgba(255,215,0,0.4)',
+            background: 'radial-gradient(ellipse at center, rgba(0,255,255,0.2) 0%, rgba(0,255,255,0.1) 70%, transparent 100%)',
+            boxShadow: '0 0 25px rgba(0,255,255,0.4)',
             animation: 'pulse 1s ease-in-out infinite alternate'
           }}
         >
           <div 
             className="text-sm font-bold"
             style={{ 
-              color: '#FFD700',
-              textShadow: '0 0 12px rgba(255,215,0,0.8)'
+              color: '#00FFFF',
+              textShadow: '0 0 12px rgba(0,255,255,0.8)'
             }}
           >
             {celebrationMessage}

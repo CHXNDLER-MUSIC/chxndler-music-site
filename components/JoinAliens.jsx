@@ -465,6 +465,48 @@ export default function JoinAliens({ visible = true } = {}) {
       )}
       </div> {/* Close Stay Connected Section */}
 
+      {/* Text Button - positioned in top left corner */}
+      <button
+        onClick={() => {
+          try { sfx.play('audio/click.mp3', 0.5); } catch {}
+          // Add text button functionality here
+          console.log('Text button clicked');
+        }}
+        style={{
+          position: 'absolute',
+          top: '12px',
+          left: '12px',
+          padding: '8px 16px',
+          background: 'rgba(0, 255, 255, 0.1)',
+          border: '2px solid #00FFFF',
+          borderRadius: '8px',
+          color: '#00FFFF',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          cursor: 'pointer',
+          transition: 'all 300ms ease',
+          outline: 'none',
+          textShadow: '0 0 8px #00FFFF',
+          boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)',
+          zIndex: 10
+        }}
+        onMouseEnter={(e) => {
+          try { sfx.play('hover', 0.3); } catch {}
+          e.target.style.transform = 'scale(1.05)';
+          e.target.style.background = 'rgba(0, 255, 255, 0.2)';
+          e.target.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.6)';
+          e.target.style.textShadow = '0 0 15px #00FFFF, 0 0 25px #00FFFF';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.transform = 'scale(1)';
+          e.target.style.background = 'rgba(0, 255, 255, 0.1)';
+          e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';
+          e.target.style.textShadow = '0 0 8px #00FFFF';
+        }}
+      >
+        TEXT
+      </button>
+
       {/* Phone Button - positioned above $ button */}
       <button
         onClick={() => {

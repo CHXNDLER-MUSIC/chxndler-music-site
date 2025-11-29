@@ -672,9 +672,9 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
       
       {/* Binder Modal - holographic popup */}
       <div 
-        className="fixed inset-0 z-[2147483647] flex items-center justify-center"
+        className="fixed inset-0 z-[2147483647] flex items-start justify-center"
         style={{
-          paddingTop: '-80px'
+          paddingTop: '10vh'
         }}
       >
         <div
@@ -784,8 +784,8 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                 <div 
                   className="rounded-lg shadow-2xl cursor-pointer"
                   style={{
-                    width: 'min(320px, 50vw)',
-                    height: 'min(480px, 55vh)',
+                    width: 'min(500px, 70vw)',
+                    height: 'min(700px, 75vh)',
                     boxShadow: '0 0 40px rgba(255,105,180,0.8), 0 0 80px rgba(255,105,180,0.5), 0 0 120px rgba(255,105,180,0.3)',
                     border: '2px solid rgba(255,105,180,0.6)',
                     perspective: '1000px'
@@ -833,22 +833,21 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                       draggable={false}
                     />
                     
-                    {/* Close button - positioned on top of card image */}
+                    {/* Back arrow - positioned at top left of binder popup */}
                     <button
                       onClick={() => {
                         try { sfx.play('close', 0.8); } catch {}
                         setCardOpen(false);
                         setIsCardFlipped(false);
                       }}
-                      className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 z-10"
+                      className="absolute top-2 left-2 w-6 h-6 rounded-full bg-black/60 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 z-10"
                   style={{
                     boxShadow: '0 0 15px rgba(255,105,180,0.6)',
                     backdropFilter: 'blur(10px)',
                   }}
                     >
                       <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true">
-                        <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                        <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </button>
                   </div>

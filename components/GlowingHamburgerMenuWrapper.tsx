@@ -7,12 +7,14 @@ import ChxndlerButton from "./ChxndlerButton";
 import CodeModal from "./CodeModal";
 import JourneyModal from "./JourneyModal";
 import BinderModal from "./BinderModal";
+import HeartCoinButton from "./HeartCoinButton";
 
 export default function GlowingHamburgerMenuWrapper() {
   const [codeOpen, setCodeOpen] = useState(false);
   const [chxndlerOpen, setChxndlerOpen] = useState(false);
   const [journeyOpen, setJourneyOpen] = useState(false);
   const [binderOpen, setBinderOpen] = useState(false);
+  const [heartCoinOpen, setHeartCoinOpen] = useState(false);
 
   useEffect(() => {
     console.log('codeOpen state changed to:', codeOpen);
@@ -43,9 +45,13 @@ export default function GlowingHamburgerMenuWrapper() {
       case "CHXNDLER":
         setChxndlerOpen(true);
         break;
-      // case "STORE":
-      //   openStore();
-      //   break;
+      case "STORE":
+        // Set initial tab preference to EARN for heart coins
+        if (typeof window !== 'undefined') {
+          (window as any).heartCoinInitialTab = 'EARN';
+        }
+        setHeartCoinOpen(true);
+        break;
       default:
         console.log(`No handler for menu item: ${label}`);
     }
@@ -165,6 +171,12 @@ export default function GlowingHamburgerMenuWrapper() {
         style={{ display: 'none' }}
         open={chxndlerOpen}
         onOpenChange={setChxndlerOpen}
+      />
+      {/* Hidden HeartCoinButton to handle the store modal functionality */}
+      <HeartCoinButton
+        style={{ display: 'none' }}
+        isActive={heartCoinOpen}
+        onClose={() => setHeartCoinOpen(false)}
       />
     </>
   );

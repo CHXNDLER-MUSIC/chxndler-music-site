@@ -236,7 +236,10 @@ export default function HeartCoinModal({ open, onClose }: Props) {
                     ${item.cost % 1 === 0 ? item.cost.toFixed(0) : item.cost.toFixed(1)}
                   </span>
                 </div>
-                <div className="flex items-center gap-1">
+                <button
+                  onClick={() => handlePurchase(item.stripeUrl)}
+                  className="flex items-center gap-1 hover:scale-105 transition-transform duration-200 cursor-pointer"
+                >
                   <img
                     src="/elements/heart-coin.webp"
                     alt="Heart Coin"
@@ -246,7 +249,7 @@ export default function HeartCoinModal({ open, onClose }: Props) {
                     }}
                   />
                   <span className="text-sm font-bold text-[#F2EF1D]">{item.heartCoin}</span>
-                </div>
+                </button>
               </div>
               
               {/* Add to Collection Button */}
