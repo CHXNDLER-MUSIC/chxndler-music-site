@@ -65,12 +65,9 @@ export default function SteeringWheelOverlay({
   // Determine welcome text based on user status
   const getWelcomeText = () => {
     if (!user) {
-      return "Enter the Heartverse";
+      return "ENTER THE HEARTVERSE";
     }
-    if (needsOnboarding) {
-      return "Enter the Heartverse";
-    }
-    return "Welcome Home";
+    return "WELCOME HOME";
   };
   
 
@@ -448,13 +445,24 @@ export default function SteeringWheelOverlay({
               />
             );
           }
+          // Detect Safari for enhanced chroma key settings
+          const isSafariUA = (function() {
+            try {
+              const ua = navigator.userAgent;
+              return /safari/i.test(ua) && !/chrome|crios|android/i.test(ua);
+            } catch {
+              return false;
+            }
+          })();
+
           return (
             <LumaKeyVideo
               srcMp4="/cockpit/wheel_less_transparent.webm"
-              // Safer chroma key with blended fallback so it never disappears
+              // Enhanced chroma key with Safari-specific adjustments
               keyColor={(vconf as any)?.keyColor ?? [0, 0, 0]}
-              keyTolerance={(vconf as any)?.keyTolerance ?? 0.12}
-              keySoftness={(vconf as any)?.keySoftness ?? 0.07}
+              // More aggressive settings for Safari to remove black backgrounds
+              keyTolerance={(vconf as any)?.keyTolerance ?? (isSafariUA ? 0.18 : 0.12)}
+              keySoftness={(vconf as any)?.keySoftness ?? (isSafariUA ? 0.12 : 0.07)}
               keyMode={'chroma'}
               // Enable blend so fallback never shows black
               blendScreen
@@ -467,8 +475,8 @@ export default function SteeringWheelOverlay({
               protectCenterYRatio={0.58}
               protectRadiusRatio={0.47}
               protectFeatherRatio={0.08}
-              saturation={(vconf as any)?.saturation ?? 1.0}
-              contrast={(vconf as any)?.contrast ?? 1.05}
+              saturation={(vconf as any)?.saturation ?? (isSafariUA ? 1.1 : 1.0)}
+              contrast={(vconf as any)?.contrast ?? (isSafariUA ? 1.15 : 1.05)}
               offsetYRatio={0}
               paused={paused}
               forceEnabled
@@ -485,6 +493,11 @@ export default function SteeringWheelOverlay({
                 filter: isDimmingOverlayActive ? 'brightness(0.65) saturate(1.0)' : undefined,
                 opacity: isDimmingOverlayActive ? 0.95 : 1,
                 transition: isDimmingOverlayActive ? 'filter 250ms ease, opacity 250ms ease' : 'none',
+                // Additional Safari-specific styling
+                ...(isSafariUA ? {
+                  mixBlendMode: 'screen',
+                  isolation: 'isolate'
+                } : {})
               }}
             />
           );

@@ -19,48 +19,8 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
   
   const { updateProfile } = useProfile();
   
-  // Audio refs for playing both tracks when not logged in
-  const welcomeAudioRef = useRef<HTMLAudioElement | null>(null);
-  const spaceMusicAudioRef = useRef<HTMLAudioElement | null>(null);
-  const welcomePlayedRef = useRef<boolean>(false);
-
-  // Play both audio tracks when modal opens for non-logged in users
-  useEffect(() => {
-    if (open) {
-      // Play both tracks simultaneously
-      const playWelcomeTrack = () => {
-        if (welcomeAudioRef.current && !welcomePlayedRef.current) {
-          welcomeAudioRef.current.volume = 0.7;
-          welcomeAudioRef.current.currentTime = 0;
-          welcomeAudioRef.current.play().catch(console.error);
-          welcomePlayedRef.current = true;
-          
-          // Add event listener to prevent replay
-          const handleEnded = () => {
-            if (welcomeAudioRef.current) {
-              welcomeAudioRef.current.removeEventListener('ended', handleEnded);
-            }
-          };
-          welcomeAudioRef.current.addEventListener('ended', handleEnded);
-        }
-      };
-
-      const playSpaceMusic = () => {
-        if (spaceMusicAudioRef.current) {
-          spaceMusicAudioRef.current.volume = 0.5;
-          spaceMusicAudioRef.current.currentTime = 0;
-          spaceMusicAudioRef.current.play().catch(console.error);
-        }
-      };
-
-      // Start both tracks
-      playWelcomeTrack();
-      playSpaceMusic();
-    } else {
-      // Don't stop either track when modal closes - let both continue playing
-      // This allows the audio experience to continue even after dismissing the modal
-    }
-  }, [open]);
+  // Audio is now handled by audioHeartverse controller when modal opens
+  // No local audio management needed - the controller handles playback
 
   async function signInWithGoogle() {
     setError(null);
@@ -135,18 +95,7 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
 
   return createPortal(
     <>
-      {/* Always render audio elements so they persist when modal closes */}
-      <audio 
-        ref={welcomeAudioRef} 
-        src="https://ik.imagekit.io/CHXNDLER/tracks/welcome-to-the-heartverse.mp3?updatedAt=1762392390137"
-        preload="auto"
-      />
-      <audio 
-        ref={spaceMusicAudioRef} 
-        src="https://ik.imagekit.io/CHXNDLER/tracks/space-music.mp3?updatedAt=1762392378623"
-        preload="auto"
-        loop
-      />
+      {/* Audio is now managed by audioHeartverse controller */}
       
       {/* Only show modal UI when open */}
       {open && (

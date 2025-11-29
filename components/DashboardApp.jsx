@@ -29,6 +29,7 @@ import PreloadMedia from "@/components/PreloadMedia";
 import { slugify } from "@/lib/slug";
 import { audioCoordinator } from "@/lib/audio-coordinator";
 import { debugLog } from "@/lib/debug";
+import { audioHeartverse } from "@/lib/audio-heartverse";
 import WelcomeHomeModal from "@/components/WelcomeHomeModal";
 import ProfileBarWrapper from "@/components/ProfileBarWrapper";
 import HoloStarsButton from "@/components/HoloStarsButton";
@@ -1022,11 +1023,18 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       // Reset any existing modals
       setShowWelcomeHomeModal(false);
       
-      // Get current user session for post-warp logic
+      // Get current user session to determine behavior path
       const { data: { session } } = await supabaseClient.auth.getSession();
       const user = session?.user;
       
-      // Always trigger warp effect first, regardless of login state
+      if (!user) {
+        // USER IS NOT LOGGED IN - Open Welcome Home modal immediately (no warp effect)
+        audioHeartverse.playWelcomeToHeartverse();
+        setShowWelcomeHomeModal(true);
+        return;
+      }
+      
+      // USER IS LOGGED IN - Run warp effect first, then transition to cockpit with audio
       setIsWarping(true);
       welcomeOnStartRef.current = true;
       setHomeIntroEnabled(true);
@@ -1061,8 +1069,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       setFlySignal((n) => n + 1);
       setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
       
-      // Post-warp logic will be handled in onWarpSfxEnd based on login state
-      // Store user data for post-warp decision making
+      // Store user data for post-warp audio handling
       window.postWarpUser = user;
       window.postWarpProfileComplete = profile?.profile_complete;
       
@@ -1607,9 +1614,12 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             
             if (!postWarpUser) {
               // User is NOT logged in - show Welcome Home modal after warp
+              // NOTE: This should not happen with new flow, as non-logged-in users don't warp
               setShowWelcomeHomeModal(true);
+            } else {
+              // User IS logged in - play welcome_home.mp3 + space_music.mp3 as cockpit appears
+              audioHeartverse.playWelcomeHomeAndSpaceMusic();
             }
-            // If user is logged in AND profile is complete, continue with normal warp flow (blue cockpit display)
           }
           
           // Show welcome home modal after warp effect completes (only on first start button click)

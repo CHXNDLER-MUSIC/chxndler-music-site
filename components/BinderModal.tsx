@@ -912,7 +912,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                             return;
                           }
                           if (hasCard && collectedCard?.cards) {
-                            try { sfx.play('click', 0.8); } catch {}
+                            try { sfx.play('card-ding', 0.8); } catch {}
                             setSelectedCard({
                               name: collectedCard.cards.card_name,
                               image: getCardImage(collectedCard.cards.card_name, collectedCard.cards.element),
@@ -921,7 +921,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                             });
                             setCardOpen(true);
                           } else if (isFirstSlotWithChxndler) {
-                            try { sfx.play('flip', 0.45); } catch {}
+                            try { sfx.play('card-ding', 0.45); } catch {}
                             setSelectedCard({
                               name: 'CHXNDLER',
                               image: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',
@@ -1762,6 +1762,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                           onClick={() => {
                             try { sfx.play('click', 0.7); } catch {}
                             setSelectedElement(element);
+                            setShowFullCollection(true);
                             // Set to 'All' to show all cards of this element, not just one specific card
                             setSelectedCardName('All');
                             setCurrentCardIndex(0);

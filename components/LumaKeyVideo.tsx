@@ -661,8 +661,12 @@ export default function LumaKeyVideo({
 
   const canvasStyle: React.CSSProperties = {
     background: 'transparent',
-    // Blend to remove dark backgrounds visually; 'lighten' is stronger at removing near-black
-    ...((isSafari || blendScreen) ? { mixBlendMode: 'lighten' as const } : {}),
+    // Enhanced blend modes for Safari to remove dark backgrounds more effectively
+    ...((isSafari || blendScreen) ? { 
+      mixBlendMode: isSafari ? 'screen' as const : 'lighten' as const,
+      // Isolate the blend context to prevent interference with other elements
+      isolation: 'isolate'
+    } : {}),
     // Do not intercept pointer/scroll events; keep overlay non-interactive
     pointerEvents: 'none',
     ...(maskCss ? ({ maskImage: maskCss, WebkitMaskImage: maskCss } as any) : {}),
@@ -720,8 +724,11 @@ export default function LumaKeyVideo({
             transition: 'opacity 180ms ease',
             pointerEvents: 'none',
             background: 'transparent',
-            // Apply same blend so black pixels don't darken the background
-            ...((isSafari || blendScreen) ? { mixBlendMode: 'lighten' as const } : {}),
+            // Apply enhanced blend for Safari to remove black backgrounds
+            ...((isSafari || blendScreen) ? { 
+              mixBlendMode: isSafari ? 'screen' as const : 'lighten' as const,
+              isolation: 'isolate'
+            } : {}),
             ...(maskCss ? ({ maskImage: maskCss, WebkitMaskImage: maskCss } as any) : {}),
           }}
         />

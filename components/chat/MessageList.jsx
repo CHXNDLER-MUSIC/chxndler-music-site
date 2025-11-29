@@ -38,7 +38,7 @@ export default function MessageList({ messages, onUserClick, loading }) {
   return (
     <div 
       ref={scrollContainerRef}
-      className="flex-1 overflow-y-auto p-3 space-y-2"
+      className="flex-1 overflow-y-auto p-3 space-y-1"
       style={{
         scrollbarWidth: 'thin',
         scrollbarColor: 'rgba(0, 255, 255, 0.3) transparent'
@@ -94,6 +94,8 @@ function ChatMessage({ message, onUserClick, isConsecutive }) {
   const userProfile = message.user_profile;
   const displayName = userProfile?.name || 'Anonymous';
   const elementColor = getElementColor(userProfile?.element);
+  // Get text color based on element, default to yellow for anonymous users
+  const textColor = userProfile?.element ? elementColor : '#F2EF1D';
   const timestamp = formatChatTimestamp(message.created_at);
   const sanitizedMessage = sanitizeMessage(message.message);
 
@@ -188,9 +190,12 @@ function ChatMessage({ message, onUserClick, isConsecutive }) {
           {/* Message text */}
           <div 
             className="text-sm leading-relaxed break-words"
-            style={{ color: '#FFFFFF' }}
+            style={{ 
+              color: textColor,
+              textShadow: `0 0 4px ${textColor}40`
+            }}
             dangerouslySetInnerHTML={{
-              __html: formatMessageText(sanitizedMessage)
+              __html: formatMessageText(sanitizedMessage, textColor)
             }}
           />
         </div>
@@ -202,10 +207,10 @@ function ChatMessage({ message, onUserClick, isConsecutive }) {
 /**
  * Format message text with basic markdown-like formatting
  */
-function formatMessageText(text) {
+function formatMessageText(text, textColor = '#F2EF1D') {
   return text
     // Bold text **text**
-    .replace(/\*\*(.*?)\*\*/g, '<strong style="color: #00FFFF; text-shadow: 0 0 6px rgba(0, 255, 255, 0.6);">$1</strong>')
+    .replace(/\*\*(.*?)\*\*/g, `<strong style="color: ${textColor}; text-shadow: 0 0 4px ${textColor}60;">$1</strong>`)
     // Italic text *text*
     .replace(/\*(.*?)\*/g, '<em style="color: #FC54AF;">$1</em>')
     // Code `text`

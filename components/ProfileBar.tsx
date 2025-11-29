@@ -83,6 +83,22 @@ export default function ProfileBar({
   const [showProfilePopover, setShowProfilePopover] = useState(false);
   const nameButtonRef = useRef<HTMLButtonElement>(null);
 
+  // Respond to profile refresh trigger
+  useEffect(() => {
+    if (profileRefreshTrigger > 0) {
+      console.log('Profile refresh trigger activated, refreshing profile...');
+      refreshProfile();
+    }
+  }, [profileRefreshTrigger, refreshProfile]);
+
+  // Debug profile changes
+  useEffect(() => {
+    console.log('ProfileBar: contextProfile changed:', {
+      name: contextProfile?.name,
+      element: contextProfile?.element,
+      profile_complete: contextProfile?.profile_complete
+    });
+  }, [contextProfile]);
 
   // Check if journal was completed today
   const checkJournalCompletion = async () => {
@@ -406,15 +422,19 @@ export default function ProfileBar({
       return { text: 'LOG IN', mode: 'login' as const };
     }
     
+    // Check profile data (prioritize contextProfile, fallback to saved values)
+    const profileName = contextProfile?.name || savedAlienName;
+    const profileElement = contextProfile?.element || savedAlienElement;
+    
     // Mode C: Logged in but profile incomplete (no name or no element)
-    if (!contextProfile?.name || !contextProfile?.element) {
+    if (!profileName || !profileElement) {
       return { text: 'Finish setup', mode: 'setup' as const };
     }
     
     // Mode B: Logged in with complete profile
-    const elementName = contextProfile.element.charAt(0).toUpperCase() + contextProfile.element.slice(1);
+    const elementName = profileElement.charAt(0).toUpperCase() + profileElement.slice(1);
     return { 
-      text: `${contextProfile.name} • ${elementName}`, 
+      text: `${profileName} • ${elementName}`, 
       mode: 'profile' as const 
     };
   };

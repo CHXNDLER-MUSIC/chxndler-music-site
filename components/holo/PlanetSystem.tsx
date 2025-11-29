@@ -515,21 +515,21 @@ function OrbitalElementalSystem({ songs, mainId, hoverId }: { songs: any[]; main
               {/* Element label */}
               <Html position={[0, 15, 0]} center>
                 <div style={{ 
-                  color: elementColors[element.code], 
+                  color: element.color, 
                   fontSize: '16px', 
                   fontWeight: 'bold',
-                  textShadow: `0 0 20px ${elementColors[element.code]}`,
+                  textShadow: `0 0 20px ${element.color}`,
                   pointerEvents: 'none',
                   textAlign: 'center'
                 }}>
-                  {element.label}
+                  {element.name}
                 </div>
               </Html>
               
               {/* Song planets orbiting this element */}
               <SongOrbitGroup
                 cards={cardsForThisElement}
-                elementCode={element.code}
+                elementCode={element.element!}
                 elementPosition={[0, 0, 0]} // Relative to the element planet
                 mainId={mainId}
                 hoverId={hoverId}

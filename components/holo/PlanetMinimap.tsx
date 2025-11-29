@@ -3,6 +3,7 @@
 import React from "react";
 import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sfx";
+import { PLANET_CONFIGS, getPlanetsByType, getPlanetsByElement, ELEMENT_POSITIONS, ELEMENT_COLORS, type ElementType } from "@/lib/planetConfig";
 
 interface ElementPosition {
   code: "heart" | "water" | "lightning" | "darkness";
@@ -39,13 +40,14 @@ interface PlanetMinimapProps {
   onPlanetClick?: (planetId: string) => void;
 }
 
-// Element configurations for proper top-down cross pattern around center (equal distance)
-const ELEMENTS: ElementPosition[] = [
-  { code: "water",     label: "Water", position: [30, 0, 0],    color: "#38B6FF", glowColor: "#38B6FF" },      // Right
-  { code: "lightning", label: "Lightning", position: [0, 0, -30], color: "#F2EF1D", glowColor: "#F2EF1D" },   // Bottom  
-  { code: "heart",     label: "Heart", position: [-30, 0, 0],   color: "#FC54AF", glowColor: "#FC54AF" },      // Left
-  { code: "darkness",  label: "Darkness", position: [0, 0, 30],  color: "#6A4C93", glowColor: "#6A4C93" },     // Top
-];
+// Get element configurations from unified config
+const ELEMENTS = getPlanetsByType('element').map(planet => ({
+  code: planet.element!,
+  label: planet.name,
+  position: planet.position!,
+  color: planet.color,
+  glowColor: planet.color
+}));
 
 // Comprehensive song planet data with detailed characteristics
 const SONG_PLANETS: SongPlanet[] = [
@@ -132,14 +134,25 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
       darkness: []
     };
 
-    // Group song planets by their designated element - use actual songs prop instead of hardcoded array
-    songs.forEach((song) => {
-      // Find corresponding planet data from SONG_PLANETS for visual/element info
-      const songPlanet = SONG_PLANETS.find(sp => sp.id === song.id);
-      if (songPlanet) {
-        if (distribution[songPlanet.element]) {
-          distribution[songPlanet.element].push(songPlanet);
-        }
+    // Group song planets by their designated element using unified config
+    const songPlanetConfigs = getPlanetsByType('song');
+    songPlanetConfigs.forEach((planetConfig) => {
+      // Find corresponding song from songs prop
+      const song = songs.find(s => s.id === planetConfig.id);
+      if (song && planetConfig.element && distribution[planetConfig.element]) {
+        // Create songPlanet object with data from both sources
+        const songPlanet = {
+          id: planetConfig.id,
+          title: planetConfig.name,
+          element: planetConfig.element,
+          color: planetConfig.color,
+          surface: "Procedurally generated surface", // Could be enhanced later
+          atmosphere: "Atmospheric effects",
+          shape: "Spherical",
+          surfaceElements: "Various terrain features",
+          isReleased: true // Default to released, could be enhanced
+        };
+        distribution[planetConfig.element].push(songPlanet);
       }
     });
 
@@ -362,11 +375,14 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
         </div>
       )}
       
-      {/* Selected planet name display */}
+      {/* Selected planet name display - Enhanced */}
       {selectedPlanet && (
-        <div className="absolute bottom-2 left-2 right-2 bg-black/90 border border-cyan-400/50 rounded px-2 py-1 text-center z-10">
-          <div className="text-cyan-400 text-xs font-bold">
-            {selectedPlanet}
+        <div className="absolute bottom-4 left-4 right-4 bg-black/95 border-2 border-cyan-400 rounded-lg px-3 py-2 text-center z-20 shadow-lg">
+          <div className="text-cyan-400 text-sm font-bold drop-shadow-lg">
+            🎵 {selectedPlanet}
+          </div>
+          <div className="text-cyan-300 text-xs mt-1">
+            Click to highlight in 3D view
           </div>
         </div>
       )}

@@ -148,7 +148,7 @@ export default function ChatPanel({ isOpen, onClose }) {
   const [selectedUser, setSelectedUser] = useState(null);
   const [hasJoined, setHasJoined] = useState(false);
   const [typingUsers, setTypingUsers] = useState([]);
-  const [isUserPanelCollapsed, setIsUserPanelCollapsed] = useState(false); // Start expanded so user can see their alien name
+  const [isUserPanelCollapsed, setIsUserPanelCollapsed] = useState(true); // Start collapsed by default
   
   // Auto-collapse user panel on small screens when profile is selected
   useEffect(() => {
@@ -594,7 +594,7 @@ export default function ChatPanel({ isOpen, onClose }) {
         <>
           {/* Backdrop */}
           <motion.div
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[100]"
+            className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-[100]"
             variants={backdropVariants}
             initial="closed"
             animate="open"
@@ -604,18 +604,14 @@ export default function ChatPanel({ isOpen, onClose }) {
 
           {/* Chat Panel */}
           <motion.div
-            className="fixed left-0 top-0 bottom-0 z-[110] flex max-w-[100vw] overflow-hidden"
+            className="fixed inset-0 z-[110] flex overflow-hidden"
             variants={panelVariants}
             initial="closed"
             animate="open"
             exit="closed"
           >
             <div
-              className={`w-full h-full border-r-2 border-yellow-400/50 flex flex-col ${
-                selectedUser 
-                  ? 'w-screen max-w-none' 
-                  : 'max-w-[90vw] sm:max-w-[32rem]'
-              } min-w-[18rem]`}
+              className="w-full h-full flex flex-col"
               style={{
                 background: `
                   linear-gradient(135deg, 
@@ -628,7 +624,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                   0 0 50px rgba(242, 239, 29, 0.15),
                   inset 0 0 100px rgba(242, 239, 29, 0.03)
                 `,
-                backdropFilter: 'blur(10px)'
+                backdropFilter: 'blur(3px)'
               }}
             >
               {/* Header */}
