@@ -10,6 +10,8 @@ import BinderModal from "./BinderModal";
 import BadgesButton from "./BadgesButton";
 import HeartCoinButton from "./HeartCoinButton";
 import SoulStarJournal from "./SoulStarJournal";
+import WelcomeHomeModal from "./WelcomeHomeModal";
+import { useUIState } from "@/lib/use-ui-state";
 
 export default function GlowingHamburgerMenuWrapper() {
   const [codeOpen, setCodeOpen] = useState(false);
@@ -19,10 +21,20 @@ export default function GlowingHamburgerMenuWrapper() {
   const [badgesOpen, setBadgesOpen] = useState(false);
   const [heartCoinOpen, setHeartCoinOpen] = useState(false);
   const [journalOpen, setJournalOpen] = useState(false);
+  const [welcomeHomeOpen, setWelcomeHomeOpen] = useState(false);
+  
+  const { hasEnteredHeartverse } = useUIState();
 
   useEffect(() => {
     console.log('codeOpen state changed to:', codeOpen);
   }, [codeOpen]);
+
+  // Show welcome home modal when user enters heartverse for the first time
+  useEffect(() => {
+    if (hasEnteredHeartverse) {
+      setWelcomeHomeOpen(true);
+    }
+  }, [hasEnteredHeartverse]);
 
   const handleItemClick = (label: string) => {
     switch (label) {
@@ -189,6 +201,11 @@ export default function GlowingHamburgerMenuWrapper() {
         style={{ display: 'none' }}
         isActive={heartCoinOpen}
         onClose={() => setHeartCoinOpen(false)}
+      />
+      {/* Welcome Home Modal */}
+      <WelcomeHomeModal
+        open={welcomeHomeOpen}
+        onClose={() => setWelcomeHomeOpen(false)}
       />
     </>
   );

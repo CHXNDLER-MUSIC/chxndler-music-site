@@ -47,12 +47,6 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
     };
   }, []);
 
-  // Auto-open menu when user enters heartverse (heart coin displays)
-  useEffect(() => {
-    if (hasEnteredHeartverse) {
-      setIsOpen(true);
-    }
-  }, [hasEnteredHeartverse]);
 
   const toggleMenu = () => {
     sfx.play('click', 0.7);

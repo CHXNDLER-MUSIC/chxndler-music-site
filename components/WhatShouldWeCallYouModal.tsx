@@ -28,14 +28,17 @@ export default function WhatShouldWeCallYouModal() {
 
   // Debug modal state for Chrome
   useEffect(() => {
-    console.log('🎯 Modal state (Chrome debug):', { 
+    console.log('🎯 [WhatShouldWeCallYouModal] Modal state (Chrome debug):', { 
       showNamePrompt, 
       namePromptFromAuth, 
       mounted, 
       documentExists: typeof document !== 'undefined',
-      bodyExists: typeof document !== 'undefined' && !!document.body
+      bodyExists: typeof document !== 'undefined' && !!document.body,
+      currentUser: !!currentUser,
+      profileName: profile?.name,
+      authChecked
     });
-  }, [showNamePrompt, namePromptFromAuth, mounted]);
+  }, [showNamePrompt, namePromptFromAuth, mounted, currentUser, profile?.name, authChecked]);
 
 
   // Check authentication and prefill name when modal opens
@@ -105,12 +108,22 @@ export default function WhatShouldWeCallYouModal() {
   // However, if the user just came from auth callback with completeProfile=1,
   // we should NOT auto-close even if they have a name (they may want to update it)
   useEffect(() => {
+    console.log('🎯 [WhatShouldWeCallYouModal] Guard-close effect triggered:', {
+      showNamePrompt,
+      authChecked,
+      namePromptFromAuth,
+      currentUser: !!currentUser,
+      profileName: profile?.name,
+      willAutoClose: !namePromptFromAuth && currentUser && profile && profile.name && profile.name.trim() !== ''
+    });
+    
     if (!showNamePrompt) return;
     if (!authChecked) return;
     
     // Only auto-close if we have a user with a complete profile AND
     // this wasn't triggered by the explicit auth callback flow
     if (!namePromptFromAuth && currentUser && profile && profile.name && profile.name.trim() !== '') {
+      console.log('🎯 [WhatShouldWeCallYouModal] Auto-closing modal due to existing name');
       closeNamePrompt();
     }
   }, [showNamePrompt, authChecked, currentUser, profile, namePromptFromAuth, closeNamePrompt]);

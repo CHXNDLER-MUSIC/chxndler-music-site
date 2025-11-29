@@ -22,6 +22,7 @@ import WelcomeHomeModal from '@/components/WelcomeHomeModal';
 import GlowingHamburgerMenu from '@/components/GlowingHamburgerMenu';
 import JourneyModal from '@/components/JourneyModal';
 import SoulStarJournal from '@/components/SoulStarJournal';
+import ProfilePopover from '@/components/ProfilePopover';
 
 interface Profile {
   id: string;
@@ -79,6 +80,8 @@ export default function ProfileBar({
   const [showWelcomeHome, setShowWelcomeHome] = useState(false);
   const [nameButtonTooltip, setNameButtonTooltip] = useState('');
   const [showLoginTooltip, setShowLoginTooltip] = useState(false);
+  const [showProfilePopover, setShowProfilePopover] = useState(false);
+  const nameButtonRef = useRef<HTMLButtonElement>(null);
 
 
   // Check if journal was completed today
@@ -158,8 +161,8 @@ export default function ProfileBar({
     }
 
     // Case 2: Logged in and profile exists
-    // Open the name modal "What should we call you"
-    openNamePrompt();
+    // Open the ProfilePopover
+    setShowProfilePopover(!showProfilePopover);
   };
   
   // IMPORTANT: Do not render anything until the user has entered
@@ -459,6 +462,7 @@ export default function ProfileBar({
             {/* Username - Clickable */}
             <div className="relative">
               <button 
+                ref={nameButtonRef}
                 data-name-button
                 onClick={handleNameButtonClick}
                 onKeyDown={(e) => {
@@ -1253,6 +1257,13 @@ export default function ProfileBar({
           setIsJourneyModalOpen(false);
           try { onOpenBlueDisplay?.(); } catch {}
         }} 
+      />
+
+      {/* Profile Popover - Triggered by clicking username */}
+      <ProfilePopover 
+        isOpen={showProfilePopover}
+        onClose={() => setShowProfilePopover(false)}
+        anchorElement={nameButtonRef.current}
       />
 
     </div>
