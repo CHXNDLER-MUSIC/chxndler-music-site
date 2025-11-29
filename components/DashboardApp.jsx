@@ -139,6 +139,21 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     try { window.addEventListener('keydown', onKey); } catch {}
     return () => { try { window.removeEventListener('keydown', onKey); } catch {} };
   }, []);
+
+  // Start ambient audio automatically for non-logged-in users
+  useEffect(() => {
+    if (!profile && isHydrated) {
+      // Small delay to ensure components are ready
+      const timer = setTimeout(() => {
+        setAmbientSuspended(false);
+        try {
+          window.dispatchEvent(new CustomEvent('ambient:play'));
+        } catch {}
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [profile, isHydrated]);
+
   const [channelIdx, setChannelIdx] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [sky, setSky] = useState(introSky);

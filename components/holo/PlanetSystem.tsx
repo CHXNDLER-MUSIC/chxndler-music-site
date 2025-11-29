@@ -20,10 +20,10 @@ const SHOW_ORBITS = true;
 
 // Fixed elemental planets configuration - VERY CLOSE TO CENTER
 const ELEMENTS = [
-  { code: "heart",     label: "💖 Heart",     position: [15, 0, 0] },     // right
-  { code: "water",     label: "🌊 Water",     position: [0, 15, 0] },     // top
-  { code: "lightning", label: "⚡ Lightning", position: [-15, 0, 0] },    // left
-  { code: "darkness",  label: "🌑 Darkness",  position: [0, -15, 0] },    // bottom
+  { code: "heart",     label: "💖 Heart",     position: [25, 0, 0] },     // right
+  { code: "water",     label: "🌊 Water",     position: [0, 25, 0] },     // top
+  { code: "lightning", label: "⚡ Lightning", position: [-25, 0, 0] },    // left
+  { code: "darkness",  label: "🌑 Darkness",  position: [0, -25, 0] },    // bottom
 ] as const;
 
 // Element colors and glow configuration
@@ -67,10 +67,11 @@ function ElementalPlanetsWithTextures() {
   React.useEffect(() => {
     const loader = new TextureLoader();
     const textureUrls = {
-      heart: "https://ik.imagekit.io/CHXNDLER/Planets/heart.png",
-      lightning: "https://ik.imagekit.io/CHXNDLER/Planets/lightning",
-      water: "https://ik.imagekit.io/CHXNDLER/Planets/water", 
-      darkness: "https://ik.imagekit.io/CHXNDLER/Planets/darkness"
+      heart: "/textures/planet_heart.webp",
+      lightning: "/textures/planet_lightning.webp",
+      water: "/textures/planet_water.webp", 
+      darkness: "/textures/planet_darkness.webp",
+      center: "/textures/center-planet.webp"
     };
     
     // Load textures asynchronously
@@ -91,10 +92,40 @@ function ElementalPlanetsWithTextures() {
 
   return (
     <group name="ElementalPlanetsWithTextures">
+      {/* Center Heart Planet with Antennas - HEART SHAPE AT CENTER */}
+      <group name="CenterHeartPlanetGroup" position={[0, 0, 0]}>
+        <mesh renderOrder={6}>
+          <planeGeometry args={[24, 24]} />
+          <meshStandardMaterial 
+            map={textures.center || null}
+            color={textures.center ? "#ffffff" : "#FC54AF"}
+            emissive="#FC54AF"
+            emissiveIntensity={6.0}
+            metalness={0.1}
+            roughness={0.2}
+            transparent={true}
+            alphaTest={0.1}
+            side={DoubleSide}
+          />
+        </mesh>
+        <Html position={[0, 20, 0]} center>
+          <div style={{ 
+            color: "#FC54AF", 
+            fontSize: "18px", 
+            fontWeight: "bold",
+            textShadow: "0 0 20px #FC54AF",
+            pointerEvents: "none",
+            textAlign: "center"
+          }}>
+            💖 CENTER
+          </div>
+        </Html>
+      </group>
+      
       {/* Heart Planet - Pink - RIGHT OF CENTER */}
       <group name="HeartPlanetGroup" position={[30, 0, 0]}>
         <mesh renderOrder={5}>
-          <sphereGeometry args={[8, 32, 32]} />
+          <planeGeometry args={[16, 16]} />
           <meshStandardMaterial 
             map={textures.heart || null}
             color={textures.heart ? "#ffffff" : "#FC54AF"}
@@ -102,6 +133,9 @@ function ElementalPlanetsWithTextures() {
             emissiveIntensity={4.0}
             metalness={0.1}
             roughness={0.2}
+            transparent={true}
+            alphaTest={0.1}
+            side={DoubleSide}
           />
         </mesh>
         {/* MASSIVE DEBUG SPHERE */}
@@ -126,7 +160,7 @@ function ElementalPlanetsWithTextures() {
       {/* Water Planet - Blue - TOP OF CENTER */}
       <group name="WaterPlanetGroup" position={[0, 30, 0]}>
         <mesh renderOrder={5}>
-          <sphereGeometry args={[8, 32, 32]} />
+          <planeGeometry args={[16, 16]} />
           <meshStandardMaterial 
             map={textures.water || null}
             color={textures.water ? "#ffffff" : "#38B6FF"}
@@ -134,6 +168,9 @@ function ElementalPlanetsWithTextures() {
             emissiveIntensity={4.0}
             metalness={0.1}
             roughness={0.2}
+            transparent={true}
+            alphaTest={0.1}
+            side={DoubleSide}
           />
         </mesh>
         {/* MASSIVE DEBUG SPHERE */}
@@ -158,7 +195,7 @@ function ElementalPlanetsWithTextures() {
       {/* Lightning Planet - Yellow - LEFT OF CENTER */}
       <group name="LightningPlanetGroup" position={[-30, 0, 0]}>
         <mesh renderOrder={5}>
-          <sphereGeometry args={[8, 32, 32]} />
+          <planeGeometry args={[16, 16]} />
           <meshStandardMaterial 
             map={textures.lightning || null}
             color={textures.lightning ? "#ffffff" : "#F2EF1D"}
@@ -166,6 +203,9 @@ function ElementalPlanetsWithTextures() {
             emissiveIntensity={4.0}
             metalness={0.1}
             roughness={0.2}
+            transparent={true}
+            alphaTest={0.1}
+            side={DoubleSide}
           />
         </mesh>
         {/* MASSIVE DEBUG SPHERE */}
@@ -190,7 +230,7 @@ function ElementalPlanetsWithTextures() {
       {/* Darkness Planet - Purple - BOTTOM OF CENTER */}
       <group name="DarknessPlanetGroup" position={[0, -30, 0]}>
         <mesh renderOrder={5}>
-          <sphereGeometry args={[8, 32, 32]} />
+          <planeGeometry args={[16, 16]} />
           <meshStandardMaterial 
             map={textures.darkness || null}
             color={textures.darkness ? "#ffffff" : "#6A4C93"}
@@ -198,6 +238,9 @@ function ElementalPlanetsWithTextures() {
             emissiveIntensity={4.0}
             metalness={0.1}
             roughness={0.2}
+            transparent={true}
+            alphaTest={0.1}
+            side={DoubleSide}
           />
         </mesh>
         {/* MASSIVE DEBUG SPHERE */}
@@ -707,6 +750,11 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
             <sphereGeometry args={[10, 16, 16]} />
             <meshBasicMaterial color="#FF0000" />
           </mesh>
+          
+          {/* 5 ELEMENTAL PLANETS WITH TEXTURES */}
+          {actualShouldShowAll && (
+            <ElementalPlanetsWithTextures />
+          )}
           
           {/* 4 ELEMENTAL PLANETS WITH SONGS ORBITING THEM */}
           {actualShouldShowAll && (

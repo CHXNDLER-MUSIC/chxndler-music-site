@@ -1068,7 +1068,6 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
                               ...(pulsingCards && !isLocked ? {
                                 transformStyle: 'preserve-3d',
                                 perspective: '1200px',
-                                animation: 'tiltPulse 3s ease-in-out infinite',
                                 transform: 'rotateX(9deg) rotateY(-9deg)',
                                 filter: 'saturate(1.06) contrast(1.06) brightness(1.04) drop-shadow(0 0 18px rgba(25,227,255,0.55)) drop-shadow(0 0 36px rgba(25,227,255,0.35))'
                               } : {})

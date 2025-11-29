@@ -282,9 +282,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
       {/* Modal Container */}
       <div
         ref={journalRef}
-        className={`relative soul-journal-container ${
-          hasPendingReflection && !showHistory ? 'animate-pulse' : ''
-        }`}
+        className="relative soul-journal-container"
         style={{
           width: '100%',
           maxHeight: '85vh',
@@ -463,7 +461,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
                 </span>
                 {hasPendingReflection && (
                   <span 
-                    className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider animate-pulse"
+                    className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
                     style={{
                       background: 'linear-gradient(45deg, #FF1493, #FF69B4)',
                       border: '1px solid #FF1493',

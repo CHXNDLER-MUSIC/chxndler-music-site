@@ -57,9 +57,10 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
       // Dispatch custom event for badges
       const badgesEvent = new CustomEvent('openBadges');
       window.dispatchEvent(badgesEvent);
-    } else {
-      onItemClick?.(label);
     }
+    
+    // Always call the parent click handler
+    onItemClick?.(label);
     setIsOpen(false);
   };
 
@@ -158,7 +159,7 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
                   }}
                   className={`w-full px-6 py-2 text-left text-white font-semibold tracking-wide transition-all duration-200 hover:bg-cyan-500/10 hover:text-cyan-300 relative group ${
                     item.label === "JOURNAL" && hasPendingReflection 
-                      ? 'animate-pulse bg-gradient-to-r from-pink-500/10 via-transparent to-pink-500/10' 
+                      ? 'bg-gradient-to-r from-pink-500/10 via-transparent to-pink-500/10' 
                       : ''
                   }`}
                   style={{
@@ -197,7 +198,7 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
                         height={32}
                         className={`transition-all duration-200 ${
                           hasPendingReflection 
-                            ? 'animate-pulse drop-shadow-[0_0_8px_rgba(255,105,180,0.8)]' 
+                            ? 'drop-shadow-[0_0_8px_rgba(255,105,180,0.8)]' 
                             : ''
                         }`}
                         style={{
@@ -241,7 +242,7 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
                       {item.label}
                       {item.label === "JOURNAL" && hasPendingReflection && (
                         <div 
-                          className="ml-2 w-2.5 h-2.5 rounded-full animate-pulse"
+                          className="ml-2 w-2.5 h-2.5 rounded-full"
                           style={{
                             background: 'radial-gradient(circle, #FF1493 0%, #FF69B4 70%)',
                             boxShadow: '0 0 8px #FF1493, 0 0 16px #FF69B4'

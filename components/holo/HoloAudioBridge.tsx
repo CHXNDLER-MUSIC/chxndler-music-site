@@ -27,10 +27,14 @@ export default function HoloAudioBridge() {
     }
 
     // Map back to the original track using the slug/ID
+    console.log('🎵 HoloAudioBridge: Looking for track with slug:', holoSong.id);
+    console.log('🎵 HoloAudioBridge: Available track slugs:', tracks.map(t => `${t.slug}(${t.title})`).slice(0, 5), '...');
+    
     const track = tracks.find(t => t.slug === holoSong.id);
     
     if (!track) {
       console.error('🎵 HoloAudioBridge: No track found for slug:', holoSong.id);
+      console.error('🎵 HoloAudioBridge: Available slugs:', tracks.map(t => t.slug));
       return;
     }
     
@@ -132,8 +136,13 @@ export default function HoloAudioBridge() {
           if (cancelled) return;
 
           // NOW load and play the track after warp effects complete
+          if (!currentTrack.src) {
+            console.error('🎵 HoloAudioBridge: currentTrack.src is empty/undefined for track:', currentTrack.title);
+            return;
+          }
+          
           console.log('🎵 HoloAudioBridge: Loading track:', currentTrack.src);
-          a.src = currentTrack.src || "";
+          a.src = currentTrack.src;
           a.load();
 
           // After SFX sequence, start the song with autoplay fallbacks and only

@@ -27,8 +27,8 @@ interface Card {
   rarity: string;
   artwork_url: string;
   description: string;
-  is_released?: boolean;
-  min_tier?: string;
+  is_released: boolean;
+  min_tier: string;
   digitalCost?: number;
   physicalCost?: number;
 }
@@ -268,7 +268,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     try {
       const { data, error } = await supabaseClient
         .from('cards')
-        .select('*')
+        .select('id, card_name, element, rarity, artwork_url, description, is_released, min_tier')
         .order('card_name');
       
       if (error) throw error;
@@ -320,15 +320,16 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
   // Helper function to check if card should be blurred based on release status and user tier
   const shouldBlurCard = (card: Card): boolean => {
+    // Special case: if min_tier is 'dreamer' and user is 'dreamer', show even if unreleased
+    if (card.min_tier?.toLowerCase() === 'dreamer' && profile?.tier?.toLowerCase() === 'dreamer') {
+      return false;
+    }
+    
+    // If card is not released, blur it
     if (!card.is_released) return true;
-    if (!profile?.tier || !card.min_tier) return false;
     
-    // Simple tier check - you can expand this based on your tier system
-    const tierOrder = ['wanderer', 'dreamer', 'lover', 'oracle'];
-    const userTierIndex = tierOrder.indexOf(profile.tier.toLowerCase());
-    const requiredTierIndex = tierOrder.indexOf(card.min_tier.toLowerCase());
-    
-    return userTierIndex < requiredTierIndex;
+    // If card is released, show it (no tier restrictions for released cards)
+    return false;
   };
 
   // Get unique rarities for filter dropdown
@@ -1325,10 +1326,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     ) : (
                                       <>
                                         <div 
-                                          className="text-sm mb-3"
+                                          className="text-xs mb-3"
                                           style={{ 
                                             color: '#FF6B6B', 
-                                            textShadow: '0 0 4px rgba(255,107,107,0.8)'
+                                            textShadow: '0 0 4px rgba(255,107,107,0.8)',
+                                            fontSize: '12px',
+                                            whiteSpace: 'nowrap'
                                           }}
                                         >
                                           You do not have enough heart coins
