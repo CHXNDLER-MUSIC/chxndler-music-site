@@ -313,19 +313,19 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             ← Back to Categories
           </button>
           
-          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-4 max-h-96 overflow-y-auto p-2">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4 max-h-80 sm:max-h-96 overflow-y-auto p-2">
             {category.badges.map((badge, index) => (
               <div key={index} className="flex flex-col items-center space-y-2">
                 <div className="relative">
                   <button
                     onClick={() => setSelectedBadge(badge)}
-                    className="relative w-12 h-12 rounded-full bg-black/60 border border-white/20 hover:border-white/40 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
+                    className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/60 border border-white/20 hover:border-white/40 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
                     title={badge.description ? `${badge.name}: ${badge.description} (${badge.current || 0}/${badge.total || 0})` : badge.name}
                   >
                     {/* Progress ring for badges with progress */}
                     {badge.progress !== undefined && badge.progress < 100 && (
                       <div className="absolute inset-0">
-                        <svg className="w-12 h-12 transform -rotate-90" viewBox="0 0 48 48">
+                        <svg className="w-10 h-10 sm:w-12 sm:h-12 transform -rotate-90" viewBox="0 0 48 48">
                           {/* Background circle */}
                           <circle
                             cx="24"
@@ -361,11 +361,11 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                         <img
                           src={badge.icon_url}
                           alt={badge.name}
-                          className="w-10 h-10 object-cover rounded-full"
+                          className="w-8 h-8 sm:w-10 sm:h-10 object-cover rounded-full"
                           draggable={false}
                         />
                       ) : (
-                        <div className="text-lg">
+                        <div className="text-sm sm:text-lg">
                           {badge.name.includes('HEART') ? '❤️' : 
                            badge.name.includes('WATER') ? '💧' : 
                            badge.name.includes('LIGHTNING') ? '⚡' : 
@@ -406,7 +406,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                 </div>
                 
                 {/* Badge name below circle */}
-                <div className="text-white/60 text-xs text-center max-w-16 truncate">
+                <div className="text-white/60 text-xs text-center max-w-12 sm:max-w-16 truncate">
                   {badge.name}
                 </div>
               </div>
@@ -510,14 +510,14 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
       )}
 
       {/* Badge Categories Grid */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
         {badgeCategories.map((category) => (
           <button
             key={category.id}
             onClick={() => setSelectedCategory(category.id)}
-            className="relative w-24 h-24 mx-auto rounded-full bg-black/40 border border-white/20 hover:border-white/40 hover:scale-105 transition-all duration-200 text-center group flex flex-col items-center justify-center"
+            className="relative w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full bg-black/40 border border-white/20 hover:border-white/40 hover:scale-105 transition-all duration-200 text-center group flex flex-col items-center justify-center"
           >
-            <div className="text-2xl mb-1">{category.emoji}</div>
+            <div className="text-xl sm:text-2xl mb-1">{category.emoji}</div>
             <div className="text-white font-semibold text-xs group-hover:text-pink-300 transition-colors px-1 leading-tight">
               {category.name}
             </div>

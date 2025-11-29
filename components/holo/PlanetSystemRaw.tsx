@@ -1792,6 +1792,37 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
     scene.add(sys);
     groupRef.current = sys;
 
+    // ADD 4 MASSIVE ELEMENTAL PLANETS DIRECTLY NEXT TO CENTER
+    const elementalPlanets = [
+      { name: 'HEART', color: 0xFC54AF, position: [8, 0, 0] },
+      { name: 'WATER', color: 0x38B6FF, position: [0, 8, 0] },
+      { name: 'LIGHTNING', color: 0xF2EF1D, position: [-8, 0, 0] },
+      { name: 'DARKNESS', color: 0x6A4C93, position: [0, -8, 0] }
+    ];
+
+    elementalPlanets.forEach((planet, index) => {
+      const planetGeo = new THREE.SphereGeometry(2.0, 32, 32);
+      const planetMat = new THREE.MeshPhongMaterial({
+        color: planet.color,
+        emissive: planet.color,
+        emissiveIntensity: 0.3,
+        shininess: 30
+      });
+      const planetMesh = new THREE.Mesh(planetGeo, planetMat);
+      planetMesh.position.set(planet.position[0], planet.position[1], planet.position[2]);
+      sys.add(planetMesh);
+
+      // Add huge debug cube above each planet
+      const cubeGeo = new THREE.BoxGeometry(3, 3, 3);
+      const cubeMat = new THREE.MeshBasicMaterial({ 
+        color: planet.color, 
+        wireframe: false 
+      });
+      const cubeMesh = new THREE.Mesh(cubeGeo, cubeMat);
+      cubeMesh.position.set(planet.position[0], planet.position[1] + 5, planet.position[2]);
+      sys.add(cubeMesh);
+    });
+
     // Main planet placeholder (real one created when songs available)
     const mainGeo = new THREE.SphereGeometry(1.6, 48, 48);
     const mainMat = new THREE.MeshPhongMaterial({ color: 0x1bd3ff, emissive: 0x0a3240, shininess: 18, specular: 0x66ffff });

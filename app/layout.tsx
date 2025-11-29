@@ -20,42 +20,44 @@ import TourReplayFloating from "@/components/TourReplayFloating";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://chxndler.world"),
-  title: "CHXNDLER — SPACESHIP",
-  description: "Enter the Heartverse and board the spaceship.",
+  title: "CHXNDLER | The Heartverse",
+  description: "Explore the immersive world of CHXNDLER, an electronic music artist creating otherworldly experiences through sound and visuals.",
   openGraph: {
-    title: "CHXNDLER",
-    description: "Welcome to the Heartverse.",
+    title: "CHXNDLER | The Heartverse",
+    description: "Explore the immersive world of CHXNDLER, an electronic music artist creating otherworldly experiences through sound and visuals.",
     url: "https://chxndler.world",
     siteName: "CHXNDLER",
+    type: "website",
     images: [
       {
-        url: "https://ik.imagekit.io/CHXNDLER/cover/logo.png?updatedAt=1763763254666",
+        url: "/icons/chxndler-og-1200x630.png",
         width: 1200,
         height: 630,
-        alt: "CHXNDLER Logo",
+        alt: "CHXNDLER - Electronic music artist from The Heartverse",
       },
     ],
-    type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "CHXNDLER",
-    description: "Welcome to the Heartverse.",
-    images: [
-      "https://ik.imagekit.io/CHXNDLER/cover/logo.png?updatedAt=1763763254666"
-    ],
+    title: "CHXNDLER | The Heartverse",
+    description: "Explore the immersive world of CHXNDLER, an electronic music artist creating otherworldly experiences through sound and visuals.",
+    images: ["/icons/chxndler-og-1200x630.png"],
   },
-  manifest: "/manifest.json",
-  themeColor: "#000000",
+  manifest: "/manifest.webmanifest",
+  themeColor: "#FC54AF",
   icons: {
     icon: [
-      { url: "/icons/chxndler-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/chxndler-256.png", sizes: "256x256", type: "image/png" },
-      { url: "/icons/chxndler-384.png", sizes: "384x384", type: "image/png" },
-      { url: "/icons/chxndler-512.png", sizes: "512x512", type: "image/png" }
+      { url: "/icons/chxndler-192.webp", sizes: "192x192", type: "image/webp" },
+      { url: "/icons/chxndler-256.webp", sizes: "256x256", type: "image/webp" },
+      { url: "/icons/chxndler-384.webp", sizes: "384x384", type: "image/webp" },
+      { url: "/icons/chxndler-512.webp", sizes: "512x512", type: "image/webp" }
     ],
-    apple: "/icons/apple-touch-icon.png",
-    shortcut: "/icons/chxndler-192.png",
+    apple: [
+      { url: "/icons/apple-touch-icon.webp", sizes: "180x180", type: "image/webp" }
+    ],
+    other: [
+      { rel: "mask-icon", url: "/icons/safari-pinned-tab.svg", color: "#FC54AF" }
+    ]
   },
 };
 
@@ -68,10 +70,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-        <link rel="icon" href="/icons/chxndler-192.png" sizes="192x192" />
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#000000" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.webp" />
+        <link rel="icon" href="/icons/chxndler-192.webp" sizes="192x192" />
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <meta name="theme-color" content="#FC54AF" />
         <link rel="mask-icon" href="/icons/safari-pinned-tab.svg" color="#FC54AF" />
         {/* Fonts: Orbitron (lyrics page) and Exo 2 (lyrics popover) */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />

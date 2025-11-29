@@ -22,7 +22,7 @@ export default function HoloAudioBridge() {
     const holoSong = songs.find(s => s.id === mainId);
     
     if (!holoSong) {
-      
+      console.warn('🎵 HoloAudioBridge: No holo song found for mainId:', mainId);
       return;
     }
 
@@ -30,11 +30,12 @@ export default function HoloAudioBridge() {
     const track = tracks.find(t => t.slug === holoSong.id);
     
     if (!track) {
-      
+      console.error('🎵 HoloAudioBridge: No track found for slug:', holoSong.id);
+      return;
     }
-    if (track) {
-      setCurrentTrack(track);
-    }
+    
+    console.log('🎵 HoloAudioBridge: Selected track:', track.title, 'src:', track.src);
+    setCurrentTrack(track);
   }, [mainId, songs]);
 
   // Helper: play an <audio> element and resolve when it ends (with safe timeout fallback)
@@ -77,6 +78,23 @@ export default function HoloAudioBridge() {
     try { playerStore.getState().setPlanetsVisible(false); } catch {}
     try { playerStore.getState().setPlanetDisplayMode('hidden'); } catch {}
 
+    // Stop ALL audio elements first to prevent conflicts (especially the default baby.mp3)
+    try {
+      const allAudio = document.querySelectorAll('audio');
+      allAudio.forEach(audio => {
+        if (audio !== a) { // Don't stop our own audio element yet
+          audio.pause();
+          audio.currentTime = 0;
+          // Also clear the src to prevent auto-resume
+          if (audio.src) {
+            console.log('🎵 HoloAudioBridge: Stopping conflicting audio:', audio.src.slice(-20));
+          }
+        }
+      });
+    } catch (e) {
+      // Silently handle any errors during audio stop
+    }
+
     // Stop current song before loading new one
     try {
       a.pause();
@@ -85,23 +103,10 @@ export default function HoloAudioBridge() {
       // Silently handle any errors during stop
     }
     
-    // Also stop all other audio elements to prevent conflicts
-    try {
-      const allAudio = document.querySelectorAll('audio');
-      allAudio.forEach(audio => {
-        if (audio !== a) { // Don't stop our own audio element
-          audio.pause();
-          audio.currentTime = 0;
-        }
-      });
-    } catch (e) {
-      // Silently handle any errors during audio stop
-    }
-    
-    a.src = currentTrack.src || "";
-    a.load();
-
+    // Don't load the track immediately - wait until after warp effect
     if (currentTrack.src) {
+      console.log('🎵 HoloAudioBridge: Starting warp sequence for:', currentTrack.title);
+      
       // Visual feedback that warp is happening
       document.body.style.backgroundColor = '#FF0000';
       const clearFlash = () => { document.body.style.backgroundColor = ''; };
@@ -111,22 +116,30 @@ export default function HoloAudioBridge() {
       let cancelled = false;
       const cancel = () => { cancelled = true; };
 
-      // Chain: warp sfx -> join-alien sfx -> song
+      // Chain: warp sfx -> join-alien sfx -> THEN load and play song
       const run = async () => {
         try {
           // Play warp SFX and wait (fallback ~1.6s if needed)
+          console.log('🎵 HoloAudioBridge: Playing warp effect...');
           const warpEl = warpAudioRef.current; if (warpEl) warpEl.volume = 0.7;
           await playAndWait(warpAudioRef.current, 1600);
           if (cancelled) return;
 
           // Play join-alien SFX and wait (fallback ~0.9s)
+          console.log('🎵 HoloAudioBridge: Playing join effect...');
           const joinEl = joinAudioRef.current; if (joinEl) joinEl.volume = 0.9;
           await playAndWait(joinAudioRef.current, 900);
           if (cancelled) return;
 
+          // NOW load and play the track after warp effects complete
+          console.log('🎵 HoloAudioBridge: Loading track:', currentTrack.src);
+          a.src = currentTrack.src || "";
+          a.load();
+
           // After SFX sequence, start the song with autoplay fallbacks and only
           // reveal the focused planet once playback actually starts
           const onPlaying = () => {
+            console.log('🎵 HoloAudioBridge: Song started playing, revealing planet');
             try { playerStore.getState().setPlanetsVisible(true); } catch {}
             try { playerStore.getState().setPlanetDisplayMode('single'); } catch {}
             try { a.removeEventListener('playing', onPlaying); } catch {}

@@ -2393,7 +2393,7 @@ export default function HUDPanel({
           {/* Cover section at bottom right corner - using CoverHologram for pop-out functionality */}
           <div ref={coverRef} className="absolute hud-cover-pos" style={{ 
             // Align flush to the right and sit slightly higher from bottom
-            bottom: 45, 
+            bottom: 60, 
             right: 0, 
             width: 'auto', 
             display: 'flex', 
@@ -3023,7 +3023,6 @@ export default function HUDPanel({
                           alignItems: 'center',
                           width: '100%',
                           padding: '4px 2px 10px 2px',
-                          borderBottom: '1px solid rgba(33,150,243,0.25)'
                         }}
                       >
                         {/* Left: Element badge + SOFIA (with picker) */}
@@ -6898,14 +6897,15 @@ export default function HUDPanel({
         {/* Song selector positioned outside content opacity container to avoid beamOnly blocking */}
         <div className="absolute" style={{ 
           left: inConsole ? 6 : 8, 
-          bottom: 'calc(80px - 24px + 36px)', // Move dropdown down by 20px
+          bottom: 'calc(80px - 24px + 56px)', // Move dropdown higher by 20px
           // Reserve dynamic space to the right so the dropdown never overlaps the cover
           right: oneLinerRight + 4, // Slightly wider than current (~8px wider)
           maxWidth: 'none',
           zIndex: 99999,  // Highest z-index to ensure it's above everything
           pointerEvents: 'auto', // Explicitly enable pointer events
           position: 'absolute', // Explicit positioning to avoid any layout conflicts
-          overflow: 'visible' // Ensure waveform can overflow below
+          overflow: 'visible', // Ensure waveform can overflow below
+          borderBottom: '1px solid rgba(33,150,243,0.25)'
         }}>
             <SongDropdown
               items={resolvedSongs}

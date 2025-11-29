@@ -268,9 +268,9 @@ export default function PopoutPanel({
           <div
             className="relative"
             style={{
-              width: 'min(85vw, 400px)',
-              minHeight: '350px',
-              padding: '20px',
+              width: 'min(80vw, 320px)',
+              minHeight: '280px',
+              padding: '16px',
               borderRadius: 18,
               background: 'rgba(0, 15, 30, 0.9)',
               border: '2px solid #FFD700',
@@ -298,11 +298,11 @@ export default function PopoutPanel({
             </button>
 
             {/* Profile Content */}
-            <div className="flex flex-col items-center space-y-4">
+            <div className="flex flex-col items-center space-y-3">
               {/* User element icon - large */}
               <div className="relative">
                 <div 
-                  className="w-20 h-20 rounded-full overflow-hidden border-2 shadow-lg"
+                  className="w-16 h-16 rounded-full overflow-hidden border-2 shadow-lg"
                   style={{ borderColor: '#FFD700' }}
                 >
                   <img 
@@ -322,7 +322,7 @@ export default function PopoutPanel({
 
               {/* User name */}
               <h3 
-                className="text-2xl font-bold text-center"
+                className="text-xl font-bold text-center"
                 style={{
                   color: '#FFD700',
                   textShadow: '0 0 10px #FFD700',
@@ -360,7 +360,7 @@ export default function PopoutPanel({
               </div>
 
               {/* Action buttons */}
-              <div className="flex space-x-3 w-full pt-4">
+              <div className="flex space-x-3 w-full pt-3">
                 {/* Cards button */}
                 <button
                   onClick={() => {
@@ -368,7 +368,7 @@ export default function PopoutPanel({
                     setShowProfilePopup(false);
                     setShowCardsModal(true);
                   }}
-                  className="flex-1 py-3 px-4 rounded-lg border-2 hover:scale-105 transition-all duration-200"
+                  className="flex-1 py-2 px-3 rounded-lg border-2 hover:scale-105 transition-all duration-200"
                   style={{
                     background: 'rgba(0, 191, 255, 0.1)',
                     borderColor: '#00BFFF',
@@ -378,7 +378,7 @@ export default function PopoutPanel({
                   }}
                 >
                   <div className="text-center">
-                    <div className="text-lg font-bold">CARDS</div>
+                    <div className="text-sm font-bold">CARDS</div>
                     <div className="text-xs opacity-80">View Collection</div>
                   </div>
                 </button>
@@ -390,7 +390,7 @@ export default function PopoutPanel({
                     setShowProfilePopup(false);
                     setShowBadgesModal(true);
                   }}
-                  className="flex-1 py-3 px-4 rounded-lg border-2 hover:scale-105 transition-all duration-200"
+                  className="flex-1 py-2 px-3 rounded-lg border-2 hover:scale-105 transition-all duration-200"
                   style={{
                     background: 'rgba(255, 105, 180, 0.1)',
                     borderColor: '#FF69B4',
@@ -400,7 +400,7 @@ export default function PopoutPanel({
                   }}
                 >
                   <div className="text-center">
-                    <div className="text-lg font-bold">BADGES</div>
+                    <div className="text-sm font-bold">BADGES</div>
                     <div className="text-xs opacity-80">View Achievements</div>
                   </div>
                 </button>
@@ -412,15 +412,16 @@ export default function PopoutPanel({
       
       {/* Main popup */}
       <div 
-        className="fixed inset-0 z-[2147483647] flex items-center justify-center"
-        style={{ paddingTop: '0px' }}
+        className="fixed inset-0 z-[2147483647] flex items-center justify-center p-4"
         onClick={handleBackdropClick}
       >
         <div
           className={`relative ${className}`}
           style={{
             width: 'min(92vw, 700px)',
+            maxWidth: '700px',
             minHeight: '200px',
+            maxHeight: '90vh',
             padding: '10px 14px 14px 14px',
             borderRadius: 18,
             background: 'rgba(0,0,0,0.6)',
@@ -428,6 +429,7 @@ export default function PopoutPanel({
             boxShadow: `0 -8px 25px ${glowColor}40, 0 -4px 15px ${glowColor}25, 0 12px 30px rgba(0,0,0,0.4), 0 0 24px ${glowColor}45`,
             backdropFilter: 'blur(12px) saturate(140%)',
             color: glowColor,
+            overflow: 'hidden',
             ...style
           }}
         >
@@ -536,7 +538,7 @@ export default function PopoutPanel({
           )}
           
           {/* Content */}
-          <div className="relative">
+          <div className="relative overflow-auto max-h-full">
             {children}
           </div>
         </div>
@@ -547,6 +549,7 @@ export default function PopoutPanel({
         <BinderModal 
           open={showCardsModal}
           onClose={() => setShowCardsModal(false)}
+          pulsingCards={true}
         />
       )}
 

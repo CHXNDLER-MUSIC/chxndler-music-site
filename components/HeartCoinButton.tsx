@@ -227,9 +227,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   }, [externalHeartCoins]);
 
   // Check for initial tab preference from hamburger menu
+  const [isFromHamburger, setIsFromHamburger] = useState(false);
+  
   useEffect(() => {
     if (typeof window !== 'undefined' && (window as any).heartCoinInitialTab) {
       setActiveTab((window as any).heartCoinInitialTab);
+      setIsFromHamburger(true);
       // Check for initial USE sub-tab preference
       if ((window as any).heartCoinInitialUseTab) {
         setActiveUseTab((window as any).heartCoinInitialUseTab);
@@ -247,6 +250,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       setOpen(true);
     } else if (!isActive && open) {
       setOpen(false);
+      setIsFromHamburger(false);
     }
   }, [isActive, open]);
 
@@ -671,9 +675,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       {/* Heart Coins Modal */}
       {open && (
         <div 
-          className="fixed inset-0 z-[2147483647] flex items-center justify-center"
+          className="fixed inset-0 z-[2147483647] flex items-start justify-center"
           style={{
-            paddingTop: '120px'
+            paddingTop: '80px'
           }}
         >
           <div
@@ -730,6 +734,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             onClick={() => {
               try { sfx.play('close', 0.8); } catch {}
               setOpen(false);
+              setIsFromHamburger(false);
               try { onOpenBlueDisplay?.(); } catch {}
               try { onClose?.(); } catch {}
             }}

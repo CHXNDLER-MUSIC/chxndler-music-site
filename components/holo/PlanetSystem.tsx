@@ -424,6 +424,12 @@ function FixedElementalSystem({ songs, mainId, hoverId }: { songs: any[]; mainId
   
   return (
     <group ref={systemRef}>
+      {/* MASSIVE DEBUG MARKER THAT SHOULD BE VISIBLE */}
+      <mesh position={[0, 0, 0]} renderOrder={100}>
+        <sphereGeometry args={[25, 16, 16]} />
+        <meshBasicMaterial color="#00FF00" wireframe={true} />
+      </mesh>
+      
       {/* Diagnostic central orbit ring */}
       {SHOW_ORBITS && (
         <mesh rotation={[-Math.PI / 2, 0, 0]} renderOrder={0}>
@@ -445,6 +451,12 @@ function FixedElementalSystem({ songs, mainId, hoverId }: { songs: any[]; mainId
         
         return (
           <group key={element.code} name={`element-${element.code}`}>
+            {/* MASSIVE DEBUG CUBE FOR EACH ELEMENT */}
+            <mesh position={element.position as [number, number, number]} renderOrder={200}>
+              <boxGeometry args={[10, 10, 10]} />
+              <meshBasicMaterial color={elementColors[element.code]} wireframe={false} />
+            </mesh>
+            
             {/* Element planet with glow */}
             <ElementPlanetWithGlow
               element={element.code}

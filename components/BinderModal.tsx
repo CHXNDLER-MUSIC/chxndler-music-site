@@ -17,12 +17,24 @@ const pulseKeyframes = `
       box-shadow: 0 4px 25px rgba(0,0,0,0.4), 0 0 10px rgba(255,255,255,0.1);
     }
   }
+  
+  @keyframes tiltPulse {
+    0%, 100% { 
+      transform: rotateX(9deg) rotateY(-9deg) scale(1);
+      filter: saturate(1.06) contrast(1.06) brightness(1.04) drop-shadow(0 0 18px rgba(25,227,255,0.55)) drop-shadow(0 0 36px rgba(25,227,255,0.35));
+    }
+    50% { 
+      transform: rotateX(13deg) rotateY(-13deg) scale(1.04);
+      filter: saturate(1.1) brightness(1.08) contrast(1.08) drop-shadow(0 0 26px rgba(25,227,255,1)) drop-shadow(0 0 52px rgba(25,227,255,0.8)) drop-shadow(0 0 96px rgba(25,227,255,0.6));
+    }
+  }
 `;
 
 type Props = {
   open: boolean;
   onClose: () => void;
   preselectedCard?: string | null;
+  pulsingCards?: boolean;
 };
 
 // TypeScript interfaces for shipping and orders
@@ -52,7 +64,7 @@ interface PhysicalCardOrder {
   created_at?: string;
 }
 
-export default function BinderModal({ open, onClose, preselectedCard }: Props) {
+export default function BinderModal({ open, onClose, preselectedCard, pulsingCards = false }: Props) {
   const { profile, updateProfile } = useProfile();
   const [cardOpen, setCardOpen] = useState(false);
   const [showFullCollection, setShowFullCollection] = useState(false);
@@ -581,6 +593,27 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
     }
   }, [profile]);
 
+  // Inject keyframes when component mounts and pulsingCards is true
+  useEffect(() => {
+    if (pulsingCards && typeof document !== 'undefined') {
+      // Check if keyframes already exist to avoid duplication
+      const existingStyle = document.querySelector('#binder-pulse-keyframes');
+      if (!existingStyle) {
+        const style = document.createElement('style');
+        style.id = 'binder-pulse-keyframes';
+        style.innerHTML = pulseKeyframes;
+        document.head.appendChild(style);
+      }
+      // Cleanup on unmount
+      return () => {
+        const styleElement = document.querySelector('#binder-pulse-keyframes');
+        if (styleElement) {
+          styleElement.remove();
+        }
+      };
+    }
+  }, [pulsingCards]);
+
   // Handle preselected card when modal opens
   useEffect(() => {
     if (open && preselectedCard) {
@@ -1011,7 +1044,9 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                             className={
                               isLocked
                                 ? "w-[120px] h-auto rounded-lg transition-all duration-300 blur-xl brightness-50 opacity-60"
-                                : "w-[120px] h-auto rounded-lg transition-transform duration-300 hover:scale-110"
+                                : pulsingCards
+                                  ? "w-[120px] h-auto rounded-2xl transition-all duration-300 hover:scale-110"
+                                  : "w-[120px] h-auto rounded-lg transition-transform duration-300 hover:scale-110"
                             }
                             style={{
                               boxShadow: gateState === 'owned' 
@@ -1020,6 +1055,13 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                               border: gateState === 'owned'
                                 ? '2px solid rgba(34,197,94,0.6)'
                                 : '2px solid rgba(255,105,180,0.6)',
+                              ...(pulsingCards && !isLocked ? {
+                                transformStyle: 'preserve-3d',
+                                perspective: '1200px',
+                                animation: 'tiltPulse 3s ease-in-out infinite',
+                                transform: 'rotateX(9deg) rotateY(-9deg)',
+                                filter: 'saturate(1.06) contrast(1.06) brightness(1.04) drop-shadow(0 0 18px rgba(25,227,255,0.55)) drop-shadow(0 0 36px rgba(25,227,255,0.35))'
+                              } : {})
                             }}
                             draggable={false}
                           />
