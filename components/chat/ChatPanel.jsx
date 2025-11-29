@@ -34,7 +34,7 @@ export default function ChatPanel({ isOpen, onClose }) {
     // Generate and store alien name for this session
     if (!alienName) {
       const alienNumber = Math.floor(Math.random() * 9999) + 1;
-      const newAlienName = `ALIEN${String(alienNumber).padStart(4, '0')}`;
+      const newAlienName = `ALIEN [${alienNumber}]`;
       setAlienName(newAlienName);
       return newAlienName;
     }
@@ -115,11 +115,18 @@ export default function ChatPanel({ isOpen, onClose }) {
       // Send sync message if not already joined
       if (!hasJoined) {
         const displayName = getDisplayName();
+        console.log('🔥 Joining chat with name:', displayName);
         const syncMessage = await chatService.sendSyncMessage(displayName);
+        console.log('🔥 Sync message result:', syncMessage);
         
         // For anonymous users, add the message locally and add to user list
         if (!user && syncMessage) {
-          setMessages(prev => [...prev, syncMessage]);
+          console.log('🔥 Adding anonymous message locally:', syncMessage);
+          setMessages(prev => {
+            const newMessages = [...prev, syncMessage];
+            console.log('🔥 Updated messages:', newMessages);
+            return newMessages;
+          });
           setChatUsers(prev => [...prev, {
             id: 'anonymous',
             name: displayName,

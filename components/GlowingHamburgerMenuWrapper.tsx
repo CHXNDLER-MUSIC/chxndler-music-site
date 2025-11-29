@@ -12,6 +12,8 @@ import HeartCoinButton from "./HeartCoinButton";
 import SoulStarJournal from "./SoulStarJournal";
 import WelcomeHomeModal from "./WelcomeHomeModal";
 import { useUIState } from "@/lib/use-ui-state";
+import { useTour } from "@/contexts/TourContext";
+import { useMenuState } from "@/contexts/MenuStateContext";
 
 export default function GlowingHamburgerMenuWrapper() {
   const [codeOpen, setCodeOpen] = useState(false);
@@ -24,6 +26,8 @@ export default function GlowingHamburgerMenuWrapper() {
   const [welcomeHomeOpen, setWelcomeHomeOpen] = useState(false);
   
   const { hasEnteredHeartverse } = useUIState();
+  const tour = useTour();
+  const { isMenuOpen, setMenuOpen } = useMenuState();
 
   useEffect(() => {
     console.log('codeOpen state changed to:', codeOpen);
@@ -58,12 +62,9 @@ export default function GlowingHamburgerMenuWrapper() {
       case "CHXNDLER":
         setChxndlerOpen(true);
         break;
-      case "STORE":
-        // Set initial tab preference to USE for heart coins
-        if (typeof window !== 'undefined') {
-          (window as any).heartCoinInitialTab = 'USE';
-        }
-        setHeartCoinOpen(true);
+      case "SIGNAL":
+        // Handle Signal functionality
+        console.log('Signal functionality not yet implemented');
         break;
       default:
         console.log(`No handler for menu item: ${label}`);
@@ -72,7 +73,11 @@ export default function GlowingHamburgerMenuWrapper() {
 
   return (
     <>
-      <GlowingHamburgerMenu onItemClick={handleItemClick} />
+      <GlowingHamburgerMenu 
+        onItemClick={handleItemClick}
+        externalIsOpen={isMenuOpen}
+        onMenuToggle={setMenuOpen}
+      />
       {/* Journal popout */}
       <SoulStarJournal 
         isOpen={journalOpen}
@@ -198,6 +203,7 @@ export default function GlowingHamburgerMenuWrapper() {
       />
       {/* Hidden HeartCoinButton to handle the store modal functionality */}
       <HeartCoinButton
+        data-tour-id="heartcoins"
         style={{ display: 'none' }}
         isActive={heartCoinOpen}
         onClose={() => setHeartCoinOpen(false)}

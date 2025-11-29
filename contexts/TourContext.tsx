@@ -2,6 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useProfile } from "@/contexts/ProfileContext";
+import { useMenuState } from "@/contexts/MenuStateContext";
 import OnboardingTour from "@/components/OnboardingTour";
 
 type TourContextValue = {
@@ -22,6 +23,7 @@ const LS_KEYS = {
 
 export function TourProvider({ children }: { children: React.ReactNode }) {
   const { profile, updateProfile } = useProfile();
+  const { setMenuOpen } = useMenuState();
   const [active, setActive] = useState(false);
   const [endModalVisible, setEndModalVisible] = useState(false);
   const [welcomeVisible, setWelcomeVisible] = useState(false);
@@ -124,7 +126,8 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
         onFinish={(completed: boolean) => completed ? completeAndDismiss() : finish()} 
         onSkip={() => skip()} 
         endModalVisible={endModalVisible} 
-        onRestartFromEnd={() => restart()} 
+        onRestartFromEnd={() => restart()}
+        onMenuToggle={setMenuOpen}
       />
 
       {/* Welcome modal before starting the tour */}

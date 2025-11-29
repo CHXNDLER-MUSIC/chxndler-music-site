@@ -22,7 +22,22 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
   // Load full profile data when modal opens
   useEffect(() => {
     if (isOpen && user) {
-      loadProfileData();
+      // Only load profile data for real users, not anonymous aliens
+      if (user.id !== 'anonymous') {
+        loadProfileData();
+      } else {
+        // For anonymous aliens, create a mock profile
+        setProfileData({
+          id: 'anonymous',
+          name: user.name,
+          element: null,
+          avatar_badge_id: null,
+          heartcoin_total: 0
+        });
+        setBadges([]);
+        setCards([]);
+        setLoading(false);
+      }
     }
   }, [isOpen, user]);
 
@@ -348,7 +363,11 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
                           <span className="text-2xl">🃏</span>
                         </div>
                         <p className="text-white/60">
-                          {isOwnProfile ? "You haven't collected any cards yet!" : `${displayName} has no cards in their collection.`}
+                          {user.id === 'anonymous' 
+                            ? `${displayName} is a mysterious visitor from another dimension.`
+                            : isOwnProfile 
+                              ? "You haven't collected any cards yet!" 
+                              : `${displayName} has no cards in their collection.`}
                         </p>
                       </div>
                     )}

@@ -23,22 +23,17 @@ export default function WhatShouldWeCallYouModal() {
   // Prevent hydration mismatch
   useEffect(() => {
     setMounted(true);
-    console.log('🎯 WhatShouldWeCallYouModal mounted (Chrome debug)');
   }, []);
 
-  // Debug modal state for Chrome
+  // Debug modal state changes
   useEffect(() => {
-    console.log('🎯 [WhatShouldWeCallYouModal] Modal state (Chrome debug):', { 
+    console.log('🎭 WhatShouldWeCallYouModal state:', { 
       showNamePrompt, 
       namePromptFromAuth, 
       mounted, 
-      documentExists: typeof document !== 'undefined',
-      bodyExists: typeof document !== 'undefined' && !!document.body,
-      currentUser: !!currentUser,
-      profileName: profile?.name,
-      authChecked
+      authChecked 
     });
-  }, [showNamePrompt, namePromptFromAuth, mounted, currentUser, profile?.name, authChecked]);
+  }, [showNamePrompt, namePromptFromAuth, mounted, authChecked]);
 
 
   // Check authentication and prefill name when modal opens
@@ -108,24 +103,21 @@ export default function WhatShouldWeCallYouModal() {
   // However, if the user just came from auth callback with completeProfile=1,
   // we should NOT auto-close even if they have a name (they may want to update it)
   useEffect(() => {
-    console.log('🎯 [WhatShouldWeCallYouModal] Guard-close effect triggered:', {
-      showNamePrompt,
-      authChecked,
-      namePromptFromAuth,
-      currentUser: !!currentUser,
-      profileName: profile?.name,
-      willAutoClose: !namePromptFromAuth && currentUser && profile && profile.name && profile.name.trim() !== ''
-    });
-    
     if (!showNamePrompt) return;
     if (!authChecked) return;
     
-    // Only auto-close if we have a user with a complete profile AND
-    // this wasn't triggered by the explicit auth callback flow
-    if (!namePromptFromAuth && currentUser && profile && profile.name && profile.name.trim() !== '') {
-      console.log('🎯 [WhatShouldWeCallYouModal] Auto-closing modal due to existing name');
-      closeNamePrompt();
-    }
+    // Add a small delay to prevent rapid state changes from auto-closing
+    // the modal before the user sees it
+    const timeoutId = setTimeout(() => {
+      // Only auto-close if we have a user with a complete profile AND
+      // this wasn't triggered by the explicit auth callback flow AND
+      // modal is still open (to prevent stale closures)
+      if (showNamePrompt && !namePromptFromAuth && currentUser && profile && profile.name && profile.name.trim() !== '') {
+        closeNamePrompt();
+      }
+    }, 200);
+
+    return () => clearTimeout(timeoutId);
   }, [showNamePrompt, authChecked, currentUser, profile, namePromptFromAuth, closeNamePrompt]);
 
   // Safely start tour once user clicks Enter and profile is complete

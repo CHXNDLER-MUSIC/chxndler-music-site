@@ -16,6 +16,7 @@ import NamePromptOnLogin from "@/components/NamePromptOnLogin";
 import StoreProvider from "@/components/StoreProvider";
 import { ProfileProvider } from "@/contexts/ProfileContext";
 import { TourProvider } from "@/contexts/TourContext";
+import { MenuStateProvider } from "@/contexts/MenuStateContext";
 import TourReplayFloating from "@/components/TourReplayFloating";
 
 export const metadata: Metadata = {
@@ -126,7 +127,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-sans">
         <ProfileProvider>
           <AudioProvider>
-            <TourProvider>
+            <MenuStateProvider>
+              <TourProvider>
             {!analyticsOff && (
               <Suspense fallback={null}>
                 <PageViewTracker />
@@ -136,17 +138,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {!analyticsOff && <AnalyticsWidget />}
             <LazyLoadEnhancer />
             <OnboardingEntryGate />
+            <StoreProvider />
             {/* Opens the name prompt when returning from auth with completeProfile=1 */}
-            <Suspense fallback={null}>
-              <NamePromptOnLogin />
-            </Suspense>
+            <NamePromptOnLogin />
             <WhatShouldWeCallYouModal />
             <WhatElementAreYouModal />
-            <StoreProvider />
             {children}
             {/* Manual replay button (always available once a profile exists) */}
             <TourReplayFloating />
-            </TourProvider>
+              </TourProvider>
+            </MenuStateProvider>
           </AudioProvider>
         </ProfileProvider>
         {mpId && !analyticsOff ? (

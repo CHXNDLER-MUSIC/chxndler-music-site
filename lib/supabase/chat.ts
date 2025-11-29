@@ -153,7 +153,7 @@ export class ChatService {
           message_type: messageType,
           created_at: new Date().toISOString(),
           user_profile: {
-            name: anonymousName || 'ALIEN0000',
+            name: anonymousName || 'ALIEN [0000]',
             element: null,
             avatar_badge_id: null
           }
@@ -200,7 +200,7 @@ export class ChatService {
    * Send a signal sync message when user opens chat
    */
   async sendSyncMessage(displayName: string): Promise<ChatMessage | null> {
-    return this.sendMessage(`🔗 ${displayName} has synced with the signal`, 'join', displayName);
+    return this.sendMessage(`${displayName} connected to the signal`, 'join', displayName);
   }
 
   /**

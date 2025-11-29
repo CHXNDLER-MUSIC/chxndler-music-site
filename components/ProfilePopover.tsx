@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useTour } from '@/contexts/TourContext';
 import { supabaseClient } from '@/lib/supabaseClient';
@@ -56,6 +57,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
   const [saving, setSaving] = useState(false);
   const [selectedImageUrl, setSelectedImageUrl] = useState<string>('');
   const [editedName, setEditedName] = useState('');
+  const [isEditingName, setIsEditingName] = useState(false);
   const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
   const [userBadges, setUserBadges] = useState<UserBadge[]>([]);
   const [userRelics, setUserRelics] = useState<UserRelic[]>([]);
@@ -77,37 +79,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
     }
   }, [isOpen, user]);
 
-  // Position popover relative to anchor element
-  useEffect(() => {
-    if (isOpen && anchorElement && popoverRef.current) {
-      const rect = anchorElement.getBoundingClientRect();
-      const popover = popoverRef.current;
-      
-      // Position below the anchor element
-      const top = rect.bottom + 8;
-      const left = Math.max(16, Math.min(rect.left, window.innerWidth - popover.offsetWidth - 16));
-      
-      popover.style.position = 'fixed';
-      popover.style.top = `${top}px`;
-      popover.style.left = `${left}px`;
-      popover.style.zIndex = '9999';
-    }
-  }, [isOpen, anchorElement]);
-
-  // Close on outside click
+  // Close on escape key
   useEffect(() => {
     if (!isOpen) return;
-
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        popoverRef.current &&
-        !popoverRef.current.contains(event.target as Node) &&
-        anchorElement &&
-        !anchorElement.contains(event.target as Node)
-      ) {
-        onClose();
-      }
-    };
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -115,14 +89,12 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleEscape);
     
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [isOpen, onClose, anchorElement]);
+  }, [isOpen, onClose]);
 
   // Helper to get element image URL
   const getElementImageUrl = (element: string | null): string => {
@@ -295,96 +267,123 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
   };
 
   if (!isOpen) return null;
+  if (typeof document === 'undefined') return null;
 
-  return (
-    <div
-      ref={popoverRef}
-      className="bg-black/90 border-2 border-white/20 rounded-2xl p-6 backdrop-blur-md shadow-2xl"
-      style={{
-        width: '420px',
-        maxHeight: '500px',
-        boxShadow: '0 0 30px rgba(255, 255, 255, 0.1), 0 0 60px rgba(0, 255, 255, 0.2)'
-      }}
-    >
-      <div className="flex h-full">
-        {/* Left Side - Profile Image Selection */}
-        <div className="flex-1 pr-4">
-          <h3 className="text-white font-semibold mb-3 text-sm">Profile Image</h3>
+  return createPortal(
+    <>
+      {/* Hologram base glow */}
+      <div 
+        className="fixed inset-0 flex items-center justify-center"
+        style={{
+          zIndex: 2147483648,
+          pointerEvents: 'none',
+          paddingTop: '200px'
+        }}
+      >
+        <div
+          style={{
+            width: 'min(120vw, 700px)',
+            height: '200px',
+            background: 'radial-gradient(ellipse 80% 100% at 50% 0%, rgba(0,255,255,0.7) 0%, rgba(0,255,255,0.4) 30%, rgba(0,255,255,0.1) 60%, transparent 100%)',
+            filter: 'blur(100px)'
+          }}
+        />
+      </div>
+      
+      {/* Profile Modal */}
+      <div 
+        className="fixed inset-0 flex items-center justify-center"
+        style={{
+          zIndex: 2147483648,
+          marginTop: '-160px'
+        }}
+      >
+        <div
+          className="profile-hologram-container"
+          style={{
+            width: 'min(92vw, 500px)',
+            minHeight: 'auto',
+            padding: '20px 24px 24px 24px',
+            borderRadius: 18,
+            background: 'rgba(0,0,0,0.6)',
+            border: '1px solid rgba(0,255,255,0.55)',
+            boxShadow: '0 -8px 25px rgba(0,255,255,0.4), 0 -4px 15px rgba(0,255,255,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(0,255,255,0.45)',
+            backdropFilter: 'blur(12px) saturate(140%)',
+            color: '#00FFFF',
+            position: 'relative'
+          }}
+        >
+          {/* Soft bottom glow pseudo element */}
+          <div 
+            className="absolute"
+            style={{
+              bottom: '-15px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '120%',
+              height: '30px',
+              background: 'radial-gradient(ellipse 60% 100% at 50% 0%, rgba(0,255,255,0.6) 0%, rgba(0,255,255,0.3) 40%, transparent 80%)',
+              filter: 'blur(30px)',
+              pointerEvents: 'none',
+              zIndex: -1
+            }}
+          />
           
-          {/* Current Profile Image */}
-          <div className="mb-4">
-            <div 
-              className="w-16 h-16 rounded-full border-2 border-cyan-400/60 overflow-hidden mx-auto"
-              style={{
-                background: 'rgba(0,255,255,0.1)',
-                boxShadow: selectedImageUrl ? '0 0 20px rgba(0,255,255,0.4)' : 'none'
-              }}
-            >
-              <img
-                src={selectedImageUrl || getElementImageUrl(profile?.element)}
-                alt="Profile"
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = getElementImageUrl(profile?.element);
-                }}
-              />
-            </div>
-          </div>
+          {/* Top bloom glow */}
+          <div 
+            className="absolute"
+            style={{
+              top: '-10px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '80%',
+              height: '20px',
+              background: 'radial-gradient(ellipse 70% 100% at 50% 100%, rgba(0,255,255,0.4) 0%, rgba(0,255,255,0.2) 50%, transparent 100%)',
+              filter: 'blur(25px)',
+              pointerEvents: 'none',
+              zIndex: -1
+            }}
+          />
 
-          {/* Available Images Grid */}
-          {loading ? (
-            <div className="text-white/60 text-center text-xs">Loading available images...</div>
-          ) : (
-            <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto">
-              {availableImages.map((image) => (
-                <button
-                  key={image.id}
-                  onClick={() => {
-                    setSelectedImageUrl(image.url);
-                    try { sfx.play('click', 0.4); } catch {}
-                  }}
-                  className={`w-12 h-12 rounded-lg border-2 overflow-hidden transition-all duration-200 ${
-                    selectedImageUrl === image.url
-                      ? 'border-cyan-400 shadow-[0_0_15px_rgba(0,255,255,0.6)]'
-                      : 'border-white/30 hover:border-white/60'
-                  }`}
-                  title={image.name}
-                >
-                  <img
-                    src={image.url}
-                    alt={image.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                    }}
-                  />
-                </button>
-              ))}
-              {availableImages.length === 0 && (
-                <div className="col-span-3 text-white/40 text-xs text-center py-2">
-                  No unlocked images available
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Right Side - Name & Tour */}
-        <div className="flex-1 pl-4 border-l border-white/20">
-          {/* Save Button - Top Right */}
-          <div className="flex justify-end mb-3">
+          {/* Close button */}
+          <button
+            onClick={() => {
+              try { sfx.play('close', 0.8); } catch {}
+              onClose();
+            }}
+            className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+            style={{
+              background: 'rgba(0,255,255,0.2)',
+              border: '1px solid rgba(0,255,255,0.6)',
+              color: '#00FFFF',
+              boxShadow: '0 0 10px rgba(0,255,255,0.3)',
+              fontSize: '14px',
+              fontWeight: 'bold'
+            }}
+          >
+            ×
+          </button>
+          
+          {/* Checkmark confirmation button - Top Right */}
+          {(editedName.trim() !== profile?.name || selectedImageUrl !== (profile?.profile_image_url || getElementImageUrl(profile?.element))) && (
             <button
               onClick={handleSave}
-              disabled={saving || (!editedName.trim() && selectedImageUrl === (profile?.profile_image_url || getElementImageUrl(profile?.element)))}
-              className="w-8 h-8 rounded-full bg-green-600/30 border border-green-500/50 text-green-300 hover:bg-green-600/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-all duration-200"
+              disabled={saving || !editedName.trim()}
+              className="absolute top-4 right-16 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+              style={{
+                background: 'rgba(0,255,0,0.2)',
+                border: '1px solid rgba(0,255,0,0.6)',
+                color: '#00FF00',
+                boxShadow: '0 0 10px rgba(0,255,0,0.3)',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}
               title="Save changes"
             >
               {saving ? (
                 <div className="w-4 h-4 border-2 border-green-300 border-t-transparent rounded-full animate-spin" />
               ) : (
-                <svg viewBox="0 0 24 24" width="16" height="16" className="text-green-300">
+                <svg viewBox="0 0 24 24" width="16" height="16">
                   <path
                     fill="none"
                     stroke="currentColor"
@@ -396,39 +395,201 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                 </svg>
               )}
             </button>
-          </div>
+          )}
 
-          {/* Name Section */}
+          {/* Header */}
+          <div 
+            className="text-center mb-4"
+            style={{ 
+              color: '#00FFFF', 
+              textShadow: '0 0 8px rgba(0,255,255,0.6)', 
+              fontSize: '18px',
+              fontWeight: 'bold'
+            }}
+          >
+            PROFILE
+          </div>
+          
+          {/* Thin cyan neon line */}
+          <div 
+            className="w-full h-px mb-6"
+            style={{
+              background: 'linear-gradient(90deg, transparent, rgba(0,255,255,0.8) 20%, rgba(0,255,255,1) 50%, rgba(0,255,255,0.8) 80%, transparent)',
+              boxShadow: '0 0 4px rgba(0,255,255,0.6)'
+            }}
+          />
+
+          {/* SELECTED IMAGE Section */}
           <div className="mb-6">
-            <h3 className="text-white font-semibold mb-2 text-sm">Name</h3>
-            <input
-              type="text"
-              value={editedName}
-              onChange={(e) => setEditedName(e.target.value)}
-              placeholder="Enter your name"
-              className="w-full px-3 py-2 bg-black/40 border border-white/30 rounded-lg text-white placeholder-white/50 text-sm focus:border-cyan-400 focus:outline-none transition-colors"
-              maxLength={50}
-            />
-          </div>
-
-          {/* Tour Section */}
-          <div>
-            <div className="text-white/70 text-xs mb-2">
-              Want a quick tour around the ship?
-            </div>
-            <button
-              onClick={handleStartTour}
-              className="w-full px-3 py-2 bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300 rounded-lg text-xs font-medium transition-all duration-200"
-              style={{
-                boxShadow: '0 0 10px rgba(236, 72, 153, 0.2)',
-                textShadow: '0 0 4px rgba(236, 72, 153, 0.4)'
+            <h3 
+              className="text-sm mb-3 font-semibold"
+              style={{ 
+                color: '#00FFFF', 
+                textShadow: '0 0 4px rgba(0,255,255,0.6)' 
               }}
             >
-              Start Tour
+              SELECTED IMAGE
+            </h3>
+            
+            {/* Current Profile Image */}
+            <div className="flex justify-center mb-4">
+              <div 
+                className="w-20 h-20 rounded-full border-2 border-cyan-400/60 overflow-hidden"
+                style={{
+                  background: 'rgba(0,255,255,0.1)',
+                  boxShadow: '0 0 20px rgba(0,255,255,0.4)'
+                }}
+              >
+                <img
+                  src={selectedImageUrl || getElementImageUrl(profile?.element)}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = getElementImageUrl(profile?.element);
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Available Images Grid */}
+            {loading ? (
+              <div 
+                className="text-center text-xs"
+                style={{ 
+                  color: '#00FFFF', 
+                  textShadow: '0 0 4px rgba(0,255,255,0.6)' 
+                }}
+              >
+                Loading available images...
+              </div>
+            ) : (
+              <div className="grid grid-cols-4 gap-2 justify-items-center">
+                {availableImages.map((image) => (
+                  <button
+                    key={image.id}
+                    onClick={() => {
+                      setSelectedImageUrl(image.url);
+                      try { sfx.play('click', 0.4); } catch {}
+                    }}
+                    className={`w-12 h-12 rounded-lg border-2 overflow-hidden transition-all duration-200 ${
+                      selectedImageUrl === image.url
+                        ? 'border-cyan-400 shadow-[0_0_15px_rgba(0,255,255,0.6)]'
+                        : 'border-white/30 hover:border-white/60'
+                    }`}
+                    title={image.name}
+                  >
+                    <img
+                      src={image.url}
+                      alt={image.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                  </button>
+                ))}
+                {availableImages.length === 0 && (
+                  <div 
+                    className="col-span-4 text-xs text-center py-2"
+                    style={{ 
+                      color: '#00FFFF', 
+                      opacity: 0.6,
+                      textShadow: '0 0 4px rgba(0,255,255,0.6)' 
+                    }}
+                  >
+                    No unlocked images available
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* SELECTED NAME Section */}
+          <div>
+            <h3 
+              className="text-sm mb-3 font-semibold"
+              style={{ 
+                color: '#00FFFF', 
+                textShadow: '0 0 4px rgba(0,255,255,0.6)' 
+              }}
+            >
+              SELECTED NAME
+            </h3>
+            
+            {!isEditingName ? (
+              <button
+                onClick={() => {
+                  setIsEditingName(true);
+                  try { sfx.play('click', 0.4); } catch {}
+                }}
+                className="w-full text-left transition-all duration-200 hover:scale-105"
+                style={{ 
+                  background: 'none',
+                  border: 'none',
+                  color: '#00FFFF', 
+                  textShadow: '0 0 8px rgba(0,255,255,0.8)',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
+                }}
+                title="Click to edit name"
+              >
+                {editedName || 'Click to set your name'}
+              </button>
+            ) : (
+              <input
+                type="text"
+                value={editedName}
+                onChange={(e) => setEditedName(e.target.value)}
+                onBlur={() => setIsEditingName(false)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    setIsEditingName(false);
+                  } else if (e.key === 'Escape') {
+                    setEditedName(profile?.name || '');
+                    setIsEditingName(false);
+                  }
+                }}
+                placeholder="Enter your name"
+                className="w-full px-3 py-2 text-sm focus:outline-none transition-colors"
+                style={{
+                  border: '1px solid rgba(0,255,255,0.4)',
+                  background: 'rgba(0,0,0,0.3)',
+                  color: '#00FFFF',
+                  textShadow: '0 0 4px rgba(0,255,255,0.6)',
+                  backdropFilter: 'blur(4px)',
+                  borderRadius: '6px'
+                }}
+                maxLength={50}
+                autoFocus
+              />
+            )}
+          </div>
+
+          {/* Start Tour Button */}
+          <div className="mt-6 pt-4" style={{
+            borderTop: '1px solid rgba(0,255,255,0.2)'
+          }}>
+            <button
+              onClick={handleStartTour}
+              className="w-full px-4 py-3 rounded-lg font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
+              style={{
+                background: 'linear-gradient(135deg, rgba(0,255,255,0.25), rgba(0,255,255,0.15))',
+                border: '1px solid rgba(0,255,255,0.5)',
+                color: '#00FFFF',
+                textShadow: '0 0 8px rgba(0,255,255,0.7)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(0,255,255,0.3)'
+              }}
+              title="Take a guided tour of the Heartverse"
+            >
+              ✨ Start Tour
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </>,
+    document.body
   );
 }

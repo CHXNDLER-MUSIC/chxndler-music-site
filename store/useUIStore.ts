@@ -18,18 +18,9 @@ interface UIState {
 export const useUIStore = create<UIState>((set) => ({
   showNamePrompt: false,
   namePromptFromAuth: false,
-  openNamePrompt: () => {
-    console.log('🎯 [UIStore] openNamePrompt called - regular flow');
-    set({ showNamePrompt: true, namePromptFromAuth: false });
-  },
-  openNamePromptFromAuth: () => {
-    console.log('🎯 [UIStore] openNamePromptFromAuth called - from auth callback');
-    set({ showNamePrompt: true, namePromptFromAuth: true });
-  },
-  closeNamePrompt: () => {
-    console.log('🎯 [UIStore] closeNamePrompt called');
-    set({ showNamePrompt: false, namePromptFromAuth: false });
-  },
+  openNamePrompt: () => set({ showNamePrompt: true, namePromptFromAuth: false }),
+  openNamePromptFromAuth: () => set({ showNamePrompt: true, namePromptFromAuth: true }),
+  closeNamePrompt: () => set({ showNamePrompt: false, namePromptFromAuth: false }),
   showElementSelection: false,
   openElementSelection: () => set({ showElementSelection: true }),
   closeElementSelection: () => set({ showElementSelection: false }),

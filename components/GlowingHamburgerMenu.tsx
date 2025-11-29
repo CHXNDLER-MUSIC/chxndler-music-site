@@ -5,39 +5,46 @@ import { useProfile } from "@/contexts/ProfileContext";
 import Image from "next/image";
 import { sfx } from "@/lib/sfx";
 import { useDailyReflectionStatus } from "@/hooks/useDailyReflectionStatus";
-import { useUIState } from "@/lib/use-ui-state";
 
 interface GlowingHamburgerMenuProps {
   onItemClick?: (label: string) => void;
+  externalIsOpen?: boolean;
+  onMenuToggle?: (isOpen: boolean) => void;
 }
 
 const getJourneyTitle = (isLoggedIn: boolean) => {
   return isLoggedIn ? "MY JOURNEY" : "JOURNEY";
 };
 
-export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMenuProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMenuToggle }: GlowingHamburgerMenuProps) {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  
+  // Use external state if provided, otherwise use internal state
+  const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
   const [badgesPoppedOut, setBadgesPoppedOut] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { profile, user } = useProfile();
   const { hasPendingReflection } = useDailyReflectionStatus();
-  const { hasEnteredHeartverse } = useUIState();
   
   const journeyTitle = getJourneyTitle(!!user);
   
   const menuItems = [
     { label: "ABOUT", href: undefined },
     { label: journeyTitle, href: undefined },
+    { label: "JOURNAL", href: undefined },
     { label: "BINDER", href: undefined },
     { label: "BADGES", href: undefined },
-    { label: "JOURNAL", href: undefined },
-    { label: "STORE", href: undefined },
+    { label: "SIGNAL", href: undefined },
   ];
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+        if (externalIsOpen !== undefined) {
+          onMenuToggle?.(false);
+        } else {
+          setInternalIsOpen(false);
+        }
       }
     }
 
@@ -45,12 +52,16 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, []);
+  }, [externalIsOpen, onMenuToggle]);
 
 
   const toggleMenu = () => {
     sfx.play('click', 0.7);
-    setIsOpen(!isOpen);
+    if (externalIsOpen !== undefined) {
+      onMenuToggle?.(!isOpen);
+    } else {
+      setInternalIsOpen(!isOpen);
+    }
   };
 
   const handleItemClick = (label: string) => {
@@ -58,7 +69,11 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
     
     // Always call the parent click handler
     onItemClick?.(label);
-    setIsOpen(false);
+    if (externalIsOpen !== undefined) {
+      onMenuToggle?.(false);
+    } else {
+      setInternalIsOpen(false);
+    }
   };
 
   return (
@@ -66,38 +81,47 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
       {/* Hamburger Button */}
       <button
         onClick={toggleMenu}
-        className="relative w-12 h-12 rounded-full bg-black/60 backdrop-blur-sm border-2 border-white flex items-center justify-center transition-all duration-300 hover:scale-105"
-        style={{
-          borderColor: '#FFFFFF',
-        }}
+        className="relative transition-all duration-300 hover:scale-105"
         aria-label={isOpen ? "Close menu" : "Open menu"}
+        data-tour-id="hamburger"
       >
-        <div className="w-6 h-6 flex flex-col justify-center items-center">
+        <div className="w-8 h-8 flex flex-col justify-center items-center">
           {/* Top Line */}
           <div
-            className={`w-5 h-0.5 bg-white transition-all duration-300 ${
-              isOpen ? "rotate-45 translate-y-0.5" : ""
+            className={`w-7 h-1 transition-all duration-300 ${
+              isOpen ? "rotate-45 translate-y-1 bg-yellow-400" : "bg-white"
             }`}
             style={{
-              boxShadow: "0 0 8px rgba(255, 255, 255, 0.6), 0 0 16px rgba(255, 255, 255, 0.3)"
+              boxShadow: isOpen 
+                ? "0 0 12px rgba(255, 255, 0, 1), 0 0 24px rgba(255, 255, 0, 0.8), 0 0 36px rgba(255, 255, 0, 0.6)"
+                : "0 0 12px rgba(255, 255, 255, 1), 0 0 24px rgba(255, 255, 255, 0.8), 0 0 36px rgba(255, 255, 255, 0.6)",
+              animation: isOpen 
+                ? "neonPulseYellow 2s ease-in-out infinite alternate"
+                : "neonPulse 2s ease-in-out infinite alternate"
             }}
           />
           {/* Middle Line */}
           <div
-            className={`w-5 h-0.5 bg-white transition-all duration-300 mt-1 ${
+            className={`w-7 h-1 bg-white transition-all duration-300 mt-1.5 ${
               isOpen ? "opacity-0" : ""
             }`}
             style={{
-              boxShadow: "0 0 8px rgba(255, 255, 255, 0.6), 0 0 16px rgba(255, 255, 255, 0.3)"
+              boxShadow: "0 0 12px rgba(255, 255, 255, 1), 0 0 24px rgba(255, 255, 255, 0.8), 0 0 36px rgba(255, 255, 255, 0.6)",
+              animation: "neonPulse 2s ease-in-out infinite alternate"
             }}
           />
           {/* Bottom Line */}
           <div
-            className={`w-5 h-0.5 bg-white transition-all duration-300 mt-1 ${
-              isOpen ? "-rotate-45 -translate-y-2" : ""
+            className={`w-7 h-1 transition-all duration-300 mt-1.5 ${
+              isOpen ? "-rotate-45 -translate-y-3 bg-yellow-400" : "bg-white"
             }`}
             style={{
-              boxShadow: "0 0 8px rgba(255, 255, 255, 0.6), 0 0 16px rgba(255, 255, 255, 0.3)"
+              boxShadow: isOpen 
+                ? "0 0 12px rgba(255, 255, 0, 1), 0 0 24px rgba(255, 255, 0, 0.8), 0 0 36px rgba(255, 255, 0, 0.6)"
+                : "0 0 12px rgba(255, 255, 255, 1), 0 0 24px rgba(255, 255, 255, 0.8), 0 0 36px rgba(255, 255, 255, 0.6)",
+              animation: isOpen 
+                ? "neonPulseYellow 2s ease-in-out infinite alternate"
+                : "neonPulse 2s ease-in-out infinite alternate"
             }}
           />
         </div>
@@ -146,6 +170,15 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
                     }
                     handleItemClick(item.label);
                   }}
+                  data-tour-id={
+                    item.label === "ABOUT" ? "menu-about" :
+                    (item.label === "JOURNEY" || item.label === "MY JOURNEY") ? "menu-journey" :
+                    item.label === "JOURNAL" ? "menu-journal" :
+                    item.label === "BINDER" ? "menu-binder" :
+                    item.label === "BADGES" ? "menu-badges" :
+                    item.label === "SIGNAL" ? "menu-signal" :
+                    `menu-${item.label.toLowerCase().replace(/ /g, '-')}`
+                  }
                   className={`w-full px-6 py-2 text-left text-white font-semibold tracking-wide transition-all duration-200 hover:bg-cyan-500/10 hover:text-cyan-300 relative group ${
                     item.label === "JOURNAL" && hasPendingReflection 
                       ? 'bg-gradient-to-r from-pink-500/10 via-transparent to-pink-500/10' 
@@ -222,10 +255,10 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
                         }}
                       />
                     )}
-                    {item.label === "STORE" && (
+                    {item.label === "SIGNAL" && (
                       <Image
-                        src="/elements/store.png"
-                        alt="Store"
+                        src="/elements/signal.webp"
+                        alt="Signal"
                         width={32}
                         height={32}
                         className="transition-all duration-200"

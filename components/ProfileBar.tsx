@@ -459,6 +459,20 @@ export default function ProfileBar({
         <div className="flex items-center justify-between h-full pl-16 sm:pl-20 pr-2 min-w-0">
           {/* Left Side */}
           <div className="flex items-center flex-1 min-w-0">
+            {/* Elemental Button - Left of LOG IN button */}
+            <div className="ml-2 flex-shrink-0">
+              <ElementalButton 
+                onHoverSound={() => sfx.play('hover', 0.8)}
+                onCloseBlueDisplay={onCloseBlueDisplay}
+                onOpenBlueDisplay={onOpenBlueDisplay}
+                onBeamColorChange={onBeamColorChange}
+                element={currentElement}
+                onElementSelect={updateElement}
+                isActive={activePanel === 'element'}
+                onClick={() => togglePanel('element')}
+              />
+            </div>
+
             {/* Username - Clickable */}
             <div className="relative">
               <button 
@@ -472,7 +486,7 @@ export default function ProfileBar({
                   }
                 }}
                 disabled={loading}
-                className="font-medium text-lg relative flex-shrink-0 ml-2 transition-all duration-200 cursor-pointer bg-transparent border-none focus:outline-none disabled:opacity-50 rounded"
+                className="font-medium text-lg relative flex-shrink-0 ml-3 transition-all duration-200 cursor-pointer bg-transparent border-none focus:outline-none disabled:opacity-50 rounded"
                 style={{ 
                   color: getUsernameColor(currentElement),
                   filter: 'brightness(1.2)',
@@ -496,20 +510,6 @@ export default function ProfileBar({
                 {displayName}
               </button>
 
-            </div>
-
-            {/* Elemental Button - Right of LOG IN button */}
-            <div className="ml-3 flex-shrink-0">
-              <ElementalButton 
-                onHoverSound={() => sfx.play('hover', 0.8)}
-                onCloseBlueDisplay={onCloseBlueDisplay}
-                onOpenBlueDisplay={onOpenBlueDisplay}
-                onBeamColorChange={onBeamColorChange}
-                element={currentElement}
-                onElementSelect={updateElement}
-                isActive={activePanel === 'element'}
-                onClick={() => togglePanel('element')}
-              />
             </div>
 
           </div>

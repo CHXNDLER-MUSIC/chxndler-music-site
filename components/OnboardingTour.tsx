@@ -12,34 +12,64 @@ export interface TourStep {
 
 export const TOUR_STEPS: TourStep[] = [
   {
-    id: "code",
-    selector: "[data-tour-id='code']",
-    title: "CODE",
-    body: "This is the CODE. These are the Heartverse beliefs that guide your journey."
+    id: "intro",
+    selector: "", // No selector for intro step
+    title: "Welcome aboard",
+    body: "This is your Heartverse spaceship. I'll show you the key controls so you can explore, reflect, and collect."
+  },
+  {
+    id: "hamburger",
+    selector: "[data-tour-id='hamburger']",
+    title: "Main controls",
+    body: "Tap this menu to open the main controls of your ship. From here you can jump between codes, journeys, your journal, and more."
+  },
+  {
+    id: "menu-about",
+    selector: "[data-tour-id='menu-about']",
+    title: "ABOUT",
+    body: "ABOUT tells you who CHXNDLER is, the story of the Heartverse, and the vision behind this world."
+  },
+  {
+    id: "menu-journey",
+    selector: "[data-tour-id='menu-journey']",
+    title: "Journey",
+    body: "Journey is your main path through the Heartverse. New songs, chapters, and experiences appear here as you travel."
+  },
+  {
+    id: "menu-journal",
+    selector: "[data-tour-id='menu-journal']",
+    title: "Journal",
+    body: "Journal is your reflection space. Each day you can set an intention, answer a question, and record how you feel. This is how you earn Soul badges and grow over time."
+  },
+  {
+    id: "menu-binder",
+    selector: "[data-tour-id='menu-binder']",
+    title: "Binder",
+    body: "The Binder is where all your collected song cards live. Each card connects to a track or story in the Heartverse, and some unlock secret content."
+  },
+  {
+    id: "menu-badges",
+    selector: "[data-tour-id='menu-badges']",
+    title: "Badges",
+    body: "Badges are your achievements. You can earn them by reflecting, attending livestreams, sending Heart Coins, and exploring different parts of the ship."
+  },
+  {
+    id: "menu-signal",
+    selector: "[data-tour-id='menu-signal']",
+    title: "Signal",
+    body: "Signal is how the Heartverse talks to you. Think of it like transmissions from the ship. It might notify you about daily reflections, new releases, or special events."
   },
   {
     id: "heartcoins",
     selector: "[data-tour-id='heartcoins']",
-    title: "HEART COINS",
-    body: "Heart Coins are your cosmic energy. Earn them by exploring, connecting, and showing up."
+    title: "Heart Coins",
+    body: "Heart Coins are the energy of this world. You can earn them by listening, reflecting, joining events, and connecting with others. Later you will be able to use them for special rewards."
   },
   {
-    id: "binder",
-    selector: "[data-tour-id='binder']",
-    title: "BINDER",
-    body: "Your Binder holds all CHXNDLER cards you collect. Some unlock by tier, others are rare drops."
-  },
-  {
-    id: "stars",
-    selector: "[data-tour-id='stars']",
-    title: "STARS",
-    body: "Your Soul Star Journal is where you reflect, grow, and complete your daily elemental prompts."
-  },
-  {
-    id: "badges",
-    selector: "[data-tour-id='badges']",
-    title: "BADGES",
-    body: "Badges honor your milestones as an Alien. They track streaks, community actions, and discoveries."
+    id: "outro",
+    selector: "", // No selector for outro step
+    title: "You are ready",
+    body: "That is the core of your ship. You can explore freely now, and you can always restart this tour from your profile if you ever want a refresher."
   }
 ];
 
@@ -49,9 +79,10 @@ interface OnboardingTourProps {
   onSkip?: () => void;
   endModalVisible?: boolean;
   onRestartFromEnd?: () => void;
+  onMenuToggle?: (open: boolean) => void;
 }
 
-export default function OnboardingTour({ active, onFinish, onSkip, endModalVisible, onRestartFromEnd }: OnboardingTourProps) {
+export default function OnboardingTour({ active, onFinish, onSkip, endModalVisible, onRestartFromEnd, onMenuToggle }: OnboardingTourProps) {
   const { updateProfile } = useProfile();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
@@ -109,6 +140,30 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
 
   // Find target element and set up highlighting
   const setupStep = (step: TourStep) => {
+    // Handle intro/outro steps that don't have selectors
+    if (!step.selector) {
+      setTargetElement(null);
+      setBubblePosition({ top: window.innerHeight / 2 - 100, left: window.innerWidth / 2 });
+      // Fallback overlay background for centered steps
+      if (overlayRef.current) {
+        overlayRef.current.style.background = 'radial-gradient(120% 120% at 50% 50%, rgba(0,0,0,0.25), rgba(0,0,0,0.45))';
+      }
+      return;
+    }
+
+    // Handle menu opening for menu steps
+    if (step.id === 'hamburger' || step.id.startsWith('menu-')) {
+      if (onMenuToggle && step.id !== 'hamburger') {
+        // Open menu for menu item steps (not for hamburger step itself)
+        setTimeout(() => onMenuToggle(true), 100);
+      }
+    } else if (step.id === 'heartcoins') {
+      // Close menu for Heart Coins step
+      if (onMenuToggle) {
+        setTimeout(() => onMenuToggle(false), 100);
+      }
+    }
+
     // Remove previous highlights
     document.querySelectorAll('.tour-highlight').forEach(el => {
       el.classList.remove('tour-highlight');
@@ -127,10 +182,12 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
         // Position bubble
         positionBubble(element);
 
-        // Trigger the actual button popout for this step
-        setTimeout(() => {
-          triggerButtonPopout(step.id);
-        }, 500);
+        // Don't trigger popout for menu items, just highlight them
+        if (!step.id.startsWith('menu-') && step.id !== 'hamburger') {
+          setTimeout(() => {
+            triggerButtonPopout(step.id);
+          }, 500);
+        }
 
         // Add click listener to target element
         const handleElementClick = () => {
@@ -155,9 +212,9 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
         console.warn(`Tour target not found after ${retryCount + 1} attempts: ${step.selector}`);
         setTargetElement(null);
         setBubblePosition(null);
-        // Fallback overlay background
+        // Fallback overlay background - more translucent
         if (overlayRef.current) {
-          overlayRef.current.style.background = 'radial-gradient(120% 120% at 50% -10%, rgba(0,0,0,0.55), rgba(0,0,0,0.75))';
+          overlayRef.current.style.background = 'radial-gradient(120% 120% at 50% 50%, rgba(0,0,0,0.25), rgba(0,0,0,0.45))';
         }
       }
     };
@@ -343,7 +400,7 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
         }`}
         style={{
           pointerEvents: isVisible ? 'auto' : 'none',
-          background: 'radial-gradient(120% 120% at 50% -10%, rgba(0,0,0,0.55), rgba(0,0,0,0.75))',
+          background: 'radial-gradient(120% 120% at 50% 50%, rgba(0,0,0,0.25), rgba(0,0,0,0.45))',
           backdropFilter: 'blur(8px)'
         }}
       />

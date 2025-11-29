@@ -19,38 +19,74 @@ export default function NamePromptOnLogin() {
 
   useEffect(() => {
     if (!mounted) return;
-    // Only react when explicit completeProfile flag is true
+    
+    // Check for completeProfile parameter in multiple ways
     const shouldComplete = searchParams.get('completeProfile') === '1';
-    console.log('🔍 NamePromptOnLogin (Chrome debug):', { 
-      shouldComplete, 
+    const urlHasCompleteProfile = typeof window !== 'undefined' && window.location.search.includes('completeProfile=1');
+    
+    console.log('🔍 NamePromptOnLogin check:', { 
       mounted, 
-      userAgent: navigator.userAgent,
-      searchParams: searchParams.toString() 
+      shouldComplete, 
+      urlHasCompleteProfile,
+      searchParamsString: searchParams.toString(),
+      url: window.location.href 
     });
     
-    if (!shouldComplete) return;
+    if (!shouldComplete && !urlHasCompleteProfile) return;
 
-    // Open prompt exactly once per arrival
-    try { 
-      console.log('🚀 Opening name prompt (Chrome debug)');
-      openNamePromptFromAuth(); 
-      
-      // Clean up URL after a longer delay for Chrome compatibility
-      setTimeout(() => {
-        try {
-          const params = new URLSearchParams(searchParams.toString());
-          params.delete('completeProfile');
-          const newUrl = params.toString() ? `/?${params.toString()}` : '/';
-          console.log('🧹 Cleaning up URL (Chrome debug):', newUrl);
-          router.replace(newUrl);
-        } catch (e) {
-          console.warn('Failed to clean up URL parameters:', e);
-        }
-      }, 300); // Increased delay for Chrome
-    } catch (e) {
-      console.warn('Failed to open name prompt from auth:', e);
-    }
+    console.log('✅ Opening name prompt from auth');
+    // Open prompt exactly once per arrival - use a small delay to ensure all components are ready
+    const timeoutId = setTimeout(() => {
+      try { 
+        openNamePromptFromAuth(); 
+        console.log('✅ openNamePromptFromAuth called successfully');
+      } catch (e) {
+        console.error('❌ Failed to open name prompt from auth:', e);
+      }
+    }, 100); // Small delay to ensure components are ready
+
+    // Clean up URL after a longer delay
+    const cleanupTimeoutId = setTimeout(() => {
+      try {
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete('completeProfile');
+        const newUrl = params.toString() ? `/?${params.toString()}` : '/';
+        router.replace(newUrl);
+      } catch (e) {
+        console.warn('Failed to clean up URL parameters:', e);
+      }
+    }, 500);
+
+    return () => {
+      clearTimeout(timeoutId);
+      clearTimeout(cleanupTimeoutId);
+    };
   }, [mounted, searchParams, openNamePromptFromAuth, router]);
+
+  // Temporary debug button - remove after testing
+  if (typeof window !== 'undefined' && window.location.search.includes('debug=1')) {
+    return (
+      <button 
+        onClick={() => {
+          console.log('🔧 Manual debug trigger');
+          openNamePromptFromAuth();
+        }}
+        style={{
+          position: 'fixed',
+          top: '10px',
+          right: '10px',
+          zIndex: 999999,
+          background: 'red',
+          color: 'white',
+          padding: '10px',
+          border: 'none',
+          borderRadius: '5px'
+        }}
+      >
+        DEBUG: Open Modal
+      </button>
+    );
+  }
 
   return null;
 }
