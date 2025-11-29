@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useProfile } from "@/contexts/ProfileContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { sfx } from "@/lib/sfx";
@@ -59,6 +59,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
   const { hasPendingReflection, markReflectionComplete } = useDailyReflectionStatus();
   const [showHistory, setShowHistory] = useState(false);
   const [dailyPrompt, setDailyPrompt] = useState<DailyPrompt | null>(null);
+  const journalRef = useRef<HTMLDivElement>(null);
   const [journalState, setJournalState] = useState<JournalState>({
     intentionResponse: "",
     reflectionResponse: "",
@@ -90,6 +91,23 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
       loadExistingEntry();
     }
   }, [isOpen, profile?.element, journalEntries]);
+
+  // Handle click outside to close
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (journalRef.current && !journalRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen, onClose]);
 
   const loadDailyPrompt = async () => {
     try {
@@ -219,14 +237,15 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
   if (!dailyPrompt) {
     return (
       <div 
-        className="fixed inset-0 z-[2147483647] flex items-center justify-center"
-        style={{ marginTop: '200px' }}
+        className="fixed z-[2147483647] flex items-center justify-center"
+        style={{ 
+          top: '80px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: 'min(92vw, 600px)'
+        }}
       >
-        <div 
-          className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-          onClick={handleClose}
-        />
-        <div className="relative p-8 text-center text-white">
+        <div className="relative p-8 text-center text-white bg-black/90 rounded-lg border border-white/20">
           <div className="text-lg">Loading your Soul Star Journal...</div>
         </div>
       </div>
@@ -239,18 +258,14 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
 
   return (
     <div 
-      className="fixed inset-0 z-[2147483647] flex items-center justify-center"
-      style={{ marginTop: '200px' }}
+      className="fixed z-[2147483647] flex items-center justify-center"
+      style={{ 
+        top: '80px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: 'min(92vw, 600px)'
+      }}
     >
-      {/* Background blur */}
-      <div 
-        className="absolute inset-0"
-        style={{
-          background: 'rgba(0,0,0,0.8)',
-          backdropFilter: 'blur(8px)'
-        }}
-        onClick={handleClose}
-      />
 
       {/* Holographic base glow */}
       <div 
@@ -266,16 +281,17 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
       
       {/* Modal Container */}
       <div
+        ref={journalRef}
         className={`relative soul-journal-container ${
           hasPendingReflection && !showHistory ? 'animate-pulse' : ''
         }`}
         style={{
-          width: 'min(92vw, 600px)',
+          width: '100%',
           maxHeight: '85vh',
           overflowY: 'auto',
           padding: '20px 24px 24px 24px',
           borderRadius: 18,
-          background: 'transparent',
+          background: 'rgba(0, 0, 0, 0.9)',
           border: hasPendingReflection && !showHistory
             ? `2px solid ${elementTheme.color}`
             : `2px solid ${elementTheme.color}`,
@@ -481,11 +497,30 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
                     ✨ Today's Intention
                   </div>
                   <div 
-                    className="text-sm leading-relaxed"
+                    className="text-sm leading-relaxed mb-3"
                     style={{ color: '#FFFFFF' }}
                   >
                     {dailyPrompt.intention.text}
                   </div>
+                  <textarea
+                    value={journalState.intentionResponse}
+                    onChange={(e) => setJournalState(prev => ({ ...prev, intentionResponse: e.target.value }))}
+                    placeholder="Set your intention for today..."
+                    className="w-full h-16 p-3 rounded-lg text-white placeholder-white/50 resize-none focus:outline-none transition-all text-sm"
+                    style={{
+                      background: 'rgba(0,0,0,0.6)',
+                      border: `1px solid ${elementTheme.color}40`,
+                      boxShadow: `0 0 10px ${elementTheme.color}20`,
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = `${elementTheme.color}80`;
+                      e.target.style.boxShadow = `0 0 15px ${elementTheme.glow}`;
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = `${elementTheme.color}40`;
+                      e.target.style.boxShadow = `0 0 10px ${elementTheme.color}20`;
+                    }}
+                  />
                 </div>
 
                 {/* Reflection Prompt */}

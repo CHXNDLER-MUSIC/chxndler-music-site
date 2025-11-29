@@ -255,7 +255,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
 
     return (
       <div
-        className="fixed inset-0 z-[2147483647] modal-no-drag"
+        className="fixed inset-0 z-[2147483647] modal-no-drag flex items-center justify-center p-4"
         aria-modal="true"
         role="dialog"
         aria-label="BADGE DETAILS"
@@ -265,8 +265,8 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           className="absolute inset-0 backdrop-blur-md"
           onClick={onClose}
         />
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 mx-4 max-w-lg w-full z-[2147483648]">
-          <div className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-yellow-400/60 bg-white/5 shadow-[0_0_26px_rgba(255,255,0,0.35)]">
+        <div className="relative w-full max-w-lg max-h-[90vh] z-[2147483648]">
+          <div className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-yellow-400/60 bg-white/5 shadow-[0_0_26px_rgba(255,255,0,0.35)] overflow-y-auto">
             <div
               className="absolute inset-0 rounded-2xl pointer-events-none"
               style={{
@@ -313,7 +313,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             ← Back to Categories
           </button>
           
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4 max-h-80 sm:max-h-96 overflow-y-auto p-2">
+          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3 sm:gap-4 max-h-80 sm:max-h-96 overflow-y-auto p-2">
             {category.badges.map((badge, index) => (
               <div key={index} className="flex flex-col items-center space-y-2">
                 <div className="relative">
@@ -441,7 +441,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
 
     return (
       <div
-        className="fixed inset-0 z-[2147483647] modal-no-drag"
+        className="fixed inset-0 z-[2147483647] modal-no-drag flex items-center justify-center p-4"
         aria-modal="true"
         role="dialog"
         aria-label={category.name}
@@ -451,8 +451,8 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           className="absolute inset-0 backdrop-blur-md"
           onClick={onClose}
         />
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 mx-4 max-w-lg w-full z-[2147483648]">
-          <div className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-yellow-400/60 bg-white/5 shadow-[0_0_26px_rgba(255,255,0,0.35)]">
+        <div className="relative w-full max-w-lg max-h-[90vh] z-[2147483648]">
+          <div className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-yellow-400/60 bg-white/5 shadow-[0_0_26px_rgba(255,255,0,0.35)] overflow-y-auto">
             <div
               className="absolute inset-0 rounded-2xl pointer-events-none"
               style={{
@@ -510,12 +510,12 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
       )}
 
       {/* Badge Categories Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 justify-items-center">
         {badgeCategories.map((category) => (
           <button
             key={category.id}
             onClick={() => setSelectedCategory(category.id)}
-            className="relative w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full bg-black/40 border border-white/20 hover:border-white/40 hover:scale-105 transition-all duration-200 text-center group flex flex-col items-center justify-center"
+            className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-black/40 border border-white/20 hover:border-white/40 hover:scale-105 transition-all duration-200 text-center group flex flex-col items-center justify-center"
           >
             <div className="text-xl sm:text-2xl mb-1">{category.emoji}</div>
             <div className="text-white font-semibold text-xs group-hover:text-pink-300 transition-colors px-1 leading-tight">
@@ -533,7 +533,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
 
   return (
     <div
-      className="fixed inset-0 z-[2147483647] modal-no-drag"
+      className="fixed inset-0 z-[2147483647] modal-no-drag flex items-center justify-center p-4"
       aria-modal="true"
       role="dialog"
       aria-label="BADGES"
@@ -543,8 +543,8 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         className="absolute inset-0 backdrop-blur-md"
         onClick={onClose}
       />
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 mx-4 max-w-lg w-full z-[2147483648]">
-        <div className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-yellow-400/60 bg-white/5 shadow-[0_0_26px_rgba(255,255,0,0.35)]">
+      <div className="relative w-full max-w-lg max-h-[90vh] z-[2147483648]">
+        <div className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-yellow-400/60 bg-white/5 shadow-[0_0_26px_rgba(255,255,0,0.35)] overflow-y-auto">
           <div
             className="absolute inset-0 rounded-2xl pointer-events-none"
             style={{

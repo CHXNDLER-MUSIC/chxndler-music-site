@@ -147,7 +147,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...re
             
             {/* Header */}
             <div 
-              className="text-center mb-6"
+              className="text-center mb-3"
               style={{ 
                 color: '#FFFFFF !important', 
                 textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7), 0 0 20px rgba(255,255,255,0.5)', 
@@ -159,7 +159,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...re
             </div>
             
             {/* Tabs */}
-            <div className="flex justify-center mb-4">
+            <div className="flex justify-center mb-1">
               <div className="flex bg-black/30 rounded-lg p-1">
                 <button
                   onClick={() => {

@@ -161,7 +161,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
               className="journey-container"
               style={{
                 width: 'min(90vw, 700px)',
-                height: '50vh',
+                height: '55vh',
                 padding: '15px',
                 borderRadius: 15,
                 background: 'rgba(0,0,0,0.7)',
@@ -255,7 +255,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
             </div>
             
             {/* Three Tier Buttons */}
-            <div className="flex justify-center gap-6 h-4/5">
+            <div className="flex justify-center gap-6 h-4/5" style={{ marginTop: '-10px' }}>
               {(Object.keys(tierData) as TierType[]).map((tier) => {
                 const data = tierData[tier];
                 const isFlipped = flippedTier === tier;
@@ -299,7 +299,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
                           flexDirection: 'column',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          fontSize: '16px',
+                          fontSize: '14px',
                           fontWeight: 'bold',
                           color: data.color,
                           textShadow: `0 0 15px ${data.glowColor}`,
@@ -346,7 +346,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              fontSize: '18px',
+                              fontSize: '16px',
                               color: data.color,
                               marginBottom: '6px',
                               textShadow: `0 0 15px ${data.glowColor}`,
@@ -390,7 +390,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
                       >
                         <div
                           style={{
-                            fontSize: '12px',
+                            fontSize: '10px',
                             fontWeight: 'bold',
                             color: data.color,
                             textShadow: `0 0 6px ${data.glowColor}, 0 0 12px ${data.glowColor}`,
@@ -406,7 +406,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
                         </div>
                         <div
                           style={{
-                            fontSize: '11px',
+                            fontSize: '9px',
                             color: '#F0F8FF',
                             fontWeight: 'bold',
                             lineHeight: '1.3',
