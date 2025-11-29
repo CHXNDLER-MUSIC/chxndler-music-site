@@ -72,7 +72,8 @@ export class ChatService {
    */
   async subscribeToChat(
     onMessage: (message: ChatMessage) => void,
-    onError?: (error: any) => void
+    onError?: (error: any) => void,
+    onTyping?: (typingData: { user_id: string, display_name: string, is_typing: boolean }) => void
   ): Promise<RealtimeChannel> {
     try {
       const sessionId = await this.getCurrentStreamSession();
@@ -120,6 +121,11 @@ export class ChatService {
             }
           }
         )
+        .on('broadcast', { event: 'typing' }, (payload) => {
+          if (onTyping && payload.payload) {
+            onTyping(payload.payload);
+          }
+        })
         .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
             console.log('✅ Chat subscription active');
@@ -146,11 +152,12 @@ export class ChatService {
       
       // Check if user is authenticated
       const { data: { session } } = await supabaseClient.auth.getSession();
+      console.log('🔥 SendMessage session check:', { hasSession: !!session, hasUser: !!session?.user, anonymousName });
       
       if (!session?.user) {
         // For anonymous users, return a mock message with alien name for local display
-        console.log('Anonymous user message:', message);
-        return {
+        console.log('🔥 Anonymous user message:', message, 'Display name:', anonymousName);
+        const mockMessage = {
           id: `anonymous-${Date.now()}`,
           user_id: 'anonymous',
           message: message.trim(),
@@ -159,10 +166,12 @@ export class ChatService {
           created_at: new Date().toISOString(),
           user_profile: {
             name: anonymousName || 'ALIEN [0000]',
-            element: null,
+            element: 'alien',
             avatar_badge_id: null
           }
         } as ChatMessage;
+        console.log('🔥 Returning mock message:', mockMessage);
+        return mockMessage;
       }
       
       const { data, error } = await supabaseClient
@@ -363,6 +372,33 @@ export class ChatService {
   }
 
   /**
+   * Send typing indicator
+   */
+  async sendTypingIndicator(displayName: string, isTyping: boolean): Promise<void> {
+    if (!this.channel) return;
+    
+    try {
+      const sessionId = await this.getCurrentStreamSession();
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      const userId = session?.user?.id || 'anonymous';
+      
+      await this.channel.send({
+        type: 'broadcast',
+        event: 'typing',
+        payload: {
+          user_id: userId,
+          display_name: displayName,
+          is_typing: isTyping,
+          session_id: sessionId,
+          timestamp: Date.now()
+        }
+      });
+    } catch (error) {
+      console.error('Error sending typing indicator:', error);
+    }
+  }
+
+  /**
    * Cleanup - unsubscribe from chat
    */
   async unsubscribe(): Promise<void> {
@@ -413,10 +449,13 @@ export function formatChatTimestamp(timestamp: string): string {
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
 
   if (diffMins < 1) return 'now';
-  if (diffMins < 60) return `${diffMins}m`;
-  if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h`;
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
   
   return date.toLocaleDateString();
 }

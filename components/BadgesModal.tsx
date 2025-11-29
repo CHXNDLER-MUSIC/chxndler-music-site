@@ -33,7 +33,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     {
       id: "soul-star",
       name: "SOUL STAR",
-      emoji: "⭐️",
+      emoji: "⭐",
       badges: [
         { name: "Soul Star", description: "First reflection", progress: 0, current: 0, total: 1 },
         { name: "Soul Ember", description: "3 reflections", progress: 0, current: 0, total: 3 },
@@ -47,9 +47,9 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     {
       id: "achievements",
       name: "ACHIEVEMENTS",
-      emoji: "🏆",
+      emoji: "📄",
       badges: [
-        { name: "First Listen", progress: 100, current: 1, total: 1, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/First%20Listen.png?updatedAt=1763736238402" }, // Completed
+        { name: "First Listen", progress: 100, current: 1, total: 1, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/First%20Listen.png?updatedAt=1763736238402" },
         { name: "Digital Collector", description: "Collect 5 cards", progress: 40, current: 2, total: 5, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Digital%20Collector.png?updatedAt=1763736238340" },
         { name: "Cosmic Archivist", description: "Collect 15 cards", progress: 13, current: 2, total: 15, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Cosmic%20Archivist.png?updatedAt=1763736238431" },
         { name: "Starbinder", description: "Collect 25 cards", progress: 8, current: 2, total: 25 },
@@ -65,7 +65,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     {
       id: "elemental-streak",
       name: "ELEMENTAL STREAK",
-      emoji: "💠",
+      emoji: "⚡",
       badges: [
         { name: "❤️ HEART" },
         { name: "Ember Glow", description: "3 days", progress: 67, current: 2, total: 3, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Ember%20Glow.png?updatedAt=1763736238400" },
@@ -100,7 +100,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     {
       id: "listening",
       name: "LISTENING",
-      emoji: "🎵",
+      emoji: "🎧",
       badges: [
         { name: "Deep Listener", description: "10 unique tracks", progress: 70, current: 7, total: 10, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Deep%20Listener.png?updatedAt=1763736238450" },
         { name: "Song Voyager", description: "25 unique tracks", progress: 28, current: 7, total: 25, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Song%20Voyager.png?updatedAt=1763736238532" },
@@ -114,7 +114,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
       name: "HEART COIN",
       emoji: "💰",
       badges: [
-        { name: "First HeartCoin", progress: 100, current: 1, total: 1, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/First%20HeartCoin.png?updatedAt=1763736238400" }, // Completed
+        { name: "First HeartCoin", progress: 100, current: 1, total: 1, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/First%20HeartCoin.png?updatedAt=1763736238400" },
         { name: "Treasure Finder", description: "10 HC", progress: 50, current: 5, total: 10 },
         { name: "Heartflow", description: "50 HC", progress: 10, current: 5, total: 50 },
         { name: "Cosmic Prosperity", description: "100 HC", progress: 5, current: 5, total: 100 },
@@ -586,16 +586,20 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         </div>
       )}
 
-      {/* Badge Categories Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 justify-items-center">
+      {/* Badge Categories Grid - 6 categories in 3x2 layout */}
+      <div className="grid grid-cols-3 gap-4 justify-items-center max-w-md mx-auto">
         {badgeCategories.map((category) => (
           <button
             key={category.id}
             onClick={() => setSelectedCategory(category.id)}
-            className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-black/40 border border-white/20 hover:border-white/40 hover:scale-105 transition-all duration-200 text-center group flex flex-col items-center justify-center"
+            className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-yellow-400/60 hover:border-yellow-400 hover:scale-105 transition-all duration-200 text-center group flex flex-col items-center justify-center"
+            style={{
+              background: 'radial-gradient(circle, rgba(0,0,0,0.8) 0%, rgba(40,40,40,0.9) 100%)',
+              boxShadow: '0 4px 15px rgba(255, 215, 0, 0.3)'
+            }}
           >
-            <div className="text-xl sm:text-2xl mb-1">{category.emoji}</div>
-            <div className="text-white font-semibold text-xs group-hover:text-pink-300 transition-colors px-1 leading-tight">
+            <div className="text-2xl sm:text-3xl mb-1">{category.emoji}</div>
+            <div className="text-yellow-300 font-bold text-[10px] sm:text-xs group-hover:text-yellow-100 transition-colors px-1 leading-tight text-center">
               {category.name}
             </div>
           </button>

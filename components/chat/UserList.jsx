@@ -8,6 +8,7 @@ import { getElementColor } from '@/lib/supabase/chat';
  * Shows active users in the chat with element-themed styling
  */
 export default function UserList({ users, onUserClick, loading }) {
+  console.log('🔥 UserList received:', { users, userCount: users?.length, loading });
   
   if (loading) {
     return (
@@ -28,6 +29,7 @@ export default function UserList({ users, onUserClick, loading }) {
         >
           <span className="text-cyan-400 text-xs">👥</span>
         </div>
+        <p className="text-xs text-white/40 text-center">No users yet</p>
       </div>
     );
   }

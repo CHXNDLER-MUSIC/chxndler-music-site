@@ -67,7 +67,7 @@ interface PhysicalCardOrder {
 export default function BinderModal({ open, onClose, preselectedCard, pulsingCards = false }: Props) {
   const { profile, updateProfile } = useProfile();
   const [cardOpen, setCardOpen] = useState(false);
-  const [showFullCollection, setShowFullCollection] = useState(true);
+  const [showFullCollection, setShowFullCollection] = useState(false);
   const [selectedElement, setSelectedElement] = useState<string | null>('DARKNESS');
   const [selectedRarity, setSelectedRarity] = useState<string>('All');
   const [selectedCardName, setSelectedCardName] = useState<string>('DARKNESS');
@@ -606,8 +606,8 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
   // Handle preselected card when modal opens
   useEffect(() => {
     if (open && preselectedCard) {
-      // Set to show full collection and filter to the specific card
-      setShowFullCollection(true);
+      // Keep showing binder view, don't auto-expand to full collection
+      setShowFullCollection(false);
       setSelectedCardName(preselectedCard);
     }
   }, [open, preselectedCard]);
@@ -1498,19 +1498,53 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
 
 
           <div className="flex justify-between items-center mb-4">            
-            {!selectedElement && (
-              <div 
-                className="text-center flex-1"
-                style={{ 
-                  whiteSpace: 'pre-wrap', 
-                  lineHeight: 1.2, 
-                  fontSize: 14, 
-                  color: '#FF69B4', 
-                  textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,105,180,0.6)', 
-                  marginTop: '2px' 
-                }}
-              >
-                Earn the cards that reflect your journey in the Heartverse.
+            {!selectedElement && !showFullCollection && (
+              <div className="flex flex-col items-center gap-2 flex-1">
+                <div 
+                  className="text-center"
+                  style={{ 
+                    whiteSpace: 'pre-wrap', 
+                    lineHeight: 1.2, 
+                    fontSize: 14, 
+                    color: '#FF69B4', 
+                    textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,105,180,0.6)', 
+                    marginTop: '2px' 
+                  }}
+                >
+                  Earn the cards that reflect your journey in the Heartverse.
+                </div>
+              </div>
+            )}
+            {!selectedElement && showFullCollection && (
+              <div className="flex flex-col items-center gap-2 flex-1">
+                <div 
+                  className="text-center"
+                  style={{ 
+                    whiteSpace: 'pre-wrap', 
+                    lineHeight: 1.2, 
+                    fontSize: 14, 
+                    color: '#FF69B4', 
+                    textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,105,180,0.6)', 
+                    marginTop: '2px' 
+                  }}
+                >
+                  Earn the cards that reflect your journey in the Heartverse.
+                </div>
+                <button
+                  onClick={() => {
+                    try { sfx.play('click', 0.7); } catch {}
+                    setShowFullCollection(false);
+                    setSelectedElement(null);
+                  }}
+                  className="px-3 py-1 rounded border border-pink-400/60 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs"
+                  style={{
+                    color: '#FFB6C1',
+                    textShadow: '0 0 4px rgba(255,182,193,0.6)',
+                    boxShadow: '0 0 8px rgba(255,105,180,0.3)',
+                  }}
+                >
+                  Back to Binder
+                </button>
               </div>
             )}
           </div>

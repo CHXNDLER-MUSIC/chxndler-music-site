@@ -18,7 +18,7 @@ export default function ChatPanel({ isOpen, onClose }) {
   const { profile, user } = useProfile();
   
   // Debug logging
-  console.log('ChatPanel render:', { isOpen, profile: !!profile, user: !!user });
+  console.log('🔥 ChatPanel render:', { isOpen, profile: !!profile, user: !!user });
 
   // Store alien name consistently for the session
   const [alienName, setAlienName] = useState(null);
@@ -36,10 +36,12 @@ export default function ChatPanel({ isOpen, onClose }) {
       const alienNumber = Math.floor(Math.random() * 99999999) + 1;
       const paddedNumber = alienNumber.toString().padStart(8, '0');
       const newAlienName = `ALIEN${paddedNumber}`;
+      console.log('🔥 Generated new alien name:', newAlienName);
       setAlienName(newAlienName);
       return newAlienName;
     }
     
+    console.log('🔥 Using existing alien name:', alienName);
     return alienName;
   };
   const [messages, setMessages] = useState([]);
@@ -47,30 +49,52 @@ export default function ChatPanel({ isOpen, onClose }) {
   const [loading, setLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [hasJoined, setHasJoined] = useState(false);
+  const [typingUsers, setTypingUsers] = useState([]);
+  const [isUserPanelCollapsed, setIsUserPanelCollapsed] = useState(false); // Start expanded so user can see their alien name
   const channelRef = useRef(null);
 
-  // Initialize anonymous user immediately
+  // Initialize anonymous user immediately when chat opens
   useEffect(() => {
     if (!user && isOpen) {
-      const alienNumber = Math.floor(Math.random() * 99999999) + 1;
-      const paddedNumber = alienNumber.toString().padStart(8, '0');
-      const alienName = `ALIEN${paddedNumber}`;
-      
-      console.log('🚀 IMMEDIATE: Adding anonymous user:', alienName);
-      
-      // Create the anonymous user object
-      const anonymousUser = {
-        id: 'anonymous',
-        name: alienName,
-        element: 'alien',
-        avatar_badge_id: null,
-        last_seen: new Date().toISOString()
-      };
-      
-      setChatUsers([anonymousUser]);
-      
-      // Store the name for consistency
-      setAlienName(alienName);
+      // Generate alien name if needed
+      if (!alienName) {
+        const alienNumber = Math.floor(Math.random() * 99999999) + 1;
+        const paddedNumber = alienNumber.toString().padStart(8, '0');
+        const newAlienName = `ALIEN${paddedNumber}`;
+        
+        console.log('🚀 IMMEDIATE: Generated alien name:', newAlienName);
+        setAlienName(newAlienName);
+        
+        // Immediately add to user list
+        const anonymousUser = {
+          id: 'anonymous',
+          name: newAlienName,
+          element: 'alien',
+          avatar_badge_id: null,
+          last_seen: new Date().toISOString()
+        };
+        
+        setChatUsers([anonymousUser]);
+        console.log('🚀 Set initial chat users:', [anonymousUser]);
+      } else {
+        // Ensure existing alien name is in user list
+        console.log('🚀 Using existing alien name:', alienName);
+        setChatUsers(prev => {
+          const hasAnonymous = prev.some(u => u.id === 'anonymous');
+          if (!hasAnonymous) {
+            const anonymousUser = {
+              id: 'anonymous',
+              name: alienName,
+              element: 'alien',
+              avatar_badge_id: null,
+              last_seen: new Date().toISOString()
+            };
+            console.log('🚀 Adding existing alien to empty list:', anonymousUser);
+            return [anonymousUser];
+          }
+          return prev;
+        });
+      }
     }
   }, [user, isOpen]);
 
@@ -83,34 +107,29 @@ export default function ChatPanel({ isOpen, onClose }) {
     }
   }, [isOpen]);
 
-  // Ensure anonymous users appear immediately when chat opens
+  // Ensure anonymous user is maintained when chat state changes
   useEffect(() => {
-    if (isOpen) {
-      const displayName = getDisplayName();
-      console.log('🔥 Chat opened - user state:', { user: !!user, profile: !!profile, displayName });
+    if (isOpen && !user && alienName) {
+      console.log('🔥 Chat opened - ensuring anonymous user exists:', alienName);
       
-      // Force add anonymous user immediately for any non-authenticated user
-      if (!user) {
-        console.log('🔥 FORCE Adding anonymous user to list:', displayName);
-        
-        // Always add/update the anonymous user entry
-        setChatUsers(prev => {
-          console.log('🔥 Current users before update:', prev);
-          const filteredUsers = prev.filter(u => u.id !== 'anonymous'); // Remove any existing anonymous
+      // Check if anonymous user is already in the list
+      setChatUsers(prev => {
+        const hasAnonymous = prev.some(u => u.id === 'anonymous');
+        if (!hasAnonymous) {
+          console.log('🔥 Anonymous user missing, adding to list');
           const anonymousUser = {
             id: 'anonymous',
-            name: displayName,
+            name: alienName,
             element: 'alien',
             avatar_badge_id: null,
             last_seen: new Date().toISOString()
           };
-          const newUsers = [anonymousUser, ...filteredUsers];
-          console.log('🔥 New users after update:', newUsers);
-          return newUsers;
-        });
-      }
+          return [anonymousUser, ...prev];
+        }
+        return prev;
+      });
     }
-  }, [isOpen, user]);
+  }, [isOpen, user, alienName]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -130,30 +149,56 @@ export default function ChatPanel({ isOpen, onClose }) {
       const recentMessages = await chatService.loadRecentMessages(50);
       setMessages(recentMessages);
 
-      // Load current chat users
-      const users = await chatService.getChatUsers();
+      // Load current chat users from database
+      const databaseUsers = await chatService.getChatUsers();
       
-      // If user is not authenticated, preserve the anonymous user
+      // If user is not authenticated, preserve/ensure the anonymous user
       if (!user) {
         const displayName = getDisplayName();
-        const anonymousUser = {
-          id: 'anonymous',
-          name: displayName,
-          element: 'alien',
-          avatar_badge_id: null,
-          last_seen: new Date().toISOString()
-        };
+        console.log('🔥 InitializeChat: Preserving anonymous user:', displayName);
         
-        // Add anonymous user to the beginning of the list
-        setChatUsers([anonymousUser, ...users]);
+        setChatUsers(prev => {
+          // Check if we already have an anonymous user
+          const existingAnonymous = prev.find(u => u.id === 'anonymous');
+          
+          if (existingAnonymous) {
+            console.log('🔥 Keeping existing anonymous user with database users');
+            // Keep existing anonymous user and add database users
+            return [existingAnonymous, ...databaseUsers];
+          } else {
+            console.log('🔥 Creating new anonymous user for database merge');
+            // Create new anonymous user
+            const anonymousUser = {
+              id: 'anonymous',
+              name: displayName,
+              element: 'alien',
+              avatar_badge_id: null,
+              last_seen: new Date().toISOString()
+            };
+            return [anonymousUser, ...databaseUsers];
+          }
+        });
       } else {
-        setChatUsers(users);
+        setChatUsers(databaseUsers);
       }
 
       // Subscribe to new messages
       channelRef.current = await chatService.subscribeToChat(
         (newMessage) => {
           setMessages(prev => [...prev, newMessage]);
+          
+          // Play notification sound for new messages (not our own)
+          if (newMessage.user_id !== 'anonymous' && newMessage.message_type === 'message') {
+            try {
+              const audio = new Audio('/notification.mp3');
+              audio.volume = 0.3;
+              audio.play().catch(error => {
+                console.log('Notification sound failed:', error);
+              });
+            } catch (error) {
+              console.log('Audio creation failed:', error);
+            }
+          }
           
           // Update user list if it's a join message
           if (newMessage.message_type === 'join' || newMessage.message_type === 'message') {
@@ -180,6 +225,17 @@ export default function ChatPanel({ isOpen, onClose }) {
         },
         (error) => {
           console.error('Chat subscription error:', error);
+        },
+        (typingData) => {
+          console.log('🔥 Typing event:', typingData);
+          // Update typing users
+          setTypingUsers(prev => {
+            const filtered = prev.filter(u => u.user_id !== typingData.user_id);
+            if (typingData.is_typing) {
+              return [...filtered, typingData];
+            }
+            return filtered;
+          });
         }
       );
 
@@ -317,6 +373,18 @@ export default function ChatPanel({ isOpen, onClose }) {
   };
 
   /**
+   * Handle typing indicator
+   */
+  const handleTyping = async (isTyping) => {
+    try {
+      const displayName = getDisplayName();
+      await chatService.sendTypingIndicator(displayName, isTyping);
+    } catch (error) {
+      console.error('Error sending typing indicator:', error);
+    }
+  };
+
+  /**
    * Handle user profile click
    */
   const handleUserClick = (userId) => {
@@ -395,19 +463,20 @@ export default function ChatPanel({ isOpen, onClose }) {
             exit="closed"
           >
             <div
-              className="w-[28rem] h-full bg-black/20 border-r-2 border-yellow-400/50 flex flex-col"
+              className="w-[28rem] h-full border-r-2 border-yellow-400/50 flex flex-col"
               style={{
                 background: `
                   linear-gradient(135deg, 
-                    rgba(0, 0, 0, 0.3) 0%,
-                    rgba(0, 20, 40, 0.2) 50%,
-                    rgba(0, 0, 0, 0.3) 100%
+                    rgba(0, 0, 0, 0.15) 0%,
+                    rgba(0, 20, 40, 0.1) 50%,
+                    rgba(0, 0, 0, 0.15) 100%
                   )
                 `,
                 boxShadow: `
-                  0 0 50px rgba(242, 239, 29, 0.2),
-                  inset 0 0 100px rgba(242, 239, 29, 0.05)
+                  0 0 50px rgba(242, 239, 29, 0.15),
+                  inset 0 0 100px rgba(242, 239, 29, 0.03)
                 `,
+                backdropFilter: 'blur(10px)'
               }}
             >
               {/* Header */}
@@ -460,12 +529,88 @@ export default function ChatPanel({ isOpen, onClose }) {
               {/* Content Area */}
               <div className="flex-1 flex">
                 {/* User List */}
-                <div className="w-20 border-r border-cyan-400/20">
-                  <UserList 
-                    users={chatUsers}
-                    onUserClick={handleUserClick}
-                    loading={loading}
-                  />
+                <div 
+                  className={`border-r border-cyan-400/20 transition-all duration-300 ease-in-out ${
+                    isUserPanelCollapsed ? 'w-8' : 'w-20'
+                  }`}
+                >
+                  {/* Collapse Toggle Button */}
+                  <div className="h-full flex flex-col">
+                    <button
+                      onClick={() => setIsUserPanelCollapsed(!isUserPanelCollapsed)}
+                      className="w-full p-2 hover:bg-yellow-400/10 transition-colors duration-200 border-b border-cyan-400/20 flex flex-col items-center justify-center relative"
+                      style={{
+                        color: '#F2EF1D',
+                        textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.color = '#FFFF99';
+                        e.target.style.textShadow = '0 0 12px rgba(242, 239, 29, 0.8)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.color = '#F2EF1D';
+                        e.target.style.textShadow = '0 0 8px rgba(242, 239, 29, 0.6)';
+                      }}
+                      title={isUserPanelCollapsed ? "Show users" : "Hide users"}
+                    >
+                      <div 
+                        className="transition-transform duration-200"
+                        style={{
+                          transform: isUserPanelCollapsed ? 'rotate(0deg)' : 'rotate(180deg)'
+                        }}
+                      >
+                        ▶
+                      </div>
+                      {/* User count when collapsed */}
+                      {isUserPanelCollapsed && chatUsers.length > 0 && (
+                        <div className="flex flex-col items-center">
+                          <div 
+                            className="text-xs mt-1 px-1 rounded-full min-w-4 h-4 flex items-center justify-center"
+                            style={{
+                              background: 'rgba(0, 255, 255, 0.2)',
+                              border: '1px solid rgba(0, 255, 255, 0.5)',
+                              fontSize: '10px'
+                            }}
+                          >
+                            {chatUsers.length}
+                          </div>
+                          {/* Typing indicator when collapsed */}
+                          {typingUsers.length > 0 && (
+                            <div 
+                              className="mt-1 w-2 h-2 rounded-full animate-pulse"
+                              style={{
+                                background: '#F2EF1D',
+                                boxShadow: '0 0 4px rgba(242, 239, 29, 0.6)'
+                              }}
+                            />
+                          )}
+                        </div>
+                      )}
+                    </button>
+                    
+                    {/* User List Content */}
+                    <div className={`flex-1 overflow-hidden transition-all duration-300 ${
+                      isUserPanelCollapsed ? 'opacity-0' : 'opacity-100'
+                    }`}>
+                      {!isUserPanelCollapsed && (() => {
+                        const usersToShow = chatUsers.length === 0 && !user ? [{
+                          id: 'anonymous',
+                          name: alienName || 'ALIEN00000000',
+                          element: 'alien',
+                          avatar_badge_id: null,
+                          last_seen: new Date().toISOString()
+                        }] : chatUsers;
+                        console.log('🔥 Rendering UserList with:', { usersToShow, chatUsers, alienName, user: !!user });
+                        return (
+                          <UserList 
+                            users={usersToShow}
+                            onUserClick={handleUserClick}
+                            loading={loading}
+                          />
+                        );
+                      })()}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Messages Area */}
@@ -564,9 +709,25 @@ export default function ChatPanel({ isOpen, onClose }) {
                         loading={loading}
                       />
                       
+                      {/* Typing Indicators */}
+                      {typingUsers.length > 0 && (
+                        <div className="px-3 py-2 border-t border-cyan-400/20">
+                          <div className="text-xs text-white/60">
+                            {typingUsers.map(user => user.display_name).join(', ')} 
+                            {typingUsers.length === 1 ? ' is' : ' are'} typing
+                            <span className="inline-flex ml-1">
+                              <span className="animate-pulse">.</span>
+                              <span className="animate-pulse" style={{animationDelay: '0.2s'}}>.</span>
+                              <span className="animate-pulse" style={{animationDelay: '0.4s'}}>.</span>
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      
                       {/* Message Input */}
                       <MessageInput 
                         onSendMessage={handleSendMessage}
+                        onTyping={handleTyping}
                         disabled={loading}
                         placeholder="Type a message..."
                       />

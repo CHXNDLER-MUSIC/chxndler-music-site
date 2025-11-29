@@ -11,6 +11,7 @@ import { computePlanetLayout } from "@/lib/planetLayout";
 import { buildPlanetSongs } from "@/lib/planets";
 import { getEntriesByRing, getPlanetEntry } from "@/lib/planetRegistry";
 import { Html } from "@react-three/drei";
+import PlanetMinimap from "@/components/holo/PlanetMinimap";
 
 // Define element types and guards
 type ElementCode = "heart" | "water" | "lightning" | "darkness";
@@ -18,12 +19,12 @@ type ElementCode = "heart" | "water" | "lightning" | "darkness";
 // DIAGNOSTIC MODE - Set to true to show orbit rings, bounding boxes, and labels
 const SHOW_ORBITS = true;
 
-// Fixed elemental planets configuration - Darkness positioned next to heart
+// Fixed elemental planets configuration - Arranged in cardinal directions
 const ELEMENTS = [
   { code: "heart",     label: "💖 Heart",     position: [25, 0, 0] },     // right
   { code: "water",     label: "🌊 Water",     position: [0, 0, 25] },     // back
-  { code: "lightning", label: "⚡ Lightning", position: [-25, 0, 0] },    // left
-  { code: "darkness",  label: "🌑 Darkness",  position: [0, 0, -25] },    // front (next to heart horizontally)
+  { code: "lightning", label: "⚡ Lightning", position: [-25, 0, 0] },    // left  
+  { code: "darkness",  label: "🌑 Darkness",  position: [0, -25, 0] },    // below center
 ] as const;
 
 // Element colors and glow configuration
@@ -432,21 +433,26 @@ function OrbitalElementalSystem({ songs, mainId, hoverId }: { songs: any[]; main
     }
   });
   
+  console.log("🚀 OrbitalElementalSystem rendering:", { 
+    songCount: songs.length, 
+    cardsByElement: Object.keys(cardsByElement).map(k => ({ [k]: cardsByElement[k as ElementCode].length }))
+  });
+  
   return (
     <group ref={systemRef} name="OrbitalElementalSystem">
-      {/* Center Heart Planet - Fixed at origin */}
+      {/* Center Heart Planet - Fixed at origin - MUCH LARGER */}
       <group position={[0, 0, 0]} name="CenterHeart">
         <mesh renderOrder={6}>
-          <sphereGeometry args={[12, 32, 32]} />
+          <sphereGeometry args={[25, 32, 32]} />
           <meshStandardMaterial 
             color="#FC54AF"
             emissive="#FC54AF"
-            emissiveIntensity={2.0}
+            emissiveIntensity={3.0}
             metalness={0.2}
             roughness={0.3}
           />
         </mesh>
-        <sprite scale={[30, 30, 1]} renderOrder={5}>
+        <sprite scale={[60, 60, 1]} renderOrder={5}>
           <spriteMaterial
             transparent={true}
             color="#FC54AF"
@@ -473,24 +479,49 @@ function OrbitalElementalSystem({ songs, mainId, hoverId }: { songs: any[]; main
         const cardsForThisElement = cardsByElement[element.code];
         const orbitRadius = 60; // Distance from center
         
+        console.log(`🪐 Rendering ${element.code} planet at ${element.position} with ${cardsForThisElement.length} songs`);
+        
         return (
           <group key={element.code} name={`element-orbit-${element.code}`}>
             {/* Individual elemental planet at fixed orbital position */}
             <group position={element.position as [number, number, number]} name={`element-${element.code}`}>
-              {/* Elemental planet sphere */}
+              {/* Elemental planet sphere - MASSIVE for visibility */}
               <mesh renderOrder={4}>
-                <sphereGeometry args={[8, 32, 32]} />
+                <sphereGeometry args={[50, 32, 32]} />
                 <meshStandardMaterial 
                   color={elementColors[element.code]}
                   emissive={elementColors[element.code]}
-                  emissiveIntensity={1.8}
+                  emissiveIntensity={5.0}
                   metalness={element.code === 'water' ? 0.8 : element.code === 'darkness' ? 0.9 : 0.3}
                   roughness={element.code === 'lightning' ? 0.8 : element.code === 'water' ? 0.1 : 0.4}
                 />
               </mesh>
               
-              {/* Elemental planet glow */}
-              <sprite scale={[20, 20, 1]} renderOrder={3}>
+              {/* DEBUG: HUGE bright wireframe marker */}
+              <mesh renderOrder={8}>
+                <sphereGeometry args={[60, 16, 16]} />
+                <meshBasicMaterial 
+                  color="#FFFFFF"
+                  wireframe={true}
+                  transparent={true}
+                  opacity={1.0}
+                />
+              </mesh>
+              
+              {/* DEBUG: Solid bright marker for water planet */}
+              {element.code === 'water' && (
+                <mesh renderOrder={10}>
+                  <sphereGeometry args={[80, 16, 16]} />
+                  <meshBasicMaterial 
+                    color="#00FFFF"
+                    transparent={true}
+                    opacity={0.8}
+                  />
+                </mesh>
+              )}
+              
+              {/* Elemental planet glow - MUCH LARGER */}
+              <sprite scale={[50, 50, 1]} renderOrder={3}>
                 <spriteMaterial
                   transparent={true}
                   color={elementGlows[element.code]}
@@ -694,8 +725,8 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         })()}
         // Pull the camera back and widen FOV so the full system fits
         // Elevated viewpoint: camera positioned above to look down at the planet system
-        // Zoom out more when showing all planets for better overview
-        camera={{ position: [0.2, 100, actualShouldShowAll ? 500 : 350], fov: actualShouldShowAll ? 180 : 130 }}
+        // MAXIMUM zoom out to show ALL elemental planets - EXTREME DISTANCE
+        camera={{ position: [0, 1000, actualShouldShowAll ? 5000 : 350], fov: actualShouldShowAll ? 45 : 130 }}
         // Prefer safer GL settings on mobile to avoid flicker when layers repaint
         gl={{
           antialias: false,
@@ -732,18 +763,21 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
 
         {/* Very shallow tilt for near-horizontal horizon line */}
         {/* Render the full system: satellites first, focus planet last; previous main becomes a moon */}
-        {/* Enlarge full-system view when showing all planets */}
-        <group scale={actualShouldShowAll ? 1.45 : 1}>
+        {/* Enlarge full-system view when showing all planets - MAXIMUM scale for visibility */}
+        <group scale={actualShouldShowAll ? 5 : 1}>
         <SystemGroup>
           
           {/* ORBITAL ELEMENTAL SYSTEM - Heart center with 4 elements orbiting */}
-          {actualShouldShowAll && (
-            <OrbitalElementalSystem 
-              songs={songs}
-              mainId={mainId}
-              hoverId={hoverId}
-            />
-          )}
+          {actualShouldShowAll && (() => {
+            console.log("🌍 RENDERING ORBITAL SYSTEM:", { actualShouldShowAll, songs: songs.length });
+            return (
+              <OrbitalElementalSystem 
+                songs={songs}
+                mainId={mainId}
+                hoverId={hoverId}
+              />
+            );
+          })()}
           
           {/* Single song focus mode - show individual planet */}
           {shouldShowSingle && focusId && (() => {
@@ -775,6 +809,11 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         {/* Controls removed; system slowly orbits programmatically */}
         <OverlapManager />
       </Canvas>
+      
+      {/* 2D Minimap overlay - show when displaying all planets */}
+      {actualShouldShowAll && (
+        <PlanetMinimap currentMainId={mainId} hoverId={hoverId} />
+      )}
     </div>
   );
 }
@@ -836,8 +875,8 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
   const target = React.useRef<{ pos: Vector3; look: Vector3; fov: number } | null>(null);
 
   React.useEffect(() => {
-    // Update base values based on current mode
-    base.current = { z: isShowAll ? 180 : 95, fov: isShowAll ? 120 : 75 };
+    // Update base values based on current mode - MAXIMUM increased for water elemental visibility
+    base.current = { z: isShowAll ? 5000 : 95, fov: isShowAll ? 45 : 75 };
     
     // Only restart zoom animation if we have a focusId (not in showAll/home mode)
     if (focusId) {
@@ -866,8 +905,8 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
       // If no focusId (home mode), ensure camera is at base position
       anim.current.active = false;
       const camera_: any = camera;
-      camera_.position.x = 0.2;
-      camera_.position.y = 30;
+      camera_.position.x = 0;
+      camera_.position.y = 1000;
       camera_.position.z = base.current.z;
       camera_.fov = base.current.fov;
       camera_.updateProjectionMatrix();

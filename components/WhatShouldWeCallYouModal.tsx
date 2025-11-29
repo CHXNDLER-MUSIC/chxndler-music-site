@@ -106,6 +106,13 @@ export default function WhatShouldWeCallYouModal() {
     if (!showNamePrompt) return;
     if (!authChecked) return;
     
+    // If this modal was opened from auth callback (namePromptFromAuth=true),
+    // never auto-close it - let the user explicitly interact with it
+    if (namePromptFromAuth) {
+      console.log('🔒 Modal opened from auth - preventing auto-close');
+      return;
+    }
+    
     // Add a small delay to prevent rapid state changes from auto-closing
     // the modal before the user sees it
     const timeoutId = setTimeout(() => {
@@ -113,6 +120,7 @@ export default function WhatShouldWeCallYouModal() {
       // this wasn't triggered by the explicit auth callback flow AND
       // modal is still open (to prevent stale closures)
       if (showNamePrompt && !namePromptFromAuth && currentUser && profile && profile.name && profile.name.trim() !== '') {
+        console.log('🚪 Auto-closing name prompt - user already has complete profile');
         closeNamePrompt();
       }
     }, 200);
@@ -132,13 +140,34 @@ export default function WhatShouldWeCallYouModal() {
   }, [shouldStartTourAfterEnter, profile?.name, profile?.element, startTour, updateProfile]);
 
   // Early returns come after all hooks
-  if (!mounted) return null;
-  if (!showNamePrompt) return null;
-  if (typeof document === 'undefined') return null;
+  if (!mounted) {
+    console.log('🚫 Modal not rendering: not mounted');
+    return null;
+  }
+  if (!showNamePrompt) {
+    console.log('🚫 Modal not rendering: showNamePrompt=false');
+    return null;
+  }
+  if (typeof document === 'undefined') {
+    console.log('🚫 Modal not rendering: document undefined');
+    return null;
+  }
+
+  console.log('✅ Rendering WhatShouldWeCallYouModal', { 
+    showNamePrompt, 
+    namePromptFromAuth, 
+    mounted,
+    authChecked,
+    currentUser: !!currentUser,
+    profile: !!profile,
+    profileName: profile?.name
+  });
 
   // Chrome-compatible rendering: render directly instead of portal for better compatibility
   // Force visibility with inline styles for Chrome
   const forceVisible = showNamePrompt && mounted;
+  
+  console.log('🎨 Modal visibility state:', { showNamePrompt, mounted, forceVisible });
   
   return (
     <>
@@ -149,9 +178,7 @@ export default function WhatShouldWeCallYouModal() {
           zIndex: 9999999, // Very high z-index for Chrome compatibility
           pointerEvents: 'none',
           paddingTop: '200px',
-          display: forceVisible ? 'flex' : 'none',
-          visibility: forceVisible ? 'visible' : 'hidden',
-          opacity: forceVisible ? 1 : 0
+          display: 'flex' // Always flex
         }}
       >
         <div
@@ -170,9 +197,7 @@ export default function WhatShouldWeCallYouModal() {
         style={{
           zIndex: 9999999, // Very high z-index for Chrome compatibility
           marginTop: '-160px',
-          display: forceVisible ? 'flex' : 'none',
-          visibility: forceVisible ? 'visible' : 'hidden',
-          opacity: forceVisible ? 1 : 0
+          display: 'flex' // Always flex
         }}
       >
         <div

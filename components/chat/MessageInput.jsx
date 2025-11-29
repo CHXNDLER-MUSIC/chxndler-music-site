@@ -7,11 +7,13 @@ import { motion } from 'framer-motion';
  * MessageInput Component
  * Input field for sending chat messages with emoji picker and formatting
  */
-export default function MessageInput({ onSendMessage, disabled, placeholder = "Type a message..." }) {
+export default function MessageInput({ onSendMessage, disabled, placeholder = "Type a message...", onTyping }) {
   const [message, setMessage] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [showEmojis, setShowEmojis] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const inputRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
 
   // Quick emoji options themed to Heartverse elements
   const quickEmojis = [
@@ -25,11 +27,39 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "T
     '🙌', '👏', '💯', '🚀'  // Celebration
   ];
 
+  // Handle typing indicators
+  const handleTyping = () => {
+    if (!isTyping && onTyping) {
+      setIsTyping(true);
+      onTyping(true);
+    }
+    
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    // Set new timeout to stop typing indicator
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      if (onTyping) onTyping(false);
+    }, 2000);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     
     const trimmedMessage = message.trim();
     if (trimmedMessage && !disabled) {
+      // Stop typing indicator immediately when sending
+      if (isTyping && onTyping) {
+        setIsTyping(false);
+        onTyping(false);
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+        }
+      }
+      
       onSendMessage(trimmedMessage);
       setMessage('');
       inputRef.current?.focus();
@@ -94,7 +124,10 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "T
             <textarea
               ref={inputRef}
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={(e) => {
+                setMessage(e.target.value);
+                handleTyping();
+              }}
               onKeyPress={handleKeyPress}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
