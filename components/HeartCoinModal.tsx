@@ -231,11 +231,12 @@ export default function HeartCoinModal({ open, onClose }: Props) {
               
               {/* Price and Heart Coins */}
               <div className="flex items-center justify-center gap-4 text-center">
-                <div className="flex items-center gap-1">
-                  <span className="text-sm font-bold text-green-400">
-                    ${item.cost % 1 === 0 ? item.cost.toFixed(0) : item.cost.toFixed(1)}
-                  </span>
-                </div>
+                <button
+                  onClick={() => handlePurchase(item.stripeUrl)}
+                  className="px-3 py-2 rounded-lg font-bold text-sm text-green-400 hover:bg-green-500/20 hover:scale-105 transition-all duration-200"
+                >
+                  PAY WITH ${item.cost % 1 === 0 ? item.cost.toFixed(0) : item.cost.toFixed(1)}
+                </button>
                 <button
                   onClick={() => handlePurchase(item.stripeUrl)}
                   className="flex items-center gap-1 hover:scale-105 transition-transform duration-200 cursor-pointer"

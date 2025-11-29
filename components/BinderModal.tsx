@@ -7,6 +7,18 @@ import { useProfile } from "@/contexts/ProfileContext";
 import { Card, CardTier, ProfileTier, isCardLocked, getCardGateState, getTierDisplayName } from "@/types/card";
 import type { CardGateState } from "@/utils/cardGating";
 
+// Add keyframes for pulsing animation
+const pulseKeyframes = `
+  @keyframes pulseGlow {
+    0% {
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    100% {
+      box-shadow: 0 4px 25px rgba(0,0,0,0.4), 0 0 10px rgba(255,255,255,0.1);
+    }
+  }
+`;
+
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -652,6 +664,9 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
 
   return (
     <>
+      {/* Inject pulsing animation styles */}
+      <style dangerouslySetInnerHTML={{ __html: pulseKeyframes }} />
+      
       {/* Hologram base glow - wider and stronger */}
       <div 
         className="fixed inset-0 z-[2147483646] flex items-center justify-center"
@@ -784,14 +799,16 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                 <div 
                   className="rounded-lg shadow-2xl cursor-pointer"
                   style={{
-                    width: 'min(500px, 70vw)',
-                    height: 'min(700px, 75vh)',
-                    boxShadow: '0 0 40px rgba(255,105,180,0.8), 0 0 80px rgba(255,105,180,0.5), 0 0 120px rgba(255,105,180,0.3)',
-                    border: '2px solid rgba(255,105,180,0.6)',
-                    perspective: '1000px'
+                    width: 'min(400px, 60vw)',
+                    height: 'min(560px, 65vh)',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                    border: '2px solid rgba(255,255,255,0.1)',
+                    borderRadius: '12px',
+                    perspective: '1000px',
+                    animation: 'pulseGlow 2s ease-in-out infinite alternate'
                   }}
                   onClick={() => {
-                    try { sfx.play('flip', 0.8); } catch {}
+                    try { sfx.play('flip', 0.45); } catch {}
                     setIsCardFlipped(!isCardFlipped);
                   }}
                 >
@@ -1521,7 +1538,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                             });
                             setCardOpen(true);
                           } else if (isFirstSlotWithChxndler) {
-                            try { sfx.play('click', 0.8); } catch {}
+                            try { sfx.play('flip', 0.45); } catch {}
                             setSelectedCard({
                               name: 'CHXNDLER',
                               image: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',

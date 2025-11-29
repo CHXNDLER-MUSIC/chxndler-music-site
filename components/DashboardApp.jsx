@@ -456,12 +456,26 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // In-app song change without spotlight/beam/route reloads
     // The id parameter is already the track slug from buildPlanetSongs()
     const slug = String(id || '').toLowerCase();
+    console.log('🎵 onSongChange - id:', id, 'slug:', slug);
+    
+    // First try exact slug match
     let idx = tracks.findIndex(t => (t.slug || '').toLowerCase() === slug);
-    if (idx < 0) idx = tracks.findIndex(t => slugify(t.title || '').toLowerCase() === slug);
+    // If not found, try exact title slugification match
+    if (idx < 0) {
+      idx = tracks.findIndex(t => slugify(t.title || '').toLowerCase() === slug);
+    }
+    // If still not found, try partial title match as last resort
+    if (idx < 0) {
+      idx = tracks.findIndex(t => (t.title || '').toLowerCase().includes(slug.replace(/-/g, ' ')));
+    }
+    
     if (idx < 0) {
       console.warn('DashboardApp: onSongChange - track not found for id:', id, 'slug:', slug);
+      console.log('Available tracks:', tracks.map(t => ({title: t.title, slug: t.slug})));
       return;
     }
+    const selectedTrack = tracks[idx];
+    console.log('🎵 Found track at index:', idx, 'track:', selectedTrack.title, 'slug:', selectedTrack.slug);
     
 
     // Planet focusing will be handled after warp sequence completes
@@ -1364,7 +1378,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           style={{
             position: 'fixed',
             // Slight upward nudge to align with cockpit wheel area
-            bottom: '-3vh',
+            bottom: '0vh',
             left: '50vw',
             transform: 'translateX(-50%)',
             width: 'calc(clamp(460px, 80vmin, 980px) * 0.8)',
@@ -1566,6 +1580,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 joinSfxWaitRef.current.then(() => {
                   // Use the stored track index from when the song was selected
                   const trackIndex = pendingTrackIndexRef.current;
+                  console.log('🎵 JOIN SFX ENDED - Setting channelIdx to:', trackIndex);
                   if (trackIndex !== null && trackIndex >= 0) {
                     setChannelIdx(trackIndex);
                     pendingTrackIndexRef.current = null; // Clear the pending index
@@ -1573,6 +1588,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 }).catch(() => {
                   // Fallback in case SFX fails
                   const trackIndex = pendingTrackIndexRef.current;
+                  console.log('🎵 JOIN SFX FAILED - Setting channelIdx to:', trackIndex);
                   if (trackIndex !== null && trackIndex >= 0) {
                     setChannelIdx(trackIndex);
                     pendingTrackIndexRef.current = null; // Clear the pending index
@@ -1738,6 +1754,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 
                 const proceed = () => {
                   if (pendingTrackPlay) {
+                    console.log('🎵 PLAY SIGNAL TRIGGERED - proceed()');
                     setPlaySignal((n) => n + 1);
                     setPendingTrackPlay(false);
                   }
@@ -1853,7 +1870,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               clearTimeout(failsafeTimer); // Clear the failsafe timer
               // Small delay to ensure MediaPlayer has set up the audio element properly
               setTimeout(() => {
-                
+                console.log('🎵 PLAY SIGNAL TRIGGERED - initialSlug autoplay');
                 setPlaySignal((n) => {
                   
                   return n + 1;
