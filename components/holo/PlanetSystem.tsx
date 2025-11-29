@@ -647,7 +647,7 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         // Pull the camera back and widen FOV so the full system fits
         // Elevated viewpoint: camera positioned above to look down at the planet system
         // Zoom out more when showing all planets for better overview
-        camera={{ position: [0.2, 18, actualShouldShowAll ? 180 : 95], fov: actualShouldShowAll ? 120 : 75 }}
+        camera={{ position: [0.2, 30, actualShouldShowAll ? 220 : 120], fov: actualShouldShowAll ? 140 : 85 }}
         // Prefer safer GL settings on mobile to avoid flicker when layers repaint
         gl={{
           antialias: false,
@@ -794,7 +794,7 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
   // Use different base values based on showAll mode - access via props context
   const isShowAll = focusId === null;
   // Match Canvas camera defaults; give more room in showAll to see every planet
-  const base = React.useRef({ z: isShowAll ? 180 : 95, fov: isShowAll ? 120 : 75 });
+  const base = React.useRef({ z: isShowAll ? 220 : 120, fov: isShowAll ? 140 : 85 });
   const anim = React.useRef<{ t: number; d: number; active: boolean }>({ t: 0, d: 0.8, active: false });
   // Targeting state for planet-focused camera moves
   const target = React.useRef<{ pos: Vector3; look: Vector3; fov: number } | null>(null);
@@ -831,7 +831,7 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
       anim.current.active = false;
       const camera_: any = camera;
       camera_.position.x = 0.2;
-      camera_.position.y = 18;
+      camera_.position.y = 30;
       camera_.position.z = base.current.z;
       camera_.fov = base.current.fov;
       camera_.updateProjectionMatrix();
