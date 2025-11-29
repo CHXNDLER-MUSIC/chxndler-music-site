@@ -51,7 +51,15 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
 
   const handleItemClick = (label: string) => {
     sfx.play('click', 0.7);
-    onItemClick?.(label);
+    
+    // Special handling for BADGES to trigger the proper event
+    if (label === "BADGES") {
+      // Dispatch custom event for badges
+      const badgesEvent = new CustomEvent('openBadges');
+      window.dispatchEvent(badgesEvent);
+    } else {
+      onItemClick?.(label);
+    }
     setIsOpen(false);
   };
 

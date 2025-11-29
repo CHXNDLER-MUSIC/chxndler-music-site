@@ -11,7 +11,7 @@ import { getElementalPlanetTexture } from "@/lib/elementalPlanets";
 type ElementKey = "water" | "heart" | "lightning" | "darkness";
 
 // Debug flags
-const SHOW_ONLY_ELEMENTS = false;   // when true, hide all songs
+const SHOW_ONLY_ELEMENTS = true;    // when true, hide all songs
 const SHOW_ORBIT_GIZMOS = false;    // when true, draw orbit rings for elements and songs
 
 export type SongPlanet = {

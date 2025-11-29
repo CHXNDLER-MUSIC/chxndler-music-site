@@ -9,7 +9,7 @@ import { useUIStore } from '@/store/useUIStore';
 export default function NamePromptOnLogin() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const openNamePrompt = useUIStore(state => state.openNamePrompt);
+  const openNamePromptFromAuth = useUIStore(state => state.openNamePromptFromAuth);
 
   useEffect(() => {
     // Only react when explicit completeProfile flag is true
@@ -17,13 +17,13 @@ export default function NamePromptOnLogin() {
     if (!shouldComplete) return;
 
     // Open prompt exactly once per arrival, then clean up the URL
-    try { openNamePrompt(); } catch {}
+    try { openNamePromptFromAuth(); } catch {}
     try {
       const params = new URLSearchParams(searchParams.toString());
       params.delete('completeProfile');
       router.replace(`/?${params.toString()}`);
     } catch {}
-  }, [searchParams, openNamePrompt, router]);
+  }, [searchParams, openNamePromptFromAuth, router]);
 
   return null;
 }

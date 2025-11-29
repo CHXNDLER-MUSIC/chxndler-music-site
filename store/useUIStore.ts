@@ -4,7 +4,9 @@ import { create } from 'zustand';
 
 interface UIState {
   showNamePrompt: boolean;
+  namePromptFromAuth: boolean; // Track if opened from auth callback
   openNamePrompt: () => void;
+  openNamePromptFromAuth: () => void;
   closeNamePrompt: () => void;
   showElementSelection: boolean;
   openElementSelection: () => void;
@@ -15,8 +17,10 @@ interface UIState {
 
 export const useUIStore = create<UIState>((set) => ({
   showNamePrompt: false,
-  openNamePrompt: () => set({ showNamePrompt: true }),
-  closeNamePrompt: () => set({ showNamePrompt: false }),
+  namePromptFromAuth: false,
+  openNamePrompt: () => set({ showNamePrompt: true, namePromptFromAuth: false }),
+  openNamePromptFromAuth: () => set({ showNamePrompt: true, namePromptFromAuth: true }),
+  closeNamePrompt: () => set({ showNamePrompt: false, namePromptFromAuth: false }),
   showElementSelection: false,
   openElementSelection: () => set({ showElementSelection: true }),
   closeElementSelection: () => set({ showElementSelection: false }),

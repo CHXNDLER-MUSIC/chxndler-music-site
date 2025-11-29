@@ -9,7 +9,7 @@ import { useTour } from "@/contexts/TourContext";
 
 export default function WhatShouldWeCallYouModal() {
   // Hooks (fixed order; all at top)
-  const { showNamePrompt, closeNamePrompt, openElementSelection } = useUIStore();
+  const { showNamePrompt, namePromptFromAuth, closeNamePrompt, openElementSelection } = useUIStore();
   const { updateProfileName, updateProfile, profile } = useProfile();
   const { start: startTour } = useTour();
   const [name, setName] = useState("");
@@ -83,14 +83,18 @@ export default function WhatShouldWeCallYouModal() {
   };
 
   // Guard-close in an effect to avoid updating state during render
+  // However, if the user just came from auth callback with completeProfile=1,
+  // we should NOT auto-close even if they have a name (they may want to update it)
   useEffect(() => {
     if (!showNamePrompt) return;
     if (!authChecked) return;
-    // Only close if we have a user but they already have a complete profile (with name)
-    if (currentUser && profile && profile.name && profile.name.trim() !== '') {
+    
+    // Only auto-close if we have a user with a complete profile AND
+    // this wasn't triggered by the explicit auth callback flow
+    if (!namePromptFromAuth && currentUser && profile && profile.name && profile.name.trim() !== '') {
       closeNamePrompt();
     }
-  }, [showNamePrompt, authChecked, currentUser, profile, closeNamePrompt]);
+  }, [showNamePrompt, authChecked, currentUser, profile, namePromptFromAuth, closeNamePrompt]);
 
   // Safely start tour once user clicks Enter and profile is complete
   useEffect(() => {

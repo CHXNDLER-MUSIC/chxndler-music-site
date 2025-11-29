@@ -1155,6 +1155,18 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         <div style={{ marginTop: 8 }} data-neon-audio="1" ref={neonWrapRef}>
           <NeonWaveform audioUrl={cur.src} element={neonElement} />
         </div>
+
+        {/* Neon white progress bar directly below waveform */}
+        <div className="mt-3 w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-white rounded-full transition-all duration-200"
+            style={{ 
+              width: `${liveDuration > 0 ? (currentTime / liveDuration) * 100 : 0}%`,
+              boxShadow: '0 0 8px rgba(255, 255, 255, 0.8), 0 0 16px rgba(255, 255, 255, 0.4)',
+              filter: 'brightness(1.2) drop-shadow(0 0 4px rgba(255, 255, 255, 0.6))'
+            }}
+          />
+        </div>
         
         {/* Lyrics + YouTube + Inline volume controls - moved above waveform */}
         <div className="waveform-volume" role="group" aria-label="Lyrics, YouTube, and Volume" ref={waveVolRef}>
