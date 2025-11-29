@@ -262,7 +262,12 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
       filteredSongs = filteredSongs.filter(song => song.rarity === selectedRarity);
     }
     
-    // Return unique card names
+    // If a specific card is preselected, don't include "All" option
+    if (preselectedCard && preselectedCard !== 'All') {
+      return filteredSongs.map(song => song.name);
+    }
+    
+    // Return unique card names with "All" option
     return ['All', ...filteredSongs.map(song => song.name)];
   };
 
@@ -323,6 +328,20 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
     window.addEventListener('openDigitalBinder', handleOpenDigitalBinder);
     return () => window.removeEventListener('openDigitalBinder', handleOpenDigitalBinder);
   }, [onCloseBlueDisplay]);
+
+  // Auto-select card when preselected card is set
+  useEffect(() => {
+    if (preselectedCard && preselectedCard !== 'All') {
+      // Find the card in the collection
+      const targetCard = songCollection.find(song => song.name === preselectedCard);
+      if (targetCard) {
+        // Set the appropriate element and card name
+        setSelectedElement(targetCard.element);
+        setSelectedCardName(preselectedCard);
+        setCurrentCardIndex(0);
+      }
+    }
+  }, [preselectedCard]);
 
   // Arrow key navigation
   useEffect(() => {

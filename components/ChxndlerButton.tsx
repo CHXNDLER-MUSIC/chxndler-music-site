@@ -275,42 +275,50 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, ...re
                 <div 
                   className="text-center mt-4"
                   style={{ 
-                    fontSize: '16px', 
+                    fontSize: '14px', 
                     color: '#FFFFFF !important', 
                     textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
                     lineHeight: '1.6'
                   }}
                 >
-                  The Elements are the foundational forces that shape the Heartverse. Each element carries its own energy, purpose, and wisdom, guiding souls on their journey of self-discovery. Together, they form the cosmic blueprint for understanding love, passion, truth, and connection.
+                  The Elements shape the Heartverse. Each one carries its own energy, guiding souls on their journey.
                 </div>
                 <div 
-                  className="text-left space-y-2 pl-2 mt-4"
+                  className="flex justify-center mt-3"
                   style={{ 
-                    fontSize: 14, 
+                    fontSize: '14px', 
                     color: '#FFFFFF !important', 
-                    textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)'
+                    textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
+                    lineHeight: '1.6'
                   }}
                 >
-                  <div className="flex items-start">
-                    <span className="mr-3" style={{ color: '#FF1493 !important', textShadow: '0 0 8px rgba(255,20,147,0.9), 0 0 15px rgba(255,20,147,0.7)' }}>♦</span>
-                    <span><span style={{ color: '#FF1493 !important', fontWeight: 'bold !important', textShadow: '0 0 10px #FF1493, 0 0 20px #FF1493' }}>Love</span> - The universal force connecting all souls</span>
+                  <div className="flex flex-col mr-8">
+                    <div className="mb-2">
+                      <img src="/elements/lightning.webp" alt="Lightning" className="inline w-5 h-5 mr-1" /> <span style={{ color: '#FFFF00 !important', fontWeight: 'bold !important', textShadow: '0 0 10px #FFFF00, 0 0 20px #FFFF00' }}>LIGHTNING</span> awakens.
+                    </div>
+                    <div>
+                      <img src="/elements/darkness.webp" alt="Darkness" className="inline w-5 h-5 mr-1" /> <span style={{ color: '#9A00FF !important', fontWeight: 'bold !important', textShadow: '0 0 10px #9A00FF, 0 0 20px #9A00FF' }}>DARKNESS</span> transforms.
+                    </div>
                   </div>
-                  <div className="flex items-start">
-                    <span className="mr-3" style={{ color: '#FFFF00 !important', textShadow: '0 0 8px rgba(255,255,0,0.9), 0 0 15px rgba(255,255,0,0.7)' }}>♦</span>
-                    <span><span style={{ color: '#FFFF00 !important', fontWeight: 'bold !important', textShadow: '0 0 10px #FFFF00, 0 0 20px #FFFF00' }}>Passion</span> - Sacred fire that drives authentic expression</span>
+                  <div className="flex flex-col">
+                    <div className="mb-2">
+                      <img src="/elements/heart.webp" alt="Heart" className="inline w-5 h-5 mr-1" /> <span style={{ color: '#FF1493 !important', fontWeight: 'bold !important', textShadow: '0 0 10px #FF1493, 0 0 20px #FF1493' }}>HEART</span> connects.
+                    </div>
+                    <div>
+                      <img src="/elements/water.webp" alt="Water" className="inline w-5 h-5 mr-1" /> <span style={{ color: '#00E5FF !important', fontWeight: 'bold !important', textShadow: '0 0 10px #00E5FF, 0 0 20px #00E5FF' }}>WATER</span> heals.
+                    </div>
                   </div>
-                  <div className="flex items-start">
-                    <span className="mr-3" style={{ color: '#00E5FF !important', textShadow: '0 0 8px rgba(0,229,255,0.9), 0 0 15px rgba(0,229,255,0.7)' }}>♦</span>
-                    <span><span style={{ color: '#00E5FF !important', fontWeight: 'bold !important', textShadow: '0 0 10px #00E5FF, 0 0 20px #00E5FF' }}>Truth</span> - The clarity found in being your authentic self</span>
-                  </div>
-                  <div className="flex items-start">
-                    <span className="mr-3" style={{ color: '#32CD32 !important', textShadow: '0 0 8px rgba(50,205,50,0.9), 0 0 15px rgba(50,205,50,0.7)' }}>♦</span>
-                    <span><span style={{ color: '#32CD32 !important', fontWeight: 'bold !important', textShadow: '0 0 10px #32CD32, 0 0 20px #32CD32' }}>Growth</span> - Evolution through challenges and transformation</span>
-                  </div>
-                  <div className="flex items-start">
-                    <span className="mr-3" style={{ color: '#9A00FF !important', textShadow: '0 0 8px rgba(154,0,255,0.9), 0 0 15px rgba(154,0,255,0.7)' }}>♦</span>
-                    <span><span style={{ color: '#9A00FF !important', fontWeight: 'bold !important', textShadow: '0 0 10px #9A00FF, 0 0 20px #9A00FF' }}>Mystery</span> - The infinite unknown that inspires wonder</span>
-                  </div>
+                </div>
+                <div 
+                  className="text-center mt-4"
+                  style={{ 
+                    fontSize: '14px', 
+                    color: '#FFFFFF !important', 
+                    textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
+                    lineHeight: '1.6'
+                  }}
+                >
+                  Together, they create the emotional ecosystem of the Heartverse — the foundation of every story and song. You align with your Element when you create your profile.
                 </div>
               </>
             )}

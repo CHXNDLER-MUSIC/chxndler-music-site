@@ -586,8 +586,19 @@ export default function ChatPanel({ isOpen, onClose }) {
                   {/* Collapse Toggle Button */}
                   <div className="h-full flex flex-col">
                     <button
-                      onClick={() => setIsUserPanelCollapsed(!isUserPanelCollapsed)}
-                      className="w-full p-2 hover:bg-yellow-400/10 transition-colors duration-200 border-b border-cyan-400/20 flex flex-col items-end justify-center relative"
+                      onClick={() => {
+                        try {
+                          const audio = new Audio('/close.mp3');
+                          audio.volume = 0.5;
+                          audio.play().catch(error => {
+                            console.log('Collapse audio play failed:', error);
+                          });
+                        } catch (error) {
+                          console.log('Collapse audio creation failed:', error);
+                        }
+                        setIsUserPanelCollapsed(!isUserPanelCollapsed);
+                      }}
+                      className="w-full p-2 hover:bg-yellow-400/10 transition-colors duration-200 border-b border-cyan-400/20 flex items-center justify-between relative"
                       style={{
                         color: '#F2EF1D',
                         textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
@@ -602,6 +613,20 @@ export default function ChatPanel({ isOpen, onClose }) {
                       }}
                       title={isUserPanelCollapsed ? "Show users" : "Hide users"}
                     >
+                      {/* ONLINE label on the left */}
+                      {!isUserPanelCollapsed && (
+                        <p 
+                          className="text-xs font-semibold"
+                          style={{
+                            color: '#F2EF1D',
+                            textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
+                          }}
+                        >
+                          ALIENS ONLINE
+                        </p>
+                      )}
+                      
+                      {/* Arrow on the right */}
                       <div 
                         className="transition-transform duration-200"
                         style={{
@@ -687,27 +712,27 @@ export default function ChatPanel({ isOpen, onClose }) {
                   {/* Profile View - shown above message input when user is selected */}
                   {console.log('🔥 Rendering profile check - selectedUser:', selectedUser)}
                   {selectedUser && (
-                    <div className="border-t border-yellow-400/30 px-3 pt-1 pb-2">
+                    <div className="border-t border-yellow-400/30 px-2 pb-2">
                       {/* Profile Header with Icons */}
-                      <div className="flex flex-col space-y-2">
+                      <div className="flex flex-col">
                         {/* Top row: User info and close button */}
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between pt-1">
                           <div className="flex items-center space-x-2 flex-1 min-w-0">
                             {/* User Icon */}
-                            <div 
-                              className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                              style={{
-                                background: 'rgba(0, 255, 0, 0.2)',
-                                border: '1px solid rgba(0, 255, 0, 0.5)',
-                                boxShadow: '0 0 8px rgba(0, 255, 0, 0.3)'
-                              }}
-                            >
-                              {selectedUser.id === 'anonymous' ? (
-                                <span className="text-xs">👽</span>
-                              ) : (
+                            {selectedUser.id === 'anonymous' ? (
+                              <img src="/elements/alien.webp" alt="Alien" className="w-5 h-5 flex-shrink-0" />
+                            ) : (
+                              <div 
+                                className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                                style={{
+                                  background: 'rgba(242, 239, 29, 0.2)',
+                                  border: '1px solid rgba(242, 239, 29, 0.5)',
+                                  boxShadow: '0 0 8px rgba(242, 239, 29, 0.3)'
+                                }}
+                              >
                                 <span className="text-xs">👤</span>
-                              )}
-                            </div>
+                              </div>
+                            )}
                             
                             <h3 
                               className="text-sm font-bold truncate flex-1"
@@ -716,18 +741,26 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 textShadow: '0 0 8px #F2EF1D'
                               }}
                             >
-                              {/* Always use global alien name for anonymous sessions */}
-                              {alienName}
+                              {selectedUser.name}
                             </h3>
                           </div>
                           
                           <button
                             onClick={() => {
+                              try {
+                                const audio = new Audio('/close.mp3');
+                                audio.volume = 0.5;
+                                audio.play().catch(error => {
+                                  console.log('Close audio play failed:', error);
+                                });
+                              } catch (error) {
+                                console.log('Close audio creation failed:', error);
+                              }
                               setSelectedUser(null);
                               setShowUserBadges(false);
                               setShowUserBinder(false);
                             }}
-                            className="text-white/70 hover:text-white transition-colors text-xs px-2 py-1 rounded flex-shrink-0"
+                            className="text-white/70 hover:text-white transition-colors text-xs px-1 py-1 rounded flex-shrink-0 ml-1"
                             style={{
                               background: 'rgba(255, 255, 255, 0.1)',
                               border: '1px solid rgba(255, 255, 255, 0.2)'
@@ -738,7 +771,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                         </div>
                         
                         {/* Bottom row: Action buttons and totals */}
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between mt-2">
                           {/* Action Icons */}
                           <div className="flex items-center space-x-1">
                             {/* Heart Coins */}
@@ -748,7 +781,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 alt="Heart Coins" 
                                 className="w-3 h-3"
                               />
-                              <span className="text-xs text-pink-400 font-bold">0</span>
+                              <span className="text-xs text-pink-400 font-bold">{selectedUser.heart_coins || 0}</span>
                             </div>
                             
                             {/* Send Heart Coin Button */}
@@ -798,7 +831,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                               alt="Total Heart Coins" 
                               className="w-4 h-4"
                             />
-                            <span className="text-sm text-pink-400 font-bold">42</span>
+                            <span className="text-sm text-pink-400 font-bold">{selectedUser.total_heart_coins || 42}</span>
                           </div>
                         </div>
                       </div>
@@ -822,7 +855,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                             
                             <div className="flex flex-col items-center p-2 rounded bg-black/30 border border-green-400/30">
                               <div className="w-6 h-6 rounded flex items-center justify-center bg-green-400/20">
-                                <span className="text-xs">👽</span>
+                                <img src="/elements/alien.webp" alt="Alien" className="w-4 h-4" />
                               </div>
                               <span className="text-xs text-white/70 mt-1 text-center">Alien Visitor</span>
                             </div>

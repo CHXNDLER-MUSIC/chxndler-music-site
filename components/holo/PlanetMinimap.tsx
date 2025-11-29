@@ -20,6 +20,7 @@ interface PlanetMinimapProps {
   currentMainId?: string | null;
   hoverId?: string | null;
   songs?: Song[];
+  onClose?: () => void;
 }
 
 // Element configurations matching PlanetSystemRaw.tsx ACTUAL positions - MORE SPREAD OUT
@@ -30,8 +31,25 @@ const ELEMENTS: ElementPosition[] = [
   { code: "darkness",  label: "Darkness", position: [0, -35, 0],  color: "#6A4C93", glowColor: "#6A4C93" },
 ];
 
-export default function PlanetMinimap({ currentMainId, hoverId, songs = [] }: PlanetMinimapProps) {
+export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onClose }: PlanetMinimapProps) {
   const [isCollapsed, setIsCollapsed] = React.useState(false);
+
+  const playCloseSound = () => {
+    try {
+      const audio = new Audio('/audio/close.mp3');
+      audio.volume = 0.5;
+      audio.play();
+    } catch (error) {
+      console.warn('Could not play close sound:', error);
+    }
+  };
+
+  const handleClose = () => {
+    playCloseSound();
+    if (onClose) {
+      onClose();
+    }
+  };
 
   // Distribute songs among elements (3 songs per element)
   const songsPerElement = React.useMemo(() => {
@@ -75,13 +93,13 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [] }: Pl
     <div className={`fixed top-4 right-4 z-50 bg-black/60 backdrop-blur-sm border-2 border-cyan-400/50 rounded-lg transition-all duration-300 ${
       isCollapsed ? 'w-12 h-12' : 'w-40 h-40'
     }`}>
-      {/* Collapse/Expand Button */}
+      {/* Close Button */}
       <button
-        onClick={() => setIsCollapsed(!isCollapsed)}
+        onClick={handleClose}
         className="absolute top-1 right-1 z-10 w-6 h-6 bg-cyan-400/20 hover:bg-cyan-400/40 border border-cyan-400/50 rounded text-cyan-400 text-xs font-bold transition-colors duration-200 flex items-center justify-center"
-        title={isCollapsed ? "Expand minimap" : "Collapse minimap"}
+        title="Close minimap"
       >
-        {isCollapsed ? '+' : '−'}
+        −
       </button>
       
       {!isCollapsed && (

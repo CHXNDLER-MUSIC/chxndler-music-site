@@ -577,6 +577,7 @@ function InvalidateOnState() {
 }
 
 export default function PlanetSystem({ showAll = false, hideUntilPlaying = false }: { showAll?: boolean; hideUntilPlaying?: boolean }) {
+  const [isMinimapVisible, setIsMinimapVisible] = React.useState(true);
   console.log("🌟🌟🌟 HOLO PLANETSYSTEM.TSX IS RENDERING!!! 🌟🌟🌟", { showAll, hideUntilPlaying });
   // Mark 3D system as active so global key handlers can avoid interfering
   React.useEffect(() => {
@@ -811,8 +812,13 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
       </Canvas>
       
       {/* 2D Minimap overlay - show when displaying all planets */}
-      {actualShouldShowAll && (
-        <PlanetMinimap currentMainId={mainId} hoverId={hoverId} />
+      {actualShouldShowAll && isMinimapVisible && (
+        <PlanetMinimap 
+          currentMainId={mainId} 
+          hoverId={hoverId} 
+          songs={songs}
+          onClose={() => setIsMinimapVisible(false)}
+        />
       )}
     </div>
   );

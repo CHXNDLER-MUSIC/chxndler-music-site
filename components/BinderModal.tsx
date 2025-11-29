@@ -1786,129 +1786,120 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
           </div>
           
           {/* Purchase Flow - positioned at bottom of popup */}
-          {selectedElement && (() => {
-            const cards = getFilteredCards();
-            const currentCard = cards[currentCardIndex];
-            
-            if (!currentCard) {
-              return null;
-            }
+          {selectedElement && getFilteredCards()[currentCardIndex] && (
+            <div className="mt-2">
 
-            return (
-              <div className="mt-2">
-
-                {/* State B: Not enough HeartCoins */}
-                {purchaseState === 'insufficient' && selectedPurchaseType === 'digital' && (
-                  <div className="mt-2">
-                    <div 
-                      className="text-center mb-2 text-xs p-2 rounded"
-                      style={{ 
-                        backgroundColor: 'rgba(239,68,68,0.1)',
-                        border: '1px solid rgba(239,68,68,0.3)',
-                        color: '#FCA5A5'
-                      }}
-                    >
-                      <div className="mb-1">{selectedPurchaseType === 'digital' ? 'Digital' : 'Physical'} costs {getCost(selectedPurchaseType)} HeartCoins.</div>
-                      <div>You need {getCost(selectedPurchaseType) - (profile?.heartcoin_balance || 0)} more HeartCoins.</div>
-                    </div>
-                    
-                    {/* Disabled button and earn more link */}
-                    <div className="flex flex-col gap-2 items-center">
-                      <button
-                        disabled
-                        className="flex items-center gap-1 px-2 py-1 rounded border border-red-400/40 bg-red-500/10 text-xs opacity-60 cursor-not-allowed"
-                      >
-                        <span className="text-red-300 text-xs">NOT ENOUGH HEARTCOINS</span>
-                      </button>
-                      <button
-                        onClick={openHeartCoinPopout}
-                        className="text-xs text-blue-300 hover:text-blue-200 underline"
-                        style={{ textShadow: '0 0 4px rgba(147,197,253,0.6)' }}
-                      >
-                        Earn more HeartCoins
-                      </button>
-                      <button
-                        onClick={resetPurchaseState}
-                        className="text-xs text-pink-300 hover:text-pink-200"
-                        style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
-                      >
-                        Cancel
-                      </button>
-                    </div>
+              {/* State B: Not enough HeartCoins */}
+              {purchaseState === 'insufficient' && selectedPurchaseType === 'digital' && (
+                <div className="mt-2">
+                  <div 
+                    className="text-center mb-2 text-xs p-2 rounded"
+                    style={{ 
+                      backgroundColor: 'rgba(239,68,68,0.1)',
+                      border: '1px solid rgba(239,68,68,0.3)',
+                      color: '#FCA5A5'
+                    }}
+                  >
+                    <div className="mb-1">{selectedPurchaseType === 'digital' ? 'Digital' : 'Physical'} costs {getCost(selectedPurchaseType)} HeartCoins.</div>
+                    <div>You need {getCost(selectedPurchaseType) - (profile?.heartcoin_balance || 0)} more HeartCoins.</div>
                   </div>
-                )}
-
-                {/* State C: Confirm digital purchase */}
-                {purchaseState === 'confirm-digital' && selectedPurchaseType === 'digital' && (
-                  <div className="mt-2">
-                    <div 
-                      className="text-center mb-3 text-xs p-2 rounded"
-                      style={{ 
-                        backgroundColor: 'rgba(34,197,94,0.1)',
-                        border: '1px solid rgba(34,197,94,0.3)',
-                        color: '#86EFAC'
-                      }}
+                  
+                  {/* Disabled button and earn more link */}
+                  <div className="flex flex-col gap-2 items-center">
+                    <button
+                      disabled
+                      className="flex items-center gap-1 px-2 py-1 rounded border border-red-400/40 bg-red-500/10 text-xs opacity-60 cursor-not-allowed"
                     >
-                      <div className="mb-1">Confirm purchase of {currentCard.name} {selectedPurchaseType.toUpperCase()}.</div>
-                      <div>This will cost {getCost(selectedPurchaseType)} HeartCoins.</div>
-                    </div>
-                    
-                    <div className="flex justify-center gap-2">
-                      <button
-                        onClick={handleConfirmPurchase}
-                        className="px-3 py-1 rounded border border-green-400/60 bg-green-500/10 hover:bg-green-500/20 transition-all duration-200 text-xs text-green-300"
-                        style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)' }}
-                      >
-                        Confirm Purchase
-                      </button>
-                      <button
-                        onClick={resetPurchaseState}
-                        className="px-3 py-1 rounded border border-pink-400/60 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs text-pink-300"
-                        style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-
-                {/* State E: Purchase successful */}
-                {purchaseState === 'success' && selectedPurchaseType && (
-                  <div className="mt-2">
-                    <div 
-                      className="text-center text-xs p-2 rounded"
-                      style={{ 
-                        backgroundColor: 'rgba(34,197,94,0.1)',
-                        border: '1px solid rgba(34,197,94,0.3)',
-                        color: '#86EFAC'
-                      }}
+                      <span className="text-red-300 text-xs">NOT ENOUGH HEARTCOINS</span>
+                    </button>
+                    <button
+                      onClick={openHeartCoinPopout}
+                      className="text-xs text-blue-300 hover:text-blue-200 underline"
+                      style={{ textShadow: '0 0 4px rgba(147,197,253,0.6)' }}
                     >
-                      {selectedPurchaseType === 'physical' ? (
-                        <>
-                          <div className="mb-1">✓ Order received</div>
-                          <div className="mb-1">Your {currentCard.name} physical card is on its way to you.</div>
-                          <div className="text-xs">You can update your address later by contacting support if needed.</div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="mb-1">✓ Purchased!</div>
-                          <div>{currentCard.name} has been added to your binder.</div>
-                        </>
-                      )}
-                    </div>
+                      Earn more HeartCoins
+                    </button>
+                    <button
+                      onClick={resetPurchaseState}
+                      className="text-xs text-pink-300 hover:text-pink-200"
+                      style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                    >
+                      Cancel
+                    </button>
                   </div>
-                )}
-              </div>
-            );
-          })()}
+                </div>
+              )}
+
+              {/* State C: Confirm digital purchase */}
+              {purchaseState === 'confirm-digital' && selectedPurchaseType === 'digital' && (
+                <div className="mt-2">
+                  <div 
+                    className="text-center mb-3 text-xs p-2 rounded"
+                    style={{ 
+                      backgroundColor: 'rgba(34,197,94,0.1)',
+                      border: '1px solid rgba(34,197,94,0.3)',
+                      color: '#86EFAC'
+                    }}
+                  >
+                    <div className="mb-1">Confirm purchase of {getFilteredCards()[currentCardIndex]?.name} {selectedPurchaseType.toUpperCase()}.</div>
+                    <div>This will cost {getCost(selectedPurchaseType)} HeartCoins.</div>
+                  </div>
+                  
+                  <div className="flex justify-center gap-2">
+                    <button
+                      onClick={handleConfirmPurchase}
+                      className="px-3 py-1 rounded border border-green-400/60 bg-green-500/10 hover:bg-green-500/20 transition-all duration-200 text-xs text-green-300"
+                      style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)' }}
+                    >
+                      Confirm Purchase
+                    </button>
+                    <button
+                      onClick={resetPurchaseState}
+                      className="px-3 py-1 rounded border border-pink-400/60 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs text-pink-300"
+                      style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+
+              {/* State E: Purchase successful */}
+              {purchaseState === 'success' && selectedPurchaseType && (
+                <div className="mt-2">
+                  <div 
+                    className="text-center text-xs p-2 rounded"
+                    style={{ 
+                      backgroundColor: 'rgba(34,197,94,0.1)',
+                      border: '1px solid rgba(34,197,94,0.3)',
+                      color: '#86EFAC'
+                    }}
+                  >
+                    {selectedPurchaseType === 'physical' ? (
+                      <>
+                        <div className="mb-1">✓ Order received</div>
+                        <div className="mb-1">Your {getFilteredCards()[currentCardIndex]?.name} physical card is on its way to you.</div>
+                        <div className="text-xs">You can update your address later by contacting support if needed.</div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="mb-1">✓ Purchased!</div>
+                        <div>{getFilteredCards()[currentCardIndex]?.name} has been added to your binder.</div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
             </>
           )}
 
           {/* Page Number Display - Bottom Center */}
           {!showFullCollection && (
             <div 
-              className="absolute bottom-2 left-1/2 transform -translate-x-1/2"
+              className="absolute bottom-0 left-1/2 transform -translate-x-1/2"
               style={{
                 color: '#FF69B4',
                 fontSize: '12px',
@@ -1930,41 +1921,32 @@ export default function BinderModal({ open, onClose, preselectedCard, pulsingCar
       </div>
 
       {/* Element Name Display - positioned on right side */}
-      {selectedElement && (() => {
-        const cards = getFilteredCards();
-        const currentCard = cards[currentCardIndex];
-        
-        if (!currentCard) {
-          return null;
-        }
-
-        return (
+      {selectedElement && getFilteredCards()[currentCardIndex] && (
+        <div 
+          className="fixed z-[2147483645]"
+          style={{
+            right: '5vw',
+            bottom: '35vh',
+            pointerEvents: 'none'
+          }}
+        >
           <div 
-            className="fixed z-[2147483645]"
+            className="text-center font-bold"
             style={{
-              right: '5vw',
-              bottom: '35vh',
-              pointerEvents: 'none'
+              color: getElementColor(getFilteredCards()[currentCardIndex].element),
+              textShadow: `0 0 12px ${getElementColor(getFilteredCards()[currentCardIndex].element)}, 0 0 24px ${getElementColor(getFilteredCards()[currentCardIndex].element)}80`,
+              fontSize: 'clamp(24px, 5vw, 48px)',
+              fontWeight: 900,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              transform: 'rotate(-5deg)',
+              filter: `drop-shadow(0 0 20px ${getElementColor(getFilteredCards()[currentCardIndex].element)}80)`
             }}
           >
-            <div 
-              className="text-center font-bold"
-              style={{
-                color: getElementColor(currentCard.element),
-                textShadow: `0 0 12px ${getElementColor(currentCard.element)}, 0 0 24px ${getElementColor(currentCard.element)}80`,
-                fontSize: 'clamp(24px, 5vw, 48px)',
-                fontWeight: 900,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                transform: 'rotate(-5deg)',
-                filter: `drop-shadow(0 0 20px ${getElementColor(currentCard.element)}80)`
-              }}
-            >
-              {currentCard.element}
-            </div>
+            {getFilteredCards()[currentCardIndex].element}
           </div>
-        );
-      })()}
+        </div>
+      )}
 
 
       </>

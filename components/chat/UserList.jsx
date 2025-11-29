@@ -36,19 +36,6 @@ export default function UserList({ users, onUserClick, loading }) {
 
   return (
     <div className="h-full overflow-y-auto p-2 space-y-2">
-      {/* Header */}
-      <div className="text-center mb-3">
-        <p 
-          className="text-xs font-semibold"
-          style={{
-            color: '#00FFFF',
-            textShadow: '0 0 8px rgba(0, 255, 255, 0.6)'
-          }}
-        >
-          ONLINE
-        </p>
-        <div className="w-8 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent mx-auto mt-1" />
-      </div>
 
       {/* User List */}
       {displayUsers?.length > 0 ? displayUsers.map((user) => (
@@ -106,20 +93,20 @@ function UserListItem({ user, onClick }) {
         {/* Username with icon */}
         <div className="flex items-center space-x-1 w-full justify-center">
           {/* Small user icon */}
-          <div 
-            className="w-3 h-3 rounded-full flex items-center justify-center flex-shrink-0"
-            style={{
-              background: 'rgba(0, 255, 0, 0.2)',
-              border: '1px solid rgba(0, 255, 0, 0.5)',
-              boxShadow: '0 0 4px rgba(0, 255, 0, 0.3)'
-            }}
-          >
-            {user.id === 'anonymous' ? (
-              <span style={{ fontSize: '8px' }}>👽</span>
-            ) : (
+          {user.id === 'anonymous' ? (
+            <img src="/elements/alien.webp" alt="Alien" className="w-3 h-3 flex-shrink-0" />
+          ) : (
+            <div 
+              className="w-3 h-3 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{
+                background: 'rgba(242, 239, 29, 0.2)',
+                border: '1px solid rgba(242, 239, 29, 0.5)',
+                boxShadow: '0 0 4px rgba(242, 239, 29, 0.3)'
+              }}
+            >
               <span style={{ fontSize: '8px' }}>👤</span>
-            )}
-          </div>
+            </div>
+          )}
           
           <p 
             className="text-xs font-medium leading-tight truncate"

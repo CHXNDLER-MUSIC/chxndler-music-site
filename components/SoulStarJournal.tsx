@@ -224,6 +224,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
   };
 
   const handleClose = () => {
+    sfx.play('close', 0.8);
     onClose();
   };
 
@@ -327,14 +328,18 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
 
         {/* Full Log Button - Top Left */}
         <button
-          onClick={() => setShowHistory(!showHistory)}
-          className="absolute top-3 left-4 text-xs font-semibold transition-all duration-200 hover:opacity-100"
+          onClick={() => {
+            sfx.play('click', 0.8);
+            setShowHistory(!showHistory);
+          }}
+          className="absolute top-3 left-4 text-xs font-semibold transition-all duration-200 hover:opacity-100 px-2 py-1 rounded"
           style={{
             color: elementTheme.color,
             textShadow: `0 0 4px ${elementTheme.glow}`,
             opacity: showHistory ? 1 : 0.8,
             background: 'transparent',
-            border: 'none',
+            border: '1px solid #F2EF1D',
+            boxShadow: '0 0 8px #F2EF1D, 0 0 15px #FFFF00',
             cursor: 'pointer'
           }}
         >
@@ -593,7 +598,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
             <div className="relative flex justify-center">
               {/* Private Toggle - positioned absolute to left */}
               <button
-                onClick={() => setJournalState(prev => ({ ...prev, isPrivate: !prev.isPrivate }))}
+                onClick={() => {
+                  sfx.play('click', 0.8);
+                  setJournalState(prev => ({ ...prev, isPrivate: !prev.isPrivate }));
+                }}
                 className="absolute left-0 top-0 px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-200"
                 style={{
                   background: journalState.isPrivate ? `${elementTheme.color}20` : 'rgba(128, 128, 128, 0.2)',

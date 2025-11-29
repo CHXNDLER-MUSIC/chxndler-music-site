@@ -621,7 +621,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
       {/* Badge Categories Grid - 6 categories layout */}
       {!loading && !error && (
         <div className="grid grid-cols-3 gap-4 justify-items-center max-w-sm mx-auto">
-          {(badgeCategories.length > 0 ? badgeCategories : fallbackCategories).map((category) => (
+          {fallbackCategories.map((category) => (
           <button
             key={category.id}
             onClick={() => setSelectedCategory(category.id)}
@@ -659,7 +659,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         onClick={onClose}
       />
       <div className="relative w-full max-w-lg max-h-[90vh] z-[2147483648]">
-        <div className="relative rounded-2xl p-4 backdrop-blur-md border border-pink-400/60 bg-black/60 shadow-[0_-8px_25px_rgba(255,105,180,0.4),_0_-4px_15px_rgba(255,105,180,0.25),_0_12px_30px_rgba(0,0,0,0.4),_0_0_24px_rgba(255,105,180,0.45)] overflow-y-auto">
+        <div className="relative rounded-2xl p-4 pb-2 backdrop-blur-md border border-pink-400/60 bg-black/60 shadow-[0_-8px_25px_rgba(255,105,180,0.4),_0_-4px_15px_rgba(255,105,180,0.25),_0_12px_30px_rgba(0,0,0,0.4),_0_0_24px_rgba(255,105,180,0.45)] overflow-y-auto">
           
           {/* Soft bottom glow */}
           <div 

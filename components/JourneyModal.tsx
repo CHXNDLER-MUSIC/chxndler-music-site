@@ -71,10 +71,13 @@ function getUserTier(cumulativeHeartCoins: number): TierType {
 
 export default function JourneyModal({ open, onClose }: JourneyModalProps) {
   const [flippedTier, setFlippedTier] = useState<TierType | null>(null);
-  const { profile } = useProfile();
+  const { profile, user } = useProfile();
   
   const cumulativeHeartCoins = profile?.heartcoin_total || 0;
   const currentTier = getUserTier(cumulativeHeartCoins);
+  
+  // For non-logged-in users, force display to show WANDERER
+  const displayTier = user ? currentTier : 'wanderer';
 
   const handleTierClick = (tier: TierType) => {
     try { sfx.play('click', 0.8); } catch {}
@@ -104,7 +107,7 @@ export default function JourneyModal({ open, onClose }: JourneyModalProps) {
           style={{
             width: 'min(120vw, 700px)',
             height: '200px',
-            background: `radial-gradient(ellipse 80% 100% at 50% 0%, ${tierData[currentTier].glowColor} 0%, ${tierData[currentTier].glowColor.replace('0.8', '0.4')} 30%, ${tierData[currentTier].glowColor.replace('0.8', '0.1')} 60%, transparent 100%)`,
+            background: `radial-gradient(ellipse 80% 100% at 50% 0%, ${tierData[displayTier].glowColor} 0%, ${tierData[displayTier].glowColor.replace('0.8', '0.4')} 30%, ${tierData[displayTier].glowColor.replace('0.8', '0.1')} 60%, transparent 100%)`,
             filter: 'blur(100px)'
           }}
         />
@@ -125,10 +128,10 @@ export default function JourneyModal({ open, onClose }: JourneyModalProps) {
             padding: '15px',
             borderRadius: 15,
             background: 'rgba(0,0,0,0.7)',
-            border: `2px solid ${tierData[currentTier].color}`,
+            border: `2px solid ${tierData[displayTier].color}`,
             backdropFilter: 'blur(15px)',
             position: 'relative',
-            boxShadow: `0 -8px 25px ${tierData[currentTier].glowColor}, 0 -4px 15px ${tierData[currentTier].glowColor.replace('0.8', '0.6')}, 0 12px 30px rgba(0,0,0,0.4), 0 0 24px ${tierData[currentTier].glowColor}`
+            boxShadow: `0 -8px 25px ${tierData[displayTier].glowColor}, 0 -4px 15px ${tierData[displayTier].glowColor.replace('0.8', '0.6')}, 0 12px 30px rgba(0,0,0,0.4), 0 0 24px ${tierData[displayTier].glowColor}`
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -142,7 +145,7 @@ export default function JourneyModal({ open, onClose }: JourneyModalProps) {
             transform: 'translateX(-50%)',
             width: '120%',
             height: '30px',
-            background: `radial-gradient(ellipse 60% 100% at 50% 0%, ${tierData[currentTier].glowColor} 0%, ${tierData[currentTier].glowColor.replace('0.8', '0.3')} 40%, transparent 80%)`,
+            background: `radial-gradient(ellipse 60% 100% at 50% 0%, ${tierData[displayTier].glowColor} 0%, ${tierData[displayTier].glowColor.replace('0.8', '0.3')} 40%, transparent 80%)`,
             filter: 'blur(30px)',
             pointerEvents: 'none',
             zIndex: -1
@@ -158,7 +161,7 @@ export default function JourneyModal({ open, onClose }: JourneyModalProps) {
             transform: 'translateX(-50%)',
             width: '80%',
             height: '20px',
-            background: `radial-gradient(ellipse 70% 100% at 50% 100%, ${tierData[currentTier].glowColor.replace('0.8', '0.4')} 0%, ${tierData[currentTier].glowColor.replace('0.8', '0.2')} 50%, transparent 100%)`,
+            background: `radial-gradient(ellipse 70% 100% at 50% 100%, ${tierData[displayTier].glowColor.replace('0.8', '0.4')} 0%, ${tierData[displayTier].glowColor.replace('0.8', '0.2')} 50%, transparent 100%)`,
             filter: 'blur(25px)',
             pointerEvents: 'none',
             zIndex: -1
@@ -171,10 +174,10 @@ export default function JourneyModal({ open, onClose }: JourneyModalProps) {
           className="absolute top-4 right-4 cursor-pointer w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
           style={{ 
             fontSize: '16px',
-            background: `rgba(${tierData[currentTier].color === '#00FFFF' ? '0,255,255' : tierData[currentTier].color === '#FFD700' ? '255,215,0' : '255,105,180'},0.2)`,
-            border: `1px solid ${tierData[currentTier].color}`,
-            color: tierData[currentTier].color,
-            boxShadow: `0 0 10px ${tierData[currentTier].glowColor.replace('0.8', '0.3')}`,
+            background: `rgba(${tierData[displayTier].color === '#00FFFF' ? '0,255,255' : tierData[displayTier].color === '#FFD700' ? '255,215,0' : '255,105,180'},0.2)`,
+            border: `1px solid ${tierData[displayTier].color}`,
+            color: tierData[displayTier].color,
+            boxShadow: `0 0 10px ${tierData[displayTier].glowColor.replace('0.8', '0.3')}`,
             backdropFilter: 'blur(2px)'
           }}
         >
@@ -188,14 +191,14 @@ export default function JourneyModal({ open, onClose }: JourneyModalProps) {
         <div className="text-center mb-4">
           <div 
             style={{ 
-              color: tierData[currentTier].color, 
+              color: tierData[displayTier].color, 
               fontSize: '20px',
               fontWeight: 'bold',
-              textShadow: `0 0 12px ${tierData[currentTier].glowColor}, 0 0 20px ${tierData[currentTier].glowColor}, 0 0 30px ${tierData[currentTier].glowColor}`,
+              textShadow: `0 0 12px ${tierData[displayTier].glowColor}, 0 0 20px ${tierData[displayTier].glowColor}, 0 0 30px ${tierData[displayTier].glowColor}`,
               marginBottom: '8px'
             }}
           >
-            {tierData[currentTier].name.toUpperCase()}
+            {tierData[displayTier].name.toUpperCase()}
           </div>
           <div 
             style={{ 
