@@ -16,6 +16,7 @@ import { sfx } from "@/lib/sfx";
 import NeonWaveform from "@/components/NeonWaveform";
 import SharedModal from "@/components/SharedModal";
 import AnimatedLyrics from "@/components/AnimatedLyrics";
+import SongProgressBar from "@/components/SongProgressBar";
 
 type Props = {
   onSkyChange: (webm: string, mp4: string, key: string) => void;
@@ -640,6 +641,29 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   function prev() { uiClick(); setIdx((p) => wrapChannels ? (p - 1 + tracks.length) % tracks.length : Math.max(0, p - 1)); }
   function next() { uiClick(); setIdx((p) => wrapChannels ? (p + 1) % tracks.length : Math.min(tracks.length - 1, p + 1)); }
   
+  function handleSeek(time: number) {
+    const a = audioRef.current;
+    if (!a || !liveDuration) return;
+    
+    uiClick();
+    setSeeking(true);
+    seekingRef.current = true;
+    
+    const seekTime = Math.max(0, Math.min(liveDuration - 0.2, time));
+    setCurrentTime(seekTime);
+    
+    try { 
+      a.currentTime = seekTime; 
+    } catch(e) { 
+      console.warn('Seek failed:', e); 
+    }
+    
+    setTimeout(() => {
+      setSeeking(false);
+      seekingRef.current = false;
+    }, 100);
+  }
+  
   function playVolumeSfx() {
     const now = (typeof performance !== 'undefined' ? performance.now() : Date.now()) as number;
     const last = volumeSfxLastRef.current || 0;
@@ -1189,17 +1213,13 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           <NeonWaveform audioUrl={cur.src} element={neonElement} />
         </div>
 
-        {/* Neon white progress bar directly below waveform */}
-        <div className="mt-3 w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-white rounded-full transition-all duration-200"
-            style={{ 
-              width: `${liveDuration > 0 ? (currentTime / liveDuration) * 100 : 0}%`,
-              boxShadow: '0 0 8px rgba(255, 255, 255, 0.8), 0 0 16px rgba(255, 255, 255, 0.4)',
-              filter: 'brightness(1.2) drop-shadow(0 0 4px rgba(255, 255, 255, 0.6))'
-            }}
-          />
-        </div>
+        {/* Element-based glowing progress bar directly below waveform */}
+        <SongProgressBar
+          currentTime={currentTime}
+          duration={liveDuration}
+          onSeek={handleSeek}
+          element={currentElement.toUpperCase() as "HEART" | "WATER" | "LIGHTNING" | "DARKNESS"}
+        />
         
         {/* Lyrics + YouTube + Inline volume controls - moved above waveform */}
         <div className="waveform-volume" role="group" aria-label="Lyrics, YouTube, and Volume" ref={waveVolRef}>

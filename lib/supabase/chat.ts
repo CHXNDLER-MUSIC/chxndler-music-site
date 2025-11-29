@@ -282,7 +282,12 @@ export class ChatService {
         .single();
 
       if (error) {
-        console.error('Error checking live status:', error);
+        console.error('Error checking live status:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+        });
         return false;
       }
 

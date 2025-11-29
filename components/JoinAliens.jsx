@@ -475,40 +475,31 @@ export default function JoinAliens({ visible = true } = {}) {
       <button
         onClick={() => {
           try { sfx.play('audio/click.mp3', 0.5); } catch {}
-          if (canOpenChat) {
-            setIsChatOpen(!isChatOpen);
-          } else {
-            // Show tooltip or message about chat availability
-            console.log('Chat not available:', statusText);
-          }
+          setIsChatOpen(!isChatOpen);
         }}
-        title={canOpenChat ? "Open live chat" : statusText}
+        title="Open live chat"
         style={{
           position: 'absolute',
           top: '12px',
           left: '12px',
           width: '40px',
           height: '40px',
-          background: canOpenChat 
-            ? 'rgba(0, 255, 255, 0.2)'
-            : 'rgba(128, 128, 128, 0.1)',
-          border: `2px solid ${canOpenChat ? '#00FFFF' : '#808080'}`,
+          background: 'rgba(0, 255, 255, 0.2)',
+          border: '2px solid #00FFFF',
           borderRadius: '8px',
-          color: canOpenChat ? '#00FFFF' : '#808080',
+          color: '#00FFFF',
           fontSize: '14px',
           fontWeight: 'bold',
-          cursor: canOpenChat ? 'pointer' : 'not-allowed',
+          cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           transition: 'all 300ms ease',
           outline: 'none',
-          textShadow: canOpenChat ? '0 0 8px #00FFFF' : 'none',
-          boxShadow: canOpenChat 
-            ? '0 0 15px rgba(0, 255, 255, 0.3)'
-            : 'none',
+          textShadow: '0 0 8px #00FFFF',
+          boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)',
           zIndex: 10,
-          opacity: canOpenChat ? 1 : 0.5
+          opacity: 1
         }}
         onMouseEnter={(e) => {
           if (canOpenChat) {
