@@ -17,6 +17,7 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
   const [loading, setLoading] = useState(false);
   const [editingAvatar, setEditingAvatar] = useState(false);
   const [selectedBadgeId, setSelectedBadgeId] = useState(null);
+  const [activeTab, setActiveTab] = useState('cards'); // 'cards' or 'badges'
 
   // Load full profile data when modal opens
   useEffect(() => {
@@ -124,7 +125,7 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-60 flex items-center justify-center"
+        className="fixed inset-0 z-[120] flex items-center justify-center"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -167,19 +168,9 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
               {/* Header */}
               <div className="p-6 border-b border-white/20">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 
-                    className="text-xl font-bold"
-                    style={{
-                      color: elementColor,
-                      textShadow: `0 0 10px ${elementColor}60`
-                    }}
-                  >
-                    {displayName}
-                  </h2>
-                  
                   <button
                     onClick={onClose}
-                    className="text-white/70 hover:text-white transition-colors p-2 rounded-lg"
+                    className="text-white/70 hover:text-white transition-colors p-2 rounded-lg ml-auto"
                     style={{
                       background: 'rgba(255, 255, 255, 0.1)',
                       border: '1px solid rgba(255, 255, 255, 0.2)'
@@ -189,77 +180,40 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
                   </button>
                 </div>
 
-                {/* Avatar and Element */}
-                <div className="flex items-center space-x-4">
-                  <div 
-                    className="relative w-16 h-16 rounded-full flex items-center justify-center"
+                {/* User Name and HeartCoins */}
+                <div className="text-center mb-6">
+                  <h2 
+                    className="text-2xl font-bold mb-3"
                     style={{
-                      background: `${elementColor}20`,
-                      border: `3px solid ${elementColor}`,
-                      boxShadow: `0 0 20px ${elementColor}60`
+                      color: elementColor,
+                      textShadow: `0 0 15px ${elementColor}60`
                     }}
                   >
-                    {profileData?.avatar_badge_id && badges.find(b => b.badge_id === profileData.avatar_badge_id) ? (
-                      // Custom badge avatar
-                      <div className="text-2xl">🏆</div>
-                    ) : user.element ? (
-                      <ElementIcon 
-                        name={user.element} 
-                        width={32} 
-                        height={32}
-                      />
-                    ) : (
-                      <div 
-                        className="w-8 h-8 rounded-full"
-                        style={{ 
-                          background: `linear-gradient(45deg, ${elementColor}, #FFFFFF)`
-                        }}
-                      />
-                    )}
-
-                    {/* Edit avatar button for own profile */}
-                    {isOwnProfile && (
-                      <button
-                        onClick={() => setEditingAvatar(true)}
-                        className="absolute -bottom-1 -right-1 w-6 h-6 bg-cyan-400 rounded-full flex items-center justify-center text-xs text-black hover:bg-cyan-300 transition-colors"
-                        title="Change avatar"
-                      >
-                        ✏️
-                      </button>
-                    )}
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-white/60 mb-1">Element</p>
-                    <p 
-                      className="font-semibold capitalize"
+                    {displayName}
+                  </h2>
+                  
+                  {/* HeartCoins Display */}
+                  <div className="flex items-center justify-center space-x-2 mb-4">
+                    <img 
+                      src="/elements/heart.webp" 
+                      alt="HeartCoin" 
+                      className="w-8 h-8"
                       style={{
-                        color: elementColor,
-                        textShadow: `0 0 6px ${elementColor}60`
+                        filter: 'drop-shadow(0 0 8px rgba(252, 84, 175, 0.8))'
+                      }}
+                    />
+                    <span 
+                      className="text-2xl font-bold"
+                      style={{
+                        color: '#FC54AF',
+                        textShadow: '0 0 10px rgba(252, 84, 175, 0.8)'
                       }}
                     >
-                      {user.element || 'Unknown'}
-                    </p>
+                      {profileData?.heartcoin_total || 0}
+                    </span>
+                    <span className="text-sm text-white/60 ml-1">HeartCoins</span>
                   </div>
                 </div>
-
-                {/* Stats */}
-                {profileData && (
-                  <div className="mt-4 grid grid-cols-2 gap-4">
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-yellow-400">
-                        {profileData.heartcoin_total || 0}
-                      </p>
-                      <p className="text-xs text-white/60">HeartCoins</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-cyan-400">
-                        {cards.length}
-                      </p>
-                      <p className="text-xs text-white/60">Cards</p>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Avatar Badge Selection (Own Profile Only) */}
@@ -320,96 +274,138 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
                 </div>
               )}
 
-              {/* Badges Section */}
-              {badges.length > 0 && (
-                <div className="p-4 border-b border-white/20">
-                  <h3 className="text-sm font-semibold text-white mb-3">
-                    Badges ({badges.length})
-                  </h3>
-                  <div className="grid grid-cols-4 gap-2">
-                    {badges.map(badge => (
-                      <div
-                        key={badge.id}
-                        className="p-2 rounded-lg bg-white/10 border border-white/20 text-center hover:bg-white/20 transition-colors"
-                        title={badge.badges.description || badge.badges.badge_name}
-                      >
-                        {badge.badges.icon_url ? (
-                          <img 
-                            src={badge.badges.icon_url} 
-                            alt={badge.badges.badge_name}
-                            className="w-8 h-8 mx-auto mb-1"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 bg-yellow-500 rounded-full mx-auto mb-1 flex items-center justify-center">
-                            🏆
-                          </div>
-                        )}
-                        <p className="text-xs text-white/80 truncate">
-                          {badge.badges.badge_name}
+              {/* Tab Navigation */}
+              <div className="flex border-b border-white/20">
+                <button
+                  onClick={() => setActiveTab('cards')}
+                  className={`flex-1 py-3 px-4 text-sm font-semibold transition-all ${
+                    activeTab === 'cards'
+                      ? 'bg-cyan-400/20 text-cyan-400 border-b-2 border-cyan-400'
+                      : 'text-white/60 hover:text-white/80'
+                  }`}
+                >
+                  CARDS ({cards.length})
+                </button>
+                <button
+                  onClick={() => setActiveTab('badges')}
+                  className={`flex-1 py-3 px-4 text-sm font-semibold transition-all ${
+                    activeTab === 'badges'
+                      ? 'bg-yellow-400/20 text-yellow-400 border-b-2 border-yellow-400'
+                      : 'text-white/60 hover:text-white/80'
+                  }`}
+                >
+                  BADGES ({badges.length})
+                </button>
+              </div>
+
+              {/* Tab Content */}
+              <div className="p-4">
+                {activeTab === 'cards' ? (
+                  /* Cards Tab Content */
+                  <div>
+                    {cards.length > 0 ? (
+                      <div className="grid grid-cols-3 gap-3 max-h-60 overflow-y-auto">
+                        {cards.map(card => {
+                          const cardElementColor = getElementColor(card.cards.element);
+                          return (
+                            <div
+                              key={card.id}
+                              className="aspect-square rounded-lg p-2 text-center transition-all hover:scale-105"
+                              style={{
+                                background: `${cardElementColor}20`,
+                                border: `2px solid ${cardElementColor}60`,
+                                boxShadow: `0 0 10px ${cardElementColor}30`
+                              }}
+                              title={`${card.cards.card_name} (${card.cards.rarity})`}
+                            >
+                              {card.cards.image_url ? (
+                                <img 
+                                  src={card.cards.image_url} 
+                                  alt={card.cards.card_name}
+                                  className="w-full h-full object-cover rounded"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex flex-col items-center justify-center">
+                                  <ElementIcon 
+                                    name={card.cards.element} 
+                                    width={32} 
+                                    height={32}
+                                  />
+                                  <p className="text-xs mt-1 text-white/80 truncate">
+                                    {card.cards.card_name}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <div 
+                          className="w-16 h-16 rounded-lg bg-cyan-400/20 border-2 border-cyan-400/50 flex items-center justify-center mx-auto mb-4"
+                        >
+                          <span className="text-2xl">🃏</span>
+                        </div>
+                        <p className="text-white/60">
+                          {isOwnProfile ? "You haven't collected any cards yet!" : `${displayName} has no cards in their collection.`}
                         </p>
                       </div>
-                    ))}
+                    )}
                   </div>
-                </div>
-              )}
-
-              {/* Cards Section */}
-              {cards.length > 0 && (
-                <div className="p-4">
-                  <h3 className="text-sm font-semibold text-white mb-3">
-                    Cards ({cards.length})
-                  </h3>
-                  <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto">
-                    {cards.map(card => {
-                      const cardElementColor = getElementColor(card.cards.element);
-                      return (
-                        <div
-                          key={card.id}
-                          className="aspect-square rounded-lg p-2 text-center"
-                          style={{
-                            background: `${cardElementColor}20`,
-                            border: `1px solid ${cardElementColor}60`
-                          }}
-                          title={`${card.cards.card_name} (${card.cards.rarity})`}
-                        >
-                          {card.cards.image_url ? (
-                            <img 
-                              src={card.cards.image_url} 
-                              alt={card.cards.card_name}
-                              className="w-full h-full object-cover rounded"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex flex-col items-center justify-center">
-                              <ElementIcon 
-                                name={card.cards.element} 
-                                width={24} 
-                                height={24}
+                ) : (
+                  /* Badges Tab Content */
+                  <div>
+                    {badges.length > 0 ? (
+                      <div className="grid grid-cols-4 gap-3 max-h-60 overflow-y-auto">
+                        {badges.map(badge => (
+                          <div
+                            key={badge.id}
+                            className="p-3 rounded-lg bg-white/10 border border-white/20 text-center hover:bg-white/20 transition-all hover:scale-105"
+                            style={{
+                              border: '2px solid rgba(255, 215, 0, 0.6)',
+                              boxShadow: '0 0 10px rgba(255, 215, 0, 0.3)'
+                            }}
+                            title={badge.badges.description || badge.badges.badge_name}
+                          >
+                            {badge.badges.icon_url ? (
+                              <img 
+                                src={badge.badges.icon_url} 
+                                alt={badge.badges.badge_name}
+                                className="w-10 h-10 mx-auto mb-2"
                               />
-                              <p className="text-xs mt-1 text-white/80 truncate">
-                                {card.cards.card_name}
-                              </p>
-                            </div>
-                          )}
+                            ) : (
+                              <div 
+                                className="w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center"
+                                style={{
+                                  background: 'linear-gradient(45deg, #FFD700, #FFA500)',
+                                  boxShadow: '0 0 8px rgba(255, 215, 0, 0.6)'
+                                }}
+                              >
+                                🏆
+                              </div>
+                            )}
+                            <p className="text-xs text-white/80 truncate font-medium">
+                              {badge.badges.badge_name}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <div 
+                          className="w-16 h-16 rounded-lg bg-yellow-400/20 border-2 border-yellow-400/50 flex items-center justify-center mx-auto mb-4"
+                        >
+                          <span className="text-2xl">🏆</span>
                         </div>
-                      );
-                    })}
+                        <p className="text-white/60">
+                          {isOwnProfile ? "You haven't earned any badges yet!" : `${displayName} has no badges to display.`}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
-
-              {/* Empty states */}
-              {badges.length === 0 && cards.length === 0 && !loading && (
-                <div className="p-8 text-center">
-                  <div 
-                    className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4"
-                  >
-                    <span className="text-2xl">✨</span>
-                  </div>
-                  <p className="text-white/60">
-                    {isOwnProfile ? "You haven't collected any badges or cards yet!" : `${displayName} is just getting started!`}
-                  </p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
 

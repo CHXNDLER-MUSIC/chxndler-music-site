@@ -4,12 +4,11 @@ import React, { useState, useEffect, useRef } from "react";
 import { sfx } from "@/lib/sfx";
 import { useProfile } from "@/contexts/ProfileContext";
 import { supabaseClient } from "@/lib/supabaseClient";
-import { useLiveStatus } from "@/hooks/useLiveStatus";
+// import { useLiveStatus } from "@/hooks/useLiveStatus"; // Removed since chat is always available
 import ChatPanel from "@/components/chat/ChatPanel";
 
 export default function JoinAliens({ visible = true } = {}) {
   const { profile, savePhone, user } = useProfile();
-  const { isLive, statusText, canOpenChat } = useLiveStatus();
   const [phone, setPhone] = useState(profile?.phone ?? "");
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
@@ -475,7 +474,9 @@ export default function JoinAliens({ visible = true } = {}) {
       <button
         onClick={() => {
           try { sfx.play('audio/click.mp3', 0.5); } catch {}
+          console.log('TEXT button clicked, current chat state:', isChatOpen);
           setIsChatOpen(!isChatOpen);
+          console.log('Setting chat state to:', !isChatOpen);
         }}
         title="Open live chat"
         style={{
@@ -502,21 +503,17 @@ export default function JoinAliens({ visible = true } = {}) {
           opacity: 1
         }}
         onMouseEnter={(e) => {
-          if (canOpenChat) {
-            try { sfx.play('hover', 0.3); } catch {}
-            e.target.style.transform = 'scale(1.05)';
-            e.target.style.background = 'rgba(0, 255, 255, 0.3)';
-            e.target.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.6)';
-            e.target.style.textShadow = '0 0 15px #00FFFF, 0 0 25px #00FFFF';
-          }
+          try { sfx.play('hover', 0.3); } catch {}
+          e.target.style.transform = 'scale(1.05)';
+          e.target.style.background = 'rgba(0, 255, 255, 0.3)';
+          e.target.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.6)';
+          e.target.style.textShadow = '0 0 15px #00FFFF, 0 0 25px #00FFFF';
         }}
         onMouseLeave={(e) => {
-          if (canOpenChat) {
-            e.target.style.transform = 'scale(1)';
-            e.target.style.background = 'rgba(0, 255, 255, 0.2)';
-            e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';
-            e.target.style.textShadow = '0 0 8px #00FFFF';
-          }
+          e.target.style.transform = 'scale(1)';
+          e.target.style.background = 'rgba(0, 255, 255, 0.2)';
+          e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';
+          e.target.style.textShadow = '0 0 8px #00FFFF';
         }}
       >
         <img 

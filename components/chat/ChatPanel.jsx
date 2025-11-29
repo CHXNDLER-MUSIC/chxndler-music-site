@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { chatService } from '@/lib/supabase/chat';
 import { useProfile } from '@/contexts/ProfileContext';
-import { useLiveStatus } from '@/hooks/useLiveStatus';
+// import { useLiveStatus } from '@/hooks/useLiveStatus'; // Removed since chat is always available
 import UserList from './UserList';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
@@ -16,7 +16,31 @@ import ProfileModal from './ProfileModal';
  */
 export default function ChatPanel({ isOpen, onClose }) {
   const { profile, user } = useProfile();
-  const { isLive, statusText } = useLiveStatus();
+  
+  // Debug logging
+  console.log('ChatPanel render:', { isOpen, profile: !!profile, user: !!user });
+
+  // Store alien name consistently for the session
+  const [alienName, setAlienName] = useState(null);
+
+  /**
+   * Get display name for user - logged in name or anonymous alien name
+   */
+  const getDisplayName = () => {
+    if (profile?.name) {
+      return profile.name;
+    }
+    
+    // Generate and store alien name for this session
+    if (!alienName) {
+      const alienNumber = Math.floor(Math.random() * 9999) + 1;
+      const newAlienName = `ALIEN${String(alienNumber).padStart(4, '0')}`;
+      setAlienName(newAlienName);
+      return newAlienName;
+    }
+    
+    return alienName;
+  };
   const [messages, setMessages] = useState([]);
   const [chatUsers, setChatUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -26,12 +50,12 @@ export default function ChatPanel({ isOpen, onClose }) {
 
   // Initialize chat when panel opens
   useEffect(() => {
-    if (isOpen && isLive && user && profile) {
+    if (isOpen) {
       initializeChat();
-    } else if (!isOpen || !isLive) {
+    } else {
       cleanupChat();
     }
-  }, [isOpen, isLive, user, profile]);
+  }, [isOpen]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -88,9 +112,23 @@ export default function ChatPanel({ isOpen, onClose }) {
         }
       );
 
-      // Send join message if not already joined
-      if (!hasJoined && profile?.name) {
-        await chatService.sendJoinMessage(profile.name);
+      // Send sync message if not already joined
+      if (!hasJoined) {
+        const displayName = getDisplayName();
+        const syncMessage = await chatService.sendSyncMessage(displayName);
+        
+        // For anonymous users, add the message locally and add to user list
+        if (!user && syncMessage) {
+          setMessages(prev => [...prev, syncMessage]);
+          setChatUsers(prev => [...prev, {
+            id: 'anonymous',
+            name: displayName,
+            element: null,
+            avatar_badge_id: null,
+            last_seen: new Date().toISOString()
+          }]);
+        }
+        
         setHasJoined(true);
       }
 
@@ -105,9 +143,10 @@ export default function ChatPanel({ isOpen, onClose }) {
    * Cleanup chat connection
    */
   const cleanupChat = async () => {
-    if (hasJoined && profile?.name) {
+    if (hasJoined) {
       try {
-        await chatService.sendLeaveMessage(profile.name);
+        const displayName = getDisplayName();
+        await chatService.sendLeaveMessage(displayName);
       } catch (error) {
         console.error('Error sending leave message:', error);
       }
@@ -128,11 +167,16 @@ export default function ChatPanel({ isOpen, onClose }) {
    */
   const handleSendMessage = async (messageText) => {
     try {
-      const message = await chatService.sendMessage(messageText, 'message');
-      if (!message) {
+      const displayName = getDisplayName();
+      const message = await chatService.sendMessage(messageText, 'message', displayName);
+      if (message) {
+        // For anonymous users, add message locally since it won't come through real-time
+        if (!user) {
+          setMessages(prev => [...prev, message]);
+        }
+      } else {
         console.error('Failed to send message');
       }
-      // Message will be added via real-time subscription
     } catch (error) {
       console.error('Error sending message:', error);
     }
@@ -176,9 +220,7 @@ export default function ChatPanel({ isOpen, onClose }) {
     open: { opacity: 1 }
   };
 
-  if (!isLive) {
-    return null;
-  }
+  // Chat is now always available (not gated behind live status)
 
   return (
     <AnimatePresence>
@@ -186,7 +228,7 @@ export default function ChatPanel({ isOpen, onClose }) {
         <>
           {/* Backdrop */}
           <motion.div
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[100]"
             variants={backdropVariants}
             initial="closed"
             animate="open"
@@ -196,7 +238,7 @@ export default function ChatPanel({ isOpen, onClose }) {
 
           {/* Chat Panel */}
           <motion.div
-            className="fixed left-0 top-0 bottom-0 z-50 flex"
+            className="fixed left-0 top-0 bottom-0 z-[110] flex"
             variants={panelVariants}
             initial="closed"
             animate="open"
@@ -274,8 +316,8 @@ export default function ChatPanel({ isOpen, onClose }) {
                   {/* Message Input */}
                   <MessageInput 
                     onSendMessage={handleSendMessage}
-                    disabled={!profile?.name || loading}
-                    placeholder={profile?.name ? "Type a message..." : "Please set your name to chat"}
+                    disabled={loading}
+                    placeholder="Type a message..."
                   />
                 </div>
               </div>

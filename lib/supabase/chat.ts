@@ -135,9 +135,30 @@ export class ChatService {
   /**
    * Send a chat message
    */
-  async sendMessage(message: string, messageType: 'message' | 'join' | 'leave' = 'message'): Promise<ChatMessage | null> {
+  async sendMessage(message: string, messageType: 'message' | 'join' | 'leave' = 'message', anonymousName?: string): Promise<ChatMessage | null> {
     try {
       const sessionId = await this.getCurrentStreamSession();
+      
+      // Check if user is authenticated
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      
+      if (!session?.user) {
+        // For anonymous users, return a mock message with alien name for local display
+        console.log('Anonymous user message:', message);
+        return {
+          id: `anonymous-${Date.now()}`,
+          user_id: 'anonymous',
+          message: message.trim(),
+          stream_session_id: sessionId,
+          message_type: messageType,
+          created_at: new Date().toISOString(),
+          user_profile: {
+            name: anonymousName || 'ALIEN0000',
+            element: null,
+            avatar_badge_id: null
+          }
+        } as ChatMessage;
+      }
       
       const { data, error } = await supabaseClient
         .from('chat_messages')
@@ -173,6 +194,13 @@ export class ChatService {
    */
   async sendJoinMessage(displayName: string): Promise<ChatMessage | null> {
     return this.sendMessage(`✨ ${displayName} has entered the room`, 'join');
+  }
+
+  /**
+   * Send a signal sync message when user opens chat
+   */
+  async sendSyncMessage(displayName: string): Promise<ChatMessage | null> {
+    return this.sendMessage(`🔗 ${displayName} has synced with the signal`, 'join', displayName);
   }
 
   /**
@@ -273,27 +301,36 @@ export class ChatService {
    */
   async checkLiveStatus(): Promise<boolean> {
     try {
-      // Check your profile's twitch_live_status
-      // Replace 'your-user-id' with your actual Supabase user ID or use a settings table
+      // Get current user first
+      const { data: session } = await supabaseClient.auth.getSession();
+      if (!session?.session?.user) {
+        return false;
+      }
+
+      // Check current user's profile for twitch_live_status
       const { data, error } = await supabaseClient
         .from('profiles')
         .select('twitch_live_status')
-        .eq('email', 'chxndlerthealien@gmail.com') // Replace with your email or use a better identifier
+        .eq('id', session.session.user.id)
         .single();
 
       if (error) {
-        console.error('Error checking live status:', {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint,
-        });
+        // Only log non-empty errors to avoid console spam
+        if (error && Object.keys(error).length > 0 && error.message) {
+          console.error('Error checking live status:', {
+            message: error.message,
+            code: error.code || 'unknown',
+            details: error.details || 'none'
+          });
+        }
         return false;
       }
 
       return data?.twitch_live_status || false;
     } catch (error) {
-      console.error('Error in checkLiveStatus:', error);
+      if (error && error instanceof Error && error.message) {
+        console.error('Error in checkLiveStatus:', error.message);
+      }
       return false;
     }
   }

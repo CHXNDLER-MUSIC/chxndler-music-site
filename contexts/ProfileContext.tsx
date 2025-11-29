@@ -66,6 +66,7 @@ interface Profile {
   updated_at: string | null;
   tier: ProfileTier; // default "wanderer"
   has_seen_tour?: boolean | null; // for onboarding tour
+  profile_image_url?: string | null; // for profile image selection
   cards: OwnedCardRow[];
   badges: OwnedBadgeRow[];
   // Legacy fields for compatibility
@@ -159,7 +160,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabaseClient
         .from("profiles")
         .select(
-          "id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, tier, has_seen_tour"
+          "id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, tier, has_seen_tour, profile_image_url"
         )
         .eq("id", user.id)
         .maybeSingle();
@@ -234,6 +235,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         updated_at: data.updated_at,
         tier: (data.tier || "wanderer") as ProfileTier,
         has_seen_tour: data.has_seen_tour,
+        profile_image_url: data.profile_image_url,
         cards: cardRows ?? [],
         badges: badgeRows ?? [],
       };
@@ -277,6 +279,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       if (updates.profile_complete !== undefined) dbUpdates.profile_complete = updates.profile_complete;
       if (updates.tier !== undefined) dbUpdates.tier = updates.tier;
       if (updates.has_seen_tour !== undefined) dbUpdates.has_seen_tour = updates.has_seen_tour;
+      if (updates.profile_image_url !== undefined) dbUpdates.profile_image_url = updates.profile_image_url;
       
       // Update the existing profile (no insert logic - trigger handles creation)
       const { data, error } = await supabaseClient
@@ -307,6 +310,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           updated_at: data.updated_at,
           tier: (data.tier || "wanderer") as ProfileTier,
           has_seen_tour: data.has_seen_tour,
+          profile_image_url: data.profile_image_url,
           cards: profile?.cards ?? [],
           badges: profile?.badges ?? [],
         };
