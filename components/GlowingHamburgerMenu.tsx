@@ -143,11 +143,15 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
                   onClick={(e) => {
                     if (item.label === "BADGES") {
                       // Add special pop-out effect for badges
-                      e.currentTarget.style.transform = 'scale(1.1)';
-                      e.currentTarget.style.transition = 'all 0.15s ease-out';
+                      const target = e.currentTarget;
+                      target.style.transform = 'scale(1.1)';
+                      target.style.transition = 'all 0.15s ease-out';
                       setTimeout(() => {
-                        e.currentTarget.style.transform = 'scale(1)';
-                        e.currentTarget.style.transition = 'all 0.2s ease-in';
+                        // Check if element is still mounted and accessible
+                        if (target && target.style) {
+                          target.style.transform = 'scale(1)';
+                          target.style.transition = 'all 0.2s ease-in';
+                        }
                       }, 150);
                     }
                     handleItemClick(item.label);

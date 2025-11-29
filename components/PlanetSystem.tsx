@@ -117,15 +117,6 @@ export const PlanetSystem: React.FC<PlanetSystemProps> = ({
       {/* Render elemental planets */}
       {ELEMENTAL_PLANETS.map((p) => (
         <group key={p.type}>
-          {/* Simple fallback sphere */}
-          <mesh position={p.position}>
-            <sphereGeometry args={[p.radius, 32, 32]} />
-            <meshStandardMaterial
-              color={p.color}
-              emissive={p.color}
-              emissiveIntensity={0.8}
-            />
-          </mesh>
           <StyledElementPlanet
             elementKey={p.type}
             position={p.position}

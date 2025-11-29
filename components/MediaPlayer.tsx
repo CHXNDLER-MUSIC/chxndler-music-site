@@ -14,6 +14,8 @@ import { MediaStateMachine, type MediaState } from "@/lib/media-state-machine";
 import { audioCoordinator } from "@/lib/audio-coordinator";
 import { sfx } from "@/lib/sfx";
 import NeonWaveform from "@/components/NeonWaveform";
+import SharedModal from "@/components/SharedModal";
+import AnimatedLyrics from "@/components/AnimatedLyrics";
 
 type Props = {
   onSkyChange: (webm: string, mp4: string, key: string) => void;
@@ -1171,8 +1173,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         {/* Lyrics + YouTube + Inline volume controls - moved above waveform */}
         <div className="waveform-volume" role="group" aria-label="Lyrics, YouTube, and Volume" ref={waveVolRef}>
             {((cur as any)?.hasLyrics !== false) ? (
-              <Link
-                href={`/lyrics/${cur.slug}`}
+              <button
                 className="lyrics-link-waveform"
                 title={`Lyrics for ${cur.title}`}
                 aria-label={`View lyrics for ${cur.title}`}
@@ -1180,6 +1181,11 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 data-slug={cur.slug}
                 data-id="lyrics"
                 onMouseEnter={playHover}
+                onClick={async () => {
+                  uiClick();
+                  await ensureLyricsLoaded(cur.slug);
+                  setLyricsOpen(true);
+                }}
               >
                 <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
                   <rect x="5" y="5" width="14" height="10" rx="4" ry="4" fill="none" stroke="currentColor" strokeWidth="1.6" />
@@ -1188,7 +1194,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                   <rect x="10" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
                   <rect x="13.6" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
                 </svg>
-              </Link>
+              </button>
             ) : (
               <div
                 className="lyrics-link-unavailable-waveform"
@@ -2928,6 +2934,35 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           transition: none; /* Instant movement while seeking */
         }
       `}</style>
+
+      {/* Animated Lyrics Modal */}
+      <SharedModal
+        open={lyricsOpen}
+        onClose={() => setLyricsOpen(false)}
+        title={`${cur.title} - Lyrics`}
+        ariaLabel={`Lyrics for ${cur.title}`}
+      >
+        {lyricsLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <p className="text-center text-base text-[#F2EF1D]/70 tracking-[0.16em]">
+              LOADING LYRICS...
+            </p>
+          </div>
+        ) : lyricsError ? (
+          <div className="flex items-center justify-center py-8">
+            <p className="text-center text-base text-red-400/70 tracking-[0.16em]">
+              {lyricsError}
+            </p>
+          </div>
+        ) : (
+          <div className="h-[60vh] min-h-[300px]">
+            <AnimatedLyrics
+              audioRef={audioRef}
+              lyrics={lyricsCacheRef.current.get(cur.slug) || ""}
+            />
+          </div>
+        )}
+      </SharedModal>
     </div>
   );
 }

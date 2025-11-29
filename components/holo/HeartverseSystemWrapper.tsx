@@ -97,8 +97,8 @@ export default function HeartverseSystemWrapper({
         })()}
         // Responsive camera settings
         camera={{ 
-          position: [0, 25, showAll ? 150 : 100], 
-          fov: showAll ? 100 : 75 
+          position: [0, 50, showAll ? 200 : 150], 
+          fov: showAll ? 120 : 90 
         }}
         // Performance optimizations for mobile
         gl={{
@@ -140,13 +140,6 @@ export default function HeartverseSystemWrapper({
           color="#4ff" 
         />
         
-        {/* Console glow from below */}
-        <pointLight 
-          position={[0, -5, 2]} 
-          intensity={0.8} 
-          color="#19E3FF" 
-          distance={20} 
-        />
 
         {/* Main Heartverse Solar System */}
         <HeartverseSolarSystem 
