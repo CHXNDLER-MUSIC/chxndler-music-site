@@ -18,12 +18,12 @@ type ElementCode = "heart" | "water" | "lightning" | "darkness";
 // DIAGNOSTIC MODE - Set to true to show orbit rings, bounding boxes, and labels
 const SHOW_ORBITS = true;
 
-// Fixed elemental planets configuration - ALL AT SAME HORIZONTAL LEVEL (Y=0)
+// Fixed elemental planets configuration - Darkness moved above center
 const ELEMENTS = [
   { code: "heart",     label: "💖 Heart",     position: [25, 0, 0] },     // right
   { code: "water",     label: "🌊 Water",     position: [0, 0, 25] },     // back
   { code: "lightning", label: "⚡ Lightning", position: [-25, 0, 0] },    // left
-  { code: "darkness",  label: "🌑 Darkness",  position: [0, 0, -25] },    // front
+  { code: "darkness",  label: "🌑 Darkness",  position: [0, 25, 0] },     // above center
 ] as const;
 
 // Element colors and glow configuration
@@ -217,8 +217,8 @@ function ElementalPlanetsWithTextures() {
         </Html>
       </group>
       
-      {/* Darkness Planet - Purple - FRONT OF CENTER */}
-      <group name="DarknessPlanetGroup" position={[0, 0, -30]}>
+      {/* Darkness Planet - Purple - ABOVE CENTER */}
+      <group name="DarknessPlanetGroup" position={[0, 30, 0]}>
         <mesh renderOrder={5}>
           <planeGeometry args={[16, 16]} />
           <meshStandardMaterial 

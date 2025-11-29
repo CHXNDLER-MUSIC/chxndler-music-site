@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useUIStore } from '@/store/useUIStore';
 
@@ -10,8 +10,15 @@ export default function NamePromptOnLogin() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const openNamePromptFromAuth = useUIStore(state => state.openNamePromptFromAuth);
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
+    if (!mounted) return;
     // Only react when explicit completeProfile flag is true
     const shouldComplete = searchParams.get('completeProfile') === '1';
     console.log('🎯 NamePromptOnLogin: URL params check:', { 
@@ -41,7 +48,7 @@ export default function NamePromptOnLogin() {
     } catch (e) {
       console.warn('Failed to open name prompt from auth:', e);
     }
-  }, [searchParams, openNamePromptFromAuth, router]);
+  }, [mounted, searchParams, openNamePromptFromAuth, router]);
 
   return null;
 }

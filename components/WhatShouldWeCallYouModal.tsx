@@ -26,6 +26,16 @@ export default function WhatShouldWeCallYouModal() {
     setMounted(true);
   }, []);
 
+  // Debug logging for modal state changes
+  useEffect(() => {
+    console.log('🎯 WhatShouldWeCallYouModal: State changed', { 
+      showNamePrompt, 
+      namePromptFromAuth, 
+      mounted,
+      profile: profile?.name 
+    });
+  }, [showNamePrompt, namePromptFromAuth, mounted, profile?.name]);
+
   // Check authentication and prefill name when modal opens
   useEffect(() => {
     const checkAuth = async () => {
