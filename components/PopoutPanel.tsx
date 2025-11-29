@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { sfx } from '@/lib/sfx';
 
@@ -25,6 +25,9 @@ export default function PopoutPanel({
   className = '',
   style = {}
 }: PopoutPanelProps) {
+  const [showTextChat, setShowTextChat] = useState(false);
+  const [chatMessage, setChatMessage] = useState('');
+
   if (!isOpen || typeof window === 'undefined') {
     return null;
   }
@@ -60,6 +63,139 @@ export default function PopoutPanel({
           }}
         />
       </div>
+      
+      {/* Text Chat - appears above popup */}
+      {showTextChat && (
+        <div 
+          className="fixed z-[2147483648] flex items-center justify-center"
+          style={{
+            left: '50%',
+            top: '20vh',
+            transform: 'translateX(-50%)',
+            pointerEvents: 'auto'
+          }}
+        >
+          <div
+            className="relative"
+            style={{
+              width: 'min(85vw, 600px)',
+              minHeight: '300px',
+              padding: '16px',
+              borderRadius: 18,
+              background: 'rgba(0, 15, 30, 0.85)',
+              border: '2px solid #00BFFF',
+              boxShadow: `0 0 20px #00BFFF60, 0 0 40px #00BFFF30, 0 8px 30px rgba(0,0,0,0.4)`,
+              backdropFilter: 'blur(12px) saturate(140%)',
+              color: '#00BFFF'
+            }}
+          >
+            {/* Chat header */}
+            <div 
+              className="flex items-center justify-between mb-4 pb-3"
+              style={{
+                borderBottom: '1px solid #00BFFF40'
+              }}
+            >
+              <div 
+                style={{
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  textShadow: '0 0 8px #00BFFF80'
+                }}
+              >
+                Signal Chat
+              </div>
+              <button
+                onClick={() => {
+                  try { sfx.play('close', 0.4); } catch {}
+                  setShowTextChat(false);
+                }}
+                className="hover:opacity-70"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#00BFFF',
+                  cursor: 'pointer',
+                  fontSize: '20px'
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Chat content area */}
+            <div 
+              className="flex-1 mb-4"
+              style={{
+                height: '200px',
+                overflowY: 'auto',
+                padding: '12px',
+                background: 'rgba(0, 191, 255, 0.05)',
+                borderRadius: 12,
+                border: '1px solid #00BFFF20'
+              }}
+            >
+              <div 
+                style={{
+                  fontSize: '14px',
+                  opacity: 0.7,
+                  textAlign: 'center',
+                  marginTop: '80px'
+                }}
+              >
+                Start a conversation...
+              </div>
+            </div>
+
+            {/* Message input */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={chatMessage}
+                onChange={(e) => setChatMessage(e.target.value)}
+                placeholder="Type your message..."
+                className="flex-1"
+                style={{
+                  padding: '12px 16px',
+                  background: 'rgba(0, 191, 255, 0.1)',
+                  border: '1px solid #00BFFF40',
+                  borderRadius: 25,
+                  color: '#00BFFF',
+                  fontSize: '14px',
+                  outline: 'none'
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && chatMessage.trim()) {
+                    try { sfx.play('click', 0.3); } catch {}
+                    setChatMessage('');
+                  }
+                }}
+              />
+              <button
+                onClick={() => {
+                  if (chatMessage.trim()) {
+                    try { sfx.play('click', 0.3); } catch {}
+                    setChatMessage('');
+                  }
+                }}
+                disabled={!chatMessage.trim()}
+                style={{
+                  padding: '12px 20px',
+                  background: chatMessage.trim() ? '#00BFFF20' : 'rgba(0, 191, 255, 0.1)',
+                  border: '1px solid #00BFFF40',
+                  borderRadius: 25,
+                  color: '#00BFFF',
+                  fontSize: '14px',
+                  cursor: chatMessage.trim() ? 'pointer' : 'not-allowed',
+                  opacity: chatMessage.trim() ? 1 : 0.5
+                }}
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Main popup */}
       <div 
@@ -116,6 +252,10 @@ export default function PopoutPanel({
           
           {/* Text button */}
           <button
+            onClick={() => {
+              try { sfx.play('click', 0.4); } catch {}
+              setShowTextChat(!showTextChat);
+            }}
             className="absolute top-2 left-4 hover:opacity-80 cursor-pointer w-8 h-8 rounded-full border flex items-center justify-center overflow-hidden"
             style={{ 
               borderColor: `${glowColor}80`,

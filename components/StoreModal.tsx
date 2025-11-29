@@ -319,11 +319,42 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
         {/* Price row */}
         <div className="px-6 pb-4">
           <div className="flex items-center justify-center gap-6 text-center">
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-bold text-green-400">${item.priceUsd}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-bold text-[#F2EF1D]">{item.priceHeartCoins}</span>
+            <button
+              type="button"
+              onClick={handleStripeCheckout}
+              disabled={isStripeLoading || (() => {
+                const gateState = getItemGateState(item);
+                return gateState === 'comingSoon' || gateState === 'lockedTier';
+              })()}
+              onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg font-bold transition-all duration-200 ${
+                (() => {
+                  const gateState = getItemGateState(item);
+                  if (isStripeLoading) return 'bg-gray-500/50 cursor-not-allowed text-gray-400';
+                  if (gateState === 'comingSoon' || gateState === 'lockedTier') return 'bg-gray-600/50 cursor-not-allowed text-gray-400';
+                  return 'text-green-400 hover:bg-green-500/20 hover:scale-105';
+                })()
+              }`}
+            >
+              <span className="text-lg font-bold">${item.priceUsd}</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleHeartCoinCheckout}
+              disabled={!profile || (() => {
+                const gateState = getItemGateState(item);
+                return gateState === 'comingSoon' || gateState === 'lockedTier';
+              })()}
+              onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg font-bold transition-all duration-200 ${
+                (() => {
+                  const gateState = getItemGateState(item);
+                  if (!profile || gateState === 'comingSoon' || gateState === 'lockedTier') return 'bg-gray-600/50 cursor-not-allowed text-gray-400';
+                  return 'text-[#F2EF1D] hover:bg-[#F2EF1D]/20 hover:scale-105';
+                })()
+              }`}
+            >
+              <span className="text-lg font-bold">{item.priceHeartCoins}</span>
               <img
                 src="/elements/heart-coin.webp"
                 alt="Heart Coin"
@@ -332,7 +363,7 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
                   filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
                 }}
               />
-            </div>
+            </button>
           </div>
         </div>
 
@@ -500,7 +531,7 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
                         : 'bg-green-500 hover:bg-green-600 hover:scale-[1.02] text-white'
                     }`}
                   >
-                    {isStripeLoading ? 'Redirecting...' : `Buy with $${item.priceUsd}`}
+                    {isStripeLoading ? 'Redirecting...' : `PAY WITH $${item.priceUsd}`}
                   </button>
 
                   {/* Add to Collection button */}

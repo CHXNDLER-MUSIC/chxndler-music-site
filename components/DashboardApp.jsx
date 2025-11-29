@@ -454,9 +454,10 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
   function onSongChange(id){
     // In-app song change without spotlight/beam/route reloads
-    const slug = slugify(String(id || ''));
+    // The id parameter is already the track slug from buildPlanetSongs()
+    const slug = String(id || '').toLowerCase();
     let idx = tracks.findIndex(t => (t.slug || '').toLowerCase() === slug);
-    if (idx < 0) idx = tracks.findIndex(t => (t.title || '').toLowerCase().includes(slug));
+    if (idx < 0) idx = tracks.findIndex(t => slugify(t.title || '').toLowerCase() === slug);
     if (idx < 0) {
       console.warn('DashboardApp: onSongChange - track not found for id:', id, 'slug:', slug);
       return;

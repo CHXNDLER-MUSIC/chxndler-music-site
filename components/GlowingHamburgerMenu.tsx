@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useProfile } from "@/contexts/ProfileContext";
 import Image from "next/image";
 import { sfx } from "@/lib/sfx";
+import { useDailyReflectionStatus } from "@/hooks/useDailyReflectionStatus";
 
 interface GlowingHamburgerMenuProps {
   onItemClick?: (label: string) => void;
@@ -17,6 +18,7 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { profile, user } = useProfile();
+  const { hasPendingReflection } = useDailyReflectionStatus();
   
   const journeyTitle = getJourneyTitle(!!user);
   
@@ -142,9 +144,15 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
                     }
                     handleItemClick(item.label);
                   }}
-                  className="w-full px-6 py-2 text-left text-white font-semibold tracking-wide transition-all duration-200 hover:bg-cyan-500/10 hover:text-cyan-300 relative group"
+                  className={`w-full px-6 py-2 text-left text-white font-semibold tracking-wide transition-all duration-200 hover:bg-cyan-500/10 hover:text-cyan-300 relative group ${
+                    item.label === "JOURNAL" && hasPendingReflection 
+                      ? 'animate-pulse bg-gradient-to-r from-pink-500/10 via-transparent to-pink-500/10' 
+                      : ''
+                  }`}
                   style={{
-                    textShadow: "0 0 10px rgba(252, 84, 175, 0.3)",
+                    textShadow: item.label === "JOURNAL" && hasPendingReflection
+                      ? "0 0 10px rgba(255, 20, 147, 0.8), 0 0 20px rgba(255, 105, 180, 0.6)"
+                      : "0 0 10px rgba(252, 84, 175, 0.3)",
                   }}
                 >
                   {/* Hover glow effect */}
@@ -175,7 +183,16 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
                         alt="Journal"
                         width={32}
                         height={32}
-                        className="transition-all duration-200"
+                        className={`transition-all duration-200 ${
+                          hasPendingReflection 
+                            ? 'animate-pulse drop-shadow-[0_0_8px_rgba(255,105,180,0.8)]' 
+                            : ''
+                        }`}
+                        style={{
+                          filter: hasPendingReflection 
+                            ? 'brightness(1.3) drop-shadow(0 0 12px rgba(255,105,180,0.9))'
+                            : undefined
+                        }}
                       />
                     )}
                     {item.label === "BINDER" && (
@@ -208,7 +225,18 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
                         className="transition-all duration-200"
                       />
                     )}
-                    {item.label}
+                    <div className="relative flex items-center">
+                      {item.label}
+                      {item.label === "JOURNAL" && hasPendingReflection && (
+                        <div 
+                          className="ml-2 w-2.5 h-2.5 rounded-full animate-pulse"
+                          style={{
+                            background: 'radial-gradient(circle, #FF1493 0%, #FF69B4 70%)',
+                            boxShadow: '0 0 8px #FF1493, 0 0 16px #FF69B4'
+                          }}
+                        />
+                      )}
+                    </div>
                   </span>
                 </button>
                 

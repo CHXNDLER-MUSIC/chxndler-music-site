@@ -8,6 +8,7 @@ import CodeModal from "./CodeModal";
 import JourneyModal from "./JourneyModal";
 import BinderModal from "./BinderModal";
 import HeartCoinButton from "./HeartCoinButton";
+import SoulStarJournal from "./SoulStarJournal";
 
 export default function GlowingHamburgerMenuWrapper() {
   const [codeOpen, setCodeOpen] = useState(false);
@@ -15,6 +16,7 @@ export default function GlowingHamburgerMenuWrapper() {
   const [journeyOpen, setJourneyOpen] = useState(false);
   const [binderOpen, setBinderOpen] = useState(false);
   const [heartCoinOpen, setHeartCoinOpen] = useState(false);
+  const [journalOpen, setJournalOpen] = useState(false);
 
   useEffect(() => {
     console.log('codeOpen state changed to:', codeOpen);
@@ -33,9 +35,9 @@ export default function GlowingHamburgerMenuWrapper() {
       case "BINDER":
         setBinderOpen(true);
         break;
-      // case "JOURNAL":
-      //   openJournal();
-      //   break;
+      case "JOURNAL":
+        setJournalOpen(true);
+        break;
       // case "BINDER":
       //   openBinder();
       //   break;
@@ -60,6 +62,11 @@ export default function GlowingHamburgerMenuWrapper() {
   return (
     <>
       <GlowingHamburgerMenu onItemClick={handleItemClick} />
+      {/* Journal popout */}
+      <SoulStarJournal 
+        isOpen={journalOpen}
+        onClose={() => setJournalOpen(false)}
+      />
       {/* Binder popout */}
       {binderOpen && (
         <BinderModal 

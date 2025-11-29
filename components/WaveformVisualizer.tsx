@@ -180,25 +180,10 @@ export default function WaveformVisualizer({
               C ${Math.max(2, progressX) + 0.3} ${centerY - 4}, ${Math.max(2, progressX) + 1.5} ${centerY - 4}, ${Math.max(2, progressX) + 1.5} ${centerY - 1}
               L ${Math.max(2, progressX)} ${centerY + 4} Z`}
           fill="#FFFFFF" 
-          stroke={elementColor} 
-          strokeWidth="2" 
+          stroke="none" 
+          strokeWidth="0" 
           opacity="1" 
           filter="url(#waveformGlow)" 
-        />
-        
-        {/* Additional heart shadow for depth */}
-        <path 
-          d={`M ${Math.max(2, progressX)} ${centerY + 4} 
-              L ${Math.max(2, progressX) - 1.5} ${centerY - 1}
-              C ${Math.max(2, progressX) - 1.5} ${centerY - 4}, ${Math.max(2, progressX) - 0.3} ${centerY - 4}, ${Math.max(2, progressX) - 0.3} ${centerY - 2.5}
-              C ${Math.max(2, progressX) - 0.3} ${centerY - 1.8}, ${Math.max(2, progressX)} ${centerY - 1}, ${Math.max(2, progressX)} ${centerY - 1}
-              C ${Math.max(2, progressX)} ${centerY - 1}, ${Math.max(2, progressX) + 0.3} ${centerY - 1.8}, ${Math.max(2, progressX) + 0.3} ${centerY - 2.5}
-              C ${Math.max(2, progressX) + 0.3} ${centerY - 4}, ${Math.max(2, progressX) + 1.5} ${centerY - 4}, ${Math.max(2, progressX) + 1.5} ${centerY - 1}
-              L ${Math.max(2, progressX)} ${centerY + 4} Z`}
-          fill="none" 
-          stroke={elementColor} 
-          strokeWidth="3" 
-          opacity="0.8" 
         />
       </svg>
     </div>

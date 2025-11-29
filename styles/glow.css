@@ -192,3 +192,72 @@
     inset 0 0 12px rgba(255, 255, 255, 0.2);
   transform: scale(1.1);
 }
+
+/* Cosmic notification animations for daily reflection */
+@keyframes cosmic-pulse {
+  0% {
+    transform: scale(1);
+    filter: brightness(1) drop-shadow(0 0 8px rgba(255,20,147,0.6));
+  }
+  50% {
+    transform: scale(1.05);
+    filter: brightness(1.3) drop-shadow(0 0 16px rgba(255,20,147,0.9));
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1) drop-shadow(0 0 8px rgba(255,20,147,0.6));
+  }
+}
+
+@keyframes cosmic-glow {
+  0% {
+    box-shadow: 
+      0 0 15px rgba(255,20,147,0.4),
+      0 0 30px rgba(255,105,180,0.3),
+      inset 0 0 15px rgba(255,20,147,0.1);
+  }
+  50% {
+    box-shadow: 
+      0 0 25px rgba(255,20,147,0.7),
+      0 0 50px rgba(255,105,180,0.5),
+      inset 0 0 25px rgba(255,20,147,0.2);
+  }
+  100% {
+    box-shadow: 
+      0 0 15px rgba(255,20,147,0.4),
+      0 0 30px rgba(255,105,180,0.3),
+      inset 0 0 15px rgba(255,20,147,0.1);
+  }
+}
+
+@keyframes holographic-shimmer {
+  0% {
+    background-position: -100% 0;
+  }
+  100% {
+    background-position: 100% 0;
+  }
+}
+
+/* Journal notification dot */
+.journal-notification-dot {
+  animation: cosmic-pulse 2s ease-in-out infinite;
+}
+
+/* Pending reflection glow styles */
+.pending-reflection-glow {
+  animation: cosmic-glow 3s ease-in-out infinite;
+}
+
+.pending-reflection-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255,20,147,0.1) 25%,
+    rgba(255,105,180,0.2) 50%,
+    rgba(255,20,147,0.1) 75%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: holographic-shimmer 3s linear infinite;
+}

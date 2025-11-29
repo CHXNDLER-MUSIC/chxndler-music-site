@@ -1392,7 +1392,7 @@ export default function BinderModal({ open, onClose, preselectedCard }: Props) {
                   ) : purchaseState === 'digital-preview' && selectedPurchaseType === 'digital' ? (
                     <div className="flex flex-col text-left">
                       {/* Title: [user name] Heart Coin PNG [# of current heart coins] */}
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="flex items-center justify-start gap-1 mb-2">
                         <h2 className="text-xl font-bold text-yellow-300">
                           {profile?.display_name || profile?.username || 'User'}
                         </h2>

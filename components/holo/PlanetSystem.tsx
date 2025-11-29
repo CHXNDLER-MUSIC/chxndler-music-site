@@ -20,10 +20,10 @@ const SHOW_ORBITS = true;
 
 // Fixed elemental planets configuration - cardinal positions around heart
 const ELEMENTS = [
-  { code: "heart",     label: "💖 Heart",     position: [80, 0, 0] },     // right
-  { code: "water",     label: "🌊 Water",     position: [0, 80, 0] },     // top
-  { code: "lightning", label: "⚡ Lightning", position: [-80, 0, 0] },    // left
-  { code: "darkness",  label: "🌑 Darkness",  position: [0, -80, 0] },    // bottom
+  { code: "heart",     label: "💖 Heart",     position: [45, 0, 0] },     // right
+  { code: "water",     label: "🌊 Water",     position: [0, 45, 0] },     // top
+  { code: "lightning", label: "⚡ Lightning", position: [-45, 0, 0] },    // left
+  { code: "darkness",  label: "🌑 Darkness",  position: [0, -45, 0] },    // bottom
 ] as const;
 
 // Element colors and glow configuration
@@ -46,8 +46,8 @@ function isElementCode(code: string): code is ElementCode {
   return ["heart", "water", "lightning", "darkness"].includes(code);
 }
 
-const elementOrbitRadius = 80;
-const songOrbitRadius = 12;
+const elementOrbitRadius = 60;
+const songOrbitRadius = 15;
 
 // Component to render all 4 elemental planets with textures
 function ElementalPlanetsWithTextures() {
@@ -334,25 +334,31 @@ function ElementPlanetWithGlow({
   return (
     <group position={position}>
       {/* Glow background - renderOrder 2 */}
-      <sprite ref={glowRef} scale={[15, 15, 1]} renderOrder={2}>
+      <sprite ref={glowRef} scale={[25, 25, 1]} renderOrder={2}>
         <spriteMaterial
           transparent={true}
           depthWrite={false}
           depthTest={true}
           color={glowColor}
-          opacity={0.4}
+          opacity={0.6}
           blending={AdditiveBlending}
         />
       </sprite>
       
-      {/* Element planet - renderOrder 1 - SIMPLE VERSION FOR DEBUG */}
+      {/* Element planet - renderOrder 1 - ENHANCED SIZE FOR VISIBILITY */}
       <mesh renderOrder={1} position={[0, 0, 0]}>
-        <sphereGeometry args={[8.0, 32, 32]} />
-        <meshBasicMaterial color={color} />
+        <sphereGeometry args={[18.0, 32, 32]} />
+        <meshStandardMaterial 
+          color={color}
+          emissive={color}
+          emissiveIntensity={1.2}
+          metalness={0.1}
+          roughness={0.2}
+        />
       </mesh>
       
       {/* Element label - always visible */}
-      <Html position={[0, 12, 0]} center>
+      <Html position={[0, 22, 0]} center>
         <div style={{ 
           color: color, 
           fontSize: '18px', 
@@ -768,26 +774,14 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
             <meshBasicMaterial color="#FF0000" />
           </mesh>
           
-          {/* 4 ELEMENTAL PLANETS WITH TEXTURES - ALWAYS VISIBLE - FORCED RENDERING */}
-          <ElementalPlanetsWithTextures />
-          
-          {/* EMERGENCY DEBUG SPHERES - SHOULD BE VISIBLE */}
-          <mesh position={[80, 0, 0]} renderOrder={10}>
-            <sphereGeometry args={[15, 16, 16]} />
-            <meshBasicMaterial color="#FF0000" />
-          </mesh>
-          <mesh position={[0, 80, 0]} renderOrder={10}>
-            <sphereGeometry args={[15, 16, 16]} />
-            <meshBasicMaterial color="#00FF00" />
-          </mesh>
-          <mesh position={[-80, 0, 0]} renderOrder={10}>
-            <sphereGeometry args={[15, 16, 16]} />
-            <meshBasicMaterial color="#0000FF" />
-          </mesh>
-          <mesh position={[0, -80, 0]} renderOrder={10}>
-            <sphereGeometry args={[15, 16, 16]} />
-            <meshBasicMaterial color="#FFFF00" />
-          </mesh>
+          {/* 4 ELEMENTAL PLANETS WITH SONGS ORBITING THEM */}
+          {actualShouldShowAll && (
+            <FixedElementalSystem 
+              songs={songs}
+              mainId={mainId}
+              hoverId={hoverId}
+            />
+          )}
           
           {/* Single song focus mode - show individual planet */}
           {shouldShowSingle && focusId && (() => {

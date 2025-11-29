@@ -261,7 +261,9 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
       
       {/* Modal Container */}
       <div
-        className="relative soul-journal-container"
+        className={`relative soul-journal-container ${
+          hasPendingReflection && !showHistory ? 'animate-pulse' : ''
+        }`}
         style={{
           width: 'min(92vw, 600px)',
           maxHeight: '85vh',
@@ -269,8 +271,12 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
           padding: '20px 24px 24px 24px',
           borderRadius: 18,
           background: 'transparent',
-          border: `2px solid ${elementTheme.color}`,
-          boxShadow: `0 -8px 25px ${elementTheme.glow}, 0 -4px 15px ${elementTheme.color}40, 0 12px 30px rgba(0,0,0,0.4), 0 0 24px ${elementTheme.glow}`,
+          border: hasPendingReflection && !showHistory
+            ? `2px solid ${elementTheme.color}`
+            : `2px solid ${elementTheme.color}`,
+          boxShadow: hasPendingReflection && !showHistory
+            ? `0 -8px 30px ${elementTheme.glow}, 0 -4px 20px ${elementTheme.color}60, 0 12px 35px rgba(0,0,0,0.4), 0 0 30px ${elementTheme.glow}, 0 0 50px ${elementTheme.color}40`
+            : `0 -8px 25px ${elementTheme.glow}, 0 -4px 15px ${elementTheme.color}40, 0 12px 30px rgba(0,0,0,0.4), 0 0 24px ${elementTheme.glow}`,
           backdropFilter: 'blur(16px) saturate(140%)',
           color: '#FFFFFF'
         }}

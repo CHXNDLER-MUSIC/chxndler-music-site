@@ -2429,7 +2429,7 @@ export default function HUDPanel({
                       pointerEvents: joinAlienOpen ? 'none' : 'auto', 
                       overflow: 'visible',
                       position: 'relative',
-                      transform: 'translateY(10px)' // Nudge icon down by 10px
+                      transform: 'translateY(5px)' // Nudge icon down by 5px
                     }}
                   >
                     <CoverHologram src={src} title={title} slug={trackingSong} inline={true} size={110} />
@@ -2449,7 +2449,7 @@ export default function HUDPanel({
                       pointerEvents: joinAlienOpen ? 'none' : 'auto', 
                       overflow: 'visible',
                       position: 'relative',
-                      transform: 'translateY(10px)' // Nudge icon down by 10px
+                      transform: 'translateY(5px)' // Nudge icon down by 5px
                     }}
                   >
                     <CoverHologram src={src} title={title} slug={trackingSong} inline={true} size={110} />
