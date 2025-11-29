@@ -335,17 +335,21 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
         />
 
 
-        {/* Full Log Text - Top Left */}
-        <span
-          className="absolute top-3 left-4 text-xs font-semibold"
+        {/* Full Log Button - Top Left */}
+        <button
+          onClick={() => setShowHistory(!showHistory)}
+          className="absolute top-3 left-4 text-xs font-semibold transition-all duration-200 hover:opacity-100"
           style={{
             color: elementTheme.color,
             textShadow: `0 0 4px ${elementTheme.glow}`,
-            opacity: 0.8
+            opacity: showHistory ? 1 : 0.8,
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer'
           }}
         >
           FULL LOG
-        </span>
+        </button>
 
         {/* Close button */}
         <button
@@ -380,6 +384,16 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
           }}
         >
           🌟 {showHistory ? 'SOUL JOURNAL HISTORY' : 'SOUL STAR JOURNAL'} 🌟
+          {/* Yellow underline */}
+          <div 
+            className="mt-2"
+            style={{
+              width: '100%',
+              height: '1px',
+              background: '#F2EF1D',
+              boxShadow: '0 0 4px #F2EF1D, 0 0 8px #FFFF00'
+            }}
+          />
         </div>
 
         {showHistory ? (
@@ -465,66 +479,21 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
                 {todayFormatted}
               </div>
               
-              {/* Element Information Box */}
-              <div 
-                className="mx-auto mb-3 p-3 rounded-lg"
-                style={{
-                  maxWidth: '400px',
-                  background: `${elementTheme.color}08`,
-                  border: `1px solid ${elementTheme.color}30`,
-                  borderLeft: `4px solid ${elementTheme.color}`
-                }}
-              >
-                <div className="flex justify-center items-center gap-2 mb-2">
-                  <span 
-                    className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
-                    style={{
-                      background: `${elementTheme.color}20`,
-                      border: `1px solid ${elementTheme.color}60`,
-                      color: elementTheme.color,
-                      textShadow: `0 0 4px ${elementTheme.glow}`
-                    }}
-                  >
-                    {elementEmoji} {dailyPrompt.element} element
-                  </span>
-                </div>
-                
-                {/* Element Description */}
-                <div 
-                  className="text-xs text-center leading-relaxed"
-                  style={{ color: '#FFFFFF', opacity: 0.85 }}
+              {/* Element Badge */}
+              <div className="flex justify-center items-center mb-3">
+                <span 
+                  className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
+                  style={{
+                    background: `${elementTheme.color}20`,
+                    border: `1px solid ${elementTheme.color}60`,
+                    color: elementTheme.color,
+                    textShadow: `0 0 4px ${elementTheme.glow}`
+                  }}
                 >
-                  {dailyPrompt.element === 'heart' && 'A day for love, compassion, and emotional connection'}
-                  {dailyPrompt.element === 'water' && 'A day for flow, intuition, and emotional release'}
-                  {dailyPrompt.element === 'lightning' && 'A day for energy, action, and powerful transformation'}
-                  {dailyPrompt.element === 'darkness' && 'A day for reflection, inner wisdom, and deep truth'}
-                </div>
-                
-                {/* Element from database indicator */}
-                <div 
-                  className="text-xs text-center mt-2 opacity-60"
-                  style={{ color: elementTheme.color }}
-                >
-                  Element cycle: {dailyPrompt.prompt_date}
-                </div>
+                  {elementEmoji} {dailyPrompt.element} element
+                </span>
               </div>
               
-              <div className="flex justify-center items-center gap-3">
-                {hasPendingReflection && (
-                  <span 
-                    className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
-                    style={{
-                      background: 'linear-gradient(45deg, #FF1493, #FF69B4)',
-                      border: '1px solid #FF1493',
-                      color: '#FFFFFF',
-                      textShadow: '0 0 8px #FF1493, 0 0 16px #FF69B4',
-                      boxShadow: '0 0 12px #FF1493, 0 0 24px #FF69B4'
-                    }}
-                  >
-                    ✨ You haven't written today yet
-                  </span>
-                )}
-              </div>
             </div>
 
             {/* Intention & Reflection Section */}
