@@ -24,17 +24,20 @@ export default function WhatShouldWeCallYouModal() {
   // Prevent hydration mismatch
   useEffect(() => {
     setMounted(true);
+    console.log('🎯 WhatShouldWeCallYouModal mounted (Chrome debug)');
   }, []);
 
-  // Debug logging for modal state changes
+  // Debug modal state for Chrome
   useEffect(() => {
-    console.log('🎯 WhatShouldWeCallYouModal: State changed', { 
+    console.log('🎯 Modal state (Chrome debug):', { 
       showNamePrompt, 
       namePromptFromAuth, 
-      mounted,
-      profile: profile?.name 
+      mounted, 
+      documentExists: typeof document !== 'undefined',
+      bodyExists: typeof document !== 'undefined' && !!document.body
     });
-  }, [showNamePrompt, namePromptFromAuth, mounted, profile?.name]);
+  }, [showNamePrompt, namePromptFromAuth, mounted]);
+
 
   // Check authentication and prefill name when modal opens
   useEffect(() => {
@@ -129,13 +132,22 @@ export default function WhatShouldWeCallYouModal() {
   if (!showNamePrompt) return null;
   if (typeof document === 'undefined') return null;
 
+  // Chrome-specific portal fix: ensure document.body exists and is ready
+  const portalTarget = typeof document !== 'undefined' ? document.body : null;
+  if (!portalTarget) {
+    console.warn('🚨 Portal target not available (Chrome debug)');
+    return null;
+  }
+
+  console.log('🚀 Rendering modal via portal (Chrome debug)', { portalTarget });
+
   return createPortal(
     <>
       {/* Hologram base glow */}
       <div 
         className="fixed inset-0 flex items-center justify-center"
         style={{
-          zIndex: 2147483648,
+          zIndex: 2147483647, // Chrome max safe z-index
           pointerEvents: 'none',
           paddingTop: '200px'
         }}
@@ -154,7 +166,7 @@ export default function WhatShouldWeCallYouModal() {
       <div 
         className="fixed inset-0 flex items-center justify-center"
         style={{
-          zIndex: 2147483648,
+          zIndex: 2147483647, // Chrome max safe z-index
           marginTop: '-160px'
         }}
       >
@@ -294,6 +306,6 @@ export default function WhatShouldWeCallYouModal() {
         </div>
       </div>
     </>,
-    document.body
+    portalTarget
   );
 }

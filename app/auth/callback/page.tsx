@@ -9,7 +9,6 @@ export default function AuthCallbackPage() {
 
   const handleSuccessfulAuth = async (session: any) => {
     console.log('🎉 AUTH SUCCESS! User:', session.user.id, 'Email:', session.user.email);
-    console.log('🔍 Session details:', JSON.stringify(session, null, 2));
 
     // Ensure a profile exists; if none, create a minimal one
     let needsName = false;
@@ -37,13 +36,11 @@ export default function AuthCallbackPage() {
 
     // Redirect back to cockpit with an explicit flag to show the name prompt once
     if (needsName) {
-      console.log('🚀 REDIRECTING: User needs name, going to /?completeProfile=1');
       router.push('/?completeProfile=1');
       return;
     }
 
     // Otherwise, proceed to normal welcome path for returning users
-    console.log('🏠 REDIRECTING: User has profile, going to /?welcome=1');
     router.push('/?welcome=1');
   };
 

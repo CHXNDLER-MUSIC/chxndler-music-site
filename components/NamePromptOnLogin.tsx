@@ -21,30 +21,32 @@ export default function NamePromptOnLogin() {
     if (!mounted) return;
     // Only react when explicit completeProfile flag is true
     const shouldComplete = searchParams.get('completeProfile') === '1';
-    console.log('🎯 NamePromptOnLogin: URL params check:', { 
+    console.log('🔍 NamePromptOnLogin (Chrome debug):', { 
       shouldComplete, 
-      searchParams: searchParams.toString(),
-      url: window.location.href 
+      mounted, 
+      userAgent: navigator.userAgent,
+      searchParams: searchParams.toString() 
     });
     
     if (!shouldComplete) return;
 
     // Open prompt exactly once per arrival
     try { 
-      console.log('🚀 NamePromptOnLogin: Opening name prompt from auth callback');
+      console.log('🚀 Opening name prompt (Chrome debug)');
       openNamePromptFromAuth(); 
       
-      // Clean up URL after a short delay to allow modal state to settle
+      // Clean up URL after a longer delay for Chrome compatibility
       setTimeout(() => {
         try {
           const params = new URLSearchParams(searchParams.toString());
           params.delete('completeProfile');
           const newUrl = params.toString() ? `/?${params.toString()}` : '/';
+          console.log('🧹 Cleaning up URL (Chrome debug):', newUrl);
           router.replace(newUrl);
         } catch (e) {
           console.warn('Failed to clean up URL parameters:', e);
         }
-      }, 100);
+      }, 300); // Increased delay for Chrome
     } catch (e) {
       console.warn('Failed to open name prompt from auth:', e);
     }

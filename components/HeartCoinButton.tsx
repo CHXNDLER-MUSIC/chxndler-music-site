@@ -187,6 +187,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [activeTab, setActiveTab] = useState<'EARN' | 'USE'>('EARN');
   const [activeUseTab, setActiveUseTab] = useState<'MERCH' | 'CARDS'>('MERCH');
   const [selectedCardElement, setSelectedCardElement] = useState<string | null>(null);
+  const [selectedSong, setSelectedSong] = useState<string>('All');
   const [showPhysicalForm, setShowPhysicalForm] = useState(false);
   const [showDigitalForm, setShowDigitalForm] = useState(false);
   const [currentMerchIndex, setCurrentMerchIndex] = useState(0);
@@ -301,6 +302,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       );
     }
     
+    // Filter by song
+    if (selectedSong !== 'All') {
+      filtered = filtered.filter(card => {
+        const baseName = card.card_name?.replace(/\s*\([^)]*\)\s*/g, '').trim();
+        return baseName?.toLowerCase() === selectedSong.toLowerCase();
+      });
+    }
+    
     // Filter by rarity
     if (selectedRarity !== 'All') {
       filtered = filtered.filter(card => 
@@ -308,8 +317,23 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       );
     }
     
+    // Sort cards to show selected element cards first
+    if (selectedCardElement) {
+      filtered.sort((a, b) => {
+        const aIsSelectedElement = a.element?.toLowerCase() === selectedCardElement.toLowerCase();
+        const bIsSelectedElement = b.element?.toLowerCase() === selectedCardElement.toLowerCase();
+        
+        // If a matches selected element but b doesn't, a comes first
+        if (aIsSelectedElement && !bIsSelectedElement) return -1;
+        // If b matches selected element but a doesn't, b comes first
+        if (!aIsSelectedElement && bIsSelectedElement) return 1;
+        // Otherwise, maintain current order
+        return 0;
+      });
+    }
+    
     setFilteredCards(filtered);
-  }, [cards, selectedCardElement, selectedRarity]);
+  }, [cards, selectedCardElement, selectedRarity, selectedSong]);
 
   // Load cards when the modal opens and CARDS tab is active
   useEffect(() => {
@@ -344,6 +368,22 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     });
     
     return Array.from(rarities);
+  };
+
+  // Get unique songs for filter dropdown
+  const getAvailableSongs = (): string[] => {
+    const songs = new Set<string>();
+    songs.add('All');
+    
+    cards.forEach(card => {
+      if (card.card_name) {
+        // Extract base song name (remove variations like "(ACOUSTIC)", "(REMIX)")
+        const baseName = card.card_name.replace(/\s*\([^)]*\)\s*/g, '').trim();
+        songs.add(baseName);
+      }
+    });
+    
+    return Array.from(songs);
   };
 
   // Get card counts for each element
@@ -1531,6 +1571,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 try { sfx.play('close', 0.6); } catch {}
                                 setSelectedCardElement(null);
                                 setSelectedRarity('All');
+                                setSelectedSong('All');
                               }}
                               className="flex items-center text-white hover:text-gray-300 transition-colors"
                               style={{ fontSize: '14px' }}
@@ -1543,6 +1584,15 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           {/* Filter dropdowns */}
                           <div className="flex gap-2 mb-4">
                             <select 
+                              value={selectedSong}
+                              onChange={(e) => setSelectedSong(e.target.value)}
+                              className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-1"
+                            >
+                              {getAvailableSongs().map(song => (
+                                <option key={song} value={song}>{song}</option>
+                              ))}
+                            </select>
+                            <select 
                               value={selectedRarity}
                               onChange={(e) => setSelectedRarity(e.target.value)}
                               className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-1"
@@ -1550,20 +1600,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               {getAvailableRarities().map(rarity => (
                                 <option key={rarity} value={rarity}>{rarity}</option>
                               ))}
-                            </select>
-                            <select 
-                              value={selectedCardElement || 'all'}
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                setSelectedCardElement(value === 'all' ? null : value);
-                              }}
-                              className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-1"
-                            >
-                              <option value="all">All Elements</option>
-                              <option value="lightning">Lightning</option>
-                              <option value="darkness">Darkness</option>
-                              <option value="water">Water</option>
-                              <option value="heart">Heart</option>
                             </select>
                           </div>
 

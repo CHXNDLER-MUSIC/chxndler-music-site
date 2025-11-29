@@ -553,6 +553,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     setCurTrack(t);
     setLinks({ spotify: t.spotify || LINKS.spotify, apple: t.apple || LINKS.apple });
     
+    // Update player store so HoloAudioBridge plays the correct song
+    try { playerStore.getState().setMain(selectedTrack.slug || ''); } catch {}
+    
     // Set flags for selection sequencing: keep planets visible during warp on homepage
     setPendingTrackPlay(true);
     setHidePlanetsForSelection(false);

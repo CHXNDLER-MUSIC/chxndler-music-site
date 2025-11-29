@@ -19,10 +19,7 @@ export const useUIStore = create<UIState>((set) => ({
   showNamePrompt: false,
   namePromptFromAuth: false,
   openNamePrompt: () => set({ showNamePrompt: true, namePromptFromAuth: false }),
-  openNamePromptFromAuth: () => {
-    console.log('🎯 UI Store: openNamePromptFromAuth called');
-    set({ showNamePrompt: true, namePromptFromAuth: true });
-  },
+  openNamePromptFromAuth: () => set({ showNamePrompt: true, namePromptFromAuth: true }),
   closeNamePrompt: () => set({ showNamePrompt: false, namePromptFromAuth: false }),
   showElementSelection: false,
   openElementSelection: () => set({ showElementSelection: true }),

@@ -266,11 +266,37 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           onClick={onClose}
         />
         <div className="relative w-full max-w-lg max-h-[90vh] z-[2147483648]">
-          <div className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-yellow-400/60 bg-white/5 shadow-[0_0_26px_rgba(255,255,0,0.35)] overflow-y-auto">
-            <div
-              className="absolute inset-0 rounded-2xl pointer-events-none"
+          <div className="relative rounded-2xl p-4 backdrop-blur-md border border-pink-400/60 bg-black/60 shadow-[0_-8px_25px_rgba(255,105,180,0.4),_0_-4px_15px_rgba(255,105,180,0.25),_0_12px_30px_rgba(0,0,0,0.4),_0_0_24px_rgba(255,105,180,0.45)] overflow-y-auto">
+            
+            {/* Soft bottom glow */}
+            <div 
+              className="absolute"
               style={{
-                boxShadow: "0 0 40px rgba(255,255,0,0.5), 0 0 80px rgba(255,255,0,0.3), inset 0 0 24px rgba(255,255,0,0.2)",
+                bottom: '-15px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '120%',
+                height: '30px',
+                background: 'radial-gradient(ellipse 60% 100% at 50% 0%, #FF69B460 0%, #FF69B430 40%, transparent 80%)',
+                filter: 'blur(30px)',
+                pointerEvents: 'none',
+                zIndex: -1
+              }}
+            />
+            
+            {/* Top bloom glow */}
+            <div 
+              className="absolute"
+              style={{
+                top: '-10px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '80%',
+                height: '20px',
+                background: 'radial-gradient(ellipse 70% 100% at 50% 100%, #FF69B440 0%, #FF69B420 50%, transparent 100%)',
+                filter: 'blur(25px)',
+                pointerEvents: 'none',
+                zIndex: -1
               }}
             />
 
@@ -278,16 +304,24 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
               type="button"
               aria-label="Close"
               onClick={onClose}
-              className="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border-2 text-lg font-bold transition-all duration-200 hover:scale-110 text-yellow-400 border-yellow-400"
+              className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border text-lg font-bold transition-all duration-200 hover:scale-110 text-pink-400 border-pink-400/80"
               style={{
-                textShadow: "0 0 5px #FFFF00, 0 0 10px #FFFF00, 0 0 15px #FFFF00",
-                boxShadow: "0 0 10px rgba(255, 255, 0, 0.5), 0 0 20px rgba(255, 255, 0, 0.3), inset 0 0 10px rgba(255, 255, 0, 0.1)"
+                background: '#FF69B410',
+                backdropFilter: 'blur(2px)',
+                boxShadow: '0 0 15px #FF69B480, 0 0 25px #FF69B450, 0 0 35px #FF69B430',
+                textShadow: '0 0 8px #FF69B480, 0 0 15px #FF69B460'
               }}
             >
-              ×
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+                <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+              </svg>
             </button>
 
-            <h2 className="relative text-xl font-bold tracking-wider text-white drop-shadow mb-1">
+            <h2 className="relative text-xl font-bold tracking-wider text-white drop-shadow mb-1" style={{
+              color: '#FF69B4',
+              textShadow: '0 0 8px #FF69B460'
+            }}>
               BADGE DETAILS
             </h2>
             
@@ -452,11 +486,37 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           onClick={onClose}
         />
         <div className="relative w-full max-w-lg max-h-[90vh] z-[2147483648]">
-          <div className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-yellow-400/60 bg-white/5 shadow-[0_0_26px_rgba(255,255,0,0.35)] overflow-y-auto">
-            <div
-              className="absolute inset-0 rounded-2xl pointer-events-none"
+          <div className="relative rounded-2xl p-4 backdrop-blur-md border border-pink-400/60 bg-black/60 shadow-[0_-8px_25px_rgba(255,105,180,0.4),_0_-4px_15px_rgba(255,105,180,0.25),_0_12px_30px_rgba(0,0,0,0.4),_0_0_24px_rgba(255,105,180,0.45)] overflow-y-auto">
+            
+            {/* Soft bottom glow */}
+            <div 
+              className="absolute"
               style={{
-                boxShadow: "0 0 40px rgba(255,255,0,0.5), 0 0 80px rgba(255,255,0,0.3), inset 0 0 24px rgba(255,255,0,0.2)",
+                bottom: '-15px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '120%',
+                height: '30px',
+                background: 'radial-gradient(ellipse 60% 100% at 50% 0%, #FF69B460 0%, #FF69B430 40%, transparent 80%)',
+                filter: 'blur(30px)',
+                pointerEvents: 'none',
+                zIndex: -1
+              }}
+            />
+            
+            {/* Top bloom glow */}
+            <div 
+              className="absolute"
+              style={{
+                top: '-10px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '80%',
+                height: '20px',
+                background: 'radial-gradient(ellipse 70% 100% at 50% 100%, #FF69B440 0%, #FF69B420 50%, transparent 100%)',
+                filter: 'blur(25px)',
+                pointerEvents: 'none',
+                zIndex: -1
               }}
             />
 
@@ -464,16 +524,24 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
               type="button"
               aria-label="Close"
               onClick={onClose}
-              className="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border-2 text-lg font-bold transition-all duration-200 hover:scale-110 text-yellow-400 border-yellow-400"
+              className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border text-lg font-bold transition-all duration-200 hover:scale-110 text-pink-400 border-pink-400/80"
               style={{
-                textShadow: "0 0 5px #FFFF00, 0 0 10px #FFFF00, 0 0 15px #FFFF00",
-                boxShadow: "0 0 10px rgba(255, 255, 0, 0.5), 0 0 20px rgba(255, 255, 0, 0.3), inset 0 0 10px rgba(255, 255, 0, 0.1)"
+                background: '#FF69B410',
+                backdropFilter: 'blur(2px)',
+                boxShadow: '0 0 15px #FF69B480, 0 0 25px #FF69B450, 0 0 35px #FF69B430',
+                textShadow: '0 0 8px #FF69B480, 0 0 15px #FF69B460'
               }}
             >
-              ×
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+                <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+              </svg>
             </button>
 
-            <h2 className="relative text-xl font-bold tracking-wider text-white drop-shadow mb-1">
+            <h2 className="relative text-xl font-bold tracking-wider text-white drop-shadow mb-1" style={{
+              color: '#FF69B4',
+              textShadow: '0 0 8px #FF69B460'
+            }}>
               {category.name}
             </h2>
             
@@ -544,11 +612,37 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         onClick={onClose}
       />
       <div className="relative w-full max-w-lg max-h-[90vh] z-[2147483648]">
-        <div className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-yellow-400/60 bg-white/5 shadow-[0_0_26px_rgba(255,255,0,0.35)] overflow-y-auto">
-          <div
-            className="absolute inset-0 rounded-2xl pointer-events-none"
+        <div className="relative rounded-2xl p-4 backdrop-blur-md border border-pink-400/60 bg-black/60 shadow-[0_-8px_25px_rgba(255,105,180,0.4),_0_-4px_15px_rgba(255,105,180,0.25),_0_12px_30px_rgba(0,0,0,0.4),_0_0_24px_rgba(255,105,180,0.45)] overflow-y-auto">
+          
+          {/* Soft bottom glow */}
+          <div 
+            className="absolute"
             style={{
-              boxShadow: "0 0 40px rgba(255,255,0,0.5), 0 0 80px rgba(255,255,0,0.3), inset 0 0 24px rgba(255,255,0,0.2)",
+              bottom: '-15px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '120%',
+              height: '30px',
+              background: 'radial-gradient(ellipse 60% 100% at 50% 0%, #FF69B460 0%, #FF69B430 40%, transparent 80%)',
+              filter: 'blur(30px)',
+              pointerEvents: 'none',
+              zIndex: -1
+            }}
+          />
+          
+          {/* Top bloom glow */}
+          <div 
+            className="absolute"
+            style={{
+              top: '-10px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '80%',
+              height: '20px',
+              background: 'radial-gradient(ellipse 70% 100% at 50% 100%, #FF69B440 0%, #FF69B420 50%, transparent 100%)',
+              filter: 'blur(25px)',
+              pointerEvents: 'none',
+              zIndex: -1
             }}
           />
 
@@ -556,16 +650,24 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             type="button"
             aria-label="Close"
             onClick={onClose}
-            className="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border-2 text-lg font-bold transition-all duration-200 hover:scale-110 text-yellow-400 border-yellow-400"
+            className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border text-lg font-bold transition-all duration-200 hover:scale-110 text-pink-400 border-pink-400/80"
             style={{
-              textShadow: "0 0 5px #FFFF00, 0 0 10px #FFFF00, 0 0 15px #FFFF00",
-              boxShadow: "0 0 10px rgba(255, 255, 0, 0.5), 0 0 20px rgba(255, 255, 0, 0.3), inset 0 0 10px rgba(255, 255, 0, 0.1)"
+              background: '#FF69B410',
+              backdropFilter: 'blur(2px)',
+              boxShadow: '0 0 15px #FF69B480, 0 0 25px #FF69B450, 0 0 35px #FF69B430',
+              textShadow: '0 0 8px #FF69B480, 0 0 15px #FF69B460'
             }}
           >
-            ×
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+              <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+              <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
           </button>
 
-          <h2 className="relative text-xl font-bold tracking-wider text-white drop-shadow mb-1">
+          <h2 className="relative text-xl font-bold tracking-wider text-white drop-shadow mb-1" style={{
+            color: '#FF69B4',
+            textShadow: '0 0 8px #FF69B460'
+          }}>
             BADGES
           </h2>
           

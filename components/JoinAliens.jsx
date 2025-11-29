@@ -504,7 +504,16 @@ export default function JoinAliens({ visible = true } = {}) {
           e.target.style.textShadow = '0 0 8px #00FFFF';
         }}
       >
-        TEXT
+        <img 
+          src="/elements/text.webp" 
+          alt="Text" 
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+            filter: 'brightness(0) saturate(100%) invert(85%) sepia(100%) saturate(1000%) hue-rotate(180deg) brightness(95%)'
+          }}
+        />
       </button>
 
       {/* Phone Button - positioned above $ button */}
