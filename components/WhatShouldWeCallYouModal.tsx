@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useUIStore } from "@/store/useUIStore";
 import { useProfile } from "@/contexts/ProfileContext";
@@ -132,24 +131,22 @@ export default function WhatShouldWeCallYouModal() {
   if (!showNamePrompt) return null;
   if (typeof document === 'undefined') return null;
 
-  // Chrome-specific portal fix: ensure document.body exists and is ready
-  const portalTarget = typeof document !== 'undefined' ? document.body : null;
-  if (!portalTarget) {
-    console.warn('🚨 Portal target not available (Chrome debug)');
-    return null;
-  }
-
-  console.log('🚀 Rendering modal via portal (Chrome debug)', { portalTarget });
-
-  return createPortal(
+  // Chrome-compatible rendering: render directly instead of portal for better compatibility
+  // Force visibility with inline styles for Chrome
+  const forceVisible = showNamePrompt && mounted;
+  
+  return (
     <>
       {/* Hologram base glow */}
       <div 
         className="fixed inset-0 flex items-center justify-center"
         style={{
-          zIndex: 2147483647, // Chrome max safe z-index
+          zIndex: 9999999, // Very high z-index for Chrome compatibility
           pointerEvents: 'none',
-          paddingTop: '200px'
+          paddingTop: '200px',
+          display: forceVisible ? 'flex' : 'none',
+          visibility: forceVisible ? 'visible' : 'hidden',
+          opacity: forceVisible ? 1 : 0
         }}
       >
         <div
@@ -166,8 +163,11 @@ export default function WhatShouldWeCallYouModal() {
       <div 
         className="fixed inset-0 flex items-center justify-center"
         style={{
-          zIndex: 2147483647, // Chrome max safe z-index
-          marginTop: '-160px'
+          zIndex: 9999999, // Very high z-index for Chrome compatibility
+          marginTop: '-160px',
+          display: forceVisible ? 'flex' : 'none',
+          visibility: forceVisible ? 'visible' : 'hidden',
+          opacity: forceVisible ? 1 : 0
         }}
       >
         <div
@@ -305,7 +305,6 @@ export default function WhatShouldWeCallYouModal() {
         </form>
         </div>
       </div>
-    </>,
-    portalTarget
+    </>
   );
 }

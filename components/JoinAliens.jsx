@@ -4,15 +4,21 @@ import React, { useState, useEffect, useRef } from "react";
 import { sfx } from "@/lib/sfx";
 import { useProfile } from "@/contexts/ProfileContext";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { useLiveStatus } from "@/hooks/useLiveStatus";
+import ChatPanel from "@/components/chat/ChatPanel";
 
 export default function JoinAliens({ visible = true } = {}) {
   const { profile, savePhone, user } = useProfile();
+  const { isLive, statusText, canOpenChat } = useLiveStatus();
   const [phone, setPhone] = useState(profile?.phone ?? "");
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [heartSignalSent, setHeartSignalSent] = useState(false);
   const [status, setStatus] = useState("idle");
+  
+  // Chat state
+  const [isChatOpen, setIsChatOpen] = useState(false);
   
   // Tip functionality state
   const [showTipOptions, setShowTipOptions] = useState(false);
@@ -469,43 +475,57 @@ export default function JoinAliens({ visible = true } = {}) {
       <button
         onClick={() => {
           try { sfx.play('audio/click.mp3', 0.5); } catch {}
-          // Add text button functionality here
-          console.log('Text button clicked');
+          if (canOpenChat) {
+            setIsChatOpen(!isChatOpen);
+          } else {
+            // Show tooltip or message about chat availability
+            console.log('Chat not available:', statusText);
+          }
         }}
+        title={canOpenChat ? "Open live chat" : statusText}
         style={{
           position: 'absolute',
           top: '12px',
           left: '12px',
           width: '40px',
           height: '40px',
-          background: 'rgba(0, 255, 255, 0.1)',
-          border: '2px solid #00FFFF',
+          background: canOpenChat 
+            ? 'rgba(0, 255, 255, 0.2)'
+            : 'rgba(128, 128, 128, 0.1)',
+          border: `2px solid ${canOpenChat ? '#00FFFF' : '#808080'}`,
           borderRadius: '8px',
-          color: '#00FFFF',
+          color: canOpenChat ? '#00FFFF' : '#808080',
           fontSize: '14px',
           fontWeight: 'bold',
-          cursor: 'pointer',
+          cursor: canOpenChat ? 'pointer' : 'not-allowed',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           transition: 'all 300ms ease',
           outline: 'none',
-          textShadow: '0 0 8px #00FFFF',
-          boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)',
-          zIndex: 10
+          textShadow: canOpenChat ? '0 0 8px #00FFFF' : 'none',
+          boxShadow: canOpenChat 
+            ? '0 0 15px rgba(0, 255, 255, 0.3)'
+            : 'none',
+          zIndex: 10,
+          opacity: canOpenChat ? 1 : 0.5
         }}
         onMouseEnter={(e) => {
-          try { sfx.play('hover', 0.3); } catch {}
-          e.target.style.transform = 'scale(1.05)';
-          e.target.style.background = 'rgba(0, 255, 255, 0.2)';
-          e.target.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.6)';
-          e.target.style.textShadow = '0 0 15px #00FFFF, 0 0 25px #00FFFF';
+          if (canOpenChat) {
+            try { sfx.play('hover', 0.3); } catch {}
+            e.target.style.transform = 'scale(1.05)';
+            e.target.style.background = 'rgba(0, 255, 255, 0.3)';
+            e.target.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.6)';
+            e.target.style.textShadow = '0 0 15px #00FFFF, 0 0 25px #00FFFF';
+          }
         }}
         onMouseLeave={(e) => {
-          e.target.style.transform = 'scale(1)';
-          e.target.style.background = 'rgba(0, 255, 255, 0.1)';
-          e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';
-          e.target.style.textShadow = '0 0 8px #00FFFF';
+          if (canOpenChat) {
+            e.target.style.transform = 'scale(1)';
+            e.target.style.background = 'rgba(0, 255, 255, 0.2)';
+            e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';
+            e.target.style.textShadow = '0 0 8px #00FFFF';
+          }
         }}
       >
         <img 
@@ -1552,6 +1572,12 @@ export default function JoinAliens({ visible = true } = {}) {
           </button>
         </div>
       )}
+
+      {/* Chat Panel */}
+      <ChatPanel 
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+      />
     </div>
   );
 }

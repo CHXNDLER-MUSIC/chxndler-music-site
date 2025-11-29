@@ -5,6 +5,7 @@ import { useProfile } from "@/contexts/ProfileContext";
 import Image from "next/image";
 import { sfx } from "@/lib/sfx";
 import { useDailyReflectionStatus } from "@/hooks/useDailyReflectionStatus";
+import { useUIState } from "@/lib/use-ui-state";
 
 interface GlowingHamburgerMenuProps {
   onItemClick?: (label: string) => void;
@@ -20,6 +21,7 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
   const menuRef = useRef<HTMLDivElement>(null);
   const { profile, user } = useProfile();
   const { hasPendingReflection } = useDailyReflectionStatus();
+  const { hasEnteredHeartverse } = useUIState();
   
   const journeyTitle = getJourneyTitle(!!user);
   
@@ -44,6 +46,13 @@ export default function GlowingHamburgerMenu({ onItemClick }: GlowingHamburgerMe
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  // Auto-open menu when user enters heartverse (heart coin displays)
+  useEffect(() => {
+    if (hasEnteredHeartverse) {
+      setIsOpen(true);
+    }
+  }, [hasEnteredHeartverse]);
 
   const toggleMenu = () => {
     sfx.play('click', 0.7);

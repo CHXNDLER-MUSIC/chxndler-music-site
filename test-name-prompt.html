@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Name Prompt Flow</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #000; color: #00ffff; }
+        .test-container { max-width: 600px; margin: 0 auto; }
+        .test-link { 
+            display: inline-block; 
+            margin: 10px 0; 
+            padding: 10px 20px; 
+            background: rgba(0,255,255,0.2); 
+            border: 1px solid #00ffff;
+            color: #00ffff; 
+            text-decoration: none; 
+            border-radius: 5px;
+        }
+        .test-link:hover { background: rgba(0,255,255,0.3); }
+        .info { background: rgba(0,255,255,0.1); padding: 15px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Test Name Prompt Authentication Flow</h1>
+        
+        <div class="info">
+            <h3>How to test the missing popup:</h3>
+            <ol>
+                <li>Click the "Test Complete Profile Flow" link below</li>
+                <li>This simulates what happens when a user clicks an email sign-in link</li>
+                <li>You should see the "What should we call you?" popup appear</li>
+                <li>If it doesn't appear, we've found the issue!</li>
+            </ol>
+        </div>
+
+        <h3>Test Links:</h3>
+        
+        <a href="http://localhost:3000/?completeProfile=1" class="test-link">
+            🧪 Test Complete Profile Flow (should show popup)
+        </a>
+        <br>
+        
+        <a href="http://localhost:3000/?welcome=1" class="test-link">
+            🏠 Test Welcome Flow (should NOT show popup)
+        </a>
+        <br>
+        
+        <a href="http://localhost:3000/" class="test-link">
+            🌟 Normal Home Page (should NOT show popup)
+        </a>
+
+        <div class="info">
+            <h3>Expected behavior:</h3>
+            <p>Only the "Complete Profile Flow" link should trigger the name prompt popup. The other links should load the normal homepage without any popups.</p>
+            
+            <h4>If the popup doesn't appear, possible issues:</h4>
+            <ul>
+                <li>JavaScript errors preventing the component from mounting</li>
+                <li>State management issues in the UI store</li>
+                <li>Component rendering issues</li>
+                <li>CSS z-index or visibility problems</li>
+                <li>Suspense fallback not resolving</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

@@ -115,6 +115,11 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
       setDailyPrompt(prompt);
     } catch (error) {
       console.error('Failed to load daily prompt:', error);
+      // Set error state that will be displayed to user
+      setJournalState(prev => ({
+        ...prev,
+        errorMessage: "Unable to load today's soul prompt from database. Please contact support."
+      }));
     }
   };
 
@@ -453,25 +458,59 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
           /* Today's Journal Interface */
           <>
             {/* Date and Element with pending notification */}
-            <div className="text-center mb-3">
+            <div className="text-center mb-4">
               <div 
-                className="text-base font-semibold mb-1"
+                className="text-base font-semibold mb-2"
                 style={{ color: '#FFFFFF' }}
               >
                 {todayFormatted}
               </div>
-              <div className="flex justify-center items-center gap-3">
-                <span 
-                  className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
-                  style={{
-                    background: `${elementTheme.color}20`,
-                    border: `1px solid ${elementTheme.color}60`,
-                    color: elementTheme.color,
-                    textShadow: `0 0 4px ${elementTheme.glow}`
-                  }}
+              
+              {/* Element Information Box */}
+              <div 
+                className="mx-auto mb-3 p-3 rounded-lg"
+                style={{
+                  maxWidth: '400px',
+                  background: `${elementTheme.color}08`,
+                  border: `1px solid ${elementTheme.color}30`,
+                  borderLeft: `4px solid ${elementTheme.color}`
+                }}
+              >
+                <div className="flex justify-center items-center gap-2 mb-2">
+                  <span 
+                    className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
+                    style={{
+                      background: `${elementTheme.color}20`,
+                      border: `1px solid ${elementTheme.color}60`,
+                      color: elementTheme.color,
+                      textShadow: `0 0 4px ${elementTheme.glow}`
+                    }}
+                  >
+                    {elementEmoji} {dailyPrompt.element} element
+                  </span>
+                </div>
+                
+                {/* Element Description */}
+                <div 
+                  className="text-xs text-center leading-relaxed"
+                  style={{ color: '#FFFFFF', opacity: 0.85 }}
                 >
-                  {elementEmoji} {dailyPrompt.element} element
-                </span>
+                  {dailyPrompt.element === 'heart' && 'A day for love, compassion, and emotional connection'}
+                  {dailyPrompt.element === 'water' && 'A day for flow, intuition, and emotional release'}
+                  {dailyPrompt.element === 'lightning' && 'A day for energy, action, and powerful transformation'}
+                  {dailyPrompt.element === 'darkness' && 'A day for reflection, inner wisdom, and deep truth'}
+                </div>
+                
+                {/* Element from database indicator */}
+                <div 
+                  className="text-xs text-center mt-2 opacity-60"
+                  style={{ color: elementTheme.color }}
+                >
+                  Element cycle: {dailyPrompt.prompt_date}
+                </div>
+              </div>
+              
+              <div className="flex justify-center items-center gap-3">
                 {hasPendingReflection && (
                   <span 
                     className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"

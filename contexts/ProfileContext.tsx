@@ -491,16 +491,25 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const getDailyPrompts = async (): Promise<DailyPrompts | null> => {
     try {
       const response = await fetch('/api/soulPrompt/daily');
+      
       if (!response.ok) {
-        console.error('Error fetching daily prompts:', response.statusText);
-        return null;
+        // If database doesn't have entry, throw error so journal can show proper message
+        const errorData = await response.json();
+        console.error('Error fetching daily prompts:', errorData.message || response.statusText);
+        throw new Error(errorData.message || 'Failed to fetch daily prompt from database');
       }
 
       const data = await response.json();
+      
+      // Validate that we received proper data structure
+      if (!data.element || !data.intention || !data.reflection) {
+        throw new Error('Invalid prompt data received from database');
+      }
+      
       return data;
     } catch (error) {
       console.error('Error in getDailyPrompts:', error);
-      return null;
+      throw error; // Re-throw so journal component can handle it
     }
   };
 

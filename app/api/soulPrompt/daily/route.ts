@@ -76,29 +76,16 @@ export async function GET(request: NextRequest) {
   try {
     // Get today's date in YYYY-MM-DD format
     const today = new Date().toISOString().split('T')[0];
-    const element = getElementForDate(today);
 
-    // Check if soul_daily_prompts entry exists for today
+    // ALWAYS check Supabase first - the table is the source of truth
     let { data: dailyPrompt, error: dailyError } = await supabase
       .from('soul_daily_prompts')
       .select(`
         id,
         prompt_date,
         element,
-        intention_prompt_id,
-        reflection_prompt_id,
-        intention:soul_prompts!intention_prompt_id (
-          id,
-          text,
-          element,
-          prompt_type
-        ),
-        reflection:soul_prompts!reflection_prompt_id (
-          id,
-          text,
-          element,
-          prompt_type
-        )
+        intention,
+        prompt
       `)
       .eq('prompt_date', today)
       .maybeSingle();
@@ -108,151 +95,57 @@ export async function GET(request: NextRequest) {
       throw new Error(`Failed to fetch daily prompt: ${dailyError.message}`);
     }
 
-    // If no daily prompt exists, create one
-    if (!dailyPrompt) {
-      console.log(`No daily prompt found for ${today}, creating one for element: ${element}`);
+    // If daily prompt exists in database, use it as the absolute source of truth
+    if (dailyPrompt) {
+      console.log(`Using daily prompt from database for ${today}: element=${dailyPrompt.element}`);
       
-      // For now, manually set today to be "darkness" element
-      // Later this could be manually configured or use a different system
-      const todayElement = 'darkness'; // Override calculated element for manual control
-      
-      // Calculate prompt indices based on days since cycle start
-      const cycleStartTime = CYCLE_START_DATE.getTime();
-      const currentTime = new Date(today).getTime();
-      const daysSinceStart = Math.floor((currentTime - cycleStartTime) / (1000 * 60 * 60 * 24));
-      
-      // Use a different index for intention vs reflection to add variety
-      const intentionPromptIndex = Math.floor(daysSinceStart / 4); // Changes every 4 days (full element cycle)
-      const reflectionPromptIndex = Math.floor(daysSinceStart / 4) + 1; // Offset by 1 for variety
-      
-      // Get the prompts from soul_prompts table using the override element
-      const intentionPrompt = await getOrderedPrompt('intention', todayElement, intentionPromptIndex);
-      const reflectionPrompt = await getOrderedPrompt('reflection', todayElement, reflectionPromptIndex);
-
-      // Create the daily prompt entry
-      const { data: newDailyPrompt, error: insertError } = await supabase
-        .from('soul_daily_prompts')
-        .insert({
-          prompt_date: today,
-          element: todayElement, // Use the manual override
-          intention_prompt_id: intentionPrompt.id,
-          reflection_prompt_id: reflectionPrompt.id
-        })
-        .select(`
-          id,
-          prompt_date,
-          element,
-          intention_prompt_id,
-          reflection_prompt_id,
-          intention:soul_prompts!intention_prompt_id (
-            id,
-            text,
-            element,
-            prompt_type
-          ),
-          reflection:soul_prompts!reflection_prompt_id (
-            id,
-            text,
-            element,
-            prompt_type
-          )
-        `)
-        .single();
-
-      if (insertError) {
-        console.error('Error creating daily prompt:', insertError);
-        throw new Error(`Failed to create daily prompt: ${insertError.message}`);
+      // Ensure we have valid prompt data
+      if (!dailyPrompt?.intention || !dailyPrompt?.prompt) {
+        console.error('Invalid daily prompt data in database:', dailyPrompt);
+        throw new Error('Invalid daily prompt structure in database');
       }
 
-      dailyPrompt = newDailyPrompt;
+      return NextResponse.json({
+        prompt_date: dailyPrompt.prompt_date,
+        element: dailyPrompt.element, // This comes directly from the database
+        intention: {
+          id: dailyPrompt.id,
+          text: dailyPrompt.intention,
+          element: dailyPrompt.element,
+          prompt_type: 'intention'
+        },
+        reflection: {
+          id: dailyPrompt.id,
+          text: dailyPrompt.prompt, // The 'prompt' column serves as reflection prompt
+          element: dailyPrompt.element,
+          prompt_type: 'reflection'
+        },
+      });
     }
 
-    // Ensure we have valid prompt data
-    if (!dailyPrompt?.intention || !dailyPrompt?.reflection) {
-      console.error('Invalid daily prompt data:', dailyPrompt);
-      throw new Error('Invalid daily prompt structure');
-    }
-
-    return NextResponse.json({
-      prompt_date: dailyPrompt.prompt_date,
-      element: dailyPrompt.element,
-      intention: Array.isArray(dailyPrompt.intention) ? dailyPrompt.intention[0] : dailyPrompt.intention,
-      reflection: Array.isArray(dailyPrompt.reflection) ? dailyPrompt.reflection[0] : dailyPrompt.reflection,
-    });
+    // If no database entry exists, we cannot create one without the soul_prompts table
+    // This should prompt the admin to create the entry manually
+    console.warn(`No daily prompt found in database for ${today}. Database should be the source of truth.`);
+    
+    return NextResponse.json(
+      { 
+        error: 'No daily prompt configured',
+        message: `No soul prompt entry found for ${today}. Please create an entry in the soul_daily_prompts table.`,
+        date: today
+      },
+      { status: 404 }
+    );
 
   } catch (error) {
     console.error('Error in daily prompts API:', error);
     
-    // Fallback to hardcoded prompts if database fails
-    const today = new Date().toISOString().split('T')[0];
-    const element = 'darkness'; // Manual override for today
-    
-    const hardcodedPrompts = {
-      heart: {
-        intention: { 
-          id: 'temp-heart-intention', 
-          text: 'What is one gentle way I can show myself love today?', 
-          element: 'heart', 
-          prompt_type: 'intention' 
-        },
-        reflection: { 
-          id: 'temp-heart-reflection', 
-          text: 'Where did love show up for me today?', 
-          element: 'heart', 
-          prompt_type: 'reflection' 
-        }
+    return NextResponse.json(
+      { 
+        error: 'Database connection failed',
+        message: 'Could not connect to soul prompts database. Please try again later.',
+        date: new Date().toISOString().split('T')[0]
       },
-      water: {
-        intention: { 
-          id: 'temp-water-intention', 
-          text: 'How can I let my emotions move instead of holding them back?', 
-          element: 'water', 
-          prompt_type: 'intention' 
-        },
-        reflection: { 
-          id: 'temp-water-reflection', 
-          text: 'What emotions flowed through me today?', 
-          element: 'water', 
-          prompt_type: 'reflection' 
-        }
-      },
-      lightning: {
-        intention: { 
-          id: 'temp-lightning-intention', 
-          text: 'Where can I channel my energy with purpose today?', 
-          element: 'lightning', 
-          prompt_type: 'intention' 
-        },
-        reflection: { 
-          id: 'temp-lightning-reflection', 
-          text: 'Where did I feel a spark of energy today?', 
-          element: 'lightning', 
-          prompt_type: 'reflection' 
-        }
-      },
-      darkness: {
-        intention: { 
-          id: 'temp-darkness-intention', 
-          text: 'What truth is quietly asking to be acknowledged today?', 
-          element: 'darkness', 
-          prompt_type: 'intention' 
-        },
-        reflection: { 
-          id: 'temp-darkness-reflection', 
-          text: 'What did silence teach me today?', 
-          element: 'darkness', 
-          prompt_type: 'reflection' 
-        }
-      }
-    };
-
-    const prompts = hardcodedPrompts[element as keyof typeof hardcodedPrompts];
-
-    return NextResponse.json({
-      prompt_date: today,
-      element: element,
-      intention: prompts.intention,
-      reflection: prompts.reflection,
-    });
+      { status: 500 }
+    );
   }
 }

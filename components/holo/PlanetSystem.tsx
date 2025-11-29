@@ -695,7 +695,7 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         // Pull the camera back and widen FOV so the full system fits
         // Elevated viewpoint: camera positioned above to look down at the planet system
         // Zoom out more when showing all planets for better overview
-        camera={{ position: [0.2, 30, actualShouldShowAll ? 280 : 150], fov: actualShouldShowAll ? 160 : 95 }}
+        camera={{ position: [0.2, 100, actualShouldShowAll ? 500 : 350], fov: actualShouldShowAll ? 180 : 130 }}
         // Prefer safer GL settings on mobile to avoid flicker when layers repaint
         gl={{
           antialias: false,
