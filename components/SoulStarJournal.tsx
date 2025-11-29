@@ -152,22 +152,12 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
   const handleSaveEntry = async () => {
     // Check if user is logged in
     if (!user?.id || !profile?.element) {
-      if (openWelcomeHome) {
-        setJournalState(prev => ({
-          ...prev,
-          errorMessage: "You need to log in to save your soul entry. Opening Welcome Home..."
-        }));
-        setTimeout(() => setJournalState(prev => ({ ...prev, errorMessage: "" })), 2000);
-        openWelcomeHome();
-        return;
-      } else {
-        setJournalState(prev => ({
-          ...prev,
-          errorMessage: "Please log in to save your soul entry."
-        }));
-        setTimeout(() => setJournalState(prev => ({ ...prev, errorMessage: "" })), 3000);
-        return;
-      }
+      setJournalState(prev => ({
+        ...prev,
+        errorMessage: "You need to create an ALIEN profile to submit"
+      }));
+      setTimeout(() => setJournalState(prev => ({ ...prev, errorMessage: "" })), 3000);
+      return;
     }
 
     if (!dailyPrompt) return;
@@ -265,7 +255,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
     <div 
       className="fixed z-[2147483647] flex items-center justify-center"
       style={{ 
-        top: '80px',
+        top: '60px',
         left: '50%',
         transform: 'translateX(-50%)',
         width: 'min(92vw, 600px)'
@@ -305,7 +295,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
           width: '100%',
           maxHeight: '85vh',
           overflowY: 'auto',
-          padding: '20px 24px 24px 24px',
+          padding: '20px 24px 12px 24px',
           borderRadius: 18,
           background: 'rgba(0, 0, 0, 0.9)',
           border: hasPendingReflection && !showHistory
@@ -373,7 +363,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
         
         {/* Header */}
         <div 
-          className="text-center mb-4"
+          className="text-center mb-1"
           style={{ 
             color: elementTheme.color,
             textShadow: `0 0 8px ${elementTheme.glow}`,
@@ -473,14 +463,14 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
             {/* Date and Element with pending notification */}
             <div className="text-center mb-4">
               <div 
-                className="text-base font-semibold mb-2"
+                className="text-base font-semibold mb-1"
                 style={{ color: '#FFFFFF' }}
               >
                 {todayFormatted}
               </div>
               
               {/* Element Badge */}
-              <div className="flex justify-center items-center mb-3">
+              <div className="flex justify-center items-center mb-1">
                 <span 
                   className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
                   style={{
@@ -498,10 +488,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
 
             {/* Intention & Reflection Section */}
             {dailyPrompt && (
-              <div className="mb-4 space-y-3">
+              <div className="mb-2 space-y-1 -mt-1">
                 {/* Intention */}
                 <div 
-                  className="p-4 rounded-lg"
+                  className="px-2 py-1 rounded-lg"
                   style={{
                     background: `${elementTheme.color}08`,
                     border: `1px solid ${elementTheme.color}30`,
@@ -524,7 +514,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
 
                 {/* Reflection Prompt */}
                 <div 
-                  className="p-4 rounded-lg"
+                  className="p-2 rounded-lg"
                   style={{
                     background: `${elementTheme.color}08`,
                     border: `1px solid ${elementTheme.color}30`,
@@ -549,12 +539,12 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
 
 
             {/* Soul Star - Main Journal Entry */}
-            <div className="mb-6">
+            <div className="mb-2">
               <textarea
                 value={journalState.soulStar}
                 onChange={(e) => setJournalState(prev => ({ ...prev, soulStar: e.target.value }))}
                 placeholder="Write your soul's message for today... What wants to be expressed?"
-                className="w-full h-24 p-3 rounded-lg text-white placeholder-white/50 resize-none focus:outline-none transition-all"
+                className="w-full h-16 p-2 rounded-lg text-white placeholder-white/50 resize-none focus:outline-none transition-all"
                 style={{
                   background: 'rgba(0,0,0,0.6)',
                   border: `1px solid ${elementTheme.color}40`,
@@ -619,7 +609,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
               <button
                 onClick={handleSaveEntry}
                 disabled={!journalState.soulStar.trim() || journalState.isLoading}
-                className="px-6 py-2 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-1 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
                   background: journalState.soulStar.trim() && !journalState.isLoading ? `${elementTheme.color}30` : `${elementTheme.color}10`,
                   border: `2px solid ${elementTheme.color}60`,
@@ -630,7 +620,11 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
                   textShadow: `0 0 4px ${elementTheme.glow}`
                 }}
               >
-                {journalState.isLoading ? 'CASTING...' : 'Cast into the Stars'}
+                {journalState.isLoading 
+                  ? 'CASTING...' 
+                  : journalState.errorMessage 
+                    ? journalState.errorMessage
+                    : 'Cast into the Stars'}
               </button>
             </div>
           </>
