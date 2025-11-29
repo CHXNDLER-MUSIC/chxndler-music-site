@@ -257,7 +257,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                     )}
                     {item.label === "STORE" && (
                       <Image
-                        src="/elements/signal.webp"
+                        src="/elements/store.webp"
                         alt="Store"
                         width={32}
                         height={32}

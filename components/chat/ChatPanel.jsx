@@ -34,12 +34,19 @@ export default function ChatPanel({ isOpen, onClose }) {
    * Get display name for user - logged in name or anonymous alien name
    */
   const getDisplayName = () => {
+    // Force anonymous mode - always use alien name if no authenticated user
+    if (!user || !profile?.id) {
+      console.log('🔥 Using stored alien name (no user or profile):', alienName);
+      return alienName;
+    }
+    
     if (profile?.name) {
+      console.log('🔥 Using profile name:', profile.name);
       return profile.name;
     }
     
-    // Always return the pre-initialized alien name
-    console.log('🔥 Using stored alien name:', alienName);
+    // Fallback to alien name
+    console.log('🔥 Using stored alien name (fallback):', alienName);
     return alienName;
   };
   const [messages, setMessages] = useState([]);
@@ -55,48 +62,22 @@ export default function ChatPanel({ isOpen, onClose }) {
 
   // Initialize anonymous user immediately when chat opens
   useEffect(() => {
-    if (!user && isOpen) {
-      // Generate alien name if needed
-      if (!alienName) {
-        const alienNumber = Math.floor(Math.random() * 99999999) + 1;
-        const paddedNumber = alienNumber.toString().padStart(8, '0');
-        const newAlienName = `ALIEN${paddedNumber}`;
-        
-        console.log('🚀 IMMEDIATE: Generated alien name:', newAlienName);
-        setAlienName(newAlienName);
-        
-        // Immediately add to user list
-        const anonymousUser = {
-          id: 'anonymous',
-          name: newAlienName,
-          element: 'alien',
-          avatar_badge_id: null,
-          last_seen: new Date().toISOString()
-        };
-        
-        setChatUsers([anonymousUser]);
-        console.log('🚀 Set initial chat users:', [anonymousUser]);
-      } else {
-        // Ensure existing alien name is in user list
-        console.log('🚀 Using existing alien name:', alienName);
-        setChatUsers(prev => {
-          const hasAnonymous = prev.some(u => u.id === 'anonymous');
-          if (!hasAnonymous) {
-            const anonymousUser = {
-              id: 'anonymous',
-              name: alienName,
-              element: 'alien',
-              avatar_badge_id: null,
-              last_seen: new Date().toISOString()
-            };
-            console.log('🚀 Adding existing alien to empty list:', anonymousUser);
-            return [anonymousUser];
-          }
-          return prev;
-        });
-      }
+    if ((!user || !profile?.id) && isOpen) {
+      console.log('🚀 IMMEDIATE: Using stored alien name:', alienName);
+      
+      // Always use the pre-initialized alien name
+      const anonymousUser = {
+        id: 'anonymous',
+        name: alienName, // Always use the stored alien name
+        element: 'alien',
+        avatar_badge_id: null,
+        last_seen: new Date().toISOString()
+      };
+      
+      setChatUsers([anonymousUser]);
+      console.log('🚀 Set initial chat users with consistent name:', [anonymousUser]);
     }
-  }, [user, isOpen]);
+  }, [user, isOpen, alienName]); // Add alienName as dependency
 
   // Initialize chat when panel opens
   useEffect(() => {
@@ -154,29 +135,19 @@ export default function ChatPanel({ isOpen, onClose }) {
       
       // If user is not authenticated, preserve/ensure the anonymous user
       if (!user) {
-        const displayName = getDisplayName();
-        console.log('🔥 InitializeChat: Preserving anonymous user:', displayName);
+        console.log('🔥 InitializeChat: Using consistent alien name:', alienName);
         
         setChatUsers(prev => {
-          // Check if we already have an anonymous user
-          const existingAnonymous = prev.find(u => u.id === 'anonymous');
-          
-          if (existingAnonymous) {
-            console.log('🔥 Keeping existing anonymous user with database users');
-            // Keep existing anonymous user and add database users
-            return [existingAnonymous, ...databaseUsers];
-          } else {
-            console.log('🔥 Creating new anonymous user for database merge');
-            // Create new anonymous user
-            const anonymousUser = {
-              id: 'anonymous',
-              name: displayName,
-              element: 'alien',
-              avatar_badge_id: null,
-              last_seen: new Date().toISOString()
-            };
-            return [anonymousUser, ...databaseUsers];
-          }
+          // Always use the consistent alien name
+          const anonymousUser = {
+            id: 'anonymous',
+            name: alienName, // Use stored alien name directly
+            element: 'alien',
+            avatar_badge_id: null,
+            last_seen: new Date().toISOString()
+          };
+          console.log('🔥 Creating consistent anonymous user:', anonymousUser);
+          return [anonymousUser, ...databaseUsers];
         });
       } else {
         setChatUsers(databaseUsers);
@@ -332,10 +303,10 @@ export default function ChatPanel({ isOpen, onClose }) {
    */
   const handleSendMessage = async (messageText) => {
     const displayName = getDisplayName();
-    console.log('🔥 Sending message:', { messageText, displayName, user: !!user });
+    console.log('🔥 Sending message:', { messageText, displayName, user: !!user, userObject: user, profile: !!profile });
     
-    // For anonymous users, always add message locally first
-    if (!user) {
+    // For anonymous users, always add message locally first  
+    if (!user || !profile?.id) {
       const anonymousMessage = {
         id: `anonymous-${Date.now()}`,
         user_id: 'anonymous',
@@ -695,9 +666,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                   {/* Profile View - shown above message input when user is selected */}
                   {console.log('🔥 Rendering profile check - selectedUser:', selectedUser)}
                   {selectedUser && (
-                    <div className="border-t border-yellow-400/30 px-3 pt-1 pb-2">
+                    <div className="border-t border-yellow-400/30 px-3" style={{ paddingTop: 0, paddingBottom: 0, marginTop: 0 }}>
                       {/* Profile Header with Icons */}
-                      <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           {/* User Icon */}
                           <div 
@@ -716,13 +687,20 @@ export default function ChatPanel({ isOpen, onClose }) {
                           </div>
                           
                           <h3 
-                            className="text-sm font-bold"
+                            className="text-sm font-bold truncate"
                             style={{
                               color: '#F2EF1D',
-                              textShadow: '0 0 8px #F2EF1D'
+                              textShadow: '0 0 8px #F2EF1D',
+                              maxWidth: '200px'
                             }}
                           >
-                            {selectedUser.id === 'anonymous' ? getDisplayName() : (selectedUser.name || 'Anonymous')}
+                            {(() => {
+                              const profileName = selectedUser.id === 'anonymous' ? alienName : (selectedUser.name || 'Anonymous');
+                              console.log('🔥 Profile displaying name:', profileName);
+                              console.log('🔥 Selected user:', selectedUser);
+                              console.log('🔥 Stored alien name:', alienName);
+                              return profileName;
+                            })()}
                           </h3>
                           
                           {/* Action Icons */}

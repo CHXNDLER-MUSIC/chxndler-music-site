@@ -133,6 +133,18 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         { name: "Galactic Signal", description: "Invite 20 friends", progress: 0, current: 0, total: 20 },
         { name: "Starlight Supporter", description: "Follow on Spotify/Apple, TikTok, YouTube, IG", progress: 25, current: 1, total: 4 },
       ]
+    },
+    {
+      id: "collector",
+      name: "COLLECTOR", 
+      emoji: "💎",
+      badges: [
+        { name: "First Collection", description: "Collect your first item", progress: 100, current: 1, total: 1 },
+        { name: "Treasure Hunter", description: "Collect 10 items", progress: 20, current: 2, total: 10 },
+        { name: "Cosmic Collector", description: "Collect 25 items", progress: 8, current: 2, total: 25 },
+        { name: "Master Archivist", description: "Collect 50 items", progress: 4, current: 2, total: 50 },
+        { name: "Legendary Keeper", description: "Collect 100 items", progress: 2, current: 2, total: 100 },
+      ]
     }
   ];
 
@@ -171,6 +183,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                      selectedBadge.name.includes('Merch') || selectedBadge.name.includes('Donor') ? '👕' :
                      selectedBadge.name.includes('Heart') && selectedBadge.name.includes('Coin') ? '💰' :
                      selectedBadge.name.includes('Portal') || selectedBadge.name.includes('Constellation') || selectedBadge.name.includes('Galactic') || selectedBadge.name.includes('Starlight') ? '🌐' :
+                     selectedBadge.name.includes('First Collection') || selectedBadge.name.includes('Treasure') || selectedBadge.name.includes('Cosmic Collector') || selectedBadge.name.includes('Master Archivist') || selectedBadge.name.includes('Legendary') ? '💎' :
                      '🏅'}
                   </div>
                 )}
@@ -267,7 +280,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
 
     return (
       <div
-        className="fixed inset-0 z-[2147483647] modal-no-drag flex items-center justify-center p-4"
+        className="fixed inset-0 z-[2147483647] modal-no-drag flex items-start justify-center pt-16 p-4"
         aria-modal="true"
         role="dialog"
         aria-label="BADGE DETAILS"
@@ -424,6 +437,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                            badge.name.includes('Merch') || badge.name.includes('Donor') ? '👕' :
                            badge.name.includes('Heart') && badge.name.includes('Coin') ? '💰' :
                            badge.name.includes('Portal') || badge.name.includes('Constellation') || badge.name.includes('Galactic') || badge.name.includes('Starlight') ? '🌐' :
+                           badge.name.includes('First Collection') || badge.name.includes('Treasure') || badge.name.includes('Cosmic Collector') || badge.name.includes('Master Archivist') || badge.name.includes('Legendary') ? '💎' :
                            '🏅'}
                         </div>
                       )}
@@ -488,7 +502,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
 
     return (
       <div
-        className="fixed inset-0 z-[2147483647] modal-no-drag flex items-center justify-center p-4"
+        className="fixed inset-0 z-[2147483647] modal-no-drag flex items-start justify-center pt-16 p-4"
         aria-modal="true"
         role="dialog"
         aria-label={category.name}
@@ -604,7 +618,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         </div>
       )}
 
-      {/* Badge Categories Grid - 6 categories in 3x2 layout */}
+      {/* Badge Categories Grid - 7 categories layout */}
       {!loading && !error && (
         <div className="grid grid-cols-3 gap-4 justify-items-center max-w-md mx-auto">
           {(badgeCategories.length > 0 ? badgeCategories : fallbackCategories).map((category) => (
@@ -634,7 +648,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
 
   return (
     <div
-      className="fixed inset-0 z-[2147483647] modal-no-drag flex items-center justify-center p-4"
+      className="fixed inset-0 z-[2147483647] modal-no-drag flex items-start justify-center pt-16 p-4"
       aria-modal="true"
       role="dialog"
       aria-label="BADGES"

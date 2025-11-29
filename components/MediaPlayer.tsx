@@ -48,7 +48,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   };
   // Define tracks and current track before any memoized computations that depend on them
   const tracks = ALL;
-  const cur = tracks[idx];
+  const cur = tracks[idx] || tracks[0];
   const [playing, setPlaying] = useState(false);
   
   // Initialize media state machine
@@ -1946,14 +1946,14 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             const a = audioRef.current; 
             if (!a) return;
             console.error('🔴 Audio element error:', {
-              src: cur.src,
+              src: cur?.src || 'unknown',
               error: a.error,
               readyState: a.readyState,
               networkState: a.networkState
             });
             if (DEBUG_MEDIA) { 
               dwarn('audio tag onError', { 
-                src: cur.src, 
+                src: cur?.src || 'unknown', 
                 error: a.error?.message || a.error?.code,
                 readyState: a.readyState,
                 networkState: a.networkState

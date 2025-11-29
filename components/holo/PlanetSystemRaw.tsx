@@ -53,7 +53,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
   const centralPlanetRef = useRef<{ id: string | null; mesh: THREE.Mesh | null; originalSat: Sat | null }>({ id: null, mesh: null, originalSat: null });
   // Camera animation for smooth focus transitions
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const targetCameraPos = useRef<THREE.Vector3>(new THREE.Vector3(0, 200, 1000.0));
+  const targetCameraPos = useRef<THREE.Vector3>(new THREE.Vector3(0, 150, 400.0));
   const targetCameraLookAt = useRef<THREE.Vector3>(new THREE.Vector3(0, 0, 0));
   const cameraTransitionSpeed = useRef<number>(0.08);
   
@@ -1757,8 +1757,8 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(35, width / height, 0.1, 5000); // MASSIVE far plane
-    // EXTREME zoom out for complete system view
-    camera.position.set(0, 200, 1000.0); // EXTREMELY far back
+    // Moderate zoom for good planet visibility
+    camera.position.set(0, 150, 400.0); // Closer for better detail
     camera.lookAt(0, 0, 0); // Look at center
     cameraRef.current = camera;
 
@@ -1795,20 +1795,35 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
 
     // ADD 4 MASSIVE ELEMENTAL PLANETS DIRECTLY NEXT TO CENTER
     const elementalPlanets = [
-      { name: 'HEART', color: 0xFC54AF, position: [8, 0, 0] },
-      { name: 'WATER', color: 0x38B6FF, position: [0, 8, 0] },
-      { name: 'LIGHTNING', color: 0xF2EF1D, position: [-8, 0, 0] },
-      { name: 'DARKNESS', color: 0x6A4C93, position: [0, -8, 0] }
+      { name: 'WATER', color: 0x38B6FF, position: [35, 0, 0] },
+      { name: 'LIGHTNING', color: 0xF2EF1D, position: [0, 35, 0] },
+      { name: 'HEART', color: 0xFC54AF, position: [-35, 0, 0] },
+      { name: 'DARKNESS', color: 0x6A4C93, position: [0, -35, 0] }
     ];
 
     elementalPlanets.forEach((planet, index) => {
       const planetGeo = new THREE.SphereGeometry(15.0, 32, 32); // MUCH LARGER for visibility
+      
+      // Load texture for this planet
+      const textureLoader = new THREE.TextureLoader();
+      const textureMap = {
+        'WATER': '/textures/planet_water.webp',
+        'LIGHTNING': '/textures/planet_lightning.webp', 
+        'HEART': '/textures/planet_heart.webp',
+        'DARKNESS': '/textures/planet_darkness.webp'
+      };
+      
+      const textureUrl = textureMap[planet.name as keyof typeof textureMap];
+      
       const planetMat = new THREE.MeshPhongMaterial({
-        color: planet.color,
+        map: textureUrl ? textureLoader.load(textureUrl) : null,
+        color: textureUrl ? 0xffffff : planet.color, // White when using texture
         emissive: planet.color,
-        emissiveIntensity: 2.0, // MUCH BRIGHTER
+        emissiveIntensity: textureUrl ? 1.0 : 2.0, // Less emissive when textured
         shininess: 30
       });
+      
+      console.log(`Loading texture for ${planet.name} (set 1): ${textureUrl}`);
       const planetMesh = new THREE.Mesh(planetGeo, planetMat);
       planetMesh.position.set(planet.position[0], planet.position[1], planet.position[2]);
       sys.add(planetMesh);
@@ -1945,8 +1960,8 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
         const ms = centralPlanet.mesh.scale;
         ms.x += (targetScale - ms.x) * 0.18;
         ms.y = ms.x; ms.z = ms.x;
-        // Position central planet slightly forward for better visibility
-        centralPlanet.mesh.position.set(0, 0, 1.2);
+        // Position central planet at TRUE center
+        centralPlanet.mesh.position.set(0, 0, 0);
         // Gentle rotation for the central planet
         centralPlanet.mesh.rotation.y += 0.003;
         // Keep heart planets right-side up
@@ -2213,6 +2228,29 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
           sys.rotation.y += spinSpeedRef.current;
         }
       }
+      // Animate orbiting song planets
+      if (sys) {
+        sys.traverse((child) => {
+          if (child.userData && child.userData.isOrbitingSong) {
+            const data = child.userData;
+            const time = Date.now() * 0.001; // Convert to seconds
+            
+            // Update orbit angle
+            data.orbitAngle += data.orbitSpeed;
+            
+            // Calculate new position
+            const x = data.elementPosition[0] + Math.cos(data.orbitAngle) * data.orbitRadius;
+            const y = data.elementPosition[1] + Math.sin(data.orbitAngle) * data.orbitRadius * 0.3;
+            const z = data.elementPosition[2] + Math.sin(data.orbitAngle) * data.orbitRadius * 0.5;
+            
+            child.position.set(x, y, z);
+            
+            // Add gentle rotation to song planets
+            child.rotation.y += 0.02;
+          }
+        });
+      }
+      
       renderer.render(scene, camera);
       rafRef.current = requestAnimationFrame(tick);
     };
@@ -2374,8 +2412,8 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
     
     // Reset camera to overview position when showing all planets
     if (effectiveShowAll || !focusId) {
-      // EXTREME zoom out for complete system overview
-      targetCameraPos.current.set(0, 200, 1000.0);
+      // Moderate zoom for good system overview  
+      targetCameraPos.current.set(0, 150, 400.0);
       targetCameraLookAt.current.set(0, 0, 0);
       cameraTransitionSpeed.current = 0.08;
       
@@ -2478,25 +2516,39 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
             console.log("🚨🪐 ADDING ELEMENTAL PLANETS TO RAW SYSTEM! 🪐🚨");
             
             const elementalPlanets = [
-              { name: 'WATER', color: '#38B6FF', position: [20, 0, 0] },
-              { name: 'LIGHTNING', color: '#F2EF1D', position: [0, 20, 0] },
-              { name: 'HEART', color: '#FC54AF', position: [-20, 0, 0] },
-              { name: 'DARKNESS', color: '#6A4C93', position: [0, -20, 0] }
+              { name: 'WATER', color: '#38B6FF', position: [35, 0, 0] },
+              { name: 'LIGHTNING', color: '#F2EF1D', position: [0, 35, 0] },
+              { name: 'HEART', color: '#FC54AF', position: [-35, 0, 0] },
+              { name: 'DARKNESS', color: '#6A4C93', position: [0, -35, 0] }
             ];
 
             elementalPlanets.forEach(planet => {
               // Create sphere geometry - MASSIVE SIZE FOR VISIBILITY
               const sphereGeo = new THREE.SphereGeometry(25.0, 32, 32);
               
-              // Create enhanced material with emissive properties
+              // Load texture for this planet
+              const textureLoader = new THREE.TextureLoader();
+              const textureMap = {
+                'WATER': '/textures/planet_water.webp',
+                'LIGHTNING': '/textures/planet_lightning.webp', 
+                'HEART': '/textures/planet_heart.webp',
+                'DARKNESS': '/textures/planet_darkness.webp'
+              };
+              
+              const textureUrl = textureMap[planet.name as keyof typeof textureMap];
+              
+              // Create enhanced material with texture and emissive properties
               const sphereMat = new THREE.MeshStandardMaterial({ 
-                color: planet.color,
+                map: textureUrl ? textureLoader.load(textureUrl) : null,
+                color: textureUrl ? '#ffffff' : planet.color, // White when using texture
                 emissive: new THREE.Color(planet.color),
-                emissiveIntensity: 3.0, // EXTREMELY BRIGHT
+                emissiveIntensity: textureUrl ? 1.0 : 3.0, // Less emissive when textured
                 metalness: 0.1,
                 roughness: 0.3,
                 transparent: false
               });
+              
+              console.log(`Loading texture for ${planet.name}: ${textureUrl}`);
               
               // Create main planet mesh
               const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
@@ -2528,6 +2580,42 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
               sys.add(outerGlowMesh);
               
               console.log(`Enhanced ${planet.name} planet at position:`, planet.position);
+              
+              // ADD ORBITING SONG PLANETS AROUND THIS ELEMENTAL PLANET
+              const elementName = planet.name.toLowerCase();
+              const songPlanetsPerElement = 3; // Number of song planets per element
+              const orbitRadius = 15; // MUCH tighter orbit around elemental planet
+              
+              for (let i = 0; i < songPlanetsPerElement; i++) {
+                const angle = (i / songPlanetsPerElement) * Math.PI * 2;
+                const x = planet.position[0] + Math.cos(angle) * orbitRadius;
+                const y = planet.position[1] + Math.sin(angle) * orbitRadius * 0.3; // Elliptical orbit
+                const z = planet.position[2] + Math.sin(angle) * orbitRadius * 0.5;
+                
+                // Create small song planet
+                const songGeo = new THREE.SphereGeometry(5.0, 16, 16);
+                const songMat = new THREE.MeshStandardMaterial({
+                  color: new THREE.Color(planet.color).multiplyScalar(0.7), // Darker version
+                  emissive: new THREE.Color(planet.color),
+                  emissiveIntensity: 1.5,
+                  metalness: 0.2,
+                  roughness: 0.4
+                });
+                
+                const songMesh = new THREE.Mesh(songGeo, songMat);
+                songMesh.position.set(x, y, z);
+                songMesh.userData = { 
+                  elementName: elementName,
+                  orbitAngle: angle,
+                  orbitRadius: orbitRadius,
+                  elementPosition: [...planet.position],
+                  isOrbitingSong: true,
+                  orbitSpeed: 0.01 + Math.random() * 0.01 // Random orbit speed
+                };
+                sys.add(songMesh);
+                
+                console.log(`Added orbiting song planet for ${elementName} at:`, [x, y, z]);
+              }
             });
           } catch (error) {
             console.error("Failed to add elemental planets:", error);
@@ -2789,8 +2877,8 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
       });
     }
     
-    // Position forward from center for prominent display
-    centralMesh.position.set(0, 0, 1.2);
+    // Position at TRUE center with elemental planets
+    centralMesh.position.set(0, 0, 0);
     centralMesh.scale.set(1.6, 1.6, 1.6); // Start even larger
     centralMesh.visible = true; // Ensure central planet is visible
     sys.add(centralMesh);

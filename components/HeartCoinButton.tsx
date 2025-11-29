@@ -187,7 +187,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [activeTab, setActiveTab] = useState<'EARN' | 'USE'>('EARN');
   const [activeUseTab, setActiveUseTab] = useState<'MERCH' | 'CARDS'>('MERCH');
   const [selectedCardElement, setSelectedCardElement] = useState<string | null>(null);
-  const [selectedSong, setSelectedSong] = useState<string>('All');
+  const [selectedSong, setSelectedSong] = useState<string>('');
   const [showPhysicalForm, setShowPhysicalForm] = useState(false);
   const [showDigitalForm, setShowDigitalForm] = useState(false);
   const [currentMerchIndex, setCurrentMerchIndex] = useState(0);
@@ -215,7 +215,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   // Cards state
   const [cards, setCards] = useState<Card[]>([]);
   const [filteredCards, setFilteredCards] = useState<Card[]>([]);
-  const [selectedRarity, setSelectedRarity] = useState<string>('All');
+  const [selectedRarity, setSelectedRarity] = useState<string>('');
   const [isLoadingCards, setIsLoadingCards] = useState(false);
 
   // Update journal completion state when external prop changes
@@ -303,7 +303,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     }
     
     // Filter by song
-    if (selectedSong !== 'All') {
+    if (selectedSong && selectedSong.trim() !== '') {
       filtered = filtered.filter(card => {
         const baseName = card.card_name?.replace(/\s*\([^)]*\)\s*/g, '').trim();
         return baseName?.toLowerCase() === selectedSong.toLowerCase();
@@ -311,7 +311,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     }
     
     // Filter by rarity
-    if (selectedRarity !== 'All') {
+    if (selectedRarity && selectedRarity.trim() !== '') {
       filtered = filtered.filter(card => 
         card.rarity?.toLowerCase() === selectedRarity.toLowerCase()
       );
@@ -359,7 +359,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   // Get unique rarities for filter dropdown
   const getAvailableRarities = (): string[] => {
     const rarities = new Set<string>();
-    rarities.add('All');
     
     cards.forEach(card => {
       if (card.rarity) {
@@ -373,7 +372,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   // Get unique songs for filter dropdown
   const getAvailableSongs = (): string[] => {
     const songs = new Set<string>();
-    songs.add('All');
     
     cards.forEach(card => {
       if (card.card_name) {
@@ -1570,8 +1568,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               onClick={() => {
                                 try { sfx.play('close', 0.6); } catch {}
                                 setSelectedCardElement(null);
-                                setSelectedRarity('All');
-                                setSelectedSong('All');
+                                setSelectedRarity('');
+                                setSelectedSong('');
                               }}
                               className="flex items-center text-white hover:text-gray-300 transition-colors"
                               style={{ fontSize: '14px' }}
@@ -1588,6 +1586,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               onChange={(e) => setSelectedSong(e.target.value)}
                               className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-1"
                             >
+                              <option value="">All Songs</option>
                               {getAvailableSongs().map(song => (
                                 <option key={song} value={song}>{song}</option>
                               ))}
@@ -1597,6 +1596,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               onChange={(e) => setSelectedRarity(e.target.value)}
                               className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-1"
                             >
+                              <option value="">All Rarities</option>
                               {getAvailableRarities().map(rarity => (
                                 <option key={rarity} value={rarity}>{rarity}</option>
                               ))}

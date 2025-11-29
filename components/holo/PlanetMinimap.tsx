@@ -15,12 +15,12 @@ interface PlanetMinimapProps {
   hoverId?: string | null;
 }
 
-// Element configurations matching PlanetSystem.tsx - UPDATED POSITIONS
+// Element configurations matching PlanetSystemRaw.tsx ACTUAL positions - MORE SPREAD OUT
 const ELEMENTS: ElementPosition[] = [
-  { code: "heart",     label: "💖 Heart", position: [25, 0, 0],   color: "#FC54AF", glowColor: "#FC54AF" },
-  { code: "water",     label: "🌊 Water", position: [0, 0, 25],   color: "#38B6FF", glowColor: "#38B6FF" },
-  { code: "lightning", label: "⚡ Lightning", position: [-25, 0, 0],  color: "#F2EF1D", glowColor: "#F2EF1D" },
-  { code: "darkness",  label: "🌑 Darkness", position: [0, -25, 0],  color: "#6A4C93", glowColor: "#6A4C93" },
+  { code: "water",     label: "🌊 Water", position: [35, 0, 0],   color: "#38B6FF", glowColor: "#38B6FF" },
+  { code: "lightning", label: "⚡ Lightning", position: [0, 35, 0],  color: "#F2EF1D", glowColor: "#F2EF1D" },
+  { code: "heart",     label: "💖 Heart", position: [-35, 0, 0],   color: "#FC54AF", glowColor: "#FC54AF" },
+  { code: "darkness",  label: "🌑 Darkness", position: [0, -35, 0],  color: "#6A4C93", glowColor: "#6A4C93" },
 ];
 
 export default function PlanetMinimap({ currentMainId, hoverId }: PlanetMinimapProps) {
@@ -35,17 +35,23 @@ export default function PlanetMinimap({ currentMainId, hoverId }: PlanetMinimapP
     };
   };
 
+  // Calculate true geometric center of the 4 elemental planets
+  const centerPosition = React.useMemo(() => {
+    const center2D = convertTo2D([0, 0, 0]); // Should be the true center
+    return center2D;
+  }, []);
+
   return (
     <div className="fixed top-4 right-4 z-50 w-40 h-40 bg-black/60 backdrop-blur-sm border-2 border-cyan-400/50 rounded-lg p-2">
       {/* Minimap background */}
       <div className="relative w-full h-full bg-gradient-radial from-blue-900/20 to-transparent rounded">
         
-        {/* Center heart planet */}
+        {/* Center heart planet - positioned at TRUE geometric center */}
         <div 
           className="absolute w-4 h-4 rounded-full border-2 transform -translate-x-1/2 -translate-y-1/2"
           style={{ 
-            left: "50%", 
-            top: "50%",
+            left: `${centerPosition.x}px`, 
+            top: `${centerPosition.y}px`,
             backgroundColor: "#FC54AF60",
             borderColor: "#FC54AF",
             boxShadow: "0 0 12px #FC54AF"
@@ -83,6 +89,75 @@ export default function PlanetMinimap({ currentMainId, hoverId }: PlanetMinimapP
                 {element.label}
               </div>
             </div>
+          );
+        })}
+
+        {/* Orbiting song planets around each elemental planet */}
+        {ELEMENTS.map((element) => {
+          const songPlanetsPerElement = 3;
+          const orbitRadius = 15; // TIGHTER orbits - matches PlanetSystemRaw.tsx
+          const songPlanets = [];
+          
+          for (let i = 0; i < songPlanetsPerElement; i++) {
+            const angle = (i / songPlanetsPerElement) * Math.PI * 2;
+            const x = element.position[0] + Math.cos(angle) * orbitRadius;
+            const y = element.position[1] + Math.sin(angle) * orbitRadius * 0.3;
+            const z = element.position[2] + Math.sin(angle) * orbitRadius * 0.5;
+            
+            const pos2D = convertTo2D([x, y, z]);
+            
+            // Sample song names for each element
+            const songNames = {
+              water: ['Ocean Dreams', 'River Flow', 'Deep Currents'],
+              lightning: ['Electric Storm', 'Thunder Strike', 'Power Surge'],
+              heart: ['Love Song', 'Heartbeat', 'Emotional'],
+              darkness: ['Shadow Dance', 'Midnight', 'Eclipse']
+            };
+            
+            const songName = songNames[element.code]?.[i] || `${element.code} Song ${i + 1}`;
+
+            songPlanets.push(
+              <div
+                key={`${element.code}-song-${i}`}
+                className="absolute w-1.5 h-1.5 rounded-full transform -translate-x-1/2 -translate-y-1/2 cursor-pointer hover:scale-150 transition-all duration-200 group"
+                style={{
+                  left: `${pos2D.x}px`,
+                  top: `${pos2D.y}px`,
+                  backgroundColor: element.color + "60",
+                  border: `1px solid ${element.color}`,
+                  boxShadow: `0 0 4px ${element.glowColor}30`,
+                }}
+                title={songName} // Simple tooltip
+              >
+                {/* Advanced tooltip */}
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-black/80 text-white text-[8px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                  {songName}
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-black/80"></div>
+                </div>
+              </div>
+            );
+          }
+          
+          return songPlanets;
+        })}
+
+        {/* Orbit paths for each elemental planet */}
+        {ELEMENTS.map((element) => {
+          const elementPos2D = convertTo2D(element.position);
+          const orbitRadiusScaled = 15 * 2.5; // TIGHTER orbit rings
+          
+          return (
+            <div
+              key={`${element.code}-orbit`}
+              className="absolute rounded-full border border-opacity-20 transform -translate-x-1/2 -translate-y-1/2"
+              style={{
+                left: `${elementPos2D.x}px`,
+                top: `${elementPos2D.y}px`,
+                width: `${orbitRadiusScaled * 2}px`,
+                height: `${orbitRadiusScaled * 2}px`,
+                borderColor: element.color + "30",
+              }}
+            />
           );
         })}
 
