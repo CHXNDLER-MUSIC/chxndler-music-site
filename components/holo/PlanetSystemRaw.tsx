@@ -1802,7 +1802,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
     ];
 
     elementalPlanets.forEach((planet, index) => {
-      const planetGeo = new THREE.SphereGeometry(15.0, 32, 32); // MUCH LARGER for visibility
+      const planetGeo = new THREE.SphereGeometry(8.0, 32, 32); // Moderate size for better balance
       
       // Load texture for this planet
       const textureLoader = new THREE.TextureLoader();
@@ -2523,8 +2523,8 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
             ];
 
             elementalPlanets.forEach(planet => {
-              // Create sphere geometry - MASSIVE SIZE FOR VISIBILITY
-              const sphereGeo = new THREE.SphereGeometry(25.0, 32, 32);
+              // Create sphere geometry - Moderate size for better balance
+              const sphereGeo = new THREE.SphereGeometry(12.0, 32, 32);
               
               // Load texture for this planet
               const textureLoader = new THREE.TextureLoader();

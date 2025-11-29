@@ -22,11 +22,26 @@ export default function ChatPanel({ isOpen, onClose }) {
 
   // Store alien name consistently for the session - initialize immediately
   const [alienName, setAlienName] = useState(() => {
+    // Check if we have a stored alien name first
+    if (typeof window !== 'undefined') {
+      const stored = sessionStorage.getItem('alienName');
+      if (stored) {
+        console.log('🔥 Using stored alien name from session:', stored);
+        return stored;
+      }
+    }
+    
     // Generate alien name once on component mount
     const alienNumber = Math.floor(Math.random() * 99999999) + 1;
     const paddedNumber = alienNumber.toString().padStart(8, '0');
     const newAlienName = `ALIEN${paddedNumber}`;
-    console.log('🔥 Generated initial alien name:', newAlienName);
+    console.log('🔥 Generated new alien name:', newAlienName);
+    
+    // Store in session storage
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('alienName', newAlienName);
+    }
+    
     return newAlienName;
   });
 
@@ -90,27 +105,24 @@ export default function ChatPanel({ isOpen, onClose }) {
 
   // Ensure anonymous user is maintained when chat state changes
   useEffect(() => {
-    if (isOpen && !user && alienName) {
-      console.log('🔥 Chat opened - ensuring anonymous user exists:', alienName);
+    if (isOpen && (!user || !profile?.id) && alienName) {
+      console.log('🔥 Chat opened - ensuring anonymous user exists with name:', alienName);
       
-      // Check if anonymous user is already in the list
+      // Always refresh the anonymous user with the correct alien name
       setChatUsers(prev => {
-        const hasAnonymous = prev.some(u => u.id === 'anonymous');
-        if (!hasAnonymous) {
-          console.log('🔥 Anonymous user missing, adding to list');
-          const anonymousUser = {
-            id: 'anonymous',
-            name: alienName,
-            element: 'alien',
-            avatar_badge_id: null,
-            last_seen: new Date().toISOString()
-          };
-          return [anonymousUser, ...prev];
-        }
-        return prev;
+        const otherUsers = prev.filter(u => u.id !== 'anonymous');
+        const anonymousUser = {
+          id: 'anonymous',
+          name: alienName, // Always use the stored alien name
+          element: 'alien',
+          avatar_badge_id: null,
+          last_seen: new Date().toISOString()
+        };
+        console.log('🔥 Setting anonymous user with consistent name:', anonymousUser);
+        return [anonymousUser, ...otherUsers];
       });
     }
-  }, [isOpen, user, alienName]);
+  }, [isOpen, user, profile?.id, alienName]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -619,14 +631,14 @@ export default function ChatPanel({ isOpen, onClose }) {
                       isUserPanelCollapsed ? 'opacity-0' : 'opacity-100'
                     }`}>
                       {!isUserPanelCollapsed && (() => {
-                        const usersToShow = chatUsers.length === 0 && !user ? [{
+                        const usersToShow = (chatUsers.length === 0 && (!user || !profile?.id)) ? [{
                           id: 'anonymous',
-                          name: alienName || 'ALIEN00000000',
-                          element: 'alien',
+                          name: alienName, // Always use stored alien name
+                          element: 'alien', 
                           avatar_badge_id: null,
                           last_seen: new Date().toISOString()
                         }] : chatUsers;
-                        console.log('🔥 Rendering UserList with:', { usersToShow, chatUsers, alienName, user: !!user });
+                        console.log('🔥 Rendering UserList with consistent alien name:', { usersToShow, alienName, user: !!user });
                         return (
                           <UserList 
                             users={usersToShow}
