@@ -1945,12 +1945,22 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           onError={(e) => {
             const a = audioRef.current; 
             if (!a) return;
-            console.error('🔴 Audio element error:', {
+            
+            const errorInfo = {
               src: cur?.src || 'unknown',
-              error: a.error,
+              errorCode: a.error?.code || 'no_code',
+              errorMessage: a.error?.message || 'no_message',
               readyState: a.readyState,
-              networkState: a.networkState
-            });
+              networkState: a.networkState,
+              currentTime: a.currentTime,
+              duration: a.duration,
+              event: e.type,
+              hasError: !!a.error
+            };
+            
+            console.error('🔴 Audio element error:', errorInfo);
+            console.error('🔴 Raw error object:', a.error);
+            console.error('🔴 Event object:', e);
             if (DEBUG_MEDIA) { 
               dwarn('audio tag onError', { 
                 src: cur?.src || 'unknown', 
