@@ -1946,27 +1946,70 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             const a = audioRef.current; 
             if (!a) return;
             
+            // Extract meaningful error information
+            const eventType = e?.type || 'unknown_event';
+            const eventTarget = e?.target === a ? 'audio_element' : 'other';
+            const errorCode = a.error?.code || null;
+            const errorMessage = a.error?.message || null;
+            
             const errorInfo = {
               src: cur?.src || 'unknown',
-              errorCode: a.error?.code || 'no_code',
-              errorMessage: a.error?.message || 'no_message',
+              errorCode: errorCode || 'no_error_code',
+              errorMessage: errorMessage || 'no_error_message', 
               readyState: a.readyState,
               networkState: a.networkState,
               currentTime: a.currentTime,
               duration: a.duration,
-              event: e.type,
-              hasError: !!a.error
+              eventType,
+              eventTarget,
+              hasError: !!a.error,
+              // Add network state meanings for debugging
+              networkStateMeaning: a.networkState === 0 ? 'EMPTY' :
+                                 a.networkState === 1 ? 'IDLE' :
+                                 a.networkState === 2 ? 'LOADING' :
+                                 a.networkState === 3 ? 'NO_SOURCE' : 'UNKNOWN',
+              readyStateMeaning: a.readyState === 0 ? 'HAVE_NOTHING' :
+                               a.readyState === 1 ? 'HAVE_METADATA' :
+                               a.readyState === 2 ? 'HAVE_CURRENT_DATA' :
+                               a.readyState === 3 ? 'HAVE_FUTURE_DATA' :
+                               a.readyState === 4 ? 'HAVE_ENOUGH_DATA' : 'UNKNOWN'
             };
             
             console.error('🔴 Audio element error:', errorInfo);
-            console.error('🔴 Raw error object:', a.error);
-            console.error('🔴 Event object:', e);
+            
+            // Only log raw objects if they have content
+            if (a.error && Object.keys(a.error).length > 0) {
+              console.error('🔴 Raw error object:', a.error);
+            } else {
+              console.error('🔴 No error object available on audio element');
+            }
+            
+            if (e && Object.keys(e).length > 0) {
+              console.error('🔴 Event object:', e);
+            } else {
+              console.error('🔴 Empty or null event object');
+            }
+            
+            // Handle specific error types
+            if (errorCode === 4) { // MEDIA_ELEMENT_ERROR: MEDIA_ERR_SRC_NOT_SUPPORTED
+              console.warn('🟠 Media source not supported, attempting to skip to next track');
+              // Could trigger next track here if desired
+            } else if (errorCode === 3) { // MEDIA_ELEMENT_ERROR: MEDIA_ERR_DECODE
+              console.warn('🟠 Media decode error, may be corrupted file');
+            } else if (errorCode === 2) { // MEDIA_ELEMENT_ERROR: MEDIA_ERR_NETWORK
+              console.warn('🟠 Network error loading media');
+            } else if (errorCode === 1) { // MEDIA_ELEMENT_ERROR: MEDIA_ERR_ABORTED
+              console.warn('🟠 Media loading aborted');
+            }
+            
             if (DEBUG_MEDIA) { 
               dwarn('audio tag onError', { 
                 src: cur?.src || 'unknown', 
                 error: a.error?.message || a.error?.code,
                 readyState: a.readyState,
-                networkState: a.networkState
+                networkState: a.networkState,
+                errorCode,
+                errorMessage
               }); 
               dumpAudio(a, 'audio:onError'); 
             }

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { chatService } from '@/lib/supabase/chat';
 import { useProfile } from '@/contexts/ProfileContext';
+import { useBadges } from '@/hooks/useBadges';
 // import { useLiveStatus } from '@/hooks/useLiveStatus'; // Removed since chat is always available
 import UserList from './UserList';
 import MessageList from './MessageList';
@@ -49,6 +50,7 @@ const getGlobalAlienName = () => {
  */
 export default function ChatPanel({ isOpen, onClose }) {
   const { profile, user } = useProfile();
+  const { userBadges } = useBadges();
   
   // Debug logging
   console.log('🔥 ChatPanel render:', { isOpen, profile: !!profile, user: !!user });
@@ -542,7 +544,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                 selectedUser 
                   ? 'max-w-[95vw] sm:max-w-[85vw] md:max-w-[75vw] lg:max-w-[60vw] xl:max-w-[50vw]' 
                   : 'max-w-[90vw] sm:max-w-[32rem]'
-              } min-w-[18rem]`
+              } min-w-[18rem]`}
               style={{
                 background: `
                   linear-gradient(135deg, 
@@ -907,27 +909,30 @@ export default function ChatPanel({ isOpen, onClose }) {
                             User Badges
                           </h4>
                           <div className="grid grid-cols-3 gap-2">
-                            {/* Sample badges */}
-                            <div className="flex flex-col items-center p-2 rounded bg-black/30 border border-purple-400/30">
-                              <div className="w-8 h-8 rounded flex items-center justify-center bg-purple-400/20">
-                                <span className="text-sm">🏆</span>
+                            {/* Display completed user badges */}
+                            {userBadges && userBadges.length > 0 ? (
+                              userBadges.slice(0, 6).map((userBadge, index) => (
+                                <div key={index} className="flex flex-col items-center p-2 rounded bg-black/30">
+                                  <div className="w-8 h-8 rounded flex items-center justify-center bg-yellow-400/20">
+                                    {userBadge.badge?.icon_url ? (
+                                      <img 
+                                        src={userBadge.badge.icon_url} 
+                                        alt={userBadge.badge.name} 
+                                        className="w-6 h-6" 
+                                      />
+                                    ) : (
+                                      <span className="text-sm">🏆</span>
+                                    )}
+                                  </div>
+                                  <span className="text-xs text-white/70 mt-1 text-center">{userBadge.badge?.name || 'Badge'}</span>
+                                </div>
+                              ))
+                            ) : (
+                              // Show message when no badges earned yet
+                              <div className="col-span-3 text-center text-white/50 text-xs py-4">
+                                No badges earned yet
                               </div>
-                              <span className="text-xs text-white/70 mt-1">Winner</span>
-                            </div>
-                            
-                            <div className="flex flex-col items-center p-2 rounded bg-black/30 border border-green-400/30">
-                              <div className="w-8 h-8 rounded flex items-center justify-center bg-green-400/20">
-                                <img src="/elements/alien.webp" alt="Alien" className="w-5 h-5" />
-                              </div>
-                              <span className="text-xs text-white/70 mt-1">Alien</span>
-                            </div>
-                            
-                            <div className="flex flex-col items-center p-2 rounded bg-black/30 border border-yellow-400/30">
-                              <div className="w-8 h-8 rounded flex items-center justify-center bg-yellow-400/20">
-                                <span className="text-sm">⭐</span>
-                              </div>
-                              <span className="text-xs text-white/70 mt-1">Star</span>
-                            </div>
+                            )}
                           </div>
                         </div>
                       )}
@@ -939,22 +944,30 @@ export default function ChatPanel({ isOpen, onClose }) {
                             <img src="/elements/binder.webp" alt="Cards" className="w-4 h-4 mr-2" />
                             Card Collection
                           </h4>
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-3 gap-2">
                             {/* Sample cards */}
-                            <div className="relative p-2 rounded bg-black/30 border border-purple-400/30">
-                              <div className="absolute top-1 right-1 text-xs text-purple-300">★</div>
-                              <div className="w-full h-16 bg-purple-400/20 rounded mb-1 flex items-center justify-center">
-                                <span className="text-sm text-purple-200">💜</span>
+                            <div className="relative p-1 rounded bg-black/30">
+                              <div className="absolute top-0.5 right-0.5 text-xs text-purple-300">★</div>
+                              <div className="w-full h-10 bg-purple-400/20 rounded mb-1 flex items-center justify-center">
+                                <span className="text-xs text-purple-200">💜</span>
                               </div>
-                              <span className="text-xs text-white/70 block truncate">Nightcore Dreams</span>
+                              <span className="text-xs text-white/70 block truncate text-center">Nightcore Dreams</span>
                             </div>
                             
-                            <div className="relative p-2 rounded bg-black/30 border border-blue-400/30">
-                              <div className="absolute top-1 right-1 text-xs text-blue-300">★</div>
-                              <div className="w-full h-16 bg-blue-400/20 rounded mb-1 flex items-center justify-center">
-                                <span className="text-sm text-blue-200">⚡</span>
+                            <div className="relative p-1 rounded bg-black/30">
+                              <div className="absolute top-0.5 right-0.5 text-xs text-blue-300">★</div>
+                              <div className="w-full h-10 bg-blue-400/20 rounded mb-1 flex items-center justify-center">
+                                <span className="text-xs text-blue-200">⚡</span>
                               </div>
-                              <span className="text-xs text-white/70 block truncate">Electric Pulse</span>
+                              <span className="text-xs text-white/70 block truncate text-center">Electric Pulse</span>
+                            </div>
+                            
+                            <div className="relative p-1 rounded bg-black/30">
+                              <div className="absolute top-0.5 right-0.5 text-xs text-green-300">★</div>
+                              <div className="w-full h-10 bg-green-400/20 rounded mb-1 flex items-center justify-center">
+                                <span className="text-xs text-green-200">🌊</span>
+                              </div>
+                              <span className="text-xs text-white/70 block truncate text-center">Ocean Girl</span>
                             </div>
                           </div>
                         </div>

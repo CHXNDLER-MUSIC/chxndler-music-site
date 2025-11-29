@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sfx";
 
 interface ElementPosition {
@@ -36,12 +37,12 @@ interface PlanetMinimapProps {
   onClose?: () => void;
 }
 
-// Element configurations matching PlanetSystemRaw.tsx ACTUAL positions - MORE SPREAD OUT
+// Element configurations for proper top-down cross pattern around center
 const ELEMENTS: ElementPosition[] = [
-  { code: "water",     label: "Water", position: [35, 0, 0],   color: "#38B6FF", glowColor: "#38B6FF" },
-  { code: "lightning", label: "Lightning", position: [0, 35, 0],  color: "#F2EF1D", glowColor: "#F2EF1D" },
-  { code: "heart",     label: "Heart", position: [-35, 0, 0],   color: "#FC54AF", glowColor: "#FC54AF" },
-  { code: "darkness",  label: "Darkness", position: [0, -35, 0],  color: "#6A4C93", glowColor: "#6A4C93" },
+  { code: "water",     label: "Water", position: [35, 0, 0],    color: "#38B6FF", glowColor: "#38B6FF" },      // Right
+  { code: "lightning", label: "Lightning", position: [0, 0, -35], color: "#F2EF1D", glowColor: "#F2EF1D" },   // Bottom  
+  { code: "heart",     label: "Heart", position: [-35, 0, 0],   color: "#FC54AF", glowColor: "#FC54AF" },      // Left
+  { code: "darkness",  label: "Darkness", position: [0, 0, 35],  color: "#6A4C93", glowColor: "#6A4C93" },     // Top
 ];
 
 // Comprehensive song planet data with detailed characteristics
@@ -94,6 +95,11 @@ const SONG_PLANETS: SongPlanet[] = [
 
 export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onClose }: PlanetMinimapProps) {
   const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const [portalContainer, setPortalContainer] = React.useState<HTMLElement | null>(null);
+
+  React.useEffect(() => {
+    setPortalContainer(document.body);
+  }, []);
 
   const handleClose = () => {
     sfx.play('close', 0.8);
@@ -126,14 +132,15 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
     return distribution;
   }, []);
 
-  // Convert 3D positions to 2D minimap coordinates
+  // Convert 3D positions to 2D minimap coordinates (top-down view)
   const convertTo2D = (position: [number, number, number]): { x: number; y: number } => {
     const [x, y, z] = position;
-    // Scale down and center in minimap (240px minimap size)
-    const scale = 3.0;
+    // Scale down and center in minimap (240px minimap size) 
+    // For top-down view: X maps to X, Z maps to Y (Y is height, ignored in top view)
+    const scale = 2.0;  // Further reduced scale for better orbital view
     return {
-      x: 120 + (x * scale), // Center at 120px + scaled X
-      y: 120 + (y * scale) - (z * scale)  // Center at 120px + Y offset - inverted scaled Z
+      x: 120 + (x * scale),  // X axis (left-right)
+      y: 120 + (z * scale)   // Z axis becomes Y axis (forward-back becomes up-down)
     };
   };
 
@@ -143,26 +150,32 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
     return center2D;
   }, []);
 
-  return (
-    <div className={`fixed top-4 right-4 bg-black/80 backdrop-blur-sm border-4 border-cyan-400 rounded-lg transition-all duration-300 ${
-      isCollapsed ? 'w-12 h-12' : 'w-60 h-60'
-    }`} style={{ zIndex: 9999, boxShadow: '0 0 20px rgba(56, 182, 255, 0.8)' }}>
+  const minimapContent = (
+    <div 
+      className={`fixed bg-black/80 backdrop-blur-sm border-4 border-cyan-400 rounded-lg transition-all duration-300 ${
+        isCollapsed ? 'w-12 h-12' : 'w-60 h-60'
+      }`} 
+      style={{ 
+        top: '2rem',
+        right: '2rem',
+        zIndex: 999999, 
+        boxShadow: '0 0 20px rgba(56, 182, 255, 0.8)',
+        pointerEvents: 'auto',
+        position: 'fixed'
+      }}
+    >
       {/* Toggle Collapse Button */}
       <button
         onClick={handleToggleCollapse}
-        className="absolute top-1 left-1 z-10 w-6 h-6 bg-cyan-400/20 hover:bg-cyan-400/40 border border-cyan-400/50 rounded text-cyan-400 text-xs font-bold transition-colors duration-200 flex items-center justify-center"
+        className="absolute top-1 right-1 w-6 h-6 bg-cyan-400/20 hover:bg-cyan-400/40 border border-cyan-400/50 rounded text-cyan-400 text-xs font-bold transition-colors duration-200 flex items-center justify-center"
+        style={{ 
+          zIndex: 999999, 
+          pointerEvents: 'auto',
+          position: 'relative'
+        }}
         title={isCollapsed ? "Expand minimap" : "Collapse minimap"}
       >
         {isCollapsed ? "+" : "−"}
-      </button>
-      
-      {/* Close Button */}
-      <button
-        onClick={handleClose}
-        className="absolute top-1 right-1 z-10 w-6 h-6 bg-cyan-400/20 hover:bg-cyan-400/40 border border-cyan-400/50 rounded text-cyan-400 text-xs font-bold transition-colors duration-200 flex items-center justify-center"
-        title="Close minimap"
-      >
-        ×
       </button>
       
       {!isCollapsed && (
@@ -218,18 +231,19 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
 
         {/* Orbiting song planets around each elemental planet */}
         {ELEMENTS.map((element) => {
-          const orbitRadius = 15; // TIGHTER orbits - matches PlanetSystemRaw.tsx
+          const orbitRadius = 15; // Orbit radius in 3D space
           const elementSongs = songsPerElement[element.code] || [];
           
           return elementSongs.map((songPlanet, i) => {
             const angle = (i / Math.max(elementSongs.length, 12)) * Math.PI * 2;
+            // For top-down view, orbit in the X-Z plane (horizontal plane)
             const x = element.position[0] + Math.cos(angle) * orbitRadius;
-            const y = element.position[1] + Math.sin(angle) * orbitRadius * 0.3;
-            const z = element.position[2] + Math.sin(angle) * orbitRadius * 0.5;
+            const y = element.position[1]; // Keep same height as elemental planet
+            const z = element.position[2] + Math.sin(angle) * orbitRadius;
             
             const pos2D = convertTo2D([x, y, z]);
             
-            // Determine shape-based styling
+            // Determine shape-based styling (keeping shape variety but uniform size)
             const getShapeClass = (shape: string) => {
               if (shape.includes("cube") || shape.includes("blocky")) return "rounded-none";
               if (shape.includes("jagged") || shape.includes("angular")) return "rounded-sm";
@@ -237,16 +251,10 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
               return "rounded-full";
             };
             
-            const getSizeClass = (shape: string) => {
-              if (shape.includes("monolith") || shape.includes("pillar")) return "w-1 h-2";
-              if (shape.includes("fragmented") || shape.includes("floating chunks")) return "w-2 h-1.5";
-              return "w-1.5 h-1.5";
-            };
-            
             return (
               <div
                 key={`${element.code}-song-${i}`}
-                className={`absolute ${getSizeClass(songPlanet.shape)} ${getShapeClass(songPlanet.shape)} transform -translate-x-1/2 -translate-y-1/2 cursor-pointer hover:scale-150 transition-all duration-200 group`}
+                className={`absolute w-1.5 h-1.5 ${getShapeClass(songPlanet.shape)} transform -translate-x-1/2 -translate-y-1/2 cursor-pointer hover:scale-150 transition-all duration-200 group`}
                 style={{
                   left: `${pos2D.x}px`,
                   top: `${pos2D.y}px`,
@@ -329,4 +337,7 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
       )}
     </div>
   );
+
+  // Render using portal to ensure it's above Three.js Canvas
+  return portalContainer ? createPortal(minimapContent, portalContainer) : null;
 }
