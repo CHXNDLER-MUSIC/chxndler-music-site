@@ -957,7 +957,8 @@ export default function ChatPanel({ isOpen, onClose }) {
               </div>
             </div>
           </motion.div>
-        )}
+        </>
+      )}
 
       {/* Scanner Effect */}
       {isOpen && (
