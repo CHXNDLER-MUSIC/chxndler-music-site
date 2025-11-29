@@ -1153,26 +1153,39 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   React.useEffect(() => {
     const handleTourSkipped = () => {
       console.log('Tour skipped - triggering warp effect');
-      if (!isWarping) {
-        setIsWarping(true);
-        setHomeIntroEnabled(true);
-        setPendingOverlayReveal(true);
-        setUiUnlocked(true);
-        setAllowWarp(true);
-        setSky(SPACE_SKY);
-        setNextSky(null);
-        setLandingRevealReady(true);
-        setWarpActive(true);
-        
-        // Store warp context for post-warp handling
-        window.postWarpUser = null;
-        window.postWarpProfileComplete = false;
-      }
+      // Use setIsWarping with function form to get current state
+      setIsWarping(currentWarping => {
+        console.log('Current isWarping state:', currentWarping);
+        if (!currentWarping) {
+          console.log('Starting warp sequence...');
+          setHomeIntroEnabled(true);
+          setPendingOverlayReveal(true);
+          setUiUnlocked(true);
+          setAllowWarp(true);
+          setSky(SPACE_SKY);
+          setNextSky(null);
+          setLandingRevealReady(true);
+          setWarpActive(true);
+          
+          // Store warp context for post-warp handling
+          window.postWarpUser = null;
+          window.postWarpProfileComplete = false;
+          console.log('Warp sequence initiated');
+          return true; // Set to warping
+        } else {
+          console.log('Warp already in progress, skipping');
+          return currentWarping; // Keep current state
+        }
+      });
     };
 
+    console.log('Adding tour:skipped event listener');
     window.addEventListener('tour:skipped', handleTourSkipped);
-    return () => window.removeEventListener('tour:skipped', handleTourSkipped);
-  }, [isWarping]);
+    return () => {
+      console.log('Removing tour:skipped event listener');
+      window.removeEventListener('tour:skipped', handleTourSkipped);
+    };
+  }, []);
 
   // Enable SFX globally only after Start unlocks the UI
   React.useEffect(() => {

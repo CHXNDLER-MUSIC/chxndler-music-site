@@ -506,8 +506,8 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
             )}
           </div>
 
-          {/* SELECTED NAME Section */}
-          <div>
+          {/* PROFILE INFO Section */}
+          <div className="space-y-4">
             <h3 
               className="text-sm mb-3 font-semibold"
               style={{ 
@@ -515,58 +515,83 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                 textShadow: '0 0 4px rgba(0,255,255,0.6)' 
               }}
             >
-              SELECTED NAME
+              PROFILE INFO
             </h3>
             
-            {!isEditingName ? (
-              <button
-                onClick={() => {
-                  setIsEditingName(true);
-                  try { sfx.play('click', 0.4); } catch {}
-                }}
-                className="w-full text-left transition-all duration-200 hover:scale-105"
+            {/* Display Name */}
+            <div className="flex items-center justify-between">
+              <span className="text-white/80 text-sm">Name:</span>
+              <span 
+                className="font-bold"
                 style={{ 
-                  background: 'none',
-                  border: 'none',
                   color: '#00FFFF', 
-                  textShadow: '0 0 8px rgba(0,255,255,0.8)',
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer'
+                  textShadow: '0 0 8px rgba(0,255,255,0.6)' 
                 }}
-                title="Click to edit name"
               >
-                {editedName || 'Click to set your name'}
-              </button>
-            ) : (
-              <input
-                type="text"
-                value={editedName}
-                onChange={(e) => setEditedName(e.target.value)}
-                onBlur={() => setIsEditingName(false)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    setIsEditingName(false);
-                  } else if (e.key === 'Escape') {
-                    setEditedName(profile?.name || '');
-                    setIsEditingName(false);
-                  }
+                {profile?.name || 'Unknown'}
+              </span>
+            </div>
+
+            {/* Element */}
+            <div className="flex items-center justify-between">
+              <span className="text-white/80 text-sm">Element:</span>
+              <span 
+                className="font-bold"
+                style={{ 
+                  color: '#00FFFF', 
+                  textShadow: '0 0 8px rgba(0,255,255,0.6)' 
                 }}
-                placeholder="Enter your name"
-                className="w-full px-3 py-2 text-sm focus:outline-none transition-colors"
-                style={{
-                  border: '1px solid rgba(0,255,255,0.4)',
-                  background: 'rgba(0,0,0,0.3)',
-                  color: '#00FFFF',
-                  textShadow: '0 0 4px rgba(0,255,255,0.6)',
-                  backdropFilter: 'blur(4px)',
-                  borderRadius: '6px'
+              >
+                {profile?.element ? profile.element.charAt(0).toUpperCase() + profile.element.slice(1) : 'None'}
+              </span>
+            </div>
+
+            {/* HeartCoins */}
+            <div className="flex items-center justify-between">
+              <span className="text-white/80 text-sm">HeartCoins:</span>
+              <span 
+                className="font-bold"
+                style={{ 
+                  color: '#00FFFF', 
+                  textShadow: '0 0 8px rgba(0,255,255,0.6)' 
                 }}
-                maxLength={50}
-                autoFocus
-              />
-            )}
+              >
+                {profile?.heartcoin_balance || 0}
+              </span>
+            </div>
+
+            {/* Streak */}
+            <div className="flex items-center justify-between">
+              <span className="text-white/80 text-sm">Daily Streak:</span>
+              <span 
+                className="font-bold"
+                style={{ 
+                  color: '#00FFFF', 
+                  textShadow: '0 0 8px rgba(0,255,255,0.6)' 
+                }}
+              >
+                {(profile as any)?.streak_days || 0} days
+              </span>
+            </div>
           </div>
+
+          {/* RELICS Section */}
+          <div className="space-y-3">
+            <h3 
+              className="text-sm mb-3 font-semibold"
+              style={{ 
+                color: '#00FFFF', 
+                textShadow: '0 0 4px rgba(0,255,255,0.6)' 
+              }}
+            >
+              RELICS
+            </h3>
+            
+            <div className="text-center py-4 text-white/60">
+              <div className="text-2xl mb-2">🏛️</div>
+              <p className="text-sm">You have no relics yet</p>
+              <p className="text-xs text-white/40 mt-1">Complete special missions to earn relics</p>
+            </div>
 
           {/* Start Tour Button */}
           <div className="mt-6 pt-4" style={{

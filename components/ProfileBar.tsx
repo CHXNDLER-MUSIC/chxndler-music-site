@@ -72,7 +72,7 @@ export default function ProfileBar({
   // Use ProfileContext for profile data
   const { profile: contextProfile, loading, updateProfile, refreshProfile, isJournalOpen, setIsJournalOpen } = useProfile();
   // Use UI store for name prompt
-  const { openNamePrompt } = useUIStore();
+  const { openNamePrompt, openElementSelection } = useUIStore();
   const [elementDropdownOpen, setElementDropdownOpen] = useState(false);
   const [journalCompletedToday, setJournalCompletedToday] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -153,16 +153,29 @@ export default function ProfileBar({
 
     if (loading) return;
 
-    // Case 1: Not logged in or no profile yet
-    if (!currentUser || !contextProfile) {
-      try { onBeamColorChange?.('blue'); } catch {}
-      setShowWelcomeHome(true);
-      return;
+    switch (buttonMode) {
+      case 'login':
+        // Mode A: Not logged in - show Welcome Home modal
+        try { onBeamColorChange?.('blue'); } catch {}
+        setShowWelcomeHome(true);
+        break;
+        
+      case 'setup':
+        // Mode C: Logged in but profile incomplete - restart onboarding flow
+        if (!contextProfile?.name) {
+          // Missing name - open name prompt
+          openNamePrompt();
+        } else if (!contextProfile?.element) {
+          // Missing element - open element selection
+          openElementSelection();
+        }
+        break;
+        
+      case 'profile':
+        // Mode B: Complete profile - show profile popover
+        setShowProfilePopover(!showProfilePopover);
+        break;
     }
-
-    // Case 2: Logged in and profile exists
-    // Open the ProfilePopover
-    setShowProfilePopover(!showProfilePopover);
   };
   
   // IMPORTANT: Do not render anything until the user has entered
@@ -384,8 +397,29 @@ export default function ProfileBar({
   }
 
   const currentElement = contextProfile?.element || savedAlienElement || null;
-  const displayName = !currentUser ? 'LOG IN' : (contextProfile?.name || savedAlienName || 'ALIEN');
   const heartCoins = !currentUser || !contextProfile ? 0 : (contextProfile?.heartcoin_balance || 0);
+  
+  // Determine button display mode
+  const getButtonDisplayInfo = () => {
+    // Mode A: Not logged in
+    if (!currentUser) {
+      return { text: 'LOG IN', mode: 'login' as const };
+    }
+    
+    // Mode C: Logged in but profile incomplete (no name or no element)
+    if (!contextProfile?.name || !contextProfile?.element) {
+      return { text: 'Finish setup', mode: 'setup' as const };
+    }
+    
+    // Mode B: Logged in with complete profile
+    const elementName = contextProfile.element.charAt(0).toUpperCase() + contextProfile.element.slice(1);
+    return { 
+      text: `${contextProfile.name} • ${elementName}`, 
+      mode: 'profile' as const 
+    };
+  };
+
+  const { text: displayName, mode: buttonMode } = getButtonDisplayInfo();
   const currentElementData = ELEMENTS.find(e => e.name === currentElement) || ELEMENTS[0];
 
   // Get username text color based on selected element
@@ -494,7 +528,13 @@ export default function ProfileBar({
                   background: 'transparent',
                   transition: 'all 0.3s ease'
                 }}
-                title={!currentUser ? "Click to log in and join the Heartverse" : !contextProfile ? "Click to log in and join the Heartverse" : "Click to edit your name"}
+                title={
+                  buttonMode === 'login' 
+                    ? "Click to log in and join the Heartverse"
+                    : buttonMode === 'setup'
+                    ? "Click to complete your profile setup"
+                    : "Click to view your profile"
+                }
                 onMouseEnter={(e) => {
                   if (!loading) {
                     try { sfx.play('hover', 0.8); } catch {}

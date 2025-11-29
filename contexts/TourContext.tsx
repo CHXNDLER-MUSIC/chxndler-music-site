@@ -68,6 +68,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   }, [markCompleted, updateProfile]);
 
   const skip = useCallback(async () => {
+    console.log('Tour skip function called');
     setActive(false);
     setEndModalVisible(false);
     markCompleted();
@@ -76,7 +77,9 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     
     // Trigger warp effect when skipping tour
     try {
+      console.log('Dispatching tour:skipped event');
       window.dispatchEvent(new CustomEvent('tour:skipped'));
+      console.log('tour:skipped event dispatched successfully');
     } catch (e) {
       console.log('Could not dispatch tour:skipped event:', e);
     }
@@ -172,7 +175,12 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
             </button>
 
             <button
-              onClick={() => { setWelcomeVisible(false); skip(); }}
+              onClick={() => { 
+                console.log('Skip for now clicked');
+                setWelcomeVisible(false); 
+                // Small delay to ensure modal closes before triggering warp
+                setTimeout(() => skip(), 100);
+              }}
               className="w-full text-white/80 hover:text-white text-sm underline"
             >
               Skip for now
