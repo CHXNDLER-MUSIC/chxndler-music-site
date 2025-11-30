@@ -127,19 +127,26 @@ export default function ChatPanel({ isOpen, onClose }) {
    * Get display name for user - logged in name or anonymous alien name
    */
   const getDisplayName = () => {
-    // Force anonymous mode - always use alien name if no authenticated user
-    if (!user || !profile?.id) {
-      console.log('🔥 Using stored alien name (no user or profile):', alienName);
-      return alienName;
-    }
-    
-    if (profile?.name) {
-      console.log('🔥 Using profile name:', profile.name);
+    // If user is authenticated and has a profile with a name, use it
+    if (user && profile?.name) {
+      console.log('🔥 Using authenticated user profile name:', profile.name);
       return profile.name;
     }
     
-    // Fallback to alien name
-    console.log('🔥 Using stored alien name (fallback):', alienName);
+    // If user is authenticated but profile is incomplete, still check for name
+    if (user && profile?.id && profile?.name) {
+      console.log('🔥 Using profile name for authenticated user:', profile.name);
+      return profile.name;
+    }
+    
+    // For unauthenticated or incomplete profiles, use alien name
+    if (!user || !profile?.id || !profile?.name) {
+      console.log('🔥 Using stored alien name (no authenticated user with name):', alienName);
+      return alienName;
+    }
+    
+    // Final fallback
+    console.log('🔥 Using stored alien name (final fallback):', alienName);
     return alienName;
   };
   const [messages, setMessages] = useState([]);
@@ -171,24 +178,36 @@ export default function ChatPanel({ isOpen, onClose }) {
   const [binderStartIndex, setBinderStartIndex] = useState(0);
   const channelRef = useRef(null);
 
-  // Initialize anonymous user immediately when chat opens
+  // Initialize chat users when chat opens - either authenticated user or anonymous
   useEffect(() => {
-    if ((!user || !profile?.id) && isOpen) {
-      console.log('🚀 IMMEDIATE: Using stored alien name:', alienName);
-      
-      // Always use the pre-initialized alien name
-      const anonymousUser = {
-        id: 'anonymous',
-        name: alienName, // Always use the stored alien name
-        element: 'alien',
-        avatar_badge_id: null,
-        last_seen: new Date().toISOString()
-      };
-      
-      setChatUsers([anonymousUser]);
-      console.log('🚀 Set initial chat users with consistent name:', [anonymousUser]);
+    if (isOpen) {
+      if (user && profile?.name) {
+        // For authenticated users with complete profile, add them to chat users
+        console.log('🚀 IMMEDIATE: Using authenticated user:', profile.name);
+        const authenticatedUser = {
+          id: user.id,
+          name: profile.name,
+          element: profile.element || null,
+          avatar_badge_id: profile.avatar_badge_id || null,
+          last_seen: new Date().toISOString()
+        };
+        setChatUsers([authenticatedUser]);
+        console.log('🚀 Set initial chat users with authenticated user:', [authenticatedUser]);
+      } else if (!user || !profile?.id || !profile?.name) {
+        // For unauthenticated users or incomplete profiles, use alien name
+        console.log('🚀 IMMEDIATE: Using stored alien name:', alienName);
+        const anonymousUser = {
+          id: 'anonymous',
+          name: alienName,
+          element: 'alien',
+          avatar_badge_id: null,
+          last_seen: new Date().toISOString()
+        };
+        setChatUsers([anonymousUser]);
+        console.log('🚀 Set initial chat users with anonymous user:', [anonymousUser]);
+      }
     }
-  }, [user, isOpen, alienName]); // Add alienName as dependency
+  }, [user, profile?.name, profile?.id, isOpen, alienName]);
 
   // Initialize chat when panel opens
   useEffect(() => {
@@ -199,26 +218,42 @@ export default function ChatPanel({ isOpen, onClose }) {
     }
   }, [isOpen]);
 
-  // Ensure anonymous user is maintained when chat state changes
+  // Update chat users when authentication state changes
   useEffect(() => {
-    if (isOpen && (!user || !profile?.id) && alienName) {
-      console.log('🔥 Chat opened - ensuring anonymous user exists with name:', alienName);
-      
-      // Always refresh the anonymous user with the correct alien name
-      setChatUsers(prev => {
-        const otherUsers = prev.filter(u => u.id !== 'anonymous');
-        const anonymousUser = {
-          id: 'anonymous',
-          name: alienName, // Always use the stored alien name
-          element: 'alien',
-          avatar_badge_id: null,
-          last_seen: new Date().toISOString()
-        };
-        console.log('🔥 Setting anonymous user with consistent name:', anonymousUser);
-        return [anonymousUser, ...otherUsers];
-      });
+    if (isOpen) {
+      if (user && profile?.name) {
+        // For authenticated users, ensure they're properly represented
+        console.log('🔥 Chat opened - ensuring authenticated user exists:', profile.name);
+        setChatUsers(prev => {
+          const otherUsers = prev.filter(u => u.id !== user.id && u.id !== 'anonymous');
+          const authenticatedUser = {
+            id: user.id,
+            name: profile.name,
+            element: profile.element || null,
+            avatar_badge_id: profile.avatar_badge_id || null,
+            last_seen: new Date().toISOString()
+          };
+          console.log('🔥 Setting authenticated user:', authenticatedUser);
+          return [authenticatedUser, ...otherUsers];
+        });
+      } else if ((!user || !profile?.id || !profile?.name) && alienName) {
+        // For unauthenticated users, ensure anonymous user exists
+        console.log('🔥 Chat opened - ensuring anonymous user exists with name:', alienName);
+        setChatUsers(prev => {
+          const otherUsers = prev.filter(u => u.id !== 'anonymous');
+          const anonymousUser = {
+            id: 'anonymous',
+            name: alienName,
+            element: 'alien',
+            avatar_badge_id: null,
+            last_seen: new Date().toISOString()
+          };
+          console.log('🔥 Setting anonymous user with consistent name:', anonymousUser);
+          return [anonymousUser, ...otherUsers];
+        });
+      }
     }
-  }, [isOpen, user, profile?.id, alienName]);
+  }, [isOpen, user, profile?.id, profile?.name, alienName]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -241,22 +276,30 @@ export default function ChatPanel({ isOpen, onClose }) {
       // Load current chat users from database
       const databaseUsers = await chatService.getChatUsers();
       
-      // If user is not authenticated, preserve/ensure the anonymous user
-      if (!user) {
+      // Handle user representation based on authentication state
+      if (user && profile?.name) {
+        // For authenticated users, add them to the users list
+        console.log('🔥 InitializeChat: Adding authenticated user:', profile.name);
+        const authenticatedUser = {
+          id: user.id,
+          name: profile.name,
+          element: profile.element || null,
+          avatar_badge_id: profile.avatar_badge_id || null,
+          last_seen: new Date().toISOString()
+        };
+        setChatUsers([authenticatedUser, ...databaseUsers.filter(u => u.id !== user.id)]);
+      } else if (!user || !profile?.name) {
+        // For unauthenticated users, use anonymous user
         console.log('🔥 InitializeChat: Using consistent alien name:', alienName);
-        
-        setChatUsers(prev => {
-          // Always use the consistent alien name
-          const anonymousUser = {
-            id: 'anonymous',
-            name: alienName, // Use stored alien name directly
-            element: 'alien',
-            avatar_badge_id: null,
-            last_seen: new Date().toISOString()
-          };
-          console.log('🔥 Creating consistent anonymous user:', anonymousUser);
-          return [anonymousUser, ...databaseUsers];
-        });
+        const anonymousUser = {
+          id: 'anonymous',
+          name: alienName,
+          element: 'alien',
+          avatar_badge_id: null,
+          last_seen: new Date().toISOString()
+        };
+        console.log('🔥 Creating consistent anonymous user:', anonymousUser);
+        setChatUsers([anonymousUser, ...databaseUsers]);
       } else {
         setChatUsers(databaseUsers);
       }
@@ -413,65 +456,64 @@ export default function ChatPanel({ isOpen, onClose }) {
     const displayName = getDisplayName();
     console.log('🔥 Sending message:', { messageText, displayName, user: !!user, userObject: user, profile: !!profile });
     
-    // For anonymous users, always add message locally first  
-    if (!user || !profile?.id) {
-      const anonymousMessage = {
-        id: `anonymous-${Date.now()}`,
-        user_id: 'anonymous',
-        message: messageText.trim(),
-        message_type: 'message',
-        created_at: new Date().toISOString(),
-        user_profile: {
-          name: displayName,
-          element: 'alien',
-          avatar_badge_id: null
-        }
-      };
-      
-      console.log('🔥 Adding anonymous message locally:', anonymousMessage);
-      setMessages(prev => {
-        const newMessages = [...prev, anonymousMessage];
-        console.log('🔥 Updated messages:', newMessages);
-        return newMessages;
-      });
-      
-      // Ensure anonymous user is in the users list
-      setChatUsers(prev => {
-        const existingAnonymous = prev.find(u => u.id === 'anonymous');
-        if (!existingAnonymous) {
-          console.log('🔥 Adding anonymous user to list');
-          return [{
-            id: 'anonymous',
-            name: displayName,
-            element: 'alien',
-            avatar_badge_id: null,
-            last_seen: new Date().toISOString()
-          }, ...prev];
-        }
-        return prev;
-      });
-      
-      // Try to send to service in background (optional)
+    // For authenticated users with complete profiles, send via service
+    if (user && profile?.name) {
       try {
         const message = await chatService.sendMessage(messageText, 'message', displayName);
-        console.log('🔥 Background service result:', message);
+        console.log('🔥 Authenticated user message result:', message);
+        
+        if (!message) {
+          console.error('Failed to send message for authenticated user');
+        }
       } catch (error) {
-        console.log('🔥 Background service failed (expected for anonymous):', error);
+        console.error('Error sending message for authenticated user:', error);
       }
-      
-      return; // Exit early for anonymous users
+      return; // Exit early for authenticated users
     }
     
-    // For authenticated users, try service first
+    // For anonymous users (unauthenticated or incomplete profiles), add message locally
+    const anonymousMessage = {
+      id: `anonymous-${Date.now()}`,
+      user_id: 'anonymous',
+      message: messageText.trim(),
+      message_type: 'message',
+      created_at: new Date().toISOString(),
+      user_profile: {
+        name: displayName,
+        element: 'alien',
+        avatar_badge_id: null
+      }
+    };
+    
+    console.log('🔥 Adding anonymous message locally:', anonymousMessage);
+    setMessages(prev => {
+      const newMessages = [...prev, anonymousMessage];
+      console.log('🔥 Updated messages:', newMessages);
+      return newMessages;
+    });
+    
+    // Ensure anonymous user is in the users list
+    setChatUsers(prev => {
+      const existingAnonymous = prev.find(u => u.id === 'anonymous');
+      if (!existingAnonymous) {
+        console.log('🔥 Adding anonymous user to list');
+        return [{
+          id: 'anonymous',
+          name: displayName,
+          element: 'alien',
+          avatar_badge_id: null,
+          last_seen: new Date().toISOString()
+        }, ...prev];
+      }
+      return prev;
+    });
+    
+    // Try to send to service in background (optional)
     try {
       const message = await chatService.sendMessage(messageText, 'message', displayName);
-      console.log('🔥 Authenticated user message result:', message);
-      
-      if (!message) {
-        console.error('Failed to send message for authenticated user');
-      }
+      console.log('🔥 Background service result:', message);
     } catch (error) {
-      console.error('Error sending message for authenticated user:', error);
+      console.log('🔥 Background service failed (expected for anonymous):', error);
     }
   };
 
@@ -766,14 +808,30 @@ export default function ChatPanel({ isOpen, onClose }) {
                       isUserPanelCollapsed ? 'opacity-0' : 'opacity-100'
                     }`}>
                       {!isUserPanelCollapsed && (() => {
-                        const usersToShow = (chatUsers.length === 0 && (!user || !profile?.id)) ? [{
-                          id: 'anonymous',
-                          name: alienName, // Always use stored alien name
-                          element: 'alien', 
-                          avatar_badge_id: null,
-                          last_seen: new Date().toISOString()
-                        }] : chatUsers;
-                        console.log('🔥 Rendering UserList with consistent alien name:', { usersToShow, alienName, user: !!user });
+                        let usersToShow = chatUsers;
+                        
+                        // If no users and authenticated, show current user
+                        if (chatUsers.length === 0 && user && profile?.name) {
+                          usersToShow = [{
+                            id: user.id,
+                            name: profile.name,
+                            element: profile.element || null,
+                            avatar_badge_id: profile.avatar_badge_id || null,
+                            last_seen: new Date().toISOString()
+                          }];
+                        }
+                        // If no users and not authenticated, show alien user
+                        else if (chatUsers.length === 0 && (!user || !profile?.name)) {
+                          usersToShow = [{
+                            id: 'anonymous',
+                            name: alienName,
+                            element: 'alien', 
+                            avatar_badge_id: null,
+                            last_seen: new Date().toISOString()
+                          }];
+                        }
+                        
+                        console.log('🔥 Rendering UserList:', { usersToShow, user: !!user, profileName: profile?.name });
                         return (
                           <UserList 
                             users={usersToShow}
@@ -851,7 +909,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                   textShadow: '0 0 8px #F2EF1D'
                                 }}
                               >
-                                {selectedUser.id === 'anonymous' ? alienName : selectedUser.name}
+                                {selectedUser.id === 'anonymous' ? alienName : (selectedUser.name || getDisplayName())}
                               </h3>
                             </div>
                             
