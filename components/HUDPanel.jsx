@@ -888,21 +888,13 @@ export default function HUDPanel({
     } catch {}
   }, [sofiaElement]);
 
-  // Check if user has seen welcome modal before
+  // Track if user has seen Welcome modal before (no auto-open here; Start flow controls it)
   const WELCOME_MODAL_LS_KEY = 'heartverse:welcome_modal_seen';
   useEffect(() => {
     try {
       if (typeof window !== 'undefined') {
         const hasSeen = window.localStorage.getItem(WELCOME_MODAL_LS_KEY) === 'true';
         setHasSeenWelcomeModal(hasSeen);
-        
-        // Show welcome modal automatically on first visit
-        if (!hasSeen) {
-          // Add a small delay to ensure the component is fully mounted
-          setTimeout(() => {
-            setShowWelcomeHomeModal(true);
-          }, 1000);
-        }
       }
     } catch {}
   }, []);

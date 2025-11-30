@@ -110,7 +110,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const { profile } = useProfile();
   
   // Global UI state for profile bar visibility
-  const { setHasEnteredHeartverse, enterHeartverse } = useUIState();
+  const { setHasEnteredHeartverse, enterHeartverse, setWarpFullyComplete } = useUIState();
   
   // Global wheel render mode (LUMA vs PLAIN). Must be top-level to obey Hooks rules.
   // Use false initially to match SSR, then sync with localStorage after hydration
@@ -1033,9 +1033,46 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       const user = session?.user;
       
       if (!user) {
-        // USER IS NOT LOGGED IN - Open Welcome Home modal immediately (no warp effect)
-        audioHeartverse.playWelcomeToHeartverse();
-        setShowWelcomeHomeModal(true);
+        // USER IS NOT LOGGED IN - Run warp effect first, then show Welcome Home modal
+        setIsWarping(true);
+        // Flag to show Welcome Home modal after warp completes
+        setShouldShowWelcomeModal(true);
+        // Prepare UI reveal sequencing for homepage
+        welcomeOnStartRef.current = true;
+        setHomeIntroEnabled(true);
+        setPendingOverlayReveal(true);
+        setUiUnlocked(true);
+        setShowDimmingOverlay(false);
+        setLandingRevealReady(true);
+
+        // Prepare warp to homepage
+        setUserSelected(false);
+        setHomeMode(false);
+        startButtonWarpRef.current = true;
+
+        // Stop any playing main track audio
+        try {
+          const a = document.querySelector('audio[data-audio-player="1"]');
+          if (a) { a.pause(); try { a.currentTime = 0; } catch {}; try { a.muted = true; } catch {}; try { a.removeAttribute('src'); } catch {}; try { a.load(); } catch {} }
+        } catch {}
+        setIsPlaying(false);
+        try { playerStore.setState({ mainId: null }); } catch {}
+
+        // Prepare UI state for warp
+        setShowHUD(false);
+        setShowOverlayUI(false);
+        setBeamEnabled(false);
+        setPendingHomePower(true);
+
+        // Trigger the warp effect
+        setAllowWarp(true);
+        setSky(SPACE_SKY);
+        setNextSky(null);
+        setFlySignal((n) => n + 1);
+        setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
+
+        // Ensure post-warp login markers are cleared for non-logged-in flow
+        try { delete window.postWarpUser; delete window.postWarpProfileComplete; } catch {}
         return;
       }
       
@@ -1602,6 +1639,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           // Reset warp state when warp effect completes
           setIsWarping(false);
           
+          // Mark that warp effect is fully complete (including sound effects)
+          setWarpFullyComplete(true);
+          
           // Handle post-warp logic based on login state (for Start button warps)
           let wasLoggedInDuringWarp = false;
           if (isWarping) {
@@ -1613,11 +1653,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             delete window.postWarpUser;
             delete window.postWarpProfileComplete;
             
-            if (!postWarpUser) {
-              // User is NOT logged in - show Welcome Home modal after warp
-              // NOTE: This should not happen with new flow, as non-logged-in users don't warp
-              setShowWelcomeHomeModal(true);
-            } else {
+            if (postWarpUser) {
               // User IS logged in - play audio but DON'T show welcome modal
               audioHeartverse.playWelcomeHomeAndSpaceMusic();
               // Clear any pending welcome modal flags for logged in users

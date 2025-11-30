@@ -33,12 +33,8 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false }: { hidden
     console.log('codeOpen state changed to:', codeOpen);
   }, [codeOpen]);
 
-  // Show welcome home modal when user enters heartverse for the first time
-  useEffect(() => {
-    if (hasEnteredHeartverse) {
-      setWelcomeHomeOpen(true);
-    }
-  }, [hasEnteredHeartverse]);
+  // Welcome Home modal now opens only from explicit triggers (Start flow or specific actions)
+  // Avoid auto-opening on initial load or generic "entered" events to prevent early popups.
 
   const handleItemClick = (label: string) => {
     switch (label) {
