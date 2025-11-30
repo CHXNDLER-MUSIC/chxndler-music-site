@@ -698,18 +698,11 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                     {/* Front side */}
                     <div style={{ backfaceVisibility: 'hidden', transform: 'rotateY(0deg)' }}>
                       <img
-                        src={explicitCardSrc || computedCardSrc}
+                        src={src}
                         alt={title}
                         className="tilt-img"
                         onError={(e)=>{
-                          // If computed card doesn't exist, fall back to legacy mapping, then to cover
-                          const fallback = src.replace('/cover/', '/card/');
-                          if (fallback && fallback !== src) {
-                            e.currentTarget.onerror = () => { e.currentTarget.src = src; };
-                            e.currentTarget.src = fallback;
-                          } else {
-                            e.currentTarget.src = src;
-                          }
+                          e.currentTarget.src = "/logo/CHXNDLER_Logo.png";
                         }}
                       />
                     </div>
@@ -726,9 +719,19 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                       }}
                     >
                       <img
-                        src={CARD_URLS['back'] || '/card/back.png'}
-                        alt="Card back"
+                        src={explicitCardSrc || computedCardSrc}
+                        alt={title}
                         className="tilt-img"
+                        onError={(e)=>{
+                          // If computed card doesn't exist, fall back to legacy mapping, then to card back
+                          const fallback = src.replace('/cover/', '/card/');
+                          if (fallback && fallback !== src) {
+                            e.currentTarget.onerror = () => { e.currentTarget.src = CARD_URLS['back'] || '/card/back.png'; };
+                            e.currentTarget.src = fallback;
+                          } else {
+                            e.currentTarget.src = CARD_URLS['back'] || '/card/back.png';
+                          }
+                        }}
                       />
                     </div>
                   </div>
@@ -757,23 +760,31 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                           // Close the card modal
                           setShowCard(false);
                           
-                          // Emit custom event to open binder with specific card
+                          // Set HeartCoin modal to open with USE tab and CARDS sub-tab
                           try {
-                            const binderEvent = new CustomEvent('openBinderCard', {
+                            (window as any).heartCoinInitialTab = 'USE';
+                            (window as any).heartCoinInitialUseTab = 'CARDS';
+                            // Store the card name for filtering
+                            (window as any).heartCoinSelectedCard = title;
+                          } catch {}
+                          
+                          // Emit custom event to open HeartCoin modal with card filter
+                          try {
+                            const heartCoinEvent = new CustomEvent('openHeartCoinCards', {
                               detail: { 
                                 cardTitle: title,
                                 songSlug: title?.toLowerCase().replace(/\s+/g, '-'),
                                 cardSrc: src 
                               }
                             });
-                            window.dispatchEvent(binderEvent);
+                            window.dispatchEvent(heartCoinEvent);
                           } catch {}
                           
                           try {
                             track('collect_card_clicked', { 
                               song_slug: title?.toLowerCase().replace(/\s+/g, '-'),
                               card_src: src,
-                              payload: { song_title: title, card_image: src, action: 'open_binder_with_card' } 
+                              payload: { song_title: title, card_image: src, action: 'open_heartcoin_with_card' } 
                             });
                           } catch {}
                         }}

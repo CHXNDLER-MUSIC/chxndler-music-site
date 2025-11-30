@@ -5,6 +5,7 @@ import { sfx } from "@/lib/sfx";
 import Image from "next/image";
 import { useProfile } from '@/contexts/ProfileContext';
 import { supabaseClient } from "@/lib/supabaseClient";
+import { track } from "@/lib/analytics";
 
 // Store item interface
 interface StoreItem {
@@ -248,6 +249,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         // Clear the USE tab preference after using it
         delete (window as any).heartCoinInitialUseTab;
       }
+      // Check for selected card filter
+      if ((window as any).heartCoinSelectedCard) {
+        setSelectedSong((window as any).heartCoinSelectedCard);
+        // Clear the selected card after using it
+        delete (window as any).heartCoinSelectedCard;
+      }
       // Clear the main tab preference after using it
       delete (window as any).heartCoinInitialTab;
     }
@@ -262,6 +269,42 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       setIsFromHamburger(false);
     }
   }, [isActive, open]);
+
+  // Listen for openHeartCoinCards event from collect card button
+  useEffect(() => {
+    const handleOpenHeartCoinCards = (e: CustomEvent) => {
+      try {
+        // Set the modal to open with USE tab and CARDS sub-tab
+        setActiveTab('USE');
+        setActiveUseTab('CARDS');
+        
+        // Set the selected song filter if provided
+        if (e.detail?.cardTitle) {
+          setSelectedSong(e.detail.cardTitle);
+        }
+        
+        // Open the modal
+        setOpen(true);
+        
+        // Track the event
+        try {
+          track('heartcoin_opened_from_collect', { 
+            song_slug: e.detail?.songSlug || 'unknown',
+            payload: { 
+              song_title: e.detail?.cardTitle || 'Unknown',
+              card_image: e.detail?.cardSrc,
+              source: 'collect_card_button'
+            } 
+          });
+        } catch {}
+      } catch (err) {
+        console.warn('Error handling openHeartCoinCards event:', err);
+      }
+    };
+
+    window.addEventListener('openHeartCoinCards', handleOpenHeartCoinCards as EventListener);
+    return () => window.removeEventListener('openHeartCoinCards', handleOpenHeartCoinCards as EventListener);
+  }, []);
 
   // Fetch cards from Supabase
   const fetchCards = async () => {

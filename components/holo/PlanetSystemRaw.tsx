@@ -2321,7 +2321,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
 
   // Sync planets to songs from the global store for closer match to previous visuals
   const [storeSnap, setStoreSnap] = React.useState(() => playerStore.getState());
-  const [isMinimapVisible, setIsMinimapVisible] = React.useState(false);
+  const [isMinimapVisible, setIsMinimapVisible] = React.useState(true);
   React.useEffect(() => playerStore.subscribe(() => setStoreSnap(playerStore.getState())), []);
   const { songs, mainId, hoverId, planetsVisible, planetDisplayMode } = storeSnap as any;
   
@@ -2910,8 +2910,19 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
         transition: 'opacity 400ms ease-in-out'
       }}
     >
-      {/* 2D Minimap overlay - show when displaying all planets */}
-      {showAll && isMinimapVisible && (
+      {/* Minimap Toggle Button */}
+      <button
+        onClick={() => setIsMinimapVisible(!isMinimapVisible)}
+        className="absolute top-4 right-20 bg-cyan-500/20 hover:bg-cyan-500/40 border border-cyan-400/50 rounded text-cyan-400 text-sm font-bold transition-colors duration-200 px-3 py-2 flex items-center gap-2"
+        style={{ zIndex: 999998 }}
+        title={isMinimapVisible ? "Hide minimap" : "Show minimap"}
+      >
+        <span className="text-xs">🗺️</span>
+        {isMinimapVisible ? "Hide Map" : "Show Map"}
+      </button>
+      
+      {/* 2D Minimap overlay - show when displaying all planets or when multiple songs exist */}
+      {(showAll || songs.length > 1) && isMinimapVisible && (
         <PlanetMinimap 
           currentMainId={mainId} 
           hoverId={hoverId} 

@@ -878,9 +878,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           setExplicitClose(false);
         }, 150);
       } else {
-        // Switch to yellow - close other displays but keep blue display open for stars popover
+        // Switch to yellow - close blue display first, then open yellow display
         setBeamTransitioning(true);
-        closeAllDisplays(true, true); // Skip yellow close and keep blue display open
+        closeAllDisplays(); // Close all displays including blue display
         setTimeout(() => {
           setBeamColor('yellow');
           setBeamEnabled(true);

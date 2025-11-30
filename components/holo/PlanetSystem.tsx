@@ -37,10 +37,10 @@ const elementGlows: Record<ElementCode, string> = {
   darkness: "#6A4C93"
 };
 
-const elementOrbitRadius = 60;
+const elementOrbitRadius = 120; // Increased for better visibility 
 // Import orbit radius from config
 import { SONG_ORBIT_RADIUS } from "@/lib/planetConfig";
-const songOrbitRadius = SONG_ORBIT_RADIUS;
+const songOrbitRadius = SONG_ORBIT_RADIUS * 3; // Increased song orbit radius
 
 
 // Elemental Planet with Glow component
@@ -61,7 +61,7 @@ function ElementPlanetWithGlow({
   return (
     <group position={position}>
       {/* Glow background - renderOrder 2 */}
-      <sprite ref={glowRef} scale={[25, 25, 1]} renderOrder={2}>
+      <sprite ref={glowRef} scale={[60, 60, 1]} renderOrder={2}>
         <spriteMaterial
           transparent={true}
           depthWrite={false}
@@ -72,9 +72,9 @@ function ElementPlanetWithGlow({
         />
       </sprite>
       
-      {/* Element planet - renderOrder 1 - SMALLER SIZE */}
+      {/* Element planet - renderOrder 1 - LARGER SIZE */}
       <mesh renderOrder={1} position={[0, 0, 0]}>
-        <sphereGeometry args={[4.0, 32, 32]} />
+        <sphereGeometry args={[8.0, 32, 32]} />
         <meshStandardMaterial 
           color={color}
           emissive={color}
@@ -86,7 +86,7 @@ function ElementPlanetWithGlow({
       
       
       {/* Element label - always visible */}
-      <Html position={[0, 22, 0]} center>
+      <Html position={[0, 32, 0]} center>
         <div style={{ 
           color: color, 
           fontSize: '18px', 
@@ -136,10 +136,15 @@ function SongOrbitGroup({
 }) {
   const orbitRef = useRef<ThreeGroup>(null);
   
-  // Rotate song planets around their element
+  // Rotate song planets around their element at different speeds for each element
   useFrame(() => {
     if (orbitRef.current) {
-      orbitRef.current.rotation.y += 0.0008;
+      // Different rotation speeds per element for variety
+      const speed = elementCode === 'lightning' ? 0.0015 : 
+                   elementCode === 'water' ? 0.0012 : 
+                   elementCode === 'heart' ? 0.0010 : 
+                   0.0008; // darkness
+      orbitRef.current.rotation.y += speed;
     }
   });
   
@@ -166,7 +171,7 @@ function SongOrbitGroup({
         const angle = index * angleStep;
         const x = Math.cos(angle) * songOrbitRadius;
         const z = Math.sin(angle) * songOrbitRadius;
-        const y = (Math.random() - 0.5) * 0.5; // Slight y randomization
+        const y = (Math.sin(angle + index) * 3); // More interesting y variation based on position
         
         return (
           <group key={card.id} position={[x, y, z]}>
@@ -177,7 +182,7 @@ function SongOrbitGroup({
                 isHover={hoverId === card.id}
                 isMoon={false}
                 isMuted={false}
-                ringBaseOverride={0.3}
+                ringBaseOverride={1.0} // Increased ring visibility
                 isHighlighted={highlightedPlanetId === card.id}
               />
             </mesh>
@@ -219,7 +224,7 @@ function OrbitalElementalSystem({ songs, mainId, hoverId, highlightedPlanetId }:
   // Elemental planets orbit around the center heart
   useFrame(() => {
     if (systemRef.current) {
-      systemRef.current.rotation.y += 0.0008; // Slower orbit for better visibility
+      systemRef.current.rotation.y += 0.0003; // Much slower orbit for better visibility and less motion sickness
     }
   });
   
@@ -233,7 +238,7 @@ function OrbitalElementalSystem({ songs, mainId, hoverId, highlightedPlanetId }:
       {/* Center Heart Planet - Fixed at origin - MUCH LARGER */}
       <group position={[0, 0, 0]} name="CenterHeart">
         <mesh renderOrder={6}>
-          <sphereGeometry args={[25, 32, 32]} />
+          <sphereGeometry args={[40, 32, 32]} />
           <meshStandardMaterial 
             color="#FC54AF"
             emissive="#FC54AF"
@@ -242,7 +247,7 @@ function OrbitalElementalSystem({ songs, mainId, hoverId, highlightedPlanetId }:
             roughness={0.3}
           />
         </mesh>
-        <sprite scale={[60, 60, 1]} renderOrder={5}>
+        <sprite scale={[100, 100, 1]} renderOrder={5}>
           <spriteMaterial
             transparent={true}
             color="#FC54AF"
@@ -250,37 +255,43 @@ function OrbitalElementalSystem({ songs, mainId, hoverId, highlightedPlanetId }:
             blending={AdditiveBlending}
           />
         </sprite>
-        <Html position={[0, 20, 0]} center>
+        <Html position={[0, 50, 0]} center>
           <div style={{ 
             color: "#FC54AF", 
-            fontSize: "20px", 
+            fontSize: "22px", 
             fontWeight: "bold",
             textShadow: "0 0 30px #FC54AF",
             pointerEvents: "none",
             textAlign: "center"
           }}>
-            💖 HEART CENTER
+            💖 HEARTVERSE
           </div>
         </Html>
       </group>
 
       {/* Orbiting elemental planets */}
-      {ELEMENT_PLANETS.map((element) => {
+      {ELEMENT_PLANETS.map((element, index) => {
         const cardsForThisElement = cardsByElement[element.element!];
         
-        console.log(`🪐 Rendering ${element.element} planet at ${element.position} with ${cardsForThisElement.length} songs`);
+        // Calculate orbital position based on index for proper spacing
+        const angle = (index / ELEMENT_PLANETS.length) * Math.PI * 2;
+        const x = Math.cos(angle) * elementOrbitRadius;
+        const z = Math.sin(angle) * elementOrbitRadius;
+        const y = (Math.sin(angle * 2) * 10); // Slight vertical variation for visual interest
+        
+        console.log(`🪐 Rendering ${element.element} planet at orbital position [${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)}] with ${cardsForThisElement.length} songs`);
         
         return (
           <group key={element.id} name={`element-orbit-${element.element}`}>
-            {/* Individual elemental planet at fixed orbital position */}
-            <group position={element.position as [number, number, number]} name={`element-${element.element}`}>
-              {/* Elemental planet sphere - Using consistent size from config */}
+            {/* Individual elemental planet at calculated orbital position */}
+            <group position={[x, y, z]} name={`element-${element.element}`}>
+              {/* Elemental planet sphere - Using consistent larger size */}
               <mesh renderOrder={4}>
-                <sphereGeometry args={[element.size * 15, 32, 32]} />
+                <sphereGeometry args={[12, 32, 32]} />
                 <meshStandardMaterial 
                   color={element.color}
                   emissive={element.color}
-                  emissiveIntensity={element.element === 'darkness' ? 3.0 : 5.0}
+                  emissiveIntensity={element.element === 'darkness' ? 4.0 : 6.0}
                   metalness={element.element === 'water' ? 0.8 : element.element === 'darkness' ? 0.9 : 0.3}
                   roughness={element.element === 'lightning' ? 0.8 : element.element === 'water' ? 0.1 : 0.4}
                 />
@@ -288,26 +299,26 @@ function OrbitalElementalSystem({ songs, mainId, hoverId, highlightedPlanetId }:
               
               
               {/* Elemental planet glow - MUCH LARGER */}
-              <sprite scale={[50, 50, 1]} renderOrder={3}>
+              <sprite scale={[80, 80, 1]} renderOrder={3}>
                 <spriteMaterial
                   transparent={true}
-                  color={elementGlows[element.code]}
-                  opacity={element.code === 'lightning' ? 0.7 : 0.5}
+                  color={elementGlows[element.element!]}
+                  opacity={element.element === 'lightning' ? 0.7 : 0.5}
                   blending={AdditiveBlending}
                 />
               </sprite>
               
               {/* Element label */}
-              <Html position={[0, 15, 0]} center>
+              <Html position={[0, 25, 0]} center>
                 <div style={{ 
                   color: element.color, 
-                  fontSize: '16px', 
+                  fontSize: '18px', 
                   fontWeight: 'bold',
                   textShadow: `0 0 20px ${element.color}`,
                   pointerEvents: 'none',
                   textAlign: 'center'
                 }}>
-                  {element.name}
+                  {element.name?.toUpperCase()}
                 </div>
               </Html>
               
@@ -497,7 +508,7 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         // Pull the camera back and widen FOV so the full system fits
         // Elevated viewpoint: camera positioned above to look down at the planet system
         // Better positioning to show the 4 element planets orbiting center
-        camera={{ position: [0, 200, actualShouldShowAll ? 400 : 200], fov: actualShouldShowAll ? 75 : 100 }}
+        camera={{ position: [0, 300, actualShouldShowAll ? 600 : 300], fov: actualShouldShowAll ? 65 : 85 }}
         // Prefer safer GL settings on mobile to avoid flicker when layers repaint
         gl={{
           antialias: false,
@@ -536,8 +547,8 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
 
         {/* Very shallow tilt for near-horizontal horizon line */}
         {/* Render the full system: satellites first, focus planet last; previous main becomes a moon */}
-        {/* Enlarge full-system view when showing all planets - MAXIMUM scale for visibility */}
-        <group scale={(actualShouldShowAll || shouldShowAll) ? 2 : 1}>
+        {/* Enlarge full-system view when showing all planets - Moderate scale for proper visibility */}
+        <group scale={(actualShouldShowAll || shouldShowAll) ? 1.5 : 1}>
         <SystemGroup>
           
           {/* ORBITAL ELEMENTAL SYSTEM - Heart center with 4 elements orbiting */}
@@ -584,8 +595,19 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         <OverlapManager />
       </Canvas>
       
-      {/* 2D Minimap overlay - show when displaying all planets */}
-      {(actualShouldShowAll || shouldShowAll) && isMinimapVisible && (
+      {/* Minimap Toggle Button */}
+      <button
+        onClick={() => setIsMinimapVisible(!isMinimapVisible)}
+        className="absolute top-4 right-20 bg-cyan-500/20 hover:bg-cyan-500/40 border border-cyan-400/50 rounded text-cyan-400 text-sm font-bold transition-colors duration-200 px-3 py-2 flex items-center gap-2"
+        style={{ zIndex: 999998 }}
+        title={isMinimapVisible ? "Hide minimap" : "Show minimap"}
+      >
+        <span className="text-xs">🗺️</span>
+        {isMinimapVisible ? "Hide Map" : "Show Map"}
+      </button>
+      
+      {/* 2D Minimap overlay - show when displaying all planets or when multiple songs exist */}
+      {((actualShouldShowAll || shouldShowAll) || songs.length > 1) && isMinimapVisible && (
         <PlanetMinimap 
           currentMainId={mainId} 
           hoverId={hoverId} 

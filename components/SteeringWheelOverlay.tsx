@@ -7,6 +7,7 @@ import HoloJoinButton from "@/components/HoloJoinButton";
 import JoinAliens from "@/components/JoinAliens";
 import { LINKS } from "@/config/cockpit";
 import { useProfile } from "@/hooks/useProfile";
+import { sfx } from "@/lib/sfx";
 
 export default function SteeringWheelOverlay({
   onLaunch,
@@ -530,10 +531,9 @@ export default function SteeringWheelOverlay({
                   onMouseEnter={() => { if (!showUI || !mounted) return; try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
                   onClick={() => {
                     if (!showUI || !isUIUnlocked) return;
-                    // Play button sound
+                    // Play button sound using SFX system
                     try {
-                      const a = buttonRef.current;
-                      if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
+                      sfx.play('button', 0.95);
                     } catch {}
 
                     // Track explicit power button click so analytics reflect blue button usage

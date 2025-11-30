@@ -3,14 +3,19 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { tracks } from "@/lib/songs-consolidated";
 import { playerStore } from "@/store/usePlayerStore";
 import { playWithAutoplayFallback } from "@/lib/media-retry";
+import { useProfile } from "@/contexts/ProfileContext";
 
 export default function HoloAudioBridge() {
   const [storeSnap, setStoreSnap] = React.useState(() => playerStore.getState());
   React.useEffect(() => playerStore.subscribe(() => setStoreSnap(playerStore.getState())), []);
   const { mainId, songs } = storeSnap as any;
+  const { profile } = useProfile();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const warpAudioRef = useRef<HTMLAudioElement | null>(null);
   const joinAudioRef = useRef<HTMLAudioElement | null>(null);
+  const spaceMusicRef = useRef<HTMLAudioElement | null>(null);
+  const welcomeToHeartrverseRef = useRef<HTMLAudioElement | null>(null);
+  const welcomeBackRef = useRef<HTMLAudioElement | null>(null);
   const [currentTrack, setCurrentTrack] = useState(null);
 
   // Find the current track from player store songs and map to tracks array
@@ -95,6 +100,15 @@ export default function HoloAudioBridge() {
           }
         }
       });
+      
+      // Specifically stop our background audio tracks
+      [spaceMusicRef, welcomeToHeartrverseRef, welcomeBackRef].forEach(ref => {
+        const el = ref.current;
+        if (el && !el.paused) {
+          el.pause();
+          el.currentTime = 0;
+        }
+      });
     } catch (e) {
       // Silently handle any errors during audio stop
     }
@@ -134,6 +148,48 @@ export default function HoloAudioBridge() {
           const joinEl = joinAudioRef.current; if (joinEl) joinEl.volume = 0.9;
           await playAndWait(joinAudioRef.current, 900);
           if (cancelled) return;
+
+          // After blue display/join button sound, play appropriate welcome + space music combination
+          const isLoggedIn = profile?.id; // Check if user is logged in
+          console.log('🎵 HoloAudioBridge: User logged in status:', !!isLoggedIn);
+          
+          if (isLoggedIn) {
+            // Logged in: play space-music.opus + welcome-back.opus together
+            console.log('🎵 HoloAudioBridge: Playing welcome back + space music for logged in user');
+            const spaceMusicEl = spaceMusicRef.current;
+            const welcomeBackEl = welcomeBackRef.current;
+            
+            if (spaceMusicEl) {
+              spaceMusicEl.volume = 0.5;
+              spaceMusicEl.loop = true;
+              spaceMusicEl.currentTime = 0;
+              spaceMusicEl.play().catch(console.error);
+            }
+            
+            if (welcomeBackEl) {
+              welcomeBackEl.volume = 0.7;
+              welcomeBackEl.currentTime = 0;
+              welcomeBackEl.play().catch(console.error);
+            }
+          } else {
+            // Not logged in: play space-music.opus + welcome-to-the-heartverse.opus together
+            console.log('🎵 HoloAudioBridge: Playing welcome to heartverse + space music for guest user');
+            const spaceMusicEl = spaceMusicRef.current;
+            const welcomeToHeartrverseEl = welcomeToHeartrverseRef.current;
+            
+            if (spaceMusicEl) {
+              spaceMusicEl.volume = 0.5;
+              spaceMusicEl.loop = true;
+              spaceMusicEl.currentTime = 0;
+              spaceMusicEl.play().catch(console.error);
+            }
+            
+            if (welcomeToHeartrverseEl) {
+              welcomeToHeartrverseEl.volume = 0.7;
+              welcomeToHeartrverseEl.currentTime = 0;
+              welcomeToHeartrverseEl.play().catch(console.error);
+            }
+          }
 
           // NOW load and play the track after warp effects complete
           if (!currentTrack.src) {
@@ -209,6 +265,9 @@ export default function HoloAudioBridge() {
       <audio ref={audioRef} data-holo-audio="1" preload="auto" />
       <audio ref={warpAudioRef} src="/audio/warp.mp3" preload="auto" style={{ display: 'none' }} />
       <audio ref={joinAudioRef} src="/audio/join-alien.mp3" preload="auto" style={{ display: 'none' }} />
+      <audio ref={spaceMusicRef} src="/tracks/space-music.opus" preload="auto" style={{ display: 'none' }} />
+      <audio ref={welcomeToHeartrverseRef} src="/tracks/welcome-to-the-heartverse.opus" preload="auto" style={{ display: 'none' }} />
+      <audio ref={welcomeBackRef} src="/tracks/welcome-back.opus" preload="auto" style={{ display: 'none' }} />
     </>
   );
 }
