@@ -94,7 +94,18 @@ function UserListItem({ user, onClick }) {
 
   return (
     <button
-      onClick={onClick}
+      onClick={() => {
+        try {
+          const audio = new Audio('/audio/click.mp3');
+          audio.volume = 0.3;
+          audio.play().catch(error => {
+            console.log('Click audio play failed:', error);
+          });
+        } catch (error) {
+          console.log('Click audio creation failed:', error);
+        }
+        onClick();
+      }}
       className="w-full p-2 rounded-lg transition-all duration-200 hover:scale-105 group"
       style={{
         background: 'rgba(255, 255, 255, 0.05)',

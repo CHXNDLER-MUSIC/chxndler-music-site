@@ -105,11 +105,11 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
       name: "LISTENING",
       emoji: "🎧",
       badges: [
-        { name: "Deep Listener", description: "10 unique tracks", progress: 70, current: 7, total: 10, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Deep%20Listener.png?updatedAt=1763736238450" },
-        { name: "Song Voyager", description: "25 unique tracks", progress: 28, current: 7, total: 25, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Song%20Voyager.png?updatedAt=1763736238532" },
-        { name: "Track Devotee", description: "25 repeats", progress: 48, current: 12, total: 25, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Track%20Devotion.png?updatedAt=1763736238387" },
-        { name: "Track Obsession", description: "100 repeats", progress: 12, current: 12, total: 100, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Track%20Obsession.png?updatedAt=1763736238452" },
-        { name: "Complete Discography", description: "All songs", progress: 35, current: 7, total: 20, icon_url: "https://ik.imagekit.io/CHXNDLER/Badges/Complete%20Discography.png?updatedAt=1763736238462" },
+        { name: "Deep Listener", description: "10 unique tracks", progress: 70, current: 7, total: 10, icon_url: "/badges/listening.webp" },
+        { name: "Song Voyager", description: "25 unique tracks", progress: 28, current: 7, total: 25, icon_url: "/badges/listening.webp" },
+        { name: "Track Devotee", description: "25 repeats", progress: 48, current: 12, total: 25, icon_url: "/badges/listening.webp" },
+        { name: "Track Obsession", description: "100 repeats", progress: 12, current: 12, total: 100, icon_url: "/badges/listening.webp" },
+        { name: "Complete Discography", description: "All songs", progress: 35, current: 7, total: 20, icon_url: "/badges/complete discography.webp" },
       ]
     },
     {

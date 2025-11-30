@@ -8,7 +8,6 @@ const nextConfig = {
     { protocol: 'https', hostname: 'images.unsplash.com' },
     { protocol: 'https', hostname: 'i.ytimg.com' },
     { protocol: 'https', hostname: 'img.youtube.com' },
-    { protocol: 'https', hostname: 'ik.imagekit.io' },
   ] },
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },
@@ -96,6 +95,31 @@ const nextConfig = {
       },
       {
         source: '/cockpit/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      // New local asset directories
+      {
+        source: '/covers/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      {
+        source: '/badges/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      {
+        source: '/relics/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      {
+        source: '/store/:path*',
         headers: [
           { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { sfx } from "@/lib/sfx";
 import { useBadges } from "@/hooks/useBadges";
 import { BadgeWithProgress, BadgeCategory as BadgeCategoryType } from "@/types/badges";
+import { getBadgeIcon } from "@/config/assets";
 
 type Badge = {
   name: string;
@@ -442,13 +443,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                             }}
                           >
                             <img
-                              src={category.id === 'soul-star' ? 'https://ik.imagekit.io/CHXNDLER/BADGES/soul.png?updatedAt=1764312761843' :
-                                   category.id === 'achievements' ? 'https://ik.imagekit.io/CHXNDLER/BADGES/collector.png?updatedAt=1764312761871' :
-                                   category.id === 'elemental-streak' ? 'https://ik.imagekit.io/CHXNDLER/BADGES/elemental%20streak.png?updatedAt=1764312761856' :
-                                   category.id === 'listening' ? 'https://ik.imagekit.io/CHXNDLER/BADGES/listening.png?updatedAt=1764312761882' :
-                                   category.id === 'heartcoin' ? 'https://ik.imagekit.io/CHXNDLER/BADGES/currency.png?updatedAt=1764312761843' :
-                                   category.id === 'community' ? 'https://ik.imagekit.io/CHXNDLER/BADGES/community.png?updatedAt=1764312761950' :
-                                   category.emoji}
+                              src={getBadgeIcon(category.id)}
                               alt={category.name}
                               className="w-16 h-16 object-cover rounded-full transition-all duration-300"
                               style={{
@@ -492,13 +487,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                             }}
                           >
                             <img
-                              src={category.id === 'soul-star' ? 'https://ik.imagekit.io/CHXNDLER/BADGES/soul.png?updatedAt=1764312761843' :
-                                   category.id === 'achievements' ? 'https://ik.imagekit.io/CHXNDLER/BADGES/collector.png?updatedAt=1764312761871' :
-                                   category.id === 'elemental-streak' ? 'https://ik.imagekit.io/CHXNDLER/BADGES/elemental%20streak.png?updatedAt=1764312761856' :
-                                   category.id === 'listening' ? 'https://ik.imagekit.io/CHXNDLER/BADGES/listening.png?updatedAt=1764312761882' :
-                                   category.id === 'heartcoin' ? 'https://ik.imagekit.io/CHXNDLER/BADGES/currency.png?updatedAt=1764312761843' :
-                                   category.id === 'community' ? 'https://ik.imagekit.io/CHXNDLER/BADGES/community.png?updatedAt=1764312761950' :
-                                   category.emoji}
+                              src={getBadgeIcon(category.id)}
                               alt={category.name}
                               className="w-16 h-16 object-cover rounded-full transition-all duration-300"
                               style={{

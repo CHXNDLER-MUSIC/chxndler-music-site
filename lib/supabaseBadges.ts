@@ -211,7 +211,7 @@ export class SupabaseBadgeService {
           badge_name: 'First Listen',
           description: 'Listened to your first track in the Heartverse',
           requirement: 'Listen to 1 track',
-          icon_url: 'https://ik.imagekit.io/CHXNDLER/Badges/First%20Listen.png?updatedAt=1763736238402'
+          icon_url: '/badges/listening.webp'
         },
         {
           badge_name: 'Soul Star',
@@ -223,19 +223,19 @@ export class SupabaseBadgeService {
           badge_name: 'Deep Listener',
           description: 'Listened to 10 unique tracks',
           requirement: '10 unique tracks',
-          icon_url: 'https://ik.imagekit.io/CHXNDLER/Badges/Deep%20Listener.png?updatedAt=1763736238450'
+          icon_url: '/badges/listening.webp'
         },
         {
           badge_name: 'Digital Collector',
           description: 'Collected your first 5 digital cards',
           requirement: 'Collect 5 cards',
-          icon_url: 'https://ik.imagekit.io/CHXNDLER/Badges/Digital%20Collector.png?updatedAt=1763736238340'
+          icon_url: '/badges/collector.webp'
         },
         {
           badge_name: 'First HeartCoin',
           description: 'Earned your first HeartCoin',
           requirement: 'Earn 1 HeartCoin',
-          icon_url: 'https://ik.imagekit.io/CHXNDLER/Badges/First%20HeartCoin.png?updatedAt=1763736238400'
+          icon_url: '/badges/currency.webp'
         },
         {
           badge_name: 'Portal Opener',

@@ -57,8 +57,8 @@ import { sfx } from "@/lib/sfx";
 // Use system font stack to avoid network font fetches during build
 
 // Constants to prevent recreating URLs on every render
-const DEFAULT_COVER = 'https://ik.imagekit.io/CHXNDLER/cover/chxndler.png?updatedAt=1762361376662';
-const DEFAULT_CARD = 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910';
+const DEFAULT_COVER = '/elements/logo.webp';
+const DEFAULT_CARD = '/cards/chxndler.webp';
 const FALLBACK_COVER = '/elements/logo.webp';
 
 function ElementIcon({ name, size = 18, glow = true }) {

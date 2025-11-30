@@ -7,10 +7,10 @@ class AudioHeartverseController {
   private spaceMusicAudio: HTMLAudioElement | null = null;
   private isInitialized = false;
 
-  // Audio URLs
-  private readonly WELCOME_TO_HEARTVERSE_URL = "https://ik.imagekit.io/CHXNDLER/tracks/welcome-to-the-heartverse.mp3?updatedAt=1762392390137";
-  private readonly WELCOME_HOME_URL = "https://ik.imagekit.io/CHXNDLER/tracks/welcome-home.mp3?updatedAt=1762392378623";
-  private readonly SPACE_MUSIC_URL = "https://ik.imagekit.io/CHXNDLER/tracks/space-music.mp3?updatedAt=1762392378623";
+  // Audio URLs - now using local assets
+  private readonly WELCOME_TO_HEARTVERSE_URL = "/audio/welcome-to-the-heartverse.mp3";
+  private readonly WELCOME_HOME_URL = "/audio/welcome-home.mp3";
+  private readonly SPACE_MUSIC_URL = "/audio/space-music.mp3";
 
   private initialize() {
     if (this.isInitialized || typeof window === 'undefined') return;

@@ -670,7 +670,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                     textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
                   }}
                 >
-                  ×
+                  ▶
                 </button>
               </div>
 
@@ -987,7 +987,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                             border: '1px solid rgba(255, 255, 255, 0.2)'
                           }}
                         >
-                          ×
+                          ▶
                         </button>
                       </div>
                     </div>
@@ -1036,40 +1036,15 @@ export default function ChatPanel({ isOpen, onClose }) {
 
                             {/* Badges Grid */}
                             <div className="flex-1 grid grid-cols-5 gap-2">
-                              {/* Display completed user badges and empty slots */}
+                              {/* Always show 5 blank badge placeholders */}
                               {Array.from({ length: 5 }, (_, index) => {
-                                const badgeIndex = badgeStartIndex + index;
-                                const userBadge = userBadges && userBadges[badgeIndex];
-                                
-                                if (userBadge) {
-                                  // Show actual badge
-                                  return (
-                                    <div key={badgeIndex} className="flex flex-col items-center">
-                                      <div className="w-12 h-12 bg-yellow-400/20 rounded-full mb-1 flex items-center justify-center">
-                                        {userBadge.badge?.icon_url ? (
-                                          <img 
-                                            src={userBadge.badge.icon_url} 
-                                            alt={userBadge.badge.name} 
-                                            className="w-8 h-8 rounded-full" 
-                                          />
-                                        ) : (
-                                          <span className="text-sm">🏆</span>
-                                        )}
-                                      </div>
-                                      <span className="text-xs text-white/70 text-center">{userBadge.badge?.name || 'Badge'}</span>
+                                return (
+                                  <div key={`placeholder-${badgeStartIndex}-${index}`} className="flex flex-col items-center">
+                                    <div className="w-12 h-12 bg-gray-600/20 rounded-full mb-1 flex items-center justify-center border-2 border-gray-600/30">
+                                      <span className="text-gray-500/50 text-sm">○</span>
                                     </div>
-                                  );
-                                } else {
-                                  // Show greyed out placeholder
-                                  return (
-                                    <div key={`placeholder-${badgeIndex}`} className="flex flex-col items-center">
-                                      <div className="w-12 h-12 bg-gray-600/20 rounded-full mb-1 flex items-center justify-center border-2 border-gray-600/30">
-                                        <span className="text-gray-500/50 text-sm">○</span>
-                                      </div>
-                                      <span className="text-xs text-gray-500/50 text-center">Empty</span>
-                                    </div>
-                                  );
-                                }
+                                  </div>
+                                );
                               })}
                             </div>
 
@@ -1085,9 +1060,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 } catch (error) {
                                   console.log('Click audio creation failed:', error);
                                 }
-                                setBadgeStartIndex(Math.min(Math.max(0, userBadges.length - 5), badgeStartIndex + 5));
+                                setBadgeStartIndex(badgeStartIndex + 5);
                               }}
-                              disabled={!userBadges || badgeStartIndex + 5 >= userBadges.length}
+                              disabled={badgeStartIndex >= 30}
                               className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
                               style={{
                                 textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
@@ -1150,14 +1125,16 @@ export default function ChatPanel({ isOpen, onClose }) {
                               {songCollection.slice(binderStartIndex, binderStartIndex + 5).map((song, index) => {
                                 const elementDisplay = getElementDisplay(song.element);
                                 return (
-                                  <div key={binderStartIndex + index} className="relative p-1 rounded bg-black/30">
-                                    <div className={`absolute top-0.5 right-0.5 text-xs ${song.rarity === 'Rare' ? 'text-yellow-300' : 'text-gray-400'}`}>
-                                      {song.rarity === 'Rare' ? '★' : '●'}
+                                  <div 
+                                    key={binderStartIndex + index} 
+                                    className="rounded-lg border border-white/20 backdrop-blur-sm transition-all duration-300"
+                                    style={{
+                                      boxShadow: '0 0 10px rgba(255,105,180,0.3)',
+                                      background: 'rgba(0, 0, 0, 0.4)'
+                                    }}
+                                  >
+                                    <div className="w-full h-16 rounded-lg flex items-center justify-center">
                                     </div>
-                                    <div className={`w-full h-16 bg-${elementDisplay.color}/20 rounded mb-1 flex items-center justify-center`}>
-                                      <span className="text-sm">{elementDisplay.icon}</span>
-                                    </div>
-                                    <span className="text-xs text-white/70 block truncate text-center">{song.name}</span>
                                   </div>
                                 );
                               })}

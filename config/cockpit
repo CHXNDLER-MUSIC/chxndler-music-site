@@ -11,22 +11,22 @@ export const PLAYLIST = [
   {
     id: "ocean-girl",
     title: "OCEAN GIRL",
-    src: "/tracks/ocean-girl.mp3",
-    cover: "https://ik.imagekit.io/CHXNDLER/cover/ocean-girl.png?updatedAt=1762361386944",
+    src: "/tracks/ocean-girl.opus",
+    cover: "/covers/OCEAN GIRL.webp",
     backdrop: "/cockpit/ocean-girl.png",
   },
   {
     id: "ocean-girl-acoustic",
     title: "OCEAN GIRL — Acoustic",
-    src: "/tracks/ocean-girl-acoustic.mp3",
-    cover: "https://ik.imagekit.io/CHXNDLER/cover/ocean-girl-acoustic.png?updatedAt=1762361387474",
+    src: "/tracks/ocean-girl-acoustic.opus",
+    cover: "/covers/OCEAN GIRL (ACOUSTIC).webp",
     backdrop: "/cockpit/ocean-girl-acoustic.png",
   },
   {
     id: "ocean-girl-remix",
     title: "OCEAN GIRL — Remix",
-    src: "/tracks/ocean-girl-remix.mp3",
-    cover: "https://ik.imagekit.io/CHXNDLER/cover/ocean-girl-remix.png?updatedAt=1762361386891",
+    src: "/tracks/ocean-girl-remix.opus",
+    cover: "/covers/OCEAN GIRL (REMIX).webp",
     backdrop: "/cockpit/ocean-girl-remix.png",
   },
 ];

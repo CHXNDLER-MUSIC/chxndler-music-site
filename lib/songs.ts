@@ -14,8 +14,8 @@ export const songs: Song[] = [
   {
     title: 'OCEAN GIRL',
     slug: 'ocean-girl',
-    audioSrc: '/tracks/ocean-girl.mp3',
-    coverSrc: 'https://ik.imagekit.io/CHXNDLER/cover/ocean-girl.png?updatedAt=1762361386944',
+    audioSrc: '/tracks/ocean-girl.opus',
+    coverSrc: '/covers/OCEAN GIRL.webp',
     bg: 'ocean',
     element: 'WATER',
     theme: {
@@ -28,7 +28,7 @@ export const songs: Song[] = [
     title: 'PARIS',
     slug: 'paris',
     audioSrc: '/tracks/paris.mp3',
-    coverSrc: 'https://ik.imagekit.io/CHXNDLER/cover/paris.png?updatedAt=1762361385345',
+    coverSrc: '/covers/PARIS.webp',
     bg: 'paris',
     element: 'HEART',
     theme: {
@@ -41,7 +41,7 @@ export const songs: Song[] = [
     title: 'BRAIN FREEZE',
     slug: 'brain-freeze',
     audioSrc: '/tracks/brain-freeze.mp3',
-    coverSrc: 'https://ik.imagekit.io/CHXNDLER/cover/brain-freeze.png?updatedAt=1762361385723',
+    coverSrc: '/covers/BRAIN FREEZE.webp',
     bg: 'space',
     element: 'LIGHTNING',
     theme: {
