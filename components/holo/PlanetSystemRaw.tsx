@@ -2321,6 +2321,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
 
   // Sync planets to songs from the global store for closer match to previous visuals
   const [storeSnap, setStoreSnap] = React.useState(() => playerStore.getState());
+  const [isMinimapVisible, setIsMinimapVisible] = React.useState(false);
   React.useEffect(() => playerStore.subscribe(() => setStoreSnap(playerStore.getState())), []);
   const { songs, mainId, hoverId, planetsVisible, planetDisplayMode } = storeSnap as any;
   
@@ -2910,8 +2911,13 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
       }}
     >
       {/* 2D Minimap overlay - show when displaying all planets */}
-      {showAll && (
-        <PlanetMinimap currentMainId={mainId} hoverId={hoverId} songs={songs} />
+      {showAll && isMinimapVisible && (
+        <PlanetMinimap 
+          currentMainId={mainId} 
+          hoverId={hoverId} 
+          songs={songs}
+          onClose={() => setIsMinimapVisible(false)}
+        />
       )}
     </div>
   );

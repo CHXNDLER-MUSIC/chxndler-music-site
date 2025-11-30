@@ -78,7 +78,7 @@ export default function DashboardWelcomeDisplay({ onBeamColorChange }: Props) {
               className="inline-flex items-center justify-center rounded-xl px-24 py-4 font-semibold text-black bg-[#38B6FF] hover:brightness-110 transition shadow-[0_0_24px_rgba(56,182,255,0.45)] welcome-home-button min-w-[320px]"
               onBeamColorChange={onBeamColorChange}
             >
-              WELCOME HOME
+              ENTER THE HEARTVERSE
             </JoinUsButton>
           </div>
         </div>

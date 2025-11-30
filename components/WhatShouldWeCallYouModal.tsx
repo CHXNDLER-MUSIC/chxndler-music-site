@@ -82,6 +82,11 @@ export default function WhatShouldWeCallYouModal() {
       // Refresh profile to ensure UI updates
       await refreshProfile();
       
+      // Force profile refresh in other components
+      try {
+        window.dispatchEvent(new CustomEvent('auth:profile-updated'));
+      } catch {}
+      
       // Close name prompt and open element selection
       closeNamePrompt();
       openElementSelection();

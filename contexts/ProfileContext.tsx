@@ -220,6 +220,15 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         console.error("Error loading user_badges", badgeError);
       }
 
+      // Debug heartcoin data from database
+      console.log('ProfileContext: Raw database profile data:', {
+        id: data.id,
+        name: data.name,
+        heartcoin_balance: data.heartcoin_balance,
+        heartcoin_total: data.heartcoin_total,
+        dataType: typeof data.heartcoin_balance
+      });
+
       // Map database columns to interface format
       const mappedProfile: Profile = {
         id: data.id,
@@ -239,6 +248,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         cards: cardRows ?? [],
         badges: badgeRows ?? [],
       };
+
+      console.log('ProfileContext: Mapped profile HeartCoin balance:', mappedProfile.heartcoin_balance);
 
       setProfile(mappedProfile);
     } catch (error) {
@@ -392,8 +403,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     // Subscribe to auth state changes
     const {
       data: { subscription },
-    } = supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+    } = supabaseClient.auth.onAuthStateChange(async (event, session) => {
+      console.log('ProfileContext: Auth state changed:', { event, userId: session?.user?.id });
+      
       if (session?.user) {
+        console.log('ProfileContext: User session detected, fetching profile...');
         await fetchProfile();
         await loadJournalEntries(session.user.id);
       } else {
@@ -404,11 +418,22 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       }
     });
 
+    // Listen for forced profile refresh events
+    const handleProfileUpdate = async () => {
+      console.log('Profile update event received, forcing refresh...');
+      await fetchProfile();
+    };
+
+    window.addEventListener('auth:profile-updated', handleProfileUpdate);
+    window.addEventListener('profile:force-refresh', handleProfileUpdate);
+
     // Initial fetch on mount
     fetchProfile();
 
     return () => {
       subscription.unsubscribe();
+      window.removeEventListener('auth:profile-updated', handleProfileUpdate);
+      window.removeEventListener('profile:force-refresh', handleProfileUpdate);
     };
   }, []);
 

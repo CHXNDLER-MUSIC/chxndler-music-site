@@ -15,7 +15,7 @@ import PlanetMinimap from "@/components/holo/PlanetMinimap";
 import { PLANET_CONFIGS, getPlanetsByType, getPlanetsByElement, getPlanetsByParent, ELEMENT_POSITIONS, ELEMENT_COLORS, type ElementType } from "@/lib/planetConfig";
 
 // DIAGNOSTIC MODE - Set to true to show orbit rings, bounding boxes, and labels
-const SHOW_ORBITS = true;
+const SHOW_ORBITS = false;
 
 // Get element planet configs from unified config
 const ELEMENT_PLANETS = getPlanetsByType('element');
@@ -25,216 +25,23 @@ function isElementCode(code: string): code is ElementType {
   return ["heart", "water", "lightning", "darkness"].includes(code);
 }
 
+// Type alias for compatibility
+type ElementCode = ElementType;
+
+// Element colors and glows
+const elementColors: Record<ElementCode, string> = ELEMENT_COLORS;
+const elementGlows: Record<ElementCode, string> = {
+  heart: "#FC54AF",
+  water: "#38B6FF", 
+  lightning: "#F2EF1D",
+  darkness: "#6A4C93"
+};
+
 const elementOrbitRadius = 60;
 // Import orbit radius from config
 import { SONG_ORBIT_RADIUS } from "@/lib/planetConfig";
 const songOrbitRadius = SONG_ORBIT_RADIUS;
 
-// Component to render all 4 elemental planets with textures
-function ElementalPlanetsWithTextures() {
-  
-  // Use React state for texture loading to avoid useLoader hook issues
-  const [textures, setTextures] = React.useState<{[key: string]: any}>({});
-  
-  React.useEffect(() => {
-    const loader = new TextureLoader();
-    const textureUrls = {
-      heart: "/textures/planet_heart.webp",
-      lightning: "/elements/lightning.webp",
-      water: "/textures/planet_water.webp", 
-      darkness: "/textures/planet_darkness.webp",
-      center: "/textures/center-planet.webp"
-    };
-    
-    // Load textures asynchronously
-    Object.entries(textureUrls).forEach(([key, url]) => {
-      loader.load(
-        url,
-        (texture) => {
-          setTextures(prev => ({ ...prev, [key]: texture }));
-        },
-        undefined,
-        (error) => {
-          console.warn(`❌ Failed to load ${key} texture:`, error);
-        }
-      );
-    });
-  }, []);
-
-  return (
-    <group name="ElementalPlanetsWithTextures">
-      {/* Center Heart Planet with Antennas - HEART SHAPE AT CENTER */}
-      <group name="CenterHeartPlanetGroup" position={[0, 0, 0]}>
-        <mesh renderOrder={6}>
-          <planeGeometry args={[24, 24]} />
-          <meshStandardMaterial 
-            map={textures.center || null}
-            color={textures.center ? "#ffffff" : "#FC54AF"}
-            emissive="#FC54AF"
-            emissiveIntensity={6.0}
-            metalness={0.1}
-            roughness={0.2}
-            transparent={true}
-            alphaTest={0.1}
-            side={DoubleSide}
-          />
-        </mesh>
-        <Html position={[0, 20, 0]} center>
-          <div style={{ 
-            color: "#FC54AF", 
-            fontSize: "18px", 
-            fontWeight: "bold",
-            textShadow: "0 0 20px #FC54AF",
-            pointerEvents: "none",
-            textAlign: "center"
-          }}>
-            💖 CENTER
-          </div>
-        </Html>
-      </group>
-      
-      {/* Heart Planet - Pink - RIGHT OF CENTER */}
-      <group name="HeartPlanetGroup" position={[25, 0, 0]}>
-        <mesh renderOrder={5}>
-          <planeGeometry args={[16, 16]} />
-          <meshStandardMaterial 
-            map={textures.heart || null}
-            color={textures.heart ? "#ffffff" : "#FC54AF"}
-            emissive="#FC54AF"
-            emissiveIntensity={4.0}
-            metalness={0.1}
-            roughness={0.2}
-            transparent={true}
-            alphaTest={0.1}
-            side={DoubleSide}
-          />
-        </mesh>
-        {/* MASSIVE DEBUG SPHERE */}
-        <mesh renderOrder={10} position={[0, 15, 0]}>
-          <sphereGeometry args={[5, 16, 16]} />
-          <meshBasicMaterial color="#FF0000" />
-        </mesh>
-        <Html position={[0, 15, 0]} center>
-          <div style={{ 
-            color: "#FC54AF", 
-            fontSize: "16px", 
-            fontWeight: "bold",
-            textShadow: "0 0 20px #FC54AF",
-            pointerEvents: "none",
-            textAlign: "center"
-          }}>
-            💖 HEART
-          </div>
-        </Html>
-      </group>
-      
-      {/* Water Planet - Blue - BACK OF CENTER */}
-      <group name="WaterPlanetGroup" position={[0, 0, 25]}>
-        <mesh renderOrder={5}>
-          <planeGeometry args={[16, 16]} />
-          <meshStandardMaterial 
-            map={textures.water || null}
-            color={textures.water ? "#ffffff" : "#38B6FF"}
-            emissive="#38B6FF"
-            emissiveIntensity={4.0}
-            metalness={0.1}
-            roughness={0.2}
-            transparent={true}
-            alphaTest={0.1}
-            side={DoubleSide}
-          />
-        </mesh>
-        {/* MASSIVE DEBUG SPHERE */}
-        <mesh renderOrder={10} position={[0, 15, 0]}>
-          <sphereGeometry args={[5, 16, 16]} />
-          <meshBasicMaterial color="#00FF00" />
-        </mesh>
-        <Html position={[0, 15, 0]} center>
-          <div style={{ 
-            color: "#38B6FF", 
-            fontSize: "16px", 
-            fontWeight: "bold",
-            textShadow: "0 0 20px #38B6FF",
-            pointerEvents: "none",
-            textAlign: "center"
-          }}>
-            🌊 WATER
-          </div>
-        </Html>
-      </group>
-      
-      {/* Lightning Planet - Yellow - LEFT OF CENTER */}
-      <group name="LightningPlanetGroup" position={[-25, 0, 0]}>
-        <mesh renderOrder={5}>
-          <planeGeometry args={[16, 16]} />
-          <meshStandardMaterial 
-            map={textures.lightning || null}
-            color={textures.lightning ? "#ffffff" : "#F2EF1D"}
-            emissive="#F2EF1D"
-            emissiveIntensity={4.0}
-            metalness={0.1}
-            roughness={0.2}
-            transparent={true}
-            alphaTest={0.1}
-            side={DoubleSide}
-          />
-        </mesh>
-        {/* MASSIVE DEBUG SPHERE */}
-        <mesh renderOrder={10} position={[0, 15, 0]}>
-          <sphereGeometry args={[5, 16, 16]} />
-          <meshBasicMaterial color="#FFFF00" />
-        </mesh>
-        <Html position={[0, 15, 0]} center>
-          <div style={{ 
-            color: "#F2EF1D", 
-            fontSize: "16px", 
-            fontWeight: "bold",
-            textShadow: "0 0 20px #F2EF1D",
-            pointerEvents: "none",
-            textAlign: "center"
-          }}>
-            ⚡ LIGHTNING
-          </div>
-        </Html>
-      </group>
-      
-      {/* Darkness Planet - Purple - FRONT OF CENTER */}
-      <group name="DarknessPlanetGroup" position={[0, 0, -25]}>
-        <mesh renderOrder={5}>
-          <planeGeometry args={[16, 16]} />
-          <meshStandardMaterial 
-            map={textures.darkness || null}
-            color={textures.darkness ? "#ffffff" : "#6A4C93"}
-            emissive="#6A4C93"
-            emissiveIntensity={4.0}
-            metalness={0.1}
-            roughness={0.2}
-            transparent={true}
-            alphaTest={0.1}
-            side={DoubleSide}
-          />
-        </mesh>
-        {/* MASSIVE DEBUG SPHERE */}
-        <mesh renderOrder={10} position={[0, 15, 0]}>
-          <sphereGeometry args={[5, 16, 16]} />
-          <meshBasicMaterial color="#FF00FF" />
-        </mesh>
-        <Html position={[0, 15, 0]} center>
-          <div style={{ 
-            color: "#6A4C93", 
-            fontSize: "16px", 
-            fontWeight: "bold",
-            textShadow: "0 0 20px #6A4C93",
-            pointerEvents: "none",
-            textAlign: "center"
-          }}>
-            🌑 DARKNESS
-          </div>
-        </Html>
-      </group>
-    </group>
-  );
-}
 
 // Elemental Planet with Glow component
 function ElementPlanetWithGlow({ 
@@ -382,7 +189,7 @@ function SongOrbitGroup({
 }
 
 // Orbital elemental system with proper hierarchy
-function OrbitalElementalSystem({ songs, mainId, hoverId }: { songs: any[]; mainId: string | null; hoverId: string | null }) {
+function OrbitalElementalSystem({ songs, mainId, hoverId, highlightedPlanetId }: { songs: any[]; mainId: string | null; hoverId: string | null; highlightedPlanetId: string | null }) {
   const systemRef = useRef<ThreeGroup>(null);
   
   // Group cards by element using song.planet.element
@@ -479,28 +286,6 @@ function OrbitalElementalSystem({ songs, mainId, hoverId }: { songs: any[]; main
                 />
               </mesh>
               
-              {/* DEBUG: HUGE bright wireframe marker */}
-              <mesh renderOrder={8}>
-                <sphereGeometry args={[60, 16, 16]} />
-                <meshBasicMaterial 
-                  color="#FFFFFF"
-                  wireframe={true}
-                  transparent={true}
-                  opacity={1.0}
-                />
-              </mesh>
-              
-              {/* DEBUG: Solid bright marker for water planet */}
-              {element.code === 'water' && (
-                <mesh renderOrder={10}>
-                  <sphereGeometry args={[80, 16, 16]} />
-                  <meshBasicMaterial 
-                    color="#00FFFF"
-                    transparent={true}
-                    opacity={0.8}
-                  />
-                </mesh>
-              )}
               
               {/* Elemental planet glow - MUCH LARGER */}
               <sprite scale={[50, 50, 1]} renderOrder={3}>
@@ -711,8 +496,8 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         })()}
         // Pull the camera back and widen FOV so the full system fits
         // Elevated viewpoint: camera positioned above to look down at the planet system
-        // MAXIMUM zoom out to show ALL elemental planets - EXTREME DISTANCE
-        camera={{ position: [0, 1000, actualShouldShowAll ? 5000 : 200], fov: actualShouldShowAll ? 45 : 100 }}
+        // Better positioning to show the 4 element planets orbiting center
+        camera={{ position: [0, 200, actualShouldShowAll ? 400 : 200], fov: actualShouldShowAll ? 75 : 100 }}
         // Prefer safer GL settings on mobile to avoid flicker when layers repaint
         gl={{
           antialias: false,
@@ -747,21 +532,23 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         <InvalidateOnState />
         <ZoomOnChange focusId={actualShouldShowAll ? null : focusId} />
         <MouseWheelZoom focusId={actualShouldShowAll ? null : focusId} />
+        <KeyboardZoom focusId={actualShouldShowAll ? null : focusId} />
 
         {/* Very shallow tilt for near-horizontal horizon line */}
         {/* Render the full system: satellites first, focus planet last; previous main becomes a moon */}
         {/* Enlarge full-system view when showing all planets - MAXIMUM scale for visibility */}
-        <group scale={actualShouldShowAll ? 5 : 1}>
+        <group scale={(actualShouldShowAll || shouldShowAll) ? 2 : 1}>
         <SystemGroup>
           
           {/* ORBITAL ELEMENTAL SYSTEM - Heart center with 4 elements orbiting */}
-          {actualShouldShowAll && (() => {
-            console.log("🌍 RENDERING ORBITAL SYSTEM:", { actualShouldShowAll, songs: songs.length });
+          {(actualShouldShowAll || shouldShowAll) && (() => {
+            console.log("🌍 RENDERING ORBITAL SYSTEM:", { actualShouldShowAll, shouldShowAll, songs: songs.length });
             return (
               <OrbitalElementalSystem 
                 songs={songs}
                 mainId={mainId}
                 hoverId={hoverId}
+                highlightedPlanetId={highlightedPlanetId}
               />
             );
           })()}
@@ -798,7 +585,7 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
       </Canvas>
       
       {/* 2D Minimap overlay - show when displaying all planets */}
-      {actualShouldShowAll && isMinimapVisible && (
+      {(actualShouldShowAll || shouldShowAll) && isMinimapVisible && (
         <PlanetMinimap 
           currentMainId={mainId} 
           hoverId={hoverId} 
@@ -877,8 +664,8 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
   const target = React.useRef<{ pos: Vector3; look: Vector3; fov: number } | null>(null);
 
   React.useEffect(() => {
-    // Update base values based on current mode - MAXIMUM increased for water elemental visibility
-    base.current = { z: isShowAll ? 5000 : 65, fov: isShowAll ? 45 : 60 };
+    // Update base values based on current mode - Closer zoom for better visibility
+    base.current = { z: isShowAll ? 400 : 65, fov: isShowAll ? 75 : 60 };
     
     // Only restart zoom animation if we have a focusId (not in showAll/home mode)
     if (focusId) {
@@ -908,7 +695,7 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
       anim.current.active = false;
       const camera_: any = camera;
       camera_.position.x = 0;
-      camera_.position.y = 1000;
+      camera_.position.y = 200;
       camera_.position.z = base.current.z;
       camera_.fov = base.current.fov;
       camera_.updateProjectionMatrix();
@@ -1022,13 +809,13 @@ function MouseWheelZoom({ focusId }: { focusId: string | null }) {
   // Define zoom preset levels with smooth transitions
   const zoomPresets = React.useMemo(() => {
     if (isShowAll) {
-      // ShowAll mode: wider range for viewing the entire system
+      // ShowAll mode: closer range for better planet visibility
       return [
-        { level: -2, z: 8000, fov: 35, description: "Maximum wide view" },
-        { level: -1, z: 6000, fov: 40, description: "Wide view" },
-        { level: 0, z: 5000, fov: 45, description: "Normal view" },
-        { level: 1, z: 3500, fov: 50, description: "Closer view" },
-        { level: 2, z: 2000, fov: 60, description: "Close view" }
+        { level: -2, z: 800, fov: 60, description: "Maximum wide view" },
+        { level: -1, z: 600, fov: 65, description: "Wide view" },
+        { level: 0, z: 400, fov: 75, description: "Normal view" },
+        { level: 1, z: 250, fov: 85, description: "Closer view" },
+        { level: 2, z: 150, fov: 95, description: "Close view" }
       ];
     } else {
       // Focus mode: closer range for detailed planet viewing
@@ -1087,6 +874,107 @@ function MouseWheelZoom({ focusId }: { focusId: string | null }) {
     
     // Smooth interpolation
     const speed = 4.0; // Animation speed
+    const zDiff = targetZ - currentZ;
+    const fovDiff = targetFov - currentFov;
+    
+    if (Math.abs(zDiff) < 0.5 && Math.abs(fovDiff) < 0.5) {
+      // Snap to target when close enough
+      cam.position.z = targetZ;
+      cam.fov = targetFov;
+      cam.updateProjectionMatrix();
+      animatingRef.current = false;
+    } else {
+      // Continue smooth interpolation
+      cam.position.z += zDiff * speed * delta;
+      cam.fov += fovDiff * speed * delta;
+      cam.updateProjectionMatrix();
+      invalidate();
+    }
+  });
+
+  return null;
+}
+
+// Keyboard zoom controls component - A to zoom in, - to zoom out
+function KeyboardZoom({ focusId }: { focusId: string | null }) {
+  const { camera, invalidate } = useThree();
+  const zoomLevelRef = React.useRef(0);
+  const animatingRef = React.useRef(false);
+  const targetZoomRef = React.useRef(0);
+  const isShowAll = focusId === null;
+  
+  // Use the same zoom presets as MouseWheelZoom for consistency
+  const zoomPresets = React.useMemo(() => {
+    if (isShowAll) {
+      return [
+        { level: -2, z: 800, fov: 60, description: "Maximum wide view" },
+        { level: -1, z: 600, fov: 65, description: "Wide view" },
+        { level: 0, z: 400, fov: 75, description: "Normal view" },
+        { level: 1, z: 250, fov: 85, description: "Closer view" },
+        { level: 2, z: 150, fov: 95, description: "Close view" }
+      ];
+    } else {
+      return [
+        { level: -2, z: 300, fov: 45, description: "Wide planet view" },
+        { level: -1, z: 150, fov: 55, description: "Medium planet view" },
+        { level: 0, z: 65, fov: 60, description: "Normal planet view" },
+        { level: 1, z: 35, fov: 70, description: "Close planet view" },
+        { level: 2, z: 15, fov: 85, description: "Very close planet view" }
+      ];
+    }
+  }, [isShowAll]);
+  
+  // Reset zoom level when mode changes
+  React.useEffect(() => {
+    zoomLevelRef.current = 0;
+    targetZoomRef.current = 0;
+  }, [isShowAll]);
+
+  // Handle keyboard events
+  React.useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Only handle if we're in 3D mode (avoid conflicts with other UI)
+      if (!(window as any).__CHX_3D_ACTIVE) return;
+      
+      let zoomChange = 0;
+      if (event.key === 'a' || event.key === 'A') {
+        zoomChange = 1; // Zoom in
+      } else if (event.key === '-' || event.key === '_') {
+        zoomChange = -1; // Zoom out
+      }
+      
+      if (zoomChange !== 0) {
+        event.preventDefault();
+        const newZoomLevel = Math.max(-2, Math.min(2, zoomLevelRef.current + zoomChange));
+        
+        if (newZoomLevel !== zoomLevelRef.current) {
+          zoomLevelRef.current = newZoomLevel;
+          targetZoomRef.current = newZoomLevel;
+          animatingRef.current = true;
+          invalidate();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [invalidate]);
+
+  // Smooth zoom animation (same as MouseWheelZoom)
+  useFrame((_, delta) => {
+    if (!animatingRef.current) return;
+    
+    const currentPreset = zoomPresets.find(p => p.level === targetZoomRef.current);
+    if (!currentPreset) return;
+    
+    const cam = camera as any;
+    const currentZ = cam.position.z;
+    const currentFov = cam.fov;
+    const targetZ = currentPreset.z;
+    const targetFov = currentPreset.fov;
+    
+    // Smooth interpolation
+    const speed = 4.0;
     const zDiff = targetZ - currentZ;
     const fovDiff = targetFov - currentFov;
     

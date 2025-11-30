@@ -230,6 +230,7 @@ export default function JoinAliens({ visible = true } = {}) {
         pointerEvents: visible ? 'auto' : 'none', 
         width: '100%',
         height: '100%',
+        maxHeight: '100%',
         margin: '0',
         padding: '15px 20px 20px 20px',
         background: 'rgba(0, 0, 0, 0.6)',
@@ -240,12 +241,14 @@ export default function JoinAliens({ visible = true } = {}) {
         opacity: visible ? 1 : 0,
         transform: visible ? 'scale(1)' : 'scale(0.95)',
         transition: 'all 300ms ease',
-        overflow: 'hidden',
-        boxSizing: 'border-box'
+        overflow: 'auto',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column'
       }}
     >
       {/* Countdown Section - Top */}
-      <div style={{ textAlign: 'center', marginBottom: '20px', marginTop: '5px', paddingTop: '5px' }}>
+      <div style={{ textAlign: 'center', marginBottom: '15px', marginTop: '0px', paddingTop: '0px', flex: '0 0 auto' }}>
         {/* Neon "Signal Lost" message */}
         <div style={{ marginBottom: '0px' }}>
           <h2 
@@ -307,7 +310,7 @@ export default function JoinAliens({ visible = true } = {}) {
       }} />
 
       {/* Stay Connected Section - Bottom */}
-      <div style={{ marginTop: '0px' }}>
+      <div style={{ marginTop: '0px', flex: '1 1 auto', minHeight: 0 }}>
         {/* Header Text */}
         {showPhoneForm && (
         <div 
@@ -485,10 +488,10 @@ export default function JoinAliens({ visible = true } = {}) {
           left: '12px',
           width: '40px',
           height: '40px',
-          background: 'rgba(0, 255, 255, 0.2)',
-          border: '2px solid #00FFFF',
+          background: 'rgba(242, 239, 29, 0.2)',
+          border: '2px solid #F2EF1D',
           borderRadius: '8px',
-          color: '#00FFFF',
+          color: '#F2EF1D',
           fontSize: '14px',
           fontWeight: 'bold',
           cursor: 'pointer',
@@ -497,23 +500,23 @@ export default function JoinAliens({ visible = true } = {}) {
           justifyContent: 'center',
           transition: 'all 300ms ease',
           outline: 'none',
-          textShadow: '0 0 8px #00FFFF',
-          boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)',
+          textShadow: '0 0 8px #F2EF1D',
+          boxShadow: '0 0 15px rgba(242, 239, 29, 0.3)',
           zIndex: 10,
           opacity: 1
         }}
         onMouseEnter={(e) => {
           try { sfx.play('hover', 0.3); } catch {}
           e.target.style.transform = 'scale(1.05)';
-          e.target.style.background = 'rgba(0, 255, 255, 0.3)';
-          e.target.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.6)';
-          e.target.style.textShadow = '0 0 15px #00FFFF, 0 0 25px #00FFFF';
+          e.target.style.background = 'rgba(242, 239, 29, 0.3)';
+          e.target.style.boxShadow = '0 0 25px rgba(242, 239, 29, 0.6)';
+          e.target.style.textShadow = '0 0 15px #F2EF1D, 0 0 25px #F2EF1D';
         }}
         onMouseLeave={(e) => {
           e.target.style.transform = 'scale(1)';
-          e.target.style.background = 'rgba(0, 255, 255, 0.2)';
-          e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';
-          e.target.style.textShadow = '0 0 8px #00FFFF';
+          e.target.style.background = 'rgba(242, 239, 29, 0.2)';
+          e.target.style.boxShadow = '0 0 15px rgba(242, 239, 29, 0.3)';
+          e.target.style.textShadow = '0 0 8px #F2EF1D';
         }}
       >
         <img 
@@ -523,7 +526,7 @@ export default function JoinAliens({ visible = true } = {}) {
             width: '100%',
             height: '100%',
             objectFit: 'contain',
-            filter: 'brightness(0) saturate(100%) invert(85%) sepia(100%) saturate(1000%) hue-rotate(180deg) brightness(95%)'
+            filter: 'brightness(0) saturate(100%) invert(90%) sepia(100%) saturate(2000%) hue-rotate(60deg) brightness(95%)'
           }}
         />
       </button>

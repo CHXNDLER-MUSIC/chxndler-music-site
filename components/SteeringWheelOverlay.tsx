@@ -67,7 +67,7 @@ export default function SteeringWheelOverlay({
     if (!user) {
       return "ENTER THE HEARTVERSE";
     }
-    return "WELCOME HOME";
+    return "ENTER THE HEARTVERSE";
   };
   
 
@@ -149,7 +149,7 @@ export default function SteeringWheelOverlay({
   const handleSignalToggle = useCallback(() => {
     if (!showUI || !isUIUnlocked) return;
     
-    // Play button sound
+    // Play click sound
     try {
       const a = buttonRef.current;
       if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
@@ -461,14 +461,14 @@ export default function SteeringWheelOverlay({
               // Enhanced chroma key with Safari-specific adjustments
               keyColor={(vconf as any)?.keyColor ?? [0, 0, 0]}
               // More aggressive settings for Safari to remove black backgrounds
-              keyTolerance={(vconf as any)?.keyTolerance ?? (isSafariUA ? 0.18 : 0.12)}
-              keySoftness={(vconf as any)?.keySoftness ?? (isSafariUA ? 0.12 : 0.07)}
+              keyTolerance={(vconf as any)?.keyTolerance ?? (isSafariUA ? 0.35 : 0.12)}
+              keySoftness={(vconf as any)?.keySoftness ?? (isSafariUA ? 0.20 : 0.07)}
               keyMode={'chroma'}
               // Enable blend so fallback never shows black
               blendScreen
               // Keep minimal fallback to prevent vanishing on dark frames
               fallbackEnabled={true}
-              minCoverageRatio={0.0008}
+              minCoverageRatio={isSafariUA ? 0.0002 : 0.0008}
               // Preserve wheel region while keying outside background
               protectCircle
               protectCenterXRatio={0.5}
@@ -731,6 +731,7 @@ export default function SteeringWheelOverlay({
               style={{
                 // Fixed width so the pink display stays the same size across viewports
                 width: 'calc(var(--pink-display-width, 320px) + 120px)',
+                maxHeight: '60vh',
                 borderRadius: 'var(--display-border-radius)',
                 padding: '0px 12px 12px 12px',
                 color: '#fff',
@@ -748,6 +749,9 @@ export default function SteeringWheelOverlay({
                 `,
                 backdropFilter: 'blur(10px)',
                 animation: 'pinkPanelPulse 2.6s ease-in-out infinite',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column'
               }}
             >
               <JoinAliens visible={joinAlienOpen && !suspendUI} />
@@ -1199,7 +1203,7 @@ export default function SteeringWheelOverlay({
         <source src="/audio/hover.mp3" type="audio/mpeg" />
         <source src="/audio/song-select.mp3" type="audio/mpeg" />
       </audio>
-      <audio ref={buttonRef} src="/audio/button.mp3" preload="auto" />
+      <audio ref={buttonRef} src="/audio/click.mp3" preload="auto" />
     </div>
   );
 }

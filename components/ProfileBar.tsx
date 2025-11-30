@@ -91,14 +91,44 @@ export default function ProfileBar({
     }
   }, [profileRefreshTrigger, refreshProfile]);
 
+  // Listen for direct profile refresh events
+  useEffect(() => {
+    const handleDirectProfileRefresh = () => {
+      console.log('ProfileBar: Direct profile refresh event received');
+      refreshProfile();
+    };
+
+    window.addEventListener('auth:profile-updated', handleDirectProfileRefresh);
+    window.addEventListener('profile:force-refresh', handleDirectProfileRefresh);
+
+    return () => {
+      window.removeEventListener('auth:profile-updated', handleDirectProfileRefresh);
+      window.removeEventListener('profile:force-refresh', handleDirectProfileRefresh);
+    };
+  }, [refreshProfile]);
+
   // Debug profile changes
   useEffect(() => {
     console.log('ProfileBar: contextProfile changed:', {
       name: contextProfile?.name,
       element: contextProfile?.element,
-      profile_complete: contextProfile?.profile_complete
+      profile_complete: contextProfile?.profile_complete,
+      loading: loading,
+      currentUser: currentUser?.id
     });
-  }, [contextProfile]);
+  }, [contextProfile, loading, currentUser]);
+
+  // Debug button display changes
+  useEffect(() => {
+    const buttonInfo = getButtonDisplayInfo();
+    console.log('ProfileBar: Button display info:', {
+      text: buttonInfo.text,
+      mode: buttonInfo.mode,
+      hasUser: !!currentUser,
+      profileName: contextProfile?.name,
+      profileElement: contextProfile?.element
+    });
+  }, [currentUser, contextProfile, savedAlienName, savedAlienElement]);
 
   // Check if journal was completed today
   const checkJournalCompletion = async () => {
@@ -146,12 +176,21 @@ export default function ProfileBar({
     getUser();
 
     // Subscribe to auth changes
-    const { data: { subscription } } = supabaseBrowser.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabaseBrowser.auth.onAuthStateChange(async (event, session) => {
+      console.log('ProfileBar: Auth state changed:', { event, userId: session?.user?.id });
       setCurrentUser(session?.user ?? null);
+      
+      // If user just signed in, force a profile refresh to ensure UI updates
+      if (event === 'SIGNED_IN' && session?.user) {
+        console.log('ProfileBar: User signed in, forcing profile refresh...');
+        setTimeout(() => {
+          refreshProfile();
+        }, 500); // Small delay to ensure database is ready
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [refreshProfile]);
 
   // Handler for when journal gets completed
   const handleJournalCompleted = async () => {
@@ -415,6 +454,34 @@ export default function ProfileBar({
   const currentElement = contextProfile?.element || savedAlienElement || null;
   const heartCoins = !currentUser || !contextProfile ? 0 : (contextProfile?.heartcoin_balance || 0);
   
+  // Debug heart coins calculation
+  useEffect(() => {
+    console.log('ProfileBar: HeartCoins calculation:', {
+      hasCurrentUser: !!currentUser,
+      hasContextProfile: !!contextProfile,
+      heartcoin_balance: contextProfile?.heartcoin_balance,
+      heartcoin_total: contextProfile?.heartcoin_total,
+      calculatedHeartCoins: heartCoins,
+      profileId: contextProfile?.id,
+      profileName: contextProfile?.name
+    });
+  }, [currentUser, contextProfile, heartCoins]);
+
+  // Add a manual refresh function for debugging
+  const forceRefreshProfile = async () => {
+    console.log('ProfileBar: Manual profile refresh triggered');
+    await refreshProfile();
+    
+    // Also fetch directly from API for comparison
+    try {
+      const response = await fetch('/api/debug-heartcoins');
+      const debugData = await response.json();
+      console.log('ProfileBar: Debug API data:', debugData);
+    } catch (error) {
+      console.error('ProfileBar: Error fetching debug data:', error);
+    }
+  };
+  
   // Determine button display mode
   const getButtonDisplayInfo = () => {
     // Mode A: Not logged in
@@ -426,12 +493,17 @@ export default function ProfileBar({
     const profileName = contextProfile?.name || savedAlienName;
     const profileElement = contextProfile?.element || savedAlienElement;
     
-    // Mode C: Logged in but profile incomplete (no name or no element)
-    if (!profileName || !profileElement) {
+    // Mode C: Logged in but missing name
+    if (!profileName) {
       return { text: 'Finish setup', mode: 'setup' as const };
     }
     
-    // Mode B: Logged in with complete profile
+    // Mode B1: Logged in with name but no element - show name only
+    if (!profileElement) {
+      return { text: profileName, mode: 'setup' as const };
+    }
+    
+    // Mode B2: Logged in with complete profile - show name and element
     const elementName = profileElement.charAt(0).toUpperCase() + profileElement.slice(1);
     return { 
       text: `${profileName} • ${elementName}`, 

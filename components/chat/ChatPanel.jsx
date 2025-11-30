@@ -594,7 +594,7 @@ export default function ChatPanel({ isOpen, onClose }) {
         <>
           {/* Backdrop */}
           <motion.div
-            className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-[100]"
+            className="absolute inset-0 bg-black/20 backdrop-blur-[2px] z-[100]"
             variants={backdropVariants}
             initial="closed"
             animate="open"
@@ -604,7 +604,7 @@ export default function ChatPanel({ isOpen, onClose }) {
 
           {/* Chat Panel */}
           <motion.div
-            className="fixed inset-0 z-[110] flex overflow-hidden"
+            className="absolute inset-0 z-[110] flex overflow-hidden"
             variants={panelVariants}
             initial="closed"
             animate="open"
@@ -1021,7 +1021,14 @@ export default function ChatPanel({ isOpen, onClose }) {
                               disabled={badgeStartIndex === 0}
                               className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
                               style={{
-                                textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
+                                textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
+                                fontSize: '14px',
+                                fontWeight: 'bold',
+                                textRendering: 'optimizeLegibility',
+                                WebkitFontSmoothing: 'antialiased',
+                                MozOsxFontSmoothing: 'grayscale',
+                                filter: 'none',
+                                backdropFilter: 'none'
                               }}
                             >
                               ◀
@@ -1083,7 +1090,14 @@ export default function ChatPanel({ isOpen, onClose }) {
                               disabled={!userBadges || badgeStartIndex + 5 >= userBadges.length}
                               className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
                               style={{
-                                textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
+                                textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
+                                fontSize: '14px',
+                                fontWeight: 'bold',
+                                textRendering: 'optimizeLegibility',
+                                WebkitFontSmoothing: 'antialiased',
+                                MozOsxFontSmoothing: 'grayscale',
+                                filter: 'none',
+                                backdropFilter: 'none'
                               }}
                             >
                               ▶
@@ -1117,7 +1131,14 @@ export default function ChatPanel({ isOpen, onClose }) {
                               disabled={binderStartIndex === 0}
                               className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
                               style={{
-                                textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
+                                textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
+                                fontSize: '14px',
+                                fontWeight: 'bold',
+                                textRendering: 'optimizeLegibility',
+                                WebkitFontSmoothing: 'antialiased',
+                                MozOsxFontSmoothing: 'grayscale',
+                                filter: 'none',
+                                backdropFilter: 'none'
                               }}
                             >
                               ◀
@@ -1159,7 +1180,14 @@ export default function ChatPanel({ isOpen, onClose }) {
                               disabled={binderStartIndex + 5 >= songCollection.length}
                               className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
                               style={{
-                                textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
+                                textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
+                                fontSize: '14px',
+                                fontWeight: 'bold',
+                                textRendering: 'optimizeLegibility',
+                                WebkitFontSmoothing: 'antialiased',
+                                MozOsxFontSmoothing: 'grayscale',
+                                filter: 'none',
+                                backdropFilter: 'none'
                               }}
                             >
                               ▶

@@ -21,12 +21,12 @@ export default function AuthCallbackPage() {
       allParams: Object.fromEntries(urlParams.entries())
     });
 
-    // For all auth flows, check profile completeness using has_completed_onboarding
+    // For all auth flows, check profile completeness using profile_complete (same as profile hook)
     let needsOnboarding = false;
     try {
       const { data: existing, error } = await supabaseClient
         .from('profiles')
-        .select('id, display_name, has_completed_onboarding')
+        .select('id, name, profile_complete')
         .eq('id', session.user.id)
         .maybeSingle();
 
@@ -40,16 +40,16 @@ export default function AuthCallbackPage() {
           .insert({ 
             id: session.user.id, 
             email: session.user.email || null, 
-            display_name: null,
-            has_completed_onboarding: false
+            name: null,
+            profile_complete: false
           })
           .throwOnError();
         needsOnboarding = true;
       } else {
-        // Profile exists - check if onboarding is complete
-        needsOnboarding = !existing.has_completed_onboarding || 
-                          !existing.display_name || 
-                          existing.display_name.trim() === '';
+        // Profile exists - check if onboarding is complete using same logic as profile hook
+        needsOnboarding = !existing.profile_complete || 
+                          !existing.name || 
+                          existing.name.trim() === '';
       }
     } catch (e) {
       console.warn('⚠️ Profile check failed; defaulting to onboarding flow:', e);
@@ -65,6 +65,20 @@ export default function AuthCallbackPage() {
 
     // User has completed onboarding - proceed to normal home
     console.log('✅ User onboarding complete - redirecting to home');
+    
+    // Force a profile refresh by emitting a custom event with a small delay
+    // to ensure the session is fully established
+    setTimeout(() => {
+      try {
+        console.log('🔔 Dispatching auth:profile-updated event');
+        window.dispatchEvent(new CustomEvent('auth:profile-updated'));
+        // Also dispatch a more general refresh event as backup
+        window.dispatchEvent(new CustomEvent('profile:force-refresh'));
+      } catch (e) {
+        console.error('Error dispatching profile refresh events:', e);
+      }
+    }, 100);
+    
     router.push('/');
   };
 

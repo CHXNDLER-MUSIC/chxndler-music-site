@@ -1617,13 +1617,15 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               // NOTE: This should not happen with new flow, as non-logged-in users don't warp
               setShowWelcomeHomeModal(true);
             } else {
-              // User IS logged in - play welcome_home.mp3 + space_music.mp3 as cockpit appears
+              // User IS logged in - play audio but DON'T show welcome modal
               audioHeartverse.playWelcomeHomeAndSpaceMusic();
+              // Clear any pending welcome modal flags for logged in users
+              setShouldShowWelcomeModal(false);
             }
           }
           
-          // Show welcome home modal after warp effect completes (only on first start button click)
-          if (shouldShowWelcomeModal && !userSelected && !pendingTrackPlay) {
+          // Show welcome home modal after warp effect completes (only for non-logged in users)
+          if (shouldShowWelcomeModal && !userSelected && !pendingTrackPlay && !postWarpUser) {
             setShowWelcomeHomeModal(true);
             setShouldShowWelcomeModal(false); // Reset flag after showing modal
           }
@@ -2364,7 +2366,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       </AnimatePresence>
 
       {/* Hamburger Menu for CODE access */}
-      <GlowingHamburgerMenuWrapper />
+      <GlowingHamburgerMenuWrapper hidden={homeMode} />
 
     </main>
   );

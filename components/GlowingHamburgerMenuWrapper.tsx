@@ -15,7 +15,7 @@ import { useUIState } from "@/lib/use-ui-state";
 import { useTour } from "@/contexts/TourContext";
 import { useMenuState } from "@/contexts/MenuStateContext";
 
-export default function GlowingHamburgerMenuWrapper() {
+export default function GlowingHamburgerMenuWrapper({ hidden = false }: { hidden?: boolean }) {
   const [codeOpen, setCodeOpen] = useState(false);
   const [chxndlerOpen, setChxndlerOpen] = useState(false);
   const [journeyOpen, setJourneyOpen] = useState(false);
@@ -80,11 +80,13 @@ export default function GlowingHamburgerMenuWrapper() {
 
   return (
     <>
-      <GlowingHamburgerMenu 
-        onItemClick={handleItemClick}
-        externalIsOpen={isMenuOpen}
-        onMenuToggle={setMenuOpen}
-      />
+      {!hidden && (
+        <GlowingHamburgerMenu 
+          onItemClick={handleItemClick}
+          externalIsOpen={isMenuOpen}
+          onMenuToggle={setMenuOpen}
+        />
+      )}
       {/* Journal popout */}
       <SoulStarJournal 
         isOpen={journalOpen}

@@ -3,7 +3,7 @@
 import React from "react";
 import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sfx";
-import { PLANET_CONFIGS, getPlanetsByType, getPlanetsByElement, ELEMENT_POSITIONS, ELEMENT_COLORS, type ElementType } from "@/lib/planetConfig";
+import { PLANET_CONFIGS, getPlanetsByType, getPlanetsByElement, ELEMENT_POSITIONS, ELEMENT_COLORS, SONG_ORBIT_RADIUS, type ElementType } from "@/lib/planetConfig";
 
 interface ElementPosition {
   code: "heart" | "water" | "lightning" | "darkness";
@@ -134,25 +134,25 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
       darkness: []
     };
 
-    // Group song planets by their designated element using unified config
-    const songPlanetConfigs = getPlanetsByType('song');
-    songPlanetConfigs.forEach((planetConfig) => {
-      // Find corresponding song from songs prop
-      const song = songs.find(s => s.id === planetConfig.id);
-      if (song && planetConfig.element && distribution[planetConfig.element]) {
-        // Create songPlanet object with data from both sources
+    // Filter to only released songs - MATCHING 3D SYSTEM LOGIC
+    const releasedSongs = songs.filter(song => song.status !== "locked" && song.status !== "coming_soon");
+    
+    releasedSongs.forEach(song => {
+      const element = song.planet?.element ?? "heart";
+      if (element && distribution[element]) {
+        // Create songPlanet object using song data directly
         const songPlanet = {
-          id: planetConfig.id,
-          title: planetConfig.name,
-          element: planetConfig.element,
-          color: planetConfig.color,
-          surface: "Procedurally generated surface", // Could be enhanced later
+          id: song.id,
+          title: song.title,
+          element: element,
+          color: song.planet?.color || "#FC54AF",
+          surface: "Procedurally generated surface",
           atmosphere: "Atmospheric effects",
-          shape: "Spherical",
+          shape: "Spherical", 
           surfaceElements: "Various terrain features",
-          isReleased: true // Default to released, could be enhanced
+          isReleased: true
         };
-        distribution[planetConfig.element].push(songPlanet);
+        distribution[element].push(songPlanet);
       }
     });
 
@@ -257,7 +257,7 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
 
         {/* Orbiting song planets around each elemental planet */}
         {ELEMENTS.map((element) => {
-          const orbitRadius = 15; // Orbit radius in 3D space
+          const orbitRadius = SONG_ORBIT_RADIUS; // Use config value for consistency
           const elementSongs = songsPerElement[element.code] || [];
           
           return elementSongs.map((songPlanet, i) => {
@@ -331,7 +331,7 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
         {/* Orbit paths for each elemental planet */}
         {ELEMENTS.map((element) => {
           const elementPos2D = convertTo2D(element.position);
-          const orbitRadiusScaled = 15 * 3.0; // TIGHTER orbit rings
+          const orbitRadiusScaled = SONG_ORBIT_RADIUS * 2.0; // Use config value scaled for minimap
           
           return (
             <div

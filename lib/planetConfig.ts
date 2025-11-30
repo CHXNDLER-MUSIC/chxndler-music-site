@@ -24,8 +24,8 @@ export const PLANET_SIZES = {
   SONG: 0.7       // Smallest - all song planets
 } as const;
 
-// Orbit radius for elements around center
-export const ELEMENT_ORBIT_RADIUS = 30;
+// Orbit radius for elements around center - matching 3D layout exactly
+export const ELEMENT_ORBIT_RADIUS = 25;
 export const SONG_ORBIT_RADIUS = 8;
 
 // Colors for elements
@@ -36,13 +36,13 @@ export const ELEMENT_COLORS: Record<ElementType, string> = {
   darkness: "#6A4C93" // Using the purple-blue for visibility instead of pure black
 };
 
-// Fixed positions for elements - matching 2D layout as requested:
-// Heart = left, Lightning = top, Water = right, Darkness = bottom
+// Fixed positions for elements - matching 3D layout exactly:
+// Based on PlanetSystem.tsx: Heart = right, Lightning = left, Water = back, Darkness = front
 export const ELEMENT_POSITIONS: Record<ElementType, [number, number, number]> = {
-  heart:     [-ELEMENT_ORBIT_RADIUS, 0, 0], // left
-  lightning: [0, ELEMENT_ORBIT_RADIUS, 0],  // top  
-  water:     [ELEMENT_ORBIT_RADIUS, 0, 0],  // right
-  darkness:  [0, -ELEMENT_ORBIT_RADIUS, 0] // bottom
+  heart:     [ELEMENT_ORBIT_RADIUS, 0, 0],  // right (matches [25, 0, 0])
+  lightning: [-ELEMENT_ORBIT_RADIUS, 0, 0], // left (matches [-25, 0, 0])
+  water:     [0, 0, ELEMENT_ORBIT_RADIUS],  // back (matches [0, 0, 25])
+  darkness:  [0, 0, -ELEMENT_ORBIT_RADIUS] // front (matches [0, 0, -25])
 };
 
 // Song to element mapping based on existing data

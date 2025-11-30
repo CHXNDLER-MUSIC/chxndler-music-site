@@ -54,7 +54,7 @@ export default function LoginPage() {
         }} />
 
         <h1 className="relative text-3xl font-bold tracking-wider text-white drop-shadow mb-6">
-          WELCOME HOME
+          ENTER THE HEARTVERSE
         </h1>
         <p className="relative text-sm text-white/80 mb-6">You’re invited into the Heartverse.</p>
 

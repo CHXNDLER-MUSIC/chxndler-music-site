@@ -1963,8 +1963,12 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             const errorCode = a.error?.code || null;
             const errorMessage = a.error?.message || null;
             
+            // Debug current audio source
+            const actualSrc = a.currentSrc || a.src || 'no_source_set';
+            
             const errorInfo = {
               src: cur?.src || 'unknown',
+              actualAudioSrc: actualSrc,
               errorCode: errorCode || 'no_error_code',
               errorMessage: errorMessage || 'no_error_message', 
               readyState: a.readyState,
@@ -1986,20 +1990,24 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                                a.readyState === 4 ? 'HAVE_ENOUGH_DATA' : 'UNKNOWN'
             };
             
-            console.error('🔴 Audio element error:', errorInfo);
-            
-            // Only log raw objects if they have content
-            if (a.error && Object.keys(a.error).length > 0) {
-              console.error('🔴 Raw error object:', a.error);
+            // Show meaningful error message based on error type
+            if (errorCode === 4 || errorInfo.src === 'unknown' || !errorInfo.src) {
+              console.warn('🟠 Audio source not supported or unavailable:', {
+                track: cur?.title || 'Unknown',
+                src: errorInfo.src,
+                readyState: errorInfo.readyStateMeaning,
+                networkState: errorInfo.networkStateMeaning
+              });
             } else {
-              console.error('🔴 No error object available on audio element');
+              console.warn('🟠 Audio playback error:', errorInfo);
             }
             
-            if (e && Object.keys(e).length > 0) {
-              console.error('🔴 Event object:', e);
-            } else {
-              console.error('🔴 Empty or null event object');
+            // Only log raw error details if they contain useful information
+            if (a.error && a.error.message && a.error.message.trim() !== '') {
+              console.warn('🟠 Error details:', a.error.message);
             }
+            
+            // Skip logging empty event objects to reduce console noise
             
             // Handle specific error types
             if (errorCode === 4) { // MEDIA_ELEMENT_ERROR: MEDIA_ERR_SRC_NOT_SUPPORTED
@@ -2011,6 +2019,15 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               console.warn('🟠 Network error loading media');
             } else if (errorCode === 1) { // MEDIA_ELEMENT_ERROR: MEDIA_ERR_ABORTED
               console.warn('🟠 Media loading aborted');
+            } else if (!errorCode && a.networkState === 3) {
+              console.warn('🟠 No source available for audio element');
+            } else if (!errorCode) {
+              console.warn('🟠 Unknown audio error - check network connection and audio file format');
+            }
+            
+            // Additional troubleshooting for "NotSupportedError"
+            if (errorMessage && errorMessage.includes('no supported source')) {
+              console.warn('🔧 Troubleshooting: Check if audio file exists and is in a supported format (MP3, AAC, OGG)');
             }
             
             if (DEBUG_MEDIA) { 
