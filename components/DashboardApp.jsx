@@ -169,6 +169,11 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   }, [profile, isHydrated]);
 
   const [channelIdx, setChannelIdx] = useState(0);
+  // Wrapper for setChannelIdx with logging for song selection debugging
+  const setChannelIdxWithLog = (newIdx) => {
+    console.log('🎵 Playing track:', tracks[newIdx]?.title);
+    setChannelIdx(newIdx);
+  };
   const [isPlaying, setIsPlaying] = useState(false);
   const [sky, setSky] = useState(introSky);
   const [links, setLinks] = useState({ spotify: LINKS.spotify, apple: LINKS.apple });
@@ -504,7 +509,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       return;
     }
     const selectedTrack = tracks[idx];
-    console.log('🎵 Found track at index:', idx, 'track:', selectedTrack.title, 'slug:', selectedTrack.slug);
+    console.log('🎵 Song selected:', selectedTrack.title);
     
 
     // Planet focusing will be handled after warp sequence completes
@@ -732,7 +737,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // Don't suspend ambient during route transitions
     // Select channel index for MediaPlayer
     const idx = tracks.findIndex((x) => (x.slug || '').toLowerCase() === (t.slug || '').toLowerCase());
-    if (idx >= 0) setChannelIdx(idx);
+    if (idx >= 0) setChannelIdxWithLog(idx);
     // Prime hidden audio element for autoplay (muted)
     try {
       const audioEl = document.querySelector('audio[data-audio-player="1"]');
@@ -1595,9 +1600,11 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           setIsWarping(false);
           
           // Handle post-warp logic based on login state (for Start button warps)
+          let wasLoggedInDuringWarp = false;
           if (isWarping) {
             const postWarpUser = window.postWarpUser;
             const postWarpProfileComplete = window.postWarpProfileComplete;
+            wasLoggedInDuringWarp = !!postWarpUser;
             
             // Clean up temporary storage
             delete window.postWarpUser;
@@ -1616,7 +1623,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           }
           
           // Show welcome home modal after warp effect completes (only for non-logged in users)
-          if (shouldShowWelcomeModal && !userSelected && !pendingTrackPlay && !postWarpUser) {
+          // Don't show if user was logged in during warp OR if currently logged in
+          const currentlyLoggedIn = !!profile?.id;
+          if (shouldShowWelcomeModal && !userSelected && !pendingTrackPlay && !wasLoggedInDuringWarp && !currentlyLoggedIn) {
             setShowWelcomeHomeModal(true);
             setShouldShowWelcomeModal(false); // Reset flag after showing modal
           }
@@ -1652,18 +1661,25 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 joinSfxWaitRef.current.then(() => {
                   // Use the stored track index from when the song was selected
                   const trackIndex = pendingTrackIndexRef.current;
-                  console.log('🎵 JOIN SFX ENDED - Setting channelIdx to:', trackIndex);
+                  console.log('🎵 Warp complete, starting selected song:', tracks[trackIndex]?.title);
                   if (trackIndex !== null && trackIndex >= 0) {
-                    setChannelIdx(trackIndex);
+                    setChannelIdxWithLog(trackIndex);
                     pendingTrackIndexRef.current = null; // Clear the pending index
+                    // Force a play signal after the channel change to ensure the new song plays
+                    setTimeout(() => {
+                      setPlaySignal((n) => n + 1);
+                    }, 100);
                   }
                 }).catch(() => {
                   // Fallback in case SFX fails
                   const trackIndex = pendingTrackIndexRef.current;
-                  console.log('🎵 JOIN SFX FAILED - Setting channelIdx to:', trackIndex);
                   if (trackIndex !== null && trackIndex >= 0) {
-                    setChannelIdx(trackIndex);
+                    setChannelIdxWithLog(trackIndex);
                     pendingTrackIndexRef.current = null; // Clear the pending index
+                    // Force a play signal after the channel change to ensure the new song plays
+                    setTimeout(() => {
+                      setPlaySignal((n) => n + 1);
+                    }, 100);
                   }
                 });
               }
@@ -1672,8 +1688,12 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               // Fallback to immediate channel change if SFX setup fails
               const trackIndex = pendingTrackIndexRef.current;
               if (trackIndex !== null && trackIndex >= 0) {
-                setChannelIdx(trackIndex);
+                setChannelIdxWithLog(trackIndex);
                 pendingTrackIndexRef.current = null; // Clear the pending index
+                // Force a play signal after the channel change to ensure the new song plays
+                setTimeout(() => {
+                  setPlaySignal((n) => n + 1);
+                }, 100);
               }
             }
           }
@@ -2232,7 +2252,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 toggleSignal={toggleSignal}
                 showHUDPlay={false}
                 index={channelIdx}
-                onIndexChange={(i)=> setChannelIdx(i)}
+                onIndexChange={(i)=> setChannelIdxWithLog(i)}
                 autoPlayOnIndex={false}
                 unlockPlays={false}
               />

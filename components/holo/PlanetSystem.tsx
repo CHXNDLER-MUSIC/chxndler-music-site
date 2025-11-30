@@ -160,32 +160,32 @@ function OrbitalElementalSystem({ songs, mainId, hoverId, highlightedPlanetId }:
   
   return (
     <group ref={systemRef} name="OrbitalElementalSystem">
-      {/* Center Heart Planet - Fixed at origin - MUCH LARGER */}
+      {/* Central Heartverse Planet */}
       <group position={[0, 0, 0]} name="CenterHeart">
         <mesh renderOrder={6}>
-          <sphereGeometry args={[40, 32, 32]} />
+          <sphereGeometry args={[25, 32, 32]} />
           <meshStandardMaterial 
             color="#FC54AF"
             emissive="#FC54AF"
-            emissiveIntensity={3.0}
+            emissiveIntensity={2.5}
             metalness={0.2}
             roughness={0.3}
           />
         </mesh>
-        <sprite scale={[100, 100, 1]} renderOrder={5}>
+        <sprite scale={[60, 60, 1]} renderOrder={5}>
           <spriteMaterial
             transparent={true}
             color="#FC54AF"
-            opacity={0.4}
+            opacity={0.3}
             blending={AdditiveBlending}
           />
         </sprite>
-        <Html position={[0, 50, 0]} center>
+        <Html position={[0, 35, 0]} center>
           <div style={{ 
             color: "#FC54AF", 
-            fontSize: "22px", 
+            fontSize: "18px", 
             fontWeight: "bold",
-            textShadow: "0 0 30px #FC54AF",
+            textShadow: "0 0 20px #FC54AF",
             pointerEvents: "none",
             textAlign: "center"
           }}>
@@ -198,11 +198,11 @@ function OrbitalElementalSystem({ songs, mainId, hoverId, highlightedPlanetId }:
       {ELEMENT_PLANETS.map((element, index) => {
         const cardsForThisElement = cardsByElement[element.element!];
         
-        // Calculate orbital position based on index for proper spacing
-        const angle = (index / ELEMENT_PLANETS.length) * Math.PI * 2;
+        // Evenly spaced around center (90 degrees apart) - keep on same plane
+        const angle = (index / 4) * Math.PI * 2;
         const x = Math.cos(angle) * elementOrbitRadius;
         const z = Math.sin(angle) * elementOrbitRadius;
-        const y = (Math.sin(angle * 2) * 10); // Slight vertical variation for visual interest
+        const y = 0; // Keep all elemental planets on same plane
         
         console.log(`🪐 Rendering ${element.element} planet at orbital position [${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)}] with ${cardsForThisElement.length} songs`);
         
@@ -210,36 +210,35 @@ function OrbitalElementalSystem({ songs, mainId, hoverId, highlightedPlanetId }:
           <group key={element.id} name={`element-orbit-${element.element}`}>
             {/* Individual elemental planet at calculated orbital position */}
             <group position={[x, y, z]} name={`element-${element.element}`}>
-              {/* Elemental planet sphere - Using consistent larger size */}
+              {/* Elemental planet */}
               <mesh renderOrder={4}>
-                <sphereGeometry args={[12, 32, 32]} />
+                <sphereGeometry args={[8, 32, 32]} />
                 <meshStandardMaterial 
                   color={element.color}
                   emissive={element.color}
-                  emissiveIntensity={element.element === 'darkness' ? 4.0 : 6.0}
+                  emissiveIntensity={element.element === 'darkness' ? 3.0 : 4.0}
                   metalness={element.element === 'water' ? 0.8 : element.element === 'darkness' ? 0.9 : 0.3}
                   roughness={element.element === 'lightning' ? 0.8 : element.element === 'water' ? 0.1 : 0.4}
                 />
               </mesh>
               
-              
-              {/* Elemental planet glow - MUCH LARGER */}
-              <sprite scale={[80, 80, 1]} renderOrder={3}>
+              {/* Elemental planet glow */}
+              <sprite scale={[40, 40, 1]} renderOrder={3}>
                 <spriteMaterial
                   transparent={true}
                   color={elementGlows[element.element!]}
-                  opacity={element.element === 'lightning' ? 0.7 : 0.5}
+                  opacity={element.element === 'lightning' ? 0.6 : 0.4}
                   blending={AdditiveBlending}
                 />
               </sprite>
               
               {/* Element label */}
-              <Html position={[0, 25, 0]} center>
+              <Html position={[0, 18, 0]} center>
                 <div style={{ 
                   color: element.color, 
-                  fontSize: '18px', 
+                  fontSize: '14px', 
                   fontWeight: 'bold',
-                  textShadow: `0 0 20px ${element.color}`,
+                  textShadow: `0 0 15px ${element.color}`,
                   pointerEvents: 'none',
                   textAlign: 'center'
                 }}>
@@ -251,7 +250,7 @@ function OrbitalElementalSystem({ songs, mainId, hoverId, highlightedPlanetId }:
               <SongOrbitGroup
                 cards={cardsForThisElement}
                 elementCode={element.element!}
-                elementPosition={[0, 0, 0]} // Relative to the element planet
+                elementPosition={[0, 0, 0]}
                 mainId={mainId}
                 hoverId={hoverId}
                 highlightedPlanetId={highlightedPlanetId}
@@ -283,6 +282,7 @@ function InvalidateOnState() {
 export default function PlanetSystem({ showAll = false, hideUntilPlaying = false }: { showAll?: boolean; hideUntilPlaying?: boolean }) {
   const [isMinimapVisible, setIsMinimapVisible] = React.useState(true);
   const [highlightedPlanetId, setHighlightedPlanetId] = React.useState<string | null>(null);
+  const [currentZoomLevel, setCurrentZoomLevel] = React.useState(0);
   console.log("🌟🌟🌟 HOLO PLANETSYSTEM.TSX IS RENDERING!!! 🌟🌟🌟", { showAll, hideUntilPlaying });
   // Mark 3D system as active so global key handlers can avoid interfering
   React.useEffect(() => {
@@ -467,8 +467,8 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         {/* Removed magenta secondary light to avoid pink aura */}
         <InvalidateOnState />
         <ZoomOnChange focusId={actualShouldShowAll ? null : focusId} />
-        <MouseWheelZoom focusId={actualShouldShowAll ? null : focusId} />
-        <KeyboardZoom focusId={actualShouldShowAll ? null : focusId} />
+        <MouseWheelZoom focusId={actualShouldShowAll ? null : focusId} onZoomChange={setCurrentZoomLevel} />
+        <KeyboardZoom focusId={actualShouldShowAll ? null : focusId} onZoomChange={setCurrentZoomLevel} />
 
         {/* Very shallow tilt for near-horizontal horizon line */}
         {/* Render the full system: satellites first, focus planet last; previous main becomes a moon */}
@@ -520,16 +520,50 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         <OverlapManager />
       </Canvas>
       
-      {/* Minimap Toggle Button */}
-      <button
-        onClick={() => setIsMinimapVisible(!isMinimapVisible)}
-        className="absolute top-4 right-4 bg-cyan-500/20 hover:bg-cyan-500/40 border border-cyan-400/50 rounded text-cyan-400 text-xs font-bold transition-colors duration-200 px-2 py-1 flex items-center gap-1"
-        style={{ zIndex: 999998 }}
-        title={isMinimapVisible ? "Hide minimap" : "Show minimap"}
-      >
-        <span className="text-xs">🗺️</span>
-        <span className="text-xs">{isMinimapVisible ? "Hide" : "Show"}</span>
-      </button>
+      {/* Zoom Controls */}
+      <div className="absolute top-4 right-4 flex items-center gap-2" style={{ zIndex: 999998 }}>
+        {/* Zoom Out Button */}
+        <button
+          onClick={() => {
+            const event = new WheelEvent('wheel', { deltaY: 100, bubbles: true });
+            document.querySelector('canvas')?.dispatchEvent(event);
+          }}
+          className="bg-cyan-500/20 hover:bg-cyan-500/40 border border-cyan-400/50 rounded text-cyan-400 text-sm font-bold transition-colors duration-200 w-8 h-8 flex items-center justify-center"
+          title="Zoom Out (or scroll down)"
+        >
+          −
+        </button>
+        
+        {/* Zoom Indicator */}
+        <div className="bg-cyan-500/20 border border-cyan-400/50 rounded text-cyan-400 text-xs font-bold px-2 py-1 min-w-12 text-center">
+          {currentZoomLevel === -2 ? "MAX" : 
+           currentZoomLevel === -1 ? "WIDE" :
+           currentZoomLevel === 0 ? "NORM" :
+           currentZoomLevel === 1 ? "CLOSE" :
+           "MAX+"}
+        </div>
+        
+        {/* Zoom In Button */}
+        <button
+          onClick={() => {
+            const event = new WheelEvent('wheel', { deltaY: -100, bubbles: true });
+            document.querySelector('canvas')?.dispatchEvent(event);
+          }}
+          className="bg-cyan-500/20 hover:bg-cyan-500/40 border border-cyan-400/50 rounded text-cyan-400 text-sm font-bold transition-colors duration-200 w-8 h-8 flex items-center justify-center"
+          title="Zoom In (or scroll up)"
+        >
+          +
+        </button>
+        
+        {/* Minimap Toggle Button */}
+        <button
+          onClick={() => setIsMinimapVisible(!isMinimapVisible)}
+          className="bg-cyan-500/20 hover:bg-cyan-500/40 border border-cyan-400/50 rounded text-cyan-400 text-xs font-bold transition-colors duration-200 px-2 py-1 flex items-center gap-1"
+          title={isMinimapVisible ? "Hide minimap" : "Show minimap"}
+        >
+          <span className="text-xs">🗺️</span>
+        </button>
+      </div>
       
       {/* 2D Minimap overlay - show when enabled */}
       {isMinimapVisible && (
@@ -550,6 +584,14 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
           }}
         />
       )}
+      
+      {/* Zoom Help Text - Bottom Left */}
+      <div className="absolute bottom-4 left-4 bg-cyan-500/10 border border-cyan-400/30 rounded text-cyan-400/80 text-xs font-mono px-3 py-2 backdrop-blur-sm" style={{ zIndex: 999997 }}>
+        <div className="font-bold mb-1">🎮 ZOOM CONTROLS</div>
+        <div>Mouse Wheel: Scroll to zoom</div>
+        <div>Keyboard: A = zoom in, - = zoom out</div>
+        <div>Buttons: Click +/- above</div>
+      </div>
     </div>
   );
 }
@@ -746,7 +788,7 @@ function OverlapManager() {
 }
 
 // Mouse wheel zoom controls component
-function MouseWheelZoom({ focusId }: { focusId: string | null }) {
+function MouseWheelZoom({ focusId, onZoomChange }: { focusId: string | null; onZoomChange?: (level: number) => void }) {
   const { camera, invalidate } = useThree();
   const zoomLevelRef = React.useRef(0); // 0 = normal, negative = zoomed out, positive = zoomed in
   const animatingRef = React.useRef(false);
@@ -798,6 +840,7 @@ function MouseWheelZoom({ focusId }: { focusId: string | null }) {
         zoomLevelRef.current = newZoomLevel;
         targetZoomRef.current = newZoomLevel;
         animatingRef.current = true;
+        onZoomChange?.(newZoomLevel);
         invalidate();
       }
     };
@@ -843,7 +886,7 @@ function MouseWheelZoom({ focusId }: { focusId: string | null }) {
 }
 
 // Keyboard zoom controls component - A to zoom in, - to zoom out
-function KeyboardZoom({ focusId }: { focusId: string | null }) {
+function KeyboardZoom({ focusId, onZoomChange }: { focusId: string | null; onZoomChange?: (level: number) => void }) {
   const { camera, invalidate } = useThree();
   const zoomLevelRef = React.useRef(0);
   const animatingRef = React.useRef(false);
@@ -898,6 +941,7 @@ function KeyboardZoom({ focusId }: { focusId: string | null }) {
           zoomLevelRef.current = newZoomLevel;
           targetZoomRef.current = newZoomLevel;
           animatingRef.current = true;
+          onZoomChange?.(newZoomLevel);
           invalidate();
         }
       }

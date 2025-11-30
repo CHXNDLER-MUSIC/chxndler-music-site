@@ -498,20 +498,6 @@ export default function ProfileBar({
         <div className="flex items-center justify-between h-full pl-16 sm:pl-20 pr-2 min-w-0">
           {/* Left Side */}
           <div className="flex items-center flex-1 min-w-0">
-            {/* Elemental Button - Left of LOG IN button */}
-            <div className="ml-2 flex-shrink-0">
-              <ElementalButton 
-                onHoverSound={() => sfx.play('hover', 0.8)}
-                onCloseBlueDisplay={onCloseBlueDisplay}
-                onOpenBlueDisplay={onOpenBlueDisplay}
-                onBeamColorChange={onBeamColorChange}
-                element={currentElement}
-                onElementSelect={updateElement}
-                isActive={activePanel === 'element'}
-                onClick={() => togglePanel('element')}
-              />
-            </div>
-
             {/* Auth Button - Clickable */}
             <div className="relative ml-3">
               <AuthButton />

@@ -39,14 +39,25 @@ interface PlanetMinimapProps {
   onPlanetClick?: (planetId: string) => void;
 }
 
-// Get element configurations from unified config
-const ELEMENTS = getPlanetsByType('element').map(planet => ({
-  code: planet.element!,
-  label: planet.name,
-  position: planet.position!,
-  color: planet.color,
-  glowColor: planet.color
-}));
+// Get element configurations from unified config - MATCH 3D SYSTEM EXACTLY
+const ELEMENT_PLANETS = getPlanetsByType('element');
+const elementOrbitRadius = 120; // Match PlanetSystem.tsx value
+
+const ELEMENTS = ELEMENT_PLANETS.map((planet, index) => {
+  // Calculate orbital position EXACTLY like 3D system does
+  const angle = (index / ELEMENT_PLANETS.length) * Math.PI * 2;
+  const x = Math.cos(angle) * elementOrbitRadius;
+  const z = Math.sin(angle) * elementOrbitRadius;
+  const y = 0; // Ignore Y for 2D minimap
+  
+  return {
+    code: planet.element!,
+    label: planet.name,
+    position: [x, y, z] as [number, number, number], // Use calculated 3D position
+    color: planet.color,
+    glowColor: planet.color
+  };
+});
 
 // Comprehensive song planet data with detailed characteristics
 const SONG_PLANETS: SongPlanet[] = [
@@ -97,8 +108,9 @@ const SONG_PLANETS: SongPlanet[] = [
 ];
 
 export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onClose, onPlanetClick }: PlanetMinimapProps) {
-  const [isCollapsed, setIsCollapsed] = React.useState(false); // Default to expanded for better visibility
+  const [isCollapsed, setIsCollapsed] = React.useState(true); // Default to collapsed when page opens
   const [selectedPlanet, setSelectedPlanet] = React.useState<string | null>(null);
+  const [hoveredPlanet, setHoveredPlanet] = React.useState<string | null>(null);
 
   const handleClose = () => {
     sfx.play('close', 0.8);
@@ -161,9 +173,18 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
 
   // Calculate true geometric center of the 4 elemental planets
   const centerPosition = React.useMemo(() => {
-    const center2D = convertTo2D([0, 0, 0]); // Should be the true center
+    // Calculate actual center based on elemental planet positions
+    let totalX = 0, totalZ = 0;
+    ELEMENTS.forEach(element => {
+      totalX += element.position[0];
+      totalZ += element.position[2];
+    });
+    const centerX = totalX / ELEMENTS.length;
+    const centerZ = totalZ / ELEMENTS.length;
+    
+    const center2D = convertTo2D([centerX, 0, centerZ]);
     return center2D;
-  }, []);
+  }, [isCollapsed]);
 
   const minimapContent = (
     <div 
@@ -199,17 +220,19 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
         
         {/* Center heart planet - positioned at TRUE geometric center */}
         <div 
-          className="absolute w-4 h-4 rounded-full border-2 transform -translate-x-1/2 -translate-y-1/2"
+          className="absolute w-4 h-4 rounded-full border-2 transform -translate-x-1/2 -translate-y-1/2 cursor-pointer hover:scale-125 transition-all duration-200"
           style={{ 
             left: `${centerPosition.x}px`, 
             top: `${centerPosition.y}px`,
             backgroundColor: "#FC54AF60",
             borderColor: "#FC54AF",
-            boxShadow: "0 0 12px #FC54AF"
+            boxShadow: hoveredPlanet === "heartverse" ? "0 0 20px #FC54AF" : "0 0 12px #FC54AF"
           }}
+          onMouseEnter={() => setHoveredPlanet("heartverse")}
+          onMouseLeave={() => setHoveredPlanet(null)}
         >
           <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold text-white" style={{textShadow: "0 0 4px black"}}>
-            Heartverse
+            💖 Heartverse
           </div>
         </div>
 
@@ -220,14 +243,16 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
           return (
             <div
               key={element.code}
-              className="absolute w-3 h-3 rounded-full transform -translate-x-1/2 -translate-y-1/2 transition-all duration-200"
+              className="absolute w-3 h-3 rounded-full transform -translate-x-1/2 -translate-y-1/2 cursor-pointer hover:scale-150 transition-all duration-200"
               style={{
                 left: `${pos2D.x}px`,
                 top: `${pos2D.y}px`,
                 backgroundColor: element.color + "80",
                 border: `2px solid ${element.color}`,
-                boxShadow: `0 0 10px ${element.glowColor}60`,
+                boxShadow: hoveredPlanet === element.code ? `0 0 20px ${element.glowColor}` : `0 0 10px ${element.glowColor}60`,
               }}
+              onMouseEnter={() => setHoveredPlanet(element.code)}
+              onMouseLeave={() => setHoveredPlanet(null)}
             >
               {/* Element full label */}
               <div 
@@ -245,11 +270,13 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
 
         {/* Orbiting song planets around each elemental planet */}
         {ELEMENTS.map((element) => {
-          const orbitRadius = SONG_ORBIT_RADIUS; // Use config value for consistency
+          const orbitRadius = SONG_ORBIT_RADIUS * 3; // Match 3D system: SONG_ORBIT_RADIUS * 3
           const elementSongs = songsPerElement[element.code] || [];
           
           return elementSongs.map((songPlanet, i) => {
-            const angle = (i / Math.max(elementSongs.length, 12)) * Math.PI * 2;
+            // Match 3D system angle calculation exactly
+            const angleStep = (2 * Math.PI) / elementSongs.length;
+            const angle = i * angleStep;
             // For top-down view, orbit in the X-Z plane (horizontal plane)
             const x = element.position[0] + Math.cos(angle) * orbitRadius;
             const y = element.position[1]; // Keep same height as elemental planet
@@ -280,8 +307,10 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
                   top: `${pos2D.y}px`,
                   backgroundColor: planetColor + "80",
                   border: `1px solid ${planetColor}`,
-                  boxShadow: `0 0 4px ${planetColor}40`,
+                  boxShadow: hoveredPlanet === songPlanet.id ? `0 0 12px ${planetColor}` : `0 0 4px ${planetColor}40`,
                 }}
+                onMouseEnter={() => setHoveredPlanet(songPlanet.id)}
+                onMouseLeave={() => setHoveredPlanet(null)}
                 title={songPlanet.title + (isReleased ? "" : " (Unreleased)")}
                 onClick={() => {
                   console.log('🎯 Planet clicked:', songPlanet.id, songPlanet.title);
@@ -319,7 +348,7 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
         {/* Orbit paths for each elemental planet */}
         {ELEMENTS.map((element) => {
           const elementPos2D = convertTo2D(element.position);
-          const orbitRadiusScaled = SONG_ORBIT_RADIUS * 2.0; // Use config value scaled for minimap
+          const orbitRadiusScaled = (SONG_ORBIT_RADIUS * 3) * 2.0; // Match 3D system orbit radius
           
           return (
             <div
@@ -376,6 +405,29 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
           </div>
           <div className="text-cyan-300 text-xs mt-1">
             Click to highlight in 3D view
+          </div>
+        </div>
+      )}
+      
+      {/* Hovered planet name display */}
+      {hoveredPlanet && !isCollapsed && (
+        <div className="absolute bottom-16 left-4 right-4 bg-black/90 border-2 border-yellow-400 rounded-lg px-3 py-2 text-center z-20 shadow-lg">
+          <div className="text-yellow-400 text-sm font-bold drop-shadow-lg">
+            👁️ {(() => {
+              // Show different names based on planet type
+              if (hoveredPlanet === "heartverse") return "💖 HEARTVERSE CENTER";
+              // Check if it's an elemental planet
+              const element = ELEMENTS.find(e => e.code === hoveredPlanet);
+              if (element) return `🌍 ${element.label.toUpperCase()} ELEMENT`;
+              // Check if it's a song planet
+              const songPlanet = songs.find(s => s.id === hoveredPlanet);
+              if (songPlanet) return `🎵 ${songPlanet.title}`;
+              // Fallback
+              return hoveredPlanet.toUpperCase();
+            })()}
+          </div>
+          <div className="text-yellow-300 text-xs mt-1">
+            Hovering over planet
           </div>
         </div>
       )}

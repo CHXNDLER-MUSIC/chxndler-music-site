@@ -62,6 +62,8 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
   const [userBadges, setUserBadges] = useState<UserBadge[]>([]);
   const [userRelics, setUserRelics] = useState<UserRelic[]>([]);
   const [showElementMenu, setShowElementMenu] = useState(false);
+  const [showRelicsModal, setShowRelicsModal] = useState(false);
+  const [showElementInfo, setShowElementInfo] = useState(false);
 
   const popoverRef = useRef<HTMLDivElement>(null);
 
@@ -86,7 +88,11 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        if (showElementMenu) {
+        if (showElementInfo) {
+          setShowElementInfo(false);
+        } else if (showRelicsModal) {
+          setShowRelicsModal(false);
+        } else if (showElementMenu) {
           setShowElementMenu(false);
         } else {
           onClose();
@@ -96,7 +102,11 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
 
     const handleClickOutside = (event: MouseEvent) => {
       if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
-        if (showElementMenu) {
+        if (showElementInfo) {
+          setShowElementInfo(false);
+        } else if (showRelicsModal) {
+          setShowRelicsModal(false);
+        } else if (showElementMenu) {
           setShowElementMenu(false);
         }
       }
@@ -109,7 +119,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
       document.removeEventListener('keydown', handleEscape);
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, onClose, showElementMenu]);
+  }, [isOpen, onClose, showElementMenu, showRelicsModal, showElementInfo]);
 
   // Helper to get element image URL
   const getElementImageUrl = (element: string | null): string => {
@@ -125,6 +135,48 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
       { name: 'lightning', url: elementIcons.lightning, label: 'Lightning' },
       { name: 'darkness', url: elementIcons.darkness, label: 'Darkness' }
     ];
+  };
+
+  // Get element information including descriptions
+  const getElementInfo = (elementName: string) => {
+    const elementData: Record<string, { 
+      title: string; 
+      subtitle: string; 
+      description: string; 
+      icon: string;
+      color: string;
+    }> = {
+      heart: {
+        title: 'Heart',
+        subtitle: 'love and connection',
+        description: 'HEART holds warmth, love, and deep connection. It represents bonds, empathy, and healing. These songs are intimate, emotional, and nurturing, creating safe spaces where vulnerability becomes strength and relationships flourish.',
+        icon: elementIcons.heart,
+        color: '#FF6B9D'
+      },
+      water: {
+        title: 'Water',
+        subtitle: 'flow and adaptability', 
+        description: 'WATER holds flow, adaptability, and emotional depth. It represents intuition, dreams, and the subconscious. These songs are fluid, dreamy, and reflective, moving like currents through different moods and states of being.',
+        icon: elementIcons.water,
+        color: '#4A90E2'
+      },
+      lightning: {
+        title: 'Lightning',
+        subtitle: 'passion and courage',
+        description: 'LIGHTNING holds energy, passion, and awakening. It represents breakthroughs, inspiration, and sudden clarity. These songs are fast, alive, and electric, striking with intensity and capturing the rush of change when everything shifts at once.',
+        icon: elementIcons.lightning,
+        color: '#FFD700'
+      },
+      darkness: {
+        title: 'Darkness',
+        subtitle: 'mystery and transformation',
+        description: 'DARKNESS holds mystery, depth, and transformation. It represents the unknown, introspection, and shadow work. These songs are haunting, powerful, and transformative, embracing the beauty found in life\'s deeper, more complex emotions.',
+        icon: elementIcons.darkness,
+        color: '#8B5CF6'
+      }
+    };
+
+    return elementData[elementName] || elementData.heart;
   };
 
   // Fetch user's unlocked badges and relics
@@ -541,58 +593,6 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               )}
             </div>
 
-            {/* Available Images Grid */}
-            {loading ? (
-              <div 
-                className="text-center text-xs"
-                style={{ 
-                  color: '#00FFFF', 
-                  textShadow: '0 0 4px rgba(0,255,255,0.6)' 
-                }}
-              >
-                Loading available images...
-              </div>
-            ) : (
-              <div className="grid grid-cols-4 gap-2 justify-items-center">
-                {availableImages.map((image) => (
-                  <button
-                    key={image.id}
-                    onClick={() => {
-                      setSelectedImageUrl(image.url);
-                      try { sfx.play('click', 0.4); } catch {}
-                    }}
-                    className={`w-12 h-12 rounded-lg border-2 overflow-hidden transition-all duration-200 ${
-                      selectedImageUrl === image.url
-                        ? 'border-cyan-400 shadow-[0_0_15px_rgba(0,255,255,0.6)]'
-                        : 'border-white/30 hover:border-white/60'
-                    }`}
-                    title={image.name}
-                  >
-                    <img
-                      src={image.url}
-                      alt={image.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                      }}
-                    />
-                  </button>
-                ))}
-                {availableImages.length === 0 && (
-                  <div 
-                    className="col-span-4 text-xs text-center py-2"
-                    style={{ 
-                      color: '#00FFFF', 
-                      opacity: 0.6,
-                      textShadow: '0 0 4px rgba(0,255,255,0.6)' 
-                    }}
-                  >
-                    No unlocked images available
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           {/* PROFILE INFO Section */}
@@ -624,15 +624,24 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
             {/* Element */}
             <div className="flex items-center justify-between">
               <span className="text-white/80 text-sm">Element:</span>
-              <span 
-                className="font-bold"
+              <button
+                onClick={() => {
+                  if (profile?.element) {
+                    setShowElementInfo(!showElementInfo);
+                    try { sfx.play('click', 0.4); } catch {}
+                  }
+                }}
+                className="font-bold transition-all duration-200 hover:scale-105 cursor-pointer"
                 style={{ 
                   color: '#00FFFF', 
-                  textShadow: '0 0 8px rgba(0,255,255,0.6)' 
+                  textShadow: '0 0 8px rgba(0,255,255,0.6)',
+                  background: 'none',
+                  border: 'none'
                 }}
+                title={profile?.element ? "Click to view element details" : undefined}
               >
                 {profile?.element ? profile.element.charAt(0).toUpperCase() + profile.element.slice(1) : 'None'}
-              </span>
+              </button>
             </div>
 
             {/* HeartCoins */}
@@ -664,6 +673,131 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
             </div>
           </div>
 
+          {/* Element Info Display */}
+          {showElementInfo && profile?.element && (
+            <div className="mt-6 p-4 rounded-lg border-2 border-opacity-60 bg-opacity-20"
+              style={{
+                borderColor: getElementInfo(profile.element).color,
+                backgroundColor: `${getElementInfo(profile.element).color}20`,
+                boxShadow: `0 0 20px ${getElementInfo(profile.element).color}40`
+              }}
+            >
+              {/* Main Headers */}
+              <div className="text-center mb-6">
+                <h2 
+                  className="text-lg font-bold mb-2"
+                  style={{ 
+                    color: '#8B5CF6', 
+                    textShadow: '0 0 8px rgba(139,92,246,0.6)',
+                    letterSpacing: '0.1em'
+                  }}
+                >
+                  THE ELEMENTS OF THE HEARTVERSE
+                </h2>
+                <h3 
+                  className="text-base font-semibold"
+                  style={{ 
+                    color: '#FFFFFF', 
+                    textShadow: '0 0 4px rgba(255,255,255,0.6)' 
+                  }}
+                >
+                  EXPLORE EACH ELEMENT'S POWER
+                </h3>
+              </div>
+
+              {/* Thin separator line */}
+              <div 
+                className="w-full h-px mb-6"
+                style={{
+                  background: 'linear-gradient(90deg, transparent, rgba(139,92,246,0.8) 20%, rgba(139,92,246,1) 50%, rgba(139,92,246,0.8) 80%, transparent)',
+                  boxShadow: '0 0 4px rgba(139,92,246,0.6)'
+                }}
+              />
+
+              {/* Header with element icon and title */}
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-12 h-12 rounded-lg border-2 overflow-hidden"
+                  style={{
+                    borderColor: getElementInfo(profile.element).color,
+                    backgroundColor: `${getElementInfo(profile.element).color}30`
+                  }}
+                >
+                  <img
+                    src={getElementInfo(profile.element).icon}
+                    alt={getElementInfo(profile.element).title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold"
+                    style={{
+                      color: getElementInfo(profile.element).color,
+                      textShadow: `0 0 8px ${getElementInfo(profile.element).color}60`
+                    }}
+                  >
+                    {getElementInfo(profile.element).title} = {getElementInfo(profile.element).subtitle}
+                  </h3>
+                </div>
+              </div>
+
+              {/* Description */}
+              <p className="text-sm leading-relaxed text-white/90 mb-4">
+                {getElementInfo(profile.element).description}
+              </p>
+
+              {/* All Elements Grid */}
+              <div className="border-t border-white/20 pt-4">
+                <h4 className="text-sm font-semibold text-cyan-400 mb-3 text-center">
+                  ALL ELEMENTS
+                </h4>
+                <div className="grid grid-cols-4 gap-3">
+                  {getAllElements().map((element) => {
+                    const elementData = getElementInfo(element.name);
+                    const isSelected = profile?.element === element.name;
+                    
+                    return (
+                      <div
+                        key={element.name}
+                        className={`aspect-square rounded-lg border-2 overflow-hidden transition-all duration-200 ${
+                          isSelected 
+                            ? 'shadow-lg' 
+                            : 'opacity-60 hover:opacity-80'
+                        }`}
+                        style={{
+                          borderColor: isSelected ? elementData.color : 'rgba(255,255,255,0.3)',
+                          backgroundColor: isSelected ? `${elementData.color}30` : 'rgba(0,0,0,0.3)',
+                          boxShadow: isSelected ? `0 0 15px ${elementData.color}60` : 'none'
+                        }}
+                      >
+                        <img
+                          src={element.url}
+                          alt={element.label}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Close button for element info */}
+              <button
+                onClick={() => {
+                  setShowElementInfo(false);
+                  try { sfx.play('close', 0.6); } catch {}
+                }}
+                className="mt-4 w-full py-2 rounded-lg text-sm font-semibold transition-all duration-200 hover:scale-105"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(0,255,255,0.15), rgba(0,255,255,0.05))',
+                  border: '1px solid rgba(0,255,255,0.3)',
+                  color: '#00FFFF'
+                }}
+              >
+                ✕ Close Element Info
+              </button>
+            </div>
+          )}
+
           {/* RELICS Section */}
           <div className="space-y-3">
             <h3 
@@ -676,11 +810,35 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               RELICS
             </h3>
             
-            <div className="text-center py-4 text-white/60">
-              <div className="text-2xl mb-2">🏛️</div>
-              <p className="text-sm">You have no relics yet</p>
-              <p className="text-xs text-white/40 mt-1">Complete special missions to earn relics</p>
-            </div>
+            <button
+              onClick={() => {
+                setShowRelicsModal(true);
+                try { sfx.play('click', 0.6); } catch {}
+              }}
+              className="w-full py-3 rounded-lg border-2 border-cyan-400/40 bg-cyan-400/10 hover:border-cyan-400/60 hover:bg-cyan-400/15 transition-all duration-200 hover:scale-105 flex items-center space-x-3"
+              style={{
+                boxShadow: '0 0 15px rgba(0,255,255,0.2)'
+              }}
+            >
+              <img
+                src="/relics.webp"
+                alt="Relics"
+                className="w-8 h-8 object-cover rounded-md"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  // Show fallback icon if image fails to load
+                  const fallback = document.createElement('div');
+                  fallback.className = 'text-lg';
+                  fallback.textContent = '🏛️';
+                  target.parentNode?.insertBefore(fallback, target);
+                }}
+              />
+              <div className="text-left">
+                <p className="text-sm font-semibold text-cyan-400">View Relics</p>
+                <p className="text-xs text-white/60">Click to explore</p>
+              </div>
+            </button>
           </div>
 
           {/* Start Tour Button */}
@@ -721,6 +879,107 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
           </div>
         </div>
       </div>
+
+      {/* Relics Modal */}
+      {showRelicsModal && (
+        <div 
+          className="fixed inset-0 flex items-center justify-center"
+          style={{
+            zIndex: 2147483649,
+            background: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(8px)'
+          }}
+          onClick={() => setShowRelicsModal(false)}
+        >
+          <div
+            className="relative"
+            style={{
+              width: 'min(95vw, 600px)',
+              minHeight: 'auto',
+              padding: '24px',
+              borderRadius: 18,
+              background: 'rgba(0,0,0,0.8)',
+              border: '1px solid rgba(0,255,255,0.55)',
+              boxShadow: '0 -8px 25px rgba(0,255,255,0.4), 0 -4px 15px rgba(0,255,255,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(0,255,255,0.45)',
+              backdropFilter: 'blur(12px) saturate(140%)',
+              color: '#00FFFF'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => {
+                setShowRelicsModal(false);
+                try { sfx.play('close', 0.8); } catch {}
+              }}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+              style={{
+                background: 'rgba(0,255,255,0.2)',
+                border: '1px solid rgba(0,255,255,0.6)',
+                color: '#00FFFF',
+                boxShadow: '0 0 10px rgba(0,255,255,0.3)',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}
+            >
+              ×
+            </button>
+
+            {/* Header */}
+            <div 
+              className="text-center mb-6"
+              style={{ 
+                color: '#00FFFF', 
+                textShadow: '0 0 8px rgba(0,255,255,0.6)', 
+                fontSize: '20px',
+                fontWeight: 'bold'
+              }}
+            >
+              RELICS COLLECTION
+            </div>
+
+            {/* Thin cyan neon line */}
+            <div 
+              className="w-full h-px mb-6"
+              style={{
+                background: 'linear-gradient(90deg, transparent, rgba(0,255,255,0.8) 20%, rgba(0,255,255,1) 50%, rgba(0,255,255,0.8) 80%, transparent)',
+                boxShadow: '0 0 4px rgba(0,255,255,0.6)'
+              }}
+            />
+
+            {/* Relics Grid - Greyed out containers */}
+            <div className="grid grid-cols-4 gap-4 mb-6">
+              {Array.from({ length: 12 }, (_, i) => (
+                <div
+                  key={i}
+                  className="aspect-square rounded-lg border-2 border-white/20 bg-black/40 flex items-center justify-center relative overflow-hidden"
+                  style={{
+                    filter: 'grayscale(100%)',
+                    opacity: 0.4
+                  }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
+                  <div className="text-white/30 text-lg">🏛️</div>
+                  <div 
+                    className="absolute bottom-1 right-1 text-xs text-white/20"
+                    style={{ fontSize: '10px' }}
+                  >
+                    {String(i + 1).padStart(2, '0')}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Info text */}
+            <div className="text-center text-white/60">
+              <p className="text-sm mb-2">No relics discovered yet</p>
+              <p className="text-xs text-white/40">
+                Complete special missions and explore the Heartverse to unlock ancient relics
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </>,
     document.body
   );

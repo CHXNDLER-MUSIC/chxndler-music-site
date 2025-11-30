@@ -31,13 +31,25 @@ export default function YourBook({ isOpen, onClose }) {
     onClose();
   };
 
-  const handleCardClick = (card) => {
-    if (card.isBlank) {
+  const handleCardClick = (cardOrData) => {
+    // Handle if this is called from CoverCard onClick with card data
+    if (cardOrData && typeof cardOrData === 'object' && cardOrData.image) {
+      sfx.play('flip', 0.5);
+      setEnlargedCard({
+        src: cardOrData.image,
+        label: cardOrData.name,
+        id: 'card-image'
+      });
+      return;
+    }
+    
+    // Handle original card click logic
+    if (cardOrData.isBlank) {
       sfx.play('click', 0.4);
       return;
     }
     sfx.play('flip', 0.5);
-    setEnlargedCard(card);
+    setEnlargedCard(cardOrData);
   };
 
   const handleCloseEnlarged = () => {
@@ -128,12 +140,13 @@ export default function YourBook({ isOpen, onClose }) {
                         <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                     ) : (
-                      <div onClick={() => handleCardClick(card)}>
+                      <div>
                         <CoverCard 
                           src={card.src}
                           label=""
                           size={130}
                           trackSlug={card.isStarter ? 'chxndler' : null}
+                          onClick={handleCardClick}
                         />
                       </div>
                     )}
