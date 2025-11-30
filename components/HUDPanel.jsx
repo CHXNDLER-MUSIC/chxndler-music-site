@@ -2461,13 +2461,28 @@ export default function HUDPanel({
             {/* Spotify-style Progress Bar - positioned directly below cover art */}
             <div style={{
               position: 'absolute',
-              top: '120px', // Position below the cover art (110px size + 10px gap)
+              top: '125px', // Position below the cover art (110px size + 15px gap)
               left: '50%',
               transform: 'translateX(-50%)',
               width: '110px', // Match cover art width
-              zIndex: 6
+              height: '40px', // Give it explicit height
+              zIndex: 10, // Higher z-index to ensure visibility
+              pointerEvents: 'auto', // Ensure it can receive events
+              backgroundColor: 'rgba(255, 0, 0, 0.3)', // Debug: red background
+              border: '2px solid red' // Debug: red border
             }}>
               <SpotifyProgressBar />
+              {/* Fallback test element */}
+              <div style={{
+                width: '100%',
+                height: '20px',
+                backgroundColor: 'yellow',
+                color: 'black',
+                textAlign: 'center',
+                fontSize: '12px'
+              }}>
+                PROGRESS BAR TEST
+              </div>
             </div>
           </div>
 

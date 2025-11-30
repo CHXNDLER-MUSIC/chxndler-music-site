@@ -589,7 +589,7 @@ export default function ChatPanel({ isOpen, onClose }) {
    */
   const handleClose = () => {
     try {
-      const audio = new Audio('/close.mp3');
+      const audio = new Audio('/audio/close.mp3');
       audio.volume = 0.5;
       audio.play().catch(error => {
         console.log('Audio play failed:', error);
@@ -889,6 +889,16 @@ export default function ChatPanel({ isOpen, onClose }) {
                               {/* User Icon */}
                               {selectedUser.id === 'anonymous' ? (
                                 <img src="/elements/alien.webp" alt="Alien" className="w-6 h-6 flex-shrink-0" />
+                              ) : profile?.profile_image_url ? (
+                                <img 
+                                  src={profile.profile_image_url} 
+                                  alt="Profile" 
+                                  className="w-6 h-6 rounded-full flex-shrink-0 object-cover"
+                                  style={{
+                                    border: '1px solid rgba(242, 239, 29, 0.5)',
+                                    boxShadow: '0 0 8px rgba(242, 239, 29, 0.3)'
+                                  }}
+                                />
                               ) : (
                                 <div 
                                   className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
@@ -1054,32 +1064,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                             </button>
                           </div>
                         </div>
-                        
-                        {/* Close Profile Button */}
-                        <button
-                          onClick={() => {
-                            try {
-                              const audio = new Audio('/audio/close.mp3');
-                              audio.volume = 0.5;
-                              audio.play().catch(error => {
-                                console.log('Close audio play failed:', error);
-                              });
-                            } catch (error) {
-                              console.log('Close audio creation failed:', error);
-                            }
-                            setSelectedUser(null);
-                            setShowUserBadges(false);
-                            setShowUserBinder(false);
-                            setShowSendHeartCoin(false);
-                          }}
-                          className="text-white/70 hover:text-white transition-colors text-sm px-1 py-1 rounded flex-shrink-0 ml-1"
-                          style={{
-                            background: 'rgba(255, 255, 255, 0.1)',
-                            border: '1px solid rgba(255, 255, 255, 0.2)'
-                          }}
-                        >
-                          ▶
-                        </button>
+                        {/* Removed right-side arrow close button to declutter UI near streak */}
                       </div>
                     </div>
 

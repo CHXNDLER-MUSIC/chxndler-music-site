@@ -7,6 +7,9 @@ type UIState = {
   setHasEnteredHeartverse: (value: boolean) => void;
   // Convenience action matching requested API
   enterHeartverse: () => void;
+  // Track when warp effect fully completes (including sound effects)
+  warpFullyComplete: boolean;
+  setWarpFullyComplete: (value: boolean) => void;
 };
 
 // Clear any old persisted state from localStorage (one-time cleanup)
@@ -23,4 +26,6 @@ export const useUIState = create<UIState>()((set) => ({
   hasEnteredHeartverse: false,
   setHasEnteredHeartverse: (value) => set({ hasEnteredHeartverse: value }),
   enterHeartverse: () => set({ hasEnteredHeartverse: true }),
+  warpFullyComplete: false,
+  setWarpFullyComplete: (value) => set({ warpFullyComplete: value }),
 }));

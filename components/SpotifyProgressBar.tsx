@@ -256,12 +256,23 @@ const SpotifyProgressBar: React.FC<SpotifyProgressBarProps> = ({
   // Always render, but show different states based on content
   const hasActiveSong = currentSong && duration > 0;
 
+  // Debug logging
+  console.log('SpotifyProgressBar render:', { 
+    currentSong: currentSong?.title, 
+    duration, 
+    hasActiveSong,
+    currentTime,
+    isPlaying 
+  });
+
   return (
     <div 
       className={`spotify-progress-bar ${className}`}
       style={{
         width: '100%',
         padding: '8px 0',
+        backgroundColor: 'rgba(0, 255, 0, 0.1)', // Debug: green background to see if it renders
+        border: '1px solid rgba(0, 255, 0, 0.5)', // Debug: green border
         ...style
       }}
     >

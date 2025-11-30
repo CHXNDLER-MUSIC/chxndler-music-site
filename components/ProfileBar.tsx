@@ -445,8 +445,8 @@ export default function ProfileBar({
       className="fixed top-0 left-0 right-0 z-[300] h-16 bg-black/40 backdrop-blur-lg border-b border-white/20 transition-opacity duration-500 ease-in-out"
     >
       <div className="relative h-full">
-        {/* Hamburger Menu - Far Top Left - Only show after profile name loads */}
-        {contextProfile?.name && (
+        {/* Hamburger Menu - Far Top Left - Only show after warp effect completes */}
+        {hasEnteredHeartverse && (
           <div className="absolute top-2 left-1 z-10">
             <GlowingHamburgerMenu
             onItemClick={(label) => {
