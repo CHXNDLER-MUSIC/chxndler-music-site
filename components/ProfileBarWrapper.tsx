@@ -11,6 +11,7 @@ type Props = React.ComponentProps<typeof ProfileBar> & {
 // Wrapper that prevents any render until client hydration, then
 // conditionally shows the ProfileBar only after the user has entered.
 export default function ProfileBarWrapper(props: Props) {
+  // All hooks must be called before any early returns
   const hasEnteredHeartverse = useUIState((s) => s.hasEnteredHeartverse);
   const [hydrated, setHydrated] = React.useState(false);
 
@@ -19,6 +20,7 @@ export default function ProfileBarWrapper(props: Props) {
     setHydrated(true);
   }, []);
 
+  // Early returns only after all hooks are called
   if (!hydrated) return null;
   if (!hasEnteredHeartverse) return null;
 

@@ -1,7 +1,7 @@
 "use client";
 import { sfx } from "@/lib/sfx";
 
-export default function CoverCard({ src = "https://ik.imagekit.io/CHXNDLER/cover/ocean-girl.png?updatedAt=1762361386944", label, size = 100, responsive = false, trackSlug = null }) {
+export default function CoverCard({ src = "/covers/OCEAN GIRL.webp", label, size = 100, responsive = false, trackSlug = null }) {
   // If responsive is true, use responsive classes similar to song listing scaling
   const responsiveClasses = responsive 
     ? "w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-28 lg:h-28"

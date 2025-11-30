@@ -57,8 +57,8 @@ import { sfx } from "@/lib/sfx";
 // Use system font stack to avoid network font fetches during build
 
 // Constants to prevent recreating URLs on every render
-const DEFAULT_COVER = '/elements/logo.webp';
-const DEFAULT_CARD = '/cards/chxndler.webp';
+const DEFAULT_COVER = '/covers/CHXNDLER.webp';
+const DEFAULT_CARD = '/cards/CHXNDLER.webp';
 const FALLBACK_COVER = '/elements/logo.webp';
 
 function ElementIcon({ name, size = 18, glow = true }) {
@@ -374,7 +374,7 @@ export default function HUDPanel({
       name: 'ALWAYS ON MY MIND (ACOUSTIC)',
       type: 'HEART',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/cover/ALWAYS%20ON%20MY%20MIND%20(ACOUSTIC).png?updatedAt=1763058363705',
+      image: '/covers/ALWAYS ON MY MIND (ACOUSTIC).webp',
       description: 'Some voices never fade — they just guide you from within.',
       collected: false
     },
@@ -5024,7 +5024,7 @@ export default function HUDPanel({
                                         src={'/store/patch.png'}
                                         alt={item.title}
                                         style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }}
-                                        onError={(e)=>{ try { e.currentTarget.src = 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910'; } catch {} }}
+                                        onError={(e)=>{ try { e.currentTarget.src = '/elements/logo.webp'; } catch {} }}
                                       />
                                     </div>
                                     {/* Back */}
@@ -5033,7 +5033,7 @@ export default function HUDPanel({
                                         src={'/store/patch-inverse.png'}
                                         alt={`${item.title} back`}
                                         style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }}
-                                        onError={(e)=>{ try { e.currentTarget.src = 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910'; } catch {} }}
+                                        onError={(e)=>{ try { e.currentTarget.src = '/elements/logo.webp'; } catch {} }}
                                       />
                                     </div>
                                   </div>
@@ -5075,7 +5075,7 @@ export default function HUDPanel({
                                         src={'/store/beanie-front.png'}
                                         alt={item.title}
                                         style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }}
-                                        onError={(e)=>{ try { e.currentTarget.src = 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910'; } catch {} }}
+                                        onError={(e)=>{ try { e.currentTarget.src = '/elements/logo.webp'; } catch {} }}
                                       />
                                     </div>
                                     {/* Back */}
@@ -5084,13 +5084,13 @@ export default function HUDPanel({
                                         src={'/store/beanie-back.png'}
                                         alt={`${item.title} back`}
                                         style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }}
-                                        onError={(e)=>{ try { e.currentTarget.src = 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910'; } catch {} }}
+                                        onError={(e)=>{ try { e.currentTarget.src = '/elements/logo.webp'; } catch {} }}
                                       />
                                     </div>
                                   </div>
                                 </div>
                               ) : (
-                                <img src={item.image || 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910'} alt={item.title} style={{ display: 'block', width: 104, height: 104, objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(33,150,243,0.35)', boxShadow: '0 6px 18px rgba(0,0,0,0.35)' }} onError={(e)=>{ try { e.currentTarget.src = 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910'; } catch {} }} />
+                                <img src={item.image || '/elements/logo.webp'} alt={item.title} style={{ display: 'block', width: 104, height: 104, objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(33,150,243,0.35)', boxShadow: '0 6px 18px rgba(0,0,0,0.35)' }} onError={(e)=>{ try { e.currentTarget.src = '/elements/logo.webp'; } catch {} }} />
                               )}
                               {/* Price directly under the image (show $ price and HEART coins side by side) */}
                               <div style={{ fontSize: 16, fontWeight: 700, color: '#FFB9E1', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
