@@ -61,6 +61,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
   const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
   const [userBadges, setUserBadges] = useState<UserBadge[]>([]);
   const [userRelics, setUserRelics] = useState<UserRelic[]>([]);
+  const [showElementMenu, setShowElementMenu] = useState(false);
 
   const popoverRef = useRef<HTMLDivElement>(null);
 
@@ -79,27 +80,51 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
     }
   }, [isOpen, user]);
 
-  // Close on escape key
+  // Close on escape key and outside click
   useEffect(() => {
     if (!isOpen) return;
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        onClose();
+        if (showElementMenu) {
+          setShowElementMenu(false);
+        } else {
+          onClose();
+        }
+      }
+    };
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
+        if (showElementMenu) {
+          setShowElementMenu(false);
+        }
       }
     };
 
     document.addEventListener('keydown', handleEscape);
+    document.addEventListener('mousedown', handleClickOutside);
     
     return () => {
       document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, showElementMenu]);
 
   // Helper to get element image URL
   const getElementImageUrl = (element: string | null): string => {
     if (!element) return elementIcons.heart; // Default to heart
     return elementIcons[element as keyof typeof elementIcons] || elementIcons.heart;
+  };
+
+  // Get all 4 element options for the selection menu
+  const getAllElements = () => {
+    return [
+      { name: 'heart', url: elementIcons.heart, label: 'Heart' },
+      { name: 'water', url: elementIcons.water, label: 'Water' },
+      { name: 'lightning', url: elementIcons.lightning, label: 'Lightning' },
+      { name: 'darkness', url: elementIcons.darkness, label: 'Darkness' }
+    ];
   };
 
   // Fetch user's unlocked badges and relics
@@ -264,6 +289,25 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
     
     onClose();
     startTour();
+  };
+
+  // Handle sign out
+  const handleSignOut = async () => {
+    try { sfx.play('click', 0.8); } catch {}
+    
+    try {
+      const { error } = await supabaseClient.auth.signOut();
+      if (error) {
+        console.error('Error signing out:', error);
+      } else {
+        console.log('Successfully signed out');
+        onClose();
+        // Redirect to home page after sign out
+        window.location.href = '/';
+      }
+    } catch (error) {
+      console.error('Unexpected error during sign out:', error);
+    }
   };
 
   if (!isOpen) return null;
@@ -431,14 +475,19 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               SELECTED IMAGE
             </h3>
             
-            {/* Current Profile Image */}
-            <div className="flex justify-center mb-4">
-              <div 
-                className="w-20 h-20 rounded-full border-2 border-cyan-400/60 overflow-hidden"
+            {/* Current Profile Image - Clickable */}
+            <div className="flex justify-center mb-4 relative">
+              <button 
+                onClick={() => {
+                  setShowElementMenu(!showElementMenu);
+                  try { sfx.play('click', 0.4); } catch {}
+                }}
+                className="w-20 h-20 rounded-full border-2 border-cyan-400/60 overflow-hidden transition-all duration-200 hover:scale-105 hover:shadow-[0_0_25px_rgba(0,255,255,0.6)]"
                 style={{
                   background: 'rgba(0,255,255,0.1)',
                   boxShadow: '0 0 20px rgba(0,255,255,0.4)'
                 }}
+                title="Click to change element"
               >
                 <img
                   src={selectedImageUrl || getElementImageUrl(profile?.element)}
@@ -449,7 +498,47 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                     target.src = getElementImageUrl(profile?.element);
                   }}
                 />
-              </div>
+              </button>
+
+              {/* Element Selection Menu */}
+              {showElementMenu && (
+                <div 
+                  className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 z-50"
+                  style={{
+                    background: 'rgba(0,0,0,0.9)',
+                    border: '1px solid rgba(0,255,255,0.6)',
+                    borderRadius: '12px',
+                    boxShadow: '0 8px 25px rgba(0,255,255,0.3)',
+                    backdropFilter: 'blur(12px)',
+                    padding: '12px'
+                  }}
+                >
+                  <div className="grid grid-cols-2 gap-3">
+                    {getAllElements().map((element) => (
+                      <button
+                        key={element.name}
+                        onClick={() => {
+                          setSelectedImageUrl(element.url);
+                          setShowElementMenu(false);
+                          try { sfx.play('join', 0.6); } catch {}
+                        }}
+                        className={`w-12 h-12 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:scale-110 ${
+                          selectedImageUrl === element.url
+                            ? 'border-cyan-400 shadow-[0_0_15px_rgba(0,255,255,0.6)]'
+                            : 'border-white/30 hover:border-cyan-400/60'
+                        }`}
+                        title={element.label}
+                      >
+                        <img
+                          src={element.url}
+                          alt={element.label}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Available Images Grid */}
@@ -600,7 +689,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
           }}>
             <button
               onClick={handleStartTour}
-              className="w-full px-4 py-3 rounded-lg font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
+              className="w-full px-4 py-3 rounded-lg font-semibold transition-all duration-200 hover:scale-105 active:scale-95 mb-3"
               style={{
                 background: 'linear-gradient(135deg, rgba(0,255,255,0.25), rgba(0,255,255,0.15))',
                 border: '1px solid rgba(0,255,255,0.5)',
@@ -611,6 +700,23 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               title="Take a guided tour of the Heartverse"
             >
               ✨ Start Tour
+            </button>
+
+            {/* Sign Out Button */}
+            <button
+              onClick={handleSignOut}
+              className="w-full px-4 py-2 rounded-lg font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
+              style={{
+                background: 'linear-gradient(135deg, rgba(255,80,80,0.25), rgba(255,80,80,0.15))',
+                border: '1px solid rgba(255,80,80,0.5)',
+                color: '#FF5050',
+                textShadow: '0 0 8px rgba(255,80,80,0.7)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,80,80,0.2)',
+                fontSize: '14px'
+              }}
+              title="Sign out of your account"
+            >
+              🚪 Sign Out
             </button>
           </div>
         </div>

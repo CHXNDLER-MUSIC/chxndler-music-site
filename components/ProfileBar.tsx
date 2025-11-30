@@ -513,7 +513,7 @@ export default function ProfileBar({
             </div>
 
             {/* Auth Button - Clickable */}
-            <div className="relative">
+            <div className="relative ml-3">
               <AuthButton />
             </div>
 

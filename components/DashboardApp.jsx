@@ -1175,8 +1175,11 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           setWarpActive(true);
           
           // Store warp context for post-warp handling
-          window.postWarpUser = null;
-          window.postWarpProfileComplete = false;
+          // Only set to null if not already set by Start button
+          if (window.postWarpUser === undefined) {
+            window.postWarpUser = null;
+            window.postWarpProfileComplete = false;
+          }
           console.log('Warp sequence initiated');
           return true; // Set to warping
         } else {

@@ -7,6 +7,7 @@ import { sfx } from '@/lib/sfx';
 import WelcomeHomeModal from '@/components/WelcomeHomeModal';
 import ProfilePopover from '@/components/ProfilePopover';
 import { useUIStore } from '@/store/useUIStore';
+import { ElementIcon } from '@/lib/elementIcons';
 
 interface ProfileData {
   id: string;
@@ -78,10 +79,9 @@ export default function AuthButton() {
       return { text: profile.name, mode: 'setup' as const };
     }
 
-    // Mode B2: Logged in with complete profile - show name and element
-    const elementName = profile.element.charAt(0).toUpperCase() + profile.element.slice(1);
+    // Mode B2: Logged in with complete profile - show name only (icon will be separate)
     return { 
-      text: `${profile.name} • ${elementName}`, 
+      text: profile.name, 
       mode: 'profile' as const 
     };
   };
@@ -132,45 +132,60 @@ export default function AuthButton() {
 
   return (
     <>
-      <button 
-        ref={buttonRef}
-        onClick={handleButtonClick}
-        onKeyDown={(e) => {
-          if ((e.key === 'Enter' || e.key === ' ') && !authLoading && !profileLoading) {
-            e.preventDefault();
-            handleButtonClick();
+      <div className="flex items-center">
+        {/* Element Icon - only show when user has complete profile */}
+        {buttonMode === 'profile' && currentElement && (
+          <div className="mr-2">
+            <ElementIcon 
+              name={currentElement} 
+              alt={currentElement} 
+              width={24} 
+              height={24}
+            />
+          </div>
+        )}
+        
+        {/* Username/Login Button */}
+        <button 
+          ref={buttonRef}
+          onClick={handleButtonClick}
+          onKeyDown={(e) => {
+            if ((e.key === 'Enter' || e.key === ' ') && !authLoading && !profileLoading) {
+              e.preventDefault();
+              handleButtonClick();
+            }
+          }}
+          disabled={authLoading || profileLoading}
+          className="font-medium text-lg relative flex-shrink-0 transition-all duration-200 cursor-pointer bg-transparent border-none focus:outline-none disabled:opacity-50 rounded"
+          style={{ 
+            color: getUsernameColor(currentElement),
+            filter: 'brightness(1.2)',
+            padding: '0',
+            background: 'transparent',
+            transition: 'all 0.3s ease'
+          }}
+          title={
+            buttonMode === 'login' 
+              ? "Click to log in and join the Heartverse"
+              : buttonMode === 'setup'
+              ? "Click to complete your profile setup"
+              : "Click to view your profile"
           }
-        }}
-        disabled={authLoading || profileLoading}
-        className="font-medium text-lg relative flex-shrink-0 ml-3 transition-all duration-200 cursor-pointer bg-transparent border-none focus:outline-none disabled:opacity-50 rounded"
-        style={{ 
-          color: getUsernameColor(currentElement),
-          filter: 'brightness(1.2)',
-          padding: '0',
-          background: 'transparent',
-          transition: 'all 0.3s ease'
-        }}
-        title={
-          buttonMode === 'login' 
-            ? "Click to log in and join the Heartverse"
-            : buttonMode === 'setup'
-            ? "Click to complete your profile setup"
-            : "Click to view your profile"
-        }
-        onMouseEnter={(e) => {
-          if (!authLoading && !profileLoading) {
-            try { sfx.play('hover', 0.8); } catch {}
-            e.currentTarget.style.transform = 'scale(1.05)';
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (!authLoading && !profileLoading) {
-            e.currentTarget.style.transform = 'scale(1)';
-          }
-        }}
-      >
-        {displayName}
-      </button>
+          onMouseEnter={(e) => {
+            if (!authLoading && !profileLoading) {
+              try { sfx.play('hover', 0.8); } catch {}
+              e.currentTarget.style.transform = 'scale(1.05)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!authLoading && !profileLoading) {
+              e.currentTarget.style.transform = 'scale(1)';
+            }
+          }}
+        >
+          {displayName}
+        </button>
+      </div>
 
       {/* Welcome Home Modal */}
       <WelcomeHomeModal 

@@ -205,7 +205,7 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
             fontWeight: 'bold'
           }}
         >
-          ENTER THE HEARTVERSE
+          WELCOME HOME
         </div>
         
         {/* Thin yellow neon line */}

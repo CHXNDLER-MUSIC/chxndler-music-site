@@ -97,7 +97,7 @@ const SONG_PLANETS: SongPlanet[] = [
 ];
 
 export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onClose, onPlanetClick }: PlanetMinimapProps) {
-  const [isCollapsed, setIsCollapsed] = React.useState(true); // Default to collapsed
+  const [isCollapsed, setIsCollapsed] = React.useState(false); // Default to expanded for better visibility
   const [selectedPlanet, setSelectedPlanet] = React.useState<string | null>(null);
 
   const handleClose = () => {
@@ -149,12 +149,13 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
   // Convert 3D positions to 2D minimap coordinates (top-down view)
   const convertTo2D = (position: [number, number, number]): { x: number; y: number } => {
     const [x, y, z] = position;
-    // Scale down and center in minimap (240px minimap size) 
+    // Scale down and center in minimap - responsive center point
     // For top-down view: X maps to X, Z maps to Y (Y is height, ignored in top view)
     const scale = 2.0;  // Further reduced scale for better orbital view
+    const centerOffset = isCollapsed ? 24 : 120; // Adjust center based on size
     return {
-      x: 120 + (x * scale),  // X axis (left-right)
-      y: 120 + (z * scale)   // Z axis becomes Y axis (forward-back becomes up-down)
+      x: centerOffset + (x * scale),  // X axis (left-right)
+      y: centerOffset + (z * scale)   // Z axis becomes Y axis (forward-back becomes up-down)
     };
   };
 
@@ -167,7 +168,7 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
   const minimapContent = (
     <div 
       className={`absolute bg-black/80 backdrop-blur-sm border-4 border-cyan-400 rounded-lg transition-all duration-300 ${
-        isCollapsed ? 'w-12 h-12' : 'w-60 h-60'
+        isCollapsed ? 'w-12 h-12' : 'w-60 h-60 sm:w-72 sm:h-72 lg:w-80 lg:h-80'
       }`} 
       style={{ 
         top: '0.75rem',
@@ -175,7 +176,7 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
         zIndex: 999999, 
         boxShadow: '0 0 20px rgba(56, 182, 255, 0.8)',
         pointerEvents: 'auto',
-        position: 'absolute'
+        position: 'fixed' // Use fixed positioning for better viewport coverage
       }}
     >
       {/* Toggle Collapse Button */}
@@ -350,13 +351,18 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
         </div>
 
         {/* Minimap label */}
-        <div className="absolute -bottom-2 left-0 text-[10px] text-cyan-400/90 font-mono font-bold">
+        <div className="absolute -bottom-2 left-0 text-[10px] text-cyan-400/90 font-mono font-bold animate-pulse">
           PLANET MAP
         </div>
 
         {/* Status indicator */}
-        <div className="absolute bottom-0 right-0 text-[8px] text-green-400/70 font-mono">
+        <div className="absolute bottom-0 right-0 text-[8px] text-green-400/70 font-mono animate-pulse">
           ● ACTIVE
+        </div>
+        
+        {/* Welcome hint for first-time users */}
+        <div className="absolute -bottom-8 left-0 right-0 text-[9px] text-cyan-300/60 font-mono text-center">
+          Click planets to navigate • Hover for info
         </div>
       </div>
         </div>
