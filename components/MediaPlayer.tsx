@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import LoginModal from "@/components/LoginModal";
 import { createPortal } from "react-dom";
-import { tracks as ALL, type Track } from "@/lib/songs-consolidated";
+import { tracks as ALL, type Track, type Song } from "@/lib/songs-consolidated";
 import { skyFor, verifyAllTrackSkies } from "@/lib/sky";
 import { track as gaTrack } from "@/lib/analytics";
 import { DEBUG_MEDIA, dlog, dwarn, dumpAudio } from "@/lib/debug";
@@ -355,7 +355,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     setIdx(startIndex);
     setTimeout(() => {
       try { if (a.readyState < 2) a.load(); } catch {}
-      if (cur.src) {
+      if (cur.sources && cur.sources.length > 0) {
         intentionalPlayRef.current = true; // Mark as intentional play
         a.play().then(() => { setPlaying(true); gaTrack("play", { slug: cur.slug }); })
                  .catch(() => setPlaying(false));
@@ -369,10 +369,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     if (DEBUG_MEDIA) { dlog('index change', { idx, title: cur?.title, slug: cur?.slug, autoPlayOnIndex }); dumpAudio(a, 'onIndexChange:before'); }
     
     // Send load song event to state machine
-    if (cur.src) {
+    if (cur.sources && cur.sources.length > 0) {
       stateMachine.current.send({ 
         type: 'LOAD_SONG', 
-        payload: { slug: cur.slug, src: cur.src } 
+        payload: { slug: cur.slug, src: cur.sources[0].src } 
       });
     }
     
@@ -401,16 +401,11 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     
 
     // Always load the song when index changes, but only auto-play if autoPlayOnIndex is true
-    if (cur.src) {
-      // Always set up the audio element with the new source
+    if (cur.sources && cur.sources.length > 0) {
+      // Always reload the audio element to pick up new sources
       try {
-        const want = String(cur.src || "");
-        const current = a.getAttribute("src") || a.src;
-        if (want && current !== want) {
-          a.setAttribute("src", want);
-          try { a.load(); } catch {}
-          if (DEBUG_MEDIA) dlog('index change: set src', want);
-        }
+        a.load(); // This will cause the audio element to re-evaluate the source elements
+        if (DEBUG_MEDIA) dlog('index change: loading new sources', cur.sources.map(s => s.src));
       } catch {}
       
       // Only auto-play if autoPlayOnIndex is enabled AND not initial mount
@@ -461,16 +456,11 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     }
     if (cur?.src) {
       // Ensure the audio element is pointing at the current track source
+      // Ensure the audio sources are loaded
       try {
-        const want = String(cur.src || "");
-        const current = a.getAttribute("src") || a.src;
-        
-        if (want && current !== want) {
-          
-          a.setAttribute("src", want);
-          // If we swapped the src, load the new one to be safe
-          try { a.load(); } catch {}
-          if (DEBUG_MEDIA) dlog('playSignal: set src', want);
+        if (cur.sources && cur.sources.length > 0) {
+          a.load(); // Reload to ensure sources are current
+          if (DEBUG_MEDIA) dlog('playSignal: loading sources', cur.sources.map(s => s.src));
         }
       } catch {}
       
@@ -511,7 +501,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       return;
     }
     // Fallback: find first track that has a local audio src
-    const withAudio = tracks.findIndex(t => !!t.src);
+    const withAudio = tracks.findIndex(t => (t.sources && t.sources.length > 0) || !!t.src);
     if (withAudio >= 0) {
       setIdx(withAudio);
       setTimeout(() => {
@@ -625,7 +615,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         }).catch(()=>{});
       } else {
         // Fallback to first with audio
-        const withAudio = tracks.findIndex(t => !!t.src);
+        const withAudio = tracks.findIndex(t => (t.sources && t.sources.length > 0) || !!t.src);
         if (withAudio >= 0) {
           setIdx(withAudio);
           // This will trigger index change effect which handles the warp sequence
@@ -694,10 +684,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       console.error('🎵 No audio element found in toggle');
       return;
     }
-    if (!cur.src) {
+    if (!cur.sources || cur.sources.length === 0) {
       
       // No local audio: jump to the first track with local audio and play
-      const withAudio = tracks.findIndex(t => !!t.src);
+      const withAudio = tracks.findIndex(t => t.sources && t.sources.length > 0);
       if (withAudio >= 0) {
         setIdx(withAudio);
         // Index change will handle loading and playing the new track
@@ -963,9 +953,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               try { a.currentTime = 0; } catch {}
               // Restore original source after unlock
               try { 
-                if (originalSrc) {
-                  a.src = originalSrc;
-                }
+                a.load(); // Reload sources instead of setting single src
                 a.muted = false; 
                 // Restore user volume (saved or last known)
                 try {
@@ -980,9 +968,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           .catch(() => {
             // Restore state on error
             try { 
-              if (originalSrc) {
-                a.src = originalSrc;
-              }
+              a.load(); // Reload sources instead of setting single src
               a.muted = false; 
               try {
                 const restore = Math.max(0, Math.min(1, lastNonZeroVolumeRef.current || volume || 1));
@@ -1086,9 +1072,12 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     neonAudio.volume = 0;
     try { neonAudio.controls = false; } catch {}
     try { neonAudio.style.display = 'none'; } catch {}
-    // Align sources
-    if (neonAudio.src !== mainAudio.src && mainAudio.src) {
-      try { neonAudio.src = mainAudio.src; } catch {}
+    // Align sources with main audio using first available source
+    if (cur.sources && cur.sources.length > 0) {
+      const primarySrc = cur.sources[0].src;
+      if (neonAudio.src !== primarySrc) {
+        try { neonAudio.src = primarySrc; } catch {}
+      }
     }
 
     const onPlay = () => {
@@ -1121,7 +1110,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       } catch {}
       try { neonAudio.pause(); } catch {}
     };
-  }, [cur?.src]);
+  }, [cur?.sources]);
 
   // Dial interactions moved to StationDialOverlay; keep keyboard + prev/next here
 
@@ -1221,7 +1210,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
 
         {/* Neon waveform visualizer (client-only canvas) */}
         <div style={{ marginTop: 8 }} data-neon-audio="1" ref={neonWrapRef}>
-          <NeonWaveform audioUrl={cur.src} element={neonElement} />
+          <NeonWaveform audioUrl={cur.sources?.[0]?.src || cur.src} element={neonElement} />
         </div>
 
         {/* Element-based glowing progress bar directly below waveform */}
@@ -1885,13 +1874,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                       const a = audioRef.current;
                       if (!a) return;
 
-                      // Ensure the correct source is loaded
+                      // Ensure the correct sources are loaded
                       try {
-                        const want = String(selectedTrack.src || "");
-                        const current = a.getAttribute("src") || a.src;
-                        if (want && current !== want) {
-                          a.setAttribute("src", want);
-                          try { a.load(); } catch {}
+                        if (selectedTrack.sources && selectedTrack.sources.length > 0) {
+                          a.load(); // Reload to pick up new sources
                         }
                       } catch {}
 
@@ -1943,7 +1929,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       {typeof document !== 'undefined' ? createPortal(
         <audio
           ref={audioRef}
-          src={cur?.src || ''}
           controls={false}
           className="media-dock-audio"
           data-audio-player="1"
@@ -2054,7 +2039,16 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             
           }}
           style={{ position:'fixed', width:0, height:0, opacity:0, pointerEvents:'none', left:0, top:0 }}
-        />,
+        >
+          {cur?.sources?.map((source) => (
+            <source
+              key={source.format}
+              src={source.src}
+              type={source.mimeType}
+            />
+          ))}
+          Your browser does not support the audio element.
+        </audio>,
         document.body
       ) : null}
 

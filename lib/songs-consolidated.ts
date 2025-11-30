@@ -146,6 +146,65 @@ function getElementForSong(title: string, slug: string): ElementKind {
   return "WATER";
 }
 
+// Function to build audio sources array for dual format support
+function buildAudioSources(providedSrc: string | undefined, slug: string): AudioSource[] {
+  const sources: AudioSource[] = [];
+  
+  // If a specific src is provided, use it and try to infer both formats
+  if (providedSrc) {
+    if (providedSrc.endsWith('.opus')) {
+      // OPUS first for modern browsers
+      sources.push({
+        format: "opus",
+        src: providedSrc,
+        mimeType: "audio/ogg; codecs=opus",
+      });
+      // Try to find corresponding MP3
+      const mp3Src = providedSrc.replace(/\.opus$/, '.mp3');
+      sources.push({
+        format: "mp3",
+        src: mp3Src,
+        mimeType: "audio/mpeg",
+      });
+    } else if (providedSrc.endsWith('.mp3')) {
+      // Try to find corresponding OPUS first
+      const opusSrc = providedSrc.replace(/\.mp3$/, '.opus');
+      sources.push({
+        format: "opus",
+        src: opusSrc,
+        mimeType: "audio/ogg; codecs=opus",
+      });
+      // Then MP3
+      sources.push({
+        format: "mp3",
+        src: providedSrc,
+        mimeType: "audio/mpeg",
+      });
+    } else {
+      // Unknown format, just add as-is with generic MIME type
+      sources.push({
+        format: "mp3", // Default to mp3
+        src: providedSrc,
+        mimeType: "audio/mpeg",
+      });
+    }
+  } else {
+    // No specific src provided, use defaults with both formats
+    sources.push({
+      format: "opus",
+      src: `/tracks/${slug}.opus`,
+      mimeType: "audio/ogg; codecs=opus",
+    });
+    sources.push({
+      format: "mp3",
+      src: `/tracks/${slug}.mp3`,
+      mimeType: "audio/mpeg",
+    });
+  }
+  
+  return sources;
+}
+
 const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" | "sources">[] = [
   { title: "BABY", spotify:"https://open.spotify.com/track/3UEVjChARWDbY4ruOIbIl3", apple:"https://music.apple.com/us/album/baby/1823220422?i=1823220423", youtube:"https://youtu.be/RqBs_MYhM6c", cover: "/covers/BABY.webp", src: "/tracks/baby.opus", sections: [
     { time: 15.8, label: "Verse 1", kind: "verse" },
@@ -227,13 +286,18 @@ const MAPPED = RAW.map((t, idx) => {
   
   // Default to local cover path when a cover isn't provided
   const cover = t.cover ?? `/cover/${base}.png`;
+  
+  // Build audio sources for dual format support
+  const sources = buildAudioSources(t.src, base);
 
   return {
     ...t,
     slug: base,
+    // Legacy fields for backward compatibility
     type: t.src?.endsWith('.opus') ? "audio/ogg" : "audio/mpeg",
-    // Match existing asset locations under /public
     src: t.src ?? `/tracks/${base}.opus`,
+    // New dual format support
+    sources,
     cover,
     subtitle: tagline ?? `Channel ${idx + 1}`,
     element,

@@ -8,6 +8,7 @@ import PageViewTracker from "@/components/PageViewTracker";
 import { isAnalyticsDisabled } from "@/lib/analytics";
 import { Suspense } from "react";
 import { AudioProvider } from "@/app/providers/AudioProvider";
+import { AuthProvider } from "@/app/providers/AuthProvider";
 import LazyLoadEnhancer from "@/components/LazyLoadEnhancer";
 import OnboardingEntryGate from "@/components/OnboardingEntryGate";
 import WhatShouldWeCallYouModal from "@/components/WhatShouldWeCallYouModal";
@@ -125,10 +126,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         ) : null}
       </head>
       <body className="font-sans">
-        <ProfileProvider>
-          <AudioProvider>
-            <MenuStateProvider>
-              <TourProvider>
+        <AuthProvider>
+          <ProfileProvider>
+            <AudioProvider>
+              <MenuStateProvider>
+                <TourProvider>
             {!analyticsOff && (
               <Suspense fallback={null}>
                 <PageViewTracker />
@@ -148,10 +150,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
             {/* Manual replay button (always available once a profile exists) */}
             <TourReplayFloating />
-              </TourProvider>
-            </MenuStateProvider>
-          </AudioProvider>
-        </ProfileProvider>
+                </TourProvider>
+              </MenuStateProvider>
+            </AudioProvider>
+          </ProfileProvider>
+        </AuthProvider>
         {mpId && !analyticsOff ? (
           <noscript>
             <img height="1" width="1" style={{ display: "none" }} src={`https://www.facebook.com/tr?id=${mpId}&noscript=1`} alt="" />

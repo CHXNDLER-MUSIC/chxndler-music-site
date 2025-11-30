@@ -1493,18 +1493,6 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             />
           )}
         </div>
-        {/* Show light beam base on initial page too */}
-        <div 
-          className="fixed z-[100] pointer-events-none lightbeam-base-bg"
-          style={{ 
-            top: 0, 
-            left: 0, 
-            right: 0, 
-            bottom: 0, 
-            opacity: 1 
-          }}
-          aria-hidden="true" 
-        />
       </main>
     );
   }

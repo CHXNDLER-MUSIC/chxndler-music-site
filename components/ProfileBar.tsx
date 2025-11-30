@@ -23,6 +23,7 @@ import GlowingHamburgerMenu from '@/components/GlowingHamburgerMenu';
 import JourneyModal from '@/components/JourneyModal';
 import SoulStarJournal from '@/components/SoulStarJournal';
 import ProfilePopover from '@/components/ProfilePopover';
+import AuthButton from '@/components/AuthButton';
 
 interface Profile {
   id: string;
@@ -77,11 +78,7 @@ export default function ProfileBar({
   const [journalCompletedToday, setJournalCompletedToday] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showSignInPopup, setShowSignInPopup] = useState(false);
-  const [showWelcomeHome, setShowWelcomeHome] = useState(false);
-  const [nameButtonTooltip, setNameButtonTooltip] = useState('');
   const [showLoginTooltip, setShowLoginTooltip] = useState(false);
-  const [showProfilePopover, setShowProfilePopover] = useState(false);
-  const nameButtonRef = useRef<HTMLButtonElement>(null);
 
   // Respond to profile refresh trigger
   useEffect(() => {
@@ -118,17 +115,6 @@ export default function ProfileBar({
     });
   }, [contextProfile, loading, currentUser]);
 
-  // Debug button display changes
-  useEffect(() => {
-    const buttonInfo = getButtonDisplayInfo();
-    console.log('ProfileBar: Button display info:', {
-      text: buttonInfo.text,
-      mode: buttonInfo.mode,
-      hasUser: !!currentUser,
-      profileName: contextProfile?.name,
-      profileElement: contextProfile?.element
-    });
-  }, [currentUser, contextProfile, savedAlienName, savedAlienElement]);
 
   // Check if journal was completed today
   const checkJournalCompletion = async () => {
@@ -202,36 +188,6 @@ export default function ProfileBar({
     setJournalCompletedToday(completed);
   };
 
-  // Handle name button click with authentication checks
-  const handleNameButtonClick = () => {
-    try { sfx.play('click', 0.4); } catch {}
-
-    if (loading) return;
-
-    switch (buttonMode) {
-      case 'login':
-        // Mode A: Not logged in - show Welcome Home modal
-        try { onBeamColorChange?.('blue'); } catch {}
-        setShowWelcomeHome(true);
-        break;
-        
-      case 'setup':
-        // Mode C: Logged in but profile incomplete - restart onboarding flow
-        if (!contextProfile?.name) {
-          // Missing name - open name prompt
-          openNamePrompt();
-        } else if (!contextProfile?.element) {
-          // Missing element - open element selection
-          openElementSelection();
-        }
-        break;
-        
-      case 'profile':
-        // Mode B: Complete profile - show profile popover
-        setShowProfilePopover(!showProfilePopover);
-        break;
-    }
-  };
   
   // IMPORTANT: Do not render anything until the user has entered
   // Guard before any loading UI to prevent initial flash on first load
@@ -482,50 +438,7 @@ export default function ProfileBar({
     }
   };
   
-  // Determine button display mode
-  const getButtonDisplayInfo = () => {
-    // Mode A: Not logged in
-    if (!currentUser) {
-      return { text: 'LOG IN', mode: 'login' as const };
-    }
-    
-    // Check profile data (prioritize contextProfile, fallback to saved values)
-    const profileName = contextProfile?.name || savedAlienName;
-    const profileElement = contextProfile?.element || savedAlienElement;
-    
-    // Mode C: Logged in but missing name
-    if (!profileName) {
-      return { text: 'Finish setup', mode: 'setup' as const };
-    }
-    
-    // Mode B1: Logged in with name but no element - show name only
-    if (!profileElement) {
-      return { text: profileName, mode: 'setup' as const };
-    }
-    
-    // Mode B2: Logged in with complete profile - show name and element
-    const elementName = profileElement.charAt(0).toUpperCase() + profileElement.slice(1);
-    return { 
-      text: `${profileName} • ${elementName}`, 
-      mode: 'profile' as const 
-    };
-  };
-
-  const { text: displayName, mode: buttonMode } = getButtonDisplayInfo();
   const currentElementData = ELEMENTS.find(e => e.name === currentElement) || ELEMENTS[0];
-
-  // Get username text color based on selected element
-  const getUsernameColor = (element: string) => {
-    switch (element) {
-      case 'heart': return '#FF69B4'; // Pink
-      case 'water': return '#00BFFF'; // Blue
-      case 'lightning': return '#FFD700'; // Yellow
-      case 'darkness': return '#FFFFFF'; // White
-      default: return '#FFFFFF';
-    }
-  };
-
-
 
   return (
     <div 
@@ -599,49 +512,9 @@ export default function ProfileBar({
               />
             </div>
 
-            {/* Username - Clickable */}
+            {/* Auth Button - Clickable */}
             <div className="relative">
-              <button 
-                ref={nameButtonRef}
-                data-name-button
-                onClick={handleNameButtonClick}
-                onKeyDown={(e) => {
-                  if ((e.key === 'Enter' || e.key === ' ') && !loading) {
-                    e.preventDefault();
-                    handleNameButtonClick();
-                  }
-                }}
-                disabled={loading}
-                className="font-medium text-lg relative flex-shrink-0 ml-3 transition-all duration-200 cursor-pointer bg-transparent border-none focus:outline-none disabled:opacity-50 rounded"
-                style={{ 
-                  color: getUsernameColor(currentElement),
-                  filter: 'brightness(1.2)',
-                  padding: '0',
-                  background: 'transparent',
-                  transition: 'all 0.3s ease'
-                }}
-                title={
-                  buttonMode === 'login' 
-                    ? "Click to log in and join the Heartverse"
-                    : buttonMode === 'setup'
-                    ? "Click to complete your profile setup"
-                    : "Click to view your profile"
-                }
-                onMouseEnter={(e) => {
-                  if (!loading) {
-                    try { sfx.play('hover', 0.8); } catch {}
-                    e.currentTarget.style.transform = 'scale(1.05)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!loading) {
-                    e.currentTarget.style.transform = 'scale(1)';
-                  }
-                }}
-              >
-                {displayName}
-              </button>
-
+              <AuthButton />
             </div>
 
           </div>
@@ -1364,12 +1237,6 @@ export default function ProfileBar({
         document.body
       )}
 
-      {/* Welcome Home Modal */}
-      <WelcomeHomeModal 
-        open={showWelcomeHome} 
-        onClose={() => setShowWelcomeHome(false)} 
-      />
-
       {/* Sign In Popup for unauthenticated users */}
       <JoinUsPopup 
         isOpen={showSignInPopup} 
@@ -1389,13 +1256,6 @@ export default function ProfileBar({
           setIsJourneyModalOpen(false);
           try { onOpenBlueDisplay?.(); } catch {}
         }} 
-      />
-
-      {/* Profile Popover - Triggered by clicking username */}
-      <ProfilePopover 
-        isOpen={showProfilePopover}
-        onClose={() => setShowProfilePopover(false)}
-        anchorElement={nameButtonRef.current}
       />
 
     </div>

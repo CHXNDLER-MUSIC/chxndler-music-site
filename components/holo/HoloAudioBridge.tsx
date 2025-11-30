@@ -43,7 +43,7 @@ export default function HoloAudioBridge() {
       return;
     }
     
-    console.log('🎵 HoloAudioBridge: Selected track:', track.title, 'src:', track.src);
+    console.log('🎵 HoloAudioBridge: Selected track:', track.title, 'sources:', track.sources?.map(s => s.src) || [track.src]);
     setCurrentTrack(track);
   }, [mainId, songs]);
 
@@ -122,7 +122,8 @@ export default function HoloAudioBridge() {
     }
     
     // Don't load the track immediately - wait until after warp effect
-    if (currentTrack.src) {
+    const primarySrc = (currentTrack as any).sources?.[0]?.src || (currentTrack as any).src;
+    if (primarySrc) {
       console.log('🎵 HoloAudioBridge: Starting warp sequence for:', currentTrack.title);
       
       // Visual feedback that warp is happening
@@ -192,13 +193,14 @@ export default function HoloAudioBridge() {
           }
 
           // NOW load and play the track after warp effects complete
-          if (!currentTrack.src) {
-            console.error('🎵 HoloAudioBridge: currentTrack.src is empty/undefined for track:', currentTrack.title);
+          const trackSrc = (currentTrack as any).sources?.[0]?.src || (currentTrack as any).src;
+          if (!trackSrc) {
+            console.error('🎵 HoloAudioBridge: No audio source available for track:', currentTrack.title);
             return;
           }
           
-          console.log('🎵 HoloAudioBridge: Loading track:', currentTrack.src);
-          a.src = currentTrack.src;
+          console.log('🎵 HoloAudioBridge: Loading track:', trackSrc);
+          a.src = trackSrc;
           a.load();
 
           // After SFX sequence, start the song with autoplay fallbacks and only

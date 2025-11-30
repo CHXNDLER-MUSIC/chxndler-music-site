@@ -2332,11 +2332,8 @@ export default function HUDPanel({
                   }}
                 >
                   {/* Show all planets on homepage (no currentId), and focus when a song is selected */}
-                  {preferRaw3D ? (
-                    <PlanetSystemRaw showAll={showAllPlanets || !currentId} hideUntilPlaying={!!hidePlanetsUntilPlaying} onSongChange={onSongChange} />
-                  ) : (
-                    <PlanetSystem showAll={showAllPlanets || !currentId} hideUntilPlaying={!!hidePlanetsUntilPlaying} onSongChange={onSongChange} />
-                  )}
+                  {/* Temporarily force only the main PlanetSystem to debug duplication */}
+                  <PlanetSystem showAll={showAllPlanets || !currentId} hideUntilPlaying={!!hidePlanetsUntilPlaying} onSongChange={onSongChange} />
                 </ErrorBoundary>
               </div>
           </div>

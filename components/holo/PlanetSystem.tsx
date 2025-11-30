@@ -6,7 +6,6 @@ import { AdditiveBlending, Group as ThreeGroup, SRGBColorSpace, Vector3, SpriteM
 import { playerStore } from "@/store/usePlayerStore";
 import Planet from "@/components/holo/Planet";
 import HeartStarPlanet from "@/components/HeartStarPlanet";
-import ElementalPlanet from "@/components/holo/ElementalPlanet";
 import { computePlanetLayout } from "@/lib/planetLayout";
 import { buildPlanetSongs } from "@/lib/planets";
 import { getEntriesByRing, getPlanetEntry } from "@/lib/planetRegistry";
@@ -43,80 +42,6 @@ import { SONG_ORBIT_RADIUS } from "@/lib/planetConfig";
 const songOrbitRadius = SONG_ORBIT_RADIUS * 3; // Increased song orbit radius
 
 
-// Elemental Planet with Glow component
-function ElementPlanetWithGlow({ 
-  element, 
-  position, 
-  orbitRef 
-}: { 
-  element: ElementCode; 
-  position: [number, number, number];
-  orbitRef: React.RefObject<ThreeGroup>;
-}) {
-  const glowRef = useRef<any>(null);
-  
-  const color = elementColors[element];
-  const glowColor = elementGlows[element];
-  
-  return (
-    <group position={position}>
-      {/* Glow background - renderOrder 2 */}
-      <sprite ref={glowRef} scale={[60, 60, 1]} renderOrder={2}>
-        <spriteMaterial
-          transparent={true}
-          depthWrite={false}
-          depthTest={true}
-          color={glowColor}
-          opacity={0.6}
-          blending={AdditiveBlending}
-        />
-      </sprite>
-      
-      {/* Element planet - renderOrder 1 - LARGER SIZE */}
-      <mesh renderOrder={1} position={[0, 0, 0]}>
-        <sphereGeometry args={[8.0, 32, 32]} />
-        <meshStandardMaterial 
-          color={color}
-          emissive={color}
-          emissiveIntensity={3.0}
-          metalness={0.1}
-          roughness={0.2}
-        />
-      </mesh>
-      
-      
-      {/* Element label - always visible */}
-      <Html position={[0, 32, 0]} center>
-        <div style={{ 
-          color: color, 
-          fontSize: '18px', 
-          fontWeight: 'bold',
-          textShadow: '2px 2px 4px black',
-          pointerEvents: 'none',
-          textAlign: 'center',
-          fontFamily: 'Arial, sans-serif',
-          letterSpacing: '1px'
-        }}>
-          {element.toUpperCase()}
-        </div>
-      </Html>
-      
-      {/* Diagnostic bounding box */}
-      {SHOW_ORBITS && (
-        <mesh renderOrder={0}>
-          <boxGeometry args={[8, 8, 8]} />
-          <meshBasicMaterial 
-            color={color} 
-            transparent={true} 
-            opacity={0.2} 
-            wireframe={true}
-            depthWrite={false}
-          />
-        </mesh>
-      )}
-    </group>
-  );
-}
 
 // Song orbit group that rotates around an element planet
 function SongOrbitGroup({ 
@@ -598,16 +523,16 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
       {/* Minimap Toggle Button */}
       <button
         onClick={() => setIsMinimapVisible(!isMinimapVisible)}
-        className="absolute top-4 right-20 bg-cyan-500/20 hover:bg-cyan-500/40 border border-cyan-400/50 rounded text-cyan-400 text-sm font-bold transition-colors duration-200 px-3 py-2 flex items-center gap-2"
+        className="absolute top-4 right-4 bg-cyan-500/20 hover:bg-cyan-500/40 border border-cyan-400/50 rounded text-cyan-400 text-xs font-bold transition-colors duration-200 px-2 py-1 flex items-center gap-1"
         style={{ zIndex: 999998 }}
         title={isMinimapVisible ? "Hide minimap" : "Show minimap"}
       >
         <span className="text-xs">🗺️</span>
-        {isMinimapVisible ? "Hide Map" : "Show Map"}
+        <span className="text-xs">{isMinimapVisible ? "Hide" : "Show"}</span>
       </button>
       
-      {/* 2D Minimap overlay - show when displaying all planets or when multiple songs exist */}
-      {((actualShouldShowAll || shouldShowAll) || songs.length > 1) && isMinimapVisible && (
+      {/* 2D Minimap overlay - show when enabled */}
+      {isMinimapVisible && (
         <PlanetMinimap 
           currentMainId={mainId} 
           hoverId={hoverId} 

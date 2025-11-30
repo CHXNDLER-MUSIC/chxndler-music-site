@@ -2902,6 +2902,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
     <div
       ref={mountRef}
       className="absolute inset-0"
+      data-planet-system="true"
       style={{
         background: 'transparent',
         // Gate visibility by global planetsVisible and respect 'hidden' mode (during warp)
@@ -2913,16 +2914,16 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
       {/* Minimap Toggle Button */}
       <button
         onClick={() => setIsMinimapVisible(!isMinimapVisible)}
-        className="absolute top-4 right-20 bg-cyan-500/20 hover:bg-cyan-500/40 border border-cyan-400/50 rounded text-cyan-400 text-sm font-bold transition-colors duration-200 px-3 py-2 flex items-center gap-2"
+        className="absolute top-4 right-4 bg-cyan-500/20 hover:bg-cyan-500/40 border border-cyan-400/50 rounded text-cyan-400 text-xs font-bold transition-colors duration-200 px-2 py-1 flex items-center gap-1"
         style={{ zIndex: 999998 }}
         title={isMinimapVisible ? "Hide minimap" : "Show minimap"}
       >
         <span className="text-xs">🗺️</span>
-        {isMinimapVisible ? "Hide Map" : "Show Map"}
+        <span className="text-xs">{isMinimapVisible ? "Hide" : "Show"}</span>
       </button>
       
-      {/* 2D Minimap overlay - show when displaying all planets or when multiple songs exist */}
-      {(showAll || songs.length > 1) && isMinimapVisible && (
+      {/* 2D Minimap overlay - show when enabled */}
+      {isMinimapVisible && (
         <PlanetMinimap 
           currentMainId={mainId} 
           hoverId={hoverId} 

@@ -658,6 +658,11 @@ export default function SteeringWheelOverlay({
                     }
                   } else {
                     // Menu is closing: turn displays off without auto-opening blue
+                    // Play button sound when closing
+                    try {
+                      const a = buttonRef.current;
+                      if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
+                    } catch {}
                     if (activeBeamColor === 'yellow') {
                       // Don't flash blue - just turn off displays then reset color after delay
                       onBeamColorChange?.('off'); // tell parent to turn ALL displays off

@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sfx";
 import { PLANET_CONFIGS, getPlanetsByType, getPlanetsByElement, ELEMENT_POSITIONS, ELEMENT_COLORS, SONG_ORBIT_RADIUS, type ElementType } from "@/lib/planetConfig";
 
@@ -99,19 +98,7 @@ const SONG_PLANETS: SongPlanet[] = [
 
 export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onClose, onPlanetClick }: PlanetMinimapProps) {
   const [isCollapsed, setIsCollapsed] = React.useState(true); // Default to collapsed
-  const [portalContainer, setPortalContainer] = React.useState<HTMLElement | null>(null);
   const [selectedPlanet, setSelectedPlanet] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    // Find the parent container of the 3D display instead of document.body
-    const planetSystemContainer = document.querySelector('[data-planet-system]');
-    if (planetSystemContainer) {
-      setPortalContainer(planetSystemContainer as HTMLElement);
-    } else {
-      // Fallback to document.body if container not found
-      setPortalContainer(document.body);
-    }
-  }, []);
 
   const handleClose = () => {
     sfx.play('close', 0.8);
@@ -183,8 +170,8 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
         isCollapsed ? 'w-12 h-12' : 'w-60 h-60'
       }`} 
       style={{ 
-        top: '1rem',
-        right: '1rem',
+        top: '0.75rem',
+        right: '0.75rem',
         zIndex: 999999, 
         boxShadow: '0 0 20px rgba(56, 182, 255, 0.8)',
         pointerEvents: 'auto',
@@ -396,6 +383,6 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
     </div>
   );
 
-  // Render using portal to ensure it's above Three.js Canvas
-  return portalContainer ? createPortal(minimapContent, portalContainer) : null;
+  // Render directly instead of using portal for better positioning control
+  return minimapContent;
 }
