@@ -17,7 +17,12 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   
-  const { updateProfile } = useProfile();
+  const { profile, updateProfile } = useProfile();
+  
+  // Safety check: Never show welcome modal for logged-in users
+  if (profile?.id) {
+    return null;
+  }
   
   // Audio is now handled by audioHeartverse controller when modal opens
   // No local audio management needed - the controller handles playback

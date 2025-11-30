@@ -1080,9 +1080,12 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       
     } catch (error) {
       console.error('Error in handleStartClick:', error);
-      // On error, reset warp state and show Welcome Home modal
+      // On error, reset warp state and only show Welcome Home modal for non-logged in users
       setIsWarping(false);
-      setShowWelcomeHomeModal(true);
+      // Only show modal if user is not logged in
+      if (!profile?.id) {
+        setShowWelcomeHomeModal(true);
+      }
     }
   }, [profile?.profile_complete, isWarping, openNamePrompt]);
 
@@ -2376,8 +2379,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         )}
       </AnimatePresence>
 
-      {/* Hamburger Menu for CODE access */}
-      <GlowingHamburgerMenuWrapper hidden={homeMode} />
+      {/* Hamburger Menu for CODE access - Only show after profile name loads */}
+      <GlowingHamburgerMenuWrapper hidden={homeMode || !profile?.name} />
 
     </main>
   );

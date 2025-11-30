@@ -36,6 +36,7 @@ import { buildPlanetSongs } from "@/lib/planets";
 import SongDropdown from "@/components/SongDropdown";
 import SimpleWaveform from "@/components/SimpleWaveform";
 import WaveformVisualizer, { ELEMENT_COLORS } from "@/components/WaveformVisualizer";
+import SpotifyProgressBar from "@/components/SpotifyProgressBar";
 import DevErrorLogger from "@/components/DevErrorLogger";
 // Lazy-load 3D systems on client only to avoid early evaluation issues
 // Prefer R3F-based system when compatible; otherwise fall back to raw Three.js
@@ -2457,35 +2458,17 @@ export default function HUDPanel({
               return null;
             })()}
             
-            {/* White Neon Progress Track - positioned directly below cover art */}
-            {(currentId || !currentId) && (
-              <div className="white-neon-track" style={{
-                position: 'absolute',
-                top: '120px', // Position below the cover art (110px size + 10px gap)
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: '80px', // Match cover art width approximately
-                height: '3px',
-                background: 'rgba(255, 255, 255, 0.2)',
-                borderRadius: '2px',
-                overflow: 'hidden',
-                boxShadow: '0 0 8px rgba(255, 255, 255, 0.3)',
-                zIndex: 6
-              }}>
-                <div 
-                  className="track-progress"
-                  style={{
-                    height: '100%',
-                    background: '#ffffff',
-                    width: `${duration > 0 ? (progress / duration) * 100 : 0}%`,
-                    borderRadius: '2px',
-                    boxShadow: '0 0 12px rgba(255, 255, 255, 0.8), 0 0 20px rgba(255, 255, 255, 0.5)',
-                    filter: 'brightness(1.3) drop-shadow(0 0 6px rgba(255, 255, 255, 0.7))',
-                    transition: 'width 0.1s ease-out'
-                  }}
-                />
-              </div>
-            )}
+            {/* Spotify-style Progress Bar - positioned directly below cover art */}
+            <div style={{
+              position: 'absolute',
+              top: '120px', // Position below the cover art (110px size + 10px gap)
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '110px', // Match cover art width
+              zIndex: 6
+            }}>
+              <SpotifyProgressBar />
+            </div>
           </div>
 
           {/* Waveform Media Player - positioned below dropdown with proper spacing */}

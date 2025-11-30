@@ -445,9 +445,10 @@ export default function ProfileBar({
       className="fixed top-0 left-0 right-0 z-[300] h-16 bg-black/40 backdrop-blur-lg border-b border-white/20 transition-opacity duration-500 ease-in-out"
     >
       <div className="relative h-full">
-        {/* Hamburger Menu - Far Top Left */}
-        <div className="absolute top-2 left-1 z-10">
-          <GlowingHamburgerMenu
+        {/* Hamburger Menu - Far Top Left - Only show after profile name loads */}
+        {contextProfile?.name && (
+          <div className="absolute top-2 left-1 z-10">
+            <GlowingHamburgerMenu
             onItemClick={(label) => {
               console.log(`Menu item clicked: ${label}`);
               
@@ -492,7 +493,8 @@ export default function ProfileBar({
               }
             }}
           />
-        </div>
+          </div>
+        )}
 
         {/* Main Flex Layout */}
         <div className="flex items-center justify-between h-full pl-16 sm:pl-20 pr-2 min-w-0">
