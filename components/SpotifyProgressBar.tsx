@@ -253,10 +253,8 @@ const SpotifyProgressBar: React.FC<SpotifyProgressBarProps> = ({
     document.addEventListener('mouseup', handleMouseUp);
   }, [getTimeFromPosition, duration, currentTime]);
 
-  // Don't render if no song is playing or no duration
-  if (!currentSong || !duration) {
-    return null;
-  }
+  // Always render, but show different states based on content
+  const hasActiveSong = currentSong && duration > 0;
 
   return (
     <div 
@@ -269,47 +267,49 @@ const SpotifyProgressBar: React.FC<SpotifyProgressBarProps> = ({
     >
       {/* Time displays */}
       <div className="flex items-center justify-between text-xs mb-2" style={{ color: '#B3B3B3' }}>
-        <span>{formatTime(currentTime)}</span>
-        <span>{formatTime(duration)}</span>
+        <span>{hasActiveSong ? formatTime(currentTime) : '0:00'}</span>
+        <span>{hasActiveSong ? formatTime(duration) : '0:00'}</span>
       </div>
       
       {/* Progress bar */}
       <div 
         ref={progressBarRef}
         className="relative w-full h-1 cursor-pointer group rounded-full"
-        onMouseMove={handleMouseMove}
-        onMouseEnter={() => setIsHovering(true)}
-        onMouseLeave={() => setIsHovering(false)}
-        onClick={handleClick}
-        onMouseDown={handleMouseDown}
+        onMouseMove={hasActiveSong ? handleMouseMove : undefined}
+        onMouseEnter={() => hasActiveSong && setIsHovering(true)}
+        onMouseLeave={() => hasActiveSong && setIsHovering(false)}
+        onClick={hasActiveSong ? handleClick : undefined}
+        onMouseDown={hasActiveSong ? handleMouseDown : undefined}
         style={{ backgroundColor: 'rgba(255, 255, 255, 0.3)' }}
       >
         {/* Progress fill */}
         <div 
           className="absolute left-0 top-0 h-full rounded-full transition-all duration-150"
           style={{ 
-            width: `${Math.min(progressPercentage, 100)}%`,
+            width: hasActiveSong ? `${Math.min(progressPercentage, 100)}%` : '0%',
             backgroundColor: currentElementColor,
-            boxShadow: `0 0 6px ${currentElementColor}80, 0 0 12px ${currentElementColor}40`,
+            boxShadow: hasActiveSong ? `0 0 6px ${currentElementColor}80, 0 0 12px ${currentElementColor}40` : 'none',
           }}
         />
         
         {/* Progress handle */}
-        <div 
-          className="absolute top-1/2 w-3 h-3 rounded-full transition-all duration-150 pointer-events-none"
-          style={{ 
-            left: `${Math.min(progressPercentage, 100)}%`,
-            transform: 'translateX(-50%) translateY(-50%)',
-            backgroundColor: currentElementColor,
-            boxShadow: `0 0 4px ${currentElementColor}, 0 2px 4px rgba(0,0,0,0.3)`,
-            border: '2px solid white',
-            opacity: isHovering || isDragging ? 1 : 0,
-            scale: isHovering || isDragging ? 1 : 0.8
-          }}
-        />
+        {hasActiveSong && (
+          <div 
+            className="absolute top-1/2 w-3 h-3 rounded-full transition-all duration-150 pointer-events-none"
+            style={{ 
+              left: `${Math.min(progressPercentage, 100)}%`,
+              transform: 'translateX(-50%) translateY(-50%)',
+              backgroundColor: currentElementColor,
+              boxShadow: `0 0 4px ${currentElementColor}, 0 2px 4px rgba(0,0,0,0.3)`,
+              border: '2px solid white',
+              opacity: isHovering || isDragging ? 1 : 0,
+              scale: isHovering || isDragging ? 1 : 0.8
+            }}
+          />
+        )}
         
         {/* Hover indicator */}
-        {isHovering && !isDragging && (
+        {hasActiveSong && isHovering && !isDragging && (
           <>
             <div 
               className="absolute top-1/2 w-3 h-3 bg-white rounded-full transition-all duration-75 pointer-events-none"
