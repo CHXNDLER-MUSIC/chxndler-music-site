@@ -115,8 +115,8 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "T
   };
 
   return (
-    <div className="border-t border-cyan-400/20 p-3">
-      <form onSubmit={handleSubmit} className="space-y-2">
+    <div className="border-t border-cyan-400/20 p-2">
+      <form onSubmit={handleSubmit}>
 
         {/* Message Input */}
         <div className="flex items-end space-x-2">
@@ -135,8 +135,10 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "T
               disabled={disabled}
               maxLength={500}
               rows={1}
-              className="w-full resize-none rounded-lg px-3 py-2 text-sm transition-all duration-200 focus:outline-none"
+              className="w-full resize-none rounded-lg px-3 py-1.5 text-sm transition-all duration-200 focus:outline-none"
               style={{
+                minHeight: '36px',
+                maxHeight: '36px',
                 background: 'rgba(0, 0, 0, 0.6)',
                 border: `2px solid ${isFocused ? '#F2EF1D' : 'rgba(242, 239, 29, 0.3)'}`,
                 color: '#F2EF1D',
@@ -146,9 +148,8 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "T
                   : '0 0 10px rgba(242, 239, 29, 0.2)'
               }}
               onInput={(e) => {
-                // Auto-resize textarea
-                e.target.style.height = 'auto';
-                e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                // Keep textarea at fixed height
+                e.target.style.height = '36px';
               }}
             />
             
@@ -169,8 +170,9 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "T
           <button
             type="submit"
             disabled={disabled || !message.trim()}
-            className="px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex-shrink-0"
+            className="px-3 py-1.5 rounded-lg font-semibold text-sm transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex-shrink-0"
             style={{
+              height: '36px',
               background: disabled || !message.trim() 
                 ? 'rgba(128, 128, 128, 0.1)'
                 : 'transparent',

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ElementIcon } from '@/lib/elementIcons';
 import { getElementColor, formatChatTimestamp, sanitizeMessage } from '@/lib/supabase/chat';
@@ -12,11 +12,28 @@ import { getElementColor, formatChatTimestamp, sanitizeMessage } from '@/lib/sup
 export default function MessageList({ messages, onUserClick, loading }) {
   const messagesEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
+  const [isNearBottom, setIsNearBottom] = useState(true);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Check if user is near bottom of chat
+  const checkIfNearBottom = () => {
+    if (!scrollContainerRef.current) return true;
+    
+    const container = scrollContainerRef.current;
+    const threshold = 100; // pixels from bottom
+    const isNear = container.scrollTop + container.clientHeight >= container.scrollHeight - threshold;
+    setIsNearBottom(isNear);
+    return isNear;
+  };
+
+  // Auto-scroll to bottom only when user is near bottom or for initial load
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (messages.length === 0) return;
+    
+    // Always scroll for initial load or if user is near bottom
+    if (isNearBottom || messages.length <= 1) {
+      scrollToBottom();
+    }
+  }, [messages, isNearBottom]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -43,6 +60,7 @@ export default function MessageList({ messages, onUserClick, loading }) {
         scrollbarWidth: 'thin',
         scrollbarColor: 'rgba(0, 255, 255, 0.3) transparent'
       }}
+      onScroll={checkIfNearBottom}
     >
       <AnimatePresence initial={false}>
         {messages.map((message, index) => (

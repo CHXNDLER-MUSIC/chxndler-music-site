@@ -458,6 +458,23 @@ export default function ChatPanel({ isOpen, onClose }) {
     
     // For authenticated users with complete profiles, send via service
     if (user && profile?.name) {
+      // Add message locally immediately for instant feedback
+      const authenticatedMessage = {
+        id: `auth-${user.id}-${Date.now()}`,
+        user_id: user.id,
+        message: messageText.trim(),
+        message_type: 'message',
+        created_at: new Date().toISOString(),
+        user_profile: {
+          name: profile.name,
+          element: profile.element || null,
+          avatar_badge_id: profile.avatar_badge_id || null
+        }
+      };
+      
+      console.log('🔥 Adding authenticated message locally:', authenticatedMessage);
+      setMessages(prev => [...prev, authenticatedMessage]);
+      
       try {
         const message = await chatService.sendMessage(messageText, 'message', displayName);
         console.log('🔥 Authenticated user message result:', message);

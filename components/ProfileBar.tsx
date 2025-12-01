@@ -68,6 +68,7 @@ export default function ProfileBar({
   savedAlienElement,
   profileRefreshTrigger = 0
 }: ProfileBarProps) {
+  // ALL HOOKS MUST BE DECLARED BEFORE ANY EARLY RETURNS
   // Use global UI state for profile bar visibility
   const { hasEnteredHeartverse, warpFullyComplete } = useUIState();
   // Use ProfileContext for profile data
@@ -79,6 +80,26 @@ export default function ProfileBar({
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showSignInPopup, setShowSignInPopup] = useState(false);
   const [showLoginTooltip, setShowLoginTooltip] = useState(false);
+  
+  // Single active panel state
+  const [activePanel, setActivePanel] = useState<ActivePanel>(null);
+  
+  // Preselected card state for opening binder with specific card
+  const [preselectedCard, setPreselectedCard] = useState<string | null>(null);
+  
+  // Code popout state
+  const [isCodePopoutOpen, setIsCodePopoutOpen] = useState(false);
+  
+  // Chxndler popout state
+  const [isChxndlerPopoutOpen, setIsChxndlerPopoutOpen] = useState(false);
+  const [chxndlerActiveTab, setChxndlerActiveTab] = useState<"CHXNDLER" | "WE BELIEVE">("CHXNDLER");
+  const [isJourneyModalOpen, setIsJourneyModalOpen] = useState(false);
+
+  // Heart popover states
+  const [showHeartPopover, setShowHeartPopover] = useState(false);
+  const [showQuests, setShowQuests] = useState(false);
+  const heartBtnRef = useRef<HTMLButtonElement>(null);
+  const [heartPopoverPos, setHeartPopoverPos] = useState<{left: number, top: number, width?: number, height?: number} | null>(null);
 
   // Respond to profile refresh trigger
   useEffect(() => {
@@ -194,20 +215,6 @@ export default function ProfileBar({
   if (!hasEnteredHeartverse) {
     return null;
   }
-  
-  // Single active panel state
-  const [activePanel, setActivePanel] = useState<ActivePanel>(null);
-  
-  // Preselected card state for opening binder with specific card
-  const [preselectedCard, setPreselectedCard] = useState<string | null>(null);
-  
-  // Code popout state
-  const [isCodePopoutOpen, setIsCodePopoutOpen] = useState(false);
-  
-  // Chxndler popout state
-  const [isChxndlerPopoutOpen, setIsChxndlerPopoutOpen] = useState(false);
-  const [chxndlerActiveTab, setChxndlerActiveTab] = useState<"CHXNDLER" | "WE BELIEVE">("CHXNDLER");
-  const [isJourneyModalOpen, setIsJourneyModalOpen] = useState(false);
 
   // Panel toggle function
   const togglePanel = (panelKey: ActivePanel) => {

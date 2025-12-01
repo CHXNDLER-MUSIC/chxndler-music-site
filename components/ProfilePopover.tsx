@@ -474,38 +474,6 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
             ×
           </button>
           
-          {/* Checkmark confirmation button - Top Right */}
-          {(editedName.trim() !== profile?.name || selectedImageUrl !== (profile?.profile_image_url || getElementImageUrl(profile?.element))) && (
-            <button
-              onClick={handleSave}
-              disabled={saving || !editedName.trim()}
-              className="absolute top-4 right-16 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
-              style={{
-                background: 'rgba(0,255,0,0.2)',
-                border: '1px solid rgba(0,255,0,0.6)',
-                color: '#00FF00',
-                boxShadow: '0 0 10px rgba(0,255,0,0.3)',
-                fontSize: '14px',
-                fontWeight: 'bold'
-              }}
-              title="Save changes"
-            >
-              {saving ? (
-                <div className="w-4 h-4 border-2 border-green-300 border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <svg viewBox="0 0 24 24" width="16" height="16">
-                  <path
-                    fill="none"
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2.5"
-                    d="M5 12l5 5L20 7"
-                  />
-                </svg>
-              )}
-            </button>
-          )}
 
           {/* Header */}
           <div 
@@ -543,28 +511,63 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
             
             {/* Current Profile Image - Clickable */}
             <div className="flex justify-center mb-4 relative">
-              <button 
-                onClick={() => {
-                  setShowElementMenu(!showElementMenu);
-                  try { sfx.play('click', 0.4); } catch {}
-                }}
-                className="w-20 h-20 rounded-full border-2 border-cyan-400/60 overflow-hidden transition-all duration-200 hover:scale-105 hover:shadow-[0_0_25px_rgba(0,255,255,0.6)]"
-                style={{
-                  background: 'rgba(0,255,255,0.1)',
-                  boxShadow: '0 0 20px rgba(0,255,255,0.4)'
-                }}
-                title="Click to change element"
-              >
-                <img
-                  src={selectedImageUrl || getElementImageUrl(profile?.element)}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = getElementImageUrl(profile?.element);
+              <div className="relative">
+                <button 
+                  onClick={() => {
+                    setShowElementMenu(!showElementMenu);
+                    try { sfx.play('click', 0.4); } catch {}
                   }}
-                />
-              </button>
+                  className="w-20 h-20 rounded-full border-2 border-cyan-400/60 overflow-hidden transition-all duration-200 hover:scale-105 hover:shadow-[0_0_25px_rgba(0,255,255,0.6)]"
+                  style={{
+                    background: 'rgba(0,255,255,0.1)',
+                    boxShadow: '0 0 20px rgba(0,255,255,0.4)'
+                  }}
+                  title="Click to change element"
+                >
+                  <img
+                    src={selectedImageUrl || getElementImageUrl(profile?.element)}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = getElementImageUrl(profile?.element);
+                    }}
+                  />
+                </button>
+
+                {/* Checkmark confirmation button - Top Right of Image */}
+                {(editedName.trim() !== profile?.name || selectedImageUrl !== (profile?.profile_image_url || getElementImageUrl(profile?.element))) && (
+                  <button
+                    onClick={handleSave}
+                    disabled={saving || !editedName.trim()}
+                    className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+                    style={{
+                      background: 'rgba(0,255,0,0.2)',
+                      border: '1px solid rgba(0,255,0,0.6)',
+                      color: '#00FF00',
+                      boxShadow: '0 0 10px rgba(0,255,0,0.3)',
+                      fontSize: '12px',
+                      fontWeight: 'bold'
+                    }}
+                    title="Save changes"
+                  >
+                    {saving ? (
+                      <div className="w-3 h-3 border-2 border-green-300 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <svg viewBox="0 0 24 24" width="12" height="12">
+                        <path
+                          fill="none"
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2.5"
+                          d="M5 12l5 5L20 7"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                )}
+              </div>
 
               {/* View Relics Button - Small Circle */}
               <button
@@ -617,7 +620,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                         onClick={() => {
                           setSelectedImageUrl(element.url);
                           setShowElementMenu(false);
-                          try { sfx.play('join', 0.6); } catch {}
+                          try { sfx.play('flip', 0.6); } catch {}
                         }}
                         className={`w-12 h-12 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:scale-110 ${
                           selectedImageUrl === element.url

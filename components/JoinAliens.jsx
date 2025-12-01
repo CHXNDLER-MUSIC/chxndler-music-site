@@ -373,22 +373,22 @@ export default function JoinAliens({ visible = true } = {}) {
             width: '100%',
             padding: '12px 16px',
             background: 'rgba(0, 0, 0, 0.6)',
-            border: '1px solid rgba(252, 84, 175, 0.4)',
+            border: '1px solid rgba(0, 255, 255, 0.4)',
             borderRadius: '8px',
             color: '#ffffff',
             fontSize: '16px',
             outline: 'none',
             transition: 'border-color 200ms ease',
             '&:focus': {
-              borderColor: '#FC54AF'
+              borderColor: '#00FFFF'
             }
           }}
           onFocus={(e) => {
-            e.target.style.borderColor = '#FC54AF';
-            e.target.style.boxShadow = '0 0 0 2px rgba(252, 84, 175, 0.2)';
+            e.target.style.borderColor = '#00FFFF';
+            e.target.style.boxShadow = '0 0 0 2px rgba(0, 255, 255, 0.2)';
           }}
           onBlur={(e) => {
-            e.target.style.borderColor = 'rgba(252, 84, 175, 0.4)';
+            e.target.style.borderColor = 'rgba(0, 255, 255, 0.4)';
             e.target.style.boxShadow = 'none';
           }}
         />
