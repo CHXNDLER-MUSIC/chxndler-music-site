@@ -1158,166 +1158,72 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           {/* Bonus Quests Tab Content */}
           {activeEarnTab === 'BONUS QUESTS' && (
             <div className="mb-4">
-            {/* Invite a Friend */}
-            <div className="flex items-center justify-between mb-2 p-2 rounded border border-white/30 bg-white/10">
-              <div>
-                <div className="text-xs font-bold" style={{ color: '#FFFFFF' }}>
-                  1. Invite a Friend
-                </div>
-                <div className="text-[10px]" style={{ color: '#FFFFFF', opacity: 0.8 }}>
-                  Share the Heartverse with someone you love. When they join, you both earn HEART coins.
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={handleInviteFriend}
-                  disabled={dailyQuests.friendInviteConfirm}
-                  className="px-2 py-1 text-xs rounded border transition-colors"
-                  style={{
-                    background: dailyQuests.friendInviteConfirm 
-                      ? 'rgba(0,255,0,0.1)' 
-                      : dailyQuests.friendInvited 
-                        ? 'rgba(255,193,7,0.3)'
-                        : 'rgba(255,255,255,0.1)',
-                    color: dailyQuests.friendInviteConfirm 
-                      ? '#00FF00' 
-                      : dailyQuests.friendInvited 
-                        ? '#FFD700'
-                        : '#FFFFFF',
-                    borderColor: dailyQuests.friendInviteConfirm 
-                      ? '#00FF00' 
-                      : dailyQuests.friendInvited 
-                        ? '#FFD700'
-                        : 'rgba(255,255,255,0.6)',
-                    textShadow: dailyQuests.friendInviteConfirm 
-                      ? '0 0 8px #00FF00, 0 0 16px #00FF00' 
-                      : dailyQuests.friendInvited 
-                        ? '0 0 8px #FFD700, 0 0 16px #FFD700'
-                        : 'none',
-                    boxShadow: dailyQuests.friendInviteConfirm 
-                      ? '0 0 10px rgba(0,255,0,0.4), 0 0 20px rgba(0,255,0,0.2)' 
-                      : dailyQuests.friendInvited 
-                        ? '0 0 10px rgba(255,215,0,0.4), 0 0 20px rgba(255,215,0,0.2)'
-                        : 'none'
-                  }}
-                >
-                  {dailyQuests.friendInviteConfirm 
-                    ? 'COMPLETE' 
-                    : dailyQuests.friendInvited 
-                      ? 'CONFIRM' 
-                      : 'INVITE A FRIEND'}
-                </button>
-                <span className="text-xs" style={{ color: '#90EE90' }}>
-                  (1 MAX per day)
-                </span>
-              </div>
-            </div>
-
-
-            {/* Attend Live Show */}
-            <div className="flex items-center justify-between mb-2 p-2 rounded border border-white/30 bg-white/10 relative">
-              <div className="flex-1">
-                {showCheckInModal ? (
-                  <div>
-                    <div className="text-xs font-bold mb-2" style={{ color: '#FFFFFF' }}>
-                      Secret Phrase
+              {bonusQuestsLoading ? (
+                <div className="text-center text-white py-4">Loading bonus quests...</div>
+              ) : bonusQuestsError ? (
+                <div className="text-center text-red-400 py-4">Error loading quests: {bonusQuestsError}</div>
+              ) : bonusQuests.length === 0 ? (
+                <div className="text-center text-white/60 py-4">No bonus quests available</div>
+              ) : (
+                bonusQuests.map((quest, index) => (
+                  <div key={quest.id} className="flex items-center justify-between mb-2 p-2 rounded border border-white/30 bg-white/10">
+                    <div>
+                      <div className="text-xs font-bold" style={{ color: '#FFFFFF' }}>
+                        {index + 1}. {quest.title}
+                      </div>
+                      <div className="text-[10px]" style={{ color: '#FFFFFF', opacity: 0.8 }}>
+                        {quest.description}
+                      </div>
                     </div>
-                    <div className="text-[10px] mb-2" style={{ color: '#FFFFFF', opacity: 0.8 }}>
-                      Enter the secret phrase from the show:
-                    </div>
-                    <input
-                      type="text"
-                      value={secretPhrase}
-                      onChange={(e) => setSecretPhrase(e.target.value)}
-                      className="w-full p-2 bg-black/60 border border-white/40 rounded text-white text-xs"
-                      placeholder="Enter secret phrase..."
-                      style={{
-                        boxShadow: '0 0 10px rgba(255,255,255,0.3)'
-                      }}
-                    />
-                    {statusType !== 'idle' && checkInMessage && (
-                      <div 
-                        className="text-center text-xs mt-2 p-2 rounded border"
-                        style={{ 
-                          color: statusType === 'success' ? '#90EE90' : '#FF6B6B',
-                          borderColor: statusType === 'success' ? 'rgba(144,238,144,0.4)' : 'rgba(255,107,107,0.4)',
-                          backgroundColor: statusType === 'success' ? 'rgba(0,255,0,0.1)' : 'rgba(255,0,0,0.1)',
-                          textShadow: statusType === 'success' ? '0 0 4px rgba(144,238,144,0.8)' : '0 0 4px rgba(255,107,107,0.8)'
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleBonusQuestComplete(quest)}
+                        disabled={!quest.can_complete || quest.times_completed >= (quest.max_total_completions || Infinity)}
+                        className="px-2 py-1 text-xs rounded border transition-colors"
+                        style={{
+                          background: quest.times_completed > 0 && quest.max_total_completions === 1 
+                            ? 'rgba(0,255,0,0.1)' 
+                            : quest.can_complete 
+                              ? 'rgba(255,255,255,0.1)'
+                              : 'rgba(100,100,100,0.3)',
+                          color: quest.times_completed > 0 && quest.max_total_completions === 1 
+                            ? '#00FF00' 
+                            : quest.can_complete 
+                              ? '#FFFFFF'
+                              : '#666',
+                          borderColor: quest.times_completed > 0 && quest.max_total_completions === 1 
+                            ? '#00FF00' 
+                            : quest.can_complete 
+                              ? 'rgba(255,255,255,0.6)'
+                              : 'rgba(100,100,100,0.6)',
+                          textShadow: quest.times_completed > 0 && quest.max_total_completions === 1 
+                            ? '0 0 8px #00FF00, 0 0 16px #00FF00' 
+                            : 'none',
+                          boxShadow: quest.times_completed > 0 && quest.max_total_completions === 1 
+                            ? '0 0 10px rgba(0,255,0,0.4), 0 0 20px rgba(0,255,0,0.2)' 
+                            : 'none'
                         }}
                       >
-                        {checkInMessage}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div>
-                    <div className="text-xs font-bold" style={{ color: '#FFFFFF' }}>
-                      2. Attend a Livestream or Live Show
+                        {quest.times_completed > 0 && quest.max_total_completions === 1 
+                          ? 'COMPLETED' 
+                          : quest.quest_key === 'ATTEND_LIVESTREAM' 
+                            ? 'CHECK IN'
+                            : quest.quest_key === 'INVITE_FRIEND' 
+                              ? 'INVITE FRIEND'
+                              : 'COMPLETE'}
+                      </button>
+                      <span className="text-sm flex items-center" style={{ 
+                        color: quest.times_completed > 0 && quest.max_total_completions === 1 ? '#666' : '#90EE90', 
+                        textShadow: quest.times_completed > 0 && quest.max_total_completions === 1 ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' 
+                      }}>
+                        {quest.reward_notes || `+${quest.reward_heartcoins}`}
+                        <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
+                      </span>
                     </div>
-                    <div className="text-[10px]" style={{ color: '#FFFFFF', opacity: 0.8 }}>
-                      Check in at a CHXNDLER show to receive bonus HEART coins.
-                    </div>
                   </div>
-                )}
-              </div>
-              <div className="flex items-center space-x-2">
-                {showCheckInModal && !dailyQuests.checkedIn ? (
-                  <div className="flex flex-col space-y-2">
-                    <button
-                      onClick={handleCheckIn}
-                      disabled={isSubmittingPhrase || !secretPhrase.trim()}
-                      className="px-2 py-1 text-xs rounded border border-white/60 hover:border-white/80 transition-colors"
-                      style={{
-                        background: isSubmittingPhrase || !secretPhrase.trim() ? 'rgba(100,100,100,0.3)' : 'rgba(255,255,255,0.1)',
-                        color: isSubmittingPhrase || !secretPhrase.trim() ? '#666' : '#FFFFFF',
-                      }}
-                    >
-                      {isSubmittingPhrase ? 'CHECKING...' : 'SUBMIT'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowCheckInModal(false);
-                        setSecretPhrase("");
-                        setCheckInMessage("");
-                        setStatusType('idle');
-                      }}
-                      className="px-2 py-1 text-xs rounded border border-gray-400/60 hover:border-gray-400/80 transition-colors"
-                      style={{
-                        background: 'rgba(100,100,100,0.1)',
-                        color: '#999',
-                      }}
-                    >
-                      CANCEL
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setShowCheckInModal(true);
-                      setStatusType('idle');
-                      setCheckInMessage('');
-                    }}
-                    disabled={dailyQuests.checkedIn}
-                    className="px-2 py-1 text-xs rounded border transition-colors"
-                    style={{
-                      background: dailyQuests.checkedIn ? 'rgba(0,255,0,0.1)' : 'rgba(255,255,255,0.1)',
-                      color: dailyQuests.checkedIn ? '#00FF00' : '#FFFFFF',
-                      borderColor: dailyQuests.checkedIn ? '#00FF00' : 'rgba(255,255,255,0.6)',
-                      textShadow: dailyQuests.checkedIn ? '0 0 8px #00FF00, 0 0 16px #00FF00' : 'none',
-                      boxShadow: dailyQuests.checkedIn ? '0 0 10px rgba(0,255,0,0.4), 0 0 20px rgba(0,255,0,0.2)' : 'none'
-                    }}
-                  >
-                    {dailyQuests.checkedIn ? 'CHECKED IN' : 'CHECK IN'}
-                  </button>
-                )}
-                <span className="text-sm flex items-center" style={{ color: dailyQuests.checkedIn ? '#666' : '#90EE90', textShadow: dailyQuests.checkedIn ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' }}>
-                  {dailyQuests.checkedIn ? '✓ +1-5' : '+1-5'} 
-                  <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
-                </span>
-              </div>
-
+                ))
+              )}
             </div>
-          </div>
           )}
           
           {/* Success message */}

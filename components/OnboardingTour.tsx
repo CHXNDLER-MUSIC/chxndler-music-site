@@ -201,26 +201,60 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
 
     // Handle menu opening for menu steps
     if (step.id === 'hamburger') {
-      // For hamburger step, open menu immediately
+      // For hamburger step, open menu using multiple methods
+      console.log('Tour: Opening menu for hamburger step');
+      
+      // Method 1: Use state management
       if (onMenuToggle) {
-        console.log('Tour: Opening menu for hamburger step');
         onMenuToggle(true);
-      } else {
-        console.log('Tour: No onMenuToggle function available');
       }
+      
+      // Method 2: Direct DOM manipulation as fallback
+      setTimeout(() => {
+        const hamburgerButton = document.querySelector('[data-tour-id="hamburger"]') as HTMLElement;
+        if (hamburgerButton && !document.querySelector('.absolute.top-20')) {
+          console.log('Tour: Menu not open, clicking hamburger button directly');
+          hamburgerButton.click();
+        }
+      }, 100);
+      
     } else if (step.id.startsWith('menu-')) {
-      // For menu item steps, ensure menu is open immediately and force it open multiple times
+      // For menu item steps, ensure menu is open using multiple methods
+      console.log(`Tour: Opening menu for step ${step.id}`);
+      
+      // Method 1: Use state management
       if (onMenuToggle) {
-        console.log(`Tour: Opening menu for step ${step.id}`);
         onMenuToggle(true);
-        // Force menu open again after a short delay to ensure it's definitely open
-        setTimeout(() => {
-          onMenuToggle(true);
-          console.log(`Tour: Force-opened menu again for ${step.id}`);
-        }, 100);
-      } else {
-        console.log('Tour: No onMenuToggle function available for menu step');
       }
+      
+      // Method 2: Direct DOM manipulation as fallback
+      setTimeout(() => {
+        const hamburgerButton = document.querySelector('[data-tour-id="hamburger"]') as HTMLElement;
+        const menuDropdown = document.querySelector('.absolute.top-20');
+        
+        if (hamburgerButton && !menuDropdown) {
+          console.log('Tour: Menu not open for menu step, clicking hamburger button directly');
+          hamburgerButton.click();
+        }
+      }, 50);
+      
+      // Method 3: Keep trying every 100ms until menu is visible
+      const ensureMenuOpen = setInterval(() => {
+        const menuDropdown = document.querySelector('.absolute.top-20');
+        if (!menuDropdown) {
+          const hamburgerButton = document.querySelector('[data-tour-id="hamburger"]') as HTMLElement;
+          if (hamburgerButton) {
+            console.log('Tour: Menu still not open, retrying...');
+            hamburgerButton.click();
+          }
+        } else {
+          clearInterval(ensureMenuOpen);
+        }
+      }, 200);
+      
+      // Clean up after 3 seconds
+      setTimeout(() => clearInterval(ensureMenuOpen), 3000);
+      
     } else if (step.id === 'heartcoins') {
       // Close menu for Heart Coins step
       if (onMenuToggle) {
@@ -459,8 +493,24 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
   useEffect(() => {
     if (active && currentStep) {
       setupStep(currentStep);
+      
+      // Ensure menu stays open for menu steps with aggressive state management
+      if (currentStep.id === 'hamburger' || currentStep.id.startsWith('menu-')) {
+        if (onMenuToggle) {
+          // Set menu open immediately
+          onMenuToggle(true);
+          
+          // Keep forcing it open every 100ms while on menu steps
+          const keepMenuOpen = setInterval(() => {
+            onMenuToggle(true);
+          }, 100);
+          
+          // Clean up interval when step changes
+          return () => clearInterval(keepMenuOpen);
+        }
+      }
     }
-  }, [currentStepIndex, active]);
+  }, [currentStepIndex, active, onMenuToggle]);
 
   // Handle window resize
   useEffect(() => {

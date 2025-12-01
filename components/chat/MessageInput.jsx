@@ -115,11 +115,11 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "T
   };
 
   return (
-    <div className="border-t border-cyan-400/20 p-2">
-      <form onSubmit={handleSubmit}>
+    <div className="border-t border-cyan-400/20 p-2 bg-black/20 backdrop-blur-sm">
+      <form onSubmit={handleSubmit} className="relative">
 
         {/* Message Input */}
-        <div className="flex items-end space-x-2">
+        <div className="flex items-center space-x-2">
           <div className="flex-1 relative">
             <textarea
               ref={inputRef}
@@ -137,6 +137,7 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "T
               rows={1}
               className="w-full resize-none rounded-lg px-3 py-1.5 text-sm transition-all duration-200 focus:outline-none"
               style={{
+                height: '36px',
                 minHeight: '36px',
                 maxHeight: '36px',
                 background: 'rgba(0, 0, 0, 0.6)',
@@ -145,10 +146,14 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "T
                 textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
                 boxShadow: isFocused 
                   ? '0 0 20px rgba(242, 239, 29, 0.4), inset 0 0 20px rgba(242, 239, 29, 0.1)' 
-                  : '0 0 10px rgba(242, 239, 29, 0.2)'
+                  : '0 0 10px rgba(242, 239, 29, 0.2)',
+                overflow: 'hidden',
+                resize: 'none',
+                whiteSpace: 'nowrap',
+                textOverflow: 'ellipsis'
               }}
               onInput={(e) => {
-                // Keep textarea at fixed height
+                // Ensure textarea stays at fixed height
                 e.target.style.height = '36px';
               }}
             />
@@ -156,7 +161,7 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "T
             {/* Character counter */}
             {message.length > 400 && (
               <div 
-                className="absolute bottom-1 right-2 text-xs"
+                className="absolute bottom-1 right-2 text-xs pointer-events-none"
                 style={{
                   color: message.length > 480 ? '#FF6B6B' : '#FFA500'
                 }}
@@ -173,6 +178,9 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "T
             className="px-3 py-1.5 rounded-lg font-semibold text-sm transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex-shrink-0"
             style={{
               height: '36px',
+              minHeight: '36px',
+              width: 'auto',
+              minWidth: '60px',
               background: disabled || !message.trim() 
                 ? 'rgba(128, 128, 128, 0.1)'
                 : 'transparent',

@@ -747,7 +747,7 @@ export default function ChatPanel({ isOpen, onClose }) {
             exit="closed"
           >
             <div
-              className="w-full h-full flex flex-col"
+              className="w-full h-full flex flex-col overflow-hidden"
               style={{
                 background: `
                   linear-gradient(135deg, 
@@ -811,7 +811,7 @@ export default function ChatPanel({ isOpen, onClose }) {
               </div>
 
               {/* Content Area */}
-              <div className="flex-1 flex">
+              <div className="flex-1 flex min-h-0 overflow-hidden">
                 {/* User List */}
                 <div 
                   className={`border-r border-cyan-400/20 transition-all duration-300 ease-in-out flex-shrink-0 ${
@@ -940,7 +940,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                 </div>
 
                 {/* Messages Area */}
-                <div className={`flex flex-col transition-all duration-300 ${selectedUser ? 'flex-1' : 'flex-1'} min-h-0`}>
+                <div className={`flex flex-col transition-all duration-300 ${selectedUser ? 'hidden' : 'flex-1'} min-h-0 h-full overflow-hidden`}>
                   {/* Messages Container - takes up remaining space and scrolls */}
                   <div className="flex-1 flex flex-col min-h-0">
                     {/* Always show messages */}
@@ -952,7 +952,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                   </div>
                   
                   {/* Bottom Fixed Section - typing indicators and input */}
-                  <div className="flex-shrink-0">
+                  <div className="flex-shrink-0 sticky bottom-0 bg-inherit">
                     {/* Typing Indicators */}
                     {typingUsers.length > 0 && (
                       <div className="px-3 py-2 border-t border-cyan-400/20">
@@ -978,9 +978,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                   </div>
                 </div>
 
-                {/* Profile Panel - full right side when user is selected */}
+                {/* Profile Panel - full width when user is selected */}
                 {selectedUser && (
-                  <div className="w-full max-w-96 min-w-64 sm:min-w-72 border-l border-yellow-400/30 flex flex-col overflow-hidden">
+                  <div className="flex-1 border-l border-yellow-400/30 flex flex-col overflow-hidden h-full">
                     {/* Profile Header */}
                     <div className="px-2 py-1 sm:px-3 sm:py-1.5 border-b border-yellow-400/30">
                       <div className="flex items-center justify-between">
@@ -1034,7 +1034,14 @@ export default function ChatPanel({ isOpen, onClose }) {
                                   alt="Total Heart Coins" 
                                   className="w-4 h-4"
                                 />
-                                <span className="text-sm text-pink-400 font-bold">{selectedUser.total_heart_coins ? selectedUser.total_heart_coins : 42}</span>
+                                <span className="text-sm text-pink-400 font-bold">
+                                  {selectedUser.id === 'anonymous' 
+                                    ? 0 
+                                    : (user && profile?.heartcoin_balance !== undefined) 
+                                      ? profile.heartcoin_balance 
+                                      : (selectedUser.total_heart_coins || 0)
+                                  }
+                                </span>
                                 <button
                                   onClick={() => {
                                     try {
@@ -1064,7 +1071,12 @@ export default function ChatPanel({ isOpen, onClose }) {
                               </div>
                               {/* Days Streak */}
                               <div className="flex items-center space-x-1 px-2 py-0 text-xs text-white/70">
-                                <span className="text-yellow-400 font-bold">{selectedUser.days_streak ? selectedUser.days_streak : 7}</span>
+                                <span className="text-yellow-400 font-bold">
+                                  {selectedUser.id === 'anonymous' 
+                                    ? 0 
+                                    : (selectedUser.days_streak || 0)
+                                  }
+                                </span>
                                 <span>Days Streak</span>
                               </div>
                             </div>

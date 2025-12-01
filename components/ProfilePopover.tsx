@@ -223,8 +223,85 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
           icon_url: relic.image_url,
           description: relic.code
         })) || [];
-        
-        setAllRelics(transformedRelics);
+
+        // Reorder specific relics to desired positions
+        // Positions are 1-based in UI, convert to 0-based indices for array
+        const norm = (s?: string | null) => (s || '').toLowerCase();
+        const includesCI = (s: string, q: string) => s.toLowerCase().includes(q.toLowerCase());
+
+        const isWallpaperN = (r: Relic, n: number) => {
+          const name = norm(r.relic_name);
+          const url = norm(r.icon_url);
+          const reName = new RegExp(`wallpaper\\s*-?\\s*${n}(?!\\d)`, 'i');
+          const reUrl = new RegExp(`wallpaper-${n}\\.`, 'i');
+          return reName.test(name) || reUrl.test(url);
+        };
+        const isAlienBlue = (r: Relic) => {
+          const name = norm(r.relic_name);
+          const url = norm(r.icon_url);
+          return (includesCI(name, 'alien') && includesCI(name, 'blue')) || includesCI(url, 'alien-blue') || includesCI(url, 'alien - blue');
+        };
+        const isPhone1 = (r: Relic) => {
+          const name = norm(r.relic_name);
+          const url = norm(r.icon_url);
+          const reName = /phone\s*-?\s*1(?!\d)/i;
+          return reName.test(name) || includesCI(url, 'phone-1');
+        };
+
+        // Planet detectors (by name or URL)
+        const isPlanetHeart = (r: Relic) => {
+          const name = norm(r.relic_name);
+          const url = norm(r.icon_url);
+          return (includesCI(name, 'planet') && includesCI(name, 'heart')) || includesCI(url, 'planet_heart');
+        };
+        const isPlanetWater = (r: Relic) => {
+          const name = norm(r.relic_name);
+          const url = norm(r.icon_url);
+          return (includesCI(name, 'planet') && includesCI(name, 'water')) || includesCI(url, 'planet_water');
+        };
+        const isPlanetLightning = (r: Relic) => {
+          const name = norm(r.relic_name);
+          const url = norm(r.icon_url);
+          return (includesCI(name, 'planet') && includesCI(name, 'lightning')) || includesCI(url, 'planet_lightning');
+        };
+
+        type Pred = (r: Relic) => boolean;
+        const desired: Array<{ pred: Pred; index: number }> = [
+          // Planets at positions 1,2,3
+          { pred: isPlanetHeart, index: 0 },              // position 1
+          { pred: isPlanetWater, index: 1 },              // position 2
+          { pred: isPlanetLightning, index: 2 },          // position 3
+          // Wallpapers
+          { pred: (r) => isWallpaperN(r, 3), index: 4 },  // position 5
+          { pred: (r) => isWallpaperN(r, 4), index: 5 },  // position 6
+          { pred: (r) => isWallpaperN(r, 2), index: 6 },  // position 7
+          { pred: (r) => isWallpaperN(r, 5), index: 8 },  // position 9
+          // Phone wallpaper and Alien Blue
+          { pred: isPhone1, index: 9 },                   // position 10
+          { pred: isAlienBlue, index: 14 },               // position 15
+        ];
+
+        const pool: Relic[] = [...transformedRelics];
+        const result: (Relic | null)[] = new Array(pool.length).fill(null);
+
+        // Place specified items first
+        for (const { pred, index } of desired) {
+          if (index < 0 || index >= result.length) continue;
+          const foundIdx = pool.findIndex(pred);
+          if (foundIdx !== -1) {
+            result[index] = pool.splice(foundIdx, 1)[0];
+          }
+        }
+
+        // Fill remaining positions with the rest in original order
+        let p = 0;
+        for (let i = 0; i < result.length; i++) {
+          if (result[i] == null && p < pool.length) {
+            result[i] = pool[p++];
+          }
+        }
+
+        setAllRelics(result.filter((x): x is Relic => x !== null));
       }
     } catch (error) {
       console.log('Relics table not found, skipping');
@@ -843,7 +920,8 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                       key={`relic-${relic.id}`}
                       onClick={() => {
                         if (relic.icon_url) {
-                          setSelectedImageUrl(relic.icon_url);
+                          setSelectedRelicInline(relic.icon_url);
+                          setShowRelicsInline(true);
                           setShowElementMenu(false);
                           try { sfx.play('flip', 0.6); } catch {}
                         }
@@ -924,6 +1002,21 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               {/* Relics Grid / Expanded View - Inline */}
               {selectedRelicInline ? (
                 <div className="mb-4 relative rounded-lg overflow-hidden border border-cyan-400/60" style={{ boxShadow: '0 0 15px rgba(0,255,255,0.25)' }}>
+                  {/* Controls above the image */}
+                  <div className="flex items-center justify-end gap-2 p-2 border-b border-cyan-400/40 bg-black/40">
+                    <button
+                      onClick={() => handleDownload(selectedRelicInline)}
+                      className="px-3 py-1.5 rounded-md text-xs font-semibold transition-all"
+                      style={{
+                        background: 'rgba(255,255,255,0.1)',
+                        border: '1px solid rgba(255,255,255,0.6)',
+                        color: '#FFFFFF',
+                        textShadow: '0 0 6px rgba(255,255,255,0.8)'
+                      }}
+                    >
+                      ⬇ Download
+                    </button>
+                  </div>
                   <div className="relative w-full" style={{ aspectRatio: '1 / 1' }}>
                     <img
                       src={selectedRelicInline}
@@ -943,18 +1036,6 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                       }}
                     >
                       Back to Grid
-                    </button>
-                    <button
-                      onClick={() => handleDownload(selectedRelicInline)}
-                      className="px-3 py-1.5 rounded-md text-xs font-semibold transition-all"
-                      style={{
-                        background: 'rgba(255,255,255,0.1)',
-                        border: '1px solid rgba(255,255,255,0.6)',
-                        color: '#FFFFFF',
-                        textShadow: '0 0 6px rgba(255,255,255,0.8)'
-                      }}
-                    >
-                      ⬇ Download
                     </button>
                   </div>
                 </div>
