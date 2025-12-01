@@ -911,7 +911,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     }
                   }}
                 >
-                  {tab} HEART COINS
+                  {tab}
                 </button>
               ))}
             </div>
@@ -961,7 +961,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   1. Tap the Element of the Day
                 </div>
                 <div className="text-[10px]" style={{ color: '#FFFFFF', opacity: 0.8 }}>
-                  Touch the glowing planet to receive one HEART coin.
+                  Receive a random reward: HeartCoins, relics, or binder slot unlocks.
                 </div>
               </div>
               <div className="flex items-center space-x-2">

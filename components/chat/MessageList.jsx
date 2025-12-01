@@ -25,15 +25,16 @@ export default function MessageList({ messages, onUserClick, loading }) {
     return isNear;
   };
 
-  // Auto-scroll to bottom only when user is near bottom or for initial load
+  // Auto-scroll to bottom only for initial load (disabled auto-scroll for new messages)
   useEffect(() => {
     if (messages.length === 0) return;
     
-    // Always scroll for initial load or if user is near bottom
-    if (isNearBottom || messages.length <= 1) {
+    // Only scroll for the very first message load (initial load)
+    if (messages.length <= 1) {
       scrollToBottom();
     }
-  }, [messages, isNearBottom]);
+    // Removed auto-scroll for new messages to prevent awkward page scrolling
+  }, [messages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -117,17 +118,48 @@ function ChatMessage({ message, onUserClick, isConsecutive }) {
   const timestamp = formatChatTimestamp(message.created_at);
   const sanitizedMessage = sanitizeMessage(message.message);
 
-  // System messages (join/leave)
-  if (message.message_type === 'join' || message.message_type === 'leave') {
+  // System messages (join/leave/system announcements)
+  if (message.message_type === 'join' || message.message_type === 'leave' || message.user_id === 'system') {
+    // Special styling for different system message types
+    let systemStyle = {
+      background: 'rgba(0, 255, 255, 0.1)',
+      border: '1px solid rgba(0, 255, 255, 0.2)',
+      color: '#00FFFF'
+    };
+
+    // Different styling based on message content for system events
+    if (sanitizedMessage.includes('✨') && sanitizedMessage.includes('connected to the Heartverse')) {
+      // Welcome message styling
+      systemStyle = {
+        background: 'rgba(255, 105, 180, 0.15)',
+        border: '1px solid rgba(255, 105, 180, 0.4)',
+        color: '#FF69B4',
+        boxShadow: '0 0 15px rgba(255, 105, 180, 0.3)'
+      };
+    } else if (sanitizedMessage.includes('⭐') && sanitizedMessage.includes('First Transmission Received')) {
+      // First message styling
+      systemStyle = {
+        background: 'rgba(255, 215, 0, 0.15)',
+        border: '1px solid rgba(255, 215, 0, 0.4)',
+        color: '#FFD700',
+        boxShadow: '0 0 15px rgba(255, 215, 0, 0.3)'
+      };
+    } else if (sanitizedMessage.includes('💛') && sanitizedMessage.includes('sent a HeartCoin')) {
+      // HeartCoin transfer styling
+      systemStyle = {
+        background: 'rgba(242, 239, 29, 0.15)',
+        border: '1px solid rgba(242, 239, 29, 0.4)',
+        color: '#F2EF1D',
+        boxShadow: '0 0 15px rgba(242, 239, 29, 0.3)',
+        animation: 'heartCoinGlow 2s ease-in-out'
+      };
+    }
+
     return (
-      <div className="flex justify-center my-2">
+      <div className="flex justify-center my-3">
         <div 
-          className="px-3 py-1 rounded-full text-xs"
-          style={{
-            background: 'rgba(0, 255, 255, 0.1)',
-            border: '1px solid rgba(0, 255, 255, 0.2)',
-            color: '#00FFFF'
-          }}
+          className="px-4 py-2 rounded-full text-sm font-semibold"
+          style={systemStyle}
         >
           {sanitizedMessage}
         </div>
@@ -243,11 +275,22 @@ function formatMessageText(text, textColor = '#F2EF1D') {
     .replace(/🌑|🌚|🖤|⚫/g, '<span style="color: #6B46C1; text-shadow: 0 0 8px rgba(107, 70, 193, 0.8);">$&</span>');
 }
 
-// CSS for heart animation
-const heartbeatKeyframes = `
+// CSS for animations
+const animationKeyframes = `
   @keyframes heartbeat {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.1); }
+  }
+  
+  @keyframes heartCoinGlow {
+    0%, 100% { 
+      box-shadow: 0 0 15px rgba(242, 239, 29, 0.3);
+      transform: scale(1);
+    }
+    50% { 
+      box-shadow: 0 0 25px rgba(242, 239, 29, 0.6), 0 0 35px rgba(242, 239, 29, 0.3);
+      transform: scale(1.02);
+    }
   }
 `;
 
@@ -255,6 +298,6 @@ const heartbeatKeyframes = `
 if (typeof document !== 'undefined' && !document.getElementById('chat-message-styles')) {
   const style = document.createElement('style');
   style.id = 'chat-message-styles';
-  style.textContent = heartbeatKeyframes;
+  style.textContent = animationKeyframes;
   document.head.appendChild(style);
 }

@@ -173,6 +173,7 @@ export function TourProvider({ children, onMenuAction }: {
     if (isActive && onMenuAction) {
       const step = tourSteps[currentStep];
       if (step.action) {
+        console.log(`Tour: Executing action "${step.action}" for step "${step.id}"`);
         onMenuAction(step.action);
       }
     }
@@ -214,44 +215,94 @@ function TourOverlay() {
 
   useEffect(() => {
     if (currentStepData.targetId) {
-      const element = document.querySelector(`[data-tour-id="${currentStepData.targetId}"]`) as HTMLElement;
-      setTargetElement(element);
-
-      if (element) {
-        const rect = element.getBoundingClientRect();
-        const scrollTop = window.scrollY || document.documentElement.scrollTop;
-        const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
+      // For menu items, add a delay to allow menu to render
+      const isMenuStep = currentStepData.id === 'about' || 
+                        currentStepData.id === 'journey' || 
+                        currentStepData.id === 'journal' || 
+                        currentStepData.id === 'binder' || 
+                        currentStepData.id === 'badges' || 
+                        currentStepData.id === 'signal';
+      
+      const findElementAndPosition = (attempts = 0) => {
+        console.log(`Tour: Looking for element with data-tour-id="${currentStepData.targetId}", attempt ${attempts + 1}`);
+        const element = document.querySelector(`[data-tour-id="${currentStepData.targetId}"]`) as HTMLElement;
+        console.log(`Tour: Element found:`, element);
         
-        let top = rect.top + scrollTop;
-        let left = rect.left + scrollLeft;
-
-        // Position tooltip based on preferred position
-        switch (currentStepData.position) {
-          case 'bottom':
-            top += rect.height + 20;
-            left += rect.width / 2;
-            break;
-          case 'top':
-            top -= 20;
-            left += rect.width / 2;
-            break;
-          case 'right':
-            top += rect.height / 2;
-            left += rect.width + 20;
-            break;
-          case 'left':
-            top += rect.height / 2;
-            left -= 20;
-            break;
-          default:
-            top += rect.height + 20;
-            left += rect.width / 2;
+        // If element not found and it's a menu step, retry up to 5 times with 100ms delays
+        if (!element && isMenuStep && attempts < 5) {
+          console.log(`Tour: Element not found, retrying in 100ms...`);
+          setTimeout(() => findElementAndPosition(attempts + 1), 100);
+          return;
         }
+        
+        if (!element && isMenuStep) {
+          console.error(`Tour: Could not find menu element after ${attempts + 1} attempts`);
+        }
+        
+        setTargetElement(element);
 
-        setTooltipPosition({ top, left });
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          const scrollTop = window.scrollY || document.documentElement.scrollTop;
+          const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
+          
+          let top = rect.top + scrollTop;
+          let left = rect.left + scrollLeft;
 
-        // Scroll element into view if needed
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Position tooltip based on preferred position
+          switch (currentStepData.position) {
+            case 'bottom':
+              top += rect.height + 20;
+              left += rect.width / 2;
+              break;
+            case 'top':
+              top -= 20;
+              left += rect.width / 2;
+              break;
+            case 'right':
+              // For menu items, position to the right of the entire dropdown menu
+              if (isMenuStep) {
+                // Find the hamburger menu container to get the full menu width
+                const hamburgerMenu = document.querySelector('[data-tour-id="hamburger"]')?.closest('.fixed');
+                if (hamburgerMenu) {
+                  const menuRect = hamburgerMenu.getBoundingClientRect();
+                  left = menuRect.right + 20; // Position to the right of the entire menu
+                  top += rect.height / 2;
+                } else {
+                  // Fallback to original positioning
+                  top += rect.height / 2;
+                  left += rect.width + 20;
+                }
+              } else {
+                top += rect.height / 2;
+                left += rect.width + 20;
+              }
+              break;
+            case 'left':
+              top += rect.height / 2;
+              left -= 20;
+              break;
+            default:
+              top += rect.height + 20;
+              left += rect.width / 2;
+          }
+
+          setTooltipPosition({ top, left });
+
+          // Scroll element into view if needed
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else if (!isMenuStep) {
+          // For non-menu steps, clear target element if not found
+          setTargetElement(null);
+        }
+      };
+
+      // Start finding the element
+      if (isMenuStep) {
+        // Add small delay for menu steps to allow menu animation
+        setTimeout(() => findElementAndPosition(0), 150);
+      } else {
+        findElementAndPosition(0);
       }
     } else {
       setTargetElement(null);
@@ -315,6 +366,13 @@ function TourOverlay() {
                 transform: currentStepData.position === 'left' ? 'translateX(-100%)' :
                           currentStepData.position === 'top' ? 'translate(-50%, -100%)' :
                           currentStepData.position === 'bottom' ? 'translateX(-50%)' :
+                          (currentStepData.position === 'right' && 
+                           (currentStepData.id === 'about' || 
+                            currentStepData.id === 'journey' || 
+                            currentStepData.id === 'journal' || 
+                            currentStepData.id === 'binder' || 
+                            currentStepData.id === 'badges' || 
+                            currentStepData.id === 'signal')) ? 'translateY(-50%)' :
                           'none',
               }
             : {}

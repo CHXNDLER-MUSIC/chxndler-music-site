@@ -430,10 +430,9 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
           }
           return [1, 2];
         })()}
-        // Pull the camera back and widen FOV so the full system fits
-        // Elevated viewpoint: camera positioned above to look down at the planet system
-        // Better positioning to show the 4 element planets orbiting center
-        camera={{ position: [0, 300, actualShouldShowAll ? 600 : 300], fov: actualShouldShowAll ? 65 : 85 }}
+        // Camera: closer, clearer baseline framing
+        // Slightly elevated to maintain depth while emphasizing planets
+        camera={{ position: [0, 140, actualShouldShowAll ? 260 : 180], fov: actualShouldShowAll ? 60 : 55 }}
         // Prefer safer GL settings on mobile to avoid flicker when layers repaint
         gl={{
           antialias: false,
@@ -646,15 +645,15 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
   const { camera, invalidate } = useThree();
   // Use different base values based on showAll mode - access via props context
   const isShowAll = focusId === null;
-  // Match Canvas camera defaults; give more room in showAll to see every planet
-  const base = React.useRef({ z: isShowAll ? 220 : 120, fov: isShowAll ? 140 : 85 });
+  // Match Canvas camera defaults; closer baseline with narrower FOV
+  const base = React.useRef({ z: isShowAll ? 240 : 110, fov: isShowAll ? 60 : 55 });
   const anim = React.useRef<{ t: number; d: number; active: boolean }>({ t: 0, d: 0.8, active: false });
   // Targeting state for planet-focused camera moves
   const target = React.useRef<{ pos: Vector3; look: Vector3; fov: number } | null>(null);
 
   React.useEffect(() => {
-    // Update base values based on current mode - Closer zoom for better visibility
-    base.current = { z: isShowAll ? 400 : 65, fov: isShowAll ? 75 : 60 };
+    // Update base values based on current mode - keep closer framing
+    base.current = { z: isShowAll ? 240 : 110, fov: isShowAll ? 60 : 55 };
     
     // Only restart zoom animation if we have a focusId (not in showAll/home mode)
     if (focusId) {
@@ -684,7 +683,7 @@ function ZoomOnChange({ focusId }: { focusId: string | null }) {
       anim.current.active = false;
       const camera_: any = camera;
       camera_.position.x = 0;
-      camera_.position.y = 200;
+      camera_.position.y = 120;
       camera_.position.z = base.current.z;
       camera_.fov = base.current.fov;
       camera_.updateProjectionMatrix();

@@ -1403,7 +1403,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             >
               <div className="btn-glow"></div>
               <img 
-                src="/elements/star.png" 
+                src="/elements/heart.webp" 
                 alt="Star" 
                 width="16" 
                 height="16"

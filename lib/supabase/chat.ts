@@ -39,6 +39,8 @@ export interface ChatUser {
 export class ChatService {
   private channel: RealtimeChannel | null = null;
   private currentSessionId: string | null = null;
+  // Session tracking for first-time user connections
+  private sessionConnectedUsers: Set<string> = new Set();
 
   /**
    * Get the current stream session ID
@@ -144,6 +146,152 @@ export class ChatService {
   }
 
   /**
+   * Post a system message (for automated events)
+   * These appear as special messages not attributed to any user
+   */
+  async postSystemMessage(message: string): Promise<ChatMessage | null> {
+    try {
+      const sessionId = await this.getCurrentStreamSession();
+      
+      // Create a system message with special user_id 'system'
+      const { data, error } = await supabaseClient
+        .from('chat_messages')
+        .insert({
+          user_id: 'system',
+          message: message.trim(),
+          stream_session_id: sessionId,
+          message_type: 'message'
+        })
+        .select(`
+          *,
+          user_profile:profiles!user_id (
+            name,
+            element,
+            avatar_badge_id
+          )
+        `)
+        .single();
+
+      if (error) {
+        console.error('Error posting system message:', error);
+        return null;
+      }
+
+      // Return the system message with special system profile
+      return {
+        ...data,
+        user_profile: {
+          name: 'SYSTEM',
+          element: null,
+          avatar_badge_id: null
+        }
+      } as ChatMessage;
+    } catch (error) {
+      console.error('Error in postSystemMessage:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Check if this is the user's first-ever message
+   */
+  async isFirstEverMessage(userId: string): Promise<boolean> {
+    try {
+      const { data, error } = await supabaseClient
+        .from('chat_messages')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('message_type', 'message')
+        .limit(1);
+
+      if (error) {
+        console.error('Error checking first message status:', error);
+        return false;
+      }
+
+      // If no messages found, this is their first message
+      return !data || data.length === 0;
+    } catch (error) {
+      console.error('Error in isFirstEverMessage:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Handle first-time user connection to chat session
+   * Triggers welcome message only once per session
+   */
+  async handleFirstTimeConnection(userId: string, userName: string): Promise<void> {
+    // Skip if already connected this session or if anonymous
+    if (this.sessionConnectedUsers.has(userId) || userId === 'anonymous') {
+      return;
+    }
+
+    // Mark user as connected this session
+    this.sessionConnectedUsers.add(userId);
+
+    // Post welcome system message
+    const welcomeMessage = `✨ ${userName} has connected to the Heartverse. Welcome home.`;
+    await this.postSystemMessage(welcomeMessage);
+    
+    console.log(`🎉 First-time connection: ${userName} (${userId})`);
+  }
+
+  /**
+   * Handle user sending their first-ever message
+   * Triggers first transmission message and posts it BEFORE their message
+   */
+  async handleFirstEverMessage(userId: string, userName: string): Promise<void> {
+    if (userId === 'anonymous' || userId === 'system') {
+      return;
+    }
+
+    const isFirst = await this.isFirstEverMessage(userId);
+    if (isFirst) {
+      // Post first transmission system message BEFORE their actual message
+      const firstTransmissionMessage = `⭐ First Transmission Received from ${userName}`;
+      await this.postSystemMessage(firstTransmissionMessage);
+      
+      console.log(`🌟 First-ever message from: ${userName} (${userId})`);
+    }
+  }
+
+  /**
+   * Handle HeartCoin transfer system message
+   * Called after successful HeartCoin transfer
+   */
+  async handleHeartCoinTransfer(senderUserId: string, receiverUserId: string): Promise<void> {
+    try {
+      // Get both users' profile names
+      const { data: profiles, error } = await supabaseClient
+        .from('profiles')
+        .select('id, name')
+        .in('id', [senderUserId, receiverUserId]);
+
+      if (error || !profiles || profiles.length !== 2) {
+        console.error('Error getting user profiles for HeartCoin transfer:', error);
+        return;
+      }
+
+      const sender = profiles.find(p => p.id === senderUserId);
+      const receiver = profiles.find(p => p.id === receiverUserId);
+
+      if (!sender || !receiver) {
+        console.error('Could not find sender or receiver profiles');
+        return;
+      }
+
+      // Post HeartCoin transfer system message
+      const transferMessage = `💛 ${sender.name} sent a HeartCoin to ${receiver.name} — the signal strengthens.`;
+      await this.postSystemMessage(transferMessage);
+      
+      console.log(`💛 HeartCoin transfer: ${sender.name} → ${receiver.name}`);
+    } catch (error) {
+      console.error('Error in handleHeartCoinTransfer:', error);
+    }
+  }
+
+  /**
    * Send a chat message
    */
   async sendMessage(message: string, messageType: 'message' | 'join' | 'leave' = 'message', anonymousName?: string): Promise<ChatMessage | null> {
@@ -172,6 +320,21 @@ export class ChatService {
         } as ChatMessage;
         console.log('🔥 Returning mock message:', mockMessage);
         return mockMessage;
+      }
+
+      // For authenticated users sending regular messages, check if it's their first message
+      if (messageType === 'message') {
+        // Get user profile for the name
+        const { data: profile } = await supabaseClient
+          .from('profiles')
+          .select('name')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (profile?.name) {
+          // Trigger first-ever message check BEFORE sending their message
+          await this.handleFirstEverMessage(session.user.id, profile.name);
+        }
       }
       
       const { data, error } = await supabaseClient

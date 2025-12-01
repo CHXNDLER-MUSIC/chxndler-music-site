@@ -23,6 +23,7 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
   const [showVenmoPopup, setShowVenmoPopup] = useState(false);
   const [showPhonePopup, setShowPhonePopup] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState("US");
 
   async function createProfileWithPhone(e: React.FormEvent) {
     e.preventDefault();
@@ -148,20 +149,113 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
     }
   }
 
-  function formatPhoneNumber(value: string) {
+  // Country data for selector
+  const countries = [
+    { code: 'US', name: 'United States', flag: '🇺🇸' },
+    { code: 'CA', name: 'Canada', flag: '🇨🇦' },
+    { code: 'GB', name: 'United Kingdom', flag: '🇬🇧' },
+    { code: 'DE', name: 'Germany', flag: '🇩🇪' },
+    { code: 'FR', name: 'France', flag: '🇫🇷' },
+    { code: 'AU', name: 'Australia', flag: '🇦🇺' },
+    { code: 'JP', name: 'Japan', flag: '🇯🇵' },
+    { code: 'BR', name: 'Brazil', flag: '🇧🇷' },
+    { code: 'IN', name: 'India', flag: '🇮🇳' },
+    { code: 'MX', name: 'Mexico', flag: '🇲🇽' }
+  ];
+
+  // International phone number country configurations
+  const phoneConfigs = {
+    US: { code: '+1', format: '(XXX) XXX-XXXX', minLength: 10, maxLength: 10 },
+    CA: { code: '+1', format: '(XXX) XXX-XXXX', minLength: 10, maxLength: 10 },
+    GB: { code: '+44', format: 'XXXX XXX XXXX', minLength: 10, maxLength: 11 },
+    DE: { code: '+49', format: 'XXX XXXX XXXX', minLength: 10, maxLength: 12 },
+    FR: { code: '+33', format: 'X XX XX XX XX', minLength: 9, maxLength: 9 },
+    AU: { code: '+61', format: 'XXX XXX XXX', minLength: 9, maxLength: 9 },
+    JP: { code: '+81', format: 'XXX XXXX XXXX', minLength: 10, maxLength: 11 },
+    BR: { code: '+55', format: '(XX) XXXXX-XXXX', minLength: 11, maxLength: 11 },
+    IN: { code: '+91', format: 'XXXXX XXXXX', minLength: 10, maxLength: 10 },
+    MX: { code: '+52', format: 'XXX XXX XXXX', minLength: 10, maxLength: 10 }
+  };
+
+  function formatPhoneNumber(value: string, country: string = 'US') {
     // Remove all non-digits
-    const phoneNumber = value.replace(/\D/g, '');
+    const digits = value.replace(/\D/g, '');
     
-    // Format as +1 (XXX) XXX-XXXX for US numbers
-    if (phoneNumber.length === 0) return '';
-    if (phoneNumber.length <= 3) return `+1 (${phoneNumber}`;
-    if (phoneNumber.length <= 6) return `+1 (${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3)}`;
-    return `+1 (${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3, 6)}-${phoneNumber.slice(6, 10)}`;
+    // Return empty string if no digits
+    if (digits.length === 0) return '';
+    
+    const config = phoneConfigs[country] || phoneConfigs.US;
+    
+    // Format based on country
+    switch (country) {
+      case 'US':
+      case 'CA':
+        if (digits.length <= 3) return `${config.code} (${digits}`;
+        if (digits.length <= 6) return `${config.code} (${digits.slice(0, 3)}) ${digits.slice(3)}`;
+        return `${config.code} (${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+      
+      case 'GB':
+        if (digits.length <= 4) return `${config.code} ${digits}`;
+        if (digits.length <= 7) return `${config.code} ${digits.slice(0, 4)} ${digits.slice(4)}`;
+        return `${config.code} ${digits.slice(0, 4)} ${digits.slice(4, 7)} ${digits.slice(7, 11)}`;
+      
+      case 'DE':
+        if (digits.length <= 3) return `${config.code} ${digits}`;
+        if (digits.length <= 7) return `${config.code} ${digits.slice(0, 3)} ${digits.slice(3)}`;
+        return `${config.code} ${digits.slice(0, 3)} ${digits.slice(3, 7)} ${digits.slice(7, 12)}`;
+      
+      case 'FR':
+        if (digits.length <= 1) return `${config.code} ${digits}`;
+        if (digits.length <= 3) return `${config.code} ${digits.slice(0, 1)} ${digits.slice(1)}`;
+        if (digits.length <= 5) return `${config.code} ${digits.slice(0, 1)} ${digits.slice(1, 3)} ${digits.slice(3)}`;
+        if (digits.length <= 7) return `${config.code} ${digits.slice(0, 1)} ${digits.slice(1, 3)} ${digits.slice(3, 5)} ${digits.slice(5)}`;
+        return `${config.code} ${digits.slice(0, 1)} ${digits.slice(1, 3)} ${digits.slice(3, 5)} ${digits.slice(5, 7)} ${digits.slice(7, 9)}`;
+      
+      case 'AU':
+        if (digits.length <= 3) return `${config.code} ${digits}`;
+        if (digits.length <= 6) return `${config.code} ${digits.slice(0, 3)} ${digits.slice(3)}`;
+        return `${config.code} ${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 9)}`;
+      
+      case 'JP':
+        if (digits.length <= 3) return `${config.code} ${digits}`;
+        if (digits.length <= 7) return `${config.code} ${digits.slice(0, 3)} ${digits.slice(3)}`;
+        return `${config.code} ${digits.slice(0, 3)} ${digits.slice(3, 7)} ${digits.slice(7, 11)}`;
+      
+      case 'BR':
+        if (digits.length <= 2) return `${config.code} (${digits}`;
+        if (digits.length <= 7) return `${config.code} (${digits.slice(0, 2)}) ${digits.slice(2)}`;
+        return `${config.code} (${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+      
+      case 'IN':
+        if (digits.length <= 5) return `${config.code} ${digits}`;
+        return `${config.code} ${digits.slice(0, 5)} ${digits.slice(5, 10)}`;
+      
+      case 'MX':
+        if (digits.length <= 3) return `${config.code} ${digits}`;
+        if (digits.length <= 6) return `${config.code} ${digits.slice(0, 3)} ${digits.slice(3)}`;
+        return `${config.code} ${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 10)}`;
+      
+      default:
+        return `${config.code} ${digits}`;
+    }
+  }
+
+  function getPhoneValidation(country: string = 'US') {
+    const config = phoneConfigs[country] || phoneConfigs.US;
+    const codeLength = config.code.length;
+    // Calculate minimum formatted length: country code + spaces + minimum digits
+    const minFormattedLength = codeLength + 1 + config.minLength + Math.floor(config.minLength / 3); // rough estimate for formatting
+    return { minLength: config.minLength, maxLength: config.maxLength, minFormattedLength };
   }
 
   function handlePhoneChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const formatted = formatPhoneNumber(e.target.value);
+    const formatted = formatPhoneNumber(e.target.value, selectedCountry);
     setPhone(formatted);
+  }
+
+  function handlePhoneNumberChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const formatted = formatPhoneNumber(e.target.value, selectedCountry);
+    setPhoneNumber(formatted);
   }
 
   return (
@@ -216,6 +310,28 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
         {/* Phone Number Signup Form */}
         {signupMethod === "phone" && (
           <form onSubmit={createProfileWithPhone} className="space-y-4">
+            {/* Country Selector */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-white/90">
+                Country
+              </label>
+              <select
+                value={selectedCountry}
+                onChange={(e) => {
+                  setSelectedCountry(e.target.value);
+                  // Clear phone number when country changes to avoid confusion
+                  setPhone('');
+                }}
+                className="block w-full rounded-lg border border-white/20 bg-black/30 px-4 py-3 text-white shadow-sm focus:border-[#FC54AF] focus:outline-none focus:ring-2 focus:ring-[#FC54AF]/20"
+              >
+                {countries.map((country) => (
+                  <option key={country.code} value={country.code} className="bg-black text-white">
+                    {country.flag} {country.name} ({phoneConfigs[country.code]?.code})
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className="space-y-2">
               <label htmlFor="join-phone" className="block text-sm font-medium text-white/90">
                 Phone Number
@@ -225,7 +341,7 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
                 type="tel"
                 value={phone}
                 onChange={handlePhoneChange}
-                placeholder="+1 (555) 123-4567"
+                placeholder={`${phoneConfigs[selectedCountry]?.code} ${phoneConfigs[selectedCountry]?.format.replace(/X/g, '5')}`}
                 required
                 disabled={loading}
                 className="block w-full rounded-lg border border-white/20 bg-black/30 px-4 py-3 text-white placeholder-white/40 shadow-sm focus:border-[#FC54AF] focus:outline-none focus:ring-2 focus:ring-[#FC54AF]/20 disabled:opacity-50"
@@ -234,10 +350,10 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
             
             <button
               type="submit"
-              disabled={loading || phone.length < 14} // +1 (XXX) XXX-XXXX = 14 chars minimum
+              disabled={loading || phone.length < getPhoneValidation(selectedCountry).minFormattedLength}
               className="w-full rounded-lg bg-gradient-to-r from-[#FC54AF] to-[#38B6FF] px-6 py-3 text-lg font-semibold text-black transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-[#FC54AF]/30 disabled:opacity-50 disabled:hover:scale-100"
               style={{
-                boxShadow: loading || phone.length < 14 
+                boxShadow: loading || phone.length < getPhoneValidation(selectedCountry).minFormattedLength
                   ? 'none' 
                   : '0 0 30px rgba(252,84,175,0.5), 0 0 60px rgba(56,182,255,0.3)'
               }}
@@ -486,13 +602,42 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
                 Stay connected to the Heartverse
               </div>
 
+              {/* Country Selector */}
+              <div style={{ marginBottom: '12px' }}>
+                <select
+                  value={selectedCountry}
+                  onChange={(e) => {
+                    setSelectedCountry(e.target.value);
+                    // Clear phone number when country changes to avoid confusion
+                    setPhoneNumber('');
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: 'rgba(0, 0, 0, 0.6)',
+                    border: '2px solid #00FFFF',
+                    borderRadius: '8px',
+                    color: '#ffffff',
+                    fontSize: '14px',
+                    outline: 'none',
+                    boxShadow: '0 0 8px rgba(0, 255, 255, 0.3)'
+                  }}
+                >
+                  {countries.map((country) => (
+                    <option key={country.code} value={country.code} style={{ background: '#000', color: '#fff' }}>
+                      {country.flag} {country.name} ({phoneConfigs[country.code]?.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               {/* Phone Number Input */}
               <div style={{ marginBottom: '20px' }}>
                 <input
                   type="tel"
                   value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  placeholder="+1 (555) 123-4567"
+                  onChange={handlePhoneNumberChange}
+                  placeholder={`${phoneConfigs[selectedCountry]?.code} ${phoneConfigs[selectedCountry]?.format.replace(/X/g, '5')}`}
                   style={{
                     width: '100%',
                     padding: '12px 16px',
@@ -519,40 +664,41 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
               {/* Send Heart Signal Button */}
               <button
                 onClick={() => {
-                  if (phoneNumber.trim()) {
+                  const validation = getPhoneValidation(selectedCountry);
+                  if (phoneNumber.length >= validation.minFormattedLength) {
                     sendHeartSignal();
                     setShowPhonePopup(false);
                     setPhoneNumber("");
                   }
                 }}
-                disabled={!phoneNumber.trim()}
+                disabled={phoneNumber.length < getPhoneValidation(selectedCountry).minFormattedLength}
                 style={{
                   width: 'auto',
                   minWidth: '140px',
                   maxWidth: '145px',
                   padding: '12px 20px',
                   background: 'transparent',
-                  border: !phoneNumber.trim() 
+                  border: phoneNumber.length < getPhoneValidation(selectedCountry).minFormattedLength 
                     ? '2px solid rgba(128, 128, 128, 0.3)' 
                     : '2px solid #00FFFF',
                   borderRadius: '8px',
-                  color: !phoneNumber.trim() 
+                  color: phoneNumber.length < getPhoneValidation(selectedCountry).minFormattedLength 
                     ? 'rgba(128, 128, 128, 0.7)' 
                     : '#00FFFF',
                   fontSize: '16px',
                   fontWeight: '600',
-                  cursor: !phoneNumber.trim() ? 'not-allowed' : 'pointer',
+                  cursor: phoneNumber.length < getPhoneValidation(selectedCountry).minFormattedLength ? 'not-allowed' : 'pointer',
                   transition: 'all 300ms ease',
-                  boxShadow: !phoneNumber.trim() 
+                  boxShadow: phoneNumber.length < getPhoneValidation(selectedCountry).minFormattedLength 
                     ? 'none' 
                     : '0 0 15px rgba(0, 255, 255, 0.3)',
-                  textShadow: !phoneNumber.trim() 
+                  textShadow: phoneNumber.length < getPhoneValidation(selectedCountry).minFormattedLength 
                     ? 'none' 
                     : '0 0 10px #00FFFF, 0 0 20px #00FFFF, 0 0 30px #00FFFF',
                   outline: 'none'
                 }}
                 onMouseEnter={(e) => {
-                  if (phoneNumber.trim()) {
+                  if (phoneNumber.length >= getPhoneValidation(selectedCountry).minFormattedLength) {
                     e.target.style.transform = 'translateY(-2px)';
                     e.target.style.background = 'rgba(0, 255, 255, 0.15)';
                     e.target.style.boxShadow = '0 0 40px rgba(0, 255, 255, 0.8), 0 0 60px rgba(0, 255, 255, 0.4), inset 0 0 30px rgba(0, 255, 255, 0.2)';
@@ -562,7 +708,7 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (phoneNumber.trim()) {
+                  if (phoneNumber.length >= getPhoneValidation(selectedCountry).minFormattedLength) {
                     e.target.style.transform = 'translateY(0)';
                     e.target.style.background = 'transparent';
                     e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';

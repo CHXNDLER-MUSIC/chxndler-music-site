@@ -116,6 +116,77 @@ export default function ChatPanel({ isOpen, onClose }) {
       default: return { color: 'gray-400', icon: '✨' };
     }
   };
+
+  // Get card image URL for a given song
+  const getCardImage = (songName, element) => {
+    const songImages = {
+      'ALWAYS ON MY MIND': 'https://ik.imagekit.io/CHXNDLER/card/HEART.png',
+      'ALWAYS ON MY MIND (REMIX)': 'https://ik.imagekit.io/CHXNDLER/card/always-on-my-mind-remix.png?updatedAt=1762388342107',
+      'ALONE': 'https://ik.imagekit.io/CHXNDLER/card/DARKNESS.png',
+      'ALONE (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/DARKNESS.png',
+      'AMERICAN DREAM': 'https://ik.imagekit.io/CHXNDLER/card/american-dream.png?updatedAt=1762388346126',
+      'BABY': 'https://ik.imagekit.io/CHXNDLER/card/baby.png?updatedAt=1762388345192',
+      'BE MY BEE': 'https://ik.imagekit.io/CHXNDLER/card/be-my-bee.png?updatedAt=1762388342848',
+      'BE MY BEE (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/be-my-bee-acoustic.png?updatedAt=1762388342912',
+      'BLUE (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/BLUE%20(ACOUSTIC).png?updatedAt=1763055066119',
+      'BLUE': 'https://ik.imagekit.io/CHXNDLER/card/LIGHTNING.png',
+      'BRAIN FREEZE': 'https://ik.imagekit.io/CHXNDLER/card/brain-freeze.png?updatedAt=1762388343020',
+      'CHEERLEADER': 'https://ik.imagekit.io/CHXNDLER/card/cheerleader.png?updatedAt=1762388342782',
+      'CHEERLEADER (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/cheerleader-acoustic.png?updatedAt=1762388343149',
+      'CHXNDLER': 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388345320',
+      'COLLIDE': 'https://ik.imagekit.io/CHXNDLER/card/collide.png?updatedAt=1762388344649',
+      'COLORS OF OUR HOME': 'https://ik.imagekit.io/CHXNDLER/card/colors-of-our-home.png?updatedAt=1762388342653',
+      'COLORS OF OUR HOME (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/colors-of-our-home-acoustic.png?updatedAt=1762388343085',
+      'COLORS OF OUR HOME (BLUMA Game Soundtrack)': 'https://ik.imagekit.io/CHXNDLER/card/colors-of-our-home-bluma.png?updatedAt=1762388342717',
+      'DARKNESS': 'https://ik.imagekit.io/CHXNDLER/card/DARKNESS.png',
+      'FEELING THIS': 'https://ik.imagekit.io/CHXNDLER/card/feeling-this.png?updatedAt=1762388344585',
+      'GAME BOY HEART': 'https://ik.imagekit.io/CHXNDLER/card/game-boy-heart.png?updatedAt=1762388344713',
+      'HEART': 'https://ik.imagekit.io/CHXNDLER/card/HEART.png',
+      'HOME': 'https://ik.imagekit.io/CHXNDLER/card/home.png?updatedAt=1762388344521',
+      'HOME (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/home-acoustic.png?updatedAt=1762388344456',
+      'HOUSE PARTY': 'https://ik.imagekit.io/CHXNDLER/card/house-party.png?updatedAt=1762388344777',
+      'HOUSE PARTY (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/house-party-acoustic.png?updatedAt=1762388343277',
+      'I MIGHT FALL IN LOVE WITH YOU': 'https://ik.imagekit.io/CHXNDLER/card/i-might-fall-in-love-with-you.png?updatedAt=1762388344392',
+      'I MIGHT FALL IN LOVE WITH YOU (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/i-might-fall-in-love-with-you-acoustic.png?updatedAt=1762388343212',
+      'KID FOREVER': 'https://ik.imagekit.io/CHXNDLER/card/kid-forever.png?updatedAt=1762388344841',
+      'LETTING GO': 'https://ik.imagekit.io/CHXNDLER/card/letting-go.png?updatedAt=1762388343341',
+      'LIGHTNING': 'https://ik.imagekit.io/CHXNDLER/card/LIGHTNING.png',
+      'LITTLE BLACK HEART': 'https://ik.imagekit.io/CHXNDLER/card/little-black-heart.png?updatedAt=1762388345064',
+      'LITTLE BLACK HEART (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/little-black-heart-acoustic.png?updatedAt=1762388345000',
+      'LOVE ME': 'https://ik.imagekit.io/CHXNDLER/card/love-me.png?updatedAt=1762388344164',
+      'LOVE ME (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/love-me-acoustic.png?updatedAt=1762388344100',
+      'MAKE BELIEVE': 'https://ik.imagekit.io/CHXNDLER/card/make-believe.png?updatedAt=1762388345128',
+      'MR. BRIGHTSIDE': 'https://ik.imagekit.io/CHXNDLER/card/mr-brightside.png?updatedAt=1762388345256',
+      'OCEAN GIRL': 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl.png?updatedAt=1762388343405',
+      'OCEAN GIRL (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl-acoustic.png?updatedAt=1762388343533',
+      'OCEAN GIRL (REMIX)': 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl-remix.png?updatedAt=1762388343469',
+      'PARIS': 'https://ik.imagekit.io/CHXNDLER/card/paris.png?updatedAt=1762388345384',
+      'PINK MOON': 'https://ik.imagekit.io/CHXNDLER/card/pink-moon.png?updatedAt=1762388345448',
+      'POKÉMON': 'https://ik.imagekit.io/CHXNDLER/card/pokemon.png?updatedAt=1762388344905',
+      'SOMEBODY TO LOVE': 'https://ik.imagekit.io/CHXNDLER/card/somebody-to-love.png?updatedAt=1762388344036',
+      'TIENES UN AMIGO': 'https://ik.imagekit.io/CHXNDLER/card/tienes-un-amigo.png?updatedAt=1762388343597',
+      'WATER': 'https://ik.imagekit.io/CHXNDLER/card/WATER.png',
+      'WE\'RE JUST FRIENDS': 'https://ik.imagekit.io/CHXNDLER/card/were-just-friends.png?updatedAt=1762388342975',
+      'WE\'RE JUST FRIENDS (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/were-just-friends-acoustic.png?updatedAt=1762388343661',
+      'WE\'RE JUST FRIENDS (DMVRCO REMIX)': 'https://ik.imagekit.io/CHXNDLER/card/were-just-friends-dmvrco-remix.png?updatedAt=1762388343725',
+      'WE\'RE JUST FRIENDS (mickey jas REMIX)': 'https://ik.imagekit.io/CHXNDLER/card/were-just-friends-mickey-jas-remix.png?updatedAt=1762388343789',
+    };
+
+    // Return the specific song image if available
+    if (songImages[songName]) {
+      return songImages[songName];
+    }
+
+    // Fallback to element image
+    const elementImages = {
+      'HEART': 'https://ik.imagekit.io/CHXNDLER/card/HEART.png',
+      'WATER': 'https://ik.imagekit.io/CHXNDLER/card/WATER.png',
+      'LIGHTNING': 'https://ik.imagekit.io/CHXNDLER/card/LIGHTNING.png',
+      'DARKNESS': 'https://ik.imagekit.io/CHXNDLER/card/DARKNESS.png'
+    };
+
+    return elementImages[element] || elementImages['HEART'];
+  };
   
   // Debug logging
   console.log('🔥 ChatPanel render:', { isOpen, profile: !!profile, user: !!user });
@@ -365,6 +436,12 @@ export default function ChatPanel({ isOpen, onClose }) {
       if (!hasJoined) {
         const displayName = getDisplayName();
         console.log('🔥 Joining chat with name:', displayName);
+        
+        // Trigger first-time connection check for authenticated users
+        if (user && profile?.name) {
+          await chatService.handleFirstTimeConnection(user.id, profile.name);
+        }
+        
         const syncMessage = await chatService.sendSyncMessage(displayName);
         console.log('🔥 Sync message result:', syncMessage);
         
@@ -898,7 +975,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                 {selectedUser && (
                   <div className="w-full max-w-96 min-w-64 sm:min-w-72 border-l border-yellow-400/30 flex flex-col overflow-hidden">
                     {/* Profile Header */}
-                    <div className="px-2 py-1.5 sm:px-3 sm:py-2 border-b border-yellow-400/30">
+                    <div className="px-2 py-1 sm:px-3 sm:py-1.5 border-b border-yellow-400/30">
                       <div className="flex items-center justify-between">
                         <div className="flex flex-col flex-1 min-w-0">
                           {/* User Icon and Name Row */}
@@ -942,8 +1019,8 @@ export default function ChatPanel({ isOpen, onClose }) {
                             </div>
                             
                             {/* Total Heart Coins */}
-                            <div className="flex flex-col items-end space-y-0.5 flex-shrink-0">
-                              <div className="flex items-center space-x-1 px-2 py-1 rounded bg-black/30">
+                            <div className="flex flex-col items-end space-y-0 flex-shrink-0">
+                              <div className="flex items-center space-x-1 px-2 py-0.5 rounded bg-black/30">
                                 <span className="text-xs text-white/80 font-medium">TOTAL</span>
                                 <img 
                                   src="/elements/heart-coin.webp" 
@@ -979,7 +1056,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 </button>
                               </div>
                               {/* Days Streak */}
-                              <div className="flex items-center space-x-1 px-2 py-1 text-xs text-white/70">
+                              <div className="flex items-center space-x-1 px-2 py-0 text-xs text-white/70">
                                 <span className="text-yellow-400 font-bold">{selectedUser.days_streak ? selectedUser.days_streak : 7}</span>
                                 <span>Days Streak</span>
                               </div>
@@ -987,7 +1064,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                           </div>
                           
                           {/* Badges, Binder Icons, and Send Heart Coin Row */}
-                          <div className="flex items-center space-x-3 mt-0.5 ml-8">
+                          <div className="flex items-center space-x-3 mt-0 ml-8">
                             <button 
                               onClick={() => {
                                 try {
@@ -1215,20 +1292,78 @@ export default function ChatPanel({ isOpen, onClose }) {
 
                             {/* Cards Grid */}
                             <div className="flex-1 grid grid-cols-5 gap-2">
-                              {/* Display real song cards */}
-                              {songCollection.slice(binderStartIndex, binderStartIndex + 5).map((song, index) => {
-                                const elementDisplay = getElementDisplay(song.element);
+                              {/* Display user's actual cards */}
+                              {Array.from({ length: 5 }, (_, index) => {
+                                // Get user's actual cards if available
+                                const userCards = selectedUser.id !== 'anonymous' && profile?.cards ? profile.cards : [];
+                                const cardIndex = binderStartIndex + index;
+                                const userCard = userCards[cardIndex];
+                                
+                                // If user has this card, find the song data
+                                let cardSong = null;
+                                if (userCard) {
+                                  cardSong = songCollection.find(song => song.name === userCard.cards?.card_name);
+                                }
+                                
+                                const elementDisplay = cardSong ? getElementDisplay(cardSong.element) : null;
+                                const hasCard = !!userCard && !!cardSong;
+                                
                                 return (
                                   <div 
-                                    key={binderStartIndex + index} 
-                                    className="rounded-lg border border-white/20 backdrop-blur-sm transition-all duration-300"
+                                    key={`card-slot-${cardIndex}`} 
+                                    className="rounded-lg border border-white/10 backdrop-blur-sm transition-all duration-300 cursor-pointer hover:scale-105"
                                     style={{
-                                      boxShadow: '0 0 10px rgba(255,105,180,0.3)',
-                                      background: 'rgba(0, 0, 0, 0.4)'
+                                      boxShadow: hasCard ? '0 0 5px rgba(255,105,180,0.3)' : '0 0 5px rgba(255,105,180,0.1)',
+                                      aspectRatio: '2/3',
+                                      background: 'rgba(0, 0, 0, 0.3)'
                                     }}
                                   >
-                                    <div className="w-full h-16 rounded-lg flex items-center justify-center">
-                                    </div>
+                                    {hasCard ? (
+                                      // Show actual card image
+                                      <div className="w-full h-full rounded-lg overflow-hidden relative">
+                                        <img
+                                          src={getCardImage(cardSong.name, cardSong.element)}
+                                          alt={cardSong.name}
+                                          className="w-full h-full object-cover"
+                                          style={{
+                                            boxShadow: '0 0 10px rgba(255,105,180,0.6)',
+                                          }}
+                                          onError={(e) => {
+                                            // Fallback to icon if image fails to load
+                                            const target = e.target;
+                                            target.style.display = 'none';
+                                            const parent = target.parentElement;
+                                            if (parent) {
+                                              parent.innerHTML = `
+                                                <div class="w-full h-full rounded-lg bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-pink-400/50 flex flex-col items-center justify-center p-1">
+                                                  <div class="text-lg mb-1" style="color: ${elementDisplay?.color || '#FFB6C1'}; filter: drop-shadow(0 0 4px rgba(255,182,193,0.8))">
+                                                    ${elementDisplay?.icon || '🎵'}
+                                                  </div>
+                                                  <div class="text-xs font-bold text-center leading-tight" style="color: #FFB6C1; text-shadow: 0 0 4px rgba(255,182,193,0.6); font-size: 7px">
+                                                    ${cardSong.name.split(' ').slice(0, 2).join(' ')}
+                                                  </div>
+                                                </div>
+                                              `;
+                                            }
+                                          }}
+                                        />
+                                      </div>
+                                    ) : (
+                                      // Show empty slot
+                                      <div className="w-full h-full rounded-lg bg-gradient-to-br from-pink-500/10 to-purple-500/10 border-2 border-dashed border-pink-400/30 flex items-center justify-center">
+                                        <div 
+                                          className="text-xs font-bold text-center"
+                                          style={{ 
+                                            color: '#FFB6C1', 
+                                            textShadow: '0 0 4px rgba(255,182,193,0.6)',
+                                            fontSize: '8px',
+                                            opacity: 0.5
+                                          }}
+                                        >
+                                          ○
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
                                 );
                               })}
@@ -1287,7 +1422,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                             
                             {/* Send Button */}
                             <button 
-                              onClick={() => {
+                              onClick={async () => {
                                 try {
                                   const audio = new Audio('/audio/click.mp3');
                                   audio.volume = 0.3;
@@ -1297,9 +1432,49 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 } catch (error) {
                                   console.log('Click audio creation failed:', error);
                                 }
-                                console.log('Sending 1 heart coin to:', selectedUser.name);
-                                // TODO: Implement actual heart coin sending logic
-                                setShowSendHeartCoin(false); // Hide interface after sending
+                                
+                                // Only allow transfers between authenticated users
+                                if (!user || !profile?.name || selectedUser.id === 'anonymous' || selectedUser.id === user.id) {
+                                  console.log('HeartCoin transfer not allowed for anonymous users or self-transfers');
+                                  return;
+                                }
+                                
+                                console.log('Sending 1 HeartCoin to:', selectedUser.name);
+                                
+                                // Import and use the transfer function
+                                try {
+                                  const { transferHeartCoins } = await import('@/utils/heartcoins');
+                                  const { supabaseClient } = await import('@/lib/supabaseClient');
+                                  
+                                  const result = await transferHeartCoins(
+                                    supabaseClient,
+                                    user.id,
+                                    selectedUser.id,
+                                    1,
+                                    `HeartCoin sent to ${selectedUser.name} via chat`
+                                  );
+                                  
+                                  if (result.success) {
+                                    console.log('✅ HeartCoin transfer successful');
+                                    setShowSendHeartCoin(false); // Hide interface after successful sending
+                                    
+                                    // Play success sound
+                                    try {
+                                      const successAudio = new Audio('/audio/success.mp3');
+                                      successAudio.volume = 0.5;
+                                      successAudio.play().catch(error => {
+                                        console.log('Success audio play failed:', error);
+                                      });
+                                    } catch (error) {
+                                      console.log('Success audio creation failed:', error);
+                                    }
+                                  } else {
+                                    console.error('❌ HeartCoin transfer failed:', result.error);
+                                    // You could show an error message to the user here
+                                  }
+                                } catch (error) {
+                                  console.error('Error importing transfer function:', error);
+                                }
                               }}
                               className="flex items-center space-x-2 px-4 py-2 bg-pink-500/20 border border-pink-400/60 hover:border-pink-400/80 rounded-lg transition-all duration-200 hover:bg-pink-500/30"
                               style={{

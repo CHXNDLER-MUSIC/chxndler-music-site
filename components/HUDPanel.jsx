@@ -36,7 +36,6 @@ import { buildPlanetSongs } from "@/lib/planets";
 import SongDropdown from "@/components/SongDropdown";
 import SimpleWaveform from "@/components/SimpleWaveform";
 import WaveformVisualizer, { ELEMENT_COLORS } from "@/components/WaveformVisualizer";
-import SpotifyProgressBar from "@/components/SpotifyProgressBar";
 import DevErrorLogger from "@/components/DevErrorLogger";
 // Lazy-load 3D systems on client only to avoid early evaluation issues
 // Prefer R3F-based system when compatible; otherwise fall back to raw Three.js
@@ -2450,18 +2449,6 @@ export default function HUDPanel({
               return null;
             })()}
             
-            {/* Spotify-style Progress Bar - positioned to the left of the cover art, lower and longer */}
-            <div style={{
-              position: 'absolute',
-              top: 35, // Move down from top of cover art
-              right: 125, // Place left of the 110px cover with ~15px gap
-              width: '240px', // Make the bar longer than the cover
-              height: '40px',
-              zIndex: 10,
-              pointerEvents: 'auto'
-            }}>
-              <SpotifyProgressBar />
-            </div>
           </div>
 
           {/* Waveform Media Player - positioned below dropdown with proper spacing */}
@@ -2488,131 +2475,12 @@ export default function HUDPanel({
                   const lyricsAria = isHome ? 'View lyrics for CHXNDLER' : `View lyrics for ${currentSong?.title || 'current track'}`;
                   return (
                     <>
-                      {/* Waveform positioned above play/pause button */}
-                      <div className="hud-mini-wave flex items-center justify-center" style={{ marginBottom: 8, marginLeft: -8 }}>
-                        <div 
-                          className="waveform"
-                          onClick={handleProgressClick}
-                          onMouseMove={(e) => {
-                            const rect = e.currentTarget.getBoundingClientRect();
-                            const hoverX = e.clientX - rect.left;
-                            const hoverPercentage = (hoverX / rect.width) * 100;
-                            e.currentTarget.style.setProperty('--hover-position', `${hoverPercentage}%`);
-                          }}
-                          style={{
-                            position: 'relative',
-                            border: 'none',
-                            width: `calc((100vw - ${(inConsole ? 6 : 8) + (oneLinerRight + 4) + 32}px) * 0.85)`, // 85% of dropdown width
-                            height: 18,
-                            borderRadius: 0,
-                            background: 'transparent'
-                          }}
-                          onMouseEnter={(e) => {
-                            try { sfx.play('hover', 0.3); } catch {}
-                            // No border styling needed for invisible container
-                          }}
-                          onMouseLeave={(e) => {
-                            // No border styling needed for invisible container
-                          }}
-                        >
-                          <svg className="w-full h-full" viewBox="0 0 100 18" preserveAspectRatio="none" style={{ background: 'transparent' }}>
-                            <defs>
-                              {(() => {
-                                const ELEMENT_COLORS = {
-                                  heart: {
-                                    stroke: "#FC54AF",
-                                    glow: "rgba(252, 84, 175, 0.9)"
-                                  },
-                                  water: {
-                                    stroke: "#38B6FF",
-                                    glow: "rgba(56, 182, 255, 0.9)"
-                                  },
-                                  lightning: {
-                                    stroke: "#F2EF1D",
-                                    glow: "rgba(242, 239, 29, 0.9)"
-                                  },
-                                  darkness: {
-                                    stroke: "#FFFFFF",
-                                    glow: "rgba(255, 255, 255, 0.7)"
-                                  }
-                                };
-                                const currentSong = resolvedSongs.find(s => s.id === active);
-                                const element = currentSong?.icon || 'heart';
-                                const elementColor = ELEMENT_COLORS[element]?.stroke || '#FFFFFF';
-                                const hexToRgba = (hex, alpha) => {
-                                  const r = parseInt(hex.slice(1, 3), 16);
-                                  const g = parseInt(hex.slice(3, 5), 16);
-                                  const b = parseInt(hex.slice(5, 7), 16);
-                                  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-                                };
-                                return (
-                                  <>
-                                    <linearGradient id="miniUnplayed" x1="0%" y1="0%" x2="0%" y2="100%">
-                                      <stop offset="0%" stopColor={hexToRgba(elementColor, 0.25)} />
-                                      <stop offset="50%" stopColor={hexToRgba(elementColor, 0.35)} />
-                                      <stop offset="100%" stopColor={hexToRgba(elementColor, 0.25)} />
-                                    </linearGradient>
-                                    <linearGradient id="miniPlayed" x1="0%" y1="0%" x2="0%" y2="100%">
-                                      <stop offset="0%" stopColor={hexToRgba(elementColor, 0.8)} />
-                                      <stop offset="50%" stopColor={hexToRgba(elementColor, 1)} />
-                                      <stop offset="100%" stopColor={hexToRgba(elementColor, 0.8)} />
-                                    </linearGradient>
-                                    <filter id="waveformGlow">
-                                      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                                      <feMerge>
-                                        <feMergeNode in="coloredBlur"/>
-                                        <feMergeNode in="SourceGraphic"/>
-                                      </feMerge>
-                                    </filter>
-                                  </>
-                                );
-                              })()}
-                            </defs>
-                            {(() => {
-                              const ELEMENT_COLORS = {
-                                heart: {
-                                  stroke: "#FC54AF",
-                                  glow: "rgba(252, 84, 175, 0.9)"
-                                },
-                                water: {
-                                  stroke: "#38B6FF",
-                                  glow: "rgba(56, 182, 255, 0.9)"
-                                },
-                                lightning: {
-                                  stroke: "#F2EF1D",
-                                  glow: "rgba(242, 239, 29, 0.9)"
-                                },
-                                darkness: {
-                                  stroke: "#FFFFFF",
-                                  glow: "rgba(255, 255, 255, 0.7)"
-                                }
-                              };
-                              const currentSong = resolvedSongs.find(s => s.id === active);
-                              const element = currentSong?.icon || 'heart';
-                              const elementColor = ELEMENT_COLORS[element]?.stroke || '#FFFFFF';
-                              const a = liveAudioRef.current;
-                              const liveDur = (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
-                              const liveTime = (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
-                              const progressRatio = liveDur > 0 ? (liveTime / liveDur) : 0;
-                              const progressX = progressRatio * 100;
-                              const centerY = 9; // half of 18
-                              return (
-                                <>
-                                  {/* Background track as a thick rounded line */}
-                                  <line x1="0" y1={centerY} x2="100" y2={centerY} stroke={elementColor} strokeWidth="8" opacity="0.35" strokeLinecap="round" strokeLinejoin="round" filter="url(#waveformGlow)" />
-                                  {/* Played portion: single clean rounded bar with glow */}
-                                  <line x1="0" y1={centerY} x2={progressX} y2={centerY} stroke={elementColor} strokeWidth="8" opacity="1" strokeLinecap="round" strokeLinejoin="round" filter="url(#waveformGlow)" />
-                                </>
-                              );
-                            })()}
-                          </svg>
-                        </div>
-                      </div>
+                      {/* Controls positioned above waveform */}
                       <div className="hud-top-controls" style={{ 
                         display: 'flex', 
                         alignItems: 'center', 
                         gap: 8, 
-                        marginTop: -24, 
+                        marginBottom: 8,
                         marginLeft: 4,
                         position: 'relative',
                         zIndex: 2,
@@ -2869,6 +2737,126 @@ export default function HUDPanel({
                         )}
                       </button>
                     </div>
+                      {/* Waveform positioned below controls */}
+                      <div className="hud-mini-wave flex items-center justify-center" style={{ marginBottom: 8, marginLeft: -8 }}>
+                        <div 
+                          className="waveform"
+                          onClick={handleProgressClick}
+                          onMouseMove={(e) => {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const hoverX = e.clientX - rect.left;
+                            const hoverPercentage = (hoverX / rect.width) * 100;
+                            e.currentTarget.style.setProperty('--hover-position', `${hoverPercentage}%`);
+                          }}
+                          style={{
+                            position: 'relative',
+                            border: 'none',
+                            width: `calc((100vw - ${(inConsole ? 6 : 8) + (oneLinerRight + 4) + 32}px) * 0.85)`, // 85% of dropdown width
+                            height: 18,
+                            borderRadius: 0,
+                            background: 'transparent'
+                          }}
+                          onMouseEnter={(e) => {
+                            try { sfx.play('hover', 0.3); } catch {}
+                            // No border styling needed for invisible container
+                          }}
+                          onMouseLeave={(e) => {
+                            // No border styling needed for invisible container
+                          }}
+                        >
+                          <svg className="w-full h-full" viewBox="0 0 100 18" preserveAspectRatio="none" style={{ background: 'transparent' }}>
+                            <defs>
+                              {(() => {
+                                const ELEMENT_COLORS = {
+                                  heart: {
+                                    stroke: "#FC54AF",
+                                    glow: "rgba(252, 84, 175, 0.9)"
+                                  },
+                                  water: {
+                                    stroke: "#38B6FF",
+                                    glow: "rgba(56, 182, 255, 0.9)"
+                                  },
+                                  lightning: {
+                                    stroke: "#F2EF1D",
+                                    glow: "rgba(242, 239, 29, 0.9)"
+                                  },
+                                  darkness: {
+                                    stroke: "#FFFFFF",
+                                    glow: "rgba(255, 255, 255, 0.7)"
+                                  }
+                                };
+                                const currentSong = resolvedSongs.find(s => s.id === active);
+                                const element = currentSong?.icon || 'heart';
+                                const elementColor = ELEMENT_COLORS[element]?.stroke || '#FFFFFF';
+                                const hexToRgba = (hex, alpha) => {
+                                  const r = parseInt(hex.slice(1, 3), 16);
+                                  const g = parseInt(hex.slice(3, 5), 16);
+                                  const b = parseInt(hex.slice(5, 7), 16);
+                                  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+                                };
+                                return (
+                                  <>
+                                    <linearGradient id="miniUnplayed" x1="0%" y1="0%" x2="0%" y2="100%">
+                                      <stop offset="0%" stopColor={hexToRgba(elementColor, 0.25)} />
+                                      <stop offset="50%" stopColor={hexToRgba(elementColor, 0.35)} />
+                                      <stop offset="100%" stopColor={hexToRgba(elementColor, 0.25)} />
+                                    </linearGradient>
+                                    <linearGradient id="miniPlayed" x1="0%" y1="0%" x2="0%" y2="100%">
+                                      <stop offset="0%" stopColor={hexToRgba(elementColor, 0.8)} />
+                                      <stop offset="50%" stopColor={hexToRgba(elementColor, 1)} />
+                                      <stop offset="100%" stopColor={hexToRgba(elementColor, 0.8)} />
+                                    </linearGradient>
+                                    <filter id="waveformGlow">
+                                      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                                      <feMerge>
+                                        <feMergeNode in="coloredBlur"/>
+                                        <feMergeNode in="SourceGraphic"/>
+                                      </feMerge>
+                                    </filter>
+                                  </>
+                                );
+                              })()}
+                            </defs>
+                            {(() => {
+                              const ELEMENT_COLORS = {
+                                heart: {
+                                  stroke: "#FC54AF",
+                                  glow: "rgba(252, 84, 175, 0.9)"
+                                },
+                                water: {
+                                  stroke: "#38B6FF",
+                                  glow: "rgba(56, 182, 255, 0.9)"
+                                },
+                                lightning: {
+                                  stroke: "#F2EF1D",
+                                  glow: "rgba(242, 239, 29, 0.9)"
+                                },
+                                darkness: {
+                                  stroke: "#FFFFFF",
+                                  glow: "rgba(255, 255, 255, 0.7)"
+                                }
+                              };
+                              const currentSong = resolvedSongs.find(s => s.id === active);
+                              const element = currentSong?.icon || 'heart';
+                              const elementColor = ELEMENT_COLORS[element]?.stroke || '#FFFFFF';
+                              const a = liveAudioRef.current;
+                              const liveDur = (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
+                              const liveTime = (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
+                              const progressRatio = liveDur > 0 ? (liveTime / liveDur) : 0;
+                              const progressX = progressRatio * 100;
+                              const centerY = 9; // half of 18
+                              return (
+                                <>
+                                  {/* Background track as a thick rounded line */}
+                                  <line x1="0" y1={centerY} x2="100" y2={centerY} stroke={elementColor} strokeWidth="8" opacity="0.35" strokeLinecap="round" strokeLinejoin="round" filter="url(#waveformGlow)" />
+                                  {/* Played portion: single clean rounded bar with glow */}
+                                  <line x1="0" y1={centerY} x2={progressX} y2={centerY} stroke={elementColor} strokeWidth="8" opacity="1" strokeLinecap="round" strokeLinejoin="round" filter="url(#waveformGlow)" />
+                                </>
+                              );
+                            })()}
+                          </svg>
+                        </div>
+                      </div>
                     </>
                   );
                 })()}

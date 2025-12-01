@@ -264,7 +264,7 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" 
     { time: 119.9, label: "Drop 2", kind: "chorus" },
     { time: 152.5, label: "Final Drop", kind: "chorus" }
   ] },
-  { title: "POKÉMON", spotify:"https://open.spotify.com/track/7uzO8MyTy8402703kP2Xuk", apple:"https://music.apple.com/us/album/pok%C3%A9mon-single/1807448784", cover:"/covers/POKÉMON.webp", src: "/tracks/pokemon.opus", sections: [
+  { title: "POKÉMON", spotify:"https://open.spotify.com/track/7uzO8MyTy8402703kP2Xuk", apple:"https://music.apple.com/us/album/pok%C3%A9mon-single/1807448784", cover:"/covers/POKEMON.webp", src: "/tracks/pokemon.opus", sections: [
     { time: 11.6, label: "Verse 1", kind: "verse" },
     { time: 41.3, label: "Chorus 1", kind: "chorus" },
     { time: 71.0, label: "Verse 2", kind: "verse" },
@@ -285,8 +285,9 @@ const MAPPED = RAW.map((t, idx) => {
   const elementData = ELEMENT_THEMES[element];
   
   // Default to local cover path when a cover isn't provided
-  // Covers are stored under /public/covers using the exact title casing as filenames (WEBP)
-  const cover = t.cover ?? `/covers/${t.title}.webp`;
+  // Covers are stored under /public/covers as WEBP; strip diacritics for filenames like POKÉMON -> POKEMON
+  const fileTitle = (t.title || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const cover = t.cover ?? `/covers/${fileTitle}.webp`;
   
   // Build audio sources for dual format support
   const sources = buildAudioSources(t.src, base);

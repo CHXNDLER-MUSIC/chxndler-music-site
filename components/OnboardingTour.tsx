@@ -111,7 +111,7 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
       if (menuRect) {
         // Position to the right of the hamburger menu dropdown
         const top = rect.top + (rect.height / 2) - (bubbleHeight / 2);
-        const left = menuRect.right + 280; // Menu width (~192px) + gap + some extra space
+        const left = menuRect.right + 20; // Position just to the right with a small gap
         
         setBubblePosition({ 
           top: Math.max(20, Math.min(top, viewportHeight - bubbleHeight - 20)), 
@@ -171,12 +171,12 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
     if (step.id === 'hamburger' || step.id.startsWith('menu-')) {
       if (onMenuToggle && step.id !== 'hamburger') {
         // Open menu for menu item steps (not for hamburger step itself)
-        setTimeout(() => onMenuToggle(true), 100);
+        onMenuToggle(true);
       }
     } else if (step.id === 'heartcoins') {
       // Close menu for Heart Coins step
       if (onMenuToggle) {
-        setTimeout(() => onMenuToggle(false), 100);
+        onMenuToggle(false);
       }
     }
 
@@ -220,10 +220,11 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
           element.removeEventListener('click', handleElementClick);
           element.classList.remove('tour-highlight');
         };
-      } else if (retryCount < 3) {
-        // Retry finding the element after a short delay (up to 3 times)
+      } else if (retryCount < 5) {
+        // Retry finding the element after a short delay (up to 5 times, with longer delays for menu items)
         console.warn(`Tour target not found on attempt ${retryCount + 1}: ${step.selector}, retrying...`);
-        setTimeout(() => findAndSetupElement(retryCount + 1), 100 * (retryCount + 1));
+        const delay = step.id.startsWith('menu-') ? 200 * (retryCount + 1) : 100 * (retryCount + 1);
+        setTimeout(() => findAndSetupElement(retryCount + 1), delay);
       } else {
         console.warn(`Tour target not found after ${retryCount + 1} attempts: ${step.selector}`);
         setTargetElement(null);
@@ -236,7 +237,12 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
     };
 
     // Start the element finding process
-    findAndSetupElement();
+    if (step.id.startsWith('menu-')) {
+      // Add a small delay for menu items to allow menu to fully open
+      setTimeout(() => findAndSetupElement(), 150);
+    } else {
+      findAndSetupElement();
+    }
   };
 
   // Trigger the actual popout for each button

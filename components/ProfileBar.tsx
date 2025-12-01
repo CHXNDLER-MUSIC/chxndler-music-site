@@ -80,6 +80,7 @@ export default function ProfileBar({
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showSignInPopup, setShowSignInPopup] = useState(false);
   const [showLoginTooltip, setShowLoginTooltip] = useState(false);
+  const [showWelcomeHome, setShowWelcomeHome] = useState(false);
   
   // Single active panel state
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
@@ -92,7 +93,7 @@ export default function ProfileBar({
   
   // Chxndler popout state
   const [isChxndlerPopoutOpen, setIsChxndlerPopoutOpen] = useState(false);
-  const [chxndlerActiveTab, setChxndlerActiveTab] = useState<"CHXNDLER" | "WE BELIEVE">("CHXNDLER");
+  const [chxndlerActiveTab, setChxndlerActiveTab] = useState<"CHXNDLER" | "WE BELIEVE" | "ELEMENTS">("CHXNDLER");
   const [isJourneyModalOpen, setIsJourneyModalOpen] = useState(false);
 
   // Heart popover states
@@ -236,12 +237,6 @@ export default function ProfileBar({
       } catch {}
     }
   };
-
-  // Heart popover states
-  const [showHeartPopover, setShowHeartPopover] = useState(false);
-  const [showQuests, setShowQuests] = useState(false);
-  const heartBtnRef = useRef<HTMLButtonElement>(null);
-  const [heartPopoverPos, setHeartPopoverPos] = useState<{left: number, top: number, width?: number, height?: number} | null>(null);
 
   // Element mapping for icons
   const getElementIcon = (element: string | null) => {
@@ -735,15 +730,15 @@ export default function ProfileBar({
             }}
           >
             <div className="flex items-start">
-              <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>•</span>
+              <span className="mr-3" style={{ color: '#FF1493 !important', textShadow: '0 0 8px rgba(255,20,147,0.9), 0 0 15px rgba(255,20,147,0.7)' }}>♥</span>
               <span>We believe being your <span style={{ color: '#0099FF !important', textShadow: '0 0 5px #0099FF, 0 0 10px #0099FF, 0 0 15px #0099FF, 0 0 20px #0099FF', fontWeight: 'inherit !important', WebkitTextFillColor: '#0099FF !important', textFillColor: '#0099FF !important', filter: 'drop-shadow(0 0 3px #0099FF)' }}>truest self</span> is the beginning of freedom.</span>
             </div>
             <div className="flex items-start">
-              <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>•</span>
+              <span className="mr-3" style={{ color: '#FF1493 !important', textShadow: '0 0 8px rgba(255,20,147,0.9), 0 0 15px rgba(255,20,147,0.7)' }}>♥</span>
               <span>We believe <span style={{ color: '#FFD700 !important', textShadow: '0 0 5px #FFD700, 0 0 10px #FFD700, 0 0 15px #FFD700, 0 0 20px #FFD700', fontWeight: 'inherit !important', WebkitTextFillColor: '#FFD700 !important', textFillColor: '#FFD700 !important', filter: 'drop-shadow(0 0 3px #FFD700)' }}>passion</span> is sacred and should be pursued loudly.</span>
             </div>
             <div className="flex items-start">
-              <span className="mr-3" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>•</span>
+              <span className="mr-3" style={{ color: '#FF1493 !important', textShadow: '0 0 8px rgba(255,20,147,0.9), 0 0 15px rgba(255,20,147,0.7)' }}>♥</span>
               <span>We believe <span style={{ color: '#FF1493 !important', textShadow: '0 0 5px #FF1493, 0 0 10px #FF1493, 0 0 15px #FF1493, 0 0 20px #FF1493', fontWeight: 'inherit !important', WebkitTextFillColor: '#FF1493 !important', textFillColor: '#FF1493 !important', filter: 'drop-shadow(0 0 3px #FF1493)' }}>love</span> is the force that connects every soul.</span>
             </div>
           </div>
@@ -756,7 +751,7 @@ export default function ProfileBar({
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center"
           style={{
-            paddingTop: '120px'
+            paddingTop: '300px'
           }}
         >
           <div
@@ -871,6 +866,20 @@ export default function ProfileBar({
               >
                 WE BELIEVE
               </button>
+              <button
+                onClick={() => setChxndlerActiveTab("ELEMENTS")}
+                className={`px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 ${
+                  chxndlerActiveTab === "ELEMENTS"
+                    ? "bg-purple-500/20 text-purple-300 border border-purple-400/50"
+                    : "text-white/70 hover:text-white"
+                }`}
+                style={{
+                  textShadow: chxndlerActiveTab === "ELEMENTS" ? '0 0 8px rgba(139,92,246,0.8)' : 'none',
+                  boxShadow: chxndlerActiveTab === "ELEMENTS" ? '0 0 15px rgba(139,92,246,0.3)' : 'none'
+                }}
+              >
+                ELEMENTS
+              </button>
             </div>
           </div>
           
@@ -886,34 +895,14 @@ export default function ProfileBar({
           {/* Tab Content */}
           {chxndlerActiveTab === "CHXNDLER" && (
             <div className="text-center px-2">
-              {/* CHXNDLER Image */}
-              <div className="flex justify-center">
-                <div 
-                  className="relative"
-                  style={{
-                    width: '120px',
-                    height: '120px',
-                    filter: 'drop-shadow(0 0 20px rgba(255,105,180,0.6))'
-                  }}
-                >
-                  <img
-                    src="/cockpit/chxndler-picture.webp"
-                    alt="CHXNDLER"
-                    className="w-full h-full object-contain rounded-lg"
-                    style={{
-                      filter: 'brightness(1.1) saturate(1.2)'
-                    }}
-                  />
-                </div>
-              </div>
-              
               {/* Description */}
               <div 
                 style={{ 
                   fontSize: 13, 
                   color: '#FFFFFF !important', 
                   textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
-                  lineHeight: 1.5
+                  lineHeight: 1.5,
+                  marginTop: '20px'
                 }}
               >
                 CHXNDLER is an alien from the Heartverse, exploring Earth in search of love. They create dreamy electronic pop to understand what it means to be human. Their music becomes a signal carried through the cosmos, guiding wanderers, dreamers, and lovers toward a place to call home.
@@ -933,19 +922,84 @@ export default function ProfileBar({
                 }}
               >
                 <div className="flex items-start">
-                  <span className="mr-2" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>•</span>
+                  <span className="mr-2" style={{ color: '#FF1493 !important', textShadow: '0 0 8px rgba(255,20,147,0.9), 0 0 15px rgba(255,20,147,0.7)' }}>♥</span>
                   <span>We believe being your <span style={{ color: '#0099FF !important', textShadow: '0 0 5px #0099FF, 0 0 10px #0099FF, 0 0 15px #0099FF, 0 0 20px #0099FF', fontWeight: 'inherit !important' }}>truest self</span> is the beginning of freedom.</span>
                 </div>
                 <div className="flex items-start">
-                  <span className="mr-2" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>•</span>
+                  <span className="mr-2" style={{ color: '#FF1493 !important', textShadow: '0 0 8px rgba(255,20,147,0.9), 0 0 15px rgba(255,20,147,0.7)' }}>♥</span>
                   <span>We believe <span style={{ color: '#FFD700 !important', textShadow: '0 0 5px #FFD700, 0 0 10px #FFD700, 0 0 15px #FFD700, 0 0 20px #FFD700', fontWeight: 'inherit !important' }}>passion</span> is sacred and should be pursued loudly.</span>
                 </div>
                 <div className="flex items-start">
-                  <span className="mr-2" style={{ color: '#FFFFFF !important', textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)' }}>•</span>
+                  <span className="mr-2" style={{ color: '#FF1493 !important', textShadow: '0 0 8px rgba(255,20,147,0.9), 0 0 15px rgba(255,20,147,0.7)' }}>♥</span>
                   <span>We believe <span style={{ color: '#FF1493 !important', textShadow: '0 0 5px #FF1493, 0 0 10px #FF1493, 0 0 15px #FF1493, 0 0 20px #FF1493', fontWeight: 'inherit !important' }}>love</span> is the force that connects every soul.</span>
                 </div>
               </div>
             </>
+          )}
+          
+          {chxndlerActiveTab === "ELEMENTS" && (
+            <div className="text-center px-2">
+              {/* Elements Grid */}
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                {[
+                  { name: 'HEART', color: '#FF6B9D', icon: '/elements/heart.webp', subtitle: 'love and connection' },
+                  { name: 'WATER', color: '#4A90E2', icon: '/elements/water.webp', subtitle: 'flow and adaptability' },
+                  { name: 'LIGHTNING', color: '#FFD700', icon: '/elements/lightning.webp', subtitle: 'passion and courage' },
+                  { name: 'DARKNESS', color: '#8B5CF6', icon: '/elements/darkness.webp', subtitle: 'mystery and transformation' }
+                ].map((element) => (
+                  <div
+                    key={element.name}
+                    className="flex flex-col items-center p-3 rounded-lg border transition-all duration-200 hover:scale-105"
+                    style={{
+                      borderColor: `${element.color}60`,
+                      background: `${element.color}10`,
+                      boxShadow: `0 0 15px ${element.color}30`
+                    }}
+                  >
+                    <div 
+                      className="w-8 h-8 rounded-lg mb-2 overflow-hidden border"
+                      style={{
+                        borderColor: element.color,
+                        background: `${element.color}20`
+                      }}
+                    >
+                      <img
+                        src={element.icon}
+                        alt={element.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div 
+                      className="text-xs font-bold"
+                      style={{
+                        color: element.color,
+                        textShadow: `0 0 8px ${element.color}80`
+                      }}
+                    >
+                      {element.name}
+                    </div>
+                    <div 
+                      className="text-xs text-white/70"
+                      style={{ fontSize: '10px' }}
+                    >
+                      {element.subtitle}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Elements Description */}
+              <div 
+                style={{ 
+                  fontSize: 11, 
+                  color: '#FFFFFF !important', 
+                  textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
+                  lineHeight: 1.4
+                }}
+              >
+                The four Elements represent different energies and emotions in the Heartverse. Each song is aligned with an Element, creating a journey through love, dreams, passion, and transformation.
+              </div>
+            </div>
           )}
           </div>
         </div>
@@ -1251,6 +1305,12 @@ export default function ProfileBar({
           setIsJourneyModalOpen(false);
           try { onOpenBlueDisplay?.(); } catch {}
         }} 
+      />
+
+      {/* Welcome Home Modal */}
+      <WelcomeHomeModal 
+        open={showWelcomeHome} 
+        onClose={() => setShowWelcomeHome(false)} 
       />
 
     </div>

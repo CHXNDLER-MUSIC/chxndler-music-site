@@ -23,12 +23,12 @@
 
 /* Custom cursor styling */
 * {
-  cursor: url('/elements/cursor-32.png') 16 16, auto;
+  cursor: url('/elements/curs.png') 16 16, auto;
 }
 
 /* Ensure cursor works on interactive elements */
 a, button, input, select, textarea, [role="button"], [tabindex]:not([tabindex="-1"]) {
-  cursor: url('/elements/cursor-32.png') 16 16, pointer;
+  cursor: url('/elements/curs.png') 16 16, pointer;
 }
 
 /* Removed global position: relative rule that was causing click blocking issues */

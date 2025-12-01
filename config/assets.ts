@@ -99,7 +99,7 @@ export const TRACKS: Record<string, TrackAsset> = {
     id: "pokemon",
     title: "POKÉMON",
     src: "/tracks/pokemon.opus", 
-    cover: "/covers/POKÉMON.webp",
+    cover: "/covers/POKEMON.webp",
     element: "LIGHTNING"
   },
   // Additional tracks that may exist with mp3 extension

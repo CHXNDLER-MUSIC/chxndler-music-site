@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import HeartversePopup from "@/components/HeartversePopup";
 import { useProfile } from "@/contexts/ProfileContext";
 import { useBadges } from "@/hooks/useBadges";
@@ -30,6 +30,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   const { badgeCategories, loading, error } = useBadges();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedBadge, setSelectedBadge] = useState<{name: string; description?: string; progress?: number; current?: number; total?: number; icon_url?: string} | null>(null);
+  const [selectedStreakElement, setSelectedStreakElement] = useState<string | null>(null);
 
   // Fallback categories if Supabase data isn't available
   const fallbackCategories: BadgeCategory[] = [
@@ -136,6 +137,64 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
       ]
     }
   ];
+
+  // Helper functions for elemental streak filtering
+  const getElementalStreakElements = () => ['HEART', 'WATER', 'LIGHTNING', 'DARKNESS'];
+  
+  const getElementIcon = (element: string) => {
+    const icons: { [key: string]: string } = {
+      'HEART': '❤️',
+      'WATER': '💧', 
+      'LIGHTNING': '⚡',
+      'DARKNESS': '🌑'
+    };
+    return icons[element] || '';
+  };
+
+  const getElementColor = (element: string) => {
+    const colors: { [key: string]: string } = {
+      'HEART': '#FF69B4',
+      'WATER': '#1E90FF',
+      'LIGHTNING': '#FFD700',
+      'DARKNESS': '#8B0082'
+    };
+    return colors[element] || '#FFFFFF';
+  };
+
+  const getFilteredStreakBadges = (category: BadgeCategory) => {
+    if (category.id !== 'elemental-streak') {
+      return category.badges;
+    }
+
+    // If no element selected, return empty array to show selection prompt
+    if (!selectedStreakElement) {
+      return [];
+    }
+
+    // Find the start and end indices for the selected element's badges
+    const elementHeader = `${getElementIcon(selectedStreakElement)} ${selectedStreakElement}`;
+    const startIndex = category.badges.findIndex(badge => badge.name === elementHeader);
+    
+    if (startIndex === -1) return [];
+
+    // Find the next element header or end of array
+    const nextElementIndex = category.badges.slice(startIndex + 1).findIndex(badge => 
+      badge.name.includes('❤️') || badge.name.includes('💧') || 
+      badge.name.includes('⚡') || badge.name.includes('🌑')
+    );
+    
+    const endIndex = nextElementIndex === -1 ? category.badges.length : startIndex + 1 + nextElementIndex;
+    
+    // Return badges for this element (excluding the header)
+    return category.badges.slice(startIndex + 1, endIndex);
+  };
+
+  // Auto-select HEART element when entering elemental streak category
+  useEffect(() => {
+    if (selectedCategory === 'elemental-streak' && !selectedStreakElement) {
+      setSelectedStreakElement('HEART');
+    }
+  }, [selectedCategory, selectedStreakElement]);
 
   // Badge detail modal
   if (selectedBadge) {
@@ -280,7 +339,14 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           onClick={onClose}
         />
         <div className="relative w-full max-w-lg max-h-[90vh] z-[2147483648]">
-          <div className="relative rounded-2xl p-4 backdrop-blur-md border border-pink-400/60 bg-black/60 shadow-[0_-8px_25px_rgba(255,105,180,0.4),_0_-4px_15px_rgba(255,105,180,0.25),_0_12px_30px_rgba(0,0,0,0.4),_0_0_24px_rgba(255,105,180,0.45)] overflow-y-auto">
+          <div className="relative rounded-2xl p-4 overflow-y-auto"
+            style={{
+              background: 'rgba(0,0,0,0.6)',
+              border: '1px solid rgba(255,105,180,0.55)',
+              boxShadow: '0 -8px 25px rgba(255,105,180,0.4), 0 -4px 15px rgba(255,105,180,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(255,105,180,0.45)',
+              backdropFilter: 'blur(12px) saturate(140%)'
+            }}
+          >
             
             {/* Soft bottom glow */}
             <div 
@@ -291,7 +357,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                 transform: 'translateX(-50%)',
                 width: '120%',
                 height: '30px',
-                background: 'radial-gradient(ellipse 60% 100% at 50% 0%, #FF69B460 0%, #FF69B430 40%, transparent 80%)',
+                background: 'radial-gradient(ellipse 60% 100% at 50% 0%, rgba(252,84,175,0.6) 0%, rgba(252,84,175,0.3) 40%, transparent 80%)',
                 filter: 'blur(30px)',
                 pointerEvents: 'none',
                 zIndex: -1
@@ -307,7 +373,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                 transform: 'translateX(-50%)',
                 width: '80%',
                 height: '20px',
-                background: 'radial-gradient(ellipse 70% 100% at 50% 100%, #FF69B440 0%, #FF69B420 50%, transparent 100%)',
+                background: 'radial-gradient(ellipse 70% 100% at 50% 100%, rgba(252,84,175,0.4) 0%, rgba(252,84,175,0.2) 50%, transparent 100%)',
                 filter: 'blur(25px)',
                 pointerEvents: 'none',
                 zIndex: -1
@@ -356,14 +422,69 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     const categoryContent = (
       <div className="relative space-y-4">
           <button
-            onClick={() => setSelectedCategory(null)}
+            onClick={() => {
+              setSelectedCategory(null);
+              setSelectedStreakElement(null); // Reset element filter when going back
+            }}
             className="mb-4 text-[#38B6FF] hover:text-[#38B6FF]/80 transition text-sm"
           >
             ← Back to Categories
           </button>
           
+          {/* Element filtering UI for elemental streak */}
+          {category.id === 'elemental-streak' && (
+            <div className="mb-4">
+              <div className="text-center mb-3">
+                <span className="text-white/80 text-sm font-medium">Select Element</span>
+              </div>
+              <div className="grid grid-cols-4 gap-2 mb-4">
+                {getElementalStreakElements().map((element) => (
+                  <button
+                    key={element}
+                    onClick={() => setSelectedStreakElement(element)}
+                    className={`relative w-12 h-12 sm:w-14 sm:h-14 rounded-lg border-2 transition-all duration-200 hover:scale-105 flex flex-col items-center justify-center ${
+                      selectedStreakElement === element 
+                        ? 'border-white/80 bg-white/10' 
+                        : 'border-white/30 hover:border-white/50'
+                    }`}
+                    style={{
+                      boxShadow: selectedStreakElement === element 
+                        ? `0 0 15px ${getElementColor(element)}60` 
+                        : 'none'
+                    }}
+                  >
+                    <div className="text-lg mb-0.5">{getElementIcon(element)}</div>
+                    <div 
+                      className="text-xs font-bold"
+                      style={{ 
+                        color: selectedStreakElement === element ? getElementColor(element) : '#FFFFFF80',
+                        textShadow: selectedStreakElement === element ? `0 0 4px ${getElementColor(element)}` : 'none'
+                      }}
+                    >
+                      {element}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          
           <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3 sm:gap-4 max-h-80 sm:max-h-96 overflow-y-auto p-2">
-            {category.badges.map((badge, index) => (
+            {(() => {
+              const badgesToShow = category.id === 'elemental-streak' ? getFilteredStreakBadges(category) : category.badges;
+              
+              // Show message if no element selected for elemental streak
+              if (category.id === 'elemental-streak' && !selectedStreakElement) {
+                return (
+                  <div className="col-span-full text-center py-8">
+                    <div className="text-white/60 text-sm">
+                      Select an element above to view streak badges
+                    </div>
+                  </div>
+                );
+              }
+              
+              return badgesToShow.map((badge, index) => (
               <div key={index} className="flex flex-col items-center space-y-2">
                 <div className="relative">
                   <button
@@ -460,7 +581,8 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                   {badge.name}
                 </div>
               </div>
-            ))}
+              ));
+            })()}
           </div>
         </div>
     );
@@ -502,7 +624,14 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           onClick={onClose}
         />
         <div className="relative w-full max-w-lg max-h-[90vh] z-[2147483648]">
-          <div className="relative rounded-2xl p-4 backdrop-blur-md border border-pink-400/60 bg-black/60 shadow-[0_-8px_25px_rgba(255,105,180,0.4),_0_-4px_15px_rgba(255,105,180,0.25),_0_12px_30px_rgba(0,0,0,0.4),_0_0_24px_rgba(255,105,180,0.45)] overflow-y-auto">
+          <div className="relative rounded-2xl p-4 overflow-y-auto"
+            style={{
+              background: 'rgba(0,0,0,0.6)',
+              border: '1px solid rgba(255,105,180,0.55)',
+              boxShadow: '0 -8px 25px rgba(255,105,180,0.4), 0 -4px 15px rgba(255,105,180,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(255,105,180,0.45)',
+              backdropFilter: 'blur(12px) saturate(140%)'
+            }}
+          >
             
             {/* Soft bottom glow */}
             <div 
@@ -513,7 +642,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                 transform: 'translateX(-50%)',
                 width: '120%',
                 height: '30px',
-                background: 'radial-gradient(ellipse 60% 100% at 50% 0%, #FF69B460 0%, #FF69B430 40%, transparent 80%)',
+                background: 'radial-gradient(ellipse 60% 100% at 50% 0%, rgba(252,84,175,0.6) 0%, rgba(252,84,175,0.3) 40%, transparent 80%)',
                 filter: 'blur(30px)',
                 pointerEvents: 'none',
                 zIndex: -1
@@ -529,7 +658,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                 transform: 'translateX(-50%)',
                 width: '80%',
                 height: '20px',
-                background: 'radial-gradient(ellipse 70% 100% at 50% 100%, #FF69B440 0%, #FF69B420 50%, transparent 100%)',
+                background: 'radial-gradient(ellipse 70% 100% at 50% 100%, rgba(252,84,175,0.4) 0%, rgba(252,84,175,0.2) 50%, transparent 100%)',
                 filter: 'blur(25px)',
                 pointerEvents: 'none',
                 zIndex: -1
@@ -651,7 +780,14 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         onClick={onClose}
       />
       <div className="relative w-full max-w-lg max-h-[90vh] z-[2147483648]">
-        <div className="relative rounded-2xl p-4 pb-2 backdrop-blur-md border border-pink-400/60 bg-black/60 shadow-[0_-8px_25px_rgba(255,105,180,0.4),_0_-4px_15px_rgba(255,105,180,0.25),_0_12px_30px_rgba(0,0,0,0.4),_0_0_24px_rgba(255,105,180,0.45)] overflow-y-auto">
+        <div className="relative rounded-2xl p-4 pb-2 overflow-y-auto"
+          style={{
+            background: 'rgba(0,0,0,0.6)',
+            border: '1px solid rgba(255,105,180,0.55)',
+            boxShadow: '0 -8px 25px rgba(255,105,180,0.4), 0 -4px 15px rgba(255,105,180,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(255,105,180,0.45)',
+            backdropFilter: 'blur(12px) saturate(140%)'
+          }}
+        >
           
           {/* Soft bottom glow */}
           <div 

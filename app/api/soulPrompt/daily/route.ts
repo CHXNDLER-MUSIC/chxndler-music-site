@@ -106,6 +106,7 @@ export async function GET(request: NextRequest) {
       }
 
       return NextResponse.json({
+        id: dailyPrompt.id, // Add the daily prompt ID for journal entries
         prompt_date: dailyPrompt.prompt_date,
         element: dailyPrompt.element, // This comes directly from the database
         intention: {

@@ -132,7 +132,44 @@ export default function AuthButton() {
 
   return (
     <>
-      <div className="flex items-center">
+      {/* Single unified clickable button containing both icon and text */}
+      <button 
+        ref={buttonRef}
+        onClick={handleButtonClick}
+        onKeyDown={(e) => {
+          if ((e.key === 'Enter' || e.key === ' ') && !authLoading && !profileLoading) {
+            e.preventDefault();
+            handleButtonClick();
+          }
+        }}
+        disabled={authLoading || profileLoading}
+        className="flex items-center font-medium text-lg relative flex-shrink-0 transition-all duration-200 cursor-pointer bg-transparent border-none focus:outline-none disabled:opacity-50 rounded"
+        style={{ 
+          color: getUsernameColor(currentElement),
+          filter: 'brightness(1.2)',
+          padding: '0',
+          background: 'transparent',
+          transition: 'all 0.3s ease'
+        }}
+        title={
+          buttonMode === 'login' 
+            ? "Click to log in and join the Heartverse"
+            : buttonMode === 'setup'
+            ? "Click to complete your profile setup"
+            : "Click to view your profile"
+        }
+        onMouseEnter={(e) => {
+          if (!authLoading && !profileLoading) {
+            try { sfx.play('hover', 0.8); } catch {}
+            e.currentTarget.style.transform = 'scale(1.05)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!authLoading && !profileLoading) {
+            e.currentTarget.style.transform = 'scale(1)';
+          }
+        }}
+      >
         {/* Element Icon - only show when user has complete profile */}
         {buttonMode === 'profile' && currentElement && (
           <div className="mr-2">
@@ -145,47 +182,11 @@ export default function AuthButton() {
           </div>
         )}
         
-        {/* Username/Login Button */}
-        <button 
-          ref={buttonRef}
-          onClick={handleButtonClick}
-          onKeyDown={(e) => {
-            if ((e.key === 'Enter' || e.key === ' ') && !authLoading && !profileLoading) {
-              e.preventDefault();
-              handleButtonClick();
-            }
-          }}
-          disabled={authLoading || profileLoading}
-          className="font-medium text-lg relative flex-shrink-0 transition-all duration-200 cursor-pointer bg-transparent border-none focus:outline-none disabled:opacity-50 rounded"
-          style={{ 
-            color: getUsernameColor(currentElement),
-            filter: 'brightness(1.2)',
-            padding: '0',
-            background: 'transparent',
-            transition: 'all 0.3s ease'
-          }}
-          title={
-            buttonMode === 'login' 
-              ? "Click to log in and join the Heartverse"
-              : buttonMode === 'setup'
-              ? "Click to complete your profile setup"
-              : "Click to view your profile"
-          }
-          onMouseEnter={(e) => {
-            if (!authLoading && !profileLoading) {
-              try { sfx.play('hover', 0.8); } catch {}
-              e.currentTarget.style.transform = 'scale(1.05)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!authLoading && !profileLoading) {
-              e.currentTarget.style.transform = 'scale(1)';
-            }
-          }}
-        >
+        {/* Username/Login Text */}
+        <span>
           {displayName}
-        </button>
-      </div>
+        </span>
+      </button>
 
       {/* Welcome Home Modal */}
       <WelcomeHomeModal 

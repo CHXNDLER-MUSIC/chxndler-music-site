@@ -53,6 +53,30 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
   const { profile, user, updateProfile, refreshProfile } = useProfile();
   const { start: startTour } = useTour();
   
+  // Static relic images from public/relics to fill inline grid
+  const relicImageUrls: string[] = [
+    // Row 1 (top): CHXNDLER_Logo, 3, 2, 1 2
+    '/relics/CHXNDLER_Logo.webp',
+    '/relics/3.webp',
+    '/relics/2.webp',
+    '/relics/1 2.webp',
+    // Row 2: remaining feature images (adjust as desired)
+    '/relics/1.webp',
+    '/relics/Alien - Blue (Transparent).webp',
+    '/relics/Alien - Pink (Transparent).webp',
+    '/relics/Laptop Background.webp',
+    // Row 3: planets left → right
+    '/relics/planet_water.webp',
+    '/relics/planet_lightning.webp',
+    '/relics/planet_heart.webp',
+    '/relics/planet_darkness.webp',
+    // Row 4 (bottom): CHXNDLER patterns left → right
+    '/relics/4_CHXNDLER-Pattern.webp',
+    '/relics/6_CHXNDLER-Pattern.webp',
+    '/relics/8_CHXNDLER-Pattern.webp',
+    '/relics/2_CHXNDLER-Pattern.webp'
+  ];
+
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selectedImageUrl, setSelectedImageUrl] = useState<string>('');
@@ -63,6 +87,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
   const [userRelics, setUserRelics] = useState<UserRelic[]>([]);
   const [showElementMenu, setShowElementMenu] = useState(false);
   const [showRelicsModal, setShowRelicsModal] = useState(false);
+  const [showRelicsInline, setShowRelicsInline] = useState(false);
+  const [selectedRelicInline, setSelectedRelicInline] = useState<string | null>(null);
+  const [selectedRelicModal, setSelectedRelicModal] = useState<string | null>(null);
   const [showElementInfo, setShowElementInfo] = useState(false);
   const [currentElementIndex, setCurrentElementIndex] = useState(0);
 
@@ -91,6 +118,8 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
       if (event.key === 'Escape') {
         if (showElementInfo) {
           setShowElementInfo(false);
+        } else if (showRelicsInline) {
+          setShowRelicsInline(false);
         } else if (showRelicsModal) {
           setShowRelicsModal(false);
         } else if (showElementMenu) {
@@ -105,6 +134,8 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
       if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
         if (showElementInfo) {
           setShowElementInfo(false);
+        } else if (showRelicsInline) {
+          setShowRelicsInline(false);
         } else if (showRelicsModal) {
           setShowRelicsModal(false);
         } else if (showElementMenu) {
@@ -120,7 +151,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
       document.removeEventListener('keydown', handleEscape);
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, onClose, showElementMenu, showRelicsModal, showElementInfo]);
+  }, [isOpen, onClose, showElementMenu, showRelicsModal, showElementInfo, showRelicsInline]);
 
   // Helper to get element image URL
   const getElementImageUrl = (element: string | null): string => {
@@ -128,7 +159,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
     return elementIcons[element as keyof typeof elementIcons] || elementIcons.heart;
   };
 
-  // Get all 4 element options for the selection menu
+  // Get all 4 core element options for the selection menu
   const getAllElements = () => {
     return [
       { name: 'heart', url: elementIcons.heart, label: 'Heart' },
@@ -239,7 +270,10 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
           .eq('user_id', user.id);
 
         if (relicError) {
-          console.error('Error fetching user relics:', relicError);
+          // Only log if it's not a "table doesn't exist" error
+          if (!relicError.message?.includes('relation') && !relicError.message?.includes('does not exist')) {
+            console.error('Error fetching user relics:', relicError);
+          }
           setUserRelics([]);
         } else {
           setUserRelics(relicData || []);
@@ -373,6 +407,21 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
       }
     } catch (error) {
       console.error('Unexpected error during sign out:', error);
+    }
+  };
+
+  const handleDownload = (url: string) => {
+    try {
+      const a = document.createElement('a');
+      a.href = url;
+      const name = url.split('/')?.pop() || 'relic.webp';
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      try { sfx.play('click', 0.6); } catch {}
+    } catch (e) {
+      console.error('Download failed:', e);
     }
   };
 
@@ -572,7 +621,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               {/* View Relics Button - Small Circle */}
               <button
                 onClick={() => {
-                  setShowRelicsModal(true);
+                  setShowRelicsInline(!showRelicsInline);
                   try { sfx.play('click', 0.6); } catch {}
                 }}
                 className="absolute w-10 h-10 rounded-full border-2 border-cyan-400/60 bg-cyan-400/10 hover:border-cyan-400/80 hover:bg-cyan-400/20 transition-all duration-200 hover:scale-110 flex items-center justify-center overflow-hidden"
@@ -600,19 +649,33 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                 />
               </button>
 
-              {/* Element Selection Menu */}
+              {/* Profile Image Selection Menu */}
               {showElementMenu && (
                 <div 
                   className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 z-50"
                   style={{
                     background: 'rgba(0,0,0,0.9)',
                     border: '1px solid rgba(0,255,255,0.6)',
-                    borderRadius: '12px',
+                    borderRadius: '16px',
                     boxShadow: '0 8px 25px rgba(0,255,255,0.3)',
                     backdropFilter: 'blur(12px)',
-                    padding: '12px'
+                    padding: '16px',
+                    maxWidth: '300px',
+                    width: 'max-content'
                   }}
                 >
+                  {/* Header */}
+                  <div 
+                    className="text-center mb-3 text-xs font-semibold"
+                    style={{ 
+                      color: '#00FFFF', 
+                      textShadow: '0 0 4px rgba(0,255,255,0.6)' 
+                    }}
+                  >
+                    CHOOSE YOUR ELEMENT
+                  </div>
+                  
+                  {/* 2x2 Grid */}
                   <div className="grid grid-cols-2 gap-3">
                     {getAllElements().map((element) => (
                       <button
@@ -633,9 +696,33 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                           src={element.url}
                           alt={element.label}
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              parent.innerHTML = '?';
+                              parent.style.color = '#666';
+                              parent.style.fontSize = '12px';
+                              parent.style.display = 'flex';
+                              parent.style.alignItems = 'center';
+                              parent.style.justifyContent = 'center';
+                            }
+                          }}
                         />
                       </button>
                     ))}
+                  </div>
+                  
+                  {/* Footer text */}
+                  <div 
+                    className="text-center mt-3 text-xs"
+                    style={{ 
+                      color: '#FFFFFF80', 
+                      fontSize: '10px'
+                    }}
+                  >
+                    Select your elemental alignment
                   </div>
                 </div>
               )}
@@ -726,6 +813,131 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               </span>
             </div>
           </div>
+
+          {/* Relics Collection Inline Display */}
+          {showRelicsInline && (
+            <div className="mt-6 p-4 rounded-lg border border-cyan-400/60 bg-black/40 relative">
+              {/* Close button */}
+              <button
+                onClick={() => {
+                  setShowRelicsInline(false);
+                  try { sfx.play('close', 0.6); } catch {}
+                }}
+                className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+                style={{
+                  background: 'rgba(0,255,255,0.2)',
+                  border: '1px solid rgba(0,255,255,0.6)',
+                  color: '#00FFFF',
+                  boxShadow: '0 0 10px rgba(0,255,255,0.3)',
+                  fontSize: '12px',
+                  fontWeight: 'bold'
+                }}
+              >
+                ×
+              </button>
+
+              {/* Header */}
+              <div 
+                className="text-center mb-4"
+                style={{ 
+                  color: '#00FFFF', 
+                  textShadow: '0 0 8px rgba(0,255,255,0.6)', 
+                  fontSize: '16px',
+                  fontWeight: 'bold'
+                }}
+              >
+                RELICS COLLECTION
+              </div>
+
+              {/* Relics Grid / Expanded View - Inline */}
+              {selectedRelicInline ? (
+                <div className="mb-4 relative rounded-lg overflow-hidden border border-cyan-400/60" style={{ boxShadow: '0 0 15px rgba(0,255,255,0.25)' }}>
+                  <div className="relative w-full" style={{ aspectRatio: '1 / 1' }}>
+                    <img
+                      src={selectedRelicInline}
+                      alt="Selected relic"
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/20 pointer-events-none" />
+                  </div>
+                  <div className="flex items-center justify-between gap-2 p-2">
+                    <button
+                      onClick={() => { setSelectedRelicInline(null); try { sfx.play('close', 0.6); } catch {} }}
+                      className="px-3 py-1.5 rounded-md text-xs font-semibold transition-all"
+                      style={{
+                        background: 'rgba(0,255,255,0.15)',
+                        border: '1px solid rgba(0,255,255,0.5)',
+                        color: '#00FFFF'
+                      }}
+                    >
+                      Back to Grid
+                    </button>
+                    <button
+                      onClick={() => handleDownload(selectedRelicInline)}
+                      className="px-3 py-1.5 rounded-md text-xs font-semibold transition-all"
+                      style={{
+                        background: 'rgba(255,255,255,0.1)',
+                        border: '1px solid rgba(255,255,255,0.6)',
+                        color: '#FFFFFF',
+                        textShadow: '0 0 6px rgba(255,255,255,0.8)'
+                      }}
+                    >
+                      ⬇ Download
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-4 gap-2 mb-4" style={{ maxWidth: '240px', marginLeft: 'auto', marginRight: 'auto' }}>
+                  {Array.from({ length: 16 }, (_, i) => {
+                    const src = relicImageUrls[i];
+                    const hasImage = Boolean(src);
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => { if (hasImage) { setSelectedRelicInline(src); try { sfx.play('click', 0.6); } catch {} } }}
+                        key={i}
+                        className="aspect-square rounded-lg border border-white/20 bg-black/40 relative overflow-hidden transition-transform hover:scale-[1.03]"
+                        style={{
+                          minHeight: '44px',
+                          opacity: hasImage ? 1 : 0.4,
+                          filter: hasImage ? 'none' : 'grayscale(100%)'
+                        }}
+                        title={hasImage ? `View relic ${i + 1}` : undefined}
+                      >
+                        {hasImage ? (
+                          <img
+                            src={src}
+                            alt={`Relic ${i + 1}`}
+                            className="absolute inset-0 w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.currentTarget as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-white/30 text-xs">🏛️</div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
+                        <div 
+                          className="absolute bottom-0.5 right-0.5 text-xs text-white/40"
+                          style={{ fontSize: '8px' }}
+                        >
+                          {String(i + 1).padStart(2, '0')}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Info text */}
+              <div className="text-center">
+                <p className="text-xs text-white" style={{ textShadow: '0 0 8px rgba(255,255,255,0.85)' }}>
+                  Tap the Element of the Day to unlock ancient relics
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Element Info Display */}
           {showElementInfo && profile?.element && (
@@ -870,21 +1082,51 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
 
               {/* ALIGN Button */}
               <button
-                onClick={() => {
-                  // Handle align functionality here - for now just play sound
-                  try { sfx.play('success', 0.8); } catch {}
+                onClick={async () => {
+                  if (!profile || !user) return;
+                  
+                  const currentElement = getCurrentElementData();
+                  
+                  try {
+                    // Update user's element in profile
+                    const { error } = await supabaseClient
+                      .from('profiles')
+                      .update({
+                        element: currentElement.name,
+                        profile_image_url: currentElement.url,
+                        updated_at: new Date().toISOString()
+                      })
+                      .eq('id', user.id);
+
+                    if (error) {
+                      console.error('Error updating profile element:', error);
+                      return;
+                    }
+
+                    // Refresh profile context and update local state
+                    await refreshProfile();
+                    setSelectedImageUrl(currentElement.url);
+                    
+                    try { sfx.play('success', 0.8); } catch {}
+                    
+                    // Close the element info panel
+                    setShowElementInfo(false);
+                  } catch (error) {
+                    console.error('Error aligning with element:', error);
+                  }
                 }}
-                className="mt-4 w-full py-3 rounded-lg text-sm font-semibold transition-all duration-200 hover:scale-105"
+                disabled={saving || getCurrentElementData().name === profile?.element}
+                className="mt-4 w-full py-3 rounded-lg text-sm font-semibold transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(139,92,246,0.25), rgba(139,92,246,0.15))',
-                  border: '1px solid rgba(139,92,246,0.6)',
-                  color: '#8B5CF6',
-                  textShadow: '0 0 8px rgba(139,92,246,0.6)',
-                  boxShadow: '0 0 15px rgba(139,92,246,0.3)'
+                  background: `linear-gradient(135deg, ${getElementInfo(getCurrentElementData().name).color}25, ${getElementInfo(getCurrentElementData().name).color}15)`,
+                  border: `1px solid ${getElementInfo(getCurrentElementData().name).color}99`,
+                  color: getElementInfo(getCurrentElementData().name).color,
+                  textShadow: `0 0 8px ${getElementInfo(getCurrentElementData().name).color}99`,
+                  boxShadow: `0 0 15px ${getElementInfo(getCurrentElementData().name).color}50`
                 }}
-                title="Align with this element's energy"
+                title={getCurrentElementData().name === profile?.element ? "Already aligned with this element" : "Align with this element's energy"}
               >
-                ALIGN
+                {saving ? 'ALIGNING...' : (getCurrentElementData().name === profile?.element ? 'ALIGNED' : 'ALIGN')}
               </button>
             </div>
           )}
@@ -996,34 +1238,90 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               }}
             />
 
-            {/* Relics Grid - Greyed out containers */}
-            <div className="grid grid-cols-4 gap-4 mb-6">
-              {Array.from({ length: 12 }, (_, i) => (
-                <div
-                  key={i}
-                  className="aspect-square rounded-lg border-2 border-white/20 bg-black/40 flex items-center justify-center relative overflow-hidden"
-                  style={{
-                    filter: 'grayscale(100%)',
-                    opacity: 0.4
-                  }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
-                  <div className="text-white/30 text-lg">🏛️</div>
-                  <div 
-                    className="absolute bottom-1 right-1 text-xs text-white/20"
-                    style={{ fontSize: '10px' }}
-                  >
-                    {String(i + 1).padStart(2, '0')}
-                  </div>
+            {/* Relics Grid / Expanded View - Modal */}
+            {selectedRelicModal ? (
+              <div className="mb-6 relative rounded-lg overflow-hidden border-2 border-cyan-400/60" style={{ boxShadow: '0 0 18px rgba(0,255,255,0.25)' }}>
+                <div className="relative w-full" style={{ aspectRatio: '1 / 1' }}>
+                  <img
+                    src={selectedRelicModal}
+                    alt="Selected relic"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/25 pointer-events-none" />
                 </div>
-              ))}
-            </div>
+                <div className="flex items-center justify-between gap-3 p-3">
+                  <button
+                    onClick={() => { setSelectedRelicModal(null); try { sfx.play('close', 0.6); } catch {} }}
+                    className="px-4 py-2 rounded-md text-sm font-semibold transition-all"
+                    style={{
+                      background: 'rgba(0,255,255,0.15)',
+                      border: '1px solid rgba(0,255,255,0.5)',
+                      color: '#00FFFF'
+                    }}
+                  >
+                    Back to Grid
+                  </button>
+                  <button
+                    onClick={() => selectedRelicModal && handleDownload(selectedRelicModal)}
+                    className="px-4 py-2 rounded-md text-sm font-semibold transition-all"
+                    style={{
+                      background: 'rgba(255,255,255,0.1)',
+                      border: '1px solid rgba(255,255,255,0.6)',
+                      color: '#FFFFFF',
+                      textShadow: '0 0 6px rgba(255,255,255,0.8)'
+                    }}
+                  >
+                    ⬇ Download
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-4 gap-4 mb-6">
+                {Array.from({ length: 16 }, (_, i) => {
+                  const src = relicImageUrls[i];
+                  const hasImage = Boolean(src);
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => { if (hasImage) { setSelectedRelicModal(src); try { sfx.play('click', 0.6); } catch {} } }}
+                      key={i}
+                      className="aspect-square rounded-lg border-2 border-white/20 bg-black/40 relative overflow-hidden transition-transform hover:scale-[1.03]"
+                      style={{
+                        opacity: hasImage ? 1 : 0.4,
+                        filter: hasImage ? 'none' : 'grayscale(100%)'
+                      }}
+                      title={hasImage ? `View relic ${i + 1}` : undefined}
+                    >
+                      {hasImage ? (
+                        <img
+                          src={src}
+                          alt={`Relic ${i + 1}`}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.currentTarget as HTMLImageElement;
+                            target.style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-white/30 text-lg">🏛️</div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
+                      <div 
+                        className="absolute bottom-1 right-1 text-xs text-white/40"
+                        style={{ fontSize: '10px' }}
+                      >
+                        {String(i + 1).padStart(2, '0')}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Info text */}
-            <div className="text-center text-white/60">
-              <p className="text-sm mb-2">No relics discovered yet</p>
-              <p className="text-xs text-white/40">
-                Complete special missions and explore the Heartverse to unlock ancient relics
+            <div className="text-center">
+              <p className="text-sm text-white" style={{ textShadow: '0 0 8px rgba(255,255,255,0.85)' }}>
+                Tap the Element of the Day to unlock ancient relics
               </p>
             </div>
           </div>

@@ -1756,9 +1756,9 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
     const height = Math.max(1, mount.clientHeight || 340);
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(35, width / height, 0.1, 5000); // MASSIVE far plane
-    // Moderate zoom for good planet visibility
-    camera.position.set(0, 150, 400.0); // Closer for better detail
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 5000); // Slightly wider FOV for closer framing
+    // Closer default framing for better planet visibility
+    camera.position.set(0, 110, 260.0);
     camera.lookAt(0, 0, 0); // Look at center
     cameraRef.current = camera;
 

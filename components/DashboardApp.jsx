@@ -1604,8 +1604,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       >
         <PrewarmThree />
         <AmbientSpace 
-          ambientSrc={!profile ? "/audio/space-music.mp3" : "/audio/welcome-home.mp3"} 
-          introSrc={homeMode && homeIntroEnabled && !welcomeHasPlayed ? (!profile ? "/audio/welcome-to-the-heartverse.mp3" : "/audio/welcome-home.mp3") : undefined} 
+          ambientSrc={!profile ? "/tracks/space-music.opus" : "/tracks/welcome-back.opus"} 
+          introSrc={homeMode && homeIntroEnabled && !welcomeHasPlayed ? (!profile ? "/tracks/welcome-to-the-heartverse.opus" : "/tracks/welcome-back.opus") : undefined} 
           playingMusic={isPlaying} 
           suspend={ambientSuspended} 
           userSelectedSong={userSelected} 

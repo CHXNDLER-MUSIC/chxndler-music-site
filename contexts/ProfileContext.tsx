@@ -92,6 +92,7 @@ interface JournalEntry {
 }
 
 interface DailyPrompts {
+  id: string; // Add the daily prompt ID
   prompt_date: string;
   element: string;
   intention: {

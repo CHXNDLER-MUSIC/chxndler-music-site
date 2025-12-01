@@ -7,6 +7,7 @@ import { sfx } from "@/lib/sfx";
 import { useDailyReflectionStatus } from "@/hooks/useDailyReflectionStatus";
 
 interface DailyPrompt {
+  id: string; // Add the daily prompt ID
   prompt_date: string;
   element: string;
   intention: {
@@ -174,19 +175,23 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
       setJournalState(prev => ({ ...prev, isLoading: true }));
       sfx.play('click', 0.8);
 
+      // Log what we're about to send for debugging
+      const entryData = {
+        user_id: user.id,
+        entry_date: today,
+        element: profile.element,
+        prompt_id: dailyPrompt.id,
+        intention_response: journalState.intentionResponse,
+        reflection_response: journalState.reflectionResponse,
+        soul_star: journalState.soulStar.trim(),
+      };
+      console.log('About to save journal entry:', entryData);
+
       // Use the upsert logic as specified
       const { data, error } = await supabaseClient
         .from("soul_journal_entries")
         .upsert(
-          {
-            user_id: user.id,
-            entry_date: today,
-            element: profile.element,
-            prompt_id: dailyPrompt.id, // Connect to daily prompt
-            intention_response: journalState.intentionResponse,
-            reflection_response: journalState.reflectionResponse,
-            soul_star: journalState.soulStar.trim(),
-          },
+          entryData,
           { onConflict: "user_id,entry_date,element" }
         )
         .select()
@@ -211,6 +216,13 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
       }
     } catch (error) {
       console.error('Failed to save journal entry:', error);
+      console.error('Error details:', {
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+        full_error: error
+      });
       setJournalState(prev => ({
         ...prev,
         errorMessage: "Failed to cast your signal. Please try again."
