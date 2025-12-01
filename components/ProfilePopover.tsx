@@ -672,57 +672,118 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                       textShadow: '0 0 4px rgba(0,255,255,0.6)' 
                     }}
                   >
-                    CHOOSE YOUR ELEMENT
+                    CHOOSE YOUR IMAGE
                   </div>
                   
-                  {/* 2x2 Grid */}
-                  <div className="grid grid-cols-2 gap-3">
-                    {getAllElements().map((element) => (
-                      <button
-                        key={element.name}
-                        onClick={() => {
-                          setSelectedImageUrl(element.url);
-                          setShowElementMenu(false);
-                          try { sfx.play('flip', 0.6); } catch {}
-                        }}
-                        className={`w-12 h-12 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:scale-110 ${
-                          selectedImageUrl === element.url
-                            ? 'border-cyan-400 shadow-[0_0_15px_rgba(0,255,255,0.6)]'
-                            : 'border-white/30 hover:border-cyan-400/60'
-                        }`}
-                        title={element.label}
-                      >
-                        <img
-                          src={element.url}
-                          alt={element.label}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            const parent = target.parentElement;
-                            if (parent) {
-                              parent.innerHTML = '?';
-                              parent.style.color = '#666';
-                              parent.style.fontSize = '12px';
-                              parent.style.display = 'flex';
-                              parent.style.alignItems = 'center';
-                              parent.style.justifyContent = 'center';
-                            }
+                  {/* Elements Section */}
+                  <div className="mb-3">
+                    <div 
+                      className="text-center mb-2 text-xs"
+                      style={{ 
+                        color: '#00FFFF80', 
+                        fontSize: '9px'
+                      }}
+                    >
+                      ELEMENTS
+                    </div>
+                    <div className="grid grid-cols-4 gap-2">
+                      {getAllElements().map((element) => (
+                        <button
+                          key={element.name}
+                          onClick={() => {
+                            setSelectedImageUrl(element.url);
+                            setShowElementMenu(false);
+                            try { sfx.play('flip', 0.6); } catch {}
                           }}
-                        />
-                      </button>
-                    ))}
+                          className={`w-10 h-10 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:scale-110 ${
+                            selectedImageUrl === element.url
+                              ? 'border-cyan-400 shadow-[0_0_15px_rgba(0,255,255,0.6)]'
+                              : 'border-white/30 hover:border-cyan-400/60'
+                          }`}
+                          title={element.label}
+                        >
+                          <img
+                            src={element.url}
+                            alt={element.label}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent) {
+                                parent.innerHTML = '?';
+                                parent.style.color = '#666';
+                                parent.style.fontSize = '12px';
+                                parent.style.display = 'flex';
+                                parent.style.alignItems = 'center';
+                                parent.style.justifyContent = 'center';
+                              }
+                            }}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Relics Section */}
+                  <div className="mb-3">
+                    <div 
+                      className="text-center mb-2 text-xs"
+                      style={{ 
+                        color: '#00FFFF80', 
+                        fontSize: '9px'
+                      }}
+                    >
+                      RELICS
+                    </div>
+                    <div className="grid grid-cols-4 gap-2">
+                      {relicImageUrls.map((relicUrl, i) => (
+                        <button
+                          key={`relic-${i}`}
+                          onClick={() => {
+                            setSelectedImageUrl(relicUrl);
+                            setShowElementMenu(false);
+                            try { sfx.play('flip', 0.6); } catch {}
+                          }}
+                          className={`w-10 h-10 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:scale-110 ${
+                            selectedImageUrl === relicUrl
+                              ? 'border-cyan-400 shadow-[0_0_15px_rgba(0,255,255,0.6)]'
+                              : 'border-white/30 hover:border-cyan-400/60'
+                          }`}
+                          title={`Relic ${i + 1}`}
+                        >
+                          <img
+                            src={relicUrl}
+                            alt={`Relic ${i + 1}`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent) {
+                                parent.innerHTML = '🏛️';
+                                parent.style.color = '#666';
+                                parent.style.fontSize = '8px';
+                                parent.style.display = 'flex';
+                                parent.style.alignItems = 'center';
+                                parent.style.justifyContent = 'center';
+                              }
+                            }}
+                          />
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   
                   {/* Footer text */}
                   <div 
-                    className="text-center mt-3 text-xs"
+                    className="text-center text-xs"
                     style={{ 
                       color: '#FFFFFF80', 
-                      fontSize: '10px'
+                      fontSize: '9px'
                     }}
                   >
-                    Select your elemental alignment
+                    Select your profile image
                   </div>
                 </div>
               )}

@@ -751,14 +751,14 @@ export default function ProfileBar({
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center"
           style={{
-            paddingTop: '300px'
+            paddingTop: '250px'
           }}
         >
           <div
             className="chxndler-hologram-container"
             style={{
               width: 'min(92vw, 700px)',
-              height: '35vh',
+              height: '40vh',
               padding: '10px 14px 14px 14px',
               borderRadius: 18,
               background: 'rgba(0,0,0,0.6)',
