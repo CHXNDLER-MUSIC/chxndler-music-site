@@ -262,24 +262,16 @@ function TourOverlay() {
             case 'right':
               // For menu items, position to the right of the entire dropdown menu
               if (isMenuStep) {
-                // Look for the dropdown panel which has a fixed width of w-48 (192px)
-                const hamburgerContainer = document.querySelector('[data-tour-id="hamburger"]')?.closest('.fixed');
-                const dropdownPanel = hamburgerContainer?.querySelector('.absolute.top-20');
-                
-                if (dropdownPanel) {
-                  const panelRect = dropdownPanel.getBoundingClientRect();
-                  // Position to the right of the dropdown panel with some spacing
-                  left = panelRect.right + 20;
-                  top += rect.height / 2;
-                } else if (hamburgerContainer) {
-                  // Fallback: if we can't find the dropdown, position based on fixed menu width (192px)
-                  const containerRect = hamburgerContainer.getBoundingClientRect();
-                  left = containerRect.left + 192 + 20; // w-48 is 192px + 20px spacing
+                // Find the hamburger menu container to get the full menu width
+                const hamburgerMenu = document.querySelector('[data-tour-id="hamburger"]')?.closest('.fixed');
+                if (hamburgerMenu) {
+                  const menuRect = hamburgerMenu.getBoundingClientRect();
+                  left = menuRect.left + 240; // Position far enough right to clear the dropdown
                   top += rect.height / 2;
                 } else {
-                  // Final fallback to original positioning but with more spacing
+                  // Fallback to original positioning with extra spacing
                   top += rect.height / 2;
-                  left += rect.width + 240; // More spacing to avoid the menu
+                  left += rect.width + 240;
                 }
               } else {
                 top += rect.height / 2;
@@ -293,28 +285,6 @@ function TourOverlay() {
             default:
               top += rect.height + 20;
               left += rect.width / 2;
-          }
-
-          // Ensure tooltip doesn't go off-screen
-          const viewportWidth = window.innerWidth;
-          const viewportHeight = window.innerHeight;
-          const tooltipWidth = 320; // Approximate max-width of tooltip (sm:max-w-sm)
-          const tooltipHeight = 200; // Approximate height
-          
-          // Adjust horizontal positioning if tooltip would go off-screen
-          if (left + tooltipWidth > viewportWidth) {
-            left = viewportWidth - tooltipWidth - 20;
-          }
-          if (left < 20) {
-            left = 20;
-          }
-          
-          // Adjust vertical positioning if tooltip would go off-screen
-          if (top + tooltipHeight > viewportHeight) {
-            top = viewportHeight - tooltipHeight - 20;
-          }
-          if (top < 20) {
-            top = 20;
           }
 
           setTooltipPosition({ top, left });

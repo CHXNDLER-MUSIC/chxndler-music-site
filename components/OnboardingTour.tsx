@@ -111,7 +111,7 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
       if (menuRect) {
         // Position to the right of the hamburger menu dropdown
         const top = rect.top + (rect.height / 2) - (bubbleHeight / 2);
-        const left = menuRect.right + 20; // Position just to the right with a small gap
+        const left = menuRect.right + 240; // Position further to the right to clear the dropdown menu
         
         setBubblePosition({ 
           top: Math.max(20, Math.min(top, viewportHeight - bubbleHeight - 20)), 

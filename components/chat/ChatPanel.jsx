@@ -1182,113 +1182,112 @@ export default function ChatPanel({ isOpen, onClose }) {
                             User Badges
                           </h4>
                           
-                          {/* Only show badges if user has earned badges */}
-                          {userBadges && userBadges.length > 0 ? (
-                            <div className="flex items-center space-x-2">
-                              {/* Left Arrow */}
-                              <button 
-                                onClick={() => {
-                                  try {
-                                    const audio = new Audio('/audio/click.mp3');
-                                    audio.volume = 0.3;
-                                    audio.play().catch(error => {
-                                      console.log('Click audio play failed:', error);
-                                    });
-                                  } catch (error) {
-                                    console.log('Click audio creation failed:', error);
-                                  }
-                                  setBadgeStartIndex(Math.max(0, badgeStartIndex - 5));
-                                }}
-                                disabled={badgeStartIndex === 0}
-                                className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
-                                style={{
-                                  textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
-                                  fontSize: '14px',
-                                  fontWeight: 'bold',
-                                  textRendering: 'optimizeLegibility',
-                                  WebkitFontSmoothing: 'antialiased',
-                                  MozOsxFontSmoothing: 'grayscale',
-                                  filter: 'none',
-                                  backdropFilter: 'none'
-                                }}
-                              >
-                                ◀
-                              </button>
+                          {/* Always show 5 badge slots */}
+                          <div className="flex items-center space-x-2">
+                            {/* Left Arrow */}
+                            <button 
+                              onClick={() => {
+                                try {
+                                  const audio = new Audio('/audio/click.mp3');
+                                  audio.volume = 0.3;
+                                  audio.play().catch(error => {
+                                    console.log('Click audio play failed:', error);
+                                  });
+                                } catch (error) {
+                                  console.log('Click audio creation failed:', error);
+                                }
+                                setBadgeStartIndex(Math.max(0, badgeStartIndex - 5));
+                              }}
+                              disabled={!userBadges || userBadges.length === 0 || badgeStartIndex === 0}
+                              className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
+                              style={{
+                                textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
+                                fontSize: '14px',
+                                fontWeight: 'bold',
+                                textRendering: 'optimizeLegibility',
+                                WebkitFontSmoothing: 'antialiased',
+                                MozOsxFontSmoothing: 'grayscale',
+                                filter: 'none',
+                                backdropFilter: 'none'
+                              }}
+                            >
+                              ◀
+                            </button>
 
-                              {/* Earned Badges Grid - only show earned badges */}
-                              <div className="flex-1 grid grid-cols-5 gap-2">
-                                {Array.from({ length: 5 }, (_, index) => {
-                                  const badgeIndex = badgeStartIndex + index;
-                                  const userBadge = userBadges[badgeIndex];
-                                  const badge = userBadge?.badge;
-                                  
-                                  if (badge) {
-                                    return (
-                                      <div key={`earned-badge-${badge.id}`} className="flex flex-col items-center" title={badge.badge_name}>
-                                        <div 
-                                          className="w-12 h-12 rounded-full mb-1 flex items-center justify-center border-2 transition-all duration-300 cursor-pointer hover:scale-110"
-                                          style={{
-                                            background: `linear-gradient(135deg, ${badge.bg_color || '#FFD700'}, ${badge.bg_color || '#FFA500'})`,
-                                            border: `2px solid ${badge.border_color || '#FFD700'}`,
-                                            boxShadow: `0 0 15px ${badge.border_color || '#FFD700'}60, 0 0 25px ${badge.border_color || '#FFD700'}30`
-                                          }}
-                                        >
-                                          <span className="text-lg" style={{ filter: 'drop-shadow(0 0 4px rgba(0,0,0,0.8))' }}>
-                                            {badge.icon || '🏆'}
-                                          </span>
-                                        </div>
+                            {/* Badge Grid - always shows 5 slots */}
+                            <div className="flex-1 grid grid-cols-5 gap-2">
+                              {Array.from({ length: 5 }, (_, index) => {
+                                const badgeIndex = badgeStartIndex + index;
+                                const userBadge = userBadges?.[badgeIndex];
+                                const badge = userBadge?.badge;
+                                
+                                if (badge) {
+                                  return (
+                                    <div key={`earned-badge-${badge.id}`} className="flex flex-col items-center" title={badge.badge_name}>
+                                      <div 
+                                        className="w-12 h-12 rounded-full mb-1 flex items-center justify-center border-2 transition-all duration-300 cursor-pointer hover:scale-110"
+                                        style={{
+                                          background: `linear-gradient(135deg, ${badge.bg_color || '#FFD700'}, ${badge.bg_color || '#FFA500'})`,
+                                          border: `2px solid ${badge.border_color || '#FFD700'}`,
+                                          boxShadow: `0 0 15px ${badge.border_color || '#FFD700'}60, 0 0 25px ${badge.border_color || '#FFD700'}30`
+                                        }}
+                                      >
+                                        <span className="text-lg" style={{ filter: 'drop-shadow(0 0 4px rgba(0,0,0,0.8))' }}>
+                                          {badge.icon || '🏆'}
+                                        </span>
                                       </div>
-                                    );
-                                  } else {
-                                    // Show empty slot if no badge at this index
-                                    return (
-                                      <div key={`empty-badge-${badgeIndex}`} className="flex flex-col items-center">
-                                        <div className="w-12 h-12 bg-transparent rounded-full mb-1">
-                                          {/* Empty slot - no visual element */}
-                                        </div>
+                                    </div>
+                                  );
+                                } else {
+                                  // Show grey placeholder slot
+                                  return (
+                                    <div key={`empty-badge-${badgeIndex}`} className="flex flex-col items-center">
+                                      <div 
+                                        className="w-12 h-12 rounded-full mb-1 flex items-center justify-center border-2 border-dashed"
+                                        style={{
+                                          background: 'rgba(128, 128, 128, 0.2)',
+                                          border: '2px dashed rgba(128, 128, 128, 0.4)',
+                                          boxShadow: 'inset 0 0 8px rgba(0, 0, 0, 0.3)'
+                                        }}
+                                      >
+                                        <span className="text-sm opacity-40">◯</span>
                                       </div>
-                                    );
-                                  }
-                                })}
-                              </div>
+                                    </div>
+                                  );
+                                }
+                              })}
+                            </div>
 
-                              {/* Right Arrow */}
-                              <button 
-                                onClick={() => {
-                                  try {
-                                    const audio = new Audio('/audio/click.mp3');
-                                    audio.volume = 0.3;
-                                    audio.play().catch(error => {
-                                      console.log('Click audio play failed:', error);
-                                    });
-                                  } catch (error) {
-                                    console.log('Click audio creation failed:', error);
-                                  }
-                                  setBadgeStartIndex(Math.min(Math.max(0, userBadges.length - 5), badgeStartIndex + 5));
-                                }}
-                                disabled={badgeStartIndex + 5 >= userBadges.length}
-                                className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
-                                style={{
-                                  textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
-                                  fontSize: '14px',
-                                  fontWeight: 'bold',
-                                  textRendering: 'optimizeLegibility',
-                                  WebkitFontSmoothing: 'antialiased',
-                                  MozOsxFontSmoothing: 'grayscale',
-                                  filter: 'none',
-                                  backdropFilter: 'none'
-                                }}
-                              >
-                                ▶
-                              </button>
-                            </div>
-                          ) : (
-                            /* No badges earned message */
-                            <div className="text-center py-4">
-                              <div className="text-white/40 text-sm">No badges earned yet</div>
-                              <div className="text-xs text-white/30 mt-1">Complete challenges to earn badges!</div>
-                            </div>
-                          )}
+                            {/* Right Arrow */}
+                            <button 
+                              onClick={() => {
+                                try {
+                                  const audio = new Audio('/audio/click.mp3');
+                                  audio.volume = 0.3;
+                                  audio.play().catch(error => {
+                                    console.log('Click audio play failed:', error);
+                                  });
+                                } catch (error) {
+                                  console.log('Click audio creation failed:', error);
+                                }
+                                setBadgeStartIndex(Math.min(Math.max(0, (userBadges?.length || 0) - 5), badgeStartIndex + 5));
+                              }}
+                              disabled={!userBadges || userBadges.length === 0 || badgeStartIndex + 5 >= userBadges.length}
+                              className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
+                              style={{
+                                textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
+                                fontSize: '14px',
+                                fontWeight: 'bold',
+                                textRendering: 'optimizeLegibility',
+                                WebkitFontSmoothing: 'antialiased',
+                                MozOsxFontSmoothing: 'grayscale',
+                                filter: 'none',
+                                backdropFilter: 'none'
+                              }}
+                            >
+                              ▶
+                            </button>
+                          </div>
                         </div>
                       )}
 
@@ -1449,18 +1448,19 @@ export default function ChatPanel({ isOpen, onClose }) {
                             <span className="text-sm mr-2">💖</span>
                             Send Heart Coin
                           </h4>
-                          <div className="flex flex-col items-center space-y-4 p-4 bg-black/20 rounded-lg border border-pink-400/30">
-                            {/* Current Heart Coins Display */}
+                          <div className="flex items-center justify-between p-4 bg-black/20 rounded-lg border border-pink-400/30">
+                            {/* YOU HAVE section on the left */}
                             <div className="flex items-center space-x-2">
+                              <span className="text-sm text-pink-400 font-bold">YOU HAVE</span>
                               <img 
                                 src="/elements/heart-coin.webp" 
                                 alt="Heart Coins" 
-                                className="w-8 h-8"
+                                className="w-6 h-6"
                               />
-                              <span className="text-lg text-pink-400 font-bold">{profile?.heartcoin_balance || 42}</span>
+                              <span className="text-lg text-pink-400 font-bold">{profile?.heartcoin_balance || 4}</span>
                             </div>
                             
-                            {/* Send Button */}
+                            {/* SEND button on the right */}
                             <button 
                               onClick={async () => {
                                 try {
@@ -1495,7 +1495,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                   );
                                   
                                   if (result.success) {
-                                    console.log('✅ HeartCoin transfer successful');
+                                    console.log('✅ HeartCoin transfer successful:', result.transfer);
                                     setShowSendHeartCoin(false); // Hide interface after successful sending
                                     
                                     // Play success sound
@@ -1508,9 +1508,37 @@ export default function ChatPanel({ isOpen, onClose }) {
                                     } catch (error) {
                                       console.log('Success audio creation failed:', error);
                                     }
+                                    
+                                    // Optionally refresh user's profile to show updated balance
+                                    // This could trigger a context refresh if available
+                                    console.log('💛 HeartCoin transfer logged to heartcoin_transfers table');
+                                    
                                   } else {
                                     console.error('❌ HeartCoin transfer failed:', result.error);
-                                    // You could show an error message to the user here
+                                    
+                                    // Show user-friendly error message
+                                    let errorMessage = 'Transfer failed';
+                                    if (result.error === 'Insufficient HeartCoins') {
+                                      errorMessage = 'Not enough HeartCoins to send!';
+                                    } else if (result.error === 'Receiver not found') {
+                                      errorMessage = 'User not found';
+                                    } else if (result.error === 'Not authenticated') {
+                                      errorMessage = 'Please log in to send HeartCoins';
+                                    }
+                                    
+                                    // Play error sound
+                                    try {
+                                      const errorAudio = new Audio('/audio/error.mp3');
+                                      errorAudio.volume = 0.3;
+                                      errorAudio.play().catch(error => {
+                                        console.log('Error audio play failed:', error);
+                                      });
+                                    } catch (error) {
+                                      console.log('Error audio creation failed:', error);
+                                    }
+                                    
+                                    // TODO: Show error message to user in UI
+                                    console.log('User error message:', errorMessage);
                                   }
                                 } catch (error) {
                                   console.error('Error importing transfer function:', error);
