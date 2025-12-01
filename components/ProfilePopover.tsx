@@ -55,19 +55,6 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
   
   const [allRelics, setAllRelics] = useState<Relic[]>([]);
   
-  // Debug allRelics state changes
-  useEffect(() => {
-    console.log('🔄 allRelics state updated:', allRelics);
-    console.log('📊 allRelics length:', allRelics.length);
-    if (allRelics.length > 0) {
-      console.log('📷 First 3 relics with icon_url:', allRelics.slice(0, 3).map(r => ({ 
-        id: r.id, 
-        name: r.relic_name, 
-        has_icon: !!r.icon_url,
-        icon_url: r.icon_url 
-      })));
-    }
-  }, [allRelics]);
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -218,7 +205,6 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
 
   // Fetch all relics from database
   const fetchAllRelics = async () => {
-    console.log('🔍 Fetching relics from database...');
     try {
       const { data: relicsData, error: relicsError } = await supabaseClient
         .from('relics')
@@ -227,7 +213,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
         .order('rarity', { ascending: false });
 
       if (relicsError) {
-        console.error('❌ Error fetching relics:', relicsError);
+        console.error('Error fetching relics:', relicsError);
         setAllRelics([]);
       } else {
         // Transform the data to match our Relic interface
@@ -238,12 +224,10 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
           description: relic.code
         })) || [];
         
-        console.log('✅ Fetched relics data:', transformedRelics);
-        console.log('📊 Number of relics found:', transformedRelics.length);
         setAllRelics(transformedRelics);
       }
     } catch (error) {
-      console.log('⚠️ Relics table not found or error:', error);
+      console.log('Relics table not found, skipping');
       setAllRelics([]);
     }
   };

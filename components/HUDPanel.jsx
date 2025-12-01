@@ -2461,7 +2461,7 @@ export default function HUDPanel({
             // Move the visual nudge into the bottom offset so it stays inside the overflow-hidden blue display
             bottom: 'calc(var(--hud-player-bottom-offset, 0px) + 6px)'
           }}>
-            <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '10px', paddingBottom: 6 }}>
+            <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '10px', paddingBottom: 10, position: 'relative' }}>
               <div className="flex flex-wrap items-start gap-3 pt-0 pr-2 pl-2 pb-0">
                 <div className="controls-row flex items-start justify-start gap-4 w-full" style={{ paddingTop: 4 }}>
                 <div className="hud-main-stack" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
@@ -2857,6 +2857,44 @@ export default function HUDPanel({
                           </svg>
                         </div>
                       </div>
+
+                      {/* White track line pinned to the bottom of blue display */}
+                      {(() => {
+                        try {
+                          const a = liveAudioRef?.current;
+                          const liveDur = (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
+                          const liveTime = (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
+                          const pct = liveDur > 0 ? Math.max(0, Math.min(100, (liveTime / liveDur) * 100)) : 0;
+                          return (
+                            <div 
+                              className="hud-white-track"
+                              style={{
+                                position: 'absolute',
+                                left: 8,
+                                right: 8,
+                                bottom: 0,
+                                height: 8,
+                                borderRadius: 9999,
+                                background: 'rgba(255,255,255,0.08)',
+                                overflow: 'hidden',
+                              }}
+                              aria-hidden
+                            >
+                              <div
+                                style={{
+                                  width: `${pct}%`,
+                                  height: '100%',
+                                  background: '#ffffff',
+                                  borderRadius: 9999,
+                                  boxShadow: '0 0 10px rgba(255,255,255,0.85), 0 0 20px rgba(255,255,255,0.5), 0 0 36px rgba(255,255,255,0.25)'
+                                }}
+                              />
+                            </div>
+                          );
+                        } catch {
+                          return null;
+                        }
+                      })()}
                     </>
                   );
                 })()}

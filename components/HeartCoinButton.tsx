@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { sfx } from "@/lib/sfx";
 import Image from "next/image";
 import { useProfile } from '@/contexts/ProfileContext';
@@ -187,6 +187,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'EARN' | 'USE'>('EARN');
   const [activeUseTab, setActiveUseTab] = useState<'MERCH' | 'CARDS'>('MERCH');
+  const [activeEarnTab, setActiveEarnTab] = useState<'DAILY QUESTIONS' | 'BONUS QUESTS'>('DAILY QUESTIONS');
   const [selectedCardElement, setSelectedCardElement] = useState<string | null>(null);
   const [selectedSong, setSelectedSong] = useState<string>('');
   const [showPhysicalForm, setShowPhysicalForm] = useState(false);
@@ -334,6 +335,63 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     }
   };
 
+  // Get unique rarities for filter dropdown
+  const availableRarities = useMemo(() => {
+    const rarities = new Set<string>();
+    
+    cards.forEach(card => {
+      // If an element is selected, only include rarities from that element
+      if (selectedCardElement && selectedCardElement !== 'all') {
+        if (card.element?.toLowerCase() !== selectedCardElement.toLowerCase()) {
+          return; // Skip cards that don't match the selected element
+        }
+      }
+      
+      if (card.rarity) {
+        rarities.add(card.rarity);
+      }
+    });
+    
+    return Array.from(rarities);
+  }, [cards, selectedCardElement]);
+
+  // Get unique songs for filter dropdown
+  const availableSongs = useMemo(() => {
+    const songs = new Set<string>();
+    
+    cards.forEach(card => {
+      // If an element is selected, only include songs from that element
+      if (selectedCardElement && selectedCardElement !== 'all') {
+        if (card.element?.toLowerCase() !== selectedCardElement.toLowerCase()) {
+          return; // Skip cards that don't match the selected element
+        }
+      }
+      
+      if (card.card_name) {
+        // Extract base song name (remove variations like "(ACOUSTIC)", "(REMIX)")
+        const baseName = card.card_name.replace(/\s*\([^)]*\)\s*/g, '').trim();
+        songs.add(baseName);
+      }
+    });
+    
+    return Array.from(songs);
+  }, [cards, selectedCardElement]);
+
+  // Reset song and rarity filters when element changes
+  useEffect(() => {
+    if (selectedCardElement && selectedCardElement !== 'all') {
+      // Reset song if it's not available in the selected element
+      if (selectedSong && !availableSongs.includes(selectedSong)) {
+        setSelectedSong('');
+      }
+      
+      // Reset rarity if it's not available in the selected element  
+      if (selectedRarity && !availableRarities.includes(selectedRarity)) {
+        setSelectedRarity('');
+      }
+    }
+  }, [selectedCardElement, availableSongs, availableRarities, selectedSong, selectedRarity]);
+
   // Filter cards based on selected element and rarity
   useEffect(() => {
     let filtered = cards;
@@ -397,34 +455,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     
     // If card is released, show it (no tier restrictions for released cards)
     return false;
-  };
-
-  // Get unique rarities for filter dropdown
-  const getAvailableRarities = (): string[] => {
-    const rarities = new Set<string>();
-    
-    cards.forEach(card => {
-      if (card.rarity) {
-        rarities.add(card.rarity);
-      }
-    });
-    
-    return Array.from(rarities);
-  };
-
-  // Get unique songs for filter dropdown
-  const getAvailableSongs = (): string[] => {
-    const songs = new Set<string>();
-    
-    cards.forEach(card => {
-      if (card.card_name) {
-        // Extract base song name (remove variations like "(ACOUSTIC)", "(REMIX)")
-        const baseName = card.card_name.replace(/\s*\([^)]*\)\s*/g, '').trim();
-        songs.add(baseName);
-      }
-    });
-    
-    return Array.from(songs);
   };
 
   // Get card counts for each element
@@ -942,8 +972,48 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 Heart coins are the energy of the Heartverse. You earn them by exploring, connecting and showing up.
               </div>
 
-          {/* Section 1 - Daily Quests */}
-          <div className="mb-4">
+              {/* Earn Sub-tabs */}
+              <div className="flex justify-center mb-3 space-x-3">
+                {(['DAILY QUESTIONS', 'BONUS QUESTS'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => {
+                      try { sfx.play('click', 0.6); } catch {}
+                      setActiveEarnTab(tab);
+                    }}
+                    className="px-6 py-2 text-sm rounded border transition-all duration-200"
+                    style={{
+                      background: activeEarnTab === tab 
+                        ? 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.6) 100%)'
+                        : 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.2) 100%)',
+                      color: activeEarnTab === tab ? '#FFFFFF' : 'rgba(255,255,255,0.7)',
+                      borderColor: activeEarnTab === tab ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.4)',
+                      textShadow: activeEarnTab === tab ? '0 0 6px rgba(255,255,255,0.8)' : 'none',
+                      boxShadow: activeEarnTab === tab ? '0 0 10px rgba(255,255,255,0.5), 0 0 20px rgba(255,255,255,0.3)' : 'none',
+                      fontWeight: 700,
+                      fontSize: '12px'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (activeEarnTab !== tab) {
+                        e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.35) 100%)';
+                        e.currentTarget.style.color = 'rgba(255,255,255,0.9)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (activeEarnTab !== tab) {
+                        e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.2) 100%)';
+                        e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                      }
+                    }}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+
+          {/* Daily Questions Tab Content */}
+          {activeEarnTab === 'DAILY QUESTIONS' && (
+            <div className="mb-4">
             <div 
               className="text-sm font-bold mb-2"
               style={{ 
@@ -1314,8 +1384,22 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 </div>
                               </div>
                               
+                              {/* Right Arrow */}
+                              <button
+                                onClick={() => {
+                                  try { sfx.play('click', 0.6); } catch {}
+                                  setCurrentMerchIndex(prev => prev < PHYSICAL_ITEMS.length - 1 ? prev + 1 : 0);
+                                }}
+                                className="flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 transition-all duration-200 flex-shrink-0 mt-8"
+                                style={{
+                                  boxShadow: '0 0 8px rgba(255,255,255,0.3)'
+                                }}
+                              >
+                                <span className="text-white text-sm font-bold">→</span>
+                              </button>
+                              
                               {/* Item Details */}
-                              <div className="flex-1">
+                              <div className="flex-1 ml-2">
                                 {showHeartCoinPurchase ? (
                                   /* HeartCoin Purchase Confirmation */
                                   <div className="text-center">
@@ -1502,20 +1586,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   </>
                                 )}
                               </div>
-                              
-                              {/* Right Arrow */}
-                              <button
-                                onClick={() => {
-                                  try { sfx.play('click', 0.6); } catch {}
-                                  setCurrentMerchIndex(prev => prev < PHYSICAL_ITEMS.length - 1 ? prev + 1 : 0);
-                                }}
-                                className="flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 transition-all duration-200 flex-shrink-0 mt-8 -mr-3"
-                                style={{
-                                  boxShadow: '0 0 8px rgba(255,255,255,0.3)'
-                                }}
-                              >
-                                <span className="text-white text-sm font-bold">→</span>
-                              </button>
                             </div>
                           </div>
                         )}
@@ -1633,7 +1703,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-1"
                             >
                               <option value="">All Songs</option>
-                              {getAvailableSongs().map(song => (
+                              {availableSongs.map(song => (
                                 <option key={song} value={song}>{song}</option>
                               ))}
                             </select>
@@ -1643,7 +1713,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-1"
                             >
                               <option value="">All Rarities</option>
-                              {getAvailableRarities().map(rarity => (
+                              {availableRarities.map(rarity => (
                                 <option key={rarity} value={rarity}>{rarity}</option>
                               ))}
                             </select>
