@@ -107,18 +107,47 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
     
     // Special positioning for menu items - place to the right of the menu
     if (currentStepId.startsWith('menu-')) {
-      const menuRect = document.querySelector('[data-tour-id="hamburger"]')?.getBoundingClientRect();
-      if (menuRect) {
-        // Position to the right of the hamburger menu dropdown
-        const top = rect.top + (rect.height / 2) - (bubbleHeight / 2);
-        const left = menuRect.right + 240; // Position further to the right to clear the dropdown menu
-        
-        setBubblePosition({ 
-          top: Math.max(20, Math.min(top, viewportHeight - bubbleHeight - 20)), 
-          left: Math.min(left, viewportWidth - bubbleWidth - 20)
-        });
-        return;
+      // Force menu to be open for menu steps
+      if (onMenuToggle) {
+        onMenuToggle(true);
       }
+      
+      // Wait a bit for menu to open, then position
+      setTimeout(() => {
+        const hamburgerContainer = document.querySelector('[data-tour-id="hamburger"]')?.closest('.fixed');
+        const menuDropdown = hamburgerContainer?.querySelector('.absolute.top-20');
+        
+        if (menuDropdown) {
+          // Menu is open, position to the right of the dropdown
+          const dropdownRect = menuDropdown.getBoundingClientRect();
+          const top = rect.top + (rect.height / 2) - (bubbleHeight / 2);
+          const left = dropdownRect.right + 20; // Position just to the right of dropdown
+          
+          setBubblePosition({ 
+            top: Math.max(20, Math.min(top, viewportHeight - bubbleHeight - 20)), 
+            left: Math.min(left, viewportWidth - bubbleWidth - 20)
+          });
+        } else {
+          // Fallback: menu not open, position based on hamburger button
+          const hamburgerRect = document.querySelector('[data-tour-id="hamburger"]')?.getBoundingClientRect();
+          if (hamburgerRect) {
+            const top = rect.top + (rect.height / 2) - (bubbleHeight / 2);
+            const left = hamburgerRect.right + 240; // Position far to the right to avoid where menu would be
+            
+            setBubblePosition({ 
+              top: Math.max(20, Math.min(top, viewportHeight - bubbleHeight - 20)), 
+              left: Math.min(left, viewportWidth - bubbleWidth - 20)
+            });
+          } else {
+            // Final fallback: center the tooltip
+            setBubblePosition({ 
+              top: viewportHeight / 2 - bubbleHeight / 2, 
+              left: viewportWidth / 2 - bubbleWidth / 2
+            });
+          }
+        }
+      }, 200);
+      return;
     }
     
     // Calculate position - try to place above the element
@@ -169,13 +198,10 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
 
     // Handle menu opening for menu steps
     if (step.id === 'hamburger') {
-      // For hamburger step, ensure menu gets opened after the step is highlighted
+      // For hamburger step, open menu immediately
       if (onMenuToggle) {
         console.log('Tour: Opening menu for hamburger step');
-        setTimeout(() => {
-          console.log('Tour: Executing delayed menu open');
-          onMenuToggle(true);
-        }, 300);
+        onMenuToggle(true);
       } else {
         console.log('Tour: No onMenuToggle function available');
       }

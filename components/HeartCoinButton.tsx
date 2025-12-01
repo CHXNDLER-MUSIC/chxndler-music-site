@@ -361,7 +361,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     }
     
     // Sort cards to show selected element cards first
-    if (selectedCardElement) {
+    if (selectedCardElement && selectedCardElement !== 'all') {
       filtered.sort((a, b) => {
         const aIsSelectedElement = a.element?.toLowerCase() === selectedCardElement.toLowerCase();
         const bIsSelectedElement = b.element?.toLowerCase() === selectedCardElement.toLowerCase();
@@ -1562,6 +1562,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   onClick={() => {
                                     try { sfx.play('click', 0.7); } catch {}
                                     setSelectedCardElement(element);
+                                    // Reset any other filters to ensure we only see cards from this element
+                                    setSelectedRarity('');
+                                    setSelectedSong('');
                                   }}
                                 >
                                   <div 

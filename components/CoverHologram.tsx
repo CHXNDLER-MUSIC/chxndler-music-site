@@ -663,7 +663,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
             className="card-anchored"
             style={{
               position: 'fixed',
-              bottom: '40vh', // Slightly higher on screen
+              bottom: '42vh', // Slightly higher on screen
               left: '50%',
               transform: 'translateX(-50%)',
               pointerEvents: 'auto'
@@ -716,7 +716,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                         }}
                       />
                     </div>
-                    {/* Back side shows the original COVER image */}
+                    {/* Back side shows the card BACK image */}
                     <div 
                       style={{ 
                         position: 'absolute', 
@@ -729,11 +729,11 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                       }}
                     >
                       <img
-                        src={src}
-                        alt={title}
+                        src={'/cards/BACK.webp'}
+                        alt={`${title} card back`}
                         className="tilt-img"
                         onError={(e)=>{
-                          // If cover missing, fall back to brand logo
+                          // If back image missing, fall back to brand logo
                           e.currentTarget.src = "/logo/CHXNDLER_Logo.png";
                         }}
                       />

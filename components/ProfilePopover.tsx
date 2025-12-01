@@ -54,6 +54,20 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
   const { start: startTour } = useTour();
   
   const [allRelics, setAllRelics] = useState<Relic[]>([]);
+  
+  // Debug allRelics state changes
+  useEffect(() => {
+    console.log('🔄 allRelics state updated:', allRelics);
+    console.log('📊 allRelics length:', allRelics.length);
+    if (allRelics.length > 0) {
+      console.log('📷 First 3 relics with icon_url:', allRelics.slice(0, 3).map(r => ({ 
+        id: r.id, 
+        name: r.relic_name, 
+        has_icon: !!r.icon_url,
+        icon_url: r.icon_url 
+      })));
+    }
+  }, [allRelics]);
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -181,7 +195,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
         subtitle: 'flow and adaptability', 
         description: 'WATER holds flow, adaptability, and emotional depth. It represents intuition, dreams, and the subconscious. These songs are fluid, dreamy, and reflective, moving like currents through different moods and states of being.',
         icon: elementIcons.water,
-        color: '#4A90E2'
+        color: '#00BFFF'
       },
       lightning: {
         title: 'Lightning',
@@ -195,7 +209,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
         subtitle: 'mystery and transformation',
         description: 'DARKNESS holds mystery, depth, and transformation. It represents the unknown, introspection, and shadow work. These songs are haunting, powerful, and transformative, embracing the beauty found in life\'s deeper, more complex emotions.',
         icon: elementIcons.darkness,
-        color: '#8B5CF6'
+        color: '#A855F7'
       }
     };
 
@@ -204,20 +218,32 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
 
   // Fetch all relics from database
   const fetchAllRelics = async () => {
+    console.log('🔍 Fetching relics from database...');
     try {
       const { data: relicsData, error: relicsError } = await supabaseClient
         .from('relics')
-        .select('id, relic_name, icon_url, description')
-        .order('id', { ascending: true });
+        .select('id, label, image_url, code')
+        .eq('kind', 'RELIC')
+        .order('rarity', { ascending: false });
 
       if (relicsError) {
-        console.error('Error fetching relics:', relicsError);
+        console.error('❌ Error fetching relics:', relicsError);
         setAllRelics([]);
       } else {
-        setAllRelics(relicsData || []);
+        // Transform the data to match our Relic interface
+        const transformedRelics = relicsData?.map(relic => ({
+          id: relic.id,
+          relic_name: relic.label,
+          icon_url: relic.image_url,
+          description: relic.code
+        })) || [];
+        
+        console.log('✅ Fetched relics data:', transformedRelics);
+        console.log('📊 Number of relics found:', transformedRelics.length);
+        setAllRelics(transformedRelics);
       }
     } catch (error) {
-      console.log('relics table not found, skipping');
+      console.log('⚠️ Relics table not found or error:', error);
       setAllRelics([]);
     }
   };
@@ -252,9 +278,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
             earned_at,
             relics (
               id,
-              relic_name,
-              icon_url,
-              description
+              label,
+              image_url,
+              code
             )
           `)
           .eq('user_id', user.id)
@@ -275,7 +301,20 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
         }
         setUserRelics([]);
       } else {
-        setUserRelics(relicResult.data || []);
+        // Transform the user relics data to match our interface
+        const transformedUserRelics = relicResult.data?.map(userRelic => ({
+          id: userRelic.id,
+          relic_id: userRelic.relic_id,
+          earned_at: userRelic.earned_at,
+          relics: {
+            id: userRelic.relics.id,
+            relic_name: userRelic.relics.label,
+            icon_url: userRelic.relics.image_url,
+            description: userRelic.relics.code
+          }
+        })) || [];
+        
+        setUserRelics(transformedUserRelics);
       }
 
       // Fetch all relics for the grid display
@@ -529,16 +568,16 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               setShowRelicsInline(!showRelicsInline);
               try { sfx.play('click', 0.6); } catch {}
             }}
-            className="absolute top-16 right-4 w-10 h-10 rounded-full border-2 border-cyan-400/60 bg-cyan-400/10 hover:border-cyan-400/80 hover:bg-cyan-400/20 transition-all duration-200 hover:scale-110 flex items-center justify-center overflow-hidden"
+            className="absolute top-16 right-4 w-10 h-10 rounded-full border-2 border-pink-400/60 bg-pink-400/10 hover:border-pink-400/80 hover:bg-pink-400/20 transition-all duration-200 hover:scale-110 flex items-center justify-center overflow-hidden"
             style={{
-              boxShadow: '0 0 15px rgba(0,255,255,0.3)'
+              boxShadow: 'inset 0 0 15px rgba(255, 20, 147, 0.4)'
             }}
             title="View Relics"
           >
             <img
               src="/elements/relics.webp"
               alt="Relics"
-              className="w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-cover"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.style.display = 'none';
@@ -629,151 +668,6 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               </div>
 
 
-              {/* Profile Image Selection Menu */}
-              {showElementMenu && (
-                <div 
-                  className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 z-50"
-                  style={{
-                    background: 'rgba(0,0,0,0.9)',
-                    border: '1px solid rgba(0,255,255,0.6)',
-                    borderRadius: '16px',
-                    boxShadow: '0 8px 25px rgba(0,255,255,0.3)',
-                    backdropFilter: 'blur(12px)',
-                    padding: '16px',
-                    maxWidth: '300px',
-                    width: 'max-content'
-                  }}
-                >
-                  {/* Header */}
-                  <div 
-                    className="text-center mb-3 text-xs font-semibold"
-                    style={{ 
-                      color: '#00FFFF', 
-                      textShadow: '0 0 4px rgba(0,255,255,0.6)' 
-                    }}
-                  >
-                    CHOOSE YOUR IMAGE
-                  </div>
-                  
-                  {/* Elements Section */}
-                  <div className="mb-3">
-                    <div 
-                      className="text-center mb-2 text-xs"
-                      style={{ 
-                        color: '#00FFFF80', 
-                        fontSize: '9px'
-                      }}
-                    >
-                      ELEMENTS
-                    </div>
-                    <div className="grid grid-cols-4 gap-2">
-                      {getAllElements().map((element) => (
-                        <button
-                          key={element.name}
-                          onClick={() => {
-                            setSelectedImageUrl(element.url);
-                            setShowElementMenu(false);
-                            try { sfx.play('flip', 0.6); } catch {}
-                          }}
-                          className={`w-10 h-10 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:scale-110 ${
-                            selectedImageUrl === element.url
-                              ? 'border-cyan-400 shadow-[0_0_15px_rgba(0,255,255,0.6)]'
-                              : 'border-white/30 hover:border-cyan-400/60'
-                          }`}
-                          title={element.label}
-                        >
-                          <img
-                            src={element.url}
-                            alt={element.label}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                              const parent = target.parentElement;
-                              if (parent) {
-                                parent.innerHTML = '?';
-                                parent.style.color = '#666';
-                                parent.style.fontSize = '12px';
-                                parent.style.display = 'flex';
-                                parent.style.alignItems = 'center';
-                                parent.style.justifyContent = 'center';
-                              }
-                            }}
-                          />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  {/* Relics Section */}
-                  <div className="mb-3">
-                    <div 
-                      className="text-center mb-2 text-xs"
-                      style={{ 
-                        color: '#00FFFF80', 
-                        fontSize: '9px'
-                      }}
-                    >
-                      RELICS
-                    </div>
-                    <div className="grid grid-cols-4 gap-2">
-                      {allRelics.slice(0, 16).map((relic, i) => (
-                        <button
-                          key={`relic-${relic.id}`}
-                          onClick={() => {
-                            if (relic.icon_url) {
-                              setSelectedImageUrl(relic.icon_url);
-                              setShowElementMenu(false);
-                              try { sfx.play('flip', 0.6); } catch {}
-                            }
-                          }}
-                          disabled={!relic.icon_url}
-                          className={`w-10 h-10 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:scale-110 disabled:opacity-30 disabled:cursor-not-allowed ${
-                            selectedImageUrl === relic.icon_url
-                              ? 'border-cyan-400 shadow-[0_0_15px_rgba(0,255,255,0.6)]'
-                              : 'border-white/30 hover:border-cyan-400/60'
-                          }`}
-                          title={relic.relic_name || `Relic ${i + 1}`}
-                        >
-                          {relic.icon_url ? (
-                            <img
-                              src={relic.icon_url}
-                              alt={relic.relic_name || `Relic ${i + 1}`}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                                const parent = target.parentElement;
-                                if (parent) {
-                                  parent.innerHTML = '🏛️';
-                                  parent.style.color = '#666';
-                                  parent.style.fontSize = '8px';
-                                  parent.style.display = 'flex';
-                                  parent.style.alignItems = 'center';
-                                  parent.style.justifyContent = 'center';
-                                }
-                              }}
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">🏛️</div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  {/* Footer text */}
-                  <div 
-                    className="text-center text-xs"
-                    style={{ 
-                      color: '#FFFFFF80', 
-                      fontSize: '9px'
-                    }}
-                  >
-                    Select your profile image
-                  </div>
-                </div>
-              )}
             </div>
             
             {/* Username and Element - Right of image */}
@@ -796,6 +690,10 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                 <button
                   onClick={() => {
                     if (profile?.element) {
+                      // Close profile image menu if it's open
+                      if (showElementMenu) {
+                        setShowElementMenu(false);
+                      }
                       // Set the current element index to match the user's element
                       const elements = getAllElements();
                       const userElementIndex = elements.findIndex(el => el.name === profile.element);
@@ -835,24 +733,10 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
             </div>
           </div>
           
-          {/* Profile Stats */}
-          <div className="space-y-2 mt-3 mb-3">
-            {/* Total Heart Coins */}
-            <div className="flex items-center justify-center">
-              <span className="text-white/80 text-sm mr-2">TOTAL HEART COINS:</span>
-              <span 
-                className="font-bold"
-                style={{ 
-                  color: '#00FFFF', 
-                  textShadow: '0 0 8px rgba(0,255,255,0.6)' 
-                }}
-              >
-                {profile?.heartcoin_total || 0}
-              </span>
-            </div>
-            
-            {/* Daily Streak */}
-            <div className="flex items-center justify-center">
+          {/* Profile Stats - Single Line */}
+          <div className="flex items-center justify-center gap-8 mt-1 mb-3">
+            {/* Daily Streak - Left */}
+            <div className="flex items-center">
               <span className="text-white/80 text-sm mr-2">DAILY STREAK:</span>
               <span 
                 className="font-bold"
@@ -862,6 +746,20 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                 }}
               >
                 {(profile as any)?.streak_days || 0} days
+              </span>
+            </div>
+            
+            {/* Total Heart Coins - Right */}
+            <div className="flex items-center">
+              <span className="text-white/80 text-sm mr-2">TOTAL HEART COINS:</span>
+              <span 
+                className="font-bold"
+                style={{ 
+                  color: '#00FFFF', 
+                  textShadow: '0 0 8px rgba(0,255,255,0.6)' 
+                }}
+              >
+                {profile?.heartcoin_total || 0}
               </span>
             </div>
           </div>
@@ -875,6 +773,134 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
             }}
           />
 
+          {/* Profile Image Selection Menu - Inline */}
+          {showElementMenu && (
+            <div className="mt-4 mb-4 p-4 rounded-lg border border-cyan-400/60 bg-black/40">
+              {/* Header */}
+              <div 
+                className="text-center mb-3 text-sm font-semibold"
+                style={{ 
+                  color: '#00FFFF', 
+                  textShadow: '0 0 4px rgba(0,255,255,0.6)' 
+                }}
+              >
+                CHOOSE YOUR PROFILE IMAGE
+              </div>
+              
+              {/* Elements Section */}
+              <div className="mb-3">
+                <div 
+                  className="text-center mb-2 text-xs"
+                  style={{ 
+                    color: '#00FFFF80', 
+                    fontSize: '10px'
+                  }}
+                >
+                  ELEMENTS
+                </div>
+                <div className="grid grid-cols-4 gap-2 justify-center max-w-xs mx-auto">
+                  {getAllElements().map((element) => (
+                    <button
+                      key={element.name}
+                      onClick={() => {
+                        setSelectedImageUrl(element.url);
+                        setShowElementMenu(false);
+                        try { sfx.play('flip', 0.6); } catch {}
+                      }}
+                      className={`w-12 h-12 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:scale-110 ${
+                        selectedImageUrl === element.url
+                          ? 'border-cyan-400 shadow-[0_0_15px_rgba(0,255,255,0.6)]'
+                          : 'border-white/30 hover:border-cyan-400/60'
+                      }`}
+                      title={element.label}
+                    >
+                      <img
+                        src={element.url}
+                        alt={element.label}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent) {
+                            parent.innerHTML = '?';
+                            parent.style.color = '#666';
+                            parent.style.fontSize = '12px';
+                            parent.style.display = 'flex';
+                            parent.style.alignItems = 'center';
+                            parent.style.justifyContent = 'center';
+                          }
+                        }}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Relics Section */}
+              <div className="mb-3">
+                <div 
+                  className="text-center mb-2 text-xs"
+                  style={{ 
+                    color: '#00FFFF80', 
+                    fontSize: '10px'
+                  }}
+                >
+                  RELICS
+                </div>
+                <div className="grid grid-cols-4 gap-2 justify-center max-w-xs mx-auto">
+                  {(allRelics.length > 0 ? allRelics.slice(0, 16) : Array.from({ length: 16 }, (_, i) => ({
+                    id: `placeholder-${i}`,
+                    relic_name: `Relic ${i + 1}`,
+                    icon_url: null,
+                    description: null
+                  }))).map((relic, i) => (
+                    <button
+                      key={`relic-${relic.id}`}
+                      onClick={() => {
+                        if (relic.icon_url) {
+                          setSelectedImageUrl(relic.icon_url);
+                          setShowElementMenu(false);
+                          try { sfx.play('flip', 0.6); } catch {}
+                        }
+                      }}
+                      disabled={!relic.icon_url}
+                      className={`w-12 h-12 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:scale-110 disabled:opacity-30 disabled:cursor-not-allowed ${
+                        selectedImageUrl === relic.icon_url
+                          ? 'border-cyan-400 shadow-[0_0_15px_rgba(0,255,255,0.6)]'
+                          : 'border-white/30 hover:border-cyan-400/60'
+                      }`}
+                      title={relic.relic_name || `Relic ${i + 1}`}
+                    >
+                      {relic.icon_url ? (
+                        <img
+                          src={relic.icon_url}
+                          alt={relic.relic_name || `Relic ${i + 1}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              parent.innerHTML = '🏛️';
+                              parent.style.color = '#666';
+                              parent.style.fontSize = '8px';
+                              parent.style.display = 'flex';
+                              parent.style.alignItems = 'center';
+                              parent.style.justifyContent = 'center';
+                            }
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">🏛️</div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+            </div>
+          )}
 
           {/* Relics Collection Inline Display */}
           {showRelicsInline && (
@@ -1034,9 +1060,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               </button>
 
               {/* Main Headers */}
-              <div className="text-center mb-4">
+              <div className="text-center mb-2">
                 <h2 
-                  className="text-lg font-bold mb-1"
+                  className="text-lg font-bold mb-0.5"
                   style={{ 
                     color: '#8B5CF6', 
                     textShadow: '0 0 8px rgba(139,92,246,0.6)',
@@ -1057,10 +1083,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               </div>
 
               {/* All Elements Grid - Moved to top */}
-              <div className="mb-4">
-                <h4 className="text-sm font-semibold text-cyan-400 mb-2 text-center">
-                  ALL ELEMENTS
-                </h4>
+              <div className="mb-2">
                 <div className="grid grid-cols-4 gap-3">
                   {getAllElements().map((element, index) => {
                     const elementData = getElementInfo(element.name);
@@ -1074,14 +1097,14 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                           setCurrentElementIndex(index);
                           try { sfx.play('click', 0.4); } catch {}
                         }}
-                        className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all duration-200 hover:scale-105 cursor-pointer ${
+                        className={`relative aspect-square rounded-lg overflow-hidden transition-all duration-200 hover:scale-105 cursor-pointer ${
                           isCurrentlyViewed 
-                            ? 'shadow-lg' 
-                            : 'opacity-60 hover:opacity-80'
+                            ? 'shadow-lg border-2' 
+                            : 'opacity-60 hover:opacity-80 border-0'
                         }`}
                         style={{
-                          borderColor: isCurrentlyViewed ? elementData.color : 'rgba(255,255,255,0.3)',
                           backgroundColor: isCurrentlyViewed ? `${elementData.color}30` : 'rgba(0,0,0,0.3)',
+                          borderColor: isCurrentlyViewed ? elementData.color : 'transparent',
                           boxShadow: isCurrentlyViewed ? `0 0 15px ${elementData.color}60` : 'none'
                         }}
                         title={`View ${element.label} element info`}
@@ -1104,7 +1127,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               
               {/* Thin separator line */}
               <div 
-                className="w-full h-px mb-4"
+                className="w-full h-px mb-2"
                 style={{
                   background: 'linear-gradient(90deg, transparent, rgba(139,92,246,0.8) 20%, rgba(139,92,246,1) 50%, rgba(139,92,246,0.8) 80%, transparent)',
                   boxShadow: '0 0 4px rgba(139,92,246,0.6)'
@@ -1112,7 +1135,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               />
 
               {/* Element Info Layout - Split with info on right */}
-              <div className="flex gap-4 mb-3">
+              <div className="flex gap-4 mb-2">
                 {/* Left side - Element Icon */}
                 <div className="w-12 h-12 rounded-lg border-2 overflow-hidden flex-shrink-0"
                   style={{
@@ -1129,7 +1152,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                 
                 {/* Right side - Element Title and Description */}
                 <div className="flex-1">
-                  <h3 className="text-lg font-bold mb-2"
+                  <h3 className="text-lg font-bold mb-1"
                     style={{
                       color: getElementInfo(getCurrentElementData().name).color,
                       textShadow: `0 0 8px ${getElementInfo(getCurrentElementData().name).color}60`
@@ -1180,13 +1203,13 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                   }
                 }}
                 disabled={saving || getCurrentElementData().name === profile?.element}
-                className="mt-4 w-full py-3 rounded-lg text-sm font-semibold transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-2 w-full py-3 rounded-lg text-sm font-semibold transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
-                  background: `linear-gradient(135deg, ${getElementInfo(getCurrentElementData().name).color}25, ${getElementInfo(getCurrentElementData().name).color}15)`,
-                  border: `1px solid ${getElementInfo(getCurrentElementData().name).color}99`,
+                  background: `linear-gradient(135deg, ${getElementInfo(getCurrentElementData().name).color}40, ${getElementInfo(getCurrentElementData().name).color}25)`,
+                  border: `2px solid ${getElementInfo(getCurrentElementData().name).color}`,
                   color: getElementInfo(getCurrentElementData().name).color,
-                  textShadow: `0 0 8px ${getElementInfo(getCurrentElementData().name).color}99`,
-                  boxShadow: `0 0 15px ${getElementInfo(getCurrentElementData().name).color}50`
+                  textShadow: `0 0 12px ${getElementInfo(getCurrentElementData().name).color}, 0 0 24px ${getElementInfo(getCurrentElementData().name).color}80`,
+                  boxShadow: `0 0 20px ${getElementInfo(getCurrentElementData().name).color}70`
                 }}
                 title={getCurrentElementData().name === profile?.element ? "Already aligned with this element" : "Align with this element's energy"}
               >

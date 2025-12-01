@@ -211,11 +211,7 @@ export default function ProfileBar({
   };
 
   
-  // IMPORTANT: Do not render anything until the user has entered
-  // Guard before any loading UI to prevent initial flash on first load
-  if (!hasEnteredHeartverse) {
-    return null;
-  }
+  // Note: hasEnteredHeartverse check is handled by ProfileBarWrapper
 
   // Panel toggle function
   const togglePanel = (panelKey: ActivePanel) => {
