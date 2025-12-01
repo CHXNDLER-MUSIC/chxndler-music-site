@@ -125,6 +125,16 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
   };
 
   // Distribute song planets by their designated elements
+  // Helper function to get consistent scaling values
+  const getScaleParams = React.useCallback(() => {
+    const mapSize = isCollapsed ? 48 : (window.innerWidth < 640 ? 240 : window.innerWidth < 1024 ? 288 : 320);
+    const contentArea = mapSize - 32; // Leave 16px padding on each side
+    const maxDistance = Math.max(elementOrbitRadius, elementOrbitRadius + (SONG_ORBIT_RADIUS * 3));
+    const scale = (contentArea / 2) / (maxDistance * 1.2); // 1.2 factor for safety margin
+    const center = mapSize / 2;
+    return { mapSize, contentArea, maxDistance, scale, center };
+  }, [isCollapsed]);
+
   const songsPerElement = React.useMemo(() => {
     const distribution: { [key: string]: SongPlanet[] } = {
       water: [],
@@ -161,28 +171,19 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
   // Convert 3D positions to 2D minimap coordinates (top-down view)
   const convertTo2D = (position: [number, number, number]): { x: number; y: number } => {
     const [x, y, z] = position;
-    // Scale down and center in minimap - responsive center point
-    // For top-down view: X maps to X, Z maps to Y (Y is height, ignored in top view)
-    const scale = 2.0;  // Further reduced scale for better orbital view
-    const centerOffset = isCollapsed ? 24 : 120; // Adjust center based on size
+    const { center, scale } = getScaleParams();
+    
     return {
-      x: centerOffset + (x * scale),  // X axis (left-right)
-      y: centerOffset + (z * scale)   // Z axis becomes Y axis (forward-back becomes up-down)
+      x: center + (x * scale),  // X axis (left-right)
+      y: center + (z * scale)   // Z axis becomes Y axis (forward-back becomes up-down)
     };
   };
 
   // Calculate true geometric center of the 4 elemental planets
   const centerPosition = React.useMemo(() => {
-    // Calculate actual center based on elemental planet positions
-    let totalX = 0, totalZ = 0;
-    ELEMENTS.forEach(element => {
-      totalX += element.position[0];
-      totalZ += element.position[2];
-    });
-    const centerX = totalX / ELEMENTS.length;
-    const centerZ = totalZ / ELEMENTS.length;
-    
-    const center2D = convertTo2D([centerX, 0, centerZ]);
+    // Since the elemental planets are arranged in a perfect circle around origin (0,0,0),
+    // the geometric center should be at the origin
+    const center2D = convertTo2D([0, 0, 0]);
     return center2D;
   }, [isCollapsed]);
 
@@ -348,7 +349,9 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
         {/* Orbit paths for each elemental planet */}
         {ELEMENTS.map((element) => {
           const elementPos2D = convertTo2D(element.position);
-          const orbitRadiusScaled = (SONG_ORBIT_RADIUS * 3) * 2.0; // Match 3D system orbit radius
+          // Calculate orbit radius in 2D space using the same scale as the planet positions
+          const { scale } = getScaleParams();
+          const orbitRadiusScaled = (SONG_ORBIT_RADIUS * 3) * scale;
           
           return (
             <div

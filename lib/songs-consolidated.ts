@@ -285,7 +285,8 @@ const MAPPED = RAW.map((t, idx) => {
   const elementData = ELEMENT_THEMES[element];
   
   // Default to local cover path when a cover isn't provided
-  const cover = t.cover ?? `/cover/${base}.png`;
+  // Covers are stored under /public/covers using the exact title casing as filenames (WEBP)
+  const cover = t.cover ?? `/covers/${t.title}.webp`;
   
   // Build audio sources for dual format support
   const sources = buildAudioSources(t.src, base);

@@ -64,6 +64,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
   const [showElementMenu, setShowElementMenu] = useState(false);
   const [showRelicsModal, setShowRelicsModal] = useState(false);
   const [showElementInfo, setShowElementInfo] = useState(false);
+  const [currentElementIndex, setCurrentElementIndex] = useState(0);
 
   const popoverRef = useRef<HTMLDivElement>(null);
 
@@ -135,6 +136,19 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
       { name: 'lightning', url: elementIcons.lightning, label: 'Lightning' },
       { name: 'darkness', url: elementIcons.darkness, label: 'Darkness' }
     ];
+  };
+
+  // Handle cycling through elements
+  const cycleToNextElement = () => {
+    const elements = getAllElements();
+    setCurrentElementIndex((prev) => (prev + 1) % elements.length);
+    try { sfx.play('click', 0.4); } catch {}
+  };
+
+  // Get current element data for display
+  const getCurrentElementData = () => {
+    const elements = getAllElements();
+    return elements[currentElementIndex];
   };
 
   // Get element information including descriptions
@@ -552,6 +566,25 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                 />
               </button>
 
+              {/* View Relics Button - Small Circle */}
+              <button
+                onClick={() => {
+                  setShowRelicsModal(true);
+                  try { sfx.play('click', 0.6); } catch {}
+                }}
+                className="absolute w-8 h-8 rounded-full border-2 border-cyan-400/60 bg-cyan-400/10 hover:border-cyan-400/80 hover:bg-cyan-400/20 transition-all duration-200 hover:scale-110 flex items-center justify-center"
+                style={{
+                  left: 'calc(50% + 50px)',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  boxShadow: '0 0 15px rgba(0,255,255,0.3)',
+                  fontSize: '12px'
+                }}
+                title="View Relics"
+              >
+                🏛️
+              </button>
+
               {/* Element Selection Menu */}
               {showElementMenu && (
                 <div 
@@ -627,6 +660,12 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               <button
                 onClick={() => {
                   if (profile?.element) {
+                    // Set the current element index to match the user's element
+                    const elements = getAllElements();
+                    const userElementIndex = elements.findIndex(el => el.name === profile.element);
+                    if (userElementIndex !== -1) {
+                      setCurrentElementIndex(userElementIndex);
+                    }
                     setShowElementInfo(!showElementInfo);
                     try { sfx.play('click', 0.4); } catch {}
                   }
@@ -675,13 +714,32 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
 
           {/* Element Info Display */}
           {showElementInfo && profile?.element && (
-            <div className="mt-6 p-4 rounded-lg border-2 border-opacity-60 bg-opacity-20"
+            <div className="mt-6 p-4 rounded-lg border-2 border-opacity-60 bg-opacity-20 relative"
               style={{
-                borderColor: getElementInfo(profile.element).color,
-                backgroundColor: `${getElementInfo(profile.element).color}20`,
-                boxShadow: `0 0 20px ${getElementInfo(profile.element).color}40`
+                borderColor: getElementInfo(getCurrentElementData().name).color,
+                backgroundColor: `${getElementInfo(getCurrentElementData().name).color}20`,
+                boxShadow: `0 0 20px ${getElementInfo(getCurrentElementData().name).color}40`
               }}
             >
+              {/* Close button - Top Right */}
+              <button
+                onClick={() => {
+                  setShowElementInfo(false);
+                  try { sfx.play('close', 0.6); } catch {}
+                }}
+                className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+                style={{
+                  background: 'rgba(0,255,255,0.2)',
+                  border: '1px solid rgba(0,255,255,0.6)',
+                  color: '#00FFFF',
+                  boxShadow: '0 0 10px rgba(0,255,255,0.3)',
+                  fontSize: '14px',
+                  fontWeight: 'bold'
+                }}
+              >
+                ×
+              </button>
+
               {/* Main Headers */}
               <div className="text-center mb-6">
                 <h2 
@@ -714,35 +772,39 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                 }}
               />
 
-              {/* Header with element icon and title */}
-              <div className="flex items-center space-x-3 mb-4">
+              {/* Header with element icon and title - Clickable */}
+              <button 
+                onClick={cycleToNextElement}
+                className="flex items-center space-x-3 mb-4 w-full text-left hover:scale-105 transition-all duration-200 cursor-pointer"
+                title="Click to cycle through elements"
+              >
                 <div className="w-12 h-12 rounded-lg border-2 overflow-hidden"
                   style={{
-                    borderColor: getElementInfo(profile.element).color,
-                    backgroundColor: `${getElementInfo(profile.element).color}30`
+                    borderColor: getElementInfo(getCurrentElementData().name).color,
+                    backgroundColor: `${getElementInfo(getCurrentElementData().name).color}30`
                   }}
                 >
                   <img
-                    src={getElementInfo(profile.element).icon}
-                    alt={getElementInfo(profile.element).title}
+                    src={getElementInfo(getCurrentElementData().name).icon}
+                    alt={getElementInfo(getCurrentElementData().name).title}
                     className="w-full h-full object-cover"
                   />
                 </div>
                 <div>
                   <h3 className="text-lg font-bold"
                     style={{
-                      color: getElementInfo(profile.element).color,
-                      textShadow: `0 0 8px ${getElementInfo(profile.element).color}60`
+                      color: getElementInfo(getCurrentElementData().name).color,
+                      textShadow: `0 0 8px ${getElementInfo(getCurrentElementData().name).color}60`
                     }}
                   >
-                    {getElementInfo(profile.element).title} = {getElementInfo(profile.element).subtitle}
+                    {getElementInfo(getCurrentElementData().name).title} = {getElementInfo(getCurrentElementData().name).subtitle}
                   </h3>
                 </div>
-              </div>
+              </button>
 
               {/* Description */}
               <p className="text-sm leading-relaxed text-white/90 mb-4">
-                {getElementInfo(profile.element).description}
+                {getElementInfo(getCurrentElementData().name).description}
               </p>
 
               {/* All Elements Grid */}
@@ -751,95 +813,67 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                   ALL ELEMENTS
                 </h4>
                 <div className="grid grid-cols-4 gap-3">
-                  {getAllElements().map((element) => {
+                  {getAllElements().map((element, index) => {
                     const elementData = getElementInfo(element.name);
-                    const isSelected = profile?.element === element.name;
+                    const isCurrentlyViewed = getCurrentElementData().name === element.name;
+                    const isUserElement = profile?.element === element.name;
                     
                     return (
-                      <div
+                      <button
                         key={element.name}
-                        className={`aspect-square rounded-lg border-2 overflow-hidden transition-all duration-200 ${
-                          isSelected 
+                        onClick={() => {
+                          setCurrentElementIndex(index);
+                          try { sfx.play('click', 0.4); } catch {}
+                        }}
+                        className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all duration-200 hover:scale-105 cursor-pointer ${
+                          isCurrentlyViewed 
                             ? 'shadow-lg' 
                             : 'opacity-60 hover:opacity-80'
                         }`}
                         style={{
-                          borderColor: isSelected ? elementData.color : 'rgba(255,255,255,0.3)',
-                          backgroundColor: isSelected ? `${elementData.color}30` : 'rgba(0,0,0,0.3)',
-                          boxShadow: isSelected ? `0 0 15px ${elementData.color}60` : 'none'
+                          borderColor: isCurrentlyViewed ? elementData.color : 'rgba(255,255,255,0.3)',
+                          backgroundColor: isCurrentlyViewed ? `${elementData.color}30` : 'rgba(0,0,0,0.3)',
+                          boxShadow: isCurrentlyViewed ? `0 0 15px ${elementData.color}60` : 'none'
                         }}
+                        title={`View ${element.label} element info`}
                       >
                         <img
                           src={element.url}
                           alt={element.label}
                           className="w-full h-full object-cover"
                         />
-                      </div>
+                        {isUserElement && (
+                          <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-cyan-400 shadow-lg"
+                            title="Your current element"
+                          />
+                        )}
+                      </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Close button for element info */}
+              {/* ALIGN Button */}
               <button
                 onClick={() => {
-                  setShowElementInfo(false);
-                  try { sfx.play('close', 0.6); } catch {}
+                  // Handle align functionality here - for now just play sound
+                  try { sfx.play('success', 0.8); } catch {}
                 }}
-                className="mt-4 w-full py-2 rounded-lg text-sm font-semibold transition-all duration-200 hover:scale-105"
+                className="mt-4 w-full py-3 rounded-lg text-sm font-semibold transition-all duration-200 hover:scale-105"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(0,255,255,0.15), rgba(0,255,255,0.05))',
-                  border: '1px solid rgba(0,255,255,0.3)',
-                  color: '#00FFFF'
+                  background: 'linear-gradient(135deg, rgba(139,92,246,0.25), rgba(139,92,246,0.15))',
+                  border: '1px solid rgba(139,92,246,0.6)',
+                  color: '#8B5CF6',
+                  textShadow: '0 0 8px rgba(139,92,246,0.6)',
+                  boxShadow: '0 0 15px rgba(139,92,246,0.3)'
                 }}
+                title="Align with this element's energy"
               >
-                ✕ Close Element Info
+                ALIGN
               </button>
             </div>
           )}
 
-          {/* RELICS Section */}
-          <div className="space-y-3">
-            <h3 
-              className="text-sm mb-3 font-semibold"
-              style={{ 
-                color: '#00FFFF', 
-                textShadow: '0 0 4px rgba(0,255,255,0.6)' 
-              }}
-            >
-              RELICS
-            </h3>
-            
-            <button
-              onClick={() => {
-                setShowRelicsModal(true);
-                try { sfx.play('click', 0.6); } catch {}
-              }}
-              className="w-full py-3 rounded-lg border-2 border-cyan-400/40 bg-cyan-400/10 hover:border-cyan-400/60 hover:bg-cyan-400/15 transition-all duration-200 hover:scale-105 flex items-center space-x-3"
-              style={{
-                boxShadow: '0 0 15px rgba(0,255,255,0.2)'
-              }}
-            >
-              <img
-                src="/relics.webp"
-                alt="Relics"
-                className="w-8 h-8 object-cover rounded-md"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  // Show fallback icon if image fails to load
-                  const fallback = document.createElement('div');
-                  fallback.className = 'text-lg';
-                  fallback.textContent = '🏛️';
-                  target.parentNode?.insertBefore(fallback, target);
-                }}
-              />
-              <div className="text-left">
-                <p className="text-sm font-semibold text-cyan-400">View Relics</p>
-                <p className="text-xs text-white/60">Click to explore</p>
-              </div>
-            </button>
-          </div>
 
           {/* Start Tour Button */}
           <div className="mt-6 pt-4" style={{

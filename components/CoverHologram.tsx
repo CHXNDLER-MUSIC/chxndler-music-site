@@ -497,7 +497,10 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
       .replace(/^-+|-+$/g, '');
     return (slug && slug.toLowerCase()) || safeFromTitle;
   })();
-  const computedCardSrc = `/card/${effectiveSlug}.png`;
+  // Prefer local card image that mirrors the cover filename when available
+  const localCardFromCover = src && src.includes('/covers/') ? src.replace('/covers/', '/cards/') : null;
+  // Fallback to a title-based card filename in /cards (files are stored as WEBP with title casing)
+  const computedCardSrc = localCardFromCover || `/cards/${title}.webp`;
   const explicitCardSrc = CARD_URLS[effectiveSlug];
 
   useEffect(() => {
@@ -508,7 +511,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
     const img = new window.Image();
     img.onload = () => setHasRealCard(true);
     img.onerror = () => {
-      const fallback = src.replace('/cover/', '/card/');
+      const fallback = src.replace('/covers/', '/cards/');
       if (fallback !== src) {
         const img2 = new window.Image();
         img2.onload = () => setHasRealCard(true);
@@ -521,7 +524,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
             .replace(/[()]/g, ' ')
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/^-+|-+$/g, '');
-          const lastTry = `/card/${asciiFromTitle}.png`;
+          const lastTry = `/cards/${asciiFromTitle}.webp`;
           const img3 = new window.Image();
           img3.onload = () => setHasRealCard(true);
           img3.onerror = () => setHasRealCard(false);
@@ -695,18 +698,25 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                       transform: cardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
                     }}
                   >
-                    {/* Front side */}
+                    {/* Front side shows the CARD image (not cover) */}
                     <div style={{ backfaceVisibility: 'hidden', transform: 'rotateY(0deg)' }}>
                       <img
-                        src={src}
+                        src={explicitCardSrc || computedCardSrc}
                         alt={title}
                         className="tilt-img"
                         onError={(e)=>{
-                          e.currentTarget.src = "/logo/CHXNDLER_Logo.png";
+                          // If card not found, try swapping covers->cards, then fallback to card back
+                          const fallback = src.replace('/covers/', '/cards/');
+                          if (fallback && fallback !== src) {
+                            e.currentTarget.onerror = () => { e.currentTarget.src = CARD_URLS['back'] || '/cards/BACK.webp'; };
+                            e.currentTarget.src = fallback;
+                          } else {
+                            e.currentTarget.src = CARD_URLS['back'] || '/cards/BACK.webp';
+                          }
                         }}
                       />
                     </div>
-                    {/* Back side */}
+                    {/* Back side shows the original COVER image */}
                     <div 
                       style={{ 
                         position: 'absolute', 
@@ -719,18 +729,12 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                       }}
                     >
                       <img
-                        src={explicitCardSrc || computedCardSrc}
+                        src={src}
                         alt={title}
                         className="tilt-img"
                         onError={(e)=>{
-                          // If computed card doesn't exist, fall back to legacy mapping, then to card back
-                          const fallback = src.replace('/cover/', '/card/');
-                          if (fallback && fallback !== src) {
-                            e.currentTarget.onerror = () => { e.currentTarget.src = CARD_URLS['back'] || '/card/back.png'; };
-                            e.currentTarget.src = fallback;
-                          } else {
-                            e.currentTarget.src = CARD_URLS['back'] || '/card/back.png';
-                          }
+                          // If cover missing, fall back to brand logo
+                          e.currentTarget.src = "/logo/CHXNDLER_Logo.png";
                         }}
                       />
                     </div>

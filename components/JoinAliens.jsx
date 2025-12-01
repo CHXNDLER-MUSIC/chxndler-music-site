@@ -323,7 +323,7 @@ export default function JoinAliens({ visible = true } = {}) {
             textShadow: '0 0 8px rgba(0, 255, 255, 0.6)'
           }}
         >
-          {profile?.phone ? `Current signal: ${profile.phone.replace(/(\+1 \(\d{3}\)) \d{3}-(\d{4})/, '$1 ***-$2')}` : 'Stay connected to the Heartverse.'}
+          {'Stay connected to the Heartverse.'}
         </div>
         )}
 
