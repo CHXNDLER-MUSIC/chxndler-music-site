@@ -572,17 +572,29 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                   setShowRelicsModal(true);
                   try { sfx.play('click', 0.6); } catch {}
                 }}
-                className="absolute w-8 h-8 rounded-full border-2 border-cyan-400/60 bg-cyan-400/10 hover:border-cyan-400/80 hover:bg-cyan-400/20 transition-all duration-200 hover:scale-110 flex items-center justify-center"
+                className="absolute w-10 h-10 rounded-full border-2 border-cyan-400/60 bg-cyan-400/10 hover:border-cyan-400/80 hover:bg-cyan-400/20 transition-all duration-200 hover:scale-110 flex items-center justify-center overflow-hidden"
                 style={{
                   left: 'calc(50% + 50px)',
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  boxShadow: '0 0 15px rgba(0,255,255,0.3)',
-                  fontSize: '12px'
+                  boxShadow: '0 0 15px rgba(0,255,255,0.3)'
                 }}
                 title="View Relics"
               >
-                🏛️
+                <img
+                  src="/relics.webp"
+                  alt="Relics"
+                  className="w-6 h-6 object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const parent = target.parentElement;
+                    if (parent) {
+                      parent.innerHTML = '🏛️';
+                      parent.style.fontSize = '14px';
+                    }
+                  }}
+                />
               </button>
 
               {/* Element Selection Menu */}

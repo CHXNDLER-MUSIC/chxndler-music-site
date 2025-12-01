@@ -490,6 +490,11 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // In-app song change without spotlight/beam/route reloads
     // The id parameter is already the track slug from buildPlanetSongs()
     const slug = String(id || '').toLowerCase();
+    // Guard against empty/invalid ids to avoid matching the first track
+    if (!slug || slug.trim() === '') {
+      console.warn('DashboardApp: onSongChange called with empty id; ignoring selection');
+      return;
+    }
     console.log('🎵 onSongChange - id:', id, 'slug:', slug);
     
     // First try exact slug match
@@ -499,7 +504,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       idx = tracks.findIndex(t => slugify(t.title || '').toLowerCase() === slug);
     }
     // If still not found, try partial title match as last resort
-    if (idx < 0) {
+    // Only do this when the slug has meaningful length to avoid matching everything
+    if (idx < 0 && slug.length >= 2) {
       idx = tracks.findIndex(t => (t.title || '').toLowerCase().includes(slug.replace(/-/g, ' ')));
     }
     

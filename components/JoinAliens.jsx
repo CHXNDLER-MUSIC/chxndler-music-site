@@ -475,6 +475,7 @@ export default function JoinAliens({ visible = true } = {}) {
 
       {/* Text Button - positioned in top left corner */}
       <button
+        data-tour-id="signal-streaming"
         onClick={() => {
           try { sfx.play('audio/click.mp3', 0.5); } catch {}
           console.log('TEXT button clicked, current chat state:', isChatOpen);

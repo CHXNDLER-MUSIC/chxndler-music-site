@@ -270,17 +270,11 @@ const SpotifyProgressBar: React.FC<SpotifyProgressBarProps> = ({
       className={`spotify-progress-bar ${className}`}
       style={{
         width: '100%',
-        padding: '8px 0',
-        backgroundColor: 'rgba(0, 255, 0, 0.1)', // Debug: green background to see if it renders
-        border: '1px solid rgba(0, 255, 0, 0.5)', // Debug: green border
+        padding: 0,
         ...style
       }}
     >
-      {/* Time displays */}
-      <div className="flex items-center justify-between text-xs mb-2" style={{ color: '#B3B3B3' }}>
-        <span>{hasActiveSong ? formatTime(currentTime) : '0:00'}</span>
-        <span>{hasActiveSong ? formatTime(duration) : '0:00'}</span>
-      </div>
+      {/* No time labels on the left or right */}
       
       {/* Progress bar */}
       <div 

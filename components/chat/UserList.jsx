@@ -30,7 +30,7 @@ const getGlobalAlienName = () => {
  * UserList Component
  * Shows active users in the chat with element-themed styling
  */
-export default function UserList({ users, onUserClick, loading }) {
+export default function UserList({ users, onUserClick, loading, currentUserProfile }) {
   console.log('🔥 UserList received:', { users, userCount: users?.length, loading });
   
   // Force add an anonymous user if no users exist - use global alien name for consistency
@@ -66,6 +66,7 @@ export default function UserList({ users, onUserClick, loading }) {
           key={user.id}
           user={user}
           onClick={() => onUserClick(user.id)}
+          currentUserProfile={currentUserProfile}
         />
       )) : (
         /* Emergency fallback - always show at least one alien user */
@@ -79,6 +80,7 @@ export default function UserList({ users, onUserClick, loading }) {
             last_seen: new Date().toISOString()
           }}
           onClick={() => onUserClick('anonymous')}
+          currentUserProfile={currentUserProfile}
         />
       )}
     </div>
@@ -88,7 +90,7 @@ export default function UserList({ users, onUserClick, loading }) {
 /**
  * Individual User List Item
  */
-function UserListItem({ user, onClick }) {
+function UserListItem({ user, onClick, currentUserProfile }) {
   const elementColor = getElementColor(user.element);
   const displayName = user.name || 'Anonymous';
 
@@ -129,6 +131,16 @@ function UserListItem({ user, onClick }) {
           {/* Small user icon */}
           {user.id === 'anonymous' ? (
             <img src="/elements/alien.webp" alt="Alien" className="w-3 h-3 flex-shrink-0" />
+          ) : currentUserProfile?.profile_image_url ? (
+            <img 
+              src={currentUserProfile.profile_image_url} 
+              alt="Profile" 
+              className="w-3 h-3 rounded-full flex-shrink-0 object-cover"
+              style={{
+                border: '1px solid rgba(242, 239, 29, 0.5)',
+                boxShadow: '0 0 4px rgba(242, 239, 29, 0.3)'
+              }}
+            />
           ) : (
             <div 
               className="w-3 h-3 rounded-full flex items-center justify-center flex-shrink-0"

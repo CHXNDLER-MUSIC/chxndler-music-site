@@ -837,6 +837,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                             users={usersToShow}
                             onUserClick={handleUserClick}
                             loading={loading}
+                            currentUserProfile={profile}
                           />
                         );
                       })()}
@@ -880,7 +881,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                 {selectedUser && (
                   <div className="w-full max-w-96 min-w-64 sm:min-w-72 border-l border-yellow-400/30 flex flex-col overflow-hidden">
                     {/* Profile Header */}
-                    <div className="p-2 sm:p-3 border-b border-yellow-400/30">
+                    <div className="px-2 py-1.5 sm:px-3 sm:py-2 border-b border-yellow-400/30">
                       <div className="flex items-center justify-between">
                         <div className="flex flex-col flex-1 min-w-0">
                           {/* User Icon and Name Row */}
@@ -924,7 +925,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                             </div>
                             
                             {/* Total Heart Coins */}
-                            <div className="flex flex-col items-end space-y-1 flex-shrink-0">
+                            <div className="flex flex-col items-end space-y-0.5 flex-shrink-0">
                               <div className="flex items-center space-x-1 px-2 py-1 rounded bg-black/30">
                                 <span className="text-xs text-white/80 font-medium">TOTAL</span>
                                 <img 
@@ -969,7 +970,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                           </div>
                           
                           {/* Badges, Binder Icons, and Send Heart Coin Row */}
-                          <div className="flex items-center space-x-3 mt-1 ml-8">
+                          <div className="flex items-center space-x-3 mt-0.5 ml-8">
                             <button 
                               onClick={() => {
                                 try {

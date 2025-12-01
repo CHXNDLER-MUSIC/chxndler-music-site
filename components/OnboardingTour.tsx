@@ -32,7 +32,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     id: "menu-journey",
     selector: "[data-tour-id='menu-journey']",
-    title: "Journey",
+    title: "My Journey",
     body: "Journey is your main path through the Heartverse. New songs, chapters, and experiences appear here as you travel."
   },
   {
@@ -54,16 +54,16 @@ export const TOUR_STEPS: TourStep[] = [
     body: "Badges are your achievements. You can earn them by reflecting, attending livestreams, sending Heart Coins, and exploring different parts of the ship."
   },
   {
-    id: "menu-signal",
-    selector: "[data-tour-id='menu-signal']",
-    title: "Signal",
-    body: "Signal is how the Heartverse talks to you. Think of it like transmissions from the ship. It might notify you about daily reflections, new releases, or special events."
-  },
-  {
     id: "heartcoins",
     selector: "[data-tour-id='heartcoins']",
     title: "Heart Coins",
     body: "Heart Coins are the energy of this world. You can earn them by listening, reflecting, joining events, and connecting with others. Later you will be able to use them for special rewards."
+  },
+  {
+    id: "signal-streaming",
+    selector: "[data-tour-id='signal-streaming']",
+    title: "Signal for Streaming",
+    body: "Connect to live streams and join the Heartverse community. This is where you can chat with other aliens and join live events."
   },
   {
     id: "outro",
@@ -101,13 +101,29 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     
+    const currentStepId = currentStep?.id || '';
+    const bubbleWidth = 320; // Estimated bubble width
+    const bubbleHeight = 120; // Estimated bubble height
+    
+    // Special positioning for menu items - place to the right of the menu
+    if (currentStepId.startsWith('menu-')) {
+      const menuRect = document.querySelector('[data-tour-id="hamburger"]')?.getBoundingClientRect();
+      if (menuRect) {
+        // Position to the right of the hamburger menu dropdown
+        const top = rect.top + (rect.height / 2) - (bubbleHeight / 2);
+        const left = menuRect.right + 280; // Menu width (~192px) + gap + some extra space
+        
+        setBubblePosition({ 
+          top: Math.max(20, Math.min(top, viewportHeight - bubbleHeight - 20)), 
+          left: Math.min(left, viewportWidth - bubbleWidth - 20)
+        });
+        return;
+      }
+    }
+    
     // Calculate position - try to place above the element
     let top = rect.top - 20; // 20px gap above element
     let left = rect.left + rect.width / 2; // Center horizontally on element
-
-    // Adjust if bubble would go off-screen
-    const bubbleWidth = 320; // Estimated bubble width
-    const bubbleHeight = 120; // Estimated bubble height
 
     // Keep horizontal position in viewport
     if (left - bubbleWidth / 2 < 20) {
@@ -400,8 +416,7 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
         }`}
         style={{
           pointerEvents: isVisible ? 'auto' : 'none',
-          background: 'radial-gradient(120% 120% at 50% 50%, rgba(0,0,0,0.25), rgba(0,0,0,0.45))',
-          backdropFilter: 'blur(8px)'
+          background: 'radial-gradient(120% 120% at 50% 50%, rgba(0,0,0,0.25), rgba(0,0,0,0.45))'
         }}
       />
 
