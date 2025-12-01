@@ -163,8 +163,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabaseClient
         .from("profiles")
         .select(
-          // Support both legacy and new column names for heart coins
-          "id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, heart_coins_current, heart_coins_total, profile_complete, created_at, updated_at, tier, has_seen_tour, profile_image_url, daily_streak, streak_last_updated"
+          "id, email, phone, name, element, journey, heart_coins_current, heart_coins_total, profile_complete, created_at, updated_at"
         )
         .eq("id", user.id)
         .maybeSingle();
@@ -233,7 +232,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         dataType: typeof data.heartcoin_balance
       });
 
-      // Map database columns to interface format (prefer new heartcoin_* columns; fallback to heart_coins_*)
+      // Map database columns to interface format
       const mappedProfile: Profile = {
         id: data.id,
         email: data.email,
@@ -241,16 +240,16 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         name: data.name,
         element: data.element,
         journey: data.journey,
-        heartcoin_balance: (data.heartcoin_balance ?? data.heart_coins_current ?? 0),
-        heartcoin_total: (data.heartcoin_total ?? data.heart_coins_total ?? 0),
+        heartcoin_balance: (data.heart_coins_current ?? 0),
+        heartcoin_total: (data.heart_coins_total ?? 0),
         profile_complete: data.profile_complete ?? !!(data.name && data.element),
         created_at: data.created_at,
         updated_at: data.updated_at,
-        tier: (data.tier || "wanderer") as ProfileTier,
-        has_seen_tour: data.has_seen_tour,
-        profile_image_url: data.profile_image_url,
-        daily_streak: data.daily_streak ?? 0,
-        streak_last_updated: data.streak_last_updated,
+        tier: "wanderer" as ProfileTier,
+        has_seen_tour: false,
+        profile_image_url: null,
+        daily_streak: 0,
+        streak_last_updated: null,
         cards: cardRows ?? [],
         badges: badgeRows ?? [],
       };
@@ -291,14 +290,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
       if (updates.element !== undefined) dbUpdates.element = updates.element;
       if (updates.journey !== undefined) dbUpdates.journey = updates.journey;
-      if (updates.heartcoin_balance !== undefined) dbUpdates.heartcoin_balance = updates.heartcoin_balance;
-      if (updates.heartcoin_total !== undefined) dbUpdates.heartcoin_total = updates.heartcoin_total;
+      if (updates.heartcoin_balance !== undefined) dbUpdates.heart_coins_current = updates.heartcoin_balance;
+      if (updates.heartcoin_total !== undefined) dbUpdates.heart_coins_total = updates.heartcoin_total;
       if (updates.profile_complete !== undefined) dbUpdates.profile_complete = updates.profile_complete;
-      if (updates.tier !== undefined) dbUpdates.tier = updates.tier;
-      if (updates.has_seen_tour !== undefined) dbUpdates.has_seen_tour = updates.has_seen_tour;
-      if (updates.profile_image_url !== undefined) dbUpdates.profile_image_url = updates.profile_image_url;
-      if (updates.daily_streak !== undefined) dbUpdates.daily_streak = updates.daily_streak;
-      if (updates.streak_last_updated !== undefined) dbUpdates.streak_last_updated = updates.streak_last_updated;
       
       // Update the existing profile (no insert logic - trigger handles creation)
       const { data, error } = await supabaseClient
@@ -322,16 +316,16 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           name: data.name,
           element: data.element,
           journey: data.journey,
-          heartcoin_balance: (data.heartcoin_balance ?? (data as any).heart_coins_current ?? 0),
-          heartcoin_total: (data.heartcoin_total ?? (data as any).heart_coins_total ?? 0),
+          heartcoin_balance: (data.heart_coins_current ?? 0),
+          heartcoin_total: (data.heart_coins_total ?? 0),
           profile_complete: data.profile_complete ?? !!(data.name && data.element),
           created_at: data.created_at,
           updated_at: data.updated_at,
-          tier: (data.tier || "wanderer") as ProfileTier,
-          has_seen_tour: data.has_seen_tour,
-          profile_image_url: data.profile_image_url,
-          daily_streak: data.daily_streak ?? 0,
-          streak_last_updated: data.streak_last_updated,
+          tier: "wanderer" as ProfileTier,
+          has_seen_tour: false,
+          profile_image_url: null,
+          daily_streak: 0,
+          streak_last_updated: null,
           cards: profile?.cards ?? [],
           badges: profile?.badges ?? [],
         };
