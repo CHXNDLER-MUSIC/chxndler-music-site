@@ -25,19 +25,23 @@ export default function MessageList({ messages, onUserClick, loading }) {
     return isNear;
   };
 
-  // Auto-scroll to bottom only for initial load (disabled auto-scroll for new messages)
+  // Always auto-scroll to the newest message
   useEffect(() => {
     if (messages.length === 0) return;
-    
-    // Only scroll for the very first message load (initial load)
-    if (messages.length <= 1) {
-      scrollToBottom();
-    }
-    // Removed auto-scroll for new messages to prevent awkward page scrolling
+    scrollToBottom();
   }, [messages]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Prefer scrolling the container to avoid layout shift
+    const container = scrollContainerRef.current;
+    if (container) {
+      // Use requestAnimationFrame to ensure layout is updated before scrolling
+      requestAnimationFrame(() => {
+        container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+      });
+    } else {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   if (loading && messages.length === 0) {

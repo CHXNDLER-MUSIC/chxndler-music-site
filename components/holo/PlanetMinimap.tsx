@@ -2,7 +2,7 @@
 
 import React from "react";
 import { sfx } from "@/lib/sfx";
-import { getPlanetsByType, ELEMENT_COLORS, SONG_ORBIT_RADIUS, ELEMENT_ORBIT_RADIUS, type ElementType } from "@/lib/planetConfig";
+import { getPlanetsByType, ELEMENT_COLORS, SONG_ORBIT_RADIUS, ELEMENT_ORBIT_RADIUS, ELEMENT_SONG_ORBIT_SPEEDS, type ElementType } from "@/lib/planetConfig";
 import { useFocusElementOfDay } from "@/hooks/useFocusElementOfDay";
 
 interface ElementPosition {
@@ -45,13 +45,8 @@ const ELEMENT_PLANETS = getPlanetsByType('element');
 const elementOrbitRadius = ELEMENT_ORBIT_RADIUS; // Match 3D system
 
 // Element speeds mirror 3D rotation
-const ELEMENT_SPEED = 0.0003; // global orbital speed around center
-const SONG_SPEEDS: Record<ElementType, number> = {
-  lightning: 0.0015,
-  water: 0.0012,
-  heart: 0.0010,
-  darkness: 0.0008,
-};
+const ELEMENT_SPEED = 0.0003; // global orbital speed around center (matches 3D systemRef rotation)
+const SONG_SPEEDS: Record<ElementType, number> = ELEMENT_SONG_ORBIT_SPEEDS;
 
 // Comprehensive song planet data with detailed characteristics
 const SONG_PLANETS: SongPlanet[] = [
@@ -137,24 +132,27 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
       darkness: []
     };
 
-    // Filter to only released songs - MATCHING 3D SYSTEM LOGIC
-    const releasedSongs = songs.filter(song => song.status !== "locked" && song.status !== "coming_soon");
-    
-    releasedSongs.forEach(song => {
-      const element = song.planet?.element ?? "heart";
+    // Include all songs; unreleased will be grayed out visually
+    songs.forEach(song => {
+      const element = (song as any)?.planet?.element ?? "heart";
       if (element && distribution[element]) {
+        const isReleased = !(
+          (song as any)?.released === false ||
+          (song as any)?.status === 'coming_soon' ||
+          (song as any)?.status === 'locked'
+        );
         // Create songPlanet object using song data directly
         const songPlanet = {
-          id: song.id,
-          title: song.title,
+          id: (song as any).id,
+          title: (song as any).title,
           element: element,
-          color: song.planet?.color || "#FC54AF",
+          color: (song as any)?.planet?.color || "#FC54AF",
           surface: "Procedurally generated surface",
           atmosphere: "Atmospheric effects",
-          shape: "Spherical", 
+          shape: "Spherical",
           surfaceElements: "Various terrain features",
-          isReleased: true
-        };
+          isReleased
+        } as SongPlanet;
         distribution[element].push(songPlanet);
       }
     });
@@ -180,6 +178,14 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
     const center2D = convertTo2D([0, 0, 0]);
     return center2D;
   }, [isCollapsed]);
+
+  // Rotate a 3D position around Y-axis (top-down rotation)
+  const rotateAroundCenter = (pos: [number, number, number], angle: number): [number, number, number] => {
+    const [x, y, z] = pos;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    return [x * cos - z * sin, y, x * sin + z * cos];
+  };
 
   const minimapContent = (
     <div 
@@ -231,9 +237,10 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
           </div>
         </div>
 
-        {/* Elemental planets */}
+        {/* Elemental planets (apply slow orbit to match 3D) */}
         {ELEMENTS.map((element) => {
-          const pos2D = convertTo2D(element.position);
+          const rotatedPos = rotateAroundCenter(element.position, now * ELEMENT_SPEED);
+          const pos2D = convertTo2D(rotatedPos);
           
           return (
             <div
@@ -277,9 +284,11 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
             const rotationOffset = now * (SONG_SPEEDS[element.code] || 0.001);
             const angle = i * angleStep + rotationOffset;
             // For top-down view, orbit in the X-Z plane (horizontal plane)
-            const x = element.position[0] + Math.cos(angle) * (SONG_ORBIT_RADIUS * 1.0);
-            const y = element.position[1]; // Keep same height as elemental planet
-            const z = element.position[2] + Math.sin(angle) * (SONG_ORBIT_RADIUS * 1.0);
+            // First rotate the element itself around center to mirror 3D parent rotation
+            const [ex, ey, ez] = rotateAroundCenter(element.position, now * ELEMENT_SPEED);
+            const x = ex + Math.cos(angle) * (SONG_ORBIT_RADIUS * 1.0);
+            const y = ey; // Keep same height as elemental planet
+            const z = ez + Math.sin(angle) * (SONG_ORBIT_RADIUS * 1.0);
             
             const pos2D = convertTo2D([x, y, z]);
             
@@ -344,9 +353,10 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
           });
         })}
 
-        {/* Orbit paths for each elemental planet */}
+        {/* Orbit paths for each elemental planet (rotate center) */}
         {ELEMENTS.map((element) => {
-          const elementPos2D = convertTo2D(element.position);
+          const rotatedPos = rotateAroundCenter(element.position, now * ELEMENT_SPEED);
+          const elementPos2D = convertTo2D(rotatedPos);
           // Calculate orbit radius in 2D space using the same scale as the planet positions
           const { scale } = getScaleParams();
           const orbitRadiusScaled = (SONG_ORBIT_RADIUS * 3) * scale;

@@ -508,7 +508,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [statusType, setStatusType] = useState<'idle' | 'success' | 'error'>('idle');
   
   // Bonus quests hook
-  const { bonusQuests, loading: bonusQuestsLoading, error: bonusQuestsError, completeQuest } = useBonusQuests();
+  const { bonusQuests, loading: bonusQuestsLoading, error: bonusQuestsError, isLoggedIn, completeQuest } = useBonusQuests();
 
   // Get today's element (rotate daily)
   const getTodaysElement = () => {
@@ -1178,39 +1178,51 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleBonusQuestComplete(quest)}
-                        disabled={!quest.can_complete || quest.times_completed >= (quest.max_total_completions || Infinity)}
+                        disabled={!isLoggedIn || !quest.can_complete || quest.times_completed >= (quest.max_total_completions || Infinity)}
                         className="px-2 py-1 text-xs rounded border transition-colors"
                         style={{
-                          background: quest.times_completed > 0 && quest.max_total_completions === 1 
+                          background: !isLoggedIn
+                            ? 'rgba(100,100,100,0.3)'
+                            : quest.times_completed > 0 && quest.max_total_completions === 1 
                             ? 'rgba(0,255,0,0.1)' 
                             : quest.can_complete 
                               ? 'rgba(255,255,255,0.1)'
                               : 'rgba(100,100,100,0.3)',
-                          color: quest.times_completed > 0 && quest.max_total_completions === 1 
+                          color: !isLoggedIn
+                            ? '#666'
+                            : quest.times_completed > 0 && quest.max_total_completions === 1 
                             ? '#00FF00' 
                             : quest.can_complete 
                               ? '#FFFFFF'
                               : '#666',
-                          borderColor: quest.times_completed > 0 && quest.max_total_completions === 1 
+                          borderColor: !isLoggedIn
+                            ? 'rgba(100,100,100,0.6)'
+                            : quest.times_completed > 0 && quest.max_total_completions === 1 
                             ? '#00FF00' 
                             : quest.can_complete 
                               ? 'rgba(255,255,255,0.6)'
                               : 'rgba(100,100,100,0.6)',
-                          textShadow: quest.times_completed > 0 && quest.max_total_completions === 1 
+                          textShadow: !isLoggedIn
+                            ? 'none'
+                            : quest.times_completed > 0 && quest.max_total_completions === 1 
                             ? '0 0 8px #00FF00, 0 0 16px #00FF00' 
                             : 'none',
-                          boxShadow: quest.times_completed > 0 && quest.max_total_completions === 1 
+                          boxShadow: !isLoggedIn
+                            ? 'none'
+                            : quest.times_completed > 0 && quest.max_total_completions === 1 
                             ? '0 0 10px rgba(0,255,0,0.4), 0 0 20px rgba(0,255,0,0.2)' 
                             : 'none'
                         }}
                       >
-                        {quest.times_completed > 0 && quest.max_total_completions === 1 
-                          ? 'COMPLETED' 
-                          : quest.quest_key === 'ATTEND_LIVESTREAM' 
-                            ? 'CHECK IN'
-                            : quest.quest_key === 'INVITE_FRIEND' 
-                              ? 'INVITE FRIEND'
-                              : 'COMPLETE'}
+                        {!isLoggedIn
+                          ? 'Log in to complete this quest'
+                          : (quest.times_completed > 0 && quest.max_total_completions === 1 
+                            ? 'COMPLETED' 
+                            : quest.quest_key === 'ATTEND_LIVESTREAM' 
+                              ? 'CHECK IN'
+                              : quest.quest_key === 'INVITE_FRIEND' 
+                                ? 'INVITE FRIEND'
+                                : 'COMPLETE')}
                       </button>
                       <span className="text-sm flex items-center" style={{ 
                         color: quest.times_completed > 0 && quest.max_total_completions === 1 ? '#666' : '#90EE90', 

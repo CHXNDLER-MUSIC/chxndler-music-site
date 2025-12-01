@@ -242,85 +242,25 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
     MX: { code: '+52', format: 'XXX XXX XXXX', minLength: 10, maxLength: 10 }
   };
 
-  function formatPhoneNumber(value: string, country: string = 'US') {
-    // Remove all non-digits
-    const digits = value.replace(/\D/g, '');
-    
-    // Return empty string if no digits
-    if (digits.length === 0) return '';
-    
-    const config = phoneConfigs[country] || phoneConfigs.US;
-    
-    // Format based on country
-    switch (country) {
-      case 'US':
-      case 'CA':
-        if (digits.length <= 3) return `${config.code} (${digits}`;
-        if (digits.length <= 6) return `${config.code} (${digits.slice(0, 3)}) ${digits.slice(3)}`;
-        return `${config.code} (${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
-      
-      case 'GB':
-        if (digits.length <= 4) return `${config.code} ${digits}`;
-        if (digits.length <= 7) return `${config.code} ${digits.slice(0, 4)} ${digits.slice(4)}`;
-        return `${config.code} ${digits.slice(0, 4)} ${digits.slice(4, 7)} ${digits.slice(7, 11)}`;
-      
-      case 'DE':
-        if (digits.length <= 3) return `${config.code} ${digits}`;
-        if (digits.length <= 7) return `${config.code} ${digits.slice(0, 3)} ${digits.slice(3)}`;
-        return `${config.code} ${digits.slice(0, 3)} ${digits.slice(3, 7)} ${digits.slice(7, 12)}`;
-      
-      case 'FR':
-        if (digits.length <= 1) return `${config.code} ${digits}`;
-        if (digits.length <= 3) return `${config.code} ${digits.slice(0, 1)} ${digits.slice(1)}`;
-        if (digits.length <= 5) return `${config.code} ${digits.slice(0, 1)} ${digits.slice(1, 3)} ${digits.slice(3)}`;
-        if (digits.length <= 7) return `${config.code} ${digits.slice(0, 1)} ${digits.slice(1, 3)} ${digits.slice(3, 5)} ${digits.slice(5)}`;
-        return `${config.code} ${digits.slice(0, 1)} ${digits.slice(1, 3)} ${digits.slice(3, 5)} ${digits.slice(5, 7)} ${digits.slice(7, 9)}`;
-      
-      case 'AU':
-        if (digits.length <= 3) return `${config.code} ${digits}`;
-        if (digits.length <= 6) return `${config.code} ${digits.slice(0, 3)} ${digits.slice(3)}`;
-        return `${config.code} ${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 9)}`;
-      
-      case 'JP':
-        if (digits.length <= 3) return `${config.code} ${digits}`;
-        if (digits.length <= 7) return `${config.code} ${digits.slice(0, 3)} ${digits.slice(3)}`;
-        return `${config.code} ${digits.slice(0, 3)} ${digits.slice(3, 7)} ${digits.slice(7, 11)}`;
-      
-      case 'BR':
-        if (digits.length <= 2) return `${config.code} (${digits}`;
-        if (digits.length <= 7) return `${config.code} (${digits.slice(0, 2)}) ${digits.slice(2)}`;
-        return `${config.code} (${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
-      
-      case 'IN':
-        if (digits.length <= 5) return `${config.code} ${digits}`;
-        return `${config.code} ${digits.slice(0, 5)} ${digits.slice(5, 10)}`;
-      
-      case 'MX':
-        if (digits.length <= 3) return `${config.code} ${digits}`;
-        if (digits.length <= 6) return `${config.code} ${digits.slice(0, 3)} ${digits.slice(3)}`;
-        return `${config.code} ${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 10)}`;
-      
-      default:
-        return `${config.code} ${digits}`;
-    }
+  // Simple phone number handler that preserves all digits
+  function handlePhoneChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.value;
+    // Allow only + symbol and digits
+    const cleaned = raw.replace(/[^\d+]/g, '');
+    setPhone(cleaned);
+  }
+
+  function handlePhoneNumberChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.value;
+    // Allow only + symbol and digits
+    const cleaned = raw.replace(/[^\d+]/g, '');
+    setPhoneNumber(cleaned);
   }
 
   function getPhoneValidation(country: string = 'US') {
     const config = phoneConfigs[country] || phoneConfigs.US;
-    const codeLength = config.code.length;
-    // Calculate minimum formatted length: country code + spaces + minimum digits
-    const minFormattedLength = codeLength + 1 + config.minLength + Math.floor(config.minLength / 3); // rough estimate for formatting
-    return { minLength: config.minLength, maxLength: config.maxLength, minFormattedLength };
-  }
-
-  function handlePhoneChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const formatted = formatPhoneNumber(e.target.value, selectedCountry);
-    setPhone(formatted);
-  }
-
-  function handlePhoneNumberChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const formatted = formatPhoneNumber(e.target.value, selectedCountry);
-    setPhoneNumber(formatted);
+    // Just check for minimum number of digits
+    return { minLength: config.minLength, maxLength: config.maxLength, minFormattedLength: config.minLength };
   }
 
   return (
@@ -407,7 +347,7 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
                 type="tel"
                 value={phone}
                 onChange={handlePhoneChange}
-                placeholder={`${phoneConfigs[selectedCountry]?.code} ${phoneConfigs[selectedCountry]?.format.replace(/X/g, '5')}`}
+                placeholder={`${phoneConfigs[selectedCountry]?.code}1234567890`}
                 autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="off"
@@ -420,10 +360,10 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
             
             <button
               type="submit"
-              disabled={loading || phone.length < getPhoneValidation(selectedCountry).minFormattedLength}
+              disabled={loading || phone.replace(/\D/g, '').length < getPhoneValidation(selectedCountry).minLength}
               className="w-full rounded-lg bg-gradient-to-r from-[#FC54AF] to-[#38B6FF] px-6 py-3 text-lg font-semibold text-black transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-[#FC54AF]/30 disabled:opacity-50 disabled:hover:scale-100"
               style={{
-                boxShadow: loading || phone.length < getPhoneValidation(selectedCountry).minFormattedLength
+                boxShadow: loading || phone.replace(/\D/g, '').length < getPhoneValidation(selectedCountry).minLength
                   ? 'none' 
                   : '0 0 30px rgba(252,84,175,0.5), 0 0 60px rgba(56,182,255,0.3)'
               }}
@@ -708,7 +648,7 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
                   type="tel"
                   value={phoneNumber}
                   onChange={handlePhoneNumberChange}
-                  placeholder={`${phoneConfigs[selectedCountry]?.code} ${phoneConfigs[selectedCountry]?.format.replace(/X/g, '5')}`}
+                  placeholder={`${phoneConfigs[selectedCountry]?.code}1234567890`}
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="off"
@@ -740,38 +680,38 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
               <button
                 onClick={() => {
                   const validation = getPhoneValidation(selectedCountry);
-                  if (phoneNumber.length >= validation.minFormattedLength && !loading) {
+                  if (phoneNumber.replace(/\D/g, '').length >= validation.minLength && !loading) {
                     submitPhoneNumber(phoneNumber);
                   }
                 }}
-                disabled={phoneNumber.length < getPhoneValidation(selectedCountry).minFormattedLength || loading}
+                disabled={phoneNumber.replace(/\D/g, '').length < getPhoneValidation(selectedCountry).minLength || loading}
                 style={{
                   width: 'auto',
                   minWidth: '140px',
                   maxWidth: '180px',
                   padding: '12px 20px',
                   background: 'transparent',
-                  border: (phoneNumber.length < getPhoneValidation(selectedCountry).minFormattedLength || loading)
+                  border: (phoneNumber.replace(/\D/g, '').length < getPhoneValidation(selectedCountry).minLength || loading)
                     ? '2px solid rgba(128, 128, 128, 0.3)' 
                     : '2px solid #00FFFF',
                   borderRadius: '8px',
-                  color: (phoneNumber.length < getPhoneValidation(selectedCountry).minFormattedLength || loading)
+                  color: (phoneNumber.replace(/\D/g, '').length < getPhoneValidation(selectedCountry).minLength || loading)
                     ? 'rgba(128, 128, 128, 0.7)' 
                     : '#00FFFF',
                   fontSize: '16px',
                   fontWeight: '600',
-                  cursor: (phoneNumber.length < getPhoneValidation(selectedCountry).minFormattedLength || loading) ? 'not-allowed' : 'pointer',
+                  cursor: (phoneNumber.replace(/\D/g, '').length < getPhoneValidation(selectedCountry).minLength || loading) ? 'not-allowed' : 'pointer',
                   transition: 'all 300ms ease',
-                  boxShadow: (phoneNumber.length < getPhoneValidation(selectedCountry).minFormattedLength || loading)
+                  boxShadow: (phoneNumber.replace(/\D/g, '').length < getPhoneValidation(selectedCountry).minLength || loading)
                     ? 'none' 
                     : '0 0 15px rgba(0, 255, 255, 0.3)',
-                  textShadow: (phoneNumber.length < getPhoneValidation(selectedCountry).minFormattedLength || loading)
+                  textShadow: (phoneNumber.replace(/\D/g, '').length < getPhoneValidation(selectedCountry).minLength || loading)
                     ? 'none' 
                     : '0 0 10px #00FFFF, 0 0 20px #00FFFF, 0 0 30px #00FFFF',
                   outline: 'none'
                 }}
                 onMouseEnter={(e) => {
-                  if (phoneNumber.length >= getPhoneValidation(selectedCountry).minFormattedLength && !loading) {
+                  if (phoneNumber.replace(/\D/g, '').length >= getPhoneValidation(selectedCountry).minLength && !loading) {
                     e.target.style.transform = 'translateY(-2px)';
                     e.target.style.background = 'rgba(0, 255, 255, 0.15)';
                     e.target.style.boxShadow = '0 0 40px rgba(0, 255, 255, 0.8), 0 0 60px rgba(0, 255, 255, 0.4), inset 0 0 30px rgba(0, 255, 255, 0.2)';
@@ -781,7 +721,7 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (phoneNumber.length >= getPhoneValidation(selectedCountry).minFormattedLength && !loading) {
+                  if (phoneNumber.replace(/\D/g, '').length >= getPhoneValidation(selectedCountry).minLength && !loading) {
                     e.target.style.transform = 'translateY(0)';
                     e.target.style.background = 'transparent';
                     e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';

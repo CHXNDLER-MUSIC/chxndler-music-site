@@ -313,7 +313,7 @@ export default function PopoutPanel({
               try { sfx.play('click', 0.4); } catch {}
               setShowTextChat(!showTextChat);
             }}
-            className="absolute top-2 left-4 hover:opacity-80 cursor-pointer w-8 h-8 rounded-full border flex items-center justify-center overflow-hidden"
+            className="absolute top-2 left-4 hover:opacity-80 cursor-pointer w-12 h-12 rounded-full border flex items-center justify-center overflow-hidden"
             style={{ 
               borderColor: '#F2EF1D80',
               boxShadow: '0 0 15px #F2EF1D80, 0 0 25px #F2EF1D50, 0 0 35px #F2EF1D30',

@@ -11,13 +11,14 @@ import { buildPlanetSongs } from "@/lib/planets";
 import { getEntriesByRing, getPlanetEntry } from "@/lib/planetRegistry";
 import { Html, OrbitControls } from "@react-three/drei";
 import PlanetMinimap from "@/components/holo/PlanetMinimap";
-import { getPlanetsByType, ELEMENT_COLORS, ELEMENT_ORBIT_RADIUS, SONG_ORBIT_RADIUS, type ElementType } from "@/lib/planetConfig";
+import { getPlanetsByType, ELEMENT_COLORS, ELEMENT_ORBIT_RADIUS, SONG_ORBIT_RADIUS, ELEMENT_SONG_ORBIT_SPEEDS, type ElementType } from "@/lib/planetConfig";
 import { useFocusElementOfDay } from "@/hooks/useFocusElementOfDay";
 
 // DIAGNOSTIC MODE - Set to true to show orbit rings, bounding boxes, and labels
 const SHOW_ORBITS = false;
 
 // Get element planet configs from unified config
+// NOTE: Positions come from lib/planetConfig and are the single source of truth
 const ELEMENT_PLANETS = getPlanetsByType('element');
 
 // Type guard for element codes
@@ -65,10 +66,7 @@ function SongOrbitGroup({
   useFrame(() => {
     if (orbitRef.current) {
       // Different rotation speeds per element for variety
-      const speed = elementCode === 'lightning' ? 0.0015 : 
-                   elementCode === 'water' ? 0.0012 : 
-                   elementCode === 'heart' ? 0.0010 : 
-                   0.0008; // darkness
+      const speed = ELEMENT_SONG_ORBIT_SPEEDS[elementCode];
       orbitRef.current.rotation.y += speed;
     }
   });
@@ -137,10 +135,8 @@ function OrbitalElementalSystem({ songs, mainId, hoverId, highlightedPlanetId, f
       darkness: [],
     };
     
-    // Only process released songs
-    const releasedSongs = songs.filter(song => song.status !== "locked" && song.status !== "coming_soon");
-    
-    releasedSongs.forEach(song => {
+    // Include ALL songs; unreleased will be styled gray in Planet
+    songs.forEach(song => {
       const element = song.planet?.element ?? "heart";
       if (isElementCode(element)) {
         grouped[element].push(song);
@@ -196,14 +192,11 @@ function OrbitalElementalSystem({ songs, mainId, hoverId, highlightedPlanetId, f
       </group>
 
       {/* Orbiting elemental planets */}
-      {ELEMENT_PLANETS.map((element, index) => {
+      {ELEMENT_PLANETS.map((element) => {
         const cardsForThisElement = cardsByElement[element.element!];
-        
-        // Evenly spaced around center (90 degrees apart) - keep on same plane
-        const angle = (index / 4) * Math.PI * 2;
-        const x = Math.cos(angle) * elementOrbitRadius;
-        const z = Math.sin(angle) * elementOrbitRadius;
-        const y = 0; // Keep all elemental planets on same plane
+        // Use shared config positions to ensure perfect sync with minimap
+        // All elemental planets stay on a flat plane (y = 0)
+        const [x, y, z] = element.position ?? [0, 0, 0];
         
         console.log(`🪐 Rendering ${element.element} planet at orbital position [${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)}] with ${cardsForThisElement.length} songs`);
         
@@ -277,6 +270,13 @@ function InvalidateOnState() {
 }
 
 export default function PlanetSystem({ showAll = false, hideUntilPlaying = false }: { showAll?: boolean; hideUntilPlaying?: boolean }) {
+  // CONFIG NOTES:
+  // - Element positions and radii come from lib/planetConfig.ts (ELEMENT_POSITIONS, ELEMENT_ORBIT_RADIUS).
+  // - Per-element song orbit speeds come from lib/planetConfig.ts (ELEMENT_SONG_ORBIT_SPEEDS).
+  // - Camera initial position/FOV and zoom limits live below on the <Canvas> and <OrbitControls>.
+  //   To tweak start distance, change camera.position and fov. To constrain zoom/tilt, adjust min/maxDistance and min/maxPolarAngle.
+  // - To add a new song planet, add a row in Supabase (or ensure your songs list includes its element/status fields).
+  //   Unreleased songs (status locked/coming_soon or released=false) render as gray automatically.
   // Focus element of the day (from Supabase)
   const { focusElement } = useFocusElementOfDay();
   const [isMinimapVisible, setIsMinimapVisible] = React.useState(true);
@@ -430,7 +430,8 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
           return [1, 2];
         })()}
         // Camera: compact, closer framing to feel like a small solar system
-        camera={{ position: [0, 18, actualShouldShowAll ? 70 : 55], fov: actualShouldShowAll ? 50 : 45 }}
+        // Adjust these to change the initial view distance/fov
+        camera={{ position: [0, 12, actualShouldShowAll ? 56 : 46], fov: actualShouldShowAll ? 48 : 42 }}
         // Prefer safer GL settings on mobile to avoid flicker when layers repaint
         gl={{
           antialias: false,
@@ -466,11 +467,15 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         {/* Intuitive camera controls */}
         <OrbitControls
           enableZoom
-          enablePan
+          enablePan={false}
           enableRotate
           target={[0, 0, 0] as any}
-          minDistance={20}
-          maxDistance={140}
+          // Keep camera outside planets but not too far away
+          minDistance={18}
+          maxDistance={100}
+          // Prevent going under the plane; keep a cinematic tilt range
+          minPolarAngle={0.2}
+          maxPolarAngle={Math.PI / 2 - 0.05}
           zoomSpeed={0.6}
           rotateSpeed={0.6}
           panSpeed={0.6}

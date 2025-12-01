@@ -7,6 +7,7 @@ interface UseBonusQuestsReturn {
   bonusQuests: BonusQuestWithCompletion[];
   loading: boolean;
   error: string | null;
+  isLoggedIn: boolean;
   refetchQuests: () => Promise<void>;
   completeQuest: (quest: BonusQuestWithCompletion) => Promise<QuestCompletionResult>;
 }
@@ -20,21 +21,22 @@ export function useBonusQuests(): UseBonusQuestsReturn {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const isLoggedIn = !!currentUserId;
 
-  // Get current user
+  // Get current user (safe: don't error if not logged in)
   useEffect(() => {
     const getCurrentUser = async () => {
       try {
         const { data: { user }, error } = await supabaseClient.auth.getUser();
         if (error) {
-          console.error('Error getting current user:', error);
-          setError('Failed to get current user');
-          return;
+          // Log but do not surface error to UI; quests are public
+          console.warn('Non-fatal: getUser error; treating as logged out:', error);
         }
         setCurrentUserId(user?.id || null);
-      } catch (error) {
-        console.error('Error in getCurrentUser:', error);
-        setError('Failed to authenticate user');
+      } catch (e) {
+        // Also non-fatal; treat as logged out
+        console.warn('Non-fatal: exception in getCurrentUser; treating as logged out');
+        setCurrentUserId(null);
       }
     };
 
@@ -43,15 +45,11 @@ export function useBonusQuests(): UseBonusQuestsReturn {
 
   // Fetch bonus quests for the current user
   const fetchQuests = useCallback(async () => {
-    if (!currentUserId) {
-      setBonusQuests([]);
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
     try {
+      // Always fetch public quests; overlay completion if user exists
       const quests = await getBonusQuestsForUser(currentUserId);
       setBonusQuests(quests);
     } catch (error) {
@@ -64,9 +62,8 @@ export function useBonusQuests(): UseBonusQuestsReturn {
 
   // Fetch quests when user ID is available
   useEffect(() => {
-    if (currentUserId) {
-      fetchQuests();
-    }
+    // Fetch whether logged in or not
+    fetchQuests();
   }, [currentUserId, fetchQuests]);
 
   // Complete a quest
@@ -115,6 +112,7 @@ export function useBonusQuests(): UseBonusQuestsReturn {
     bonusQuests,
     loading,
     error,
+    isLoggedIn,
     refetchQuests: fetchQuests,
     completeQuest
   };

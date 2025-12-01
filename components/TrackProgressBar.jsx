@@ -145,7 +145,7 @@ const TrackProgressBar = ({
   const currentColor = getCurrentColor();
   
   return (
-    <div className="absolute w-full z-20" style={{ top: '-24px' }}>
+    <div className="w-full z-20">
       <div 
         ref={progressBarRef}
         className="relative w-full h-[3px] cursor-pointer group"

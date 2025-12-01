@@ -2,10 +2,12 @@ import { supabaseClient } from '@/lib/supabaseClient';
 import { BonusQuestRow, UserBonusQuestRow, BonusQuestWithCompletion, QuestCompletionResult } from '@/types/bonusQuests';
 
 /**
- * Fetches bonus quests for the current user, filtered by completion status
- * Returns up to 3 quests: 1 rotating featured quest + 2 core quests
+ * Fetches bonus quests, optionally overlaying completion for a user.
+ * Always fetches public quests first (no auth required), then if a userId is
+ * provided, fetches that user's completion rows to compute completion state.
+ * Returns up to 3 quests: 1 rotating featured quest + 2 core quests.
  */
-export async function getBonusQuestsForUser(userId: string): Promise<BonusQuestWithCompletion[]> {
+export async function getBonusQuestsForUser(userId?: string | null): Promise<BonusQuestWithCompletion[]> {
   try {
     // Fetch all active bonus quests
     const { data: quests, error: questsError } = await supabaseClient
@@ -23,15 +25,20 @@ export async function getBonusQuestsForUser(userId: string): Promise<BonusQuestW
       return [];
     }
 
-    // Fetch user's completion stats
-    const { data: completions, error: completionsError } = await supabaseClient
-      .from('user_bonus_quests')
-      .select('bonus_quest_id, times_completed, last_completed_at')
-      .eq('user_id', userId);
+    // Fetch user's completion stats (only if a userId is present)
+    let completions: Pick<UserBonusQuestRow, 'bonus_quest_id' | 'times_completed' | 'last_completed_at'>[] = [];
+    if (userId) {
+      const { data, error: completionsError } = await supabaseClient
+        .from('user_bonus_quests')
+        .select('bonus_quest_id, times_completed, last_completed_at')
+        .eq('user_id', userId);
 
-    if (completionsError) {
-      console.error('Error fetching user completions:', completionsError);
-      return [];
+      if (completionsError) {
+        console.error('Error fetching user completions:', completionsError);
+        // Don't throw; continue without completions for public visibility
+      } else {
+        completions = data || [];
+      }
     }
 
     // Build completion map

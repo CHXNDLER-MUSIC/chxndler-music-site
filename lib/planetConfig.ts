@@ -1,5 +1,16 @@
 // Unified Planet Configuration System
-// This is the single source of truth for all planet data
+// This is the single source of truth for positions, radii, and basic styling used by:
+// - 3D system (components/holo/PlanetSystem.tsx)
+// - 2D minimap (components/holo/PlanetMinimap.tsx)
+//
+// How to tweak:
+// - Adjust ELEMENT_ORBIT_RADIUS to move the four elemental planets closer/farther from center.
+// - Adjust SONG_ORBIT_RADIUS to change how far songs orbit around their element.
+// - Per-element visual color/texture lives here via ELEMENT_COLORS and texture paths.
+// - 3D orbit speed is controlled in components/holo/PlanetSystem.tsx (systemRef + per-element song speeds).
+// - Camera initial position and zoom limits are in components/holo/PlanetSystem.tsx (Canvas camera + OrbitControls).
+// - To add a new song planet, insert a new row in Supabase (or extend data/songs or songs-consolidated),
+//   ensuring it has an element mapping; the 3D and minimap read from the same runtime song list.
 
 export type PlanetType = 'center' | 'element' | 'song';
 export type ElementType = 'heart' | 'water' | 'lightning' | 'darkness';
@@ -34,6 +45,14 @@ export const ELEMENT_COLORS: Record<ElementType, string> = {
   water: "#38B6FF", 
   lightning: "#F2EF1D",
   darkness: "#6A4C93" // Using the purple-blue for visibility instead of pure black
+};
+
+// Per-element song orbit speeds (radians per frame-tick), used by 3D + minimap
+export const ELEMENT_SONG_ORBIT_SPEEDS: Record<ElementType, number> = {
+  lightning: 0.0015,
+  water: 0.0012,
+  heart: 0.0010,
+  darkness: 0.0008,
 };
 
 // Fixed positions for elements - matching 3D layout exactly:

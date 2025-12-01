@@ -163,7 +163,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabaseClient
         .from("profiles")
         .select(
-          "id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, tier, has_seen_tour, profile_image_url, daily_streak, streak_last_updated"
+          // Support both legacy and new column names for heart coins
+          "id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, heart_coins_current, heart_coins_total, profile_complete, created_at, updated_at, tier, has_seen_tour, profile_image_url, daily_streak, streak_last_updated"
         )
         .eq("id", user.id)
         .maybeSingle();
@@ -232,7 +233,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         dataType: typeof data.heartcoin_balance
       });
 
-      // Map database columns to interface format
+      // Map database columns to interface format (prefer new heartcoin_* columns; fallback to heart_coins_*)
       const mappedProfile: Profile = {
         id: data.id,
         email: data.email,
@@ -240,8 +241,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         name: data.name,
         element: data.element,
         journey: data.journey,
-        heartcoin_balance: data.heartcoin_balance ?? 0,
-        heartcoin_total: data.heartcoin_total ?? 0,
+        heartcoin_balance: (data.heartcoin_balance ?? data.heart_coins_current ?? 0),
+        heartcoin_total: (data.heartcoin_total ?? data.heart_coins_total ?? 0),
         profile_complete: data.profile_complete ?? !!(data.name && data.element),
         created_at: data.created_at,
         updated_at: data.updated_at,
@@ -321,8 +322,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           name: data.name,
           element: data.element,
           journey: data.journey,
-          heartcoin_balance: data.heartcoin_balance ?? 0,
-          heartcoin_total: data.heartcoin_total ?? 0,
+          heartcoin_balance: (data.heartcoin_balance ?? (data as any).heart_coins_current ?? 0),
+          heartcoin_total: (data.heartcoin_total ?? (data as any).heart_coins_total ?? 0),
           profile_complete: data.profile_complete ?? !!(data.name && data.element),
           created_at: data.created_at,
           updated_at: data.updated_at,
