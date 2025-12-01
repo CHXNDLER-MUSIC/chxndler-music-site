@@ -13,6 +13,7 @@ interface ProfileData {
   id: string;
   name: string | null;
   element: string | null;
+  profile_image_url: string | null;
 }
 
 export default function AuthButton() {
@@ -36,7 +37,7 @@ export default function AuthButton() {
       try {
         const { data, error } = await supabaseClient
           .from('profiles')
-          .select('id, name, element')
+          .select('id, name, element, profile_image_url')
           .eq('id', user.id)
           .single();
 
@@ -55,6 +56,43 @@ export default function AuthButton() {
     }
 
     fetchProfile();
+  }, [user]);
+
+  // Listen for profile updates from other components
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      // Refetch profile when it's updated elsewhere
+      if (user) {
+        fetchProfile();
+      }
+    };
+
+    const fetchProfile = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabaseClient
+          .from('profiles')
+          .select('id, name, element, profile_image_url')
+          .eq('id', user.id)
+          .single();
+
+        if (!error) {
+          setProfile(data);
+        }
+      } catch (error) {
+        console.error('AuthButton: Error refetching profile:', error);
+      }
+    };
+
+    // Listen for profile update events
+    window.addEventListener('auth:profile-updated', handleProfileUpdate);
+    window.addEventListener('profile:force-refresh', handleProfileUpdate);
+
+    return () => {
+      window.removeEventListener('auth:profile-updated', handleProfileUpdate);
+      window.removeEventListener('profile:force-refresh', handleProfileUpdate);
+    };
   }, [user]);
 
   // Get button display info
@@ -170,15 +208,41 @@ export default function AuthButton() {
           }
         }}
       >
-        {/* Element Icon - only show when user has complete profile */}
+        {/* Profile Image - only show when user has complete profile */}
         {buttonMode === 'profile' && currentElement && (
           <div className="mr-2">
-            <ElementIcon 
-              name={currentElement} 
-              alt={currentElement} 
-              width={24} 
-              height={24}
-            />
+            {profile?.profile_image_url ? (
+              <img
+                src={profile.profile_image_url}
+                alt={currentElement}
+                width={24}
+                height={24}
+                className="w-6 h-6 rounded-full object-cover"
+                onError={(e) => {
+                  // Fallback to element icon on error
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const parent = target.parentElement;
+                  if (parent) {
+                    parent.innerHTML = '';
+                    const elementIcon = document.createElement('img');
+                    elementIcon.src = `/elements/${currentElement}.webp`;
+                    elementIcon.alt = currentElement;
+                    elementIcon.width = 24;
+                    elementIcon.height = 24;
+                    elementIcon.className = 'w-6 h-6 object-cover';
+                    parent.appendChild(elementIcon);
+                  }
+                }}
+              />
+            ) : (
+              <ElementIcon 
+                name={currentElement} 
+                alt={currentElement} 
+                width={24} 
+                height={24}
+              />
+            )}
           </div>
         )}
         

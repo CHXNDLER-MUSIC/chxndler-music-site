@@ -898,7 +898,7 @@ export default function ProfileBar({
               {/* Description */}
               <div 
                 style={{ 
-                  fontSize: 13, 
+                  fontSize: 15, 
                   color: '#FFFFFF !important', 
                   textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
                   lineHeight: 1.5,
@@ -916,7 +916,7 @@ export default function ProfileBar({
               <div 
                 className="text-left space-y-3"
                 style={{ 
-                  fontSize: 12, 
+                  fontSize: 15, 
                   color: '#FFFFFF !important', 
                   textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
                 }}
@@ -939,8 +939,21 @@ export default function ProfileBar({
           
           {chxndlerActiveTab === "ELEMENTS" && (
             <div className="text-center px-2">
+              {/* Elements Description */}
+              <div 
+                style={{ 
+                  fontSize: 11, 
+                  color: '#FFFFFF !important', 
+                  textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
+                  lineHeight: 1.4,
+                  marginBottom: '16px'
+                }}
+              >
+                The four Elements represent different energies and emotions in the Heartverse. Each song is aligned with an Element, creating a journey through love, dreams, passion, and transformation.
+              </div>
+              
               {/* Elements Grid */}
-              <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="grid grid-cols-2 gap-2 mb-3 px-2">
                 {[
                   { name: 'HEART', color: '#FF6B9D', icon: '/elements/heart.webp', subtitle: 'love and connection' },
                   { name: 'WATER', color: '#4A90E2', icon: '/elements/water.webp', subtitle: 'flow and adaptability' },
@@ -949,15 +962,15 @@ export default function ProfileBar({
                 ].map((element) => (
                   <div
                     key={element.name}
-                    className="flex flex-col items-center p-3 rounded-lg border transition-all duration-200 hover:scale-105"
+                    className="flex flex-col items-center p-2 rounded-lg border transition-all duration-200 hover:scale-105"
                     style={{
                       borderColor: `${element.color}60`,
                       background: `${element.color}10`,
-                      boxShadow: `0 0 15px ${element.color}30`
+                      boxShadow: `0 0 10px ${element.color}30`
                     }}
                   >
                     <div 
-                      className="w-8 h-8 rounded-lg mb-2 overflow-hidden border"
+                      className="w-6 h-6 rounded-lg mb-1 overflow-hidden border"
                       style={{
                         borderColor: element.color,
                         background: `${element.color}20`
@@ -973,31 +986,20 @@ export default function ProfileBar({
                       className="text-xs font-bold"
                       style={{
                         color: element.color,
-                        textShadow: `0 0 8px ${element.color}80`
+                        textShadow: `0 0 8px ${element.color}80`,
+                        fontSize: '10px'
                       }}
                     >
                       {element.name}
                     </div>
                     <div 
                       className="text-xs text-white/70"
-                      style={{ fontSize: '10px' }}
+                      style={{ fontSize: '9px' }}
                     >
                       {element.subtitle}
                     </div>
                   </div>
                 ))}
-              </div>
-              
-              {/* Elements Description */}
-              <div 
-                style={{ 
-                  fontSize: 11, 
-                  color: '#FFFFFF !important', 
-                  textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
-                  lineHeight: 1.4
-                }}
-              >
-                The four Elements represent different energies and emotions in the Heartverse. Each song is aligned with an Element, creating a journey through love, dreams, passion, and transformation.
               </div>
             </div>
           )}

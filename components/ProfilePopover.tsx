@@ -547,7 +547,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
           />
 
           {/* SELECTED IMAGE Section */}
-          <div className="mb-6">
+          <div className="mb-4">
             <h3 
               className="text-sm mb-3 font-semibold"
               style={{ 
@@ -792,9 +792,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
           </div>
 
           {/* PROFILE INFO Section */}
-          <div className="space-y-4">
+          <div className="space-y-2">
             <h3 
-              className="text-sm mb-3 font-semibold"
+              className="text-sm mb-2 font-semibold"
               style={{ 
                 color: '#00FFFF', 
                 textShadow: '0 0 4px rgba(0,255,255,0.6)' 
@@ -835,8 +835,8 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                 }}
                 className="font-bold transition-all duration-200 hover:scale-105 cursor-pointer"
                 style={{ 
-                  color: '#00FFFF', 
-                  textShadow: '0 0 8px rgba(0,255,255,0.6)',
+                  color: profile?.element ? getElementInfo(profile.element).color : '#00FFFF', 
+                  textShadow: profile?.element ? `0 0 8px ${getElementInfo(profile.element).color}60` : '0 0 8px rgba(0,255,255,0.6)',
                   background: 'none',
                   border: 'none'
                 }}
@@ -1194,7 +1194,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
 
 
           {/* Start Tour Button */}
-          <div className="mt-6 pt-4" style={{
+          <div className="mt-4 pt-3" style={{
             borderTop: '1px solid rgba(0,255,255,0.2)'
           }}>
             <button
