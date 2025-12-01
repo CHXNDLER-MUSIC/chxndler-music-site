@@ -193,9 +193,9 @@ export default function YourBook({ isOpen, onClose }) {
                     height: '300px',
                     boxShadow: '0 0 60px rgba(252,84,175,0.4), 0 0 120px rgba(56,182,255,0.3)'
                   }}
-                  initial={{ scale: 0.5, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.5, opacity: 0 }}
+                  initial={{ scale: 0.5, opacity: 0, y: -20 }}
+                  animate={{ scale: 1, opacity: 1, y: -20 }}
+                  exit={{ scale: 0.5, opacity: 0, y: -20 }}
                   transition={{ type: 'spring', damping: 25, stiffness: 400 }}
                 >
                   <img
