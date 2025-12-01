@@ -67,6 +67,8 @@ interface Profile {
   tier: ProfileTier; // default "wanderer"
   has_seen_tour?: boolean | null; // for onboarding tour
   profile_image_url?: string | null; // for profile image selection
+  daily_streak?: number | null; // daily streak counter
+  streak_last_updated?: string | null; // last date streak was updated
   cards: OwnedCardRow[];
   badges: OwnedBadgeRow[];
   // Legacy fields for compatibility
@@ -161,7 +163,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabaseClient
         .from("profiles")
         .select(
-          "id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, tier, has_seen_tour, profile_image_url"
+          "id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, tier, has_seen_tour, profile_image_url, daily_streak, streak_last_updated"
         )
         .eq("id", user.id)
         .maybeSingle();
@@ -246,6 +248,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         tier: (data.tier || "wanderer") as ProfileTier,
         has_seen_tour: data.has_seen_tour,
         profile_image_url: data.profile_image_url,
+        daily_streak: data.daily_streak ?? 0,
+        streak_last_updated: data.streak_last_updated,
         cards: cardRows ?? [],
         badges: badgeRows ?? [],
       };
@@ -292,6 +296,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       if (updates.tier !== undefined) dbUpdates.tier = updates.tier;
       if (updates.has_seen_tour !== undefined) dbUpdates.has_seen_tour = updates.has_seen_tour;
       if (updates.profile_image_url !== undefined) dbUpdates.profile_image_url = updates.profile_image_url;
+      if (updates.daily_streak !== undefined) dbUpdates.daily_streak = updates.daily_streak;
+      if (updates.streak_last_updated !== undefined) dbUpdates.streak_last_updated = updates.streak_last_updated;
       
       // Update the existing profile (no insert logic - trigger handles creation)
       const { data, error } = await supabaseClient
@@ -323,6 +329,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           tier: (data.tier || "wanderer") as ProfileTier,
           has_seen_tour: data.has_seen_tour,
           profile_image_url: data.profile_image_url,
+          daily_streak: data.daily_streak ?? 0,
+          streak_last_updated: data.streak_last_updated,
           cards: profile?.cards ?? [],
           badges: profile?.badges ?? [],
         };

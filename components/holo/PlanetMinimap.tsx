@@ -2,7 +2,8 @@
 
 import React from "react";
 import { sfx } from "@/lib/sfx";
-import { PLANET_CONFIGS, getPlanetsByType, getPlanetsByElement, ELEMENT_POSITIONS, ELEMENT_COLORS, SONG_ORBIT_RADIUS, type ElementType } from "@/lib/planetConfig";
+import { getPlanetsByType, ELEMENT_COLORS, SONG_ORBIT_RADIUS, ELEMENT_ORBIT_RADIUS, type ElementType } from "@/lib/planetConfig";
+import { useFocusElementOfDay } from "@/hooks/useFocusElementOfDay";
 
 interface ElementPosition {
   code: "heart" | "water" | "lightning" | "darkness";
@@ -41,23 +42,16 @@ interface PlanetMinimapProps {
 
 // Get element configurations from unified config - MATCH 3D SYSTEM EXACTLY
 const ELEMENT_PLANETS = getPlanetsByType('element');
-const elementOrbitRadius = 120; // Match PlanetSystem.tsx value
+const elementOrbitRadius = ELEMENT_ORBIT_RADIUS; // Match 3D system
 
-const ELEMENTS = ELEMENT_PLANETS.map((planet, index) => {
-  // Calculate orbital position EXACTLY like 3D system does
-  const angle = (index / ELEMENT_PLANETS.length) * Math.PI * 2;
-  const x = Math.cos(angle) * elementOrbitRadius;
-  const z = Math.sin(angle) * elementOrbitRadius;
-  const y = 0; // Ignore Y for 2D minimap
-  
-  return {
-    code: planet.element!,
-    label: planet.name,
-    position: [x, y, z] as [number, number, number], // Use calculated 3D position
-    color: planet.color,
-    glowColor: planet.color
-  };
-});
+// Element speeds mirror 3D rotation
+const ELEMENT_SPEED = 0.0003; // global orbital speed around center
+const SONG_SPEEDS: Record<ElementType, number> = {
+  lightning: 0.0015,
+  water: 0.0012,
+  heart: 0.0010,
+  darkness: 0.0008,
+};
 
 // Comprehensive song planet data with detailed characteristics
 const SONG_PLANETS: SongPlanet[] = [
@@ -129,7 +123,7 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
   const getScaleParams = React.useCallback(() => {
     const mapSize = isCollapsed ? 48 : (window.innerWidth < 640 ? 240 : window.innerWidth < 1024 ? 288 : 320);
     const contentArea = mapSize - 32; // Leave 16px padding on each side
-    const maxDistance = Math.max(elementOrbitRadius, elementOrbitRadius + (SONG_ORBIT_RADIUS * 3));
+    const maxDistance = Math.max(elementOrbitRadius, elementOrbitRadius + (SONG_ORBIT_RADIUS * 2));
     const scale = (contentArea / 2) / (maxDistance * 1.2); // 1.2 factor for safety margin
     const center = mapSize / 2;
     return { mapSize, contentArea, maxDistance, scale, center };
@@ -255,6 +249,9 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
               onMouseEnter={() => setHoveredPlanet(element.code)}
               onMouseLeave={() => setHoveredPlanet(null)}
             >
+              {focusElement === element.code && !isCollapsed && (
+                <div className="absolute -inset-1 rounded-full" style={{ boxShadow: `0 0 12px 2px ${element.color}` }} />
+              )}
               {/* Element full label */}
               <div 
                 className="absolute -top-5 left-1/2 transform -translate-x-1/2 text-[9px] font-bold text-white whitespace-nowrap"
@@ -276,12 +273,13 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
           
           return elementSongs.map((songPlanet, i) => {
             // Match 3D system angle calculation exactly
-            const angleStep = (2 * Math.PI) / elementSongs.length;
-            const angle = i * angleStep;
+            const angleStep = (2 * Math.PI) / Math.max(elementSongs.length, 1);
+            const rotationOffset = now * (SONG_SPEEDS[element.code] || 0.001);
+            const angle = i * angleStep + rotationOffset;
             // For top-down view, orbit in the X-Z plane (horizontal plane)
-            const x = element.position[0] + Math.cos(angle) * orbitRadius;
+            const x = element.position[0] + Math.cos(angle) * (SONG_ORBIT_RADIUS * 1.0);
             const y = element.position[1]; // Keep same height as elemental planet
-            const z = element.position[2] + Math.sin(angle) * orbitRadius;
+            const z = element.position[2] + Math.sin(angle) * (SONG_ORBIT_RADIUS * 1.0);
             
             const pos2D = convertTo2D([x, y, z]);
             

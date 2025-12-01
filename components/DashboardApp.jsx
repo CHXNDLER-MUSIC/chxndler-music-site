@@ -116,7 +116,22 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   // Use false initially to match SSR, then sync with localStorage after hydration
   const [wheelPlain, setWheelPlain] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
-  
+
+  // Hard guard: ensure main player is fully silent on first load
+  // Prevents any accidental playback (e.g., previously primed states) on opening page
+  React.useEffect(() => {
+    try {
+      const a = document.querySelector('audio[data-audio-player="1"]');
+      if (a) {
+        try { a.pause(); } catch {}
+        try { a.currentTime = 0; } catch {}
+        try { a.muted = true; } catch {}
+        try { a.removeAttribute('src'); } catch {}
+        try { a.load(); } catch {}
+      }
+    } catch {}
+  }, []);
+
   // Sync with localStorage after hydration to prevent hydration mismatch
   useEffect(() => {
     try {
@@ -668,18 +683,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     }
   }, []);
 
-  // Enable welcome VO on first homepage open (before Start), once per refresh
+  // Disable legacy auto-welcome VO on first homepage open to ensure silence until Start
   useEffect(() => {
-    try {
-      const playedFlag = (typeof window !== 'undefined' && (window).__CHX_WELCOME_PLAYED === true);
-      if (homeMode && isFirstLoad && !playedFlag) {
-        setHomeIntroEnabled(true);
-        // Proactively prime and attempt enable to start VO ASAP
-        try { window.dispatchEvent(new CustomEvent('ambient:prime')); } catch {}
-        // Small delay to ensure <audio data-intro> is mounted, then try enable
-        setTimeout(() => { try { window.dispatchEvent(new CustomEvent('ambient:enable')); } catch {} }, 60);
-      }
-    } catch {}
+    // Intentionally no-op: centralized AudioManager handles Start flow
   }, [homeMode, isFirstLoad]);
 
   // Track ambient audio playing state for accurate button state on homepage

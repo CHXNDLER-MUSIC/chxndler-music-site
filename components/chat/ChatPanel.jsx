@@ -204,20 +204,8 @@ export default function ChatPanel({ isOpen, onClose }) {
       return profile.name;
     }
     
-    // If user is authenticated but profile is incomplete, still check for name
-    if (user && profile?.id && profile?.name) {
-      console.log('🔥 Using profile name for authenticated user:', profile.name);
-      return profile.name;
-    }
-    
-    // For unauthenticated or incomplete profiles, use alien name
-    if (!user || !profile?.id || !profile?.name) {
-      console.log('🔥 Using stored alien name (no authenticated user with name):', alienName);
-      return alienName;
-    }
-    
-    // Final fallback
-    console.log('🔥 Using stored alien name (final fallback):', alienName);
+    // For unauthenticated users or users without names, use alien name
+    console.log('🔥 Using stored alien name (not authenticated or no profile name):', alienName);
     return alienName;
   };
   const [messages, setMessages] = useState([]);
@@ -264,8 +252,8 @@ export default function ChatPanel({ isOpen, onClose }) {
         };
         setChatUsers([authenticatedUser]);
         console.log('🚀 Set initial chat users with authenticated user:', [authenticatedUser]);
-      } else if (!user || !profile?.id || !profile?.name) {
-        // For unauthenticated users or incomplete profiles, use alien name
+      } else {
+        // For unauthenticated users, use alien name
         console.log('🚀 IMMEDIATE: Using stored alien name:', alienName);
         const anonymousUser = {
           id: 'anonymous',
@@ -307,7 +295,7 @@ export default function ChatPanel({ isOpen, onClose }) {
           console.log('🔥 Setting authenticated user:', authenticatedUser);
           return [authenticatedUser, ...otherUsers];
         });
-      } else if ((!user || !profile?.id || !profile?.name) && alienName) {
+      } else if (alienName) {
         // For unauthenticated users, ensure anonymous user exists
         console.log('🔥 Chat opened - ensuring anonymous user exists with name:', alienName);
         setChatUsers(prev => {
@@ -531,7 +519,15 @@ export default function ChatPanel({ isOpen, onClose }) {
    */
   const handleSendMessage = async (messageText) => {
     const displayName = getDisplayName();
-    console.log('🔥 Sending message:', { messageText, displayName, user: !!user, userObject: user, profile: !!profile });
+    console.log('🔥 Sending message:', { 
+      messageText, 
+      displayName, 
+      user: !!user, 
+      userObject: user, 
+      profile: !!profile,
+      profileName: profile?.name,
+      shouldUseProfileName: user && profile?.name
+    });
     
     // For authenticated users with complete profiles, send via service
     if (user && profile?.name) {
@@ -1074,7 +1070,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 <span className="text-yellow-400 font-bold">
                                   {selectedUser.id === 'anonymous' 
                                     ? 0 
-                                    : (selectedUser.days_streak || 0)
+                                    : (user && profile?.daily_streak !== undefined) 
+                                      ? profile.daily_streak 
+                                      : 0
                                   }
                                 </span>
                                 <span>Days Streak</span>

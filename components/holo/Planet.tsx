@@ -119,8 +119,11 @@ export default function Planet({
   // Element-based tweaks (non-destructive): radius/speed/wobble/scale tinting done as computed fields
   const element = (song as any)?.planet?.element as ("water"|"fire"|"lightning"|"heart"|"moon"|"magic"|"darkness"|undefined);
   
+  // Unreleased songs render as neutral gray (data-driven)
+  const unreleased = (song as any)?.released === false || (song as any)?.status === 'coming_soon' || (song as any)?.status === 'locked';
   // More varied and realistic colors for each planet type
   const color = useMemo(() => {
+    if (unreleased) return "#9CA3AF"; // gray for unreleased
     if (planetType === 'gas-giant') {
       // Gas giants have varied compositions
       const gasColors = ["#FFD700", "#FFA500", "#FF6347", "#DDA0DD", "#98FB98"];
@@ -141,7 +144,7 @@ export default function Planet({
     if (element === 'lightning') return "#9400D3"; // Violet for lightning worlds
     if (element === 'darkness') return "#8B0000"; // Dark red for dark worlds
     return song.planet.color || "#3DF5FF";
-  }, [song.planet.color, planetType, element, idHash]);
+  }, [song.planet.color, planetType, element, idHash, unreleased]);
   const ringColor = useMemo(() => {
     const hex = (color || "#3DF5FF").replace('#','');
     const r = parseInt(hex.substring(0,2) || '00', 16);

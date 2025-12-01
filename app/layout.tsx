@@ -16,6 +16,7 @@ import WhatElementAreYouModal from "@/components/WhatElementAreYouModal";
 import NamePromptOnLogin from "@/components/NamePromptOnLogin";
 import StoreProvider from "@/components/StoreProvider";
 import { ProfileProvider } from "@/contexts/ProfileContext";
+import { AudioManagerProvider } from "@/contexts/AudioManagerContext";
 import { TourProvider } from "@/contexts/TourContext";
 import { MenuStateProvider } from "@/contexts/MenuStateContext";
 
@@ -127,6 +128,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-sans">
         <AuthProvider>
           <ProfileProvider>
+            <AudioManagerProvider>
             <AudioProvider>
               <MenuStateProvider>
                 <TourProvider>
@@ -150,6 +152,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </TourProvider>
               </MenuStateProvider>
             </AudioProvider>
+            </AudioManagerProvider>
           </ProfileProvider>
         </AuthProvider>
         {mpId && !analyticsOff ? (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import HeartversePopup from "@/components/HeartversePopup";
 import VenmoButton from "@/components/VenmoButton";
@@ -24,6 +24,23 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
   const [showPhonePopup, setShowPhonePopup] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [selectedCountry, setSelectedCountry] = useState("US");
+
+  // Clear phone number when popup opens or when showPhonePopup changes
+  useEffect(() => {
+    if (showPhonePopup) {
+      setPhoneNumber("");
+    }
+  }, [showPhonePopup]);
+
+  // Clear main phone state when popup opens or signup method changes
+  useEffect(() => {
+    if (isOpen) {
+      setPhone("");
+      setPhoneNumber("");
+      setError(null);
+      setMessage(null);
+    }
+  }, [isOpen, signupMethod]);
 
   async function createProfileWithPhone(e: React.FormEvent) {
     e.preventDefault();
@@ -146,6 +163,54 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
       setTimeout(() => {
         setError(null);
       }, 3000);
+    }
+  }
+
+  async function submitPhoneNumber(phone: string) {
+    try {
+      setLoading(true);
+      setError(null);
+      setMessage(null);
+
+      const response = await fetch('/api/submit-phone', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phone }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setMessage(result.message);
+        try {
+          sfx.play('success', 0.7);
+        } catch {}
+        
+        // Clear phone number after successful submission
+        setPhoneNumber("");
+        
+        // Close popup after a delay
+        setTimeout(() => {
+          setShowPhonePopup(false);
+          setMessage(null);
+        }, 3000);
+      } else {
+        setError(result.error || "Failed to save phone number");
+        try {
+          sfx.play('error', 0.5);
+        } catch {}
+      }
+
+    } catch (e: any) {
+      console.error('Phone submission error:', e);
+      setError("Failed to save phone number. Please try again.");
+      try {
+        sfx.play('error', 0.5);
+      } catch {}
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -338,10 +403,15 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
               </label>
               <input
                 id="join-phone"
+                key={`main-phone-input-${selectedCountry}`}
                 type="tel"
                 value={phone}
                 onChange={handlePhoneChange}
                 placeholder={`${phoneConfigs[selectedCountry]?.code} ${phoneConfigs[selectedCountry]?.format.replace(/X/g, '5')}`}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
                 required
                 disabled={loading}
                 className="block w-full rounded-lg border border-white/20 bg-black/30 px-4 py-3 text-white placeholder-white/40 shadow-sm focus:border-[#FC54AF] focus:outline-none focus:ring-2 focus:ring-[#FC54AF]/20 disabled:opacity-50"
@@ -634,10 +704,15 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
               {/* Phone Number Input */}
               <div style={{ marginBottom: '20px' }}>
                 <input
+                  key={`phone-input-${selectedCountry}`}
                   type="tel"
                   value={phoneNumber}
                   onChange={handlePhoneNumberChange}
                   placeholder={`${phoneConfigs[selectedCountry]?.code} ${phoneConfigs[selectedCountry]?.format.replace(/X/g, '5')}`}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
                   style={{
                     width: '100%',
                     padding: '12px 16px',
@@ -661,44 +736,42 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
                 />
               </div>
 
-              {/* Send Heart Signal Button */}
+              {/* Submit Phone Button */}
               <button
                 onClick={() => {
                   const validation = getPhoneValidation(selectedCountry);
-                  if (phoneNumber.length >= validation.minFormattedLength) {
-                    sendHeartSignal();
-                    setShowPhonePopup(false);
-                    setPhoneNumber("");
+                  if (phoneNumber.length >= validation.minFormattedLength && !loading) {
+                    submitPhoneNumber(phoneNumber);
                   }
                 }}
-                disabled={phoneNumber.length < getPhoneValidation(selectedCountry).minFormattedLength}
+                disabled={phoneNumber.length < getPhoneValidation(selectedCountry).minFormattedLength || loading}
                 style={{
                   width: 'auto',
                   minWidth: '140px',
-                  maxWidth: '145px',
+                  maxWidth: '180px',
                   padding: '12px 20px',
                   background: 'transparent',
-                  border: phoneNumber.length < getPhoneValidation(selectedCountry).minFormattedLength 
+                  border: (phoneNumber.length < getPhoneValidation(selectedCountry).minFormattedLength || loading)
                     ? '2px solid rgba(128, 128, 128, 0.3)' 
                     : '2px solid #00FFFF',
                   borderRadius: '8px',
-                  color: phoneNumber.length < getPhoneValidation(selectedCountry).minFormattedLength 
+                  color: (phoneNumber.length < getPhoneValidation(selectedCountry).minFormattedLength || loading)
                     ? 'rgba(128, 128, 128, 0.7)' 
                     : '#00FFFF',
                   fontSize: '16px',
                   fontWeight: '600',
-                  cursor: phoneNumber.length < getPhoneValidation(selectedCountry).minFormattedLength ? 'not-allowed' : 'pointer',
+                  cursor: (phoneNumber.length < getPhoneValidation(selectedCountry).minFormattedLength || loading) ? 'not-allowed' : 'pointer',
                   transition: 'all 300ms ease',
-                  boxShadow: phoneNumber.length < getPhoneValidation(selectedCountry).minFormattedLength 
+                  boxShadow: (phoneNumber.length < getPhoneValidation(selectedCountry).minFormattedLength || loading)
                     ? 'none' 
                     : '0 0 15px rgba(0, 255, 255, 0.3)',
-                  textShadow: phoneNumber.length < getPhoneValidation(selectedCountry).minFormattedLength 
+                  textShadow: (phoneNumber.length < getPhoneValidation(selectedCountry).minFormattedLength || loading)
                     ? 'none' 
                     : '0 0 10px #00FFFF, 0 0 20px #00FFFF, 0 0 30px #00FFFF',
                   outline: 'none'
                 }}
                 onMouseEnter={(e) => {
-                  if (phoneNumber.length >= getPhoneValidation(selectedCountry).minFormattedLength) {
+                  if (phoneNumber.length >= getPhoneValidation(selectedCountry).minFormattedLength && !loading) {
                     e.target.style.transform = 'translateY(-2px)';
                     e.target.style.background = 'rgba(0, 255, 255, 0.15)';
                     e.target.style.boxShadow = '0 0 40px rgba(0, 255, 255, 0.8), 0 0 60px rgba(0, 255, 255, 0.4), inset 0 0 30px rgba(0, 255, 255, 0.2)';
@@ -708,7 +781,7 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (phoneNumber.length >= getPhoneValidation(selectedCountry).minFormattedLength) {
+                  if (phoneNumber.length >= getPhoneValidation(selectedCountry).minFormattedLength && !loading) {
                     e.target.style.transform = 'translateY(0)';
                     e.target.style.background = 'transparent';
                     e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';
@@ -717,7 +790,21 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
                   }
                 }}
               >
-                Send Heart Signal
+                {loading ? (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <div style={{
+                      width: '14px',
+                      height: '14px',
+                      border: '2px solid rgba(0, 255, 255, 0.3)',
+                      borderTop: '2px solid #00FFFF',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }} />
+                    Saving...
+                  </div>
+                ) : (
+                  'Connect to Heartverse'
+                )}
               </button>
               
               {/* Arrow pointing down to button */}
@@ -758,6 +845,11 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
             transform: scale(1.25);
             box-shadow: 0 0 35px rgba(242,239,29,0.8), 0 0 70px rgba(242,239,29,0.6);
           }
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
         }
       `}</style>
     </HeartversePopup>

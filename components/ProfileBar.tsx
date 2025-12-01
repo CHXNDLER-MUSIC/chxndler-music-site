@@ -406,7 +406,8 @@ export default function ProfileBar({
   }
 
   const currentElement = contextProfile?.element || savedAlienElement || null;
-  const heartCoins = !currentUser || !contextProfile ? 0 : (contextProfile?.heartcoin_balance || 0);
+  // Show balance as soon as profile is available; don't wait on currentUser state
+  const heartCoins = contextProfile?.heartcoin_balance ?? 0;
   
   // Debug heart coins calculation
   useEffect(() => {

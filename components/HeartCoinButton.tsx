@@ -1250,22 +1250,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             <div className="pl-1 pr-4 py-2">
               {!showItemDetail ? (
                 <>
-                  <div 
-                    className="text-base text-center mb-3 -ml-4"
-                    style={{ 
-                      color: '#FFFFFF', 
-                      textShadow: '0 0 4px rgba(255,255,255,0.8)', 
-                      fontSize: '11px',
-                      lineHeight: 1,
-                      width: '100%',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    Trade your HEART coins for rare collectibles and CHXNDLER cards
-                  </div>
-
                   {/* Sub-tabs for USE */}
-                  <div className="flex justify-center mb-1 space-x-3">
+                  <div className="flex justify-center mb-3 space-x-3">
                     {(['MERCH', 'CARDS'] as const).map((tab) => (
                       <button
                         key={tab}
@@ -1301,6 +1287,20 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         {tab}
                       </button>
                     ))}
+                  </div>
+
+                  <div 
+                    className="text-base text-center mb-1 -ml-4"
+                    style={{ 
+                      color: '#FFFFFF', 
+                      textShadow: '0 0 4px rgba(255,255,255,0.8)', 
+                      fontSize: '11px',
+                      lineHeight: 1,
+                      width: '100%',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    Trade your HEART coins for rare collectibles and CHXNDLER cards
                   </div>
 
                   {/* MERCH Tab Content */}

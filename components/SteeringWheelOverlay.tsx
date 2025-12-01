@@ -6,6 +6,7 @@ import LumaKeyVideo from "@/components/LumaKeyVideo";
 import HoloJoinButton from "@/components/HoloJoinButton";
 import JoinAliens from "@/components/JoinAliens";
 import { LINKS } from "@/config/cockpit";
+import { useAudioManager } from "@/contexts/AudioManagerContext";
 import { useProfile } from "@/hooks/useProfile";
 import { sfx } from "@/lib/sfx";
 
@@ -62,6 +63,7 @@ export default function SteeringWheelOverlay({
   
   // Get user and profile data to determine welcome text
   const { user, profile, needsOnboarding } = useProfile();
+  const audioManager = useAudioManager();
   
   // Determine welcome text based on user status
   const getWelcomeText = () => {
@@ -139,6 +141,9 @@ export default function SteeringWheelOverlay({
     } catch {}
     // Trigger toggle action first so downstream can open streaming links within a user gesture
     try { onLaunch(); } catch {}
+
+    // Start button audio sequence: warp -> button -> ambient + welcome (based on login)
+    try { audioManager?.playStartSequence(!!user); } catch {}
     // After first click, stop pulsing the Start button until refresh
     if (startPulseOn) setStartPulseOn(false);
     // After first click, permanently disable the start spotlight

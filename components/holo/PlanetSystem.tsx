@@ -2,16 +2,17 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { Canvas, useThree, useFrame, useLoader } from "@react-three/fiber";
-import { AdditiveBlending, Group as ThreeGroup, SRGBColorSpace, Vector3, SpriteMaterial, Sprite, MeshBasicMaterial, PlaneGeometry, DoubleSide, TextureLoader } from "three";
+import { AdditiveBlending, Group as ThreeGroup, SRGBColorSpace, Vector3, TextureLoader } from "three";
 import { playerStore } from "@/store/usePlayerStore";
 import Planet from "@/components/holo/Planet";
 import HeartStarPlanet from "@/components/HeartStarPlanet";
 import { computePlanetLayout } from "@/lib/planetLayout";
 import { buildPlanetSongs } from "@/lib/planets";
 import { getEntriesByRing, getPlanetEntry } from "@/lib/planetRegistry";
-import { Html } from "@react-three/drei";
+import { Html, OrbitControls } from "@react-three/drei";
 import PlanetMinimap from "@/components/holo/PlanetMinimap";
-import { PLANET_CONFIGS, getPlanetsByType, getPlanetsByElement, getPlanetsByParent, ELEMENT_POSITIONS, ELEMENT_COLORS, type ElementType } from "@/lib/planetConfig";
+import { getPlanetsByType, ELEMENT_COLORS, ELEMENT_ORBIT_RADIUS, SONG_ORBIT_RADIUS, type ElementType } from "@/lib/planetConfig";
+import { useFocusElementOfDay } from "@/hooks/useFocusElementOfDay";
 
 // DIAGNOSTIC MODE - Set to true to show orbit rings, bounding boxes, and labels
 const SHOW_ORBITS = false;
@@ -36,10 +37,9 @@ const elementGlows: Record<ElementCode, string> = {
   darkness: "#6A4C93"
 };
 
-const elementOrbitRadius = 120; // Increased for better visibility 
-// Import orbit radius from config
-import { SONG_ORBIT_RADIUS } from "@/lib/planetConfig";
-const songOrbitRadius = SONG_ORBIT_RADIUS * 3; // Increased song orbit radius
+// Shared orbit radii for consistency
+const elementOrbitRadius = ELEMENT_ORBIT_RADIUS;
+const songOrbitRadius = SONG_ORBIT_RADIUS;
 
 
 
@@ -96,7 +96,7 @@ function SongOrbitGroup({
         const angle = index * angleStep;
         const x = Math.cos(angle) * songOrbitRadius;
         const z = Math.sin(angle) * songOrbitRadius;
-        const y = (Math.sin(angle + index) * 3); // More interesting y variation based on position
+        const y = 0; // keep on flat plane
         
         return (
           <group key={card.id} position={[x, y, z]}>
@@ -119,8 +119,14 @@ function SongOrbitGroup({
 }
 
 // Orbital elemental system with proper hierarchy
-function OrbitalElementalSystem({ songs, mainId, hoverId, highlightedPlanetId }: { songs: any[]; mainId: string | null; hoverId: string | null; highlightedPlanetId: string | null }) {
+function OrbitalElementalSystem({ songs, mainId, hoverId, highlightedPlanetId, focusElement }: { songs: any[]; mainId: string | null; hoverId: string | null; highlightedPlanetId: string | null; focusElement?: ElementType | null }) {
   const systemRef = useRef<ThreeGroup>(null);
+  // Textures
+  const centerTexture = useLoader(TextureLoader, "/textures/center-planet.webp");
+  const heartTexture = useLoader(TextureLoader, "/textures/planet_heart.webp");
+  const waterTexture = useLoader(TextureLoader, "/textures/planet_water.webp");
+  const lightningTexture = useLoader(TextureLoader, "/textures/planet_lightning.webp");
+  const darknessTexture = useLoader(TextureLoader, "/textures/planet_darkness.webp");
   
   // Group cards by element using song.planet.element
   const cardsByElement: Record<ElementCode, any[]> = React.useMemo(() => {
@@ -163,24 +169,19 @@ function OrbitalElementalSystem({ songs, mainId, hoverId, highlightedPlanetId }:
       {/* Central Heartverse Planet */}
       <group position={[0, 0, 0]} name="CenterHeart">
         <mesh renderOrder={6}>
-          <sphereGeometry args={[25, 32, 32]} />
+          <sphereGeometry args={[8, 48, 48]} />
           <meshStandardMaterial 
-            color="#FC54AF"
+            map={centerTexture}
             emissive="#FC54AF"
-            emissiveIntensity={2.5}
+            emissiveIntensity={0.6}
             metalness={0.2}
-            roughness={0.3}
+            roughness={0.4}
           />
         </mesh>
-        <sprite scale={[60, 60, 1]} renderOrder={5}>
-          <spriteMaterial
-            transparent={true}
-            color="#FC54AF"
-            opacity={0.3}
-            blending={AdditiveBlending}
-          />
+        <sprite scale={[24, 24, 1]} renderOrder={5}>
+          <spriteMaterial transparent color="#FC54AF" opacity={0.18} blending={AdditiveBlending} />
         </sprite>
-        <Html position={[0, 35, 0]} center>
+        <Html position={[0, 14, 0]} center>
           <div style={{ 
             color: "#FC54AF", 
             fontSize: "18px", 
@@ -212,28 +213,24 @@ function OrbitalElementalSystem({ songs, mainId, hoverId, highlightedPlanetId }:
             <group position={[x, y, z]} name={`element-${element.element}`}>
               {/* Elemental planet */}
               <mesh renderOrder={4}>
-                <sphereGeometry args={[8, 32, 32]} />
+                <sphereGeometry args={[2.5, 48, 48]} />
                 <meshStandardMaterial 
+                  map={element.element === 'heart' ? heartTexture : element.element === 'water' ? waterTexture : element.element === 'lightning' ? lightningTexture : darknessTexture}
                   color={element.color}
                   emissive={element.color}
-                  emissiveIntensity={element.element === 'darkness' ? 3.0 : 4.0}
-                  metalness={element.element === 'water' ? 0.8 : element.element === 'darkness' ? 0.9 : 0.3}
-                  roughness={element.element === 'lightning' ? 0.8 : element.element === 'water' ? 0.1 : 0.4}
+                  emissiveIntensity={(focusElement && element.element === focusElement) ? 1.2 : element.element === 'darkness' ? 0.8 : 1.0}
+                  metalness={element.element === 'water' ? 0.8 : element.element === 'darkness' ? 0.4 : 0.3}
+                  roughness={element.element === 'lightning' ? 0.6 : element.element === 'water' ? 0.2 : 0.45}
                 />
               </mesh>
               
               {/* Elemental planet glow */}
-              <sprite scale={[40, 40, 1]} renderOrder={3}>
-                <spriteMaterial
-                  transparent={true}
-                  color={elementGlows[element.element!]}
-                  opacity={element.element === 'lightning' ? 0.6 : 0.4}
-                  blending={AdditiveBlending}
-                />
+              <sprite scale={[(focusElement && element.element === focusElement) ? 12 : 8, (focusElement && element.element === focusElement) ? 12 : 8, 1]} renderOrder={3}>
+                <spriteMaterial transparent color={elementGlows[element.element!]} opacity={(focusElement && element.element === focusElement) ? 0.5 : 0.28} blending={AdditiveBlending} />
               </sprite>
               
               {/* Element label */}
-              <Html position={[0, 18, 0]} center>
+              <Html position={[0, 5.5, 0]} center>
                 <div style={{ 
                   color: element.color, 
                   fontSize: '14px', 
@@ -280,6 +277,8 @@ function InvalidateOnState() {
 }
 
 export default function PlanetSystem({ showAll = false, hideUntilPlaying = false }: { showAll?: boolean; hideUntilPlaying?: boolean }) {
+  // Focus element of the day (from Supabase)
+  const { focusElement } = useFocusElementOfDay();
   const [isMinimapVisible, setIsMinimapVisible] = React.useState(true);
   const [highlightedPlanetId, setHighlightedPlanetId] = React.useState<string | null>(null);
   const [currentZoomLevel, setCurrentZoomLevel] = React.useState(0);
@@ -430,9 +429,8 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
           }
           return [1, 2];
         })()}
-        // Camera: closer, clearer baseline framing
-        // Slightly elevated to maintain depth while emphasizing planets
-        camera={{ position: [0, 140, actualShouldShowAll ? 260 : 180], fov: actualShouldShowAll ? 60 : 55 }}
+        // Camera: compact, closer framing to feel like a small solar system
+        camera={{ position: [0, 18, actualShouldShowAll ? 70 : 55], fov: actualShouldShowAll ? 50 : 45 }}
         // Prefer safer GL settings on mobile to avoid flicker when layers repaint
         gl={{
           antialias: false,
@@ -465,14 +463,24 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         <pointLight position={[0, -1.4, 0.6]} intensity={1.1} color={"#19E3FF"} distance={9} />
         {/* Removed magenta secondary light to avoid pink aura */}
         <InvalidateOnState />
+        {/* Intuitive camera controls */}
+        <OrbitControls
+          enableZoom
+          enablePan
+          enableRotate
+          target={[0, 0, 0] as any}
+          minDistance={20}
+          maxDistance={140}
+          zoomSpeed={0.6}
+          rotateSpeed={0.6}
+          panSpeed={0.6}
+        />
         <ZoomOnChange focusId={actualShouldShowAll ? null : focusId} />
         <MouseWheelZoom focusId={actualShouldShowAll ? null : focusId} onZoomChange={setCurrentZoomLevel} />
         <KeyboardZoom focusId={actualShouldShowAll ? null : focusId} onZoomChange={setCurrentZoomLevel} />
 
-        {/* Very shallow tilt for near-horizontal horizon line */}
-        {/* Render the full system: satellites first, focus planet last; previous main becomes a moon */}
-        {/* Enlarge full-system view when showing all planets - Moderate scale for proper visibility */}
-        <group scale={(actualShouldShowAll || shouldShowAll) ? 1.5 : 1}>
+        {/* Render the full system */}
+        <group scale={(actualShouldShowAll || shouldShowAll) ? 1 : 1}>
         <SystemGroup>
           
           {/* ORBITAL ELEMENTAL SYSTEM - Heart center with 4 elements orbiting */}
@@ -484,6 +492,7 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
                 mainId={mainId}
                 hoverId={hoverId}
                 highlightedPlanetId={highlightedPlanetId}
+                focusElement={focusElement || undefined}
               />
             );
           })()}

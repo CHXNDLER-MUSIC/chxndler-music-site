@@ -526,8 +526,7 @@ export default function JoinAliens({ visible = true } = {}) {
           style={{
             width: '100%',
             height: '100%',
-            objectFit: 'contain',
-            filter: 'brightness(0) saturate(100%) invert(90%) sepia(100%) saturate(2000%) hue-rotate(60deg) brightness(95%)'
+            objectFit: 'contain'
           }}
         />
       </button>
