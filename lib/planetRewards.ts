@@ -1,6 +1,6 @@
 import { supabaseClient } from "@/lib/supabaseClient";
 
-export type RewardKind = "HEART_COIN" | "CARD_SLOT" | "DOWNLOAD";
+export type RewardKind = "HEART_COIN" | "CARD_SLOT" | "DOWNLOAD" | "RELIC";
 
 export type RewardRarity = 1 | 2 | 3;
 

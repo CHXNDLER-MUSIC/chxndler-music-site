@@ -53,29 +53,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
   const { profile, user, updateProfile, refreshProfile } = useProfile();
   const { start: startTour } = useTour();
   
-  // Static relic images from public/relics to fill inline grid
-  const relicImageUrls: string[] = [
-    // Row 1 (top): CHXNDLER_Logo, 3, 2, 1 2
-    '/relics/CHXNDLER_Logo.webp',
-    '/relics/3.webp',
-    '/relics/2.webp',
-    '/relics/1 2.webp',
-    // Row 2: remaining feature images (adjust as desired)
-    '/relics/1.webp',
-    '/relics/Alien - Blue (Transparent).webp',
-    '/relics/Alien - Pink (Transparent).webp',
-    '/relics/Laptop Background.webp',
-    // Row 3: planets left → right
-    '/relics/planet_water.webp',
-    '/relics/planet_lightning.webp',
-    '/relics/planet_heart.webp',
-    '/relics/planet_darkness.webp',
-    // Row 4 (bottom): CHXNDLER patterns left → right
-    '/relics/4_CHXNDLER-Pattern.webp',
-    '/relics/6_CHXNDLER-Pattern.webp',
-    '/relics/8_CHXNDLER-Pattern.webp',
-    '/relics/2_CHXNDLER-Pattern.webp'
-  ];
+  const [allRelics, setAllRelics] = useState<Relic[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -224,37 +202,49 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
     return elementData[elementName] || elementData.heart;
   };
 
+  // Fetch all relics from database
+  const fetchAllRelics = async () => {
+    try {
+      const { data: relicsData, error: relicsError } = await supabaseClient
+        .from('relics')
+        .select('id, relic_name, icon_url, description')
+        .order('id', { ascending: true });
+
+      if (relicsError) {
+        console.error('Error fetching relics:', relicsError);
+        setAllRelics([]);
+      } else {
+        setAllRelics(relicsData || []);
+      }
+    } catch (error) {
+      console.log('relics table not found, skipping');
+      setAllRelics([]);
+    }
+  };
+
   // Fetch user's unlocked badges and relics
   const fetchUnlockedItems = async () => {
     if (!user) return;
 
     setLoading(true);
     try {
-      // Fetch unlocked badges
-      const { data: badgeData, error: badgeError } = await supabaseClient
-        .from('user_badges')
-        .select(`
-          id,
-          badge_id,
-          earned_at,
-          badges (
+      // Fetch all relics and unlocked badges/relics in parallel
+      const [badgeResult, relicResult] = await Promise.all([
+        supabaseClient
+          .from('user_badges')
+          .select(`
             id,
-            badge_name,
-            icon_url,
-            description
-          )
-        `)
-        .eq('user_id', user.id);
-
-      if (badgeError) {
-        console.error('Error fetching user badges:', badgeError);
-      } else {
-        setUserBadges(badgeData || []);
-      }
-
-      // Fetch unlocked relics (if table exists)
-      try {
-        const { data: relicData, error: relicError } = await supabaseClient
+            badge_id,
+            earned_at,
+            badges (
+              id,
+              badge_name,
+              icon_url,
+              description
+            )
+          `)
+          .eq('user_id', user.id),
+        supabaseClient
           .from('user_relics')
           .select(`
             id,
@@ -267,27 +257,37 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               description
             )
           `)
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+      ]);
 
-        if (relicError) {
-          // Only log if it's not a "table doesn't exist" error
-          if (!relicError.message?.includes('relation') && !relicError.message?.includes('does not exist')) {
-            console.error('Error fetching user relics:', relicError);
-          }
-          setUserRelics([]);
-        } else {
-          setUserRelics(relicData || []);
-        }
-      } catch (error) {
-        // Table might not exist, that's okay
-        console.log('user_relics table not found, skipping relics');
-        setUserRelics([]);
+      // Handle badges
+      if (badgeResult.error) {
+        console.error('Error fetching user badges:', badgeResult.error);
+        setUserBadges([]);
+      } else {
+        setUserBadges(badgeResult.data || []);
       }
 
+      // Handle relics
+      if (relicResult.error) {
+        if (!relicResult.error.message?.includes('relation') && !relicResult.error.message?.includes('does not exist')) {
+          console.error('Error fetching user relics:', relicResult.error);
+        }
+        setUserRelics([]);
+      } else {
+        setUserRelics(relicResult.data || []);
+      }
+
+      // Fetch all relics for the grid display
+      await fetchAllRelics();
+
       // Build available images array
-      buildAvailableImages(badgeData || [], []);
+      buildAvailableImages(badgeResult.data || [], relicResult.data || []);
     } catch (error) {
       console.error('Error fetching unlocked items:', error);
+      setUserRelics([]);
+      setUserBadges([]);
+      setAllRelics([]);
     } finally {
       setLoading(false);
     }
@@ -524,42 +524,11 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
           </button>
           
 
-          {/* Header */}
-          <div 
-            className="text-center mb-4"
-            style={{ 
-              color: '#00FFFF', 
-              textShadow: '0 0 8px rgba(0,255,255,0.6)', 
-              fontSize: '18px',
-              fontWeight: 'bold'
-            }}
-          >
-            PROFILE
-          </div>
-          
-          {/* Thin cyan neon line */}
-          <div 
-            className="w-full h-px mb-6"
-            style={{
-              background: 'linear-gradient(90deg, transparent, rgba(0,255,255,0.8) 20%, rgba(0,255,255,1) 50%, rgba(0,255,255,0.8) 80%, transparent)',
-              boxShadow: '0 0 4px rgba(0,255,255,0.6)'
-            }}
-          />
-
-          {/* SELECTED IMAGE Section */}
-          <div className="mb-4">
-            <h3 
-              className="text-sm mb-3 font-semibold"
-              style={{ 
-                color: '#00FFFF', 
-                textShadow: '0 0 4px rgba(0,255,255,0.6)' 
-              }}
-            >
-              SELECTED IMAGE
-            </h3>
-            
-            {/* Current Profile Image - Clickable */}
-            <div className="flex justify-center mb-4 relative">
+          {/* Top section with Profile Image and Header */}
+          <div className="flex items-start justify-between mb-4">
+            {/* Profile Image - Left */}
+            <div className="flex-shrink-0">
+              {/* Current Profile Image - Clickable */}
               <div className="relative">
                 <button 
                   onClick={() => {
@@ -624,19 +593,16 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                   setShowRelicsInline(!showRelicsInline);
                   try { sfx.play('click', 0.6); } catch {}
                 }}
-                className="absolute w-10 h-10 rounded-full border-2 border-cyan-400/60 bg-cyan-400/10 hover:border-cyan-400/80 hover:bg-cyan-400/20 transition-all duration-200 hover:scale-110 flex items-center justify-center overflow-hidden"
+                className="ml-2 w-10 h-10 rounded-full border-2 border-cyan-400/60 bg-cyan-400/10 hover:border-cyan-400/80 hover:bg-cyan-400/20 transition-all duration-200 hover:scale-110 flex items-center justify-center overflow-hidden"
                 style={{
-                  left: 'calc(50% + 50px)',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
                   boxShadow: '0 0 15px rgba(0,255,255,0.3)'
                 }}
                 title="View Relics"
               >
                 <img
-                  src="/relics.webp"
+                  src="/elements/relics.webp"
                   alt="Relics"
-                  className="w-6 h-6 object-cover"
+                  className="w-full h-full object-cover"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';
@@ -737,39 +703,46 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                       RELICS
                     </div>
                     <div className="grid grid-cols-4 gap-2">
-                      {relicImageUrls.map((relicUrl, i) => (
+                      {allRelics.slice(0, 16).map((relic, i) => (
                         <button
-                          key={`relic-${i}`}
+                          key={`relic-${relic.id}`}
                           onClick={() => {
-                            setSelectedImageUrl(relicUrl);
-                            setShowElementMenu(false);
-                            try { sfx.play('flip', 0.6); } catch {}
+                            if (relic.icon_url) {
+                              setSelectedImageUrl(relic.icon_url);
+                              setShowElementMenu(false);
+                              try { sfx.play('flip', 0.6); } catch {}
+                            }
                           }}
-                          className={`w-10 h-10 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:scale-110 ${
-                            selectedImageUrl === relicUrl
+                          disabled={!relic.icon_url}
+                          className={`w-10 h-10 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:scale-110 disabled:opacity-30 disabled:cursor-not-allowed ${
+                            selectedImageUrl === relic.icon_url
                               ? 'border-cyan-400 shadow-[0_0_15px_rgba(0,255,255,0.6)]'
                               : 'border-white/30 hover:border-cyan-400/60'
                           }`}
-                          title={`Relic ${i + 1}`}
+                          title={relic.relic_name || `Relic ${i + 1}`}
                         >
-                          <img
-                            src={relicUrl}
-                            alt={`Relic ${i + 1}`}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                              const parent = target.parentElement;
-                              if (parent) {
-                                parent.innerHTML = '🏛️';
-                                parent.style.color = '#666';
-                                parent.style.fontSize = '8px';
-                                parent.style.display = 'flex';
-                                parent.style.alignItems = 'center';
-                                parent.style.justifyContent = 'center';
-                              }
-                            }}
-                          />
+                          {relic.icon_url ? (
+                            <img
+                              src={relic.icon_url}
+                              alt={relic.relic_name || `Relic ${i + 1}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  parent.innerHTML = '🏛️';
+                                  parent.style.color = '#666';
+                                  parent.style.fontSize = '8px';
+                                  parent.style.display = 'flex';
+                                  parent.style.alignItems = 'center';
+                                  parent.style.justifyContent = 'center';
+                                }
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">🏛️</div>
+                          )}
                         </button>
                       ))}
                     </div>
@@ -788,8 +761,40 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                 </div>
               )}
             </div>
-
+            
+            {/* Username - Right of image */}
+            <div className="flex-1 ml-4">
+              <div 
+                className="text-left"
+                style={{ 
+                  color: '#00FFFF', 
+                  textShadow: '0 0 8px rgba(0,255,255,0.6)', 
+                  fontSize: '24px',
+                  fontWeight: 'bold'
+                }}
+              >
+                {profile?.name || 'Unknown'}
+              </div>
+              <div 
+                className="text-left text-sm mt-1"
+                style={{ 
+                  color: '#00FFFF80', 
+                  fontSize: '14px'
+                }}
+              >
+                PROFILE
+              </div>
+            </div>
           </div>
+          
+          {/* Thin cyan neon line */}
+          <div 
+            className="w-full h-px mb-3"
+            style={{
+              background: 'linear-gradient(90deg, transparent, rgba(0,255,255,0.8) 20%, rgba(0,255,255,1) 50%, rgba(0,255,255,0.8) 80%, transparent)',
+              boxShadow: '0 0 4px rgba(0,255,255,0.6)'
+            }}
+          />
 
           {/* PROFILE INFO Section */}
           <div className="space-y-2">
@@ -949,26 +954,25 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                 </div>
               ) : (
                 <div className="grid grid-cols-4 gap-2 mb-4" style={{ maxWidth: '240px', marginLeft: 'auto', marginRight: 'auto' }}>
-                  {Array.from({ length: 16 }, (_, i) => {
-                    const src = relicImageUrls[i];
-                    const hasImage = Boolean(src);
+                  {allRelics.slice(0, 16).map((relic, i) => {
+                    const hasImage = Boolean(relic.icon_url);
                     return (
                       <button
                         type="button"
-                        onClick={() => { if (hasImage) { setSelectedRelicInline(src); try { sfx.play('click', 0.6); } catch {} } }}
-                        key={i}
+                        onClick={() => { if (hasImage) { setSelectedRelicInline(relic.icon_url!); try { sfx.play('click', 0.6); } catch {} } }}
+                        key={`relic-inline-${relic.id}`}
                         className="aspect-square rounded-lg border border-white/20 bg-black/40 relative overflow-hidden transition-transform hover:scale-[1.03]"
                         style={{
                           minHeight: '44px',
                           opacity: hasImage ? 1 : 0.4,
                           filter: hasImage ? 'none' : 'grayscale(100%)'
                         }}
-                        title={hasImage ? `View relic ${i + 1}` : undefined}
+                        title={hasImage ? `View ${relic.relic_name}` : relic.relic_name || `Relic ${i + 1}`}
                       >
                         {hasImage ? (
                           <img
-                            src={src}
-                            alt={`Relic ${i + 1}`}
+                            src={relic.icon_url!}
+                            alt={relic.relic_name || `Relic ${i + 1}`}
                             className="absolute inset-0 w-full h-full object-cover"
                             onError={(e) => {
                               const target = e.currentTarget as HTMLImageElement;
@@ -1338,25 +1342,24 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               </div>
             ) : (
               <div className="grid grid-cols-4 gap-4 mb-6">
-                {Array.from({ length: 16 }, (_, i) => {
-                  const src = relicImageUrls[i];
-                  const hasImage = Boolean(src);
+                {allRelics.slice(0, 16).map((relic, i) => {
+                  const hasImage = Boolean(relic.icon_url);
                   return (
                     <button
                       type="button"
-                      onClick={() => { if (hasImage) { setSelectedRelicModal(src); try { sfx.play('click', 0.6); } catch {} } }}
-                      key={i}
+                      onClick={() => { if (hasImage) { setSelectedRelicModal(relic.icon_url!); try { sfx.play('click', 0.6); } catch {} } }}
+                      key={`relic-modal-${relic.id}`}
                       className="aspect-square rounded-lg border-2 border-white/20 bg-black/40 relative overflow-hidden transition-transform hover:scale-[1.03]"
                       style={{
                         opacity: hasImage ? 1 : 0.4,
                         filter: hasImage ? 'none' : 'grayscale(100%)'
                       }}
-                      title={hasImage ? `View relic ${i + 1}` : undefined}
+                      title={hasImage ? `View ${relic.relic_name}` : relic.relic_name || `Relic ${i + 1}`}
                     >
                       {hasImage ? (
                         <img
-                          src={src}
-                          alt={`Relic ${i + 1}`}
+                          src={relic.icon_url!}
+                          alt={relic.relic_name || `Relic ${i + 1}`}
                           className="absolute inset-0 w-full h-full object-cover"
                           onError={(e) => {
                             const target = e.currentTarget as HTMLImageElement;

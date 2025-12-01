@@ -23,7 +23,7 @@ type StoreItem = {
 const storeItems: StoreItem[] = [
   {
     name: "PIN",
-    image: "https://ik.imagekit.io/CHXNDLER/STORE/pin.png",
+    image: "/store/pin.webp",
     stripeUrl: "https://buy.stripe.com/cNi00kfxDeVD3oZ5ST4gg0B",
     description: "A symbol that you belong here with the people who feel deeply, dream big, and find beauty in being different.",
     cost: 4.5,
@@ -31,8 +31,8 @@ const storeItems: StoreItem[] = [
   },
   {
     name: "PATCH",
-    image: "https://ik.imagekit.io/CHXNDLER/STORE/patch.png",
-    image2: "https://ik.imagekit.io/CHXNDLER/STORE/patch-inverse.png",
+    image: "/store/patch.webp",
+    image2: "/store/patch-inverse.webp",
     stripeUrl: "https://buy.stripe.com/00w5kEgBHdRz1gRgxx4gg0C",
     description: "Stitch this into your world as a quiet reminder that this isn't just music, it's a community.",
     cost: 6,
@@ -40,7 +40,7 @@ const storeItems: StoreItem[] = [
   },
   {
     name: "Sticker",
-    image: "https://ik.imagekit.io/CHXNDLER/STORE/sticker.png",
+    image: "/store/sticker.webp",
     stripeUrl: "https://buy.stripe.com/8x24gA99f9Bj1gR6WX4gg0F",
     description: "A simple reminder that you're part of something bigger. Remember you're not alone in this story.",
     cost: 3,
@@ -48,7 +48,7 @@ const storeItems: StoreItem[] = [
   },
   {
     name: "Hat",
-    image: "https://ik.imagekit.io/CHXNDLER/STORE/hat.png",
+    image: "/store/hat.webp",
     stripeUrl: "https://buy.stripe.com/6oU28s717aFn1gR1CD4gg0I",
     description: "A classic you'll wear everywhere. It's lowkey, but it says everything it needs to.",
     cost: 30,
@@ -56,7 +56,7 @@ const storeItems: StoreItem[] = [
   },
   {
     name: "Keychain",
-    image: "https://ik.imagekit.io/CHXNDLER/STORE/keychain.png",
+    image: "/store/keychain.webp",
     stripeUrl: "https://buy.stripe.com/8x214o99faFn0cN5ST4gg0H",
     description: "A small piece of the HEARTVERSE to carry everywhere. A quiet reminder that you're connected, always.",
     cost: 6,
@@ -64,7 +64,7 @@ const storeItems: StoreItem[] = [
   },
   {
     name: "House Party Poster",
-    image: "https://ik.imagekit.io/CHXNDLER/STORE/house-party-poster.png",
+    image: "/store/house-party-poster.webp",
     stripeUrl: "https://buy.stripe.com/dRm8wQetz14N5x71CD4gg0L",
     description: "This poster captures the night the HEARTVERSE came alive. Hang it up and remember when you joined the story.",
     cost: 30,
@@ -72,7 +72,7 @@ const storeItems: StoreItem[] = [
   },
   {
     name: "Necklace",
-    image: "https://ik.imagekit.io/CHXNDLER/STORE/necklace.png",
+    image: "/store/necklace.webp",
     stripeUrl: "https://buy.stripe.com/bJe3cw99f28R5x7epp4gg0K",
     description: "A symbol of love, connection, and everything this world stands for. It's a keepsake for the people who found home here.",
     cost: 18,
@@ -80,8 +80,8 @@ const storeItems: StoreItem[] = [
   },
   {
     name: "Beanie",
-    image: "https://ik.imagekit.io/CHXNDLER/STORE/beanie-front.png",
-    image2: "https://ik.imagekit.io/CHXNDLER/STORE/beanie-back.png",
+    image: "/store/beanie-front.webp",
+    image2: "/store/beanie-back.webp",
     stripeUrl: "https://buy.stripe.com/dRm8wQetz14N5x71CD4gg0L",
     description: "For the ones who wear their hearts out loud and aren't afraid to stand out.",
     cost: 30,
@@ -89,7 +89,7 @@ const storeItems: StoreItem[] = [
   },
   {
     name: "Button",
-    image: "https://ik.imagekit.io/CHXNDLER/STORE/button.png",
+    image: "/store/button.webp",
     stripeUrl: "https://buy.stripe.com/6oU14oclr8xfbVvbdd4gg0J",
     description: "A symbol of unity, curiosity, and courage for those who feel deeply and dream beyond the ordinary.",
     cost: 6,
@@ -97,7 +97,7 @@ const storeItems: StoreItem[] = [
   },
   {
     name: "Bracelet",
-    image: "https://ik.imagekit.io/CHXNDLER/STORE/bracelet.png",
+    image: "/store/bracelet.webp",
     stripeUrl: "https://buy.stripe.com/aFa8wQ2KR8xf6Bbftt4gg0N",
     description: "A reminder you wear on your wrist that you're growing, healing, and finding your place. It's a quiet symbol that you belong here, with the ones who feel deeply and love endlessly.",
     cost: 24,
@@ -105,7 +105,7 @@ const storeItems: StoreItem[] = [
   },
   {
     name: "Pick",
-    image: "https://ik.imagekit.io/CHXNDLER/STORE/pick.png",
+    image: "/store/pick.webp",
     stripeUrl: "https://buy.stripe.com/4gM9AUadj9Bj2kVgxx4gg0O",
     description: "Your reminder to follow your passion wherever it leads. A glow in the dark pick made for the dreamers and late night creators who carry music like a heartbeat through the dark.",
     cost: 6,

@@ -1571,7 +1571,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     }}
                                   >
                                     <img
-                                      src={`https://ik.imagekit.io/CHXNDLER/card/${element.toUpperCase()}.png`}
+                                      src={`/cards/${element.toUpperCase()}.webp`}
                                       alt={`${element} Card`}
                                       className="w-full h-full object-cover rounded-lg"
                                       draggable={false}
@@ -1657,7 +1657,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               {/* Card image */}
                               <div className="w-20 h-28 rounded-lg border-2 border-yellow-500/80 overflow-hidden flex-shrink-0 relative">
                                 <img
-                                  src={card.artwork_url || 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png'}
+                                  src={card.artwork_url || '/cards/CHXNDLER.webp'}
                                   alt={card.card_name}
                                   className={`w-full h-full object-cover ${shouldBlurCard(card) ? 'filter blur-sm opacity-60' : ''}`}
                                 />

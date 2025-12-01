@@ -43,6 +43,8 @@ function RewardRevealModal({ reward, onClose }: RewardRevealModalProps) {
                 "Your binder has unlocked a new cosmic slot."}
               {reward.kind === "DOWNLOAD" &&
                 "A piece of the Heartverse is now yours to keep."}
+              {reward.kind === "RELIC" &&
+                "A mystical relic has been discovered and added to your collection."}
             </p>
           </div>
         </div>
@@ -113,6 +115,32 @@ export default function ElementPlanetOfTheDay({ className = "" }: ElementPlanetO
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+    }
+
+    if (reward.kind === "RELIC") {
+      // Look up the corresponding relic row by code
+      const { data: relic, error: relicError } = await supabase
+        .from('relics')
+        .select('id')
+        .eq('code', reward.code)
+        .single();
+
+      if (relicError) {
+        console.error('Error finding relic:', relicError);
+        throw new Error(`Relic with code ${reward.code} not found`);
+      }
+
+      // Insert or upsert into user_relics
+      const { error: insertError } = await supabase
+        .from('user_relics')
+        .upsert({
+          user_id: userId,
+          relic_id: relic.id,
+        }, { onConflict: 'user_id,relic_id' });
+
+      if (insertError) {
+        throw insertError;
+      }
     }
   }
 

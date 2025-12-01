@@ -168,14 +168,29 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
     }
 
     // Handle menu opening for menu steps
-    if (step.id === 'hamburger' || step.id.startsWith('menu-')) {
-      if (onMenuToggle && step.id !== 'hamburger') {
-        // Open menu for menu item steps (not for hamburger step itself)
+    if (step.id === 'hamburger') {
+      // For hamburger step, ensure menu gets opened after the step is highlighted
+      if (onMenuToggle) {
+        console.log('Tour: Opening menu for hamburger step');
+        setTimeout(() => {
+          console.log('Tour: Executing delayed menu open');
+          onMenuToggle(true);
+        }, 300);
+      } else {
+        console.log('Tour: No onMenuToggle function available');
+      }
+    } else if (step.id.startsWith('menu-')) {
+      // For menu item steps, ensure menu is open immediately
+      if (onMenuToggle) {
+        console.log(`Tour: Opening menu for step ${step.id}`);
         onMenuToggle(true);
+      } else {
+        console.log('Tour: No onMenuToggle function available for menu step');
       }
     } else if (step.id === 'heartcoins') {
       // Close menu for Heart Coins step
       if (onMenuToggle) {
+        console.log('Tour: Closing menu for heartcoins step');
         onMenuToggle(false);
       }
     }
@@ -188,7 +203,20 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
     // Helper function to find and setup the element
     const findAndSetupElement = (retryCount = 0) => {
       // Find target element
+      console.log(`Tour: Looking for element with selector "${step.selector}", attempt ${retryCount + 1}`);
+      
+      // Debug: Check if menu is open
+      const menuContainer = document.querySelector('[data-tour-id="hamburger"]')?.closest('.fixed');
+      const menuDropdown = menuContainer?.querySelector('.absolute');
+      console.log('Tour: Menu container found:', !!menuContainer);
+      console.log('Tour: Menu dropdown found:', !!menuDropdown);
+      
+      // Debug: List all elements with data-tour-id
+      const allTourElements = document.querySelectorAll('[data-tour-id]');
+      console.log('Tour: All elements with data-tour-id:', Array.from(allTourElements).map(el => el.getAttribute('data-tour-id')));
+      
       const element = document.querySelector(step.selector) as HTMLElement;
+      console.log('Tour: Target element found:', !!element);
       if (element) {
         setTargetElement(element);
         
@@ -272,8 +300,16 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
       el.classList.remove('tour-highlight');
     });
 
-    // Close any open popouts by clicking their close buttons
-    closeOpenPopouts();
+    // Only close popouts if we're not transitioning to another menu step
+    const nextStepIndex = currentStepIndex + 1;
+    const nextStep = TOUR_STEPS[nextStepIndex];
+    const currentStepIsMenu = currentStep?.id === 'hamburger' || currentStep?.id?.startsWith('menu-');
+    const nextStepIsMenu = nextStep?.id === 'hamburger' || nextStep?.id?.startsWith('menu-');
+    
+    // Don't close popouts if transitioning from hamburger to menu or between menu items
+    if (!(currentStepIsMenu && nextStepIsMenu)) {
+      closeOpenPopouts();
+    }
   };
 
   // Close any open button popouts

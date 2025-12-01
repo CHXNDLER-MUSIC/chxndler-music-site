@@ -134,8 +134,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
     if (todayEntry) {
       setJournalState(prev => ({
         ...prev,
-        intentionResponse: todayEntry.intention_response || "",
-        reflectionResponse: todayEntry.reflection_response || "",
+        intentionResponse: todayEntry.intention || "",
+        reflectionResponse: todayEntry.reflection || "",
         soulStar: todayEntry.soul_star || "",
       }));
     } else {
@@ -181,8 +181,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
         entry_date: today,
         element: profile.element,
         prompt_id: dailyPrompt.id,
-        intention_response: journalState.intentionResponse,
-        reflection_response: journalState.reflectionResponse,
+        intention: journalState.intentionResponse,
+        reflection: journalState.reflectionResponse,
         soul_star: journalState.soulStar.trim(),
       };
       console.log('About to save journal entry:', entryData);

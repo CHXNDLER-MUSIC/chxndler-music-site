@@ -120,56 +120,56 @@ export default function ChatPanel({ isOpen, onClose }) {
   // Get card image URL for a given song
   const getCardImage = (songName, element) => {
     const songImages = {
-      'ALWAYS ON MY MIND': 'https://ik.imagekit.io/CHXNDLER/card/HEART.png',
-      'ALWAYS ON MY MIND (REMIX)': 'https://ik.imagekit.io/CHXNDLER/card/always-on-my-mind-remix.png?updatedAt=1762388342107',
-      'ALONE': 'https://ik.imagekit.io/CHXNDLER/card/DARKNESS.png',
-      'ALONE (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/DARKNESS.png',
-      'AMERICAN DREAM': 'https://ik.imagekit.io/CHXNDLER/card/american-dream.png?updatedAt=1762388346126',
-      'BABY': 'https://ik.imagekit.io/CHXNDLER/card/baby.png?updatedAt=1762388345192',
-      'BE MY BEE': 'https://ik.imagekit.io/CHXNDLER/card/be-my-bee.png?updatedAt=1762388342848',
-      'BE MY BEE (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/be-my-bee-acoustic.png?updatedAt=1762388342912',
-      'BLUE (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/BLUE%20(ACOUSTIC).png?updatedAt=1763055066119',
-      'BLUE': 'https://ik.imagekit.io/CHXNDLER/card/LIGHTNING.png',
-      'BRAIN FREEZE': 'https://ik.imagekit.io/CHXNDLER/card/brain-freeze.png?updatedAt=1762388343020',
-      'CHEERLEADER': 'https://ik.imagekit.io/CHXNDLER/card/cheerleader.png?updatedAt=1762388342782',
-      'CHEERLEADER (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/cheerleader-acoustic.png?updatedAt=1762388343149',
-      'CHXNDLER': 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388345320',
-      'COLLIDE': 'https://ik.imagekit.io/CHXNDLER/card/collide.png?updatedAt=1762388344649',
-      'COLORS OF OUR HOME': 'https://ik.imagekit.io/CHXNDLER/card/colors-of-our-home.png?updatedAt=1762388342653',
-      'COLORS OF OUR HOME (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/colors-of-our-home-acoustic.png?updatedAt=1762388343085',
-      'COLORS OF OUR HOME (BLUMA Game Soundtrack)': 'https://ik.imagekit.io/CHXNDLER/card/colors-of-our-home-bluma.png?updatedAt=1762388342717',
-      'DARKNESS': 'https://ik.imagekit.io/CHXNDLER/card/DARKNESS.png',
-      'FEELING THIS': 'https://ik.imagekit.io/CHXNDLER/card/feeling-this.png?updatedAt=1762388344585',
-      'GAME BOY HEART': 'https://ik.imagekit.io/CHXNDLER/card/game-boy-heart.png?updatedAt=1762388344713',
-      'HEART': 'https://ik.imagekit.io/CHXNDLER/card/HEART.png',
-      'HOME': 'https://ik.imagekit.io/CHXNDLER/card/home.png?updatedAt=1762388344521',
-      'HOME (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/home-acoustic.png?updatedAt=1762388344456',
-      'HOUSE PARTY': 'https://ik.imagekit.io/CHXNDLER/card/house-party.png?updatedAt=1762388344777',
-      'HOUSE PARTY (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/house-party-acoustic.png?updatedAt=1762388343277',
-      'I MIGHT FALL IN LOVE WITH YOU': 'https://ik.imagekit.io/CHXNDLER/card/i-might-fall-in-love-with-you.png?updatedAt=1762388344392',
-      'I MIGHT FALL IN LOVE WITH YOU (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/i-might-fall-in-love-with-you-acoustic.png?updatedAt=1762388343212',
-      'KID FOREVER': 'https://ik.imagekit.io/CHXNDLER/card/kid-forever.png?updatedAt=1762388344841',
-      'LETTING GO': 'https://ik.imagekit.io/CHXNDLER/card/letting-go.png?updatedAt=1762388343341',
-      'LIGHTNING': 'https://ik.imagekit.io/CHXNDLER/card/LIGHTNING.png',
-      'LITTLE BLACK HEART': 'https://ik.imagekit.io/CHXNDLER/card/little-black-heart.png?updatedAt=1762388345064',
-      'LITTLE BLACK HEART (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/little-black-heart-acoustic.png?updatedAt=1762388345000',
-      'LOVE ME': 'https://ik.imagekit.io/CHXNDLER/card/love-me.png?updatedAt=1762388344164',
-      'LOVE ME (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/love-me-acoustic.png?updatedAt=1762388344100',
-      'MAKE BELIEVE': 'https://ik.imagekit.io/CHXNDLER/card/make-believe.png?updatedAt=1762388345128',
-      'MR. BRIGHTSIDE': 'https://ik.imagekit.io/CHXNDLER/card/mr-brightside.png?updatedAt=1762388345256',
-      'OCEAN GIRL': 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl.png?updatedAt=1762388343405',
-      'OCEAN GIRL (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl-acoustic.png?updatedAt=1762388343533',
-      'OCEAN GIRL (REMIX)': 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl-remix.png?updatedAt=1762388343469',
-      'PARIS': 'https://ik.imagekit.io/CHXNDLER/card/paris.png?updatedAt=1762388345384',
-      'PINK MOON': 'https://ik.imagekit.io/CHXNDLER/card/pink-moon.png?updatedAt=1762388345448',
-      'POKÉMON': 'https://ik.imagekit.io/CHXNDLER/card/pokemon.png?updatedAt=1762388344905',
-      'SOMEBODY TO LOVE': 'https://ik.imagekit.io/CHXNDLER/card/somebody-to-love.png?updatedAt=1762388344036',
-      'TIENES UN AMIGO': 'https://ik.imagekit.io/CHXNDLER/card/tienes-un-amigo.png?updatedAt=1762388343597',
-      'WATER': 'https://ik.imagekit.io/CHXNDLER/card/WATER.png',
-      'WE\'RE JUST FRIENDS': 'https://ik.imagekit.io/CHXNDLER/card/were-just-friends.png?updatedAt=1762388342975',
-      'WE\'RE JUST FRIENDS (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/were-just-friends-acoustic.png?updatedAt=1762388343661',
-      'WE\'RE JUST FRIENDS (DMVRCO REMIX)': 'https://ik.imagekit.io/CHXNDLER/card/were-just-friends-dmvrco-remix.png?updatedAt=1762388343725',
-      'WE\'RE JUST FRIENDS (mickey jas REMIX)': 'https://ik.imagekit.io/CHXNDLER/card/were-just-friends-mickey-jas-remix.png?updatedAt=1762388343789',
+      'ALWAYS ON MY MIND': '/cards/HEART.webp',
+      'ALWAYS ON MY MIND (REMIX)': '/cards/ALWAYS ON MY MIND (REMIX).webp',
+      'ALONE': '/cards/ALONE.webp',
+      'ALONE (ACOUSTIC)': '/cards/ALONE.webp',
+      'AMERICAN DREAM': '/cards/AMERICAN DREAM.webp',
+      'BABY': '/cards/BABY.webp',
+      'BE MY BEE': '/cards/BE MY BEE.webp',
+      'BE MY BEE (ACOUSTIC)': '/cards/BE MY BEE (ACOUSTIC).webp',
+      'BLUE (ACOUSTIC)': '/cards/BLUE (ACOUSTIC).webp',
+      'BLUE': '/cards/BLUE.webp',
+      'BRAIN FREEZE': '/cards/BRAIN FREEZE.webp',
+      'CHEERLEADER': '/cards/CHEERLEADER.webp',
+      'CHEERLEADER (ACOUSTIC)': '/cards/CHEERLEADER (ACOUSTIC).webp',
+      'CHXNDLER': '/cards/CHXNDLER.webp',
+      'COLLIDE': '/cards/COLLIDE.webp',
+      'COLORS OF OUR HOME': '/cards/COLORS OF OUR HOME.webp',
+      'COLORS OF OUR HOME (ACOUSTIC)': '/cards/COLORS OF OUR HOME (ACOUSTIC).webp',
+      'COLORS OF OUR HOME (BLUMA Game Soundtrack)': '/cards/COLORS OF OUR HOME (BLUMA Game Soundtrack).webp',
+      'DARKNESS': '/cards/DARKNESS.webp',
+      'FEELING THIS': '/cards/FEELING THIS.webp',
+      'GAME BOY HEART': '/cards/GAME BOY HEART.webp',
+      'HEART': '/cards/HEART.webp',
+      'HOME': '/cards/HOME.webp',
+      'HOME (ACOUSTIC)': '/cards/HOME (ACOUSTIC).webp',
+      'HOUSE PARTY': '/cards/HOUSE PARTY.webp',
+      'HOUSE PARTY (ACOUSTIC)': '/cards/HOUSE PARTY (ACOUSTIC).webp',
+      'I MIGHT FALL IN LOVE WITH YOU': '/cards/I MIGHT FALL IN LOVE WITH YOU.webp',
+      'I MIGHT FALL IN LOVE WITH YOU (ACOUSTIC)': '/cards/I MIGHT FALL IN LOVE WITH YOU (ACOUSTIC).webp',
+      'KID FOREVER': '/cards/KID FOREVER.webp',
+      'LETTING GO': '/cards/LETTING GO.webp',
+      'LIGHTNING': '/cards/LIGHTNING.webp',
+      'LITTLE BLACK HEART': '/cards/LITTLE BLACK HEART.webp',
+      'LITTLE BLACK HEART (ACOUSTIC)': '/cards/LITTLE BLACK HEART (ACOUSTIC).webp',
+      'LOVE ME': '/cards/LOVE ME.webp',
+      'LOVE ME (ACOUSTIC)': '/cards/LOVE ME (ACOUSTIC).webp',
+      'MAKE BELIEVE': '/cards/MAKE BELIEVE.webp',
+      'MR. BRIGHTSIDE': '/cards/MR. BRIGHTSIDE.webp',
+      'OCEAN GIRL': '/cards/OCEAN GIRL.webp',
+      'OCEAN GIRL (ACOUSTIC)': '/cards/OCEAN GIRL (ACOUSTIC).webp',
+      'OCEAN GIRL (REMIX)': '/cards/OCEAN GIRL (REMIX).webp',
+      'PARIS': '/cards/PARIS.webp',
+      'PINK MOON': '/cards/PINK MOON.webp',
+      'POKÉMON': '/cards/POKEMON.webp',
+      'SOMEBODY TO LOVE': '/cards/SOMEBODY TO LOVE.webp',
+      'TIENES UN AMIGO': '/cards/TIENES UN AMIGO.webp',
+      'WATER': '/cards/WATER.webp',
+      'WE\'RE JUST FRIENDS': '/cards/WE\'RE JUST FRIENDS.webp',
+      'WE\'RE JUST FRIENDS (ACOUSTIC)': '/cards/WE\'RE JUST FRIENDS (ACOUSTIC).webp',
+      'WE\'RE JUST FRIENDS (DMVRCO REMIX)': '/cards/WE\'RE JUST FRIENDS (DMVRCO REMIX).webp',
+      'WE\'RE JUST FRIENDS (mickey jas REMIX)': '/cards/WE\'RE JUST FRIENDS (MICKEY JAS REMIX).webp',
     };
 
     // Return the specific song image if available
@@ -179,10 +179,10 @@ export default function ChatPanel({ isOpen, onClose }) {
 
     // Fallback to element image
     const elementImages = {
-      'HEART': 'https://ik.imagekit.io/CHXNDLER/card/HEART.png',
-      'WATER': 'https://ik.imagekit.io/CHXNDLER/card/WATER.png',
-      'LIGHTNING': 'https://ik.imagekit.io/CHXNDLER/card/LIGHTNING.png',
-      'DARKNESS': 'https://ik.imagekit.io/CHXNDLER/card/DARKNESS.png'
+      'HEART': '/cards/HEART.webp',
+      'WATER': '/cards/WATER.webp',
+      'LIGHTNING': '/cards/LIGHTNING.webp',
+      'DARKNESS': '/cards/DARKNESS.webp'
     };
 
     return elementImages[element] || elementImages['HEART'];
@@ -940,35 +940,42 @@ export default function ChatPanel({ isOpen, onClose }) {
                 </div>
 
                 {/* Messages Area */}
-                <div className={`flex flex-col transition-all duration-300 ${selectedUser ? 'flex-1' : 'flex-1'}`}>
-                  {/* Always show messages */}
-                  <MessageList 
-                    messages={messages}
-                    onUserClick={handleUserClick}
-                    loading={loading}
-                  />
-                  {/* Typing Indicators */}
-                  {typingUsers.length > 0 && (
-                    <div className="px-3 py-2 border-t border-cyan-400/20">
-                      <div className="text-xs text-white/60">
-                        {typingUsers.map(user => user.display_name).join(', ')} 
-                        {typingUsers.length === 1 ? ' is' : ' are'} typing
-                        <span className="inline-flex ml-1">
-                          <span className="animate-pulse">.</span>
-                          <span className="animate-pulse" style={{animationDelay: '0.2s'}}>.</span>
-                          <span className="animate-pulse" style={{animationDelay: '0.4s'}}>.</span>
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Message Input - shown when no profile is selected */}
-                  {!selectedUser && (
-                    <MessageInput 
-                      onSendMessage={handleSendMessage}
-                      onTyping={handleTyping}
+                <div className={`flex flex-col transition-all duration-300 ${selectedUser ? 'flex-1' : 'flex-1'} min-h-0`}>
+                  {/* Messages Container - takes up remaining space and scrolls */}
+                  <div className="flex-1 flex flex-col min-h-0">
+                    {/* Always show messages */}
+                    <MessageList 
+                      messages={messages}
+                      onUserClick={handleUserClick}
+                      loading={loading}
                     />
-                  )}
+                  </div>
+                  
+                  {/* Bottom Fixed Section - typing indicators and input */}
+                  <div className="flex-shrink-0">
+                    {/* Typing Indicators */}
+                    {typingUsers.length > 0 && (
+                      <div className="px-3 py-2 border-t border-cyan-400/20">
+                        <div className="text-xs text-white/60">
+                          {typingUsers.map(user => user.display_name).join(', ')} 
+                          {typingUsers.length === 1 ? ' is' : ' are'} typing
+                          <span className="inline-flex ml-1">
+                            <span className="animate-pulse">.</span>
+                            <span className="animate-pulse" style={{animationDelay: '0.2s'}}>.</span>
+                            <span className="animate-pulse" style={{animationDelay: '0.4s'}}>.</span>
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Message Input - shown when no profile is selected */}
+                    {!selectedUser && (
+                      <MessageInput 
+                        onSendMessage={handleSendMessage}
+                        onTyping={handleTyping}
+                      />
+                    )}
+                  </div>
                 </div>
 
                 {/* Profile Panel - full right side when user is selected */}
@@ -1174,81 +1181,114 @@ export default function ChatPanel({ isOpen, onClose }) {
                             <img src="/elements/badges.webp" alt="Badges" className="w-4 h-4 mr-2" />
                             User Badges
                           </h4>
-                          <div className="flex items-center space-x-2">
-                            {/* Left Arrow */}
-                            <button 
-                              onClick={() => {
-                                try {
-                                  const audio = new Audio('/audio/click.mp3');
-                                  audio.volume = 0.3;
-                                  audio.play().catch(error => {
-                                    console.log('Click audio play failed:', error);
-                                  });
-                                } catch (error) {
-                                  console.log('Click audio creation failed:', error);
-                                }
-                                setBadgeStartIndex(Math.max(0, badgeStartIndex - 5));
-                              }}
-                              disabled={badgeStartIndex === 0}
-                              className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
-                              style={{
-                                textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
-                                fontSize: '14px',
-                                fontWeight: 'bold',
-                                textRendering: 'optimizeLegibility',
-                                WebkitFontSmoothing: 'antialiased',
-                                MozOsxFontSmoothing: 'grayscale',
-                                filter: 'none',
-                                backdropFilter: 'none'
-                              }}
-                            >
-                              ◀
-                            </button>
+                          
+                          {/* Only show badges if user has earned badges */}
+                          {userBadges && userBadges.length > 0 ? (
+                            <div className="flex items-center space-x-2">
+                              {/* Left Arrow */}
+                              <button 
+                                onClick={() => {
+                                  try {
+                                    const audio = new Audio('/audio/click.mp3');
+                                    audio.volume = 0.3;
+                                    audio.play().catch(error => {
+                                      console.log('Click audio play failed:', error);
+                                    });
+                                  } catch (error) {
+                                    console.log('Click audio creation failed:', error);
+                                  }
+                                  setBadgeStartIndex(Math.max(0, badgeStartIndex - 5));
+                                }}
+                                disabled={badgeStartIndex === 0}
+                                className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
+                                style={{
+                                  textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
+                                  fontSize: '14px',
+                                  fontWeight: 'bold',
+                                  textRendering: 'optimizeLegibility',
+                                  WebkitFontSmoothing: 'antialiased',
+                                  MozOsxFontSmoothing: 'grayscale',
+                                  filter: 'none',
+                                  backdropFilter: 'none'
+                                }}
+                              >
+                                ◀
+                              </button>
 
-                            {/* Badges Grid */}
-                            <div className="flex-1 grid grid-cols-5 gap-2">
-                              {/* Always show 5 blank badge placeholders */}
-                              {Array.from({ length: 5 }, (_, index) => {
-                                return (
-                                  <div key={`placeholder-${badgeStartIndex}-${index}`} className="flex flex-col items-center">
-                                    <div className="w-12 h-12 bg-gray-600/20 rounded-full mb-1 flex items-center justify-center border-2 border-gray-600/30">
-                                      <span className="text-gray-500/50 text-sm">○</span>
-                                    </div>
-                                  </div>
-                                );
-                              })}
+                              {/* Earned Badges Grid - only show earned badges */}
+                              <div className="flex-1 grid grid-cols-5 gap-2">
+                                {Array.from({ length: 5 }, (_, index) => {
+                                  const badgeIndex = badgeStartIndex + index;
+                                  const userBadge = userBadges[badgeIndex];
+                                  const badge = userBadge?.badge;
+                                  
+                                  if (badge) {
+                                    return (
+                                      <div key={`earned-badge-${badge.id}`} className="flex flex-col items-center" title={badge.badge_name}>
+                                        <div 
+                                          className="w-12 h-12 rounded-full mb-1 flex items-center justify-center border-2 transition-all duration-300 cursor-pointer hover:scale-110"
+                                          style={{
+                                            background: `linear-gradient(135deg, ${badge.bg_color || '#FFD700'}, ${badge.bg_color || '#FFA500'})`,
+                                            border: `2px solid ${badge.border_color || '#FFD700'}`,
+                                            boxShadow: `0 0 15px ${badge.border_color || '#FFD700'}60, 0 0 25px ${badge.border_color || '#FFD700'}30`
+                                          }}
+                                        >
+                                          <span className="text-lg" style={{ filter: 'drop-shadow(0 0 4px rgba(0,0,0,0.8))' }}>
+                                            {badge.icon || '🏆'}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    );
+                                  } else {
+                                    // Show empty slot if no badge at this index
+                                    return (
+                                      <div key={`empty-badge-${badgeIndex}`} className="flex flex-col items-center">
+                                        <div className="w-12 h-12 bg-transparent rounded-full mb-1">
+                                          {/* Empty slot - no visual element */}
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+                                })}
+                              </div>
+
+                              {/* Right Arrow */}
+                              <button 
+                                onClick={() => {
+                                  try {
+                                    const audio = new Audio('/audio/click.mp3');
+                                    audio.volume = 0.3;
+                                    audio.play().catch(error => {
+                                      console.log('Click audio play failed:', error);
+                                    });
+                                  } catch (error) {
+                                    console.log('Click audio creation failed:', error);
+                                  }
+                                  setBadgeStartIndex(Math.min(Math.max(0, userBadges.length - 5), badgeStartIndex + 5));
+                                }}
+                                disabled={badgeStartIndex + 5 >= userBadges.length}
+                                className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
+                                style={{
+                                  textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
+                                  fontSize: '14px',
+                                  fontWeight: 'bold',
+                                  textRendering: 'optimizeLegibility',
+                                  WebkitFontSmoothing: 'antialiased',
+                                  MozOsxFontSmoothing: 'grayscale',
+                                  filter: 'none',
+                                  backdropFilter: 'none'
+                                }}
+                              >
+                                ▶
+                              </button>
                             </div>
-
-                            {/* Right Arrow */}
-                            <button 
-                              onClick={() => {
-                                try {
-                                  const audio = new Audio('/audio/click.mp3');
-                                  audio.volume = 0.3;
-                                  audio.play().catch(error => {
-                                    console.log('Click audio play failed:', error);
-                                  });
-                                } catch (error) {
-                                  console.log('Click audio creation failed:', error);
-                                }
-                                setBadgeStartIndex(badgeStartIndex + 5);
-                              }}
-                              disabled={badgeStartIndex >= 30}
-                              className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
-                              style={{
-                                textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
-                                fontSize: '14px',
-                                fontWeight: 'bold',
-                                textRendering: 'optimizeLegibility',
-                                WebkitFontSmoothing: 'antialiased',
-                                MozOsxFontSmoothing: 'grayscale',
-                                filter: 'none',
-                                backdropFilter: 'none'
-                              }}
-                            >
-                              ▶
-                            </button>
-                          </div>
+                          ) : (
+                            /* No badges earned message */
+                            <div className="text-center py-4">
+                              <div className="text-white/40 text-sm">No badges earned yet</div>
+                              <div className="text-xs text-white/30 mt-1">Complete challenges to earn badges!</div>
+                            </div>
+                          )}
                         </div>
                       )}
 

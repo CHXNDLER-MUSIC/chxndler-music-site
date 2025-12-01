@@ -56,7 +56,7 @@ export default function MessageList({ messages, onUserClick, loading }) {
   return (
     <div 
       ref={scrollContainerRef}
-      className="flex-1 overflow-y-auto p-3 space-y-1"
+      className="flex-1 overflow-y-auto p-3 space-y-1 min-h-0"
       style={{
         scrollbarWidth: 'thin',
         scrollbarColor: 'rgba(0, 255, 255, 0.3) transparent'
