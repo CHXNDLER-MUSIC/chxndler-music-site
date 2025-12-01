@@ -163,7 +163,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabaseClient
         .from("profiles")
         .select(
-          "id, email, phone, name, element, journey, heart_coins_current, heart_coins_total, profile_complete, created_at, updated_at"
+          "id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at"
         )
         .eq("id", user.id)
         .maybeSingle();
@@ -240,8 +240,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         name: data.name,
         element: data.element,
         journey: data.journey,
-        heartcoin_balance: (data.heart_coins_current ?? 0),
-        heartcoin_total: (data.heart_coins_total ?? 0),
+        heartcoin_balance: (data.heartcoin_balance ?? 0),
+        heartcoin_total: (data.heartcoin_total ?? 0),
         profile_complete: data.profile_complete ?? !!(data.name && data.element),
         created_at: data.created_at,
         updated_at: data.updated_at,
@@ -290,8 +290,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
       if (updates.element !== undefined) dbUpdates.element = updates.element;
       if (updates.journey !== undefined) dbUpdates.journey = updates.journey;
-      if (updates.heartcoin_balance !== undefined) dbUpdates.heart_coins_current = updates.heartcoin_balance;
-      if (updates.heartcoin_total !== undefined) dbUpdates.heart_coins_total = updates.heartcoin_total;
+      if (updates.heartcoin_balance !== undefined) dbUpdates.heartcoin_balance = updates.heartcoin_balance;
+      if (updates.heartcoin_total !== undefined) dbUpdates.heartcoin_total = updates.heartcoin_total;
       if (updates.profile_complete !== undefined) dbUpdates.profile_complete = updates.profile_complete;
       
       // Update the existing profile (no insert logic - trigger handles creation)
@@ -316,8 +316,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           name: data.name,
           element: data.element,
           journey: data.journey,
-          heartcoin_balance: (data.heart_coins_current ?? 0),
-          heartcoin_total: (data.heart_coins_total ?? 0),
+          heartcoin_balance: (data.heartcoin_balance ?? 0),
+          heartcoin_total: (data.heartcoin_total ?? 0),
           profile_complete: data.profile_complete ?? !!(data.name && data.element),
           created_at: data.created_at,
           updated_at: data.updated_at,

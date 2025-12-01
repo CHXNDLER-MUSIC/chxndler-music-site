@@ -794,23 +794,25 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
             </div>
           </div>
           
-          {/* Profile Stats - Single Line */}
-          <div className="flex items-center justify-center gap-8 mt-1 mb-3">
-            {/* Daily Streak - Left */}
-            <div className="flex items-center">
-              <span className="text-white/80 text-sm mr-2">DAILY STREAK:</span>
-              <span 
-                className="font-bold"
-                style={{ 
-                  color: '#00FFFF', 
-                  textShadow: '0 0 8px rgba(0,255,255,0.6)' 
-                }}
-              >
-                {(profile as any)?.streak_days || 0} days
-              </span>
+          {/* Profile Stats - Daily streak under element, heart coins to the right */}
+          <div className="flex items-start justify-between mt-3 mb-3">
+            {/* Left side - Daily Streak under element */}
+            <div className="flex flex-col items-start ml-4">
+              <div className="flex items-center">
+                <span className="text-white/80 text-sm mr-2">DAILY STREAK:</span>
+                <span 
+                  className="font-bold"
+                  style={{ 
+                    color: '#00FFFF', 
+                    textShadow: '0 0 8px rgba(0,255,255,0.6)' 
+                  }}
+                >
+                  {(profile as any)?.streak_days || 0} days
+                </span>
+              </div>
             </div>
             
-            {/* Total Heart Coins - Right */}
+            {/* Right side - Total Heart Coins */}
             <div className="flex items-center">
               <span className="text-white/80 text-sm mr-2">TOTAL HEART COINS:</span>
               <span 

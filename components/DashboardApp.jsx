@@ -203,6 +203,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const [showWelcomeHomeModal, setShowWelcomeHomeModal] = useState(false);
   const [warpActive, setWarpActive] = useState(false);
   const [isWarping, setIsWarping] = useState(false);
+  // Guard to prevent rapid double-trigger of Start flow before state updates
+  const startInFlightRef = React.useRef(false);
   const [nextSky, setNextSky] = useState(null);
   const [beamOnly, setBeamOnly] = useState(true);
   const [beamEnabled, setBeamEnabled] = useState(false);
@@ -1033,6 +1035,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   }, [beamColor, showHUD, joinAlienOpen, beamTransitioning, explicitClose]);
 
   const handleStartClick = React.useCallback(async () => {
+    // Synchronous guard for rapid double clicks
+    if (startInFlightRef.current) return;
+    startInFlightRef.current = true;
     try {
       // Prevent multiple clicks while warping
       if (isWarping) return;
@@ -1669,6 +1674,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         // Use provided YouTube clip for lightspeed overlay on opening and Start
         lightspeedYoutubeUrl={'https://youtu.be/KFssNa5WvKc'}
         onWarpSfxEnd={() => {
+          // Allow Start to be clicked again after warp sfx completes
+          try { startInFlightRef.current = false; } catch {}
           // Welcome modal and planet visibility sequencing after warp
           
           // Reset warp state when warp effect completes
@@ -1740,8 +1747,15 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                     setChannelIdxWithLog(trackIndex);
                     pendingTrackIndexRef.current = null; // Clear the pending index
                     // Force a play signal after the channel change to ensure the new song plays
+                    // Only when the legacy MediaPlayer is responsible for playback.
                     setTimeout(() => {
-                      setPlaySignal((n) => n + 1);
+                      try {
+                        if (!(typeof window !== 'undefined' && (window).__AUDIO_MANAGER_ACTIVE)) {
+                          setPlaySignal((n) => n + 1);
+                        }
+                      } catch {
+                        setPlaySignal((n) => n + 1);
+                      }
                     }, 100);
                   }
                 }).catch(() => {
@@ -1751,8 +1765,15 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                     setChannelIdxWithLog(trackIndex);
                     pendingTrackIndexRef.current = null; // Clear the pending index
                     // Force a play signal after the channel change to ensure the new song plays
+                    // Only when the legacy MediaPlayer is responsible for playback.
                     setTimeout(() => {
-                      setPlaySignal((n) => n + 1);
+                      try {
+                        if (!(typeof window !== 'undefined' && (window).__AUDIO_MANAGER_ACTIVE)) {
+                          setPlaySignal((n) => n + 1);
+                        }
+                      } catch {
+                        setPlaySignal((n) => n + 1);
+                      }
                     }, 100);
                   }
                 });
@@ -1765,8 +1786,15 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 setChannelIdxWithLog(trackIndex);
                 pendingTrackIndexRef.current = null; // Clear the pending index
                 // Force a play signal after the channel change to ensure the new song plays
+                // Only when the legacy MediaPlayer is responsible for playback.
                 setTimeout(() => {
-                  setPlaySignal((n) => n + 1);
+                  try {
+                    if (!(typeof window !== 'undefined' && (window).__AUDIO_MANAGER_ACTIVE)) {
+                      setPlaySignal((n) => n + 1);
+                    }
+                  } catch {
+                    setPlaySignal((n) => n + 1);
+                  }
                 }, 100);
               }
             }
@@ -1872,6 +1900,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           // Don't interfere with audio here - let MediaPlayer manage it
         }}
         onFlyEnd={() => {
+          // Clear Start in-flight lock once warp fully ends
+          try { startInFlightRef.current = false; } catch {}
           setWarpActive(false);
           setAllowWarp(false);
           setLandingMode(false); // leave landing mode after first warp
@@ -1917,11 +1947,16 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             try {
               if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); }
               trackPlayTimerRef.current = window.setTimeout(() => {
-                
                 const proceed = () => {
                   if (pendingTrackPlay) {
                     console.log('🎵 PLAY SIGNAL TRIGGERED - proceed()');
-                    setPlaySignal((n) => n + 1);
+                    try {
+                      if (!(typeof window !== 'undefined' && (window).__AUDIO_MANAGER_ACTIVE)) {
+                        setPlaySignal((n) => n + 1);
+                      }
+                    } catch {
+                      setPlaySignal((n) => n + 1);
+                    }
                     setPendingTrackPlay(false);
                   }
                 };
@@ -2027,7 +2062,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             const failsafeTimer = setTimeout(() => {
               if (pendingTrackPlay) {
                 console.warn('DashboardApp: Failsafe timer triggered - forcing song start');
-                setPlaySignal((n) => n + 1);
+                try {
+                  if (!(typeof window !== 'undefined' && (window).__AUDIO_MANAGER_ACTIVE)) {
+                    setPlaySignal((n) => n + 1);
+                  }
+                } catch {
+                  setPlaySignal((n) => n + 1);
+                }
                 setPendingTrackPlay(false);
               }
             }, 3000);
@@ -2037,10 +2078,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               // Small delay to ensure MediaPlayer has set up the audio element properly
               setTimeout(() => {
                 console.log('🎵 PLAY SIGNAL TRIGGERED - initialSlug autoplay');
-                setPlaySignal((n) => {
-                  
-                  return n + 1;
-                }); 
+                try {
+                  if (!(typeof window !== 'undefined' && (window).__AUDIO_MANAGER_ACTIVE)) {
+                    setPlaySignal((n) => n + 1);
+                  }
+                } catch {
+                  setPlaySignal((n) => n + 1);
+                }
                 setPendingTrackPlay(false); 
                 buttonSfxWaitRef.current = null;
                 
@@ -2252,7 +2296,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             <div className="hidden">
               <MediaPlayer
                 onSkyChange={(webm, mp4, key) => setNextSky({ webm, mp4, key })}
-                onPlayingChange={(p) => { 
+                onPlayingChange={(p) => {
                   setIsPlaying(p);
                   // When a mapped track starts playing, arm its YouTube sky
                   try {
@@ -2267,12 +2311,10 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                       const isHomePlayback = homeMode && !userSelected && !pendingTrackPlay;
                       if (slug) {
                         if (isHomePlayback) {
-                          
                           // Home/ambient case: keep all planets
                           try { playerStore.getState().setMain(slug, true); } catch {}
                           try { playerStore.getState().setPlanetDisplayMode('all'); playerStore.getState().setPlanetsVisible(true); } catch {}
                         } else {
-                          
                           try { playerStore.getState().setMain(slug); } catch {}
                           try { playerStore.getState().setPlanetDisplayMode('single'); playerStore.getState().setPlanetsVisible(true); } catch {}
                           try { setHomeMode(false); } catch {}
@@ -2304,10 +2346,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                   }
                 }}
                 onAudioReady={() => {}}
-                onTrackChange={(t) => { 
-
-                  setCurTrack(t); 
-                  if (userSelected) { setLinks({ spotify: t.spotify || LINKS.spotify, apple: t.apple || LINKS.apple }); } else { setLinks({ spotify: LINKS.spotify, apple: LINKS.apple }); } 
+                onTrackChange={(t) => {
+                  setCurTrack(t);
+                  if (userSelected) { setLinks({ spotify: t.spotify || LINKS.spotify, apple: t.apple || LINKS.apple }); } else { setLinks({ spotify: LINKS.spotify, apple: LINKS.apple }); }
                   // Reset YouTube sky state when switching away from the armed track
                   try {
                     const nextSlug = t?.slug || '';
@@ -2326,7 +2367,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 toggleSignal={toggleSignal}
                 showHUDPlay={false}
                 index={channelIdx}
-                onIndexChange={(i)=> setChannelIdxWithLog(i)}
+                onIndexChange={(i) => setChannelIdxWithLog(i)}
                 autoPlayOnIndex={false}
                 unlockPlays={false}
               />

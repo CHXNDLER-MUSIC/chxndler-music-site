@@ -374,9 +374,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       }
       
       if (card.card_name) {
-        // Extract base song name (remove variations like "(ACOUSTIC)", "(REMIX)")
-        const baseName = card.card_name.replace(/\s*\([^)]*\)\s*/g, '').trim();
-        songs.add(baseName);
+        // Keep full card name including variations like "(ACOUSTIC)", "(REMIX)"
+        songs.add(card.card_name);
       }
     });
     
@@ -412,8 +411,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     // Filter by song
     if (selectedSong && selectedSong.trim() !== '') {
       filtered = filtered.filter(card => {
-        const baseName = card.card_name?.replace(/\s*\([^)]*\)\s*/g, '').trim();
-        return baseName?.toLowerCase() === selectedSong.toLowerCase();
+        return card.card_name?.toLowerCase() === selectedSong.toLowerCase();
       });
     }
     
@@ -987,6 +985,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               {(['EARN', 'USE'] as const).map((tab) => (
                 <button
                   key={tab}
+                  data-tour-id={`heartcoins-${tab.toLowerCase()}-tab`}
                   onClick={() => {
                     try { sfx.play('click', 0.6); } catch {}
                     setActiveTab(tab);
@@ -1052,6 +1051,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 {(['DAILY QUESTS', 'BONUS QUESTS'] as const).map((tab) => (
                   <button
                     key={tab}
+                    data-tour-id={`heartcoins-${tab.toLowerCase().replace(' ', '-')}-tab`}
                     onClick={() => {
                       try { sfx.play('click', 0.6); } catch {}
                       setActiveEarnTab(tab);
@@ -1267,6 +1267,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     {(['MERCH', 'CARDS'] as const).map((tab) => (
                       <button
                         key={tab}
+                        data-tour-id={`heartcoins-${tab.toLowerCase()}-tab`}
                         onClick={() => {
                           try { sfx.play('click', 0.6); } catch {}
                           setActiveUseTab(tab);
@@ -1312,7 +1313,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       whiteSpace: 'nowrap'
                     }}
                   >
-                    Trade your HEART coins for rare collectibles and CHXNDLER cards
+                    Trade your HEART coins for rare collectibles and CHXNDLER cards that reflect your journey.
                   </div>
 
                   {/* MERCH Tab Content */}
@@ -1587,30 +1588,20 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     <div>
                       {!selectedCardElement ? (
                         <>
-                          <div 
-                            className="text-sm mb-3 text-center"
-                            style={{ 
-                              color: '#FFFFFF', 
-                              textShadow: '0 0 4px rgba(255,255,255,0.8)',
-                              fontSize: '12px'
-                            }}
-                          >
-                            Earn the cards that reflect your journey in the Heartverse.
-                          </div>
                           
                           <div 
-                            className="text-center mb-2"
+                            className="text-center mb-3"
                             style={{ 
                               color: '#FFFFFF', 
                               fontSize: '14px',
                               textShadow: '0 0 4px rgba(255,255,255,0.6)',
-                              marginTop: '-12px'
+                              marginTop: '8px'
                             }}
                           >
                             SELECT AN ELEMENT TO VIEW CARDS
                           </div>
 
-                          <div className="grid grid-cols-4 gap-2 justify-center px-2" style={{ marginTop: '-8px' }}>
+                          <div className="grid grid-cols-4 gap-2 justify-center px-2" style={{ marginTop: '4px' }}>
                             {['lightning', 'darkness', 'water', 'heart'].map((element, index) => {
                               const elementCounts = getElementCardCounts();
                               const count = elementCounts[element] || 0;
@@ -1620,10 +1611,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   className="text-center cursor-pointer group w-20"
                                   onClick={() => {
                                     try { sfx.play('click', 0.7); } catch {}
-                                    setSelectedCardElement(element);
-                                    // Reset any other filters to ensure we only see cards from this element
+                                    setSelectedCardElement(element.toUpperCase());
+                                    // Set the song filter to the specific element card (e.g., "LIGHTNING", "WATER", etc.)
+                                    setSelectedSong(element.toUpperCase());
                                     setSelectedRarity('');
-                                    setSelectedSong('');
                                   }}
                                 >
                                   <div 
@@ -1691,7 +1682,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               onChange={(e) => setSelectedSong(e.target.value)}
                               className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-1"
                             >
-                              <option value="">All Songs</option>
                               {availableSongs.map(song => (
                                 <option key={song} value={song}>{song}</option>
                               ))}

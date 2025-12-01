@@ -11,7 +11,7 @@ export interface TourStep {
   showNext?: boolean;
   showPrevious?: boolean;
   showSkip?: boolean;
-  action?: 'open-menu' | 'close-menu'; // Special actions to perform
+  action?: 'open-menu' | 'close-menu' | 'open-heartcoins' | 'click-tab' | 'open-signal'; // Special actions to perform
 }
 
 interface TourContextType {
@@ -117,6 +117,93 @@ const tourSteps: TourStep[] = [
     showSkip: true,
   },
   {
+    id: 'heartcoins-earn',
+    title: 'Earn Heart Coins',
+    content: 'The Earn tab shows you how to collect Heart Coins through daily quests and bonus activities.',
+    targetId: 'heartcoins-earn-tab',
+    position: 'bottom',
+    action: 'open-heartcoins',
+    showNext: true,
+    showPrevious: true,
+    showSkip: true,
+  },
+  {
+    id: 'heartcoins-daily',
+    title: 'Daily Quests',
+    content: 'Daily quests refresh every day and give you ways to earn Heart Coins through simple activities like tapping your element or journaling.',
+    targetId: 'heartcoins-daily-quests-tab',
+    position: 'bottom',
+    action: 'click-tab',
+    showNext: true,
+    showPrevious: true,
+    showSkip: true,
+  },
+  {
+    id: 'heartcoins-bonus',
+    title: 'Bonus Quests',
+    content: 'Bonus quests offer extra ways to earn Heart Coins through special challenges and activities.',
+    targetId: 'heartcoins-bonus-quests-tab',
+    position: 'bottom',
+    action: 'click-tab',
+    showNext: true,
+    showPrevious: true,
+    showSkip: true,
+  },
+  {
+    id: 'heartcoins-use',
+    title: 'Use Heart Coins',
+    content: 'The Use tab lets you spend your Heart Coins on merchandise and trading cards.',
+    targetId: 'heartcoins-use-tab',
+    position: 'bottom',
+    action: 'click-tab',
+    showNext: true,
+    showPrevious: true,
+    showSkip: true,
+  },
+  {
+    id: 'heartcoins-merch',
+    title: 'Merchandise',
+    content: 'Browse and purchase CHXNDLER merchandise using your Heart Coins.',
+    targetId: 'heartcoins-merch-tab',
+    position: 'bottom',
+    action: 'click-tab',
+    showNext: true,
+    showPrevious: true,
+    showSkip: true,
+  },
+  {
+    id: 'heartcoins-cards',
+    title: 'Trading Cards',
+    content: 'Collect unique trading cards from the Heartverse using your Heart Coins.',
+    targetId: 'heartcoins-cards-tab',
+    position: 'bottom',
+    action: 'click-tab',
+    showNext: true,
+    showPrevious: true,
+    showSkip: true,
+  },
+  {
+    id: 'song-dropdown',
+    title: 'Music Library',
+    content: 'This is your music portal. Here you can choose any song from the Heartverse to listen to and experience.',
+    targetId: 'song-dropdown',
+    position: 'top',
+    showNext: true,
+    showPrevious: true,
+    showSkip: true,
+  },
+  {
+    id: 'signal-streaming',
+    title: 'Live Chat',
+    content: 'Connect with other aliens in real-time during CHXNDLER Signal streams. This is your community space to share the experience together.',
+    targetId: 'signal-streaming',
+    position: 'right',
+    action: 'open-signal',
+    showNext: true,
+    showPrevious: true,
+    showSkip: true,
+  },
+  {
     id: 'outro',
     title: 'You are ready',
     content: 'That is the core of your ship. You can explore freely now, and you can always restart this tour from your profile if you ever want a refresher.',
@@ -170,11 +257,45 @@ export function TourProvider({ children, onMenuAction }: {
 
   // Handle step actions
   useEffect(() => {
-    if (isActive && onMenuAction) {
+    if (isActive) {
       const step = tourSteps[currentStep];
       if (step.action) {
         console.log(`Tour: Executing action "${step.action}" for step "${step.id}"`);
-        onMenuAction(step.action);
+        
+        if (step.action === 'open-menu' || step.action === 'close-menu') {
+          if (onMenuAction) {
+            onMenuAction(step.action);
+          }
+        } else if (step.action === 'open-heartcoins') {
+          // Click the heart coins button to open the modal
+          setTimeout(() => {
+            const heartCoinsButton = document.querySelector('[data-tour-id="heartcoins"]');
+            if (heartCoinsButton) {
+              (heartCoinsButton as HTMLElement).click();
+            }
+          }, 100);
+        } else if (step.action === 'click-tab') {
+          // Click the specific tab element
+          setTimeout(() => {
+            const tabElement = document.querySelector(`[data-tour-id="${step.targetId}"]`);
+            if (tabElement) {
+              (tabElement as HTMLElement).click();
+            }
+          }, 300);
+        } else if (step.action === 'open-signal') {
+          // Open the signal popout first
+          setTimeout(() => {
+            if (onMenuAction) {
+              onMenuAction('close-menu'); // Close hamburger menu first
+            }
+            // Wait for menu to close, then open signal
+            setTimeout(() => {
+              // This should trigger the pink beam/signal display
+              const signalEvent = new CustomEvent('openSignal');
+              window.dispatchEvent(signalEvent);
+            }, 500);
+          }, 100);
+        }
       }
     }
   }, [currentStep, isActive, onMenuAction]);
@@ -222,21 +343,28 @@ function TourOverlay() {
                         currentStepData.id === 'binder' || 
                         currentStepData.id === 'badges' || 
                         currentStepData.id === 'signal';
+                        
+      // For Heart Coins modal elements, add delay to allow modal to render
+      const isHeartCoinsStep = currentStepData.id.startsWith('heartcoins-') && 
+                               currentStepData.id !== 'heartcoins';
+                               
+      // For signal elements, add delay to allow signal popout to render
+      const isSignalStep = currentStepData.id === 'signal-streaming';
       
       const findElementAndPosition = (attempts = 0) => {
         console.log(`Tour: Looking for element with data-tour-id="${currentStepData.targetId}", attempt ${attempts + 1}`);
         const element = document.querySelector(`[data-tour-id="${currentStepData.targetId}"]`) as HTMLElement;
         console.log(`Tour: Element found:`, element);
         
-        // If element not found and it's a menu step, retry up to 5 times with 100ms delays
-        if (!element && isMenuStep && attempts < 5) {
+        // If element not found and it's a special step, retry up to 5 times with 100ms delays
+        if (!element && (isMenuStep || isHeartCoinsStep || isSignalStep) && attempts < 5) {
           console.log(`Tour: Element not found, retrying in 100ms...`);
           setTimeout(() => findElementAndPosition(attempts + 1), 100);
           return;
         }
         
-        if (!element && isMenuStep) {
-          console.error(`Tour: Could not find menu element after ${attempts + 1} attempts`);
+        if (!element && (isMenuStep || isHeartCoinsStep || isSignalStep)) {
+          console.error(`Tour: Could not find element after ${attempts + 1} attempts`);
         }
         
         setTargetElement(element);
@@ -266,12 +394,12 @@ function TourOverlay() {
                 const hamburgerMenu = document.querySelector('[data-tour-id="hamburger"]')?.closest('.fixed');
                 if (hamburgerMenu) {
                   const menuRect = hamburgerMenu.getBoundingClientRect();
-                  left = menuRect.left + 240; // Position far enough right to clear the dropdown
-                  top += rect.height / 2;
+                  left = menuRect.right + 60; // Position to the right of the menu with padding
+                  top = rect.top + scrollTop + (rect.height / 2);
                 } else {
                   // Fallback to original positioning with extra spacing
                   top += rect.height / 2;
-                  left += rect.width + 240;
+                  left += rect.width + 320;
                 }
               } else {
                 top += rect.height / 2;
@@ -301,6 +429,12 @@ function TourOverlay() {
       if (isMenuStep) {
         // Add small delay for menu steps to allow menu animation
         setTimeout(() => findElementAndPosition(0), 150);
+      } else if (isHeartCoinsStep) {
+        // Add delay for Heart Coins modal elements to allow modal to render
+        setTimeout(() => findElementAndPosition(0), 400);
+      } else if (isSignalStep) {
+        // Add delay for signal popout elements to allow popout to render
+        setTimeout(() => findElementAndPosition(0), 800);
       } else {
         findElementAndPosition(0);
       }
@@ -372,7 +506,8 @@ function TourOverlay() {
                             currentStepData.id === 'journal' || 
                             currentStepData.id === 'binder' || 
                             currentStepData.id === 'badges' || 
-                            currentStepData.id === 'signal')) ? 'translateY(-50%)' :
+                            currentStepData.id === 'signal' ||
+                            currentStepData.id === 'signal-streaming')) ? 'translateY(-50%)' :
                           'none',
               }
             : {}

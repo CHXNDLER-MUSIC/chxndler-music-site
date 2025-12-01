@@ -56,6 +56,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const stateMachine = useRef(new MediaStateMachine());
   const [mediaState, setMediaState] = useState<MediaState>('idle');
   const audioRef = useRef<HTMLAudioElement|null>(null);
+  // Keep main audio muted on first load to prevent any brief audible playback
+  const [forceMuted, setForceMuted] = useState(true);
   const rootRef = useRef<HTMLDivElement|null>(null);
   const isHoveredRef = useRef(false);
   const uiClickRef = useRef<HTMLAudioElement|null>(null);
@@ -357,6 +359,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       try { if (a.readyState < 2) a.load(); } catch {}
       if (cur.sources && cur.sources.length > 0) {
         intentionalPlayRef.current = true; // Mark as intentional play
+        try { a.muted = false; setForceMuted(false); } catch {}
         a.play().then(() => { setPlaying(true); gaTrack("play", { slug: cur.slug }); })
                  .catch(() => setPlaying(false));
       }
@@ -466,7 +469,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       
       // Ensure audio is unmuted before playing; preserve current volume
       try {
-        a.muted = false;
+        a.muted = false; setForceMuted(false);
         // Do not override user volume here
         
       } catch {}
@@ -608,7 +611,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       if (warpPlayTimerRef.current !== undefined) { clearTimeout(warpPlayTimerRef.current); warpPlayTimerRef.current = undefined; }
       if (cur?.src) {
         // Don't reload - just resume from current position
-        try { a.muted = false; /* preserve volume */ } catch {}
+        try { a.muted = false; setForceMuted(false); /* preserve volume */ } catch {}
         intentionalPlayRef.current = true; // Mark as intentional play
         a.play().then(() => {
           setPlaying(true); if (onPlayingChange) onPlayingChange(true); gaTrack("play", { slug: cur.slug });
@@ -699,7 +702,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       intentionalPlayRef.current = true; // Mark as intentional play
       
       // Ensure audio is unmuted and has proper volume
-      a.muted = false;
+      a.muted = false; setForceMuted(false);
       // Preserve user-selected volume
       
       // Simple play attempt first, fallback to retry logic if needed
@@ -765,7 +768,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       (window as any).mainPlayerPlay = () => {
         try {
           const a = audioRef.current; if (!a) return;
-          if (a.paused) { a.muted = false; intentionalPlayRef.current = true; a.play().catch(()=>{}); }
+          if (a.paused) { a.muted = false; setForceMuted(false); intentionalPlayRef.current = true; a.play().catch(()=>{}); }
         } catch {}
       };
       (window as any).mainPlayerPause = () => { try { const a = audioRef.current; if (!a) return; if (!a.paused) a.pause(); } catch {} };
@@ -1939,7 +1942,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           loop
           preload="metadata"
           playsInline
-          muted={false}
+          muted={forceMuted}
           autoPlay={false}
           crossOrigin="anonymous"
           onError={(e) => {

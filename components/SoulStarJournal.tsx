@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useProfile } from "@/contexts/ProfileContext";
-import { supabaseClient } from "@/lib/supabaseClient";
 import { sfx } from "@/lib/sfx";
 import { useDailyReflectionStatus } from "@/hooks/useDailyReflectionStatus";
 
@@ -175,36 +174,22 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
       setJournalState(prev => ({ ...prev, isLoading: true }));
       sfx.play('click', 0.8);
 
-      // Log what we're about to send for debugging
-      const entryData = {
-        user_id: user.id,
+      // Use ProfileContext to save so journalEntries updates for FULL LOG
+      const saved = await saveJournalEntry({
         entry_date: today,
         element: profile.element,
         prompt_id: dailyPrompt.id,
         intention: journalState.intentionResponse,
         reflection: journalState.reflectionResponse,
+        intention_response: null,
+        reflection_response: null,
         soul_star: journalState.soulStar.trim(),
-      };
-      console.log('About to save journal entry:', entryData);
+      } as any);
 
-      // Use the upsert logic as specified
-      const { data, error } = await supabaseClient
-        .from("soul_journal_entries")
-        .upsert(
-          entryData,
-          { onConflict: "user_id,entry_date,element" }
-        )
-        .select()
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      if (data) {
+      if (saved) {
         // Mark reflection as complete to hide notifications
         markReflectionComplete();
-        
+
         setJournalState(prev => ({
           ...prev,
           saveMessage: "Signal cast into the stars",
@@ -215,14 +200,19 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
         }, 2000);
       }
     } catch (error) {
-      console.error('Failed to save journal entry:', error);
-      console.error('Error details:', {
-        message: error?.message,
-        code: error?.code,
-        details: error?.details,
-        hint: error?.hint,
-        full_error: error
-      });
+      try {
+        // Provide clearer diagnostics
+        const err = error as any;
+        console.error('Failed to save journal entry:', err);
+        console.error('Error details:', {
+          message: err?.message,
+          code: err?.code,
+          details: err?.details,
+          hint: err?.hint,
+        });
+      } catch (logErr) {
+        console.error('Failed to log error details for journal save');
+      }
       setJournalState(prev => ({
         ...prev,
         errorMessage: "Failed to cast your signal. Please try again."
