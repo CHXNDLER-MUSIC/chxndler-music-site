@@ -13,6 +13,7 @@ interface StoreItem {
   title: string;
   description: string;
   image: string;
+  image2?: string;
   priceUsd: number;
   priceHeartCoins: number;
   stripeUrl: string;
@@ -64,6 +65,7 @@ const PHYSICAL_ITEMS: StoreItem[] = [
     title: 'PATCH',
     description: "Stitch this into your world as a quiet reminder that this isn't just music, it's a community.",
     image: 'https://ik.imagekit.io/CHXNDLER/STORE/patch.png',
+    image2: 'https://ik.imagekit.io/CHXNDLER/STORE/patch-inverse.png',
     priceUsd: 6,
     priceHeartCoins: 4,
     stripeUrl: 'https://buy.stripe.com/00w5kEgBHdRz1gRgxx4gg0C',
@@ -119,6 +121,7 @@ const PHYSICAL_ITEMS: StoreItem[] = [
     title: 'Beanie',
     description: "For the ones who wear their hearts out loud and aren't afraid to stand out.",
     image: 'https://ik.imagekit.io/CHXNDLER/STORE/beanie-front.png',
+    image2: 'https://ik.imagekit.io/CHXNDLER/STORE/beanie-back.png',
     priceUsd: 30,
     priceHeartCoins: 20,
     stripeUrl: 'https://buy.stripe.com/dRm8wQetz14N5x71CD4gg0L',
@@ -1088,9 +1091,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               </div>
             </div>
           </div>
+          )}
 
-          {/* Section 2 - Bonus Quests */}
-          <div className="mb-4">
+          {/* Bonus Quests Tab Content */}
+          {activeEarnTab === 'BONUS QUESTS' && (
+            <div className="mb-4">
             <div 
               className="text-sm font-bold mb-2"
               style={{ 
@@ -1261,6 +1266,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
             </div>
           </div>
+          )}
           
           {/* Success message */}
           {showCheckInSuccess && (
