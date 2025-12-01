@@ -394,11 +394,35 @@ export default function SteeringWheelOverlay({
               disable = !force && (v === '1' || v === 'true');
             }
           } catch {}
+          // Detect Safari for enhanced chroma key settings
+          const isSafariUA = (function() {
+            try {
+              const ua = navigator.userAgent;
+              return /safari/i.test(ua) && !/chrome|crios|android/i.test(ua);
+            } catch {
+              return false;
+            }
+          })();
+          // Prefer MOV with alpha only if the browser claims support for HEVC/H.265
+          const canPlayHvc = (() => {
+            try {
+              const v = document.createElement('video');
+              const c1 = v.canPlayType('video/mp4; codecs="hvc1"');
+              const c2 = v.canPlayType('video/mp4; codecs="hev1"');
+              const c3 = v.canPlayType('video/quicktime');
+              return !!(c1 || c2 || c3);
+            } catch { return false; }
+          })();
+          // Choose best source per browser with capability check
+          const wheelSrc = (isSafariUA && canPlayHvc)
+            ? "/cockpit/wheel_transparent.mov"
+            : "/cockpit/wheel_less_transparent.webm";
+
           if (disable) {
             // If explicitly disabled, still render a plain <video> so the wheel is visible
             return (
               <video
-                src={"/cockpit/wheel_less_transparent.webm"}
+                src={wheelSrc}
                 autoPlay
                 muted
                 loop
@@ -424,7 +448,7 @@ export default function SteeringWheelOverlay({
           if (plainWheel) {
             return (
               <video
-                src={"/cockpit/wheel_less_transparent.webm"}
+                src={wheelSrc}
                 autoPlay
                 muted
                 loop
@@ -446,19 +470,10 @@ export default function SteeringWheelOverlay({
               />
             );
           }
-          // Detect Safari for enhanced chroma key settings
-          const isSafariUA = (function() {
-            try {
-              const ua = navigator.userAgent;
-              return /safari/i.test(ua) && !/chrome|crios|android/i.test(ua);
-            } catch {
-              return false;
-            }
-          })();
 
           return (
             <LumaKeyVideo
-              srcMp4="/cockpit/wheel_less_transparent.webm"
+              srcMp4={wheelSrc}
               // Enhanced chroma key with Safari-specific adjustments
               keyColor={(vconf as any)?.keyColor ?? [0, 0, 0]}
               // More aggressive settings for Safari to remove black backgrounds

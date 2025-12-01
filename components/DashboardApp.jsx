@@ -1521,9 +1521,29 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             outline: (typeof window !== 'undefined' && window.localStorage.getItem('WHEEL_DEBUG') === '1') ? '2px dashed rgba(255,0,0,0.5)' : undefined,
           }}
         >
-          {wheelPlain ? (
+          {(() => {
+            const isSafariUA = (() => {
+              try {
+                const ua = navigator.userAgent;
+                return /safari/i.test(ua) && !/chrome|crios|android/i.test(ua);
+              } catch { return false; }
+            })();
+            const canPlayHvc = (() => {
+              try {
+                const v = document.createElement('video');
+                const c1 = v.canPlayType('video/mp4; codecs="hvc1"');
+                const c2 = v.canPlayType('video/mp4; codecs="hev1"');
+                const c3 = v.canPlayType('video/quicktime');
+                return !!(c1 || c2 || c3);
+              } catch { return false; }
+            })();
+            const wheelSrc = (isSafariUA && canPlayHvc)
+              ? "/cockpit/wheel_transparent.mov"
+              : "/cockpit/wheel_less_transparent.webm";
+            if (wheelPlain) {
+              return (
             <video
-              src="/cockpit/wheel_less_transparent.webm"
+              src={wheelSrc}
               autoPlay
               muted
               loop
@@ -1531,9 +1551,11 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               aria-label="wheel-video-plain"
               style={{ width: '100%', height: '100%', objectFit: 'cover', background: 'transparent' }}
             />
-          ) : (
+            );
+            }
+            return (
             <LumaKeyVideo
-              srcMp4="/cockpit/wheel_less_transparent.webm"
+              srcMp4={wheelSrc}
               threshold={0.02}
               softness={0.04}
               saturation={1.0}
@@ -1545,7 +1567,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               className="block"
               style={{ width: '100%', height: '100%', background: 'transparent' }}
             />
-          )}
+            );
+          })()}
         </div>
       </main>
     );

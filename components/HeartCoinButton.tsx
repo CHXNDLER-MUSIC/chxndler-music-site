@@ -6,6 +6,8 @@ import Image from "next/image";
 import { useProfile } from '@/contexts/ProfileContext';
 import { supabaseClient } from "@/lib/supabaseClient";
 import { track } from "@/lib/analytics";
+import { useBonusQuests } from '@/hooks/useBonusQuests';
+import { BonusQuestWithCompletion } from '@/types/bonusQuests';
 
 // Store item interface
 interface StoreItem {
@@ -190,12 +192,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'EARN' | 'USE'>('EARN');
   const [activeUseTab, setActiveUseTab] = useState<'MERCH' | 'CARDS'>('MERCH');
-  const [activeEarnTab, setActiveEarnTab] = useState<'DAILY QUESTIONS' | 'BONUS QUESTS'>('DAILY QUESTIONS');
+  const [activeEarnTab, setActiveEarnTab] = useState<'DAILY QUESTS' | 'BONUS QUESTS'>('DAILY QUESTS');
   const [selectedCardElement, setSelectedCardElement] = useState<string | null>(null);
   const [selectedSong, setSelectedSong] = useState<string>('');
   const [showPhysicalForm, setShowPhysicalForm] = useState(false);
   const [showDigitalForm, setShowDigitalForm] = useState(false);
   const [currentMerchIndex, setCurrentMerchIndex] = useState(0);
+  const [flippedItems, setFlippedItems] = useState<Set<string>>(new Set());
   const [shippingInfo, setShippingInfo] = useState({
     fullName: '',
     street: '',
@@ -503,6 +506,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [showCheckInSuccess, setShowCheckInSuccess] = useState(false);
   const [isSubmittingPhrase, setIsSubmittingPhrase] = useState(false);
   const [statusType, setStatusType] = useState<'idle' | 'success' | 'error'>('idle');
+  
+  // Bonus quests hook
+  const { bonusQuests, loading: bonusQuestsLoading, error: bonusQuestsError, completeQuest } = useBonusQuests();
 
   // Get today's element (rotate daily)
   const getTodaysElement = () => {
@@ -513,6 +519,72 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   };
 
   const todaysElement = getTodaysElement();
+
+  // Reset flip state when item changes
+  useEffect(() => {
+    setFlippedItems(new Set());
+  }, [currentMerchIndex]);
+
+  // Handle image flip for items with alternative images
+  const handleImageFlip = (itemId: string) => {
+    const currentItem = PHYSICAL_ITEMS[currentMerchIndex];
+    // Only allow flip if the item has an alternative image
+    if (currentItem.id === itemId && currentItem.image2) {
+      try { sfx.play('flip', 0.8); } catch {}
+      setFlippedItems(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(itemId)) {
+          newSet.delete(itemId);
+        } else {
+          newSet.add(itemId);
+        }
+        return newSet;
+      });
+    }
+  };
+
+  // Handle bonus quest completion
+  const handleBonusQuestComplete = async (quest: BonusQuestWithCompletion) => {
+    try {
+      const result = await completeQuest(quest);
+      
+      if (result.success) {
+        // Award heart coins using existing system
+        if (result.rewards?.heartcoins) {
+          await updateHeartCoins(heartCoins + result.rewards.heartcoins);
+        }
+        
+        // Show success message
+        setCheckInMessage(result.message);
+        setStatusType('success');
+        setShowCheckInSuccess(true);
+        
+        // Hide success message after 3 seconds
+        setTimeout(() => {
+          setShowCheckInSuccess(false);
+          setCheckInMessage("");
+          setStatusType('idle');
+        }, 3000);
+        
+        try { sfx.play('click', 0.7); } catch {}
+      } else {
+        setCheckInMessage(result.message);
+        setStatusType('error');
+        setTimeout(() => {
+          setCheckInMessage("");
+          setStatusType('idle');
+        }, 3000);
+      }
+    } catch (error) {
+      console.error('Error completing bonus quest:', error);
+      setCheckInMessage('An error occurred while completing the quest');
+      setStatusType('error');
+      setTimeout(() => {
+        setCheckInMessage("");
+        setStatusType('idle');
+      }, 3000);
+    }
+  };
 
   const getElementIcon = (element: string) => {
     return `/elements/${element}.webp`;
@@ -977,7 +1049,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
               {/* Earn Sub-tabs */}
               <div className="flex justify-center mb-3 space-x-3">
-                {(['DAILY QUESTIONS', 'BONUS QUESTS'] as const).map((tab) => (
+                {(['DAILY QUESTS', 'BONUS QUESTS'] as const).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => {
@@ -1014,19 +1086,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 ))}
               </div>
 
-          {/* Daily Questions Tab Content */}
-          {activeEarnTab === 'DAILY QUESTIONS' && (
+          {/* Daily Quests Tab Content */}
+          {activeEarnTab === 'DAILY QUESTS' && (
             <div className="mb-4">
-            <div 
-              className="text-sm font-bold mb-2"
-              style={{ 
-                color: '#FFD700', 
-                textShadow: '0 0 4px rgba(255,215,0,0.8)' 
-              }}
-            >
-              ⭐ SECTION 1 — DAILY QUESTS
-            </div>
-            
             {/* Element of the Day */}
             <div className="flex items-center justify-between mb-2 p-2 rounded border border-white/30 bg-white/10">
               <div>
@@ -1096,16 +1158,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           {/* Bonus Quests Tab Content */}
           {activeEarnTab === 'BONUS QUESTS' && (
             <div className="mb-4">
-            <div 
-              className="text-sm font-bold mb-2"
-              style={{ 
-                color: '#FFD700', 
-                textShadow: '0 0 4px rgba(255,215,0,0.8)' 
-              }}
-            >
-              ⭐ SECTION 2 — BONUS QUESTS
-            </div>
-            
             {/* Invite a Friend */}
             <div className="flex items-center justify-between mb-2 p-2 rounded border border-white/30 bg-white/10">
               <div>
@@ -1373,12 +1425,25 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               
                               {/* Item Image */}
                               <div className="flex flex-col items-center">
-                                <div className="relative w-28 h-28 flex-shrink-0">
+                                <div 
+                                  className="relative w-28 h-28 flex-shrink-0 cursor-pointer transition-transform duration-200 hover:scale-105"
+                                  onClick={() => handleImageFlip(PHYSICAL_ITEMS[currentMerchIndex].id)}
+                                >
                                   <img
-                                    src={PHYSICAL_ITEMS[currentMerchIndex].image}
+                                    src={
+                                      flippedItems.has(PHYSICAL_ITEMS[currentMerchIndex].id) && PHYSICAL_ITEMS[currentMerchIndex].image2
+                                        ? PHYSICAL_ITEMS[currentMerchIndex].image2
+                                        : PHYSICAL_ITEMS[currentMerchIndex].image
+                                    }
                                     alt={PHYSICAL_ITEMS[currentMerchIndex].title}
                                     className="w-full h-full object-cover rounded"
                                   />
+                                  {/* Flip indicator for items with alternative images */}
+                                  {PHYSICAL_ITEMS[currentMerchIndex].image2 && (
+                                    <div className="absolute bottom-1 right-1 w-4 h-4 bg-black/60 rounded-full flex items-center justify-center">
+                                      <span className="text-white text-xs">⟲</span>
+                                    </div>
+                                  )}
                                 </div>
                                 <div 
                                   className="text-xs text-white/80 mt-2 text-center"

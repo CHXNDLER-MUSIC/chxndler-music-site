@@ -115,13 +115,16 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
       // Wait a bit for menu to open, then position
       setTimeout(() => {
         const hamburgerContainer = document.querySelector('[data-tour-id="hamburger"]')?.closest('.fixed');
-        const menuDropdown = hamburgerContainer?.querySelector('.absolute.top-20');
+        const menuDropdown = hamburgerContainer?.querySelector('.absolute');
         
         if (menuDropdown) {
           // Menu is open, position to the right of the dropdown
           const dropdownRect = menuDropdown.getBoundingClientRect();
-          const top = rect.top + (rect.height / 2) - (bubbleHeight / 2);
-          const left = dropdownRect.right + 20; // Position just to the right of dropdown
+          const targetRect = element.getBoundingClientRect();
+          
+          // Position tooltip to the right of the dropdown, vertically aligned with the target menu item
+          const top = targetRect.top + (targetRect.height / 2) - (bubbleHeight / 2);
+          const left = dropdownRect.right + 16; // Small gap from dropdown edge
           
           setBubblePosition({ 
             top: Math.max(20, Math.min(top, viewportHeight - bubbleHeight - 20)), 
@@ -131,8 +134,8 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
           // Fallback: menu not open, position based on hamburger button
           const hamburgerRect = document.querySelector('[data-tour-id="hamburger"]')?.getBoundingClientRect();
           if (hamburgerRect) {
-            const top = rect.top + (rect.height / 2) - (bubbleHeight / 2);
-            const left = hamburgerRect.right + 240; // Position far to the right to avoid where menu would be
+            const top = hamburgerRect.top + (hamburgerRect.height / 2) - (bubbleHeight / 2);
+            const left = hamburgerRect.right + 260; // Position to the right where menu would be
             
             setBubblePosition({ 
               top: Math.max(20, Math.min(top, viewportHeight - bubbleHeight - 20)), 
@@ -146,7 +149,7 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
             });
           }
         }
-      }, 200);
+      }, 300); // Increased wait time for menu animation
       return;
     }
     
@@ -206,10 +209,15 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
         console.log('Tour: No onMenuToggle function available');
       }
     } else if (step.id.startsWith('menu-')) {
-      // For menu item steps, ensure menu is open immediately
+      // For menu item steps, ensure menu is open immediately and force it open multiple times
       if (onMenuToggle) {
         console.log(`Tour: Opening menu for step ${step.id}`);
         onMenuToggle(true);
+        // Force menu open again after a short delay to ensure it's definitely open
+        setTimeout(() => {
+          onMenuToggle(true);
+          console.log(`Tour: Force-opened menu again for ${step.id}`);
+        }, 100);
       } else {
         console.log('Tour: No onMenuToggle function available for menu step');
       }
@@ -236,6 +244,10 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
       const menuDropdown = menuContainer?.querySelector('.absolute');
       console.log('Tour: Menu container found:', !!menuContainer);
       console.log('Tour: Menu dropdown found:', !!menuDropdown);
+      if (menuDropdown) {
+        console.log('Tour: Menu dropdown rect:', menuDropdown.getBoundingClientRect());
+        console.log('Tour: Menu dropdown children:', Array.from(menuDropdown.querySelectorAll('[data-tour-id]')).map(el => el.getAttribute('data-tour-id')));
+      }
       
       // Debug: List all elements with data-tour-id
       const allTourElements = document.querySelectorAll('[data-tour-id]');
@@ -274,10 +286,10 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
           element.removeEventListener('click', handleElementClick);
           element.classList.remove('tour-highlight');
         };
-      } else if (retryCount < 5) {
-        // Retry finding the element after a short delay (up to 5 times, with longer delays for menu items)
+      } else if (retryCount < 8) {
+        // Retry finding the element after a short delay (up to 8 times, with longer delays for menu items)
         console.warn(`Tour target not found on attempt ${retryCount + 1}: ${step.selector}, retrying...`);
-        const delay = step.id.startsWith('menu-') ? 200 * (retryCount + 1) : 100 * (retryCount + 1);
+        const delay = step.id.startsWith('menu-') ? 300 * (retryCount + 1) : 100 * (retryCount + 1);
         setTimeout(() => findAndSetupElement(retryCount + 1), delay);
       } else {
         console.warn(`Tour target not found after ${retryCount + 1} attempts: ${step.selector}`);
@@ -292,8 +304,8 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
 
     // Start the element finding process
     if (step.id.startsWith('menu-')) {
-      // Add a small delay for menu items to allow menu to fully open
-      setTimeout(() => findAndSetupElement(), 150);
+      // Add a larger delay for menu items to allow menu to fully open and render
+      setTimeout(() => findAndSetupElement(), 400);
     } else {
       findAndSetupElement();
     }
