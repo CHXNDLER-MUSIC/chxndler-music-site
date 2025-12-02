@@ -1313,7 +1313,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       whiteSpace: 'nowrap'
                     }}
                   >
-                    Trade your HEART coins for rare collectibles and CHXNDLER cards that reflect your journey.
+                    Trade your HEART coins for collectibles and CHXNDLER cards that reflect your journey.
                   </div>
 
                   {/* MERCH Tab Content */}

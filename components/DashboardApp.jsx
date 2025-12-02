@@ -169,19 +169,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     return () => { try { window.removeEventListener('keydown', onKey); } catch {} };
   }, []);
 
-  // Start ambient audio automatically for non-logged-in users
-  useEffect(() => {
-    if (!profile && isHydrated) {
-      // Small delay to ensure components are ready
-      const timer = setTimeout(() => {
-        setAmbientSuspended(false);
-        try {
-          window.dispatchEvent(new CustomEvent('ambient:play'));
-        } catch {}
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [profile, isHydrated]);
+  // Ambient audio will only start when user explicitly interacts
+  // (removed auto-start for silent page opening)
 
   const [channelIdx, setChannelIdx] = useState(0);
   // Wrapper for setChannelIdx with logging for song selection debugging
@@ -1222,11 +1211,10 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [uiUnlocked, homeMode, isPlaying]);
 
-  // Defensive: On initial homepage open for guests, ensure no main/holo track audio exists or is playing
+  // Defensive: On initial page open, ensure no main/holo track audio exists or is playing
   React.useEffect(() => {
-    if (profile || initialSlug) return; // Only for guest homepage
     try {
-      // Block main player globally on guest homepage until Start or a song is selected
+      // Block main player globally until a song is explicitly selected
       if (typeof window !== 'undefined') { window.__BLOCK_MAIN_AUDIO = true; }
       const stopAndClear = (a) => {
         try { a.pause(); } catch {}
@@ -1237,11 +1225,10 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       const nodes = document.querySelectorAll('audio[data-audio-player="1"], audio[data-holo-audio="1"]');
       nodes.forEach((a) => stopAndClear(a));
     } catch {}
-  }, [profile, initialSlug]);
+  }, []); // Run on every mount
 
-  // Temporary watchdog: for the first 5s on guest homepage, forcibly stop any stray track audio
+  // Temporary watchdog: for the first 5s, forcibly stop any stray track audio
   React.useEffect(() => {
-    if (profile || initialSlug) return; // Only for guest homepage
     let active = true;
     const deadline = Date.now() + 5000;
     const tick = () => {
@@ -1265,7 +1252,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     };
     requestAnimationFrame(tick);
     return () => { active = false; };
-  }, [profile, initialSlug]);
+  }, []); // Run on every mount
 
   // Listen for tour skip event to trigger warp effect
   React.useEffect(() => {
@@ -1808,17 +1795,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                   if (trackIndex !== null && trackIndex >= 0) {
                     setChannelIdxWithLog(trackIndex);
                     pendingTrackIndexRef.current = null; // Clear the pending index
-                    // Force a play signal after the channel change to ensure the new song plays
-                    // Only when the legacy MediaPlayer is responsible for playback.
-                    setTimeout(() => {
-                      try {
-                        if (!(typeof window !== 'undefined' && (window).__AUDIO_MANAGER_ACTIVE)) {
-                          setPlaySignal((n) => n + 1);
-                        }
-                      } catch {
-                        setPlaySignal((n) => n + 1);
-                      }
-                    }, 100);
+                    // Channel index is set; playback will be handled by onFlyEnd
                   }
                 }).catch(() => {
                   // Fallback in case SFX fails
@@ -1826,17 +1803,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                   if (trackIndex !== null && trackIndex >= 0) {
                     setChannelIdxWithLog(trackIndex);
                     pendingTrackIndexRef.current = null; // Clear the pending index
-                    // Force a play signal after the channel change to ensure the new song plays
-                    // Only when the legacy MediaPlayer is responsible for playback.
-                    setTimeout(() => {
-                      try {
-                        if (!(typeof window !== 'undefined' && (window).__AUDIO_MANAGER_ACTIVE)) {
-                          setPlaySignal((n) => n + 1);
-                        }
-                      } catch {
-                        setPlaySignal((n) => n + 1);
-                      }
-                    }, 100);
+                    // Channel index is set; playback will be handled by onFlyEnd
                   }
                 });
               }
@@ -2077,12 +2044,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             // Defer overlay/UI reveal until warp SFX has finished
             setPendingOverlayReveal(true);
           }
-          // For track changes: trigger music when we are pending a track play
-          // Allow playback even if warpActive is still true to handle race conditions with onFlyEnd
-          // SAFETY: Only auto-play if user has explicitly selected a song or there was an initialSlug
-          // Also ensure UI is unlocked (user has interacted) to prevent auto-play on page load
-          // Only start audio after warp has fully ended
-          if (pendingTrackPlay && (userSelected || initialSlug) && uiUnlocked && !warpActive) {
+          // Post-warp music auto-play disabled - user must manually start playback
+          if (false && pendingTrackPlay && userSelected && uiUnlocked && !warpActive) {
             // Ensure ambient and intro are fully stopped just before starting the song
             try {
               const amb = document.querySelector('audio[data-ambient="1"]');
@@ -2166,6 +2129,11 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             } catch {
               startSong();
             }
+          }
+          
+          // Clear pending state after warp since auto-play is disabled
+          if (pendingTrackPlay) {
+            setPendingTrackPlay(false);
           }
         }}
       />

@@ -2385,6 +2385,16 @@ export default function HUDPanel({
               const liveDur = (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
               const liveTime = (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
               const pct = liveDur ? (liveTime / liveDur) * 100 : 0;
+              const seekAtClientX = (clientX) => {
+                if (!a || !liveDur) return;
+                const rect = barRef?.current?.getBoundingClientRect?.();
+                if (!rect) return;
+                const clickX = clientX - rect.left;
+                const ratio = Math.min(Math.max(clickX / rect.width, 0), 1);
+                const newTime = ratio * liveDur;
+                try { a.currentTime = newTime; } catch {}
+                try { setProgress(newTime); } catch {}
+              };
               const onSeek = (event) => {
                 if (!a || !liveDur) return;
                 const rect = event.currentTarget.getBoundingClientRect();
@@ -2394,11 +2404,34 @@ export default function HUDPanel({
                 try { a.currentTime = newTime; } catch {}
                 try { setProgress(newTime); } catch {}
               };
+              const onPointerDown = (e) => {
+                try { e.preventDefault(); } catch {}
+                seekAtClientX(e.clientX || (e.touches && e.touches[0]?.clientX) || 0);
+                const onMove = (me) => {
+                  const cx = me.clientX || (me.touches && me.touches[0]?.clientX) || 0;
+                  seekAtClientX(cx);
+                };
+                const onUp = () => {
+                  window.removeEventListener('mousemove', onMove);
+                  window.removeEventListener('touchmove', onMove);
+                  window.removeEventListener('mouseup', onUp);
+                  window.removeEventListener('touchend', onUp);
+                };
+                window.addEventListener('mousemove', onMove, { passive: true });
+                window.addEventListener('touchmove', onMove, { passive: true });
+                window.addEventListener('mouseup', onUp, { passive: true });
+                window.addEventListener('touchend', onUp, { passive: true });
+              };
+              const barRef = React.useRef(null);
               return (
-                <div className="absolute left-2 right-2 bottom-2">
+                <div className="absolute left-2 right-2 bottom-2" style={{ zIndex: 5, pointerEvents: 'auto' }}>
                   <div
-                    className="relative w-full h-2 rounded-full bg-white/10 overflow-hidden cursor-pointer"
+                    ref={barRef}
+                    className="relative w-full h-3 rounded-full bg-white/10 overflow-hidden cursor-pointer"
                     onClick={onSeek}
+                    onMouseDown={onPointerDown}
+                    onTouchStart={onPointerDown}
+                    style={{ touchAction: 'none' }}
                   >
                     <div className="absolute inset-0 opacity-40 bg-white/20" />
                     <div
@@ -2409,7 +2442,7 @@ export default function HUDPanel({
                       className="absolute top-1/2 -translate-y-1/2"
                       style={{ left: `calc(${pct}% - 6px)` }}
                     >
-                      <div className="w-3 h-3 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)]" />
+                      <div className="w-3 h-3 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)] pointer-events-none" />
                     </div>
                   </div>
                 </div>
@@ -2519,8 +2552,8 @@ export default function HUDPanel({
                         position: 'absolute',
                         left: 8,
                         right: 8,
-                        bottom: 18,
-                        zIndex: 2,
+                        bottom: 30,
+                        zIndex: 6,
                         borderRadius: '8px',
                         padding: '4px 8px',
                         backgroundColor: 'transparent'
@@ -6964,7 +6997,7 @@ export default function HUDPanel({
         {/* Song selector positioned outside content opacity container to avoid beamOnly blocking */}
         <div className="absolute" style={{ 
           left: inConsole ? 6 : 8, 
-          bottom: 'calc(80px - 24px + 56px)', // Move dropdown higher by 20px
+          bottom: 'calc(80px - 24px + 68px)', // Nudge dropdown higher slightly (+12px)
           // Reserve dynamic space to the right so the dropdown never overlaps the cover
           right: oneLinerRight + 4, // Slightly wider than current (~8px wider)
           maxWidth: 'none',

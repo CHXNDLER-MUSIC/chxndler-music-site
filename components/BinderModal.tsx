@@ -935,6 +935,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                           boxShadow: hasCard || isFirstSlotWithChxndler
                             ? '0 0 15px rgba(255,105,180,0.3)' 
                             : '0 0 5px rgba(255,105,180,0.1)',
+                          aspectRatio: '2/3'
                         }}
                       >
                         <div className="relative">
@@ -956,14 +957,14 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                                 const isLocked = gateState === 'comingSoon' || gateState === 'lockedTier';
                                 
                                 return (
-                                  <div className="relative w-full h-28">
+                                  <div className="relative w-full h-full">
                                     <img
                                       src={getCardImage(collectedCard.cards.card_name, collectedCard.cards.element)}
                                       alt={collectedCard.cards.card_name}
                                       className={
                                         isLocked
-                                          ? "w-full h-28 object-cover rounded blur-xl brightness-50 opacity-60 transition-all duration-300"
-                                          : "w-full h-28 object-cover rounded transition-all duration-300"
+                                          ? "w-full h-full object-cover rounded blur-xl brightness-50 opacity-60 transition-all duration-300"
+                                          : "w-full h-full object-cover rounded transition-all duration-300"
                                       }
                                       draggable={false}
                                     />
@@ -991,7 +992,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                               })()}
                             </>
                           ) : isLockedSlot ? (
-                            <div className="w-full h-28 bg-gradient-to-br from-pink-500/5 to-purple-500/5 rounded mb-1 border-2 border-dashed border-pink-400/20 flex items-center justify-center">
+                            <div className="w-full h-full bg-gradient-to-br from-pink-500/5 to-purple-500/5 rounded mb-1 border-2 border-dashed border-pink-400/20 flex items-center justify-center">
                               <div 
                                 className="text-xs font-bold text-center"
                                 style={{ 
@@ -1009,7 +1010,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                               <img
                                 src="https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910"
                                 alt="CHXNDLER"
-                                className="w-full h-28 object-cover rounded"
+                                className="w-full h-full object-cover rounded"
                                 draggable={false}
                               />
                               <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-blue-500/80 rounded-full flex items-center justify-center">
@@ -1019,7 +1020,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                               </div>
                             </>
                           ) : (
-                            <div className="w-full h-28 bg-gradient-to-br from-pink-500/10 to-purple-500/10 rounded mb-1 border-2 border-dashed border-pink-400/30 flex items-center justify-center">
+                            <div className="w-full h-full bg-gradient-to-br from-pink-500/10 to-purple-500/10 rounded mb-1 border-2 border-dashed border-pink-400/30 flex items-center justify-center">
                               <div 
                                 className="text-xs font-bold text-center"
                                 style={{ 
@@ -1769,7 +1770,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                           }}
                         >
                           <div 
-                            className="w-full h-28 rounded-lg border-2 border-pink-400/60 hover:border-pink-400/80 relative overflow-hidden transition-all duration-300 group-hover:scale-105"
+                            className="w-full h-full rounded-lg border-2 border-pink-400/60 hover:border-pink-400/80 relative overflow-hidden transition-all duration-300 group-hover:scale-105"
                             style={{
                               boxShadow: '0 0 15px rgba(255,105,180,0.3)',
                             }}

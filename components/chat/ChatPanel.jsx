@@ -747,16 +747,16 @@ export default function ChatPanel({ isOpen, onClose }) {
               style={{
                 background: `
                   linear-gradient(135deg, 
-                    rgba(0, 0, 0, 0.15) 0%,
-                    rgba(0, 20, 40, 0.1) 50%,
-                    rgba(0, 0, 0, 0.15) 100%
+                    rgba(0, 0, 0, 0.05) 0%,
+                    rgba(0, 20, 40, 0.03) 50%,
+                    rgba(0, 0, 0, 0.05) 100%
                   )
                 `,
                 boxShadow: `
-                  0 0 50px rgba(242, 239, 29, 0.15),
-                  inset 0 0 100px rgba(242, 239, 29, 0.03)
+                  0 0 50px rgba(242, 239, 29, 0.08),
+                  inset 0 0 100px rgba(242, 239, 29, 0.01)
                 `,
-                backdropFilter: 'blur(3px)'
+                backdropFilter: 'blur(2px)'
               }}
             >
               {/* Header */}
