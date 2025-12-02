@@ -37,6 +37,7 @@
     "@types/nodemailer": "^7.0.4",
     "dotenv": "^17.2.3",
     "framer-motion": "^11.2.10",
+    "libphonenumber-js": "^1.12.31",
     "next": "^15.5.2",
     "nodemailer": "^7.0.10",
     "react": "^18.3.1",

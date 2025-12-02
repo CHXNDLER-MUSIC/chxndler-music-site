@@ -3,7 +3,8 @@
 import React, { useCallback, useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { songs } from "@/data/songs";
-import { TRACKS, type TrackKey } from "@/contexts/AudioManagerContext";
+import { TRACKS, type TrackKey, useAudioManager } from "@/contexts/AudioManagerContext";
+import { trackKeyFromSlug } from "@/utils/trackKeyFromSlug";
 import SongDropdown from "./SongDropdown";
 
 // Map song IDs to track keys
@@ -58,122 +59,136 @@ interface UnifiedAudioPlayerProps {
 }
 
 export default function UnifiedAudioPlayer({ initialTrackId }: UnifiedAudioPlayerProps) {
-  // Audio element reference
-  const audioRef = useRef<HTMLAudioElement>(null);
+  // Use existing audio manager
+  const audioManager = useAudioManager();
   
-  // React state
+  // React state for UI
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [selectedTrackId, setSelectedTrackId] = useState(initialTrackId || songs[0]?.id || "");
+  const [currentAudioElement, setCurrentAudioElement] = useState<HTMLAudioElement | null>(null);
   
   // Progress bar reference for click handling
   const progressBarRef = useRef<HTMLDivElement>(null);
   
   // Get current track info
   const currentTrack = songs.find(song => song.id === selectedTrackId) || songs[0];
-  const currentTrackUrl = getTrackUrlFromSongId(selectedTrackId);
   
   // Calculate progress (0-1)
   const progress = duration > 0 ? currentTime / duration : 0;
 
   // Handle track change from dropdown
-  const handleTrackChange = useCallback((newTrackId: string) => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    
-    const wasPlaying = isPlaying;
-    
-    // Pause current audio
-    audio.pause();
-    setIsPlaying(false);
-    
-    // Set new track
+  const handleTrackChange = useCallback(async (newTrackId: string) => {
     setSelectedTrackId(newTrackId);
-    const newUrl = getTrackUrlFromSongId(newTrackId);
-    audio.src = newUrl;
     
-    // Reset time
-    audio.currentTime = 0;
-    setCurrentTime(0);
-    
-    // Load and potentially start playing
-    audio.load();
-    if (wasPlaying) {
-      audio.play().then(() => {
+    // Use existing audio manager to play the song
+    try {
+      const trackKey = trackKeyFromSlug(newTrackId);
+      if (trackKey) {
+        await audioManager.playSongSequence(trackKey as TrackKey);
         setIsPlaying(true);
-      }).catch(console.error);
+      }
+    } catch (error) {
+      console.error("Failed to play track:", error);
     }
-  }, [isPlaying]);
+  }, [audioManager]);
 
   // Handle play/pause button
   const handleTogglePlay = useCallback(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
+    if (!currentAudioElement) return;
     
     if (isPlaying) {
-      audio.pause();
+      currentAudioElement.pause();
       setIsPlaying(false);
     } else {
-      audio.play().then(() => {
+      currentAudioElement.play().then(() => {
         setIsPlaying(true);
       }).catch(console.error);
     }
-  }, [isPlaying]);
+  }, [isPlaying, currentAudioElement]);
 
   // Handle progress bar click for seeking
   const handleProgressClick = useCallback((e: React.MouseEvent) => {
-    const audio = audioRef.current;
     const progressBar = progressBarRef.current;
-    if (!audio || !progressBar || duration <= 0) return;
+    if (!currentAudioElement || !progressBar || duration <= 0) return;
     
     const rect = progressBar.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const ratio = Math.max(0, Math.min(1, clickX / rect.width));
     const newTime = ratio * duration;
     
-    audio.currentTime = newTime;
+    currentAudioElement.currentTime = newTime;
     setCurrentTime(newTime);
-  }, [duration]);
+  }, [duration, currentAudioElement]);
 
-  // Setup audio event listeners
+  // Monitor the audio manager's foreground audio element
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
+    let intervalId: NodeJS.Timeout;
+    let cleanupListeners: (() => void) | null = null;
     
-    const handleTimeUpdate = () => {
-      setCurrentTime(audio.currentTime);
+    const pollForAudio = () => {
+      const currentAudio = audioManager.getCurrentAudio();
+      
+      if (currentAudio && currentAudio !== currentAudioElement) {
+        // Clean up previous listeners
+        if (cleanupListeners) {
+          cleanupListeners();
+        }
+        
+        setCurrentAudioElement(currentAudio);
+        
+        // Set up listeners for this audio element
+        const handleTimeUpdate = () => {
+          setCurrentTime(currentAudio.currentTime);
+        };
+        
+        const handleLoadedMetadata = () => {
+          setDuration(currentAudio.duration || 0);
+        };
+        
+        const handleEnded = () => {
+          setIsPlaying(false);
+          setCurrentTime(0);
+        };
+        
+        const handlePlay = () => setIsPlaying(true);
+        const handlePause = () => setIsPlaying(false);
+        
+        currentAudio.addEventListener("timeupdate", handleTimeUpdate);
+        currentAudio.addEventListener("loadedmetadata", handleLoadedMetadata);
+        currentAudio.addEventListener("ended", handleEnded);
+        currentAudio.addEventListener("play", handlePlay);
+        currentAudio.addEventListener("pause", handlePause);
+        
+        // Set initial state
+        setCurrentTime(currentAudio.currentTime);
+        setDuration(currentAudio.duration || 0);
+        setIsPlaying(!currentAudio.paused);
+        
+        cleanupListeners = () => {
+          currentAudio.removeEventListener("timeupdate", handleTimeUpdate);
+          currentAudio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+          currentAudio.removeEventListener("ended", handleEnded);
+          currentAudio.removeEventListener("play", handlePlay);
+          currentAudio.removeEventListener("pause", handlePause);
+        };
+      }
     };
     
-    const handleLoadedMetadata = () => {
-      setDuration(audio.duration || 0);
-    };
+    // Poll every 100ms for audio changes
+    intervalId = setInterval(pollForAudio, 100);
     
-    const handleEnded = () => {
-      setIsPlaying(false);
-      setCurrentTime(0);
-      audio.currentTime = 0;
-    };
-    
-    audio.addEventListener("timeupdate", handleTimeUpdate);
-    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
-    audio.addEventListener("ended", handleEnded);
+    // Initial check
+    pollForAudio();
     
     return () => {
-      audio.removeEventListener("timeupdate", handleTimeUpdate);
-      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      audio.removeEventListener("ended", handleEnded);
+      clearInterval(intervalId);
+      if (cleanupListeners) {
+        cleanupListeners();
+      }
     };
-  }, []);
-
-  // Initialize audio source when component mounts or track changes
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    
-    audio.src = currentTrackUrl;
-    audio.load();
-  }, [currentTrackUrl]);
+  }, [audioManager, currentAudioElement]);
 
   // Prepare dropdown items for SongDropdown component
   const dropdownItems = songs.map(song => ({
@@ -189,9 +204,6 @@ export default function UnifiedAudioPlayer({ initialTrackId }: UnifiedAudioPlaye
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      {/* Hidden audio element */}
-      <audio ref={audioRef} preload="metadata" />
-      
       {/* Main player container */}
       <div className="backdrop-blur-xl bg-[rgba(8,26,32,0.85)] rounded-2xl p-4 border border-[#19E3FF]/40 shadow-[0_0_25px_rgba(25,227,255,0.2)]">
         <div className="flex flex-col gap-4">

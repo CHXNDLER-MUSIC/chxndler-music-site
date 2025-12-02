@@ -501,6 +501,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [secretPhrase, setSecretPhrase] = useState("");
   const [checkInMessage, setCheckInMessage] = useState("");
+  const [enlargedCard, setEnlargedCard] = useState<Card | null>(null);
   const [showCheckInSuccess, setShowCheckInSuccess] = useState(false);
   const [isSubmittingPhrase, setIsSubmittingPhrase] = useState(false);
   const [statusType, setStatusType] = useState<'idle' | 'success' | 'error'>('idle');
@@ -1765,11 +1766,17 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             filteredCards.map(card => (
                             <div key={card.id} className="flex gap-2 max-w-full overflow-hidden">
                               {/* Card image */}
-                              <div className="w-20 h-28 rounded-lg border-2 border-yellow-500/80 overflow-hidden flex-shrink-0 relative">
+                              <div className="w-20 h-28 rounded-lg border-2 border-yellow-500/80 overflow-hidden flex-shrink-0 relative cursor-pointer hover:border-yellow-400/90 transition-all duration-200 hover:scale-105">
                                 <img
                                   src={card.artwork_url || '/cards/CHXNDLER.webp'}
                                   alt={card.card_name}
                                   className={`w-full h-full object-cover ${shouldBlurCard(card) ? 'filter blur-sm opacity-60' : ''}`}
+                                  onClick={() => {
+                                    if (!shouldBlurCard(card)) {
+                                      try { sfx.play('click', 0.8); } catch {}
+                                      setEnlargedCard(card);
+                                    }
+                                  }}
                                 />
                                 {shouldBlurCard(card) && (
                                   <div className="absolute inset-0 flex items-center justify-center">
@@ -2146,7 +2153,39 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         </div>
       )}
 
-
+      {/* Enlarged Card Modal */}
+      {enlargedCard && (
+        <div 
+          className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[9999] rounded-lg"
+          onClick={() => setEnlargedCard(null)}
+        >
+          <div 
+            className="relative w-48 mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={enlargedCard.artwork_url || '/cards/CHXNDLER.webp'}
+              alt={enlargedCard.card_name}
+              className="w-full h-auto rounded-lg border-4 border-yellow-500/80 shadow-2xl"
+              style={{
+                maxHeight: '300px',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))'
+              }}
+            />
+            <button
+              onClick={() => setEnlargedCard(null)}
+              className="absolute top-1 right-1 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white text-sm font-bold transition-all duration-200"
+            >
+              ×
+            </button>
+            <div className="absolute bottom-1 left-1 right-1 bg-black/80 rounded px-2 py-1 text-center">
+              <h3 className="text-yellow-400 font-bold text-xs mb-0.5">{enlargedCard.card_name}</h3>
+              <p className="text-white/80 text-xs">Element: {enlargedCard.element}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
     </>
   );

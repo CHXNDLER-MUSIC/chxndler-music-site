@@ -5,6 +5,8 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import HeartversePopup from "@/components/HeartversePopup";
 import VenmoButton from "@/components/VenmoButton";
 import { sfx } from "@/lib/sfx";
+// npm install libphonenumber-js
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 type Props = {
   isOpen: boolean;
@@ -24,6 +26,7 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
   const [showPhonePopup, setShowPhonePopup] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [selectedCountry, setSelectedCountry] = useState("US");
+  const [detectedCountry, setDetectedCountry] = useState<string | null>(null);
 
   // Clear phone number when popup opens or when showPhonePopup changes
   useEffect(() => {
@@ -228,6 +231,30 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
     { code: 'MX', name: 'Mexico', flag: '🇲🇽' }
   ];
 
+  // Country mapping for detected countries
+  const countryNames: { [key: string]: string } = {
+    'US': 'United States',
+    'CA': 'Canada', 
+    'GB': 'United Kingdom',
+    'DE': 'Germany',
+    'FR': 'France',
+    'AU': 'Australia',
+    'JP': 'Japan',
+    'BR': 'Brazil',
+    'IN': 'India',
+    'MX': 'Mexico',
+    'BO': 'Bolivia',
+    'AR': 'Argentina',
+    'CN': 'China',
+    'IT': 'Italy',
+    'ES': 'Spain',
+    'NL': 'Netherlands',
+    'CH': 'Switzerland',
+    'SE': 'Sweden',
+    'NO': 'Norway',
+    'DK': 'Denmark'
+  };
+
   // International phone number country configurations
   const phoneConfigs = {
     US: { code: '+1', format: '(XXX) XXX-XXXX', minLength: 10, maxLength: 10 },
@@ -251,10 +278,19 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
   }
 
   function handlePhoneNumberChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const raw = e.target.value;
-    // Allow only + symbol and digits
-    const cleaned = raw.replace(/[^\d+]/g, '');
-    setPhoneNumber(cleaned);
+    const value = e.target.value;
+    // Allow only digits, +, spaces, and -
+    if (/^[0-9+\-\s]*$/.test(value)) {
+      setPhoneNumber(value);
+      
+      // Auto-detect country using libphonenumber-js
+      const parsed = parsePhoneNumberFromString(value);
+      if (parsed && parsed.country) {
+        setDetectedCountry(parsed.country); // ISO 2 code like "US", "BO", "GB"
+      } else {
+        setDetectedCountry(null);
+      }
+    }
   }
 
   function getPhoneValidation(country: string = 'US') {
@@ -648,7 +684,7 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
                   type="tel"
                   value={phoneNumber}
                   onChange={handlePhoneNumberChange}
-                  placeholder={`${phoneConfigs[selectedCountry]?.code}1234567890`}
+                  placeholder="+1 555-555-5555"
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="off"
@@ -674,44 +710,97 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
                     e.target.style.boxShadow = '0 0 8px rgba(0, 255, 255, 0.3)';
                   }}
                 />
+
+                {/* Country detection and validation display */}
+                {detectedCountry ? (
+                  <p style={{ 
+                    marginTop: '8px', 
+                    fontSize: '12px', 
+                    color: '#87CEEB',
+                    textAlign: 'left'
+                  }}>
+                    Detected country: {countryNames[detectedCountry] || detectedCountry}
+                  </p>
+                ) : phoneNumber.length > 0 && (() => {
+                  const digitsOnly = phoneNumber.replace(/\D/g, '');
+                  const isValidPhone = digitsOnly.length >= 7 && digitsOnly.length <= 20;
+                  return !isValidPhone ? (
+                    <p style={{
+                      marginTop: '8px',
+                      color: '#FC54AF',
+                      fontSize: '14px',
+                      textAlign: 'left'
+                    }}>
+                      Please enter a valid phone number.
+                    </p>
+                  ) : (
+                    <p style={{
+                      marginTop: '8px',
+                      fontSize: '12px',
+                      color: '#87CEEB',
+                      textAlign: 'left'
+                    }}>
+                      Outside the US? Add your full country code.
+                    </p>
+                  );
+                })()}
               </div>
 
               {/* Submit Phone Button */}
               <button
                 onClick={() => {
-                  const validation = getPhoneValidation(selectedCountry);
-                  if (phoneNumber.replace(/\D/g, '').length >= validation.minLength && !loading) {
-                    submitPhoneNumber(phoneNumber);
+                  const digitsOnly = phoneNumber.replace(/\D/g, '');
+                  const isValidPhone = digitsOnly.length >= 7 && digitsOnly.length <= 20;
+                  if (isValidPhone && !loading) {
+                    submitPhoneNumber(phoneNumber.trim());
                   }
                 }}
-                disabled={phoneNumber.replace(/\D/g, '').length < getPhoneValidation(selectedCountry).minLength || loading}
+                disabled={(() => {
+                  const digitsOnly = phoneNumber.replace(/\D/g, '');
+                  const isValidPhone = digitsOnly.length >= 7 && digitsOnly.length <= 20;
+                  return !isValidPhone || loading;
+                })()}
                 style={{
                   width: 'auto',
                   minWidth: '140px',
                   maxWidth: '180px',
                   padding: '12px 20px',
                   background: 'transparent',
-                  border: (phoneNumber.replace(/\D/g, '').length < getPhoneValidation(selectedCountry).minLength || loading)
-                    ? '2px solid rgba(128, 128, 128, 0.3)' 
-                    : '2px solid #00FFFF',
+                  border: (() => {
+                    const digitsOnly = phoneNumber.replace(/\D/g, '');
+                    const isValidPhone = digitsOnly.length >= 7 && digitsOnly.length <= 20;
+                    return (!isValidPhone || loading) ? '2px solid rgba(128, 128, 128, 0.3)' : '2px solid #00FFFF';
+                  })(),
                   borderRadius: '8px',
-                  color: (phoneNumber.replace(/\D/g, '').length < getPhoneValidation(selectedCountry).minLength || loading)
-                    ? 'rgba(128, 128, 128, 0.7)' 
-                    : '#00FFFF',
+                  color: (() => {
+                    const digitsOnly = phoneNumber.replace(/\D/g, '');
+                    const isValidPhone = digitsOnly.length >= 7 && digitsOnly.length <= 20;
+                    return (!isValidPhone || loading) ? 'rgba(128, 128, 128, 0.7)' : '#00FFFF';
+                  })(),
                   fontSize: '16px',
                   fontWeight: '600',
-                  cursor: (phoneNumber.replace(/\D/g, '').length < getPhoneValidation(selectedCountry).minLength || loading) ? 'not-allowed' : 'pointer',
+                  cursor: (() => {
+                    const digitsOnly = phoneNumber.replace(/\D/g, '');
+                    const isValidPhone = digitsOnly.length >= 7 && digitsOnly.length <= 20;
+                    return (!isValidPhone || loading) ? 'not-allowed' : 'pointer';
+                  })(),
                   transition: 'all 300ms ease',
-                  boxShadow: (phoneNumber.replace(/\D/g, '').length < getPhoneValidation(selectedCountry).minLength || loading)
-                    ? 'none' 
-                    : '0 0 15px rgba(0, 255, 255, 0.3)',
-                  textShadow: (phoneNumber.replace(/\D/g, '').length < getPhoneValidation(selectedCountry).minLength || loading)
-                    ? 'none' 
-                    : '0 0 10px #00FFFF, 0 0 20px #00FFFF, 0 0 30px #00FFFF',
+                  boxShadow: (() => {
+                    const digitsOnly = phoneNumber.replace(/\D/g, '');
+                    const isValidPhone = digitsOnly.length >= 7 && digitsOnly.length <= 20;
+                    return (!isValidPhone || loading) ? 'none' : '0 0 15px rgba(0, 255, 255, 0.3)';
+                  })(),
+                  textShadow: (() => {
+                    const digitsOnly = phoneNumber.replace(/\D/g, '');
+                    const isValidPhone = digitsOnly.length >= 7 && digitsOnly.length <= 20;
+                    return (!isValidPhone || loading) ? 'none' : '0 0 10px #00FFFF, 0 0 20px #00FFFF, 0 0 30px #00FFFF';
+                  })(),
                   outline: 'none'
                 }}
                 onMouseEnter={(e) => {
-                  if (phoneNumber.replace(/\D/g, '').length >= getPhoneValidation(selectedCountry).minLength && !loading) {
+                  const digitsOnly = phoneNumber.replace(/\D/g, '');
+                  const isValidPhone = digitsOnly.length >= 7 && digitsOnly.length <= 20;
+                  if (isValidPhone && !loading) {
                     e.target.style.transform = 'translateY(-2px)';
                     e.target.style.background = 'rgba(0, 255, 255, 0.15)';
                     e.target.style.boxShadow = '0 0 40px rgba(0, 255, 255, 0.8), 0 0 60px rgba(0, 255, 255, 0.4), inset 0 0 30px rgba(0, 255, 255, 0.2)';
@@ -721,7 +810,9 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (phoneNumber.replace(/\D/g, '').length >= getPhoneValidation(selectedCountry).minLength && !loading) {
+                  const digitsOnly = phoneNumber.replace(/\D/g, '');
+                  const isValidPhone = digitsOnly.length >= 7 && digitsOnly.length <= 20;
+                  if (isValidPhone && !loading) {
                     e.target.style.transform = 'translateY(0)';
                     e.target.style.background = 'transparent';
                     e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';
@@ -743,7 +834,7 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
                     Saving...
                   </div>
                 ) : (
-                  'Connect to Heartverse'
+                  'Send Heart Signal'
                 )}
               </button>
               

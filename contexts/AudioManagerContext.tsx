@@ -40,6 +40,7 @@ type AudioManagerApi = {
   playSongSequence: (trackKey: TrackKey) => Promise<void>;
   stopAllAudio: () => void;
   bestSourceFor: (t: { mp3?: string; opus?: string }) => string;
+  getCurrentAudio: () => HTMLAudioElement | null;
 };
 
 const Ctx = createContext<AudioManagerApi | null>(null);
@@ -157,11 +158,16 @@ export function AudioManagerProvider({ children }: { children: React.ReactNode }
     }, { once: true } as any);
   }, [stopAllAudioInternal]);
 
+  const getCurrentAudio = useCallback(() => {
+    return foregroundRef.current;
+  }, []);
+
   const api: AudioManagerApi = {
     playStartSequence,
     playSongSequence,
     stopAllAudio: stopAllAudioInternal,
     bestSourceFor: bestSourceForInternal,
+    getCurrentAudio,
   };
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;

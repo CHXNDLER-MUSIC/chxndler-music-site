@@ -97,6 +97,7 @@ export default function ProfileBar({
   const [isChxndlerPopoutOpen, setIsChxndlerPopoutOpen] = useState(false);
   const [chxndlerActiveTab, setChxndlerActiveTab] = useState<"CHXNDLER" | "WE BELIEVE" | "ELEMENTS">("CHXNDLER");
   const [isJourneyModalOpen, setIsJourneyModalOpen] = useState(false);
+  const [heartElementFlipped, setHeartElementFlipped] = useState(false);
 
   // Heart popover states
   const [showHeartPopover, setShowHeartPopover] = useState(false);
@@ -963,24 +964,27 @@ export default function ProfileBar({
               {/* Elements Grid */}
               <div className="grid grid-cols-2 gap-2 mb-3 px-2">
                 {[
-                  { name: 'HEART', color: '#FF6B9D', icon: '/elements/heart.webp', subtitle: 'love and connection' },
+                  { name: 'HEART', color: '#FF6B9D', icon: '/elements/heart.webp', subtitle: 'LOVE AND CONNECTION' },
                   { name: 'WATER', color: '#4A90E2', icon: '/elements/water.webp', subtitle: 'flow and adaptability' },
                   { name: 'LIGHTNING', color: '#FFD700', icon: '/elements/lightning.webp', subtitle: 'passion and courage' },
                   { name: 'DARKNESS', color: '#8B5CF6', icon: '/elements/darkness.webp', subtitle: 'mystery and transformation' }
                 ].map((element) => (
                   <div
                     key={element.name}
-                    className="flex flex-col items-center p-2 rounded-lg border transition-all duration-200 hover:scale-105"
+                    className={`flex flex-col items-center p-2 rounded-lg border transition-all duration-200 hover:scale-105 ${element.name === 'HEART' ? 'cursor-pointer' : ''}`}
                     style={{
                       borderColor: `${element.color}60`,
                       background: `${element.color}10`,
                       boxShadow: `0 0 10px ${element.color}30`
                     }}
+                    onClick={element.name === 'HEART' ? () => {
+                      try { sfx.play('flip', 0.8); } catch {}
+                      setHeartElementFlipped(!heartElementFlipped);
+                    } : undefined}
                   >
                     <div 
-                      className="w-6 h-6 rounded-lg mb-1 overflow-hidden border"
+                      className="w-6 h-6 rounded-lg mb-1 overflow-hidden"
                       style={{
-                        borderColor: element.color,
                         background: `${element.color}20`
                       }}
                     >
@@ -1000,12 +1004,15 @@ export default function ProfileBar({
                     >
                       {element.name}
                     </div>
-                    <div 
-                      className="text-xs text-white/70"
-                      style={{ fontSize: '9px' }}
-                    >
-                      {element.subtitle}
-                    </div>
+                    {/* Only show subtitle for non-HEART elements or when HEART is flipped */}
+                    {(element.name !== 'HEART' || heartElementFlipped) && (
+                      <div 
+                        className="text-xs text-white/70"
+                        style={{ fontSize: '9px' }}
+                      >
+                        {element.name === 'HEART' && heartElementFlipped ? 'LOVE AND CONNECTION' : element.subtitle}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
