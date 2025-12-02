@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+import { sfx } from "@/lib/sfx";
 
 interface PopoutShellProps {
   title: string;
@@ -28,8 +29,8 @@ export default function PopoutShell({ title, onClose, children, pageIndicator }:
         <div
           className="binder-hologram-container"
           style={{
-            width: 'min(92vw, 700px)',
-            height: '45vh',
+            width: 'min(80vw, 500px)',
+            height: '40vh',
             display: 'flex',
             flexDirection: 'column',
             padding: '10px 14px 0px 14px',
@@ -78,7 +79,10 @@ export default function PopoutShell({ title, onClose, children, pageIndicator }:
           
           {/* Close button - exact copy from Binder */}
           <button
-            onClick={onClose}
+            onClick={() => {
+              try { sfx.play('close', 0.8); } catch {}
+              onClose();
+            }}
             className="absolute top-2 right-4 text-pink-400 hover:text-pink-200 cursor-pointer w-8 h-8 rounded-full border border-pink-400/80 flex items-center justify-center"
             style={{ 
               fontSize: '16px',

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { usePlanetPositions } from './planet-positions-context';
 
 interface TooltipInfo {
@@ -12,9 +12,19 @@ interface TooltipInfo {
 export function PlanetMinimapV2() {
   const { positions, activePlanetId, setActivePlanetId } = usePlanetPositions();
   const [tooltip, setTooltip] = useState<TooltipInfo | null>(null);
+  const [, forceUpdate] = useState({});
 
-  const mapSize = 260;
-  const mapScale = 8; // Scale factor to map 3D coordinates to 2D minimap
+  // Force re-render at 60fps to match the smoothness of the 3D scene
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      forceUpdate({});
+    }, 1000 / 60); // 60 FPS for smoother movement
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  const mapSize = 280;
+  const mapScale = 30; // Scale factor to map 3D coordinates to 2D minimap (increased for larger orbits and better spacing)
 
   const worldToMap = (worldX: number, worldZ: number) => {
     const mapX = (worldX / mapScale) * (mapSize / 2) + mapSize / 2;
@@ -22,48 +32,62 @@ export function PlanetMinimapV2() {
     return { x: mapX, y: mapY };
   };
 
-  const planetPositions = useMemo(() => {
-    const result: Array<{
-      id: string;
-      x: number;
-      y: number;
-      planet: any;
-      size: number;
-      color: string;
-    }> = [];
+  // Calculate planet positions on every render to show real-time movement
+  const planetPositions: Array<{
+    id: string;
+    x: number;
+    y: number;
+    planet: any;
+    size: number;
+    color: string;
+  }> = [];
 
-    positions.forEach((position, id) => {
-      const mapPos = worldToMap(position.x, position.z);
-      let size = 4;
-      let color = '#6b7280';
 
-      switch (position.data.kind) {
-        case 'center':
-          size = 12;
-          color = '#f59e0b';
-          break;
-        case 'element':
-          size = 8;
-          color = '#3b82f6';
-          break;
-        case 'song':
-          size = 6;
-          color = position.data.released ? '#10b981' : '#6b7280';
-          break;
-      }
+  positions.forEach((position, id) => {
+    const mapPos = worldToMap(position.x, position.z);
+    let size = 4;
+    let color = '#6b7280';
 
-      result.push({
-        id,
-        x: mapPos.x,
-        y: mapPos.y,
-        planet: position.data,
-        size,
-        color,
-      });
+    switch (position.data.kind) {
+      case 'center':
+        size = 12;
+        color = '#f59e0b'; // Orange for center
+        break;
+      case 'element':
+        size = 8;
+        // Color based on element type
+        switch (position.data.elementId) {
+          case 'HEART':
+            color = '#ff6b9d'; // Pink for Heart
+            break;
+          case 'WATER':
+            color = '#4fc3f7'; // Blue for Water
+            break;
+          case 'LIGHTNING':
+            color = '#ffeb3b'; // Yellow for Lightning
+            break;
+          case 'DARKNESS':
+            color = '#9c27b0'; // Purple for Darkness
+            break;
+          default:
+            color = '#3b82f6'; // Default blue
+        }
+        break;
+      case 'song':
+        size = 6;
+        color = position.data.released ? '#10b981' : '#6b7280'; // Green for released, gray for unreleased
+        break;
+    }
+
+    planetPositions.push({
+      id,
+      x: mapPos.x,
+      y: mapPos.y,
+      planet: position.data,
+      size,
+      color,
     });
-
-    return result;
-  }, [positions]);
+  });
 
   const handlePlanetHover = (
     e: React.MouseEvent,
@@ -199,8 +223,20 @@ export function PlanetMinimapV2() {
             <span>Center</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-            <span>Element</span>
+            <div className="w-2 h-2 rounded-full" style={{backgroundColor: '#ff6b9d'}}></div>
+            <span>Heart</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full" style={{backgroundColor: '#4fc3f7'}}></div>
+            <span>Water</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full" style={{backgroundColor: '#ffeb3b'}}></div>
+            <span>Lightning</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full" style={{backgroundColor: '#9c27b0'}}></div>
+            <span>Darkness</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-emerald-500"></div>

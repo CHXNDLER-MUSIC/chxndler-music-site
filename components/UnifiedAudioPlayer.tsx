@@ -3,7 +3,7 @@
 import React, { useCallback, useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { songs } from "@/data/songs";
-import { TRACKS, type TrackKey, useAudioManager } from "@/contexts/AudioManagerContext";
+import { TRACKS, TRACK_INFO, type TrackKey, useAudioManager } from "@/contexts/AudioManagerContext";
 import { trackKeyFromSlug } from "@/utils/trackKeyFromSlug";
 import SongDropdown from "./SongDropdown";
 
@@ -59,40 +59,41 @@ interface UnifiedAudioPlayerProps {
 }
 
 export default function UnifiedAudioPlayer({ initialTrackId }: UnifiedAudioPlayerProps) {
-  // Use existing audio manager
+  // Use existing audio manager with centralized state
   const audioManager = useAudioManager();
   
-  // React state for UI
-  const [isPlaying, setIsPlaying] = useState(false);
+  // Get centralized state from audio manager
+  const isPlaying = audioManager.isPlaying;
+  const currentTrackInfo = audioManager.currentTrackInfo;
+  
+  // Local state for progress tracking
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [selectedTrackId, setSelectedTrackId] = useState(initialTrackId || songs[0]?.id || "");
   const [currentAudioElement, setCurrentAudioElement] = useState<HTMLAudioElement | null>(null);
   
   // Progress bar reference for click handling
   const progressBarRef = useRef<HTMLDivElement>(null);
   
-  // Get current track info
-  const currentTrack = songs.find(song => song.id === selectedTrackId) || songs[0];
+  // Filter songs to only include those that have track info (available tracks)
+  const availableSongs = Object.keys(TRACK_INFO).map(trackId => {
+    const trackInfo = TRACK_INFO[trackId];
+    return {
+      id: trackId,
+      title: trackInfo.title,
+      oneLiner: trackInfo.oneLiner || "",
+      // Add placeholder planet info for compatibility
+      planet: { radius: 1, color: "#38B6FF", orbitRadius: 3, orbitSpeed: 0.5, tilt: 0.2 }
+    };
+  });
   
   // Calculate progress (0-1)
   const progress = duration > 0 ? currentTime / duration : 0;
 
-  // Handle track change from dropdown
-  const handleTrackChange = useCallback(async (newTrackId: string) => {
-    setSelectedTrackId(newTrackId);
-    
-    // Use existing audio manager to play the song
-    try {
-      const trackKey = trackKeyFromSlug(newTrackId);
-      if (trackKey) {
-        await audioManager.playSongSequence(trackKey as TrackKey);
-        setIsPlaying(true);
-      }
-    } catch (error) {
-      console.error("Failed to play track:", error);
-    }
-  }, [audioManager]);
+  // Handle track change from dropdown - let SongDropdown handle the audio playing
+  const handleTrackChange = useCallback((newTrackId: string) => {
+    // The SongDropdown will handle calling audioManager.playSongSequence()
+    // and audioManager will update its currentTrackInfo automatically
+  }, []);
 
   // Handle play/pause button
   const handleTogglePlay = useCallback(() => {
@@ -138,6 +139,28 @@ export default function UnifiedAudioPlayer({ initialTrackId }: UnifiedAudioPlaye
         
         setCurrentAudioElement(currentAudio);
         
+        // Try to detect which song is playing by checking the audio src
+        // and update selectedTrackId accordingly
+        const detectCurrentSong = () => {
+          if (currentAudio.src) {
+            // Look for song match by checking if the audio src matches any available tracks
+            const playingSong = availableSongs.find(song => {
+              const trackKey = trackKeyFromSlug(song.id);
+              if (trackKey && TRACKS[trackKey as TrackKey]) {
+                const track = TRACKS[trackKey as TrackKey];
+                return currentAudio.src.includes(trackKey.toLowerCase()) ||
+                       (track.mp3 && currentAudio.src.includes(track.mp3.replace('/tracks/', ''))) ||
+                       (track.opus && currentAudio.src.includes(track.opus.replace('/tracks/', '')));
+              }
+              return false;
+            });
+            
+            if (playingSong && playingSong.id !== selectedTrackId) {
+              setSelectedTrackId(playingSong.id);
+            }
+          }
+        };
+        
         // Set up listeners for this audio element
         const handleTimeUpdate = () => {
           setCurrentTime(currentAudio.currentTime);
@@ -145,6 +168,7 @@ export default function UnifiedAudioPlayer({ initialTrackId }: UnifiedAudioPlaye
         
         const handleLoadedMetadata = () => {
           setDuration(currentAudio.duration || 0);
+          detectCurrentSong(); // Detect song when metadata loads
         };
         
         const handleEnded = () => {
@@ -152,7 +176,11 @@ export default function UnifiedAudioPlayer({ initialTrackId }: UnifiedAudioPlaye
           setCurrentTime(0);
         };
         
-        const handlePlay = () => setIsPlaying(true);
+        const handlePlay = () => {
+          setIsPlaying(true);
+          detectCurrentSong(); // Detect song when playback starts
+        };
+        
         const handlePause = () => setIsPlaying(false);
         
         currentAudio.addEventListener("timeupdate", handleTimeUpdate);
@@ -165,6 +193,7 @@ export default function UnifiedAudioPlayer({ initialTrackId }: UnifiedAudioPlaye
         setCurrentTime(currentAudio.currentTime);
         setDuration(currentAudio.duration || 0);
         setIsPlaying(!currentAudio.paused);
+        detectCurrentSong(); // Initial detection
         
         cleanupListeners = () => {
           currentAudio.removeEventListener("timeupdate", handleTimeUpdate);
@@ -188,10 +217,10 @@ export default function UnifiedAudioPlayer({ initialTrackId }: UnifiedAudioPlaye
         cleanupListeners();
       }
     };
-  }, [audioManager, currentAudioElement]);
+  }, [audioManager, currentAudioElement, availableSongs, selectedTrackId]);
 
   // Prepare dropdown items for SongDropdown component
-  const dropdownItems = songs.map(song => ({
+  const dropdownItems = availableSongs.map(song => ({
     id: song.id,
     title: song.title,
     slug: song.id,

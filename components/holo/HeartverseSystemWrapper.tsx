@@ -40,13 +40,33 @@ function SafeWrapper({ children }: { children: React.ReactNode }) {
   const [canRenderErrorBoundary, setCanRenderErrorBoundary] = useState(false);
   
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     // Double-check React is fully ready before rendering ErrorBoundary
-    if (typeof React !== 'undefined' && React.Component && React.createElement) {
-      setCanRenderErrorBoundary(true);
+    const checkReactReady = () => {
+      try {
+        if (typeof React !== 'undefined' && React.Component && React.createElement) {
+          // Test ErrorBoundary creation
+          const testBoundary = React.createElement(ErrorBoundary, { children: null });
+          if (testBoundary) {
+            setCanRenderErrorBoundary(true);
+            return true;
+          }
+        }
+      } catch (error) {
+        console.warn('ErrorBoundary not ready:', error);
+        return false;
+      }
+      return false;
+    };
+
+    if (!checkReactReady()) {
+      // Retry after a short delay
+      setTimeout(checkReactReady, 100);
     }
   }, []);
   
-  if (!canRenderErrorBoundary) {
+  if (!canRenderErrorBoundary || typeof window === 'undefined') {
     return null;
   }
   
@@ -71,21 +91,26 @@ export default function HeartverseSystemWrapper({
   
   // Lazy-load R3F Canvas to avoid evaluating internals before guards
   const R3FCanvas: any = React.useMemo(
-    () =>
-      dynamic(() => import("@react-three/fiber").then((m) => m.Canvas as any), {
+    () => {
+      if (typeof window === 'undefined') return null;
+      
+      return dynamic(() => import("@react-three/fiber").then((m) => m.Canvas as any), {
         ssr: false,
         loading: () => null,
         onError: (error) => {
           console.error('Failed to load R3F Canvas:', error);
           return null;
         }
-      }),
+      });
+    },
     []
   );
   // Lazy-load the solar system too, only render it when safe
   const HeartverseSolarSystemLazy: any = React.useMemo(
-    () =>
-      dynamic(() => import("./HeartverseSolarSystem").then((m) => {
+    () => {
+      if (typeof window === 'undefined') return null;
+      
+      return dynamic(() => import("./HeartverseSolarSystem").then((m) => {
         console.log("HeartverseSolarSystem import result:", m);
         return { default: m.default };
       }), {
@@ -95,47 +120,69 @@ export default function HeartverseSystemWrapper({
           console.error('Failed to load HeartverseSolarSystem:', error);
           return null;
         }
-      }),
+      });
+    },
     []
   );
   
   // Ensure client-side mounting and React internals are ready
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     setIsMounted(true);
     
     // Check if React internals are properly initialized
-    try {
-      if (typeof React !== 'undefined' && React.createElement) {
-        // Try to access React internals safely
-        const testElement = React.createElement('div');
-        if (testElement) {
-          setReactReady(true);
-        }
-      }
-    } catch (error) {
-      console.warn('React not fully ready:', error);
-      // Retry after a short delay
-      setTimeout(() => {
-        try {
+    const checkReactReady = () => {
+      try {
+        if (typeof React !== 'undefined' && React.createElement && React.Component) {
+          // Try to access React internals safely
           const testElement = React.createElement('div');
-          if (testElement) {
+          if (testElement && testElement.type === 'div') {
             setReactReady(true);
+            return true;
           }
-        } catch (retryError) {
-          console.error('React failed to initialize:', retryError);
         }
-      }, 100);
+      } catch (error) {
+        console.warn('React not fully ready:', error);
+        return false;
+      }
+      return false;
+    };
+
+    if (!checkReactReady()) {
+      // Retry after a short delay
+      const retryInterval = setInterval(() => {
+        if (checkReactReady()) {
+          clearInterval(retryInterval);
+        }
+      }, 50);
+      
+      // Clean up after 5 seconds max
+      setTimeout(() => {
+        clearInterval(retryInterval);
+        if (!reactReady) {
+          console.error('React failed to initialize after 5 seconds');
+        }
+      }, 5000);
     }
-  }, []);
+  }, [reactReady]);
 
   // After mount, probe environment to avoid ReactCurrentOwner crashes
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     try {
       const c = document.createElement('canvas');
       const gl = c && (c.getContext('webgl') || c.getContext('experimental-webgl'));
       const hasWebGL = !!gl;
       setR3fSafe(hasWebGL);
-    } catch {
+      
+      // Clean up test canvas
+      if (gl) {
+        gl.getExtension('WEBGL_lose_context')?.loseContext();
+      }
+    } catch (error) {
+      console.warn('WebGL check failed:', error);
       setR3fSafe(false);
     }
   }, []);
@@ -155,12 +202,24 @@ export default function HeartverseSystemWrapper({
   // Responsive design values
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
 
+  // Comprehensive safety checks before rendering
+  if (typeof window === 'undefined') {
+    return null; // Never render on server
+  }
+
   if (!isMounted || !reactReady) {
     return null; // Prevent SSR issues and wait for React to be ready
   }
 
-  if (!r3fSafe || !componentsLoaded) {
-    console.log("Components not ready:", { r3fSafe, componentsLoaded, isMounted, reactReady });
+  if (!r3fSafe || !componentsLoaded || !R3FCanvas || !HeartverseSolarSystemLazy) {
+    console.log("Components not ready:", { 
+      r3fSafe, 
+      componentsLoaded, 
+      isMounted, 
+      reactReady,
+      hasR3FCanvas: !!R3FCanvas,
+      hasHeartverseSolarSystemLazy: !!HeartverseSolarSystemLazy
+    });
     return null; // Don't render until all components are safely loaded
   }
 

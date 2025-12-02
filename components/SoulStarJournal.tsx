@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useProfile } from "@/contexts/ProfileContext";
 import { sfx } from "@/lib/sfx";
 import { useDailyReflectionStatus } from "@/hooks/useDailyReflectionStatus";
+import { saveSoulStarEntry } from "@/lib/soulStarJournal";
 
 interface DailyPrompt {
   id: string; // Add the daily prompt ID
@@ -196,18 +197,21 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       setJournalState(prev => ({ ...prev, isLoading: true }));
       sfx.play('click', 0.8);
 
-      // Use ProfileContext to save so journalEntries updates for FULL LOG
-      const saved = await saveJournalEntry({
-        entry_date: today,
-        element: profile.element,
-        prompt_id: dailyPrompt.id,
-        intention: dailyPrompt.intention.text,
-        reflection: dailyPrompt.reflection.text,
-        intention_response: journalState.intentionResponse,
-        reflection_response: journalState.reflectionResponse,
-        soul_star: journalState.soulStar.trim(),
-        is_private: journalState.isPrivate,
-      } as any);
+      // Use the new saveSoulStarEntry function to save to soul_journal_entries table
+      const currentPrompt = {
+        id: dailyPrompt.id,
+        prompt_date: dailyPrompt.prompt_date,
+        element: dailyPrompt.element,
+        prompt: dailyPrompt.reflection.text,
+        intention: dailyPrompt.intention.text
+      };
+
+      const saved = await saveSoulStarEntry({
+        userId: user.id,
+        currentPrompt,
+        soulStarText: journalState.soulStar.trim(),
+        isPrivate: journalState.isPrivate,
+      });
 
       if (saved) {
         // Mark reflection as complete to hide notifications

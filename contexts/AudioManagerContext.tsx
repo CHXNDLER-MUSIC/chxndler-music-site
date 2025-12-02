@@ -3,6 +3,17 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef } from "react";
 
 // Music and voiceover tracks
+// Track info for audio and visual display
+export type TrackInfo = {
+  id: string;
+  title: string;
+  artist: string;
+  coverUrl: string;
+  skyTexture?: string;
+  oneLiner?: string;
+};
+
+// Audio source files  
 export const TRACKS = {
   BABY: { mp3: "/tracks/baby.mp3", opus: "/tracks/baby.opus" },
   BE_MY_BEE: { mp3: "/tracks/be-my-bee.mp3", opus: "/tracks/be-my-bee.opus" },
@@ -28,6 +39,90 @@ export const TRACKS = {
   WELCOME_BACK: { mp3: "/tracks/welcome-back.mp3", opus: "/tracks/welcome-back.opus" },
 } as const;
 
+// Track info mapping - links track keys to visual/metadata information
+export const TRACK_INFO: Record<string, TrackInfo> = {
+  'baby': {
+    id: 'baby',
+    title: 'BABY',
+    artist: 'CHXNDLER',
+    coverUrl: '/covers/BABY.webp',
+    skyTexture: '/sky/baby-sky.webp',
+    oneLiner: 'Chaos, magic, and first-date sparks.'
+  },
+  'ocean-girl': {
+    id: 'ocean-girl',
+    title: 'OCEAN GIRL',
+    artist: 'CHXNDLER',
+    coverUrl: '/covers/OCEAN GIRL.webp',
+    skyTexture: '/sky/ocean-girl-sky.webp',
+    oneLiner: 'Love flows back like the tide.'
+  },
+  'be-my-bee': {
+    id: 'be-my-bee',
+    title: 'BE MY BEE',
+    artist: 'CHXNDLER', 
+    coverUrl: '/covers/BE MY BEE.webp',
+    skyTexture: '/sky/be-my-bee-sky.webp',
+    oneLiner: 'Love\'s sweet buzz, then the sting.'
+  },
+  'colors-home': {
+    id: 'colors-home',
+    title: 'COLORS OF OUR HOME',
+    artist: 'CHXNDLER',
+    coverUrl: '/covers/COLORS OF OUR HOME.webp',
+    skyTexture: '/sky/colors-home-sky.webp',
+    oneLiner: 'From isolation to a world in color.'
+  },
+  'game-boy-heart': {
+    id: 'game-boy-heart',
+    title: 'GAME BOY HEART',
+    artist: 'CHXNDLER',
+    coverUrl: '/covers/GAME BOY HEART.webp',
+    skyTexture: '/sky/game-boy-heart-sky.webp',
+    oneLiner: 'Escaping into an 8-bit dream.'
+  },
+  'house-party': {
+    id: 'house-party',
+    title: 'ALIEN (House Party)',
+    artist: 'CHXNDLER',
+    coverUrl: '/covers/HOUSE PARTY.webp', 
+    skyTexture: '/sky/house-party-sky.webp',
+    oneLiner: 'A crush, a crowd, all aliens in disguise.'
+  },
+  'kid-forever': {
+    id: 'kid-forever',
+    title: 'KID FOREVER',
+    artist: 'CHXNDLER',
+    coverUrl: '/covers/KID FOREVER.webp',
+    skyTexture: '/sky/kid-forever-sky.webp',
+    oneLiner: 'Fearless in your daydream land.'
+  },
+  'paris': {
+    id: 'paris',
+    title: 'PARIS',
+    artist: 'CHXNDLER',
+    coverUrl: '/covers/PARIS.webp',
+    skyTexture: '/sky/paris-sky.webp',
+    oneLiner: 'Poison love kissed anyway.'
+  },
+  'pokemon': {
+    id: 'pokemon',
+    title: 'POKÉMON',
+    artist: 'CHXNDLER',
+    coverUrl: '/covers/POKEMON.webp',
+    skyTexture: '/sky/pokemon-sky.webp',
+    oneLiner: 'Dream big, fight hard, never stop chasing.'
+  },
+  'were-just-friends': {
+    id: 'were-just-friends',
+    title: 'WE\'RE JUST FRIENDS',
+    artist: 'CHXNDLER',
+    coverUrl: '/covers/WE\'RE JUST FRIENDS.webp',
+    skyTexture: '/sky/were-just-friends-sky.webp',
+    oneLiner: 'Lines blur between us.'
+  }
+};
+
 export const SFX = {
   WARP: "/audio/warp.mp3",
   BUTTON_BEAM: "/audio/button.mp3",
@@ -41,6 +136,9 @@ type AudioManagerApi = {
   stopAllAudio: () => void;
   bestSourceFor: (t: { mp3?: string; opus?: string }) => string;
   getCurrentAudio: () => HTMLAudioElement | null;
+  currentTrackInfo: TrackInfo | null;
+  setCurrentTrackInfo: (trackId: string) => void;
+  isPlaying: boolean;
 };
 
 const Ctx = createContext<AudioManagerApi | null>(null);
@@ -84,6 +182,12 @@ export function AudioManagerProvider({ children }: { children: React.ReactNode }
   const ambientRef = useRef<HTMLAudioElement | null>(null);
   const sfxRef = useRef<HTMLAudioElement | null>(null);
   const sfx2Ref = useRef<HTMLAudioElement | null>(null);
+
+  // Track state - single source of truth
+  const [currentTrackInfo, setCurrentTrackInfoState] = React.useState<TrackInfo | null>(
+    TRACK_INFO['baby'] || null  // Default to baby only on initial load
+  );
+  const [isPlaying, setIsPlaying] = React.useState(false);
 
   // Mark that the new AudioManager is active; used to disable legacy bridges
   useEffect(() => {
@@ -140,23 +244,54 @@ export function AudioManagerProvider({ children }: { children: React.ReactNode }
     } catch {}
   }, [stopAllAudioInternal]);
 
+  // Helper to set current track info and maintain it during warp
+  const setCurrentTrackInfo = useCallback((trackId: string) => {
+    const trackInfo = TRACK_INFO[trackId.toLowerCase()];
+    if (trackInfo) {
+      setCurrentTrackInfoState(trackInfo);
+    }
+  }, []);
+
   const playSongSequence = useCallback(async (trackKey: TrackKey) => {
+    // First, determine which song this is for and update track info immediately
+    const trackId = Object.keys(TRACK_INFO).find(key => {
+      const upperKey = key.replace(/-/g, '_').toUpperCase();
+      return upperKey === trackKey || trackKey.includes(upperKey);
+    });
+    
+    if (trackId) {
+      setCurrentTrackInfo(trackId);
+    }
+    
     stopAllAudioInternal();
+    setIsPlaying(false);
+    
     // warp -> button
     try { sfxRef.current = await playAudioOnce(SFX.WARP); } catch {}
     try { sfx2Ref.current = await playAudioOnce(SFX.BUTTON_BEAM); } catch {}
-    // selected song only (no ambient)
+    
+    // selected song only (no ambient) 
     const t = TRACKS[trackKey];
     const src = bestSourceForInternal(t);
     const a = new Audio(src);
     a.preload = "auto";
     a.playsInline = true as any;
+    
+    // Set up event listeners to track playing state
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+    const handleEnded = () => {
+      setIsPlaying(false);
+      if (foregroundRef.current === a) foregroundRef.current = null;
+    };
+    
+    a.addEventListener("play", handlePlay);
+    a.addEventListener("pause", handlePause);  
+    a.addEventListener("ended", handleEnded, { once: true } as any);
+    
     foregroundRef.current = a;
     void a.play().catch(() => {});
-    a.addEventListener("ended", () => {
-      if (foregroundRef.current === a) foregroundRef.current = null;
-    }, { once: true } as any);
-  }, [stopAllAudioInternal]);
+  }, [stopAllAudioInternal, setCurrentTrackInfo]);
 
   const getCurrentAudio = useCallback(() => {
     return foregroundRef.current;
@@ -168,6 +303,9 @@ export function AudioManagerProvider({ children }: { children: React.ReactNode }
     stopAllAudio: stopAllAudioInternal,
     bestSourceFor: bestSourceForInternal,
     getCurrentAudio,
+    currentTrackInfo,
+    setCurrentTrackInfo,
+    isPlaying,
   };
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;

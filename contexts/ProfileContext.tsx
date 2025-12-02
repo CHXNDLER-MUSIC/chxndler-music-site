@@ -488,7 +488,6 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         entry_date: entry.entry_date,
         element: entry.element,
         intention: entry.intention,
-        reflection: entry.reflection,
         soul_star: entry.soul_star,
       };
 

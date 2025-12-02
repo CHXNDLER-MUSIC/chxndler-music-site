@@ -1,6 +1,6 @@
 'use client';
 
-import { PlanetSystemV2 } from '@/components/PlanetSystemV2';
+import { PlanetSystemV2 } from '@/components/PlanetSystemV2Simple';
 
 export default function TestPlanetsPage() {
   return (

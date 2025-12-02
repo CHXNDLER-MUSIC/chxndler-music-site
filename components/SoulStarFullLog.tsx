@@ -78,20 +78,16 @@ export default function SoulStarFullLog({ userId }: SoulStarFullLogProps) {
     try {
       sfx.play('click', 0.8);
       
-      const currentPrompt: CurrentPrompt = {
-        id: entry.id,
-        prompt_date: entry.promptDate,
-        element: entry.element,
-        prompt: entry.prompt,
-        intention: entry.intention
-      };
-
-      await saveSoulStarEntry({
-        userId: currentUserId!,
-        currentPrompt,
-        soulStarText: editText.trim(),
-        isPrivate: entry.isPrivate
-      });
+      // For editing, we update the soul_star directly
+      const { supabaseClient } = await import('@/lib/supabaseClient');
+      const { data, error } = await supabaseClient
+        .from('soul_journal_entries')
+        .update({ soul_star: editText.trim() })
+        .eq('id', entry.id)
+        .select()
+        .single();
+      
+      if (error) throw error;
 
       setEntries(prev => prev.map(e => 
         e.id === entry.id 

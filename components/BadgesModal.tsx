@@ -6,6 +6,7 @@ import { useBadges } from "@/hooks/useBadges";
 import BadgeCategoryButton from "@/components/BadgeCategoryButton";
 import PopoutShell from "@/components/PopoutShell";
 import { BadgeWithProgress, BadgeCategory } from "@/types/badges";
+import { sfx } from "@/lib/sfx";
 
 type Props = {
   open: boolean;
@@ -21,13 +22,19 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
 
   // Six badge categories matching your requirements
   const sixCategories = [
-    { id: "soul-star", name: "SOUL STAR", emoji: "⭐" },
-    { id: "achievements", name: "ACHIEVEMENTS", emoji: "🏆" },
-    { id: "elemental-streak", name: "ELEMENTAL STREAK", emoji: "🔷" },
-    { id: "listening", name: "LISTENING", emoji: "🎵" },
-    { id: "heartcoin", name: "HEARTCOINS", emoji: "💛" },
-    { id: "community", name: "MILESTONES", emoji: "👣" }
+    { id: "soul-star", name: "SOUL STAR", emoji: "⭐", image: "/badges/soul star.webp" },
+    { id: "achievements", name: "ACHIEVEMENTS", emoji: "🏆", image: "/badges/collector.webp" },
+    { id: "elemental-streak", name: "ELEMENTAL STREAK", emoji: "🔷", image: "/badges/elemental streak.webp" },
+    { id: "listening", name: "LISTENING", emoji: "🎵", image: "/badges/listening.webp" },
+    { id: "heartcoin", name: "HEARTCOINS", emoji: "💛", image: "/badges/currency.webp" },
+    { id: "community", name: "MILESTONES", emoji: "👣", image: "/badges/community.webp" }
   ];
+
+  // Handle category click with sound
+  const handleCategoryClick = (categoryId: string) => {
+    sfx.play('click');
+    setSelectedCategory(categoryId);
+  };
 
   // Get actual badges for a category, fallback to empty if not found
   const getBadgesForCategory = (categoryId: string): BadgeWithProgress[] => {
@@ -40,7 +47,10 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     const badgeDetailContent = (
       <div className="relative text-center space-y-4">
         <button
-          onClick={() => setSelectedBadge(null)}
+          onClick={() => {
+            sfx.play('click');
+            setSelectedBadge(null);
+          }}
           className="mb-4 text-[#38B6FF] hover:text-[#38B6FF]/80 transition text-sm"
         >
           ← Back to Badges
@@ -154,7 +164,10 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     const categoryContent = (
       <div className="relative space-y-4">
         <button
-          onClick={() => setSelectedCategory(null)}
+          onClick={() => {
+            sfx.play('click');
+            setSelectedCategory(null);
+          }}
           className="mb-4 text-[#38B6FF] hover:text-[#38B6FF]/80 transition text-sm"
         >
           ← Back to Categories
@@ -166,7 +179,10 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             <div key={index} className="flex flex-col items-center space-y-2">
               <div className="relative">
                 <button
-                  onClick={() => setSelectedBadge(badge)}
+                  onClick={() => {
+                    sfx.play('click');
+                    setSelectedBadge(badge);
+                  }}
                   className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/60 border border-white/20 hover:border-white/40 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
                   title={badge.description ? `${badge.badge_name}: ${badge.description} (${badge.current || 0}/${badge.total || 0})` : badge.badge_name}
                 >
@@ -315,57 +331,66 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
       )}
 
       {!loading && !error && (
-        <div className="relative">
-          {/* Six circular category buttons in binder card grid layout */}
-          <div className="grid gap-2 grid-cols-5 p-2">
-            {sixCategories.slice(0, 5).map((category, index) => (
-              <div
-                key={category.id}
-                className="flex items-center justify-center"
-                style={{ aspectRatio: '2/3' }}
-              >
-                <BadgeCategoryButton
-                  category={category}
-                  onClick={() => setSelectedCategory(category.id)}
-                />
-              </div>
-            ))}
-          </div>
-          
-          {/* Second row - single category button in first slot */}
-          <div className="grid gap-2 grid-cols-5 mt-3 p-2">
-            <div
-              className="flex items-center justify-center"
-              style={{ aspectRatio: '2/3' }}
-            >
-              <BadgeCategoryButton
-                category={sixCategories[5]}
-                onClick={() => setSelectedCategory(sixCategories[5].id)}
-              />
-            </div>
-            {/* Empty locked slots to match binder layout */}
-            {Array.from({ length: 4 }, (_, index) => (
-              <div
-                key={`empty-slot-${index}`}
-                className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300"
-                style={{
-                  boxShadow: '0 0 5px rgba(255,105,180,0.1)',
-                  aspectRatio: '2/3'
-                }}
-              >
-                <div className="w-full h-full bg-gradient-to-br from-pink-500/5 to-purple-500/5 rounded border-2 border-dashed border-pink-400/20 flex items-center justify-center">
-                  <div 
-                    className="text-xs font-bold text-center"
-                    style={{ 
-                      color: 'rgba(255,105,180,0.4)', 
-                      textShadow: '0 0 4px rgba(255,105,180,0.3)',
+        <div className="relative flex flex-col items-center justify-center min-h-[300px]">
+          {/* Inner dark tinted container like binder */}
+          <div 
+            className="relative p-6 rounded-lg backdrop-blur-sm"
+            style={{
+              background: 'rgba(0,0,0,0.4)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              backdropFilter: 'blur(8px)'
+            }}
+          >
+            {/* Six badge category circles in 3x2 grid */}
+            <div className="grid grid-cols-3 gap-6">
+              {/* Top row - 3 badges */}
+              {sixCategories.slice(0, 3).map((category) => (
+                <div key={category.id} className="flex flex-col items-center space-y-2">
+                  <button
+                    onClick={() => handleCategoryClick(category.id)}
+                    className="relative w-16 h-16 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 hover:border-white/50 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
+                    style={{
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,105,180,0.2)'
                     }}
                   >
-                    LOCKED
-                  </div>
+                    <img
+                      src={category.image}
+                      alt={category.name}
+                      className="w-12 h-12 object-cover rounded-full group-hover:scale-110 transition-transform"
+                      draggable={false}
+                    />
+                  </button>
+                  <span className="text-white/70 text-xs font-medium text-center max-w-20">
+                    {category.name}
+                  </span>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+            
+            {/* Bottom row - 3 badges */}
+            <div className="grid grid-cols-3 gap-6 mt-6">
+              {sixCategories.slice(3, 6).map((category) => (
+                <div key={category.id} className="flex flex-col items-center space-y-2">
+                  <button
+                    onClick={() => handleCategoryClick(category.id)}
+                    className="relative w-16 h-16 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 hover:border-white/50 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
+                    style={{
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,105,180,0.2)'
+                    }}
+                  >
+                    <img
+                      src={category.image}
+                      alt={category.name}
+                      className="w-12 h-12 object-cover rounded-full group-hover:scale-110 transition-transform"
+                      draggable={false}
+                    />
+                  </button>
+                  <span className="text-white/70 text-xs font-medium text-center max-w-20">
+                    {category.name}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}

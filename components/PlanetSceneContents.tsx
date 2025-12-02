@@ -1,9 +1,6 @@
 'use client';
 
 import React, { useRef, useMemo } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
-import { useTexture } from '@react-three/drei';
-import * as THREE from 'three';
 import { usePlanetPositions } from './planet-positions-context';
 import { 
   centerPlanet, 
@@ -12,6 +9,25 @@ import {
   ElementPlanet, 
   SongPlanet 
 } from './planet-data';
+
+// Import Three.js and R3F hooks dynamically to avoid SSR issues
+let useFrame: any;
+let useThree: any;
+let useTexture: any;
+let THREE: any;
+
+if (typeof window !== 'undefined') {
+  import('@react-three/fiber').then(module => {
+    useFrame = module.useFrame;
+    useThree = module.useThree;
+  });
+  import('@react-three/drei').then(module => {
+    useTexture = module.useTexture;
+  });
+  import('three').then(module => {
+    THREE = module;
+  });
+}
 
 interface PlanetSceneContentsProps {
   zoomLevel: number;
