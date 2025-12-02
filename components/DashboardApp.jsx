@@ -31,6 +31,7 @@ import { audioCoordinator } from "@/lib/audio-coordinator";
 import { debugLog } from "@/lib/debug";
 import { audioHeartverse } from "@/lib/audio-heartverse";
 import WelcomeHomeModal from "@/components/WelcomeHomeModal";
+import { useAudioManager } from "@/contexts/AudioManagerContext";
 import ProfileBarWrapper from "@/components/ProfileBarWrapper";
 import HoloStarsButton from "@/components/HoloStarsButton";
 import SoulStareModal from "@/components/SoulStareModal";
@@ -44,6 +45,9 @@ import GlowingHamburgerMenuWrapper from "@/components/GlowingHamburgerMenuWrappe
 export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  
+  // Audio manager context for centralized track state
+  const audioManager = useAudioManager();
   
   // UI store for profile refresh trigger and name modal (must be before useEffect)
   const { profileRefreshTrigger, openNamePrompt, openNamePromptFromAuth } = useUIStore();
@@ -256,6 +260,27 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   React.useEffect(() => { showHUDRef.current = showHUD; }, [showHUD]);
   const beamEnabledRef = React.useRef(beamEnabled);
   React.useEffect(() => { beamEnabledRef.current = beamEnabled; }, [beamEnabled]);
+
+  // Connect audio manager context to sky/background changes
+  React.useEffect(() => {
+    if (audioManager.currentTrackInfo && audioManager.currentTrackInfo.id) {
+      // Update sky when context track changes (maintains warp effect without breaking state)
+      try {
+        const newSky = skyFor(audioManager.currentTrackInfo.id);
+        if (newSky && (newSky.key !== sky.key)) {
+          setSky(newSky);
+        }
+      } catch (error) {
+        console.warn('Failed to update sky for track:', audioManager.currentTrackInfo.id, error);
+      }
+      
+      // Update curTrack to match the context (maintain compatibility with existing logic)
+      const matchingTrack = tracks.find(t => t.slug === audioManager.currentTrackInfo.id);
+      if (matchingTrack && (!curTrack || curTrack.slug !== matchingTrack.slug)) {
+        setCurTrack(matchingTrack);
+      }
+    }
+  }, [audioManager.currentTrackInfo, sky.key, curTrack]);
 
   // Guard: wait until blue HUD and beam are fully hidden before continuing (with a hard cap)
   const waitUntilBlueHidden = React.useCallback((next) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { usePlanetPositions } from './planet-positions-context';
 
 interface TooltipInfo {
@@ -13,15 +13,24 @@ export function PlanetMinimapV2() {
   const { positions, activePlanetId, setActivePlanetId } = usePlanetPositions();
   const [tooltip, setTooltip] = useState<TooltipInfo | null>(null);
   const [, forceUpdate] = useState({});
+  const animationFrameRef = useRef<number>();
 
-  // Force re-render at 60fps to match the smoothness of the 3D scene
+  // Use requestAnimationFrame for smooth updates that match the 3D scene timing
   React.useEffect(() => {
-    const interval = setInterval(() => {
+    const animate = () => {
       forceUpdate({});
-    }, 1000 / 60); // 60 FPS for smoother movement
+      animationFrameRef.current = requestAnimationFrame(animate);
+    };
+    animationFrameRef.current = requestAnimationFrame(animate);
     
-    return () => clearInterval(interval);
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
   }, []);
+
+  // Remove the extra position effect that was causing stuttering
 
   const mapSize = 280;
   const mapScale = 30; // Scale factor to map 3D coordinates to 2D minimap (increased for larger orbits and better spacing)
@@ -42,6 +51,8 @@ export function PlanetMinimapV2() {
     color: string;
   }> = [];
 
+  // Debug: Log positions to see if they're updating
+  // console.log('Minimap positions update:', positions.size, Array.from(positions.entries()).slice(0, 2));
 
   positions.forEach((position, id) => {
     const mapPos = worldToMap(position.x, position.z);
@@ -75,7 +86,23 @@ export function PlanetMinimapV2() {
         break;
       case 'song':
         size = 6;
-        color = position.data.released ? '#10b981' : '#6b7280'; // Green for released, gray for unreleased
+        // Color based on the element this song belongs to, with opacity for release status
+        switch (position.data.elementId) {
+          case 'HEART':
+            color = position.data.released ? '#ff6b9d' : '#ff6b9d80'; // Pink (full or semi-transparent)
+            break;
+          case 'WATER':
+            color = position.data.released ? '#4fc3f7' : '#4fc3f780'; // Blue (full or semi-transparent)
+            break;
+          case 'LIGHTNING':
+            color = position.data.released ? '#ffeb3b' : '#ffeb3b80'; // Yellow (full or semi-transparent)
+            break;
+          case 'DARKNESS':
+            color = position.data.released ? '#9c27b0' : '#9c27b080'; // Purple (full or semi-transparent)
+            break;
+          default:
+            color = position.data.released ? '#10b981' : '#6b7280'; // Fallback to green/gray
+        }
         break;
     }
 

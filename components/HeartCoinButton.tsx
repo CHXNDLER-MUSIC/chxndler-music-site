@@ -199,6 +199,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [showDigitalForm, setShowDigitalForm] = useState(false);
   const [currentMerchIndex, setCurrentMerchIndex] = useState(0);
   const [flippedItems, setFlippedItems] = useState<Set<string>>(new Set());
+  const [inviteFriendShared, setInviteFriendShared] = useState(false);
   const [shippingInfo, setShippingInfo] = useState({
     fullName: '',
     street: '',
@@ -595,6 +596,16 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           }, 2500);
           return;
         }
+        
+        // Mark as shared but don't complete the quest yet
+        setInviteFriendShared(true);
+        setCheckInMessage('Message sent! Click CONFIRM to complete the quest');
+        setStatusType('success');
+        setTimeout(() => {
+          setCheckInMessage("");
+          setStatusType('idle');
+        }, 3000);
+        return; // Don't complete the quest yet
       }
 
       const result = await completeQuest(quest);
@@ -634,6 +645,38 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         setCheckInMessage("");
         setStatusType('idle');
       }, 3000);
+    }
+  };
+
+  // Handle bonus quest confirm step for invite friend
+  const handleBonusQuestConfirm = async (quest: BonusQuestWithCompletion) => {
+    try {
+      const result = await completeQuest(quest);
+      
+      if (result.success) {
+        setCheckInMessage(`Quest completed! +${quest.reward_heartcoins} Heart Coins earned`);
+        setStatusType('success');
+        setTimeout(() => {
+          setCheckInMessage("");
+          setStatusType('idle');
+        }, 3000);
+        setInviteFriendShared(false); // Reset the shared state
+      } else {
+        setCheckInMessage(result.message || 'Failed to complete quest');
+        setStatusType('error');
+        setTimeout(() => {
+          setCheckInMessage("");
+          setStatusType('idle');
+        }, 2500);
+      }
+    } catch (error: any) {
+      console.error('Error confirming bonus quest:', error);
+      setCheckInMessage('Failed to confirm quest completion');
+      setStatusType('error');
+      setTimeout(() => {
+        setCheckInMessage("");
+        setStatusType('idle');
+      }, 2500);
     }
   };
 
@@ -1230,41 +1273,62 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     </div>
                     <div className="flex items-center space-x-2">
                       <button
-                        onClick={() => handleBonusQuestComplete(quest)}
-                        disabled={!isLoggedIn || !quest.can_complete || quest.times_completed >= (quest.max_total_completions || Infinity)}
-                        className="px-2 py-1 text-xs rounded border transition-colors"
+                        onClick={() => {
+                          if (quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared) {
+                            handleBonusQuestConfirm(quest);
+                          } else {
+                            handleBonusQuestComplete(quest);
+                          }
+                        }}
+                        disabled={!isLoggedIn || (!quest.can_complete && !inviteFriendShared) || quest.times_completed >= (quest.max_total_completions || Infinity)}
+                        className="px-2 py-1 text-xs rounded border transition-colors font-bold"
                         style={{
                           background: !isLoggedIn
                             ? 'rgba(100,100,100,0.3)'
                             : quest.times_completed > 0 && quest.max_total_completions === 1 
-                            ? 'rgba(0,255,0,0.1)' 
-                            : quest.can_complete 
-                              ? 'rgba(255,255,255,0.1)'
-                              : 'rgba(100,100,100,0.3)',
+                            ? 'rgba(0,255,0,0.2)' 
+                            : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
+                              ? 'rgba(0,0,0,0.3)'
+                              : quest.can_complete 
+                                ? 'rgba(255,255,255,0.1)'
+                                : 'rgba(100,100,100,0.3)',
                           color: !isLoggedIn
                             ? '#666'
                             : quest.times_completed > 0 && quest.max_total_completions === 1 
                             ? '#00FF00' 
-                            : quest.can_complete 
-                              ? '#FFFFFF'
-                              : '#666',
+                            : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
+                              ? '#F2EF1D'
+                              : quest.can_complete 
+                                ? '#FFFFFF'
+                                : '#666',
                           borderColor: !isLoggedIn
                             ? 'rgba(100,100,100,0.6)'
                             : quest.times_completed > 0 && quest.max_total_completions === 1 
                             ? '#00FF00' 
-                            : quest.can_complete 
-                              ? 'rgba(255,255,255,0.6)'
-                              : 'rgba(100,100,100,0.6)',
+                            : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
+                              ? '#F2EF1D'
+                              : quest.can_complete 
+                                ? 'rgba(255,255,255,0.6)'
+                                : 'rgba(100,100,100,0.6)',
+                          borderWidth: quest.times_completed > 0 && quest.max_total_completions === 1 
+                            ? '2px'
+                            : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
+                              ? '2px'
+                              : '1px',
                           textShadow: !isLoggedIn
                             ? 'none'
                             : quest.times_completed > 0 && quest.max_total_completions === 1 
                             ? '0 0 8px #00FF00, 0 0 16px #00FF00' 
-                            : 'none',
+                            : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
+                              ? '0 0 10px #F2EF1D'
+                              : 'none',
                           boxShadow: !isLoggedIn
                             ? 'none'
                             : quest.times_completed > 0 && quest.max_total_completions === 1 
-                            ? '0 0 10px rgba(0,255,0,0.4), 0 0 20px rgba(0,255,0,0.2)' 
-                            : 'none'
+                            ? '0 0 15px rgba(0,255,0,0.6), inset 0 0 10px rgba(0,255,0,0.2)' 
+                            : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
+                              ? '0 0 20px rgba(242,239,29,0.8), inset 0 0 10px rgba(242,239,29,0.2)'
+                              : 'none'
                         }}
                       >
                         {!isLoggedIn
@@ -1274,7 +1338,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             : quest.quest_key === 'ATTEND_LIVESTREAM' 
                               ? 'CHECK IN'
                               : quest.quest_key === 'INVITE_FRIEND' 
-                                ? 'INVITE FRIEND'
+                                ? (inviteFriendShared ? 'CONFIRM' : 'INVITE FRIEND')
                                 : 'COMPLETE')}
                       </button>
                       <span className="text-sm flex items-center" style={{ 

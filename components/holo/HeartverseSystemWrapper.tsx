@@ -15,58 +15,33 @@ class ErrorBoundary extends React.Component<
   }
 
   static getDerivedStateFromError(error: Error) {
-    console.error('ErrorBoundary caught error:', error);
     return { hasError: true };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('HeartverseSystemWrapper Error:', error, errorInfo);
-    // Log additional context
-    if (error.message?.includes('ReactCurrentOwner')) {
-      console.error('ReactCurrentOwner error detected - React internals not ready');
+    // Only log in development
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('HeartverseSystemWrapper Error (handled):', error.message);
     }
   }
 
   render() {
     if (this.state.hasError) {
-      return this.props.fallback || <div style={{ display: 'none' }} />;
+      return this.props.fallback || null;
     }
     return this.props.children;
   }
 }
 
-// Safe wrapper component that delays ErrorBoundary creation until React is ready
+// Simple wrapper that only renders on client-side
 function SafeWrapper({ children }: { children: React.ReactNode }) {
-  const [canRenderErrorBoundary, setCanRenderErrorBoundary] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
-    // Double-check React is fully ready before rendering ErrorBoundary
-    const checkReactReady = () => {
-      try {
-        if (typeof React !== 'undefined' && React.Component && React.createElement) {
-          // Test ErrorBoundary creation
-          const testBoundary = React.createElement(ErrorBoundary, { children: null });
-          if (testBoundary) {
-            setCanRenderErrorBoundary(true);
-            return true;
-          }
-        }
-      } catch (error) {
-        console.warn('ErrorBoundary not ready:', error);
-        return false;
-      }
-      return false;
-    };
-
-    if (!checkReactReady()) {
-      // Retry after a short delay
-      setTimeout(checkReactReady, 100);
-    }
+    setIsMounted(true);
   }, []);
   
-  if (!canRenderErrorBoundary || typeof window === 'undefined') {
+  if (!isMounted) {
     return null;
   }
   
@@ -86,8 +61,6 @@ export default function HeartverseSystemWrapper({
 }: HeartverseSystemWrapperProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [r3fSafe, setR3fSafe] = useState(false);
-  const [componentsLoaded, setComponentsLoaded] = useState(false);
-  const [reactReady, setReactReady] = useState(false);
   
   // Lazy-load R3F Canvas to avoid evaluating internals before guards
   const R3FCanvas: any = React.useMemo(
@@ -125,102 +98,44 @@ export default function HeartverseSystemWrapper({
     []
   );
   
-  // Ensure client-side mounting and React internals are ready
+  // Simple client-side mounting
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
     setIsMounted(true);
-    
-    // Check if React internals are properly initialized
-    const checkReactReady = () => {
-      try {
-        if (typeof React !== 'undefined' && React.createElement && React.Component) {
-          // Try to access React internals safely
-          const testElement = React.createElement('div');
-          if (testElement && testElement.type === 'div') {
-            setReactReady(true);
-            return true;
-          }
-        }
-      } catch (error) {
-        console.warn('React not fully ready:', error);
-        return false;
-      }
-      return false;
-    };
+  }, []);
 
-    if (!checkReactReady()) {
-      // Retry after a short delay
-      const retryInterval = setInterval(() => {
-        if (checkReactReady()) {
-          clearInterval(retryInterval);
-        }
-      }, 50);
-      
-      // Clean up after 5 seconds max
-      setTimeout(() => {
-        clearInterval(retryInterval);
-        if (!reactReady) {
-          console.error('React failed to initialize after 5 seconds');
-        }
-      }, 5000);
-    }
-  }, [reactReady]);
-
-  // After mount, probe environment to avoid ReactCurrentOwner crashes
+  // Check WebGL support
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (!isMounted) return;
     
     try {
-      const c = document.createElement('canvas');
-      const gl = c && (c.getContext('webgl') || c.getContext('experimental-webgl'));
-      const hasWebGL = !!gl;
-      setR3fSafe(hasWebGL);
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      setR3fSafe(!!gl);
       
-      // Clean up test canvas
+      // Clean up
       if (gl) {
         gl.getExtension('WEBGL_lose_context')?.loseContext();
       }
-    } catch (error) {
-      console.warn('WebGL check failed:', error);
+    } catch {
       setR3fSafe(false);
     }
-  }, []);
+  }, [isMounted]);
 
-  // Verify components are loaded properly
-  useEffect(() => {
-    console.log("Components validation:", {
-      R3FCanvas: !!R3FCanvas,
-      HeartverseSolarSystemLazy: !!HeartverseSolarSystemLazy,
-      isMounted,
-      r3fSafe,
-      reactReady
-    });
-    setComponentsLoaded(!!R3FCanvas && !!HeartverseSolarSystemLazy && reactReady);
-  }, [R3FCanvas, HeartverseSolarSystemLazy, isMounted, r3fSafe, reactReady]);
 
   // Responsive design values
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
 
-  // Comprehensive safety checks before rendering
+  // Safety checks before rendering
   if (typeof window === 'undefined') {
-    return null; // Never render on server
+    return null;
   }
 
-  if (!isMounted || !reactReady) {
-    return null; // Prevent SSR issues and wait for React to be ready
+  if (!isMounted) {
+    return null;
   }
 
-  if (!r3fSafe || !componentsLoaded || !R3FCanvas || !HeartverseSolarSystemLazy) {
-    console.log("Components not ready:", { 
-      r3fSafe, 
-      componentsLoaded, 
-      isMounted, 
-      reactReady,
-      hasR3FCanvas: !!R3FCanvas,
-      hasHeartverseSolarSystemLazy: !!HeartverseSolarSystemLazy
-    });
-    return null; // Don't render until all components are safely loaded
+  if (!r3fSafe || !R3FCanvas || !HeartverseSolarSystemLazy) {
+    return null;
   }
 
   return (

@@ -563,34 +563,34 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
                       : handleInviteFriend
                 }
                 disabled={questStatus.inviteFriendConfirm || loading || !isAuthenticated}
-                className={`px-4 py-2 rounded text-sm transition-all duration-200 ${
+                className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 ${
                   questStatus.inviteFriendConfirm
-                    ? 'bg-green-600/30 border border-green-500/50 text-green-300 cursor-not-allowed'
+                    ? 'bg-green-500/20 border-2 border-green-400 text-green-400 cursor-not-allowed'
                     : !isAuthenticated
                       ? 'bg-gray-600/30 border border-gray-500/50 text-gray-300 cursor-not-allowed'
                       : questStatus.inviteFriend
-                        ? 'bg-yellow-400/30 hover:bg-yellow-400/40 border border-yellow-400/50 text-yellow-200'
+                        ? 'bg-black/30 border-2 border-[#F2EF1D] text-[#F2EF1D] hover:bg-[#F2EF1D]/10'
                         : 'bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300'
                 }`}
                 style={{
                   boxShadow: questStatus.inviteFriendConfirm
-                    ? '0 0 10px rgba(0,255,0,0.3)'
+                    ? '0 0 15px rgba(0,255,0,0.6), inset 0 0 10px rgba(0,255,0,0.2)'
                     : !isAuthenticated
                       ? '0 0 10px rgba(100,100,100,0.3)'
                       : questStatus.inviteFriend
-                        ? '0 0 10px rgba(255,193,7,0.4)'
+                        ? '0 0 20px rgba(242,239,29,0.8), inset 0 0 10px rgba(242,239,29,0.2)'
                         : '0 0 10px rgba(252,84,175,0.3)',
                   textShadow: questStatus.inviteFriendConfirm
-                    ? '0 0 4px rgba(0,255,0,0.6)'
+                    ? '0 0 8px rgba(0,255,0,0.8)'
                     : !isAuthenticated
                       ? '0 0 4px rgba(100,100,100,0.6)'
                       : questStatus.inviteFriend
-                        ? '0 0 4px rgba(255,193,7,0.8)'
+                        ? '0 0 10px rgba(242,239,29,1)'
                         : '0 0 4px rgba(252,84,175,0.6)'
                 }}
               >
                 {questStatus.inviteFriendConfirm 
-                  ? '✓ COMPLETE' 
+                  ? 'COMPLETED' 
                   : !isAuthenticated
                     ? 'LOG IN TO COMPLETE'
                     : questStatus.inviteFriend 

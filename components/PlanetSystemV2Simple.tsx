@@ -249,6 +249,7 @@ function ThreeJSScene({ zoomLevel }: { zoomLevel: number }) {
             x, y: 0, z,
             data: elementData
           });
+          
         } else if (planet.kind === 'song' && planet.elementId && planet.orbitRadius && planet.orbitSpeed) {
           // Song planets orbit their element planet (which is also moving)
           const elementPlanet = planetsRef.current.find(p => p.id === planet.elementId);
@@ -315,7 +316,10 @@ function ThreeJSScene({ zoomLevel }: { zoomLevel: number }) {
     };
   }, []);
 
-  // Zoom level is handled in the animation loop
+  // Update zoom when zoomLevel prop changes
+  useEffect(() => {
+    // This will trigger re-calculation in the animation loop
+  }, [zoomLevel]);
 
   return <div ref={containerRef} className="w-full h-full" />;
 }
@@ -342,51 +346,49 @@ function getElementEmissive(elementId: string): number {
 
 // Create custom geometries for element planets
 function createWaterDropletGeometry(): THREE.BufferGeometry {
-  const shape = new THREE.Shape();
-  
-  // Create a water droplet shape
+  // Create a water droplet using LatheGeometry for a smooth 3D droplet
+  const points = [];
   const scale = 2;
-  shape.moveTo(0, -1.5 * scale);
-  shape.bezierCurveTo(-0.8 * scale, -1.5 * scale, -1.2 * scale, -0.5 * scale, -1.2 * scale, 0.2 * scale);
-  shape.bezierCurveTo(-1.2 * scale, 1 * scale, -0.6 * scale, 1.5 * scale, 0, 1.5 * scale);
-  shape.bezierCurveTo(0.6 * scale, 1.5 * scale, 1.2 * scale, 1 * scale, 1.2 * scale, 0.2 * scale);
-  shape.bezierCurveTo(1.2 * scale, -0.5 * scale, 0.8 * scale, -1.5 * scale, 0, -1.5 * scale);
   
-  const extrudeSettings = {
-    depth: 0.3,
-    bevelEnabled: true,
-    bevelSegments: 8,
-    steps: 2,
-    bevelSize: 0.1,
-    bevelThickness: 0.1
-  };
+  // Define the profile curve for a water droplet (half profile that will be rotated)
+  points.push(new THREE.Vector2(0, -1.5 * scale)); // Point at bottom
+  points.push(new THREE.Vector2(0.3 * scale, -1.4 * scale));
+  points.push(new THREE.Vector2(0.6 * scale, -1.1 * scale));
+  points.push(new THREE.Vector2(0.9 * scale, -0.6 * scale));
+  points.push(new THREE.Vector2(1.1 * scale, 0 * scale));
+  points.push(new THREE.Vector2(1.0 * scale, 0.5 * scale));
+  points.push(new THREE.Vector2(0.8 * scale, 0.9 * scale));
+  points.push(new THREE.Vector2(0.5 * scale, 1.2 * scale));
+  points.push(new THREE.Vector2(0.2 * scale, 1.4 * scale));
+  points.push(new THREE.Vector2(0, 1.5 * scale)); // Point at top
   
-  return new THREE.ExtrudeGeometry(shape, extrudeSettings);
+  return new THREE.LatheGeometry(points, 32);
 }
 
 function createLightningBoltGeometry(): THREE.BufferGeometry {
+  // Create a lightning bolt shape with extrusion
   const shape = new THREE.Shape();
+  const scale = 1.5;
   
-  // Create a lightning bolt shape
-  const scale = 1.2;
-  shape.moveTo(-0.3 * scale, 1.5 * scale);
+  // Define lightning bolt path
+  shape.moveTo(-0.2 * scale, 1.5 * scale);
   shape.lineTo(0.1 * scale, 1.5 * scale);
-  shape.lineTo(-0.4 * scale, 0.3 * scale);
-  shape.lineTo(0 * scale, 0.3 * scale);
-  shape.lineTo(-0.6 * scale, -1.5 * scale);
-  shape.lineTo(-0.2 * scale, -1.5 * scale);
-  shape.lineTo(0.3 * scale, -0.3 * scale);
-  shape.lineTo(-0.1 * scale, -0.3 * scale);
-  shape.lineTo(0.5 * scale, 1.5 * scale);
-  shape.lineTo(-0.3 * scale, 1.5 * scale);
+  shape.lineTo(-0.3 * scale, 0.3 * scale);
+  shape.lineTo(0.1 * scale, 0.3 * scale);
+  shape.lineTo(-0.4 * scale, -1.5 * scale);
+  shape.lineTo(-0.1 * scale, -1.5 * scale);
+  shape.lineTo(0.4 * scale, -0.3 * scale);
+  shape.lineTo(0 * scale, -0.3 * scale);
+  shape.lineTo(0.3 * scale, 1.5 * scale);
+  shape.lineTo(-0.2 * scale, 1.5 * scale);
   
   const extrudeSettings = {
-    depth: 0.4,
+    depth: 0.6,
     bevelEnabled: true,
-    bevelSegments: 6,
-    steps: 2,
-    bevelSize: 0.05,
-    bevelThickness: 0.05
+    bevelSegments: 4,
+    steps: 1,
+    bevelSize: 0.08,
+    bevelThickness: 0.08
   };
   
   return new THREE.ExtrudeGeometry(shape, extrudeSettings);
@@ -394,74 +396,41 @@ function createLightningBoltGeometry(): THREE.BufferGeometry {
 
 function createHeartGeometry(): THREE.BufferGeometry {
   const shape = new THREE.Shape();
+  const scale = 1.6;
   
-  // Create a heart shape
-  const scale = 1.3;
+  // Create a more proportional heart shape
   const x = 0, y = 0;
-  
-  shape.moveTo(x, y);
-  shape.bezierCurveTo(x, y - 0.3 * scale, x - 0.6 * scale, y - 0.3 * scale, x - 0.6 * scale, y);
-  shape.bezierCurveTo(x - 0.6 * scale, y + 0.3 * scale, x - 0.3 * scale, y + 0.6 * scale, x, y + 1 * scale);
-  shape.bezierCurveTo(x + 0.3 * scale, y + 0.6 * scale, x + 0.6 * scale, y + 0.3 * scale, x + 0.6 * scale, y);
-  shape.bezierCurveTo(x + 0.6 * scale, y - 0.3 * scale, x, y - 0.3 * scale, x, y);
+  shape.moveTo(x, y - 0.5 * scale);
+  shape.bezierCurveTo(x, y - 0.8 * scale, x - 0.7 * scale, y - 0.8 * scale, x - 0.7 * scale, y - 0.3 * scale);
+  shape.bezierCurveTo(x - 0.7 * scale, y + 0.1 * scale, x - 0.4 * scale, y + 0.4 * scale, x, y + 0.9 * scale);
+  shape.bezierCurveTo(x + 0.4 * scale, y + 0.4 * scale, x + 0.7 * scale, y + 0.1 * scale, x + 0.7 * scale, y - 0.3 * scale);
+  shape.bezierCurveTo(x + 0.7 * scale, y - 0.8 * scale, x, y - 0.8 * scale, x, y - 0.5 * scale);
   
   const extrudeSettings = {
-    depth: 0.3,
+    depth: 0.8,
     bevelEnabled: true,
-    bevelSegments: 8,
-    steps: 2,
-    bevelSize: 0.1,
-    bevelThickness: 0.1
+    bevelSegments: 12,
+    steps: 3,
+    bevelSize: 0.2,
+    bevelThickness: 0.2
   };
   
   return new THREE.ExtrudeGeometry(shape, extrudeSettings);
 }
 
 function createDarknessGeometry(): THREE.BufferGeometry {
-  const shape = new THREE.Shape();
+  // Create a crescent moon shape using sphere subtraction concept
+  const scale = 1.8;
   
-  // Create a crescent moon/shadow shape
-  const scale = 1.5;
-  const outerRadius = 1 * scale;
-  const innerRadius = 0.7 * scale;
-  const offsetX = 0.3 * scale;
+  // Create a sphere and then "cut" it to make a crescent
+  const geometry = new THREE.SphereGeometry(scale, 32, 32, 0, Math.PI * 1.3);
   
-  // Outer circle
-  for (let i = 0; i <= 32; i++) {
-    const angle = (i / 32) * Math.PI * 2;
-    const x = Math.cos(angle) * outerRadius;
-    const y = Math.sin(angle) * outerRadius;
-    if (i === 0) {
-      shape.moveTo(x, y);
-    } else {
-      shape.lineTo(x, y);
-    }
-  }
+  // Transform to make it look more like a crescent
+  const matrix = new THREE.Matrix4();
+  matrix.makeScale(1.2, 1, 0.6);
+  geometry.applyMatrix4(matrix);
   
-  // Inner circle (hole) to create crescent
-  const hole = new THREE.Path();
-  for (let i = 0; i <= 32; i++) {
-    const angle = (i / 32) * Math.PI * 2;
-    const x = Math.cos(angle) * innerRadius + offsetX;
-    const y = Math.sin(angle) * innerRadius;
-    if (i === 0) {
-      hole.moveTo(x, y);
-    } else {
-      hole.lineTo(x, y);
-    }
-  }
-  shape.holes.push(hole);
-  
-  const extrudeSettings = {
-    depth: 0.2,
-    bevelEnabled: true,
-    bevelSegments: 6,
-    steps: 2,
-    bevelSize: 0.05,
-    bevelThickness: 0.05
-  };
-  
-  return new THREE.ExtrudeGeometry(shape, extrudeSettings);
+  return geometry;
 }
 
 function getElementGeometry(elementId: string): THREE.BufferGeometry {

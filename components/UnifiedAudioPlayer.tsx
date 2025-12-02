@@ -89,11 +89,12 @@ export default function UnifiedAudioPlayer({ initialTrackId }: UnifiedAudioPlaye
   // Calculate progress (0-1)
   const progress = duration > 0 ? currentTime / duration : 0;
 
-  // Handle track change from dropdown - let SongDropdown handle the audio playing
+  // Handle track change from dropdown
   const handleTrackChange = useCallback((newTrackId: string) => {
-    // The SongDropdown will handle calling audioManager.playSongSequence()
-    // and audioManager will update its currentTrackInfo automatically
-  }, []);
+    // Update the track info immediately so UI reflects the new selection
+    audioManager.setCurrentTrackInfo(newTrackId);
+    // Note: SongDropdown also calls audioManager.playSongSequence() which handles the warp and audio
+  }, [audioManager]);
 
   // Handle play/pause button
   const handleTogglePlay = useCallback(() => {
@@ -101,11 +102,8 @@ export default function UnifiedAudioPlayer({ initialTrackId }: UnifiedAudioPlaye
     
     if (isPlaying) {
       currentAudioElement.pause();
-      setIsPlaying(false);
     } else {
-      currentAudioElement.play().then(() => {
-        setIsPlaying(true);
-      }).catch(console.error);
+      currentAudioElement.play().catch(console.error);
     }
   }, [isPlaying, currentAudioElement]);
 
@@ -123,7 +121,7 @@ export default function UnifiedAudioPlayer({ initialTrackId }: UnifiedAudioPlaye
     setCurrentTime(newTime);
   }, [duration, currentAudioElement]);
 
-  // Monitor the audio manager's foreground audio element
+  // Monitor the audio manager's foreground audio element for progress tracking only
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
     let cleanupListeners: (() => void) | null = null;
@@ -139,68 +137,31 @@ export default function UnifiedAudioPlayer({ initialTrackId }: UnifiedAudioPlaye
         
         setCurrentAudioElement(currentAudio);
         
-        // Try to detect which song is playing by checking the audio src
-        // and update selectedTrackId accordingly
-        const detectCurrentSong = () => {
-          if (currentAudio.src) {
-            // Look for song match by checking if the audio src matches any available tracks
-            const playingSong = availableSongs.find(song => {
-              const trackKey = trackKeyFromSlug(song.id);
-              if (trackKey && TRACKS[trackKey as TrackKey]) {
-                const track = TRACKS[trackKey as TrackKey];
-                return currentAudio.src.includes(trackKey.toLowerCase()) ||
-                       (track.mp3 && currentAudio.src.includes(track.mp3.replace('/tracks/', ''))) ||
-                       (track.opus && currentAudio.src.includes(track.opus.replace('/tracks/', '')));
-              }
-              return false;
-            });
-            
-            if (playingSong && playingSong.id !== selectedTrackId) {
-              setSelectedTrackId(playingSong.id);
-            }
-          }
-        };
-        
-        // Set up listeners for this audio element
+        // Set up listeners for progress tracking only
         const handleTimeUpdate = () => {
           setCurrentTime(currentAudio.currentTime);
         };
         
         const handleLoadedMetadata = () => {
           setDuration(currentAudio.duration || 0);
-          detectCurrentSong(); // Detect song when metadata loads
         };
         
         const handleEnded = () => {
-          setIsPlaying(false);
           setCurrentTime(0);
         };
-        
-        const handlePlay = () => {
-          setIsPlaying(true);
-          detectCurrentSong(); // Detect song when playback starts
-        };
-        
-        const handlePause = () => setIsPlaying(false);
         
         currentAudio.addEventListener("timeupdate", handleTimeUpdate);
         currentAudio.addEventListener("loadedmetadata", handleLoadedMetadata);
         currentAudio.addEventListener("ended", handleEnded);
-        currentAudio.addEventListener("play", handlePlay);
-        currentAudio.addEventListener("pause", handlePause);
         
         // Set initial state
         setCurrentTime(currentAudio.currentTime);
         setDuration(currentAudio.duration || 0);
-        setIsPlaying(!currentAudio.paused);
-        detectCurrentSong(); // Initial detection
         
         cleanupListeners = () => {
           currentAudio.removeEventListener("timeupdate", handleTimeUpdate);
           currentAudio.removeEventListener("loadedmetadata", handleLoadedMetadata);
           currentAudio.removeEventListener("ended", handleEnded);
-          currentAudio.removeEventListener("play", handlePlay);
-          currentAudio.removeEventListener("pause", handlePause);
         };
       }
     };
@@ -217,7 +178,7 @@ export default function UnifiedAudioPlayer({ initialTrackId }: UnifiedAudioPlaye
         cleanupListeners();
       }
     };
-  }, [audioManager, currentAudioElement, availableSongs, selectedTrackId]);
+  }, [audioManager, currentAudioElement]);
 
   // Prepare dropdown items for SongDropdown component
   const dropdownItems = availableSongs.map(song => ({
@@ -241,8 +202,8 @@ export default function UnifiedAudioPlayer({ initialTrackId }: UnifiedAudioPlaye
           <div className="w-full">
             <SongDropdown 
               items={dropdownItems}
-              initialActiveId={selectedTrackId}
-              currentId={selectedTrackId}
+              initialActiveId={currentTrackInfo?.id || ""}
+              currentId={currentTrackInfo?.id || ""}
               onChange={handleTrackChange}
             />
           </div>
@@ -272,10 +233,10 @@ export default function UnifiedAudioPlayer({ initialTrackId }: UnifiedAudioPlaye
             {/* Track Info */}
             <div className="flex-1 min-w-0">
               <div className="text-[#CFF7FF] font-semibold text-base truncate">
-                {currentTrack.title}
+                {currentTrackInfo?.title || "Select a Song"}
               </div>
               <div className="text-[#9EEBFF]/80 text-sm truncate">
-                {currentTrack.oneLiner}
+                {currentTrackInfo?.oneLiner || "Choose from the dropdown above"}
               </div>
             </div>
 
