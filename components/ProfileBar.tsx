@@ -957,7 +957,7 @@ export default function ProfileBar({
                   marginBottom: '16px'
                 }}
               >
-                The four Elements represent different energies and emotions in the Heartverse. Each song is aligned with an Element, creating a journey through love, dreams, passion, and transformation.
+                The Elements shape the Heartverse. Each one carries its own energy, guiding souls on their journey.
               </div>
               
               {/* Elements Grid */}

@@ -11,6 +11,9 @@ import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import ProfileModal from './ProfileModal';
 
+// Debug flag to control console logging
+const DEBUG = process.env.NODE_ENV === 'development' && false;
+
 // Global alien name storage - persists across component remounts
 let globalAlienName = null;
 
@@ -40,7 +43,7 @@ const getGlobalAlienName = () => {
     sessionStorage.setItem('alienName', newAlienName);
   }
   
-  console.log('🔥 Generated global alien name:', newAlienName);
+  DEBUG && console.log('🔥 Generated global alien name:', newAlienName);
   return newAlienName;
 };
 
@@ -189,7 +192,7 @@ export default function ChatPanel({ isOpen, onClose }) {
   };
   
   // Debug logging
-  console.log('🔥 ChatPanel render:', { isOpen, profile: !!profile, user: !!user });
+  DEBUG && console.log('🔥 ChatPanel render:', { isOpen, profile: !!profile, user: !!user });
 
   // Use the global alien name function
   const alienName = getGlobalAlienName();
@@ -200,12 +203,12 @@ export default function ChatPanel({ isOpen, onClose }) {
   const getDisplayName = () => {
     // If user is authenticated and has a profile with a name, use it
     if (user && profile?.name) {
-      console.log('🔥 Using authenticated user profile name:', profile.name);
+      DEBUG && console.log('🔥 Using authenticated user profile name:', profile.name);
       return profile.name;
     }
     
     // For unauthenticated users or users without names, use alien name
-    console.log('🔥 Using stored alien name (not authenticated or no profile name):', alienName);
+    DEBUG && console.log('🔥 Using stored alien name (not authenticated or no profile name):', alienName);
     return alienName;
   };
   const [messages, setMessages] = useState([]);
@@ -243,7 +246,7 @@ export default function ChatPanel({ isOpen, onClose }) {
     if (isOpen) {
       if (user && profile?.name) {
         // For authenticated users with complete profile, add them to chat users
-        console.log('🚀 IMMEDIATE: Using authenticated user:', profile.name);
+        DEBUG && console.log('🚀 IMMEDIATE: Using authenticated user:', profile.name);
         const authenticatedUser = {
           id: user.id,
           name: profile.name,
@@ -253,10 +256,10 @@ export default function ChatPanel({ isOpen, onClose }) {
           last_seen: new Date().toISOString()
         };
         setChatUsers([authenticatedUser]);
-        console.log('🚀 Set initial chat users with authenticated user:', [authenticatedUser]);
+        DEBUG && console.log('🚀 Set initial chat users with authenticated user:', [authenticatedUser]);
       } else {
         // For unauthenticated users, use alien name
-        console.log('🚀 IMMEDIATE: Using stored alien name:', alienName);
+        DEBUG && console.log('🚀 IMMEDIATE: Using stored alien name:', alienName);
         const anonymousUser = {
           id: 'anonymous',
           name: alienName,
@@ -265,7 +268,7 @@ export default function ChatPanel({ isOpen, onClose }) {
           last_seen: new Date().toISOString()
         };
         setChatUsers([anonymousUser]);
-        console.log('🚀 Set initial chat users with anonymous user:', [anonymousUser]);
+        DEBUG && console.log('🚀 Set initial chat users with anonymous user:', [anonymousUser]);
       }
     }
   }, [user, profile?.name, profile?.id, isOpen, alienName]);
@@ -284,7 +287,7 @@ export default function ChatPanel({ isOpen, onClose }) {
     if (isOpen) {
       if (user && profile?.name) {
         // For authenticated users, ensure they're properly represented
-        console.log('🔥 Chat opened - ensuring authenticated user exists:', profile.name);
+        DEBUG && console.log('🔥 Chat opened - ensuring authenticated user exists:', profile.name);
         setChatUsers(prev => {
           const otherUsers = prev.filter(u => u.id !== user.id && u.id !== 'anonymous');
           const authenticatedUser = {
@@ -295,12 +298,12 @@ export default function ChatPanel({ isOpen, onClose }) {
             profile_image_url: profile.profile_image_url || null,
             last_seen: new Date().toISOString()
           };
-          console.log('🔥 Setting authenticated user:', authenticatedUser);
+          DEBUG && console.log('🔥 Setting authenticated user:', authenticatedUser);
           return [authenticatedUser, ...otherUsers];
         });
       } else if (alienName) {
         // For unauthenticated users, ensure anonymous user exists
-        console.log('🔥 Chat opened - ensuring anonymous user exists with name:', alienName);
+        DEBUG && console.log('🔥 Chat opened - ensuring anonymous user exists with name:', alienName);
         setChatUsers(prev => {
           const otherUsers = prev.filter(u => u.id !== 'anonymous');
           const anonymousUser = {
@@ -310,7 +313,7 @@ export default function ChatPanel({ isOpen, onClose }) {
             avatar_badge_id: null,
             last_seen: new Date().toISOString()
           };
-          console.log('🔥 Setting anonymous user with consistent name:', anonymousUser);
+          DEBUG && console.log('🔥 Setting anonymous user with consistent name:', anonymousUser);
           return [anonymousUser, ...otherUsers];
         });
       }
@@ -341,7 +344,7 @@ export default function ChatPanel({ isOpen, onClose }) {
       // Handle user representation based on authentication state
       if (user && profile?.name) {
         // For authenticated users, add them to the users list
-        console.log('🔥 InitializeChat: Adding authenticated user:', profile.name);
+        DEBUG && console.log('🔥 InitializeChat: Adding authenticated user:', profile.name);
         const authenticatedUser = {
           id: user.id,
           name: profile.name,
@@ -353,7 +356,7 @@ export default function ChatPanel({ isOpen, onClose }) {
         setChatUsers([authenticatedUser, ...databaseUsers.filter(u => u.id !== user.id)]);
       } else if (!user || !profile?.name) {
         // For unauthenticated users, use anonymous user
-        console.log('🔥 InitializeChat: Using consistent alien name:', alienName);
+        DEBUG && console.log('🔥 InitializeChat: Using consistent alien name:', alienName);
         const anonymousUser = {
           id: 'anonymous',
           name: alienName,
@@ -361,7 +364,7 @@ export default function ChatPanel({ isOpen, onClose }) {
           avatar_badge_id: null,
           last_seen: new Date().toISOString()
         };
-        console.log('🔥 Creating consistent anonymous user:', anonymousUser);
+        DEBUG && console.log('🔥 Creating consistent anonymous user:', anonymousUser);
         setChatUsers([anonymousUser, ...databaseUsers]);
       } else {
         setChatUsers(databaseUsers);
@@ -413,7 +416,7 @@ export default function ChatPanel({ isOpen, onClose }) {
           console.error('Chat subscription error:', error);
         },
         (typingData) => {
-          console.log('🔥 Typing event:', typingData);
+          DEBUG && console.log('🔥 Typing event:', typingData);
           // Update typing users
           setTypingUsers(prev => {
             const filtered = prev.filter(u => u.user_id !== typingData.user_id);
@@ -428,7 +431,7 @@ export default function ChatPanel({ isOpen, onClose }) {
       // Send sync message if not already joined
       if (!hasJoined) {
         const displayName = getDisplayName();
-        console.log('🔥 Joining chat with name:', displayName);
+        DEBUG && console.log('🔥 Joining chat with name:', displayName);
         
         // Trigger first-time connection check for authenticated users
         if (user && profile?.name) {
@@ -436,14 +439,14 @@ export default function ChatPanel({ isOpen, onClose }) {
         }
         
         const syncMessage = await chatService.sendSyncMessage(displayName);
-        console.log('🔥 Sync message result:', syncMessage);
+        DEBUG && console.log('🔥 Sync message result:', syncMessage);
         
         // For anonymous users, add the message locally and add to user list
         if (!user && syncMessage) {
-          console.log('🔥 Adding anonymous message locally:', syncMessage);
+          DEBUG && console.log('🔥 Adding anonymous message locally:', syncMessage);
           setMessages(prev => {
             const newMessages = [...prev, syncMessage];
-            console.log('🔥 Updated messages:', newMessages);
+            DEBUG && console.log('🔥 Updated messages:', newMessages);
             return newMessages;
           });
           
@@ -524,7 +527,7 @@ export default function ChatPanel({ isOpen, onClose }) {
    */
   const handleSendMessage = async (messageText) => {
     const displayName = getDisplayName();
-    console.log('🔥 Sending message:', { 
+    DEBUG && console.log('🔥 Sending message:', { 
       messageText, 
       displayName, 
       user: !!user, 
@@ -550,12 +553,12 @@ export default function ChatPanel({ isOpen, onClose }) {
         }
       };
       
-      console.log('🔥 Adding authenticated message locally:', authenticatedMessage);
+      DEBUG && console.log('🔥 Adding authenticated message locally:', authenticatedMessage);
       setMessages(prev => [...prev, authenticatedMessage]);
       
       try {
         const message = await chatService.sendMessage(messageText, 'message', displayName);
-        console.log('🔥 Authenticated user message result:', message);
+        DEBUG && console.log('🔥 Authenticated user message result:', message);
         
         if (!message) {
           console.error('Failed to send message for authenticated user');
@@ -580,10 +583,10 @@ export default function ChatPanel({ isOpen, onClose }) {
       }
     };
     
-    console.log('🔥 Adding anonymous message locally:', anonymousMessage);
+    DEBUG && console.log('🔥 Adding anonymous message locally:', anonymousMessage);
     setMessages(prev => {
       const newMessages = [...prev, anonymousMessage];
-      console.log('🔥 Updated messages:', newMessages);
+      DEBUG && console.log('🔥 Updated messages:', newMessages);
       return newMessages;
     });
     
@@ -591,7 +594,7 @@ export default function ChatPanel({ isOpen, onClose }) {
     setChatUsers(prev => {
       const existingAnonymous = prev.find(u => u.id === 'anonymous');
       if (!existingAnonymous) {
-        console.log('🔥 Adding anonymous user to list');
+        DEBUG && console.log('🔥 Adding anonymous user to list');
         return [{
           id: 'anonymous',
           name: displayName,
@@ -606,9 +609,9 @@ export default function ChatPanel({ isOpen, onClose }) {
     // Try to send to service in background (optional)
     try {
       const message = await chatService.sendMessage(messageText, 'message', displayName);
-      console.log('🔥 Background service result:', message);
+      DEBUG && console.log('🔥 Background service result:', message);
     } catch (error) {
-      console.log('🔥 Background service failed (expected for anonymous):', error);
+      DEBUG && console.log('🔥 Background service failed (expected for anonymous):', error);
     }
   };
 
@@ -628,7 +631,7 @@ export default function ChatPanel({ isOpen, onClose }) {
    * Handle user profile click
    */
   const handleUserClick = (userId) => {
-    console.log('🔥 User clicked:', userId);
+    DEBUG && console.log('🔥 User clicked:', userId);
     
     // Play click sound
     try {
@@ -643,7 +646,7 @@ export default function ChatPanel({ isOpen, onClose }) {
     
     // Toggle profile - if clicking on same user, close profile
     if (selectedUser && selectedUser.id === userId) {
-      console.log('🔥 Closing profile for same user');
+      DEBUG && console.log('🔥 Closing profile for same user');
       setSelectedUser(null);
       setShowUserBadges(false);
       setShowUserBinder(false);
@@ -652,8 +655,8 @@ export default function ChatPanel({ isOpen, onClose }) {
     }
     
     let user = chatUsers.find(u => u.id === userId);
-    console.log('🔥 Found user in chatUsers:', user);
-    console.log('🔥 Current chatUsers:', chatUsers);
+    DEBUG && console.log('🔥 Found user in chatUsers:', user);
+    DEBUG && console.log('🔥 Current chatUsers:', chatUsers);
     
     // For anonymous users, always use the global alien name
     if (userId === 'anonymous') {
@@ -664,7 +667,7 @@ export default function ChatPanel({ isOpen, onClose }) {
         avatar_badge_id: null,
         last_seen: new Date().toISOString()
       };
-      console.log('🔥 Using global alien user:', user);
+      DEBUG && console.log('🔥 Using global alien user:', user);
     }
     
     if (user) {
@@ -673,9 +676,9 @@ export default function ChatPanel({ isOpen, onClose }) {
       setShowUserBinder(false); // Reset binder view when switching users
       setShowSendHeartCoin(false); // Reset heart coin view when switching users
       setIsUserPanelCollapsed(true); // Auto-collapse left panel when profile opens
-      console.log('🔥 Set selected user:', user);
+      DEBUG && console.log('🔥 Set selected user:', user);
     } else {
-      console.log('🔥 No user found for ID:', userId);
+      DEBUG && console.log('🔥 No user found for ID:', userId);
     }
   };
 
@@ -927,7 +930,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                           }];
                         }
                         
-                        console.log('🔥 Rendering UserList:', { usersToShow, user: !!user, profileName: profile?.name });
+                        DEBUG && console.log('🔥 Rendering UserList:', { usersToShow, user: !!user, profileName: profile?.name });
                         return (
                           <UserList 
                             users={usersToShow}
@@ -1531,11 +1534,11 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 
                                 // Only allow transfers between authenticated users
                                 if (!user || !profile?.name || selectedUser.id === 'anonymous' || selectedUser.id === user.id) {
-                                  console.log('HeartCoin transfer not allowed for anonymous users or self-transfers');
+                                  DEBUG && console.log('HeartCoin transfer not allowed for anonymous users or self-transfers');
                                   return;
                                 }
                                 
-                                console.log('Sending 1 HeartCoin to:', selectedUser.name);
+                                DEBUG && console.log('Sending 1 HeartCoin to:', selectedUser.name);
                                 
                                 // Import and use the transfer function
                                 try {
@@ -1551,7 +1554,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                   );
                                   
                                   if (result.success) {
-                                    console.log('✅ HeartCoin transfer successful:', result.transfer);
+                                    DEBUG && console.log('✅ HeartCoin transfer successful:', result.transfer);
                                     setShowSendHeartCoin(false); // Hide interface after successful sending
                                     
                                     // Play success sound
@@ -1567,7 +1570,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                     
                                     // Optionally refresh user's profile to show updated balance
                                     // This could trigger a context refresh if available
-                                    console.log('💛 HeartCoin transfer logged to heartcoin_transfers table');
+                                    DEBUG && console.log('💛 HeartCoin transfer logged to heartcoin_transfers table');
                                     
                                   } else {
                                     console.error('❌ HeartCoin transfer failed:', result.error);
@@ -1594,7 +1597,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                     }
                                     
                                     // TODO: Show error message to user in UI
-                                    console.log('User error message:', errorMessage);
+                                    DEBUG && console.log('User error message:', errorMessage);
                                   }
                                 } catch (error) {
                                   console.error('Error importing transfer function:', error);

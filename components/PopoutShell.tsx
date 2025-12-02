@@ -12,6 +12,12 @@ interface PopoutShellProps {
 export default function PopoutShell({ title, onClose, children, pageIndicator }: PopoutShellProps) {
   return (
     <>
+      {/* Dark backdrop overlay */}
+      <div 
+        className="fixed inset-0 z-[2147483646] bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      
       {/* Main modal container - exact copy from Binder */}
       <div 
         className="fixed inset-0 z-[2147483647] flex items-start justify-center"
@@ -37,6 +43,38 @@ export default function PopoutShell({ title, onClose, children, pageIndicator }:
             overflow: 'visible'
           }}
         >
+          
+          {/* Soft bottom glow - matching binder exactly */}
+          <div 
+            className="absolute"
+            style={{
+              bottom: '-15px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '120%',
+              height: '30px',
+              background: 'radial-gradient(ellipse 60% 100% at 50% 0%, rgba(252,84,175,0.6) 0%, rgba(252,84,175,0.3) 40%, transparent 80%)',
+              filter: 'blur(30px)',
+              pointerEvents: 'none',
+              zIndex: -1
+            }}
+          />
+          
+          {/* Top bloom glow - matching binder exactly */}
+          <div 
+            className="absolute"
+            style={{
+              top: '-10px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '80%',
+              height: '20px',
+              background: 'radial-gradient(ellipse 70% 100% at 50% 100%, rgba(252,84,175,0.4) 0%, rgba(252,84,175,0.2) 50%, transparent 100%)',
+              filter: 'blur(25px)',
+              pointerEvents: 'none',
+              zIndex: -1
+            }}
+          />
           
           {/* Close button - exact copy from Binder */}
           <button

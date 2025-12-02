@@ -1311,7 +1311,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
           {/* USE Tab Content */}
           {activeTab === 'USE' && (
-            <div className="pl-1 pr-4 py-2">
+            <div className="pl-1 pr-4 pb-2 pt-0">
               {!showItemDetail ? (
                 <>
                   {/* Sub-tabs for USE */}
