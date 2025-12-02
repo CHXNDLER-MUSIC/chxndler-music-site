@@ -45,7 +45,15 @@ export default function YourBook({ isOpen, onClose }) {
     
     // Handle original card click logic
     if (cardOrData.isBlank) {
-      sfx.play('click', 0.4);
+      // Empty slot: open the HeartCoin popout on USE → CARDS
+      try { sfx.play('click', 0.4); } catch {}
+      try {
+        window.dispatchEvent(new CustomEvent('openHeartCoinCards', {
+          detail: { source: 'yourbook_empty_slot' }
+        }));
+      } catch {}
+      // Close the YourBook modal
+      try { onClose?.(); } catch {}
       return;
     }
     sfx.play('flip', 0.5);

@@ -149,13 +149,20 @@ export default function JoinAliens({ visible = true } = {}) {
     };
   }, [visible]);
 
+  // Controlled input: only allow digits and plus sign
   function handlePhoneChange(e) {
-    setPhone(e.target.value);
+    const newVal = e.target.value;
+    if (/^[0-9+]*$/.test(newVal)) {
+      setPhone(newVal);
+    }
   }
 
+  // Simple international-friendly validation (E.164 style-ish): length + allowed chars
+  const isValidPhone = phone.length >= 7 && phone.length <= 20 && /^[0-9+]+$/.test(phone);
+
   async function sendHeartSignal() {
-    if (!phone || phone.trim().length < 3) {
-      setError("Please enter a phone number");
+    if (!isValidPhone) {
+      setError("Please enter a valid phone number with country code.");
       try { sfx.play('error', 0.5); } catch {}
       return;
     }
@@ -166,30 +173,38 @@ export default function JoinAliens({ visible = true } = {}) {
 
     try {
       sfx.play('join-alien', 0.8);
-      
-      if (user && profile) {
-        // User is logged in - save to profile
-        await savePhone(phone);
-        setStatus("saved");
-        setMessage("Signal linked to your Alien profile.");
-        try { sfx.play('success', 0.7); } catch {}
-      } else {
-        // User is not logged in - insert to phone_signups
-        const { error } = await supabaseClient
-          .from("phone_signups")
-          .insert({ phone_number: phone });
 
-        if (error) {
-          console.error("Error saving to phone_signups:", error);
-          setError("Failed to send heart signal");
-          setStatus("error");
-          try { sfx.play('error', 0.5); } catch {}
+      const phoneToSave = phone.trim();
+
+      // Always insert raw string to anonymous signup table
+      const { error: insertError } = await supabaseClient
+        .from("phone_signups")
+        .insert({ phone: phoneToSave });
+
+      if (insertError) {
+        console.error("Error saving to phone_signups:", insertError);
+      }
+
+      // If logged in, also update the user's profile phone
+      if (user && profile) {
+        const { error: updateError } = await supabaseClient
+          .from("profiles")
+          .update({ phone: phoneToSave })
+          .eq("id", profile.id);
+
+        if (updateError) {
+          console.error("Error updating profile phone:", updateError);
         } else {
-          setStatus("saved");
-          setMessage("Signal received. When you create your Alien we will connect this number.");
-          try { sfx.play('success', 0.7); } catch {}
+          // Keep local context in sync if helper exists
+          try { await savePhone(phoneToSave); } catch {}
         }
       }
+
+      setStatus("saved");
+      setMessage(user && profile
+        ? "Signal linked to your Alien profile."
+        : "Signal received. When you create your Alien we will connect this number.");
+      try { sfx.play('success', 0.7); } catch {}
 
       setTimeout(() => {
         setError(null);
@@ -355,7 +370,8 @@ export default function JoinAliens({ visible = true } = {}) {
           type="tel"
           value={phone}
           onChange={handlePhoneChange}
-          placeholder={profile?.phone ? profile.phone : "+1 (555) 123-4567"}
+          // Must start with + or a digit; no formatting like dashes
+          placeholder={profile?.phone ? profile.phone : "+1 5555555555 or your country code"}
           disabled={status === "saving"}
           style={{
             width: '100%',
@@ -380,45 +396,50 @@ export default function JoinAliens({ visible = true } = {}) {
             e.target.style.boxShadow = 'none';
           }}
         />
+        {phone.length > 0 && !isValidPhone && (
+          <p className="text-pink-400 text-sm mt-2">
+            Please enter a valid phone number with country code.
+          </p>
+        )}
       </div>
 
       {/* Send Heart Signal Button */}
       <button
         onClick={sendHeartSignal}
-        disabled={status === "saving" || !phone?.trim() || phone.trim().length < 3}
+        disabled={status === "saving" || !isValidPhone}
         style={{
           width: '100%',
           padding: '12px 24px',
           background: 'transparent',
           border: status === "saved"
             ? '2px solid #00FF00'
-            : status === "saving" || !phone?.trim() || phone.trim().length < 3 
+            : status === "saving" || !isValidPhone 
               ? '2px solid rgba(128, 128, 128, 0.3)' 
               : '2px solid #00FFFF',
           borderRadius: '8px',
           color: status === "saved"
             ? '#00FF00'
-            : status === "saving" || !phone?.trim() || phone.trim().length < 3 
+            : status === "saving" || !isValidPhone 
               ? 'rgba(128, 128, 128, 0.7)' 
               : '#00FFFF',
           fontSize: '16px',
           fontWeight: '600',
-          cursor: status === "saving" || !phone?.trim() || phone.trim().length < 3 ? 'not-allowed' : 'pointer',
+          cursor: status === "saving" || !isValidPhone ? 'not-allowed' : 'pointer',
           transition: 'all 300ms ease',
           boxShadow: status === "saved"
             ? '0 0 15px rgba(0, 255, 0, 0.3)'
-            : status === "saving" || !phone?.trim() || phone.trim().length < 3 
+            : status === "saving" || !isValidPhone 
               ? 'none' 
               : '0 0 15px rgba(0, 255, 255, 0.3)',
           textShadow: status === "saved"
             ? '0 0 10px #00FF00, 0 0 20px #00FF00, 0 0 30px #00FF00'
-            : status === "saving" || !phone?.trim() || phone.trim().length < 3 
+            : status === "saving" || !isValidPhone 
               ? 'none' 
               : '0 0 10px #00FFFF, 0 0 20px #00FFFF, 0 0 30px #00FFFF',
           outline: 'none'
         }}
         onMouseEnter={(e) => {
-          if (status !== "saving" && phone?.trim() && phone.trim().length >= 3 && status !== "saved") {
+          if (status !== "saving" && isValidPhone && status !== "saved") {
             e.target.style.transform = 'translateY(-2px)';
             e.target.style.background = 'rgba(0, 255, 255, 0.15)';
             e.target.style.boxShadow = '0 0 40px rgba(0, 255, 255, 0.8), 0 0 60px rgba(0, 255, 255, 0.4), inset 0 0 30px rgba(0, 255, 255, 0.2)';
@@ -428,7 +449,7 @@ export default function JoinAliens({ visible = true } = {}) {
           }
         }}
         onMouseLeave={(e) => {
-          if (status !== "saving" && phone?.trim() && phone.trim().length >= 3 && status !== "saved") {
+          if (status !== "saving" && isValidPhone && status !== "saved") {
             e.target.style.transform = 'translateY(0)';
             e.target.style.background = 'transparent';
             e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';

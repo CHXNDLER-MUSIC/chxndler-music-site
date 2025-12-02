@@ -111,7 +111,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
         
         {isActive && (
           <div className="fixed inset-0 z-[2147483647] flex items-center justify-center">
-            <div className="text-yellow-400 text-xl">Loading badges...</div>
+          <div className="text-pink-400 text-xl">Loading badges...</div>
           </div>
         )}
       </>
@@ -250,28 +250,13 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       </button>
       
       {/* Hologram base glow */}
-      {isActive && (
-        <div 
-          className="fixed inset-0 z-[2147483646] flex items-center justify-center"
-          style={{
-            pointerEvents: 'none'
-          }}
-        >
-          <div
-            style={{
-              width: 'min(120vw, 700px)',
-              height: '200px',
-              background: 'radial-gradient(ellipse 80% 100% at 50% 0%, rgba(255,255,0,0.7) 0%, rgba(255,255,0,0.4) 30%, rgba(255,255,0,0.1) 60%, transparent 100%)',
-              filter: 'blur(100px)'
-            }}
-          />
-        </div>
-      )}
+      {isActive && null}
       
       {/* Badges Modal */}
       {isActive && (
         <div 
-          className="fixed inset-0 z-[2147483647] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[2147483647] flex items-start justify-center relative"
+          style={{ paddingTop: '10vh' }}
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               try { sfx.play('close', 0.8); } catch {}
@@ -283,6 +268,22 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
             }
           }}
         >
+          {/* Soft pink glow behind the popout container */}
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              top: 'calc(10vh - 20px)',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 'min(110vw, 840px)',
+              height: 'min(70vh, 560px)',
+              background: 'radial-gradient(ellipse 75% 55% at 50% 35%, rgba(255,105,180,0.35) 0%, rgba(255,105,180,0.18) 45%, rgba(255,105,180,0.08) 70%, transparent 100%)',
+              filter: 'blur(20px)',
+              pointerEvents: 'none',
+              zIndex: 0
+            }}
+          />
           <div
             className="badges-hologram-container flex flex-col"
             style={{
@@ -292,45 +293,16 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
               maxHeight: '90vh',
               padding: '10px 14px 8px 14px',
               borderRadius: 18,
-              background: 'rgba(0,0,0,0.8)',
-              border: '1px solid rgba(255,255,0,0.55)',
-              boxShadow: '0 -8px 25px rgba(255,255,0,0.4), 0 -4px 15px rgba(255,255,0,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(255,255,0,0.45)',
-              backdropFilter: 'blur(8px) saturate(120%)',
-              color: '#FFFF00',
-              position: 'relative'
+              background: 'linear-gradient(135deg, rgba(255,105,180,0.10), rgba(0,0,0,0.60))',
+              border: '1px solid rgba(255,105,180,0.55)',
+              boxShadow: '0 -8px 25px rgba(255,105,180,0.4), 0 -4px 15px rgba(255,105,180,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(255,105,180,0.45)',
+              backdropFilter: 'blur(12px) saturate(140%)',
+              color: '#FF69B4',
+              position: 'relative',
+              zIndex: 1
             }}
           >
-            {/* Soft bottom glow */}
-            <div 
-              className="absolute"
-              style={{
-                bottom: '-15px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: '120%',
-                height: '30px',
-                background: 'radial-gradient(ellipse 60% 100% at 50% 0%, rgba(255,255,0,0.6) 0%, rgba(255,255,0,0.3) 40%, transparent 80%)',
-                filter: 'blur(30px)',
-                pointerEvents: 'none',
-                zIndex: -1
-              }}
-            />
-            
-            {/* Top bloom glow */}
-            <div 
-              className="absolute"
-              style={{
-                top: '-10px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: '80%',
-                height: '20px',
-                background: 'radial-gradient(ellipse 70% 100% at 50% 100%, rgba(255,255,0,0.4) 0%, rgba(255,255,0,0.2) 50%, transparent 100%)',
-                filter: 'blur(25px)',
-                pointerEvents: 'none',
-                zIndex: -1
-              }}
-            />
+            {/* Extra bloom glows removed to mirror Binder's chrome */}
 
             {/* Close button */}
             <button
@@ -343,12 +315,12 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                 setElementFilter(null);
                 try { onOpenBlueDisplay?.(); } catch {}
               }}
-              className="absolute top-2 right-4 text-yellow-400 hover:text-yellow-200 cursor-pointer w-8 h-8 rounded-full border border-yellow-400/80 flex items-center justify-center"
+              className="absolute top-2 right-4 text-pink-400 hover:text-pink-200 cursor-pointer w-8 h-8 rounded-full border border-pink-400/80 flex items-center justify-center"
               style={{ 
                 fontSize: '16px',
-                boxShadow: '0 0 15px rgba(255,255,0,0.8), 0 0 25px rgba(255,255,0,0.5), 0 0 35px rgba(255,255,0,0.3)',
-                textShadow: '0 0 8px rgba(255,255,0,0.8), 0 0 15px rgba(255,255,0,0.6)',
-                background: 'rgba(255,255,0,0.1)',
+                boxShadow: '0 0 15px rgba(255,105,180,0.8), 0 0 25px rgba(255,105,180,0.5), 0 0 35px rgba(255,105,180,0.3)',
+                textShadow: '0 0 8px rgba(255,105,180,0.8), 0 0 15px rgba(255,105,180,0.6)',
+                background: 'rgba(255,105,180,0.1)',
                 backdropFilter: 'blur(2px)'
               }}
             >
@@ -369,12 +341,12 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                     setElementFilter(null);
                     setCurrentPage(0);
                   }}
-                  className="px-3 py-1 text-[10px] font-bold rounded border border-yellow-400/60 hover:border-yellow-400/80 transition-all duration-200"
+                  className="px-3 py-1 text-[10px] font-bold rounded border border-pink-400/60 hover:border-pink-400/80 transition-all duration-200"
                   style={{
-                    background: 'rgba(255,255,0,0.1)',
-                    color: '#FFFF80',
-                    textShadow: '0 0 4px rgba(255,255,128,0.8)',
-                    boxShadow: '0 0 8px rgba(255,255,0,0.3)',
+                    background: 'rgba(255,105,180,0.1)',
+                    color: '#FF69B4',
+                    textShadow: '0 0 4px rgba(255,105,180,0.8)',
+                    boxShadow: '0 0 8px rgba(255,105,180,0.3)',
                   }}
                 >
                   ← BACK TO CATEGORIES
@@ -383,8 +355,8 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
               <div 
                 className="absolute left-1/2 transform -translate-x-1/2"
                 style={{ 
-                  color: '#FFFF00', 
-                  textShadow: '0 0 8px rgba(255,255,0,0.6)', 
+                  color: '#FF69B4', 
+                  textShadow: '0 0 8px rgba(255,105,180,0.6)', 
                   fontSize: '12px',
                   fontWeight: 'bold'
                 }}
@@ -398,8 +370,8 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
             <div 
               className="w-full h-px mb-4"
               style={{
-                background: 'linear-gradient(90deg, transparent, rgba(255,255,0,0.8) 20%, rgba(255,255,0,1) 50%, rgba(255,255,0,0.8) 80%, transparent)',
-                boxShadow: '0 0 4px rgba(255,255,0,0.6)'
+                background: 'linear-gradient(90deg, transparent, rgba(255,105,180,0.8) 20%, rgba(255,105,180,1) 50%, rgba(255,105,180,0.8) 80%, transparent)',
+                boxShadow: '0 0 4px rgba(255,105,180,0.6)'
               }}
             />
 
@@ -414,8 +386,8 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                       whiteSpace: 'pre-wrap', 
                       lineHeight: 1.3, 
                       fontSize: 11, 
-                      color: '#FFFF00', 
-                      textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,255,0,0.6)', 
+                      color: '#FF69B4', 
+                      textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,105,180,0.6)', 
                       marginTop: '4px' 
                     }}
                   >
@@ -436,7 +408,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                           }}
                         >
                           <div 
-                            className="w-20 h-20 rounded-full border-2 border-yellow-400/60 hover:border-yellow-400/80 relative overflow-hidden transition-all duration-300 group-hover:scale-105 flex items-center justify-center"
+                            className="w-20 h-20 rounded-full border-2 border-pink-400/60 hover:border-pink-400/80 relative overflow-hidden transition-all duration-300 group-hover:scale-105 flex items-center justify-center"
                             style={{
                               boxShadow: `0 0 15px ${category.color}40`,
                               background: `linear-gradient(135deg, ${category.color}20, rgba(252,84,175,0.1))`
@@ -480,7 +452,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                           }}
                         >
                           <div 
-                            className="w-20 h-20 rounded-full border-2 border-yellow-400/60 hover:border-yellow-400/80 relative overflow-hidden transition-all duration-300 group-hover:scale-105 flex items-center justify-center"
+                            className="w-20 h-20 rounded-full border-2 border-pink-400/60 hover:border-pink-400/80 relative overflow-hidden transition-all duration-300 group-hover:scale-105 flex items-center justify-center"
                             style={{
                               boxShadow: `0 0 15px ${category.color}40`,
                               background: `linear-gradient(135deg, ${category.color}20, rgba(252,84,175,0.1))`
@@ -532,13 +504,13 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                                   setElementFilter(null);
                                   setCurrentPage(0);
                                 }}
-                                className="px-3 py-1 text-[10px] font-bold rounded border border-yellow-400/60 hover:border-yellow-400/80 transition-all duration-200"
+                                className="px-3 py-1 text-[10px] font-bold rounded border border-pink-400/60 hover:border-pink-400/80 transition-all duration-200"
                                 style={{
-                                  background: 'rgba(255,255,0,0.1)',
-                                  color: '#FFFF80',
-                                  textShadow: '0 0 4px rgba(255,255,128,0.8)',
-                                  boxShadow: '0 0 8px rgba(255,255,0,0.3)',
-                                }}
+                                  background: 'rgba(255,105,180,0.1)',
+                                  color: '#FF69B4',
+                                  textShadow: '0 0 4px rgba(255,105,180,0.8)',
+                                  boxShadow: '0 0 8px rgba(255,105,180,0.3)',
+                              }}
                               >
                                 ← BACK TO ELEMENTS
                               </button>
@@ -649,12 +621,12 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                                 setCurrentPage(Math.max(0, currentPage - 1));
                               }}
                               disabled={currentPage === 0}
-                              className="w-8 h-8 rounded-full border border-yellow-400/60 hover:border-yellow-400/80 transition-all duration-200 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
+                              className="w-8 h-8 rounded-full border border-pink-400/60 hover:border-pink-400/80 transition-all duration-200 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
                               style={{
-                                background: 'rgba(255,255,0,0.1)',
-                                color: '#FFFF80',
-                                textShadow: '0 0 4px rgba(255,255,128,0.8)',
-                                boxShadow: '0 0 8px rgba(255,255,0,0.3)',
+                                background: 'rgba(255,105,180,0.1)',
+                                color: '#FF69B4',
+                                textShadow: '0 0 4px rgba(255,105,180,0.8)',
+                                boxShadow: '0 0 8px rgba(255,105,180,0.3)',
                               }}
                             >
                               ←
@@ -663,8 +635,8 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                             <div 
                               className="text-xs"
                               style={{ 
-                                color: '#FFFF80', 
-                                textShadow: '0 0 4px rgba(255,255,128,0.8)',
+                                color: '#FF69B4', 
+                                textShadow: '0 0 4px rgba(255,105,180,0.8)',
                               }}
                             >
                               Page {currentPage + 1}
@@ -675,12 +647,12 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                                 try { sfx.play('click', 0.6); } catch {}
                                 setCurrentPage(currentPage + 1);
                               }}
-                              className="w-8 h-8 rounded-full border border-yellow-400/60 hover:border-yellow-400/80 transition-all duration-200 flex items-center justify-center"
+                              className="w-8 h-8 rounded-full border border-pink-400/60 hover:border-pink-400/80 transition-all duration-200 flex items-center justify-center"
                               style={{
-                                background: 'rgba(255,255,0,0.1)',
-                                color: '#FFFF80',
-                                textShadow: '0 0 4px rgba(255,255,128,0.8)',
-                                boxShadow: '0 0 8px rgba(255,255,0,0.3)',
+                                background: 'rgba(255,105,180,0.1)',
+                                color: '#FF69B4',
+                                textShadow: '0 0 4px rgba(255,105,180,0.8)',
+                                boxShadow: '0 0 8px rgba(255,105,180,0.3)',
                               }}
                             >
                               →
@@ -816,12 +788,12 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                       try { sfx.play('close', 0.6); } catch {}
                       setSelectedBadge(null);
                     }}
-                    className="absolute -left-8 top-0 px-3 py-1 text-[10px] font-bold rounded border border-yellow-400/60 hover:border-yellow-400/80 transition-all duration-200"
+                    className="absolute -left-8 top-0 px-3 py-1 text-[10px] font-bold rounded border border-pink-400/60 hover:border-pink-400/80 transition-all duration-200"
                     style={{
-                      background: 'rgba(255,255,0,0.1)',
-                      color: '#FFFF80',
-                      textShadow: '0 0 4px rgba(255,255,128,0.8)',
-                      boxShadow: '0 0 8px rgba(255,255,0,0.3)',
+                      background: 'rgba(255,105,180,0.1)',
+                      color: '#FF69B4',
+                      textShadow: '0 0 4px rgba(255,105,180,0.8)',
+                      boxShadow: '0 0 8px rgba(255,105,180,0.3)',
                     }}
                   >
                     ← BACK TO BADGES

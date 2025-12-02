@@ -69,15 +69,10 @@ export default function HeartverseSystemWrapper({
   // After mount, probe environment to avoid ReactCurrentOwner crashes
   useEffect(() => {
     try {
-      // WebGL availability check
       const c = document.createElement('canvas');
       const gl = c && (c.getContext('webgl') || c.getContext('experimental-webgl'));
       const hasWebGL = !!gl;
-      // Some R3F versions touch React internals in dev runtime
-      const hasReactInternals = !!(
-        (React as any) && (React as any).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED
-      );
-      setR3fSafe(!!hasWebGL && !!hasReactInternals);
+      setR3fSafe(hasWebGL);
     } catch {
       setR3fSafe(false);
     }
@@ -137,7 +132,7 @@ export default function HeartverseSystemWrapper({
           gl.outputColorSpace = SRGBColorSpace;
           (gl as any).physicallyCorrectLights = true;
         }}
-        frameloop="demand" // Only render when needed
+        frameloop="always" // Animate orbits continuously
       >
         {/* Ambient lighting */}
         <ambientLight intensity={0.2} />

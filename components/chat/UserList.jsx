@@ -131,27 +131,38 @@ function UserListItem({ user, onClick, currentUserProfile }) {
           {/* Small user icon */}
           {user.id === 'anonymous' ? (
             <img src="/elements/alien.webp" alt="Alien" className="w-3 h-3 flex-shrink-0" />
-          ) : currentUserProfile?.profile_image_url ? (
+          ) : user?.profile_image_url ? (
             <img 
-              src={currentUserProfile.profile_image_url} 
+              src={user.profile_image_url} 
               alt="Profile" 
               className="w-3 h-3 rounded-full flex-shrink-0 object-cover"
               style={{
                 border: '1px solid rgba(242, 239, 29, 0.5)',
                 boxShadow: '0 0 4px rgba(242, 239, 29, 0.3)'
               }}
+              onError={(e) => {
+                const target = e.target;
+                if (target && target.parentElement) {
+                  target.parentElement.innerHTML = '';
+                  const img = document.createElement('img');
+                  const el = (user.element || '').toLowerCase();
+                  img.src = el ? `/elements/${el}.webp` : '/elements/chxndler.webp';
+                  img.alt = 'Element';
+                  img.className = 'w-3 h-3 flex-shrink-0 object-cover';
+                  target.parentElement.appendChild(img);
+                }
+              }}
             />
           ) : (
-            <div 
-              className="w-3 h-3 rounded-full flex items-center justify-center flex-shrink-0"
+            <img 
+              src={user?.element ? `/elements/${String(user.element).toLowerCase()}.webp` : '/elements/chxndler.webp'}
+              alt="Element"
+              className="w-3 h-3 flex-shrink-0 object-cover rounded-full"
               style={{
-                background: 'rgba(242, 239, 29, 0.2)',
                 border: '1px solid rgba(242, 239, 29, 0.5)',
                 boxShadow: '0 0 4px rgba(242, 239, 29, 0.3)'
               }}
-            >
-              <span style={{ fontSize: '8px' }}>👤</span>
-            </div>
+            />
           )}
           
           <p 

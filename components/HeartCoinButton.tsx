@@ -544,26 +544,78 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   // Handle bonus quest completion
   const handleBonusQuestComplete = async (quest: BonusQuestWithCompletion) => {
     try {
+      // Special flow for INVITE_FRIEND: trigger share first, then record completion
+      if (quest.quest_key === 'INVITE_FRIEND') {
+        const text = "I thought of you. I think this world could feel like home for you too. https://chxndler.world";
+
+        const performShare = async () => {
+          // Prefer native share sheet if available
+          if (typeof navigator !== 'undefined' && (navigator as any).share) {
+            try {
+              await (navigator as any).share({ text });
+              return true;
+            } catch (err) {
+              // If user cancels share, don't record completion
+              console.warn('Share canceled or failed:', err);
+              return false;
+            }
+          }
+
+          // Mobile SMS intent fallback
+          try {
+            const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            if (isMobile) {
+              const smsUrl = `sms:?body=${encodeURIComponent(text)}`;
+              window.open(smsUrl, '_blank');
+              return true;
+            }
+          } catch {}
+
+          // Fallback to clipboard with alert/prompt UX
+          try {
+            await navigator.clipboard.writeText(text);
+            alert("Invite message copied! Paste it into your messaging app.");
+            return true;
+          } catch {
+            // Last resort: prompt for manual copy
+            const copied = window.prompt("Copy this message to share:", text);
+            return !!copied; // treat as success if prompt shown
+          }
+        };
+
+        const shared = await performShare();
+        if (!shared) {
+          // User didn't complete sharing; do not record completion
+          setCheckInMessage('Invite not sent');
+          setStatusType('error');
+          setTimeout(() => {
+            setCheckInMessage("");
+            setStatusType('idle');
+          }, 2500);
+          return;
+        }
+      }
+
       const result = await completeQuest(quest);
-      
+
       if (result.success) {
         // Award heart coins using existing system
         if (result.rewards?.heartcoins) {
           await updateHeartCoins(heartCoins + result.rewards.heartcoins);
         }
-        
+
         // Show success message
         setCheckInMessage(result.message);
         setStatusType('success');
         setShowCheckInSuccess(true);
-        
+
         // Hide success message after 3 seconds
         setTimeout(() => {
           setShowCheckInSuccess(false);
           setCheckInMessage("");
           setStatusType('idle');
         }, 3000);
-        
+
         try { sfx.play('click', 0.7); } catch {}
       } else {
         setCheckInMessage(result.message);
@@ -1313,7 +1365,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       whiteSpace: 'nowrap'
                     }}
                   >
-                    Trade your HEART coins for collectibles and CHXNDLER cards that reflect your journey.
+                    Trade your HEART coins for collectibles and cards that reflect your journey.
                   </div>
 
                   {/* MERCH Tab Content */}

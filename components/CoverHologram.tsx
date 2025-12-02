@@ -402,8 +402,19 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
     if (selectedElement && updatedElements[selectedElement]) {
       console.log(`🎯 Showing content for selected element: ${selectedElement}`);
       const element = updatedElements[selectedElement];
-      
-      // Render with centered heading and left-aligned body text
+
+      // Special handling: HEART shows only the title "LOVE AND CONNECTION"
+      if (selectedElement === 'heart') {
+        return (
+          <div style={{ lineHeight: 1.6, fontSize: 15, textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>
+            <div style={{ textAlign: 'center', fontWeight: 800 }}>
+              LOVE AND CONNECTION
+            </div>
+          </div>
+        );
+      }
+
+      // Default rendering for other elements
       return (
         <div style={{ lineHeight: 1.6, fontSize: 15, textShadow: '0 0 12px rgba(242,239,29,1), 0 0 26px rgba(242,239,29,0.75)' }}>
           <div style={{ textAlign: 'center', fontWeight: 700, marginBottom: '8px' }}>

@@ -51,6 +51,12 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "T
     
     const trimmedMessage = message.trim();
     if (trimmedMessage && !disabled) {
+      // Play send sound effect
+      try {
+        const audio = new Audio('/audio/change-channel.mp3');
+        audio.volume = 0.5;
+        audio.play().catch(() => {});
+      } catch {}
       // Stop typing indicator immediately when sending
       if (isTyping && onTyping) {
         setIsTyping(false);

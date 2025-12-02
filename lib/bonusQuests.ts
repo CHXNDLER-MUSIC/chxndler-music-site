@@ -144,24 +144,79 @@ export async function completeBonusQuest(
       onElementCardAwarded?.();
     }
 
-    // Upsert user completion record
-    const { error: upsertError } = await supabaseClient
-      .from('user_bonus_quests')
-      .upsert({
-        user_id: userId,
-        bonus_quest_id: quest.id,
-        times_completed: quest.times_completed + 1,
-        last_completed_at: new Date().toISOString()
-      }, {
-        onConflict: 'user_id,bonus_quest_id'
-      });
+    // Persist user completion record. Prefer a safe select+update/insert pattern
+    // to avoid depending on a DB unique constraint for onConflict.
+    const nowIso = new Date().toISOString();
 
-    if (upsertError) {
-      console.error('Error updating user quest completion:', upsertError);
+    // Try to find an existing completion row
+    const { data: existingRow, error: selectError } = await supabaseClient
+      .from('user_bonus_quests')
+      .select('id, times_completed')
+      .eq('user_id', userId)
+      .eq('bonus_quest_id', quest.id)
+      .maybeSingle();
+
+    if (selectError) {
+      console.error('Error reading existing quest completion (raw):', selectError);
+      console.error('Error reading existing quest completion (details):', {
+        message: (selectError as any)?.message,
+        details: (selectError as any)?.details,
+        hint: (selectError as any)?.hint,
+        code: (selectError as any)?.code,
+      });
       return {
         success: false,
-        message: 'Failed to save quest completion'
+        message: 'Failed to read quest completion state'
       };
+    }
+
+    if (existingRow) {
+      // Update existing row (increment times_completed)
+      const { error: updateError } = await supabaseClient
+        .from('user_bonus_quests')
+        .update({
+          times_completed: (existingRow.times_completed ?? 0) + 1,
+          last_completed_at: nowIso,
+        })
+        .eq('id', existingRow.id);
+
+      if (updateError) {
+        console.error('Error updating user quest completion (raw):', updateError);
+        console.error('Error updating user quest completion (details):', {
+          message: (updateError as any)?.message,
+          details: (updateError as any)?.details,
+          hint: (updateError as any)?.hint,
+          code: (updateError as any)?.code,
+        });
+        return {
+          success: false,
+          message: 'Failed to save quest completion'
+        };
+      }
+    } else {
+      // Insert new row
+      const { error: insertError } = await supabaseClient
+        .from('user_bonus_quests')
+        .insert({
+          user_id: userId,
+          bonus_quest_id: quest.id,
+          times_completed: 1,
+          last_completed_at: nowIso,
+        });
+
+      if (insertError) {
+        console.error('Error inserting user quest completion (raw):', insertError);
+        console.error('Error inserting user quest completion (details):', {
+          message: (insertError as any)?.message,
+          details: (insertError as any)?.details,
+          hint: (insertError as any)?.hint,
+          code: (insertError as any)?.code,
+        });
+        return {
+          success: false,
+          message: 'Failed to save quest completion'
+        };
+      }
     }
 
     return {

@@ -767,7 +767,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
           /* Today's Journal Interface */
           <div style={{ height: '350px', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
             {/* Date and Element with pending notification */}
-            <div className="text-center mb-4">
+            <div className="text-center mb-2">
               <div 
                 className="text-base font-semibold mb-1"
                 style={{ color: '#FFFFFF' }}
@@ -794,7 +794,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
             {/* Intention & Reflection Section */}
             {dailyPrompt && (
-              <div className="mb-2 space-y-1 -mt-1">
+              <div className="mb-1 space-y-0.5 -mt-1">
                 {/* Intention */}
                 <div 
                   className="px-2 py-1 rounded-lg"
@@ -805,13 +805,13 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                   }}
                 >
                   <div 
-                    className="text-sm font-semibold mb-2 uppercase tracking-wider"
+                    className="text-sm font-semibold mb-1 uppercase tracking-wider"
                     style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
                   >
                     ✨ Today's Intention
                   </div>
                   <div 
-                    className="text-sm leading-relaxed mb-3"
+                    className="text-sm leading-relaxed mb-1"
                     style={{ color: '#FFFFFF' }}
                   >
                     {dailyPrompt.intention.text}
@@ -828,7 +828,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                   }}
                 >
                   <div 
-                    className="text-sm font-semibold mb-2 uppercase tracking-wider"
+                    className="text-sm font-semibold mb-1 uppercase tracking-wider"
                     style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
                   >
                     💭 Prompt
@@ -845,7 +845,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
 
             {/* Soul Star - Main Journal Entry */}
-            <div className="mb-2">
+            <div className="mb-1">
               <textarea
                 value={journalState.soulStar}
                 onChange={(e) => setJournalState(prev => ({ ...prev, soulStar: e.target.value }))}
@@ -875,7 +875,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             {/* Messages */}
             {journalState.errorMessage && (
               <div 
-                className="mb-4 p-3 rounded-lg text-center text-red-400"
+                className="mb-1 p-3 rounded-lg text-center text-red-400"
                 style={{ 
                   background: 'rgba(239, 68, 68, 0.1)',
                   border: '1px solid rgba(239, 68, 68, 0.3)'
@@ -887,7 +887,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
             {journalState.saveMessage && (
               <div 
-                className="mb-4 p-3 rounded-lg text-center"
+                className="mb-1 p-3 rounded-lg text-center"
                 style={{ 
                   background: 'rgba(34, 197, 94, 0.1)',
                   border: '1px solid rgba(34, 197, 94, 0.3)',
@@ -900,7 +900,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             )}
 
             {/* Bottom Section */}
-            <div className="flex justify-center mt-auto mb-2">
+            <div className="flex justify-center mt-0 mb-1">
               {/* Cast into the Stars Button - centered */}
               {(!user?.id || !profile?.element) ? (
                 <button
@@ -939,8 +939,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               ) : (
                 <button
                   onClick={journalState.isSubmitted ? undefined : handleSaveEntry}
-                  disabled={journalState.isSubmitted || !journalState.soulStar.trim() || journalState.isLoading}
-                  className="px-6 py-1 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!journalState.isSubmitted && (!journalState.soulStar.trim() || journalState.isLoading)}
+                  className="px-6 py-1 rounded-lg font-semibold transition-all duration-200"
                   style={{
                     background: (!journalState.isSubmitted && journalState.soulStar.trim() && !journalState.isLoading) ? `${elementTheme.color}30` : `${elementTheme.color}10`,
                     border: journalState.isSubmitted ? `2px solid #00FF00` : `2px solid ${elementTheme.color}60`,
@@ -950,7 +950,11 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                       : (!journalState.isSubmitted && journalState.soulStar.trim() && !journalState.isLoading)
                         ? `0 0 20px ${elementTheme.glow}, 0 0 40px ${elementTheme.color}40, inset 0 0 10px ${elementTheme.color}20`
                         : 'none',
-                    textShadow: journalState.isSubmitted ? `0 0 8px #00FF00` : `0 0 4px ${elementTheme.glow}`
+                    textShadow: journalState.isSubmitted ? `0 0 8px #00FF00` : `0 0 4px ${elementTheme.glow}`,
+                    pointerEvents: journalState.isSubmitted ? 'none' : 'auto',
+                    cursor: journalState.isSubmitted
+                      ? 'default'
+                      : ((!journalState.isSubmitted && journalState.soulStar.trim() && !journalState.isLoading) ? 'pointer' : 'not-allowed')
                   }}
                 >
                   {journalState.isSubmitted

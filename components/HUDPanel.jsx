@@ -2475,6 +2475,17 @@ export default function HUDPanel({
             zIndex: 5
           }}>
             {(() => {
+              // Derive the display track robustly: prefer prop 'track', then lookup by currentId/active
+              const displayTrack = (() => {
+                try {
+                  if (track && track.cover) return track;
+                  const id = currentId || active;
+                  if (!id) return undefined;
+                  const found = resolvedSongs?.find?.(s => s.id === id);
+                  return (found && found.cover) ? found : undefined;
+                } catch { return undefined; }
+              })();
+
               // On homepage (no currentId), always show the CHXNDLER brand cover
               if (!currentId) {
                 const src = DEFAULT_COVER;
@@ -2491,15 +2502,15 @@ export default function HUDPanel({
                       transform: 'translateY(5px)' // Nudge icon down by 5px
                     }}
                   >
-                    <CoverHologram src={src} title={title} slug={trackingSong} inline={true} size={110} />
+                    <CoverHologram key={trackingSong} src={src} title={title} slug={trackingSong} inline={true} size={110} />
                   </div>
                 );
               }
-              // When a track is selected, show only if it has an explicit cover
-              if (track && track.cover) {
-                const src = track.cover;
-                const title = track?.title || 'Unknown';
-                const trackingSong = (track?.slug || active || 'unknown');
+              // When a track is selected, show using robustly resolved data
+              if (displayTrack && displayTrack.cover) {
+                const src = displayTrack.cover;
+                const title = displayTrack?.title || 'Unknown';
+                const trackingSong = (displayTrack?.slug || currentId || active || 'unknown');
                 return (
                   <div
                     className="cover-art-glow"
@@ -2511,7 +2522,7 @@ export default function HUDPanel({
                       transform: 'translateY(5px)' // Nudge icon down by 5px
                     }}
                   >
-                    <CoverHologram src={src} title={title} slug={trackingSong} inline={true} size={110} />
+                    <CoverHologram key={trackingSong} src={src} title={title} slug={trackingSong} inline={true} size={110} />
                   </div>
                 );
               }
@@ -4145,6 +4156,17 @@ export default function HUDPanel({
                                 try { sfx.play('click', 0.4); } catch {}
                                 setSelectedCard(card);
                                 setShowCardPopup(true);
+                              } else {
+                                // Empty slot: open HeartCoin modal on CARDS tab
+                                try { sfx.play('click', 0.4); } catch {}
+                                try { setShowBookPopover(false); } catch {}
+                                try {
+                                  window.dispatchEvent(new CustomEvent('openHeartCoinCards', {
+                                    detail: {
+                                      source: 'binder_empty_slot'
+                                    }
+                                  }));
+                                } catch {}
                               }
                             }}
                           >
@@ -6677,7 +6699,7 @@ export default function HUDPanel({
                         <span style={{ fontWeight: 'bold', fontStyle: 'normal' }}>REFLECTION:</span> <span style={{ fontStyle: 'italic', fontWeight: 'normal' }}>What constellation would you create if you could arrange the stars in the sky, and what story would it tell?</span>
                       </div>
                     </div>
-                    <div style={{ marginTop: '-4px', marginBottom: '4px' }}>
+                    <div style={{ marginTop: '-4px', marginBottom: '0' }}>
                       <textarea
                           value={questionResponse}
                           onChange={(e) => setQuestionResponse(e.target.value)}
@@ -6774,13 +6796,14 @@ export default function HUDPanel({
                           background: 'transparent',
                           border: '1px solid rgba(255,215,0,0.6)',
                           borderRadius: '8px',
-                          color: journalCompletedToday ? '#90EE90' : (questionResponse.trim() ? '#FFD700' : 'rgba(255,255,255,0.5)'),
+                          color: journalCompletedToday ? '#00FF00' : (questionResponse.trim() ? '#FFD700' : 'rgba(255,255,255,0.5)'),
                           cursor: (questionResponse.trim() && !journalCompletedToday) ? 'pointer' : 'not-allowed',
                           transition: 'all 0.3s ease',
                           fontSize: '16px',
                           fontWeight: '600',
-                          textShadow: journalCompletedToday ? '0 0 8px rgba(144,238,144,1), 0 0 16px rgba(144,238,144,0.8)' : (questionResponse.trim() ? '0 0 8px rgba(255,215,0,1), 0 0 16px rgba(255,223,0,0.8), 0 0 24px rgba(255,215,0,0.6)' : 'none'),
-                          boxShadow: journalCompletedToday ? '0 0 20px rgba(144,238,144,0.6), 0 0 40px rgba(144,238,144,0.4)' : (questionResponse.trim() ? '0 0 20px rgba(255,215,0,0.6), 0 0 40px rgba(255,223,0,0.4), inset 0 1px rgba(255,255,255,0.2)' : 'none')
+                          textShadow: journalCompletedToday ? '0 0 10px #00FF00, 0 0 20px rgba(0,255,0,0.6)' : (questionResponse.trim() ? '0 0 8px rgba(255,215,0,1), 0 0 16px rgba(255,223,0,0.8), 0 0 24px rgba(255,215,0,0.6)' : 'none'),
+                          boxShadow: journalCompletedToday ? '0 0 20px rgba(0,255,0,0.6), 0 0 40px rgba(0,255,0,0.4)' : (questionResponse.trim() ? '0 0 20px rgba(255,215,0,0.6), 0 0 40px rgba(255,223,0,0.4), inset 0 1px rgba(255,255,255,0.2)' : 'none'),
+                          marginBottom: 0
                         }}
                       >
 {journalCompletedToday ? "YOUR SOUL STAR SHINES ABOVE" : 'Cast into the Stars'}

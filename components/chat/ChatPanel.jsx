@@ -401,6 +401,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                   name: newMessage.user_profile.name,
                   element: newMessage.user_profile.element,
                   avatar_badge_id: newMessage.user_profile.avatar_badge_id,
+                  profile_image_url: newMessage.user_profile.profile_image_url,
                   last_seen: newMessage.created_at
                 }];
               }
@@ -911,6 +912,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                             name: profile.name,
                             element: profile.element || null,
                             avatar_badge_id: profile.avatar_badge_id || null,
+                            profile_image_url: profile.profile_image_url || null,
                             last_seen: new Date().toISOString()
                           }];
                         }
@@ -991,27 +993,40 @@ export default function ChatPanel({ isOpen, onClose }) {
                               {/* User Icon */}
                               {selectedUser.id === 'anonymous' ? (
                                 <img src="/elements/alien.webp" alt="Alien" className="w-6 h-6 flex-shrink-0" />
-                              ) : profile?.profile_image_url ? (
+                              ) : selectedUser?.profile_image_url ? (
                                 <img 
-                                  src={profile.profile_image_url} 
+                                  src={selectedUser.profile_image_url} 
                                   alt="Profile" 
                                   className="w-6 h-6 rounded-full flex-shrink-0 object-cover"
                                   style={{
                                     border: '1px solid rgba(242, 239, 29, 0.5)',
                                     boxShadow: '0 0 8px rgba(242, 239, 29, 0.3)'
                                   }}
+                                  onError={(e) => {
+                                    // Fallback to element icon if provided
+                                    const target = e.target;
+                                    if (target && target.parentElement) {
+                                      target.parentElement.innerHTML = '';
+                                      const img = document.createElement('img');
+                                      const el = (selectedUser.element || '').toLowerCase();
+                                      img.src = el ? `/elements/${el}.webp` : '/elements/chxndler.webp';
+                                      img.alt = 'Element';
+                                      img.className = 'w-6 h-6 flex-shrink-0 object-cover';
+                                      target.parentElement.appendChild(img);
+                                    }
+                                  }}
                                 />
                               ) : (
-                                <div 
-                                  className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
+                                // Fallback to element icon if no profile image
+                                <img 
+                                  src={selectedUser?.element ? `/elements/${String(selectedUser.element).toLowerCase()}.webp` : '/elements/chxndler.webp'}
+                                  alt="Element"
+                                  className="w-6 h-6 flex-shrink-0 object-cover rounded-full"
                                   style={{
-                                    background: 'rgba(242, 239, 29, 0.2)',
                                     border: '1px solid rgba(242, 239, 29, 0.5)',
                                     boxShadow: '0 0 8px rgba(242, 239, 29, 0.3)'
                                   }}
-                                >
-                                  <span className="text-sm">👤</span>
-                                </div>
+                                />
                               )}
                               
                               <h3 
