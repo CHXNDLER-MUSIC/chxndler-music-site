@@ -6,7 +6,8 @@ import { DEBUG_MEDIA, dlog } from "@/lib/debug";
 export default function SkyboxVideo({
   brightness = 0.95,
   srcWebm,
-  srcMp4 = "/skies/ocean-girl.mp4",
+  // Default base sky to space to avoid accidental Ocean Girl fallback
+  srcMp4 = "/skies/space.mp4",
   videoKey,
   offsetY = "2vh",
   flySignal,

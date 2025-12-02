@@ -2379,6 +2379,42 @@ export default function HUDPanel({
               <div className="holo-particle holo-particle-10"></div>
             </div>
 
+            {/* Bottom-anchored Spotify-style progress bar inside blue display */}
+            {(() => {
+              const a = liveAudioRef?.current;
+              const liveDur = (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
+              const liveTime = (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
+              const pct = liveDur ? (liveTime / liveDur) * 100 : 0;
+              const onSeek = (event) => {
+                if (!a || !liveDur) return;
+                const rect = event.currentTarget.getBoundingClientRect();
+                const clickX = event.clientX - rect.left;
+                const ratio = Math.min(Math.max(clickX / rect.width, 0), 1);
+                const newTime = ratio * liveDur;
+                try { a.currentTime = newTime; } catch {}
+                try { setProgress(newTime); } catch {}
+              };
+              return (
+                <div className="absolute left-2 right-2 bottom-2">
+                  <div
+                    className="relative w-full h-2 rounded-full bg-white/10 overflow-hidden cursor-pointer"
+                    onClick={onSeek}
+                  >
+                    <div className="absolute inset-0 opacity-40 bg-white/20" />
+                    <div
+                      className="absolute inset-y-0 left-0 bg-[#F2EF1D]/80 shadow-[0_0_12px_rgba(242,239,29,0.8)]"
+                      style={{ width: `${pct}%` }}
+                    />
+                    <div
+                      className="absolute top-1/2 -translate-y-1/2"
+                      style={{ left: `calc(${pct}% - 6px)` }}
+                    >
+                      <div className="w-3 h-3 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)]" />
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           
           {/* Cover section at bottom right corner - using CoverHologram for pop-out functionality */}
           <div ref={coverRef} className="absolute hud-cover-pos" style={{ 
@@ -2459,7 +2495,7 @@ export default function HUDPanel({
             height: '60px',
             // Keep player snug to the blue display; slightly lower
             // Move the visual nudge into the bottom offset so it stays inside the overflow-hidden blue display
-            bottom: 'calc(var(--hud-player-bottom-offset, 0px) + 6px)'
+            bottom: 'calc(var(--hud-player-bottom-offset, 0px) + 2px)'
           }}>
             <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '10px', paddingBottom: 10, position: 'relative' }}>
               <div className="flex flex-wrap items-start gap-3 pt-0 pr-2 pl-2 pb-0">
@@ -2480,9 +2516,10 @@ export default function HUDPanel({
                         display: 'flex', 
                         alignItems: 'center', 
                         gap: 8, 
-                        marginBottom: 8,
-                        marginLeft: 4,
-                        position: 'relative',
+                        position: 'absolute',
+                        left: 8,
+                        right: 8,
+                        bottom: 18,
                         zIndex: 2,
                         borderRadius: '8px',
                         padding: '4px 8px',
@@ -6941,6 +6978,7 @@ export default function HUDPanel({
             <div className="mb-2">
               <SimpleWaveform className="opacity-70 hover:opacity-100 transition-opacity duration-300" />
             </div>
+            {/* Song dropdown only (outer container removed) */}
             <SongDropdown
               items={resolvedSongs}
               initialActiveId={active || resolvedSongs[0]?.id}
@@ -6974,53 +7012,6 @@ export default function HUDPanel({
                 // Stay in place; DashboardApp.onSongChange handles switch without spotlight/route
               }}
             />
-            
-            
-            {/* Waveform visualizer directly under song dropdown */}
-            {(() => {
-              const currentSong = resolvedSongs.find(s => s.id === active);
-              // Force white-glow style by using 'darkness' element mapping
-              const element = 'darkness';
-              
-              // Calculate progress ratio from audio or fallback to state
-              const a = liveAudioRef?.current;
-              const liveDur = (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
-              const liveTime = (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
-              
-              return (
-                <div className="border-0 bg-transparent backdrop-blur-xl rounded-[10px]" style={{
-                  marginTop: 2,
-                  paddingLeft: 8,
-                  paddingRight: 8,
-                  paddingTop: 6,
-                  paddingBottom: 6,
-                  zIndex: 99998,
-                  pointerEvents: 'auto',
-                  width: '100%',
-                  boxShadow: '0 0 18px rgba(25,227,255,0.35)'
-                }}>
-                  <WaveformVisualizer
-                    element={element}
-                    progress={liveDur > 0 ? (liveTime / liveDur) : 0}
-                    duration={liveDur}
-                    currentTime={liveTime}
-                    onProgressClick={(e) => {
-                      if (a && liveDur > 0) {
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        const clickX = e.clientX - rect.left;
-                        const clickPercentage = clickX / rect.width;
-                        const newTime = clickPercentage * liveDur;
-                        a.currentTime = Math.max(0, Math.min(liveDur, newTime));
-                        setProgress(a.currentTime);
-                      }
-                    }}
-                    width="100%"
-                    height={18}
-                    className="song-waveform"
-                  />
-                </div>
-              );
-            })()}
           </div>
 
       {/* styles moved to app/globals.css to avoid styled-jsx in this module */}

@@ -96,6 +96,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const [lyricsError, setLyricsError] = useState<string | null>(null);
   const lyricsCacheRef = useRef<Map<string, string>>(new Map());
   const playHover = () => { try { sfx.play('hover', 0.35); } catch {} };
+  // Global guard: prevent main audio from playing unless explicitly allowed (home/start mode)
+  const isMainAudioBlocked = () => {
+    try { return (typeof window !== 'undefined') && !!(window as any).__BLOCK_MAIN_AUDIO; } catch { return false; }
+  };
   // Track homepage vs. song-selected view via playerStore's planet display mode
   const [planetDisplayMode, setPlanetDisplayMode] = useState<'all' | 'single' | 'hidden'>('all');
   useEffect(() => {
@@ -451,6 +455,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   // External play signal: play current track if it has audio; otherwise jump to first with local audio
   useEffect(() => {
     if (playSignal === 0) return; // Don't run on initial mount
+    // Respect global playback block (e.g., Start/home mode)
+    if (isMainAudioBlocked()) return;
     
     const a = audioRef.current; 
     if (!a) {
@@ -676,6 +682,11 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   }
   
   function toggle() {
+    // Respect global playback block (e.g., Start/home mode)
+    if (isMainAudioBlocked()) {
+      try { sfx.play('click', 0.25); } catch {}
+      return;
+    }
     
     // Cancel any pending auto-play timer from warp sequence to respect user intent
     if (warpPlayTimerRef.current !== undefined) {
@@ -768,7 +779,11 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       (window as any).mainPlayerPlay = () => {
         try {
           const a = audioRef.current; if (!a) return;
-          if (a.paused) { a.muted = false; setForceMuted(false); intentionalPlayRef.current = true; a.play().catch(()=>{}); }
+          if (a.paused) {
+            // Respect global playback block (e.g., Start/home mode)
+            if (isMainAudioBlocked()) return;
+            a.muted = false; setForceMuted(false); intentionalPlayRef.current = true; a.play().catch(()=>{});
+          }
         } catch {}
       };
       (window as any).mainPlayerPause = () => { try { const a = audioRef.current; if (!a) return; if (!a.paused) a.pause(); } catch {} };

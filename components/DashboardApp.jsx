@@ -533,6 +533,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     }
     const selectedTrack = tracks[idx];
     console.log('🎵 Song selected:', selectedTrack.title);
+    // Unblock main player audio now that a song is explicitly selected
+    try { if (typeof window !== 'undefined') { window.__BLOCK_MAIN_AUDIO = false; } } catch (e) {}
     
 
     // Planet focusing will be handled after warp sequence completes
@@ -1038,6 +1040,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // Synchronous guard for rapid double clicks
     if (startInFlightRef.current) return;
     startInFlightRef.current = true;
+    // Block main player audio during Start/home warp flow
+    try { if (typeof window !== 'undefined') { window.__BLOCK_MAIN_AUDIO = true; } } catch (e) {}
     try {
       // Prevent multiple clicks while warping
       if (isWarping) return;
@@ -1217,6 +1221,51 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [uiUnlocked, homeMode, isPlaying]);
+
+  // Defensive: On initial homepage open for guests, ensure no main/holo track audio exists or is playing
+  React.useEffect(() => {
+    if (profile || initialSlug) return; // Only for guest homepage
+    try {
+      // Block main player globally on guest homepage until Start or a song is selected
+      if (typeof window !== 'undefined') { window.__BLOCK_MAIN_AUDIO = true; }
+      const stopAndClear = (a) => {
+        try { a.pause(); } catch {}
+        try { a.currentTime = 0; } catch {}
+        try { a.removeAttribute('src'); } catch {}
+        try { a.load(); } catch {}
+      };
+      const nodes = document.querySelectorAll('audio[data-audio-player="1"], audio[data-holo-audio="1"]');
+      nodes.forEach((a) => stopAndClear(a));
+    } catch {}
+  }, [profile, initialSlug]);
+
+  // Temporary watchdog: for the first 5s on guest homepage, forcibly stop any stray track audio
+  React.useEffect(() => {
+    if (profile || initialSlug) return; // Only for guest homepage
+    let active = true;
+    const deadline = Date.now() + 5000;
+    const tick = () => {
+      if (!active) return;
+      try {
+        const audios = document.querySelectorAll('audio');
+        audios.forEach((a) => {
+          const el = a;
+          const src = (el.currentSrc || el.src || '').toLowerCase();
+          const isMainOrUnknown = !el.getAttribute('data-ambient') && !el.getAttribute('data-intro');
+          const isTrack = src.includes('/tracks/');
+          if (isTrack && isMainOrUnknown) {
+            try { el.pause(); } catch {}
+            try { el.currentTime = 0; } catch {}
+            try { el.removeAttribute('src'); } catch {}
+            try { el.load(); } catch {}
+          }
+        });
+      } catch {}
+      if (Date.now() < deadline) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+    return () => { active = false; };
+  }, [profile, initialSlug]);
 
   // Listen for tour skip event to trigger warp effect
   React.useEffect(() => {
@@ -1676,6 +1725,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         onWarpSfxEnd={() => {
           // Allow Start to be clicked again after warp sfx completes
           try { startInFlightRef.current = false; } catch {}
+          // Keep main player audio blocked on home warp (until a song is selected)
+          try { if (!pendingTrackPlay && !userSelected && typeof window !== 'undefined') { window.__BLOCK_MAIN_AUDIO = true; } } catch (e) {}
           // Welcome modal and planet visibility sequencing after warp
           
           // Reset warp state when warp effect completes
@@ -1730,6 +1781,17 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             try {
               playerStore.getState().setPlanetDisplayMode('all');
               playerStore.getState().setPlanetsVisible(true);
+            } catch {}
+            // Extra safety: ensure main track audio stays stopped on home warp end
+            try {
+              const a = document.querySelector('audio[data-audio-player="1"]');
+              if (a) {
+                a.pause();
+                try { a.currentTime = 0; } catch {}
+                try { a.muted = true; } catch {}
+                try { a.removeAttribute('src'); } catch {}
+                try { a.load(); } catch {}
+              }
             } catch {}
           }
           // Kick off join-alien SFX as soon as warp SFX ends so it's definitely
@@ -2292,11 +2354,12 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 />
               ) : null}
             </div>
-            {/* Hidden MediaPlayer for audio functionality only */}
+            {/* Hidden MediaPlayer for audio functionality only (mount only when a song is selected/pending) */}
+            {(userSelected || pendingTrackPlay || initialSlug) ? (
             <div className="hidden">
               <MediaPlayer
                 onSkyChange={(webm, mp4, key) => setNextSky({ webm, mp4, key })}
-                onPlayingChange={(p) => {
+                onPlayingChange={(p) => { 
                   setIsPlaying(p);
                   // When a mapped track starts playing, arm its YouTube sky
                   try {
@@ -2372,6 +2435,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 unlockPlays={false}
               />
             </div>
+            ) : null}
           </div>
         ),
         document.body

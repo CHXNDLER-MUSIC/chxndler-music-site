@@ -258,30 +258,88 @@ export function TourProvider({ children, onMenuAction }: {
   // Handle step actions
   useEffect(() => {
     if (isActive) {
-      const step = tourSteps[currentStep];
-      if (step.action) {
-        console.log(`Tour: Executing action "${step.action}" for step "${step.id}"`);
-        
-        if (step.action === 'open-menu' || step.action === 'close-menu') {
-          if (onMenuAction) {
-            onMenuAction(step.action);
-          }
+      try {
+        const step = tourSteps[currentStep];
+        if (step?.action) {
+          console.log(`Tour: Executing action "${step.action}" for step "${step.id}"`);
+          
+          if (step.action === 'open-menu' || step.action === 'close-menu') {
+            if (onMenuAction) {
+              onMenuAction(step.action);
+            }
         } else if (step.action === 'open-heartcoins') {
-          // Click the heart coins button to open the modal
+          // First close the hamburger menu, then click the heart coins button
           setTimeout(() => {
-            const heartCoinsButton = document.querySelector('[data-tour-id="heartcoins"]');
-            if (heartCoinsButton) {
-              (heartCoinsButton as HTMLElement).click();
+            try {
+              if (onMenuAction) {
+                onMenuAction('close-menu');
+              }
+              
+              // Wait for menu to close, then try to find and open heart coins
+              const attemptHeartCoinsOpen = (attempts = 0) => {
+                if (attempts > 5) {
+                  console.error('Tour: Could not find Heart Coins button after 5 attempts');
+                  return;
+                }
+                
+                const heartCoinsButton = document.querySelector('[data-tour-id="heartcoins"]');
+                
+                if (heartCoinsButton && heartCoinsButton.offsetParent) {
+                  // Element exists and is visible
+                  console.log(`Tour: Found Heart Coins button, attempt ${attempts + 1}`);
+                  try {
+                    (heartCoinsButton as HTMLElement).click();
+                    console.log('Tour: Heart Coins button clicked successfully');
+                  } catch (error) {
+                    console.error('Tour: Error clicking Heart Coins button:', error);
+                  }
+                } else {
+                  // Element not found or not visible, retry
+                  console.log(`Tour: Heart Coins button not ready, retrying... attempt ${attempts + 1}`);
+                  setTimeout(() => attemptHeartCoinsOpen(attempts + 1), 200);
+                }
+              };
+              
+              // Start attempting to open heart coins after menu closes
+              setTimeout(() => attemptHeartCoinsOpen(0), 500);
+              
+            } catch (error) {
+              console.error('Tour: Error in open-heartcoins action:', error);
             }
           }, 100);
         } else if (step.action === 'click-tab') {
-          // Click the specific tab element
+          // Click the specific tab element with retry logic
           setTimeout(() => {
-            const tabElement = document.querySelector(`[data-tour-id="${step.targetId}"]`);
-            if (tabElement) {
-              (tabElement as HTMLElement).click();
-            }
-          }, 300);
+            const attemptTabClick = (attempts = 0) => {
+              if (attempts > 3) {
+                console.error(`Tour: Could not find tab element ${step.targetId} after 3 attempts`);
+                return;
+              }
+              
+              try {
+                const tabElement = document.querySelector(`[data-tour-id="${step.targetId}"]`);
+                
+                if (tabElement && tabElement.offsetParent) {
+                  // Element exists and is visible
+                  console.log(`Tour: Clicking tab element: ${step.targetId}, attempt ${attempts + 1}`);
+                  (tabElement as HTMLElement).click();
+                  console.log(`Tour: Tab ${step.targetId} clicked successfully`);
+                } else {
+                  // Element not found or not visible, retry
+                  console.log(`Tour: Tab element ${step.targetId} not ready, retrying... attempt ${attempts + 1}`);
+                  setTimeout(() => attemptTabClick(attempts + 1), 250);
+                }
+              } catch (error) {
+                console.error(`Tour: Error clicking tab element ${step.targetId}:`, error);
+                // Still retry in case it was a temporary error
+                if (attempts < 3) {
+                  setTimeout(() => attemptTabClick(attempts + 1), 250);
+                }
+              }
+            };
+            
+            attemptTabClick(0);
+          }, 400); // Increased initial delay
         } else if (step.action === 'open-signal') {
           // Open the signal popout first
           setTimeout(() => {
@@ -296,6 +354,9 @@ export function TourProvider({ children, onMenuAction }: {
             }, 500);
           }, 100);
         }
+        }
+      } catch (error) {
+        console.error('Tour: Error in step action handling:', error);
       }
     }
   }, [currentStep, isActive, onMenuAction]);
@@ -335,7 +396,8 @@ function TourOverlay() {
   const currentStepData = steps[currentStep];
 
   useEffect(() => {
-    if (currentStepData.targetId) {
+    try {
+      if (currentStepData?.targetId) {
       // For menu items, add a delay to allow menu to render
       const isMenuStep = currentStepData.id === 'about' || 
                         currentStepData.id === 'journey' || 
@@ -390,17 +452,16 @@ function TourOverlay() {
             case 'right':
               // For menu items, position to the right of the entire dropdown menu
               if (isMenuStep) {
-                // Find the hamburger menu container to get the full menu width
-                const hamburgerMenu = document.querySelector('[data-tour-id="hamburger"]')?.closest('.fixed');
-                if (hamburgerMenu) {
-                  const menuRect = hamburgerMenu.getBoundingClientRect();
-                  left = menuRect.right + 60; // Position to the right of the menu with padding
-                  top = rect.top + scrollTop + (rect.height / 2);
-                } else {
-                  // Fallback to original positioning with extra spacing
-                  top += rect.height / 2;
-                  left += rect.width + 320;
-                }
+                // Use a fixed position approach to ensure we're far enough right
+                // The hamburger menu is typically positioned at the left side, so we'll position based on viewport
+                const viewportWidth = window.innerWidth;
+                const tooltipWidth = 400; // Estimated tooltip width
+                
+                // Position tooltip in the right half of the viewport, with some margin
+                left = Math.max(450, viewportWidth * 0.6); // At least 450px from left, or 60% of viewport width
+                top = rect.top + scrollTop + (rect.height / 2);
+                
+                console.log(`Tour: Positioning menu step at left: ${left}, viewport width: ${viewportWidth}`);
               } else {
                 top += rect.height / 2;
                 left += rect.width + 20;
@@ -438,7 +499,11 @@ function TourOverlay() {
       } else {
         findElementAndPosition(0);
       }
-    } else {
+      } else {
+        setTargetElement(null);
+      }
+    } catch (error) {
+      console.error('Tour: Error in element positioning:', error);
       setTargetElement(null);
     }
   }, [currentStep, currentStepData]);

@@ -807,7 +807,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                     textShadow: '0 0 8px rgba(0,255,255,0.6)' 
                   }}
                 >
-                  {(profile as any)?.streak_days || 0} days
+  {profile?.daily_streak || 0} days
                 </span>
               </div>
             </div>

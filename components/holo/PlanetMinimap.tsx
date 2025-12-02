@@ -100,6 +100,7 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
   const [isCollapsed, setIsCollapsed] = React.useState(true); // Default to collapsed when page opens
   const [selectedPlanet, setSelectedPlanet] = React.useState<string | null>(null);
   const [hoveredPlanet, setHoveredPlanet] = React.useState<string | null>(null);
+  const now = Date.now() * 0.001;
 
   const handleClose = () => {
     sfx.play('close', 0.8);

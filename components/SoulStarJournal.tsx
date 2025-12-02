@@ -37,6 +37,7 @@ interface JournalState {
   saveMessage: string;
   errorMessage: string;
   isPrivate: boolean;
+  isSubmitted: boolean;
 }
 
 // Element colors for theming
@@ -68,6 +69,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
     saveMessage: "",
     errorMessage: "",
     isPrivate: true,
+    isSubmitted: false,
   });
 
   const today = new Date().toISOString().slice(0, 10);
@@ -136,6 +138,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
         intentionResponse: todayEntry.intention || "",
         reflectionResponse: todayEntry.reflection || "",
         soulStar: todayEntry.soul_star || "",
+        // If there's already a soul_star for today, mark as submitted to lock UI
+        isSubmitted: !!(todayEntry.soul_star && todayEntry.soul_star.trim().length > 0),
       }));
     } else {
       // Reset state for new entry
@@ -145,6 +149,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
         reflectionResponse: "",
         soulStar: "",
         isPrivate: true,
+        isSubmitted: false,
       }));
     }
   };
@@ -193,6 +198,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
         setJournalState(prev => ({
           ...prev,
           saveMessage: "Signal cast into the stars",
+          isSubmitted: true,
         }));
         setTimeout(() => {
           setJournalState(prev => ({ ...prev, saveMessage: "" }));
@@ -550,12 +556,16 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
                 onChange={(e) => setJournalState(prev => ({ ...prev, soulStar: e.target.value }))}
                 placeholder="Write your soul's message for today... What wants to be expressed?"
                 className="w-full h-16 p-2 rounded-lg text-white placeholder-white/50 resize-none focus:outline-none transition-all"
+                disabled={journalState.isLoading || journalState.isSubmitted}
                 style={{
                   background: 'rgba(0,0,0,0.6)',
                   border: `1px solid ${elementTheme.color}40`,
                   boxShadow: `0 0 10px ${elementTheme.color}20`,
+                  opacity: (journalState.isLoading || journalState.isSubmitted) ? 0.7 : 1,
+                  pointerEvents: (journalState.isLoading || journalState.isSubmitted) ? 'none' as any : 'auto'
                 }}
                 onFocus={(e) => {
+                  if (journalState.isSubmitted) return;
                   e.target.style.borderColor = `${elementTheme.color}80`;
                   e.target.style.boxShadow = `0 0 15px ${elementTheme.glow}`;
                 }}
@@ -625,7 +635,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
                     textShadow: `0 0 4px ${elementTheme.glow}`
                   }}
                 >
-                  You need to create an{' '}
+                  Create an{' '}
                   <span
                     onClick={(e) => {
                       e.stopPropagation();
@@ -645,20 +655,22 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
                 </button>
               ) : (
                 <button
-                  onClick={handleSaveEntry}
-                  disabled={!journalState.soulStar.trim() || journalState.isLoading}
+                  onClick={journalState.isSubmitted ? undefined : handleSaveEntry}
+                  disabled={journalState.isSubmitted || !journalState.soulStar.trim() || journalState.isLoading}
                   className="px-6 py-1 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{
-                    background: journalState.soulStar.trim() && !journalState.isLoading ? `${elementTheme.color}30` : `${elementTheme.color}10`,
+                    background: (!journalState.isSubmitted && journalState.soulStar.trim() && !journalState.isLoading) ? `${elementTheme.color}30` : `${elementTheme.color}10`,
                     border: `2px solid ${elementTheme.color}60`,
                     color: elementTheme.color,
-                    boxShadow: journalState.soulStar.trim() && !journalState.isLoading 
+                    boxShadow: (!journalState.isSubmitted && journalState.soulStar.trim() && !journalState.isLoading)
                       ? `0 0 20px ${elementTheme.glow}, 0 0 40px ${elementTheme.color}40, inset 0 0 10px ${elementTheme.color}20`
                       : 'none',
                     textShadow: `0 0 4px ${elementTheme.glow}`
                   }}
                 >
-                  {journalState.isLoading ? 'CASTING...' : 'Cast into the Stars'}
+                  {journalState.isSubmitted
+                    ? 'Your soul star shines above'
+                    : (journalState.isLoading ? 'CASTING...' : 'Cast into the Stars')}
                 </button>
               )}
             </div>
