@@ -68,7 +68,7 @@ interface Profile {
   has_seen_tour?: boolean | null; // for onboarding tour
   profile_image_url?: string | null; // for profile image selection
   daily_streak?: number | null; // daily streak counter
-  streak_last_updated?: string | null; // last date streak was updated
+  last_streak_activity_date?: string | null; // last date streak was updated
   cards: OwnedCardRow[];
   badges: OwnedBadgeRow[];
   // Legacy fields for compatibility
@@ -89,6 +89,7 @@ interface JournalEntry {
   intention_response: string | null;
   reflection_response: string | null;
   soul_star: string | null;
+  is_private: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -163,7 +164,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabaseClient
         .from("profiles")
         .select(
-          "id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at"
+          "id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, daily_streak_current, last_streak_activity_date, profile_image_url, has_seen_tour"
         )
         .eq("id", user.id)
         .maybeSingle();
@@ -246,10 +247,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         created_at: data.created_at,
         updated_at: data.updated_at,
         tier: "wanderer" as ProfileTier,
-        has_seen_tour: false,
-        profile_image_url: null,
-        daily_streak: 0,
-        streak_last_updated: null,
+        has_seen_tour: data.has_seen_tour ?? false,
+        profile_image_url: data.profile_image_url ?? null,
+        daily_streak: data.daily_streak_current ?? 0,
+        last_streak_activity_date: data.last_streak_activity_date ?? null,
         cards: cardRows ?? [],
         badges: badgeRows ?? [],
       };
@@ -299,7 +300,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         .from("profiles")
         .update(dbUpdates)
         .eq("id", user.id)
-        .select("*")
+        .select("id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, daily_streak_current, last_streak_activity_date, profile_image_url, has_seen_tour")
         .maybeSingle();
 
       if (error) {
@@ -322,10 +323,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           created_at: data.created_at,
           updated_at: data.updated_at,
           tier: "wanderer" as ProfileTier,
-          has_seen_tour: false,
-          profile_image_url: null,
-          daily_streak: 0,
-          streak_last_updated: null,
+          has_seen_tour: data.has_seen_tour ?? false,
+          profile_image_url: data.profile_image_url ?? null,
+          daily_streak: data.daily_streak_current ?? 0,
+          last_streak_activity_date: data.last_streak_activity_date ?? null,
           cards: profile?.cards ?? [],
           badges: profile?.badges ?? [],
         };
@@ -385,7 +386,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           updated_at: new Date().toISOString()
         })
         .eq("id", user.id)
-        .select("*")
+        .select("id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, daily_streak_current, last_streak_activity_date, profile_image_url, has_seen_tour")
         .maybeSingle();
 
       if (error) {
@@ -492,6 +493,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             intention_response: entry.intention_response,
             reflection_response: entry.reflection_response,
             soul_star: entry.soul_star,
+            is_private: entry.is_private,
           },
           { 
             onConflict: 'user_id,entry_date,element',
@@ -502,7 +504,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (error) {
-        console.error('Error saving journal entry:', error);
+        console.error('Error saving journal entry:', error.message || error.details || error);
         return null;
       }
 

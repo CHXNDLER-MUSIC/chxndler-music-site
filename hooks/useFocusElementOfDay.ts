@@ -25,43 +25,13 @@ function normalizeElement(s: string | null | undefined): ElementType | null {
 }
 
 export function useFocusElementOfDay() {
-  const [focusElement, setFocusElement] = useState<ElementType | null>(null);
+  const [focusElement, setFocusElement] = useState<ElementType | null>("heart");
 
+  // TEMPORARILY DISABLED: Skip database calls that cause 404 errors
+  // This allows the 3D planet system to work properly
   useEffect(() => {
-    let mounted = true;
-    const supabase = createClient();
-    async function fetchFocus() {
-      for (const table of CANDIDATE_TABLES) {
-        try {
-          const { data, error } = await supabase
-            .from(table)
-            .select("element, focus_date, created_at")
-            .order("focus_date", { ascending: false })
-            .limit(1);
-          if (error) throw error;
-          const rec: FocusRecord | undefined = data?.[0];
-          const el = normalizeElement(rec?.element);
-          if (el && mounted) {
-            setFocusElement(el);
-            return;
-          }
-        } catch (e) {
-          // Try next candidate table
-        }
-      }
-      // Fallback: default focus is HEART (brand)
-      if (mounted) setFocusElement("heart");
-    }
-    fetchFocus();
-
-    // Refresh at midnight local time (optional)
-    const now = new Date();
-    const msUntilMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() - now.getTime();
-    const t = setTimeout(fetchFocus, msUntilMidnight + 1000);
-    return () => {
-      mounted = false;
-      clearTimeout(t);
-    };
+    // Just use "heart" as the default focus element
+    setFocusElement("heart");
   }, []);
 
   return { focusElement };

@@ -596,6 +596,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     setHidePlanetsForSelection(false);
     // Store the track index to set after warp completes
     pendingTrackIndexRef.current = idx;
+    // Also set the current track directly for immediate UI updates
+    setCurTrack(selectedTrack);
     
     // Always switch the base sky immediately so it can load under the overlay.
     // Do not start a new warp if one is already in progress; just update the pending track.

@@ -452,16 +452,22 @@ function TourOverlay() {
             case 'right':
               // For menu items, position to the right of the entire dropdown menu
               if (isMenuStep) {
-                // Use a fixed position approach to ensure we're far enough right
-                // The hamburger menu is typically positioned at the left side, so we'll position based on viewport
+                // Get the hamburger menu element to calculate its actual width
+                const hamburgerMenu = document.querySelector('[data-tour-id="hamburger"]')?.closest('.absolute') as HTMLElement;
                 const viewportWidth = window.innerWidth;
-                const tooltipWidth = 400; // Estimated tooltip width
                 
-                // Position tooltip in the right half of the viewport, with some margin
-                left = Math.max(450, viewportWidth * 0.6); // At least 450px from left, or 60% of viewport width
+                let menuWidth = 320; // Default fallback width
+                if (hamburgerMenu) {
+                  const menuRect = hamburgerMenu.getBoundingClientRect();
+                  menuWidth = menuRect.width;
+                }
+                
+                // Position tooltip to the right of the menu with additional margin
+                // Use the larger of: menu width + 50px margin, or 50% viewport width
+                left = Math.max(menuWidth + 50, viewportWidth * 0.5);
                 top = rect.top + scrollTop + (rect.height / 2);
                 
-                console.log(`Tour: Positioning menu step at left: ${left}, viewport width: ${viewportWidth}`);
+                console.log(`Tour: Positioning menu step at left: ${left}, menu width: ${menuWidth}, viewport width: ${viewportWidth}`);
               } else {
                 top += rect.height / 2;
                 left += rect.width + 20;

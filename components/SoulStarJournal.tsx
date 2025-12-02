@@ -68,7 +68,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
     isLoading: false,
     saveMessage: "",
     errorMessage: "",
-    isPrivate: true,
+    isPrivate: false,
     isSubmitted: false,
   });
 
@@ -138,6 +138,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
         intentionResponse: todayEntry.intention || "",
         reflectionResponse: todayEntry.reflection || "",
         soulStar: todayEntry.soul_star || "",
+        isPrivate: todayEntry.is_private ?? false,
         // If there's already a soul_star for today, mark as submitted to lock UI
         isSubmitted: !!(todayEntry.soul_star && todayEntry.soul_star.trim().length > 0),
       }));
@@ -148,7 +149,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
         intentionResponse: "",
         reflectionResponse: "",
         soulStar: "",
-        isPrivate: true,
+        isPrivate: false,
         isSubmitted: false,
       }));
     }
@@ -189,6 +190,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
         intention_response: null,
         reflection_response: null,
         soul_star: journalState.soulStar.trim(),
+        is_private: journalState.isPrivate,
       } as any);
 
       if (saved) {
@@ -373,24 +375,24 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
           </svg>
         </button>
 
-        {/* Private Toggle - positioned under close button */}
+        {/* Privacy Toggle - positioned under close button */}
         <button
           onClick={(!user?.id || !profile?.element) ? undefined : () => {
             sfx.play('click', 0.8);
             setJournalState(prev => ({ ...prev, isPrivate: !prev.isPrivate }));
           }}
-          disabled={!user?.id || !profile?.element}
+          disabled={!user?.id || !profile?.element || journalState.isSubmitted}
           className="absolute top-16 right-4 px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-200 disabled:cursor-not-allowed"
           style={{
-            background: (!user?.id || !profile?.element) ? 'rgba(128, 128, 128, 0.1)' : (journalState.isPrivate ? `${elementTheme.color}20` : 'rgba(128, 128, 128, 0.2)'),
-            border: (!user?.id || !profile?.element) ? '1px solid #50505060' : `1px solid ${journalState.isPrivate ? elementTheme.color : '#808080'}60`,
-            color: (!user?.id || !profile?.element) ? '#505050' : (journalState.isPrivate ? elementTheme.color : '#808080'),
-            textShadow: (!user?.id || !profile?.element) ? 'none' : (journalState.isPrivate ? `0 0 4px ${elementTheme.glow}` : 'none'),
-            opacity: (!user?.id || !profile?.element) ? 0.4 : 1,
-            cursor: (!user?.id || !profile?.element) ? 'not-allowed' : 'pointer'
+            background: (!user?.id || !profile?.element) ? 'rgba(128, 128, 128, 0.1)' : (journalState.isPrivate ? `${elementTheme.color}20` : 'rgba(34, 197, 94, 0.2)'),
+            border: (!user?.id || !profile?.element) ? '1px solid #50505060' : `1px solid ${journalState.isPrivate ? elementTheme.color : '#22C55E'}60`,
+            color: (!user?.id || !profile?.element) ? '#505050' : (journalState.isPrivate ? elementTheme.color : '#22C55E'),
+            textShadow: (!user?.id || !profile?.element) ? 'none' : (journalState.isPrivate ? `0 0 4px ${elementTheme.glow}` : '0 0 4px #22C55E'),
+            opacity: (!user?.id || !profile?.element || journalState.isSubmitted) ? 0.4 : 1,
+            cursor: (!user?.id || !profile?.element || journalState.isSubmitted) ? 'not-allowed' : 'pointer'
           }}
         >
-          PRIVATE
+          {journalState.isPrivate ? "Keep this transmission private" : "Share with the Heartverse"}
         </button>
         
         {/* Header */}

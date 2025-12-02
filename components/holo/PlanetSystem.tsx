@@ -435,9 +435,9 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
           }
           return [1, 2];
         })()}
-        // Camera: compact, closer framing to feel like a small solar system
-        // Adjust these to change the initial view distance/fov
-        camera={{ position: [0, 12, actualShouldShowAll ? 56 : 46], fov: actualShouldShowAll ? 48 : 42 }}
+        // Camera: MUCH closer framing for better planet visibility
+        // Moved camera significantly closer to the planets
+        camera={{ position: [0, 8, 25], fov: 60 }}
         // Prefer safer GL settings on mobile to avoid flicker when layers repaint
         gl={{
           antialias: false,
@@ -478,9 +478,9 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
           enableDamping={true}
           dampingFactor={0.05}
           target={[0, 0, 0] as any}
-          // Keep camera outside planets but not too far away
-          minDistance={18}
-          maxDistance={100}
+          // Allow much closer viewing of planets
+          minDistance={8}
+          maxDistance={80}
           // Allow full vertical rotation for better viewing angles
           minPolarAngle={0.1}
           maxPolarAngle={Math.PI - 0.1}
@@ -557,30 +557,82 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         <OverlapManager />
       </Canvas>
       
-      {/* Simple Test Controls - Should be IMPOSSIBLE to miss */}
+      {/* Working Camera Controls */}
       <div 
         style={{
-          position: 'fixed',
-          top: '20px',
-          left: '20px',
+          position: 'absolute',
+          top: '10px',
+          left: '10px',
           zIndex: 999999999,
           pointerEvents: 'auto',
-          backgroundColor: 'red',
-          color: 'white',
-          padding: '20px',
-          fontSize: '24px',
-          fontWeight: 'bold',
-          border: '5px solid white',
-          borderRadius: '10px'
-        }}
-        onClick={() => {
-          console.log('🎯 TEST CONTROL CLICKED!');
-          // Try to move the camera manually
-          const event = new WheelEvent('wheel', { deltaY: 100, bubbles: true });
-          document.querySelector('canvas')?.dispatchEvent(event);
+          display: 'flex',
+          gap: '8px',
+          alignItems: 'center'
         }}
       >
-        ZOOM TEST - CLICK ME
+        {/* Zoom Out */}
+        <button
+          style={{
+            backgroundColor: 'rgba(0, 255, 255, 0.8)',
+            color: 'white',
+            border: '2px solid white',
+            borderRadius: '8px',
+            width: '40px',
+            height: '40px',
+            fontSize: '20px',
+            fontWeight: 'bold',
+            cursor: 'pointer'
+          }}
+          onMouseDown={() => {
+            console.log('🔍 Zoom Out!');
+            const canvas = document.querySelector('canvas');
+            if (canvas) {
+              const event = new WheelEvent('wheel', { deltaY: 300, bubbles: true });
+              canvas.dispatchEvent(event);
+            }
+          }}
+        >
+          −
+        </button>
+        
+        {/* Zoom In */}
+        <button
+          style={{
+            backgroundColor: 'rgba(0, 255, 255, 0.8)',
+            color: 'white',
+            border: '2px solid white',
+            borderRadius: '8px',
+            width: '40px',
+            height: '40px',
+            fontSize: '20px',
+            fontWeight: 'bold',
+            cursor: 'pointer'
+          }}
+          onMouseDown={() => {
+            console.log('🔍 Zoom In!');
+            const canvas = document.querySelector('canvas');
+            if (canvas) {
+              const event = new WheelEvent('wheel', { deltaY: -300, bubbles: true });
+              canvas.dispatchEvent(event);
+            }
+          }}
+        >
+          +
+        </button>
+        
+        {/* Camera Instructions */}
+        <div 
+          style={{
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            color: 'white',
+            padding: '8px 12px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            border: '1px solid rgba(0, 255, 255, 0.5)'
+          }}
+        >
+          Click + Drag to Rotate
+        </div>
       </div>
       
       {/* 2D Minimap overlay - show when enabled */}

@@ -419,12 +419,17 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
                 <img
                   src={`/elements/${todaysElement.name}.webp`}
                   alt="Today's Element"
-                  className="w-full h-full object-cover"
+                  className={`w-full h-full object-cover ${!isAuthenticated && !questStatus.elementOfDay ? 'filter grayscale opacity-50' : ''}`}
                   draggable={false}
                 />
                 {questStatus.elementOfDay && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/40">
                     <span className="text-green-400 text-lg">✓</span>
+                  </div>
+                )}
+                {!isAuthenticated && !questStatus.elementOfDay && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                    <span className="text-gray-400 text-xs font-bold">LOGIN</span>
                   </div>
                 )}
               </button>
@@ -492,7 +497,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
                       : '0 0 4px rgba(252,84,175,0.6)'
                 }}
               >
-                {questStatus.journalEntry ? '✓ COMPLETE' : !isAuthenticated ? 'LOG IN' : 'SOUL STARE'}
+                {questStatus.journalEntry ? '✓ COMPLETE' : !isAuthenticated ? 'LOG IN TO COMPLETE' : 'OPEN JOURNAL'}
               </button>
               <div 
                 className={`font-bold text-sm ${

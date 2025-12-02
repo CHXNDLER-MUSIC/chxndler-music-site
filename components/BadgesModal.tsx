@@ -740,49 +740,97 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
       {!loading && !error && (
         <div className="relative">
           {/* First row of categories */}
-          <div className="grid gap-2 grid-cols-3 p-2">
+          <div className="grid gap-2 grid-cols-5 p-2">
             {(() => {
               const categoriesToUse = badgeCategories.length > 0 ? badgeCategories : fallbackCategories;
               console.log("BadgesModal: Rendering categories:", categoriesToUse.length, categoriesToUse.map(c => c.name));
-              return categoriesToUse.slice(0, 3).map((category) => (
-          <button
+              return categoriesToUse.slice(0, 5).map((category) => (
+          <div
             key={category.id}
-            onClick={() => setSelectedCategory(category.id)}
-            className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-yellow-400/60 hover:border-yellow-400 hover:scale-105 transition-all duration-200 text-center group flex flex-col items-center justify-center"
+            className="rounded-lg border backdrop-blur-sm transition-all duration-300 border-white/20 hover:border-white/40 cursor-pointer group"
             style={{
-              background: 'radial-gradient(circle, rgba(0,0,0,0.8) 0%, rgba(40,40,40,0.9) 100%)',
-              boxShadow: '0 4px 15px rgba(255, 215, 0, 0.3)'
+              boxShadow: '0 0 5px rgba(255,105,180,0.2)',
+              aspectRatio: '2/3'
             }}
+            onClick={() => setSelectedCategory(category.id)}
           >
-            <div className="text-2xl sm:text-3xl mb-1">{category.emoji}</div>
-            <div className="text-yellow-300 font-bold text-[10px] sm:text-xs group-hover:text-yellow-100 transition-colors px-1 leading-tight text-center">
-              {category.name}
+            <div className="w-full h-full bg-gradient-to-br from-pink-500/10 to-purple-500/10 rounded border-2 border-dashed border-pink-400/30 flex flex-col items-center justify-center hover:border-pink-400/50 transition-all duration-200 group-hover:scale-105">
+              <div className="text-xl sm:text-2xl mb-1">{category.emoji}</div>
+              <div 
+                className="text-xs font-bold text-center px-1 leading-tight"
+                style={{ 
+                  color: '#FFB6C1', 
+                  textShadow: '0 0 4px rgba(255,182,193,0.6)',
+                }}
+              >
+                {category.name}
+              </div>
             </div>
-          </button>
+          </div>
               ));
             })()}
           </div>
           
           {/* Second row of categories */}
-          <div className="grid gap-2 grid-cols-3 mt-3 p-2">
+          <div className="grid gap-2 grid-cols-5 mt-3 p-2">
             {(() => {
               const categoriesToUse = badgeCategories.length > 0 ? badgeCategories : fallbackCategories;
-              return categoriesToUse.slice(3, 6).map((category) => (
-          <button
-            key={category.id}
-            onClick={() => setSelectedCategory(category.id)}
-            className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-yellow-400/60 hover:border-yellow-400 hover:scale-105 transition-all duration-200 text-center group flex flex-col items-center justify-center"
-            style={{
-              background: 'radial-gradient(circle, rgba(0,0,0,0.8) 0%, rgba(40,40,40,0.9) 100%)',
-              boxShadow: '0 4px 15px rgba(255, 215, 0, 0.3)'
-            }}
-          >
-            <div className="text-2xl sm:text-3xl mb-1">{category.emoji}</div>
-            <div className="text-yellow-300 font-bold text-[10px] sm:text-xs group-hover:text-yellow-100 transition-colors px-1 leading-tight text-center">
-              {category.name}
-            </div>
-          </button>
-              ));
+              const remainingCategories = categoriesToUse.slice(5, 10);
+              const totalSlots = 5;
+              
+              return Array.from({ length: totalSlots }, (_, index) => {
+                const category = remainingCategories[index];
+                
+                if (category) {
+                  return (
+                    <div
+                      key={category.id}
+                      className="rounded-lg border backdrop-blur-sm transition-all duration-300 border-white/20 hover:border-white/40 cursor-pointer group"
+                      style={{
+                        boxShadow: '0 0 5px rgba(255,105,180,0.2)',
+                        aspectRatio: '2/3'
+                      }}
+                      onClick={() => setSelectedCategory(category.id)}
+                    >
+                      <div className="w-full h-full bg-gradient-to-br from-pink-500/10 to-purple-500/10 rounded border-2 border-dashed border-pink-400/30 flex flex-col items-center justify-center hover:border-pink-400/50 transition-all duration-200 group-hover:scale-105">
+                        <div className="text-xl sm:text-2xl mb-1">{category.emoji}</div>
+                        <div 
+                          className="text-xs font-bold text-center px-1 leading-tight"
+                          style={{ 
+                            color: '#FFB6C1', 
+                            textShadow: '0 0 4px rgba(255,182,193,0.6)',
+                          }}
+                        >
+                          {category.name}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div
+                      key={`empty-slot-${index}`}
+                      className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300"
+                      style={{
+                        boxShadow: '0 0 5px rgba(255,105,180,0.1)',
+                        aspectRatio: '2/3'
+                      }}
+                    >
+                      <div className="w-full h-full bg-gradient-to-br from-pink-500/5 to-purple-500/5 rounded border-2 border-dashed border-pink-400/20 flex items-center justify-center">
+                        <div 
+                          className="text-xs font-bold text-center"
+                          style={{ 
+                            color: 'rgba(255,105,180,0.4)', 
+                            textShadow: '0 0 4px rgba(255,105,180,0.3)',
+                          }}
+                        >
+                          LOCKED
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+              });
             })()}
           </div>
         </div>
