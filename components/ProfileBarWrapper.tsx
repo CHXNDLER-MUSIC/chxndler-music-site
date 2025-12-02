@@ -6,6 +6,7 @@ import { useUIState } from "@/lib/use-ui-state";
 
 type Props = React.ComponentProps<typeof ProfileBar> & {
   todaysPrompt?: any;
+  onOpenHeartCoin?: () => void;
 };
 
 // Wrapper that prevents any render until client hydration, then

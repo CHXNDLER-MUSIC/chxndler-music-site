@@ -21,6 +21,7 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
   
   // Safety check: Never show welcome modal for logged-in users
   if (profile?.id) {
+    console.log('🚫 Modal not rendering: user logged in', profile.id);
     return null;
   }
   
@@ -96,7 +97,12 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
     }
   }
 
-  if (typeof document === 'undefined') return null;
+  if (typeof document === 'undefined') {
+    console.log('🚫 Modal not rendering: not mounted');
+    return null;
+  }
+
+  console.log('✅ Modal should render:', { open, hasProfile: !!profile?.id });
 
   return createPortal(
     <>

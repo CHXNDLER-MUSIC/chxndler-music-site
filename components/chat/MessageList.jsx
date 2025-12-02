@@ -185,26 +185,78 @@ function ChatMessage({ message, onUserClick, isConsecutive }) {
             className="flex-shrink-0 mt-0.5 hover:scale-110 transition-transform duration-200"
           >
             <div 
-              className="w-6 h-6 rounded-full flex items-center justify-center"
+              className="w-6 h-6 rounded-full flex items-center justify-center overflow-hidden"
               style={{
                 background: `${elementColor}30`,
                 border: `1px solid ${elementColor}`,
                 boxShadow: `0 0 8px ${elementColor}60`
               }}
             >
-              {userProfile?.avatar_badge_id ? (
-                // Custom badge avatar
-                <span className="text-xs">🏆</span>
-              ) : userProfile?.element ? (
-                // Element icon
-                <ElementIcon 
-                  name={userProfile.element} 
-                  width={14} 
-                  height={14}
-                  className="opacity-90"
+              {message.user_id === 'anonymous' ? (
+                // Always show alien.webp for anonymous users
+                <img
+                  src="/elements/alien.webp"
+                  alt="Anonymous User"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Fallback to emoji if alien.webp fails to load
+                    e.target.style.display = 'none';
+                    const parent = e.target.parentElement;
+                    if (parent) {
+                      parent.innerHTML = `<div class="w-full h-full flex items-center justify-center"><span class="text-xs">👽</span></div>`;
+                    }
+                  }}
                 />
+              ) : userProfile?.profile_image_url ? (
+                // Show actual profile image for authenticated users
+                <img
+                  src={userProfile.profile_image_url}
+                  alt={displayName}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Fallback to element icon if profile image fails to load
+                    e.target.style.display = 'none';
+                    const parent = e.target.parentElement;
+                    if (parent && userProfile?.element) {
+                      parent.innerHTML = `<div class="w-full h-full flex items-center justify-center"></div>`;
+                      // Insert ElementIcon fallback
+                      const iconContainer = parent.querySelector('div');
+                      if (iconContainer) {
+                        if (userProfile.element === 'alien') {
+                          iconContainer.innerHTML = '<span class="text-xs">👽</span>';
+                        } else {
+                          // For other elements, show the element icon
+                          iconContainer.innerHTML = '<span class="text-xs">⭐</span>';
+                        }
+                      }
+                    }
+                  }}
+                />
+              ) : userProfile?.element ? (
+                // Element icon fallback for authenticated users without profile images
+                userProfile.element === 'alien' ? (
+                  <img
+                    src="/elements/alien.webp"
+                    alt="Alien Element"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      const parent = e.target.parentElement;
+                      if (parent) {
+                        parent.innerHTML = `<div class="w-full h-full flex items-center justify-center"><span class="text-xs">👽</span></div>`;
+                      }
+                    }}
+                  />
+                ) : (
+                  <ElementIcon 
+                    name={userProfile.element} 
+                    width={14} 
+                    height={14}
+                    className="opacity-90"
+                  />
+                )
               ) : (
-                // Default avatar
+                // Default avatar for users without element or profile image
                 <div 
                   className="w-3 h-3 rounded-full"
                   style={{ 

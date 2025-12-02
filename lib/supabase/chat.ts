@@ -25,6 +25,7 @@ export interface ChatMessage {
     name: string | null;
     element: string | null;
     avatar_badge_id: string | null;
+    profile_image_url: string | null;
   };
 }
 
@@ -33,6 +34,7 @@ export interface ChatUser {
   name: string | null;
   element: ElementType | null;
   avatar_badge_id: string | null;
+  profile_image_url: string | null;
   last_seen: string;
 }
 
@@ -105,7 +107,8 @@ export class ChatService {
                   user_profile:profiles!user_id (
                     name,
                     element,
-                    avatar_badge_id
+                    avatar_badge_id,
+                    profile_image_url
                   )
                 `)
                 .eq('id', payload.new.id)
@@ -167,7 +170,8 @@ export class ChatService {
           user_profile:profiles!user_id (
             name,
             element,
-            avatar_badge_id
+            avatar_badge_id,
+            profile_image_url
           )
         `)
         .single();
@@ -183,7 +187,8 @@ export class ChatService {
         user_profile: {
           name: 'SYSTEM',
           element: null,
-          avatar_badge_id: null
+          avatar_badge_id: null,
+          profile_image_url: null
         }
       } as ChatMessage;
     } catch (error) {
@@ -315,7 +320,8 @@ export class ChatService {
           user_profile: {
             name: anonymousName || 'ALIEN [0000]',
             element: 'alien',
-            avatar_badge_id: null
+            avatar_badge_id: null,
+            profile_image_url: null
           }
         } as ChatMessage;
         console.log('🔥 Returning mock message:', mockMessage);
@@ -349,7 +355,8 @@ export class ChatService {
           user_profile:profiles!user_id (
             name,
             element,
-            avatar_badge_id
+            avatar_badge_id,
+            profile_image_url
           )
         `)
         .single();
@@ -401,7 +408,8 @@ export class ChatService {
           user_profile:profiles!user_id (
             name,
             element,
-            avatar_badge_id
+            avatar_badge_id,
+            profile_image_url
           )
         `)
         .eq('stream_session_id', sessionId)
@@ -439,7 +447,8 @@ export class ChatService {
           user_profile:profiles!user_id (
             name,
             element,
-            avatar_badge_id
+            avatar_badge_id,
+            profile_image_url
           )
         `)
         .eq('stream_session_id', sessionId)
@@ -462,6 +471,7 @@ export class ChatService {
           name: message.user_profile.name,
           element: message.user_profile.element as ElementType | null,
           avatar_badge_id: message.user_profile.avatar_badge_id,
+          profile_image_url: message.user_profile.profile_image_url,
           last_seen: message.created_at
         });
       }

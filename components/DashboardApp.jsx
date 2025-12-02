@@ -34,6 +34,7 @@ import WelcomeHomeModal from "@/components/WelcomeHomeModal";
 import ProfileBarWrapper from "@/components/ProfileBarWrapper";
 import HoloStarsButton from "@/components/HoloStarsButton";
 import SoulStareModal from "@/components/SoulStareModal";
+import HeartCoinModal from "@/components/HeartCoinModal";
 import { useUIStore } from "@/store/useUIStore";
 import { useProfile } from "@/contexts/ProfileContext";
 import { useUIState } from "@/lib/use-ui-state";
@@ -190,6 +191,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const [showHUD, setShowHUD] = useState(false);
   const [showStarsModal, setShowStarsModal] = useState(false);
   const [showWelcomeHomeModal, setShowWelcomeHomeModal] = useState(false);
+  const [showHeartCoinModal, setShowHeartCoinModal] = useState(false);
   const [warpActive, setWarpActive] = useState(false);
   const [isWarping, setIsWarping] = useState(false);
   // Guard to prevent rapid double-trigger of Start flow before state updates
@@ -1057,7 +1059,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
         // Prepare warp to homepage
         setUserSelected(false);
-        setHomeMode(false);
+        setHomeMode(true); // Set to true so welcome audio can play
         startButtonWarpRef.current = true;
 
         // Stop any playing main track audio
@@ -1660,6 +1662,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           }
         }}
         onOpenJournal={handleOpenJournal}
+        onOpenHeartCoin={() => setShowHeartCoinModal(true)}
         onJournalCompleted={handleJournalCompleted}
         onBeamColorChange={handleBeamToggle}
         savedAlienName={savedProfileName}
@@ -2496,6 +2499,12 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       <WelcomeHomeModal 
         open={showWelcomeHomeModal} 
         onClose={handleWelcomeHomeClose} 
+      />
+
+      {/* Heart Coin Modal */}
+      <HeartCoinModal 
+        open={showHeartCoinModal} 
+        onClose={() => setShowHeartCoinModal(false)} 
       />
 
       {/* Authentication Error Notification */}

@@ -36,6 +36,7 @@ type Props = {
   preselectedCard?: string | null;
   preselectedElement?: string | null;
   pulsingCards?: boolean;
+  onOpenHeartCoin?: () => void;
 };
 
 // TypeScript interfaces for shipping and orders
@@ -65,7 +66,7 @@ interface PhysicalCardOrder {
   created_at?: string;
 }
 
-export default function BinderModal({ open, onClose, preselectedCard, preselectedElement, pulsingCards = false }: Props) {
+export default function BinderModal({ open, onClose, preselectedCard, preselectedElement, pulsingCards = false, onOpenHeartCoin }: Props) {
   const { profile, updateProfile } = useProfile();
   const [cardOpen, setCardOpen] = useState(false);
   const [showFullCollection, setShowFullCollection] = useState(false);
@@ -422,11 +423,10 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
 
   const openHeartCoinPopout = () => {
     try { sfx.play('click', 0.4); } catch {}
-    // Find and click the heart coin button in the HUD to trigger existing popup
-    const heartCoinButton = document.querySelector('[data-heart-coin-trigger]') || 
-                           document.querySelector('img[src*="heart-coin"]')?.parentElement;
-    if (heartCoinButton && heartCoinButton instanceof HTMLElement) {
-      heartCoinButton.click();
+    if (onOpenHeartCoin) {
+      onOpenHeartCoin();
+    } else {
+      console.warn('Heart coin trigger not available');
     }
   };
 
@@ -1025,7 +1025,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                           ) : (
                             <div className="w-full h-full bg-gradient-to-br from-pink-500/10 to-purple-500/10 rounded mb-1 border-2 border-dashed border-pink-400/30 flex items-center justify-center">
                               <div 
-                                className="text-xs font-bold text-center"
+                                className="text-xs font-bold text-center flex items-center justify-center w-full h-full"
                                 style={{ 
                                   color: '#FFB6C1', 
                                   textShadow: '0 0 4px rgba(255,182,193,0.6)',
@@ -1076,7 +1076,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                 
                 {/* Right arrow to go to second page - positioned within popup on the right side */}
                 <div 
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 z-10"
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10"
                   style={{
                     pointerEvents: 'auto'
                   }}
@@ -1208,7 +1208,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page - positioned within popup on the right side */}
                   <div 
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}

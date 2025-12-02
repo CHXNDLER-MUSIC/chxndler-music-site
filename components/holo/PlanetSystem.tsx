@@ -420,7 +420,13 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
     >
       <Canvas
         className="absolute inset-0"
-        style={{ background: 'transparent' }}
+        style={{ 
+          background: 'transparent',
+          pointerEvents: 'auto',
+          cursor: 'grab',
+          touchAction: 'none'
+        }}
+        onPointerMissed={() => console.log('Canvas click detected but missed objects')}
         // Lower DPR on mobile to reduce fill rate cost
         dpr={(() => {
           if (typeof window !== 'undefined') {
@@ -464,21 +470,39 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         <pointLight position={[0, -1.4, 0.6]} intensity={1.1} color={"#19E3FF"} distance={9} />
         {/* Removed magenta secondary light to avoid pink aura */}
         <InvalidateOnState />
-        {/* Intuitive camera controls */}
+        {/* Enhanced camera controls - Full click and drag functionality */}
         <OrbitControls
-          enableZoom
-          enablePan={false}
-          enableRotate
+          enableZoom={true}
+          enablePan={true}
+          enableRotate={true}
+          enableDamping={true}
+          dampingFactor={0.05}
           target={[0, 0, 0] as any}
           // Keep camera outside planets but not too far away
           minDistance={18}
           maxDistance={100}
-          // Prevent going under the plane; keep a cinematic tilt range
-          minPolarAngle={0.2}
-          maxPolarAngle={Math.PI / 2 - 0.05}
-          zoomSpeed={0.6}
-          rotateSpeed={0.6}
-          panSpeed={0.6}
+          // Allow full vertical rotation for better viewing angles
+          minPolarAngle={0.1}
+          maxPolarAngle={Math.PI - 0.1}
+          // Enhanced speeds for smoother control
+          zoomSpeed={0.8}
+          rotateSpeed={0.8}
+          panSpeed={1.2}
+          // Mouse button assignments
+          mouseButtons={{
+            LEFT: 0,   // Left click = rotate camera around target
+            MIDDLE: 1, // Middle click = zoom
+            RIGHT: 2   // Right click = pan/move camera
+          }}
+          // Touch controls for mobile
+          touches={{
+            ONE: 0,    // One finger = rotate
+            TWO: 2     // Two finger = pan and zoom
+          }}
+          // Debug events
+          onStart={() => console.log('🎮 OrbitControls: Started interaction')}
+          onChange={() => console.log('🎮 OrbitControls: Camera moved')}
+          onEnd={() => console.log('🎮 OrbitControls: Ended interaction')}
         />
         <ZoomOnChange focusId={actualShouldShowAll ? null : focusId} />
         <MouseWheelZoom focusId={actualShouldShowAll ? null : focusId} onZoomChange={setCurrentZoomLevel} />
@@ -533,49 +557,30 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         <OverlapManager />
       </Canvas>
       
-      {/* Zoom Controls */}
-      <div className="absolute top-4 right-4 flex items-center gap-2" style={{ zIndex: 999998 }}>
-        {/* Zoom Out Button */}
-        <button
-          onClick={() => {
-            const event = new WheelEvent('wheel', { deltaY: 100, bubbles: true });
-            document.querySelector('canvas')?.dispatchEvent(event);
-          }}
-          className="bg-cyan-500/20 hover:bg-cyan-500/40 border border-cyan-400/50 rounded text-cyan-400 text-sm font-bold transition-colors duration-200 w-8 h-8 flex items-center justify-center"
-          title="Zoom Out (or scroll down)"
-        >
-          −
-        </button>
-        
-        {/* Zoom Indicator */}
-        <div className="bg-cyan-500/20 border border-cyan-400/50 rounded text-cyan-400 text-xs font-bold px-2 py-1 min-w-12 text-center">
-          {currentZoomLevel === -2 ? "MAX" : 
-           currentZoomLevel === -1 ? "WIDE" :
-           currentZoomLevel === 0 ? "NORM" :
-           currentZoomLevel === 1 ? "CLOSE" :
-           "MAX+"}
-        </div>
-        
-        {/* Zoom In Button */}
-        <button
-          onClick={() => {
-            const event = new WheelEvent('wheel', { deltaY: -100, bubbles: true });
-            document.querySelector('canvas')?.dispatchEvent(event);
-          }}
-          className="bg-cyan-500/20 hover:bg-cyan-500/40 border border-cyan-400/50 rounded text-cyan-400 text-sm font-bold transition-colors duration-200 w-8 h-8 flex items-center justify-center"
-          title="Zoom In (or scroll up)"
-        >
-          +
-        </button>
-        
-        {/* Minimap Toggle Button */}
-        <button
-          onClick={() => setIsMinimapVisible(!isMinimapVisible)}
-          className="bg-cyan-500/20 hover:bg-cyan-500/40 border border-cyan-400/50 rounded text-cyan-400 text-xs font-bold transition-colors duration-200 px-2 py-1 flex items-center gap-1"
-          title={isMinimapVisible ? "Hide minimap" : "Show minimap"}
-        >
-          <span className="text-xs">🗺️</span>
-        </button>
+      {/* Simple Test Controls - Should be IMPOSSIBLE to miss */}
+      <div 
+        style={{
+          position: 'fixed',
+          top: '20px',
+          left: '20px',
+          zIndex: 999999999,
+          pointerEvents: 'auto',
+          backgroundColor: 'red',
+          color: 'white',
+          padding: '20px',
+          fontSize: '24px',
+          fontWeight: 'bold',
+          border: '5px solid white',
+          borderRadius: '10px'
+        }}
+        onClick={() => {
+          console.log('🎯 TEST CONTROL CLICKED!');
+          // Try to move the camera manually
+          const event = new WheelEvent('wheel', { deltaY: 100, bubbles: true });
+          document.querySelector('canvas')?.dispatchEvent(event);
+        }}
+      >
+        ZOOM TEST - CLICK ME
       </div>
       
       {/* 2D Minimap overlay - show when enabled */}

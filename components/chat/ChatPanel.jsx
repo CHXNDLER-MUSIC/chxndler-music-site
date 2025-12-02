@@ -235,6 +235,7 @@ export default function ChatPanel({ isOpen, onClose }) {
   const [showSendHeartCoin, setShowSendHeartCoin] = useState(false);
   const [badgeStartIndex, setBadgeStartIndex] = useState(0);
   const [binderStartIndex, setBinderStartIndex] = useState(0);
+  const [selectedCardPopup, setSelectedCardPopup] = useState(null);
   const channelRef = useRef(null);
 
   // Initialize chat users when chat opens - either authenticated user or anonymous
@@ -1346,16 +1347,23 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 // Get user's actual cards if available
                                 const userCards = selectedUser.id !== 'anonymous' && profile?.cards ? profile.cards : [];
                                 const cardIndex = binderStartIndex + index;
-                                const userCard = userCards[cardIndex];
                                 
-                                // If user has this card, find the song data
+                                // Everyone gets CHXNDLER card in the first slot (cardIndex 0)
                                 let cardSong = null;
-                                if (userCard) {
+                                let hasCard = false;
+                                let userCard = userCards[cardIndex];
+                                
+                                if (cardIndex === 0) {
+                                  // Always show CHXNDLER card in first slot for everyone
+                                  cardSong = songCollection.find(song => song.name === 'CHXNDLER');
+                                  hasCard = true;
+                                } else if (userCard) {
+                                  // For other slots, show user's actual cards
                                   cardSong = songCollection.find(song => song.name === userCard.cards?.card_name);
+                                  hasCard = !!userCard && !!cardSong;
                                 }
                                 
                                 const elementDisplay = cardSong ? getElementDisplay(cardSong.element) : null;
-                                const hasCard = !!userCard && !!cardSong;
                                 
                                 return (
                                   <div 
@@ -1365,6 +1373,26 @@ export default function ChatPanel({ isOpen, onClose }) {
                                       boxShadow: hasCard ? '0 0 5px rgba(255,105,180,0.3)' : '0 0 5px rgba(255,105,180,0.1)',
                                       aspectRatio: '2/3',
                                       background: 'rgba(0, 0, 0, 0.3)'
+                                    }}
+                                    onClick={() => {
+                                      if (hasCard && cardSong) {
+                                        try {
+                                          const audio = new Audio('/audio/click.mp3');
+                                          audio.volume = 0.3;
+                                          audio.play().catch(error => {
+                                            console.log('Click audio play failed:', error);
+                                          });
+                                        } catch (error) {
+                                          console.log('Click audio creation failed:', error);
+                                        }
+                                        setSelectedCardPopup({
+                                          name: cardSong.name,
+                                          element: cardSong.element,
+                                          image: getCardImage(cardSong.name, cardSong.element),
+                                          rarity: cardSong.rarity,
+                                          isReleased: cardSong.is_released
+                                        });
+                                      }
                                     }}
                                   >
                                     {hasCard ? (
@@ -1580,6 +1608,128 @@ export default function ChatPanel({ isOpen, onClose }) {
             </div>
           </motion.div>
         </>
+      )}
+
+      {/* Card Popup Modal */}
+      {selectedCardPopup && (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center p-4"
+          style={{
+            background: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'blur(8px)'
+          }}
+          onClick={() => setSelectedCardPopup(null)}
+        >
+          <div
+            className="relative max-w-md w-full aspect-[2/3] max-h-[80vh]"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: `
+                linear-gradient(135deg, 
+                  rgba(0, 0, 0, 0.05) 0%,
+                  rgba(0, 20, 40, 0.03) 50%,
+                  rgba(0, 0, 0, 0.05) 100%
+                )
+              `,
+              boxShadow: `
+                0 0 50px rgba(242, 239, 29, 0.08),
+                inset 0 0 100px rgba(242, 239, 29, 0.01),
+                0 0 30px rgba(255, 105, 180, 0.3)
+              `,
+              backdropFilter: 'blur(2px)',
+              borderRadius: '12px',
+              border: '2px solid rgba(255, 105, 180, 0.4)'
+            }}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setSelectedCardPopup(null)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 z-10"
+              style={{
+                background: 'rgba(242, 239, 29, 0.2)',
+                border: '1px solid rgba(242, 239, 29, 0.6)',
+                color: '#F2EF1D',
+                boxShadow: '0 0 10px rgba(242, 239, 29, 0.3)',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}
+            >
+              ×
+            </button>
+
+            {/* Card image */}
+            <div className="w-full h-full rounded-lg overflow-hidden relative">
+              <img
+                src={selectedCardPopup.image}
+                alt={selectedCardPopup.name}
+                className="w-full h-full object-cover"
+                style={{
+                  boxShadow: '0 0 30px rgba(255,105,180,0.6)',
+                }}
+                onError={(e) => {
+                  // Fallback display if image fails to load
+                  const target = e.target;
+                  target.style.display = 'none';
+                  const parent = target.parentElement;
+                  if (parent) {
+                    const elementDisplay = getElementDisplay(selectedCardPopup.element);
+                    parent.innerHTML = `
+                      <div class="w-full h-full rounded-lg bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-pink-400/50 flex flex-col items-center justify-center p-4">
+                        <div class="text-6xl mb-4" style="color: ${elementDisplay?.color || '#FFB6C1'}; filter: drop-shadow(0 0 8px rgba(255,182,193,0.8))">
+                          ${elementDisplay?.icon || '🎵'}
+                        </div>
+                        <div class="text-xl font-bold text-center leading-tight" style="color: #FFB6C1; text-shadow: 0 0 8px rgba(255,182,193,0.6)">
+                          ${selectedCardPopup.name}
+                        </div>
+                        <div class="text-sm mt-2" style="color: #FFB6C1; opacity: 0.8">
+                          ${selectedCardPopup.element} • ${selectedCardPopup.rarity}
+                        </div>
+                      </div>
+                    `;
+                  }
+                }}
+              />
+            </div>
+
+            {/* Card info overlay */}
+            <div 
+              className="absolute bottom-0 left-0 right-0 p-4 rounded-b-lg"
+              style={{
+                background: 'linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.4), transparent)',
+                backdropFilter: 'blur(4px)'
+              }}
+            >
+              <h3 
+                className="text-lg font-bold text-center mb-1"
+                style={{
+                  color: '#F2EF1D',
+                  textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
+                }}
+              >
+                {selectedCardPopup.name}
+              </h3>
+              <div className="flex justify-center items-center space-x-3 text-sm">
+                <span 
+                  className="font-semibold"
+                  style={{
+                    color: getElementDisplay(selectedCardPopup.element)?.color || '#FFB6C1',
+                    textShadow: `0 0 4px ${getElementDisplay(selectedCardPopup.element)?.color || '#FFB6C1'}60`
+                  }}
+                >
+                  {selectedCardPopup.element}
+                </span>
+                <span className="text-white/60">•</span>
+                <span className="text-white/80">{selectedCardPopup.rarity}</span>
+                {selectedCardPopup.isReleased && (
+                  <>
+                    <span className="text-white/60">•</span>
+                    <span className="text-green-400 font-semibold">Released</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Scanner Effect */}

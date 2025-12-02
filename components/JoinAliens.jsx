@@ -149,25 +149,13 @@ export default function JoinAliens({ visible = true } = {}) {
     };
   }, [visible]);
 
-  function formatPhoneNumber(value) {
-    // Remove all non-digits
-    const phoneNumber = value.replace(/\D/g, '');
-    
-    // Format as +1 (XXX) XXX-XXXX for US numbers
-    if (phoneNumber.length === 0) return '';
-    if (phoneNumber.length <= 3) return `+1 (${phoneNumber}`;
-    if (phoneNumber.length <= 6) return `+1 (${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3)}`;
-    return `+1 (${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3, 6)}-${phoneNumber.slice(6, 10)}`;
-  }
-
   function handlePhoneChange(e) {
-    const formatted = formatPhoneNumber(e.target.value);
-    setPhone(formatted);
+    setPhone(e.target.value);
   }
 
   async function sendHeartSignal() {
-    if (!phone || phone.length < 14) {
-      setError("Please enter a valid phone number");
+    if (!phone || phone.trim().length < 3) {
+      setError("Please enter a phone number");
       try { sfx.play('error', 0.5); } catch {}
       return;
     }
@@ -186,13 +174,13 @@ export default function JoinAliens({ visible = true } = {}) {
         setMessage("Signal linked to your Alien profile.");
         try { sfx.play('success', 0.7); } catch {}
       } else {
-        // User is not logged in - insert to signal_signups
+        // User is not logged in - insert to phone_signups
         const { error } = await supabaseClient
-          .from("signal_signups")
-          .insert({ phone });
+          .from("phone_signups")
+          .insert({ phone_number: phone });
 
         if (error) {
-          console.error("Error saving to signal_signups:", error);
+          console.error("Error saving to phone_signups:", error);
           setError("Failed to send heart signal");
           setStatus("error");
           try { sfx.play('error', 0.5); } catch {}
@@ -397,40 +385,40 @@ export default function JoinAliens({ visible = true } = {}) {
       {/* Send Heart Signal Button */}
       <button
         onClick={sendHeartSignal}
-        disabled={status === "saving" || phone.length < 14}
+        disabled={status === "saving" || !phone?.trim() || phone.trim().length < 3}
         style={{
           width: '100%',
           padding: '12px 24px',
           background: 'transparent',
           border: status === "saved"
             ? '2px solid #00FF00'
-            : status === "saving" || phone.length < 14 
+            : status === "saving" || !phone?.trim() || phone.trim().length < 3 
               ? '2px solid rgba(128, 128, 128, 0.3)' 
               : '2px solid #00FFFF',
           borderRadius: '8px',
           color: status === "saved"
             ? '#00FF00'
-            : status === "saving" || phone.length < 14 
+            : status === "saving" || !phone?.trim() || phone.trim().length < 3 
               ? 'rgba(128, 128, 128, 0.7)' 
               : '#00FFFF',
           fontSize: '16px',
           fontWeight: '600',
-          cursor: status === "saving" || phone.length < 14 ? 'not-allowed' : 'pointer',
+          cursor: status === "saving" || !phone?.trim() || phone.trim().length < 3 ? 'not-allowed' : 'pointer',
           transition: 'all 300ms ease',
           boxShadow: status === "saved"
             ? '0 0 15px rgba(0, 255, 0, 0.3)'
-            : status === "saving" || phone.length < 14 
+            : status === "saving" || !phone?.trim() || phone.trim().length < 3 
               ? 'none' 
               : '0 0 15px rgba(0, 255, 255, 0.3)',
           textShadow: status === "saved"
             ? '0 0 10px #00FF00, 0 0 20px #00FF00, 0 0 30px #00FF00'
-            : status === "saving" || phone.length < 14 
+            : status === "saving" || !phone?.trim() || phone.trim().length < 3 
               ? 'none' 
               : '0 0 10px #00FFFF, 0 0 20px #00FFFF, 0 0 30px #00FFFF',
           outline: 'none'
         }}
         onMouseEnter={(e) => {
-          if (status !== "saving" && phone.length >= 14 && status !== "saved") {
+          if (status !== "saving" && phone?.trim() && phone.trim().length >= 3 && status !== "saved") {
             e.target.style.transform = 'translateY(-2px)';
             e.target.style.background = 'rgba(0, 255, 255, 0.15)';
             e.target.style.boxShadow = '0 0 40px rgba(0, 255, 255, 0.8), 0 0 60px rgba(0, 255, 255, 0.4), inset 0 0 30px rgba(0, 255, 255, 0.2)';
@@ -440,7 +428,7 @@ export default function JoinAliens({ visible = true } = {}) {
           }
         }}
         onMouseLeave={(e) => {
-          if (status !== "saving" && phone.length >= 14 && status !== "saved") {
+          if (status !== "saving" && phone?.trim() && phone.trim().length >= 3 && status !== "saved") {
             e.target.style.transform = 'translateY(0)';
             e.target.style.background = 'transparent';
             e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';

@@ -121,6 +121,7 @@ export default function HeartCoinModal({ open, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
+  const [activeTab, setActiveTab] = useState('use');
   const itemsPerPage = 6;
 
   async function signInWithGoogle() {
@@ -202,8 +203,34 @@ export default function HeartCoinModal({ open, onClose }: Props) {
       title=""
     >
       <div className="relative">
-        {/* Store Items Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[60vh] overflow-y-auto pr-2">
+        {/* Tabs */}
+        <div className="flex border-b border-white/20 mb-6">
+          <button
+            onClick={() => setActiveTab('use')}
+            className={`px-6 py-3 font-bold text-sm transition-all duration-200 ${
+              activeTab === 'use'
+                ? 'text-[#F2EF1D] border-b-2 border-[#F2EF1D]'
+                : 'text-white/60 hover:text-white/80'
+            }`}
+          >
+            USE
+          </button>
+          <button
+            onClick={() => setActiveTab('cards')}
+            className={`px-6 py-3 font-bold text-sm transition-all duration-200 ${
+              activeTab === 'cards'
+                ? 'text-[#F2EF1D] border-b-2 border-[#F2EF1D]'
+                : 'text-white/60 hover:text-white/80'
+            }`}
+          >
+            CARDS
+          </button>
+        </div>
+
+        {activeTab === 'use' ? (
+          <div>
+            {/* Store Items Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[60vh] overflow-y-auto pr-2">
           {currentItems.map((item, index) => (
             <div key={index} className="text-center space-y-4 p-4 bg-black/20 rounded-lg transition-all duration-300">
               <h3 className="text-lg font-bold text-white tracking-wider">
@@ -334,6 +361,41 @@ export default function HeartCoinModal({ open, onClose }: Props) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </button>
+          </div>
+        )}
+          </div>
+        ) : (
+          /* Cards Tab */
+          <div className="text-center text-white/60">
+            <div className="mb-8">
+              <h3 className="text-xl font-bold text-white mb-4">AVAILABLE CARDS</h3>
+              <p className="text-sm">Purchase cards with HeartCoins to add them to your collection.</p>
+            </div>
+            
+            {/* Placeholder for cards that can be purchased */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Example card item - replace with actual card data */}
+              <div className="p-4 bg-black/20 rounded-lg border border-white/10">
+                <div className="h-32 bg-gradient-to-br from-pink-500/20 to-purple-500/20 rounded mb-3 flex items-center justify-center">
+                  <span className="text-white/40 text-sm">CARD PREVIEW</span>
+                </div>
+                <h4 className="text-white font-bold mb-2">SAMPLE CARD</h4>
+                <div className="flex items-center justify-center gap-1 mb-3">
+                  <img
+                    src="/elements/heart-coin.webp"
+                    alt="Heart Coin"
+                    className="w-4 h-4 object-contain"
+                    style={{
+                      filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 2px #FC54AF)'
+                    }}
+                  />
+                  <span className="text-sm font-bold text-[#F2EF1D]">5</span>
+                </div>
+                <button className="w-full py-2 px-3 rounded-lg bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black font-bold text-xs hover:scale-105 transition-all duration-200">
+                  PURCHASE
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

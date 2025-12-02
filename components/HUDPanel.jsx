@@ -7252,7 +7252,10 @@ export default function HUDPanel({
         isOpen={showSoulStarJournal}
         onClose={() => setShowSoulStarJournal(false)}
         prompt={dailySoulPrompt}
-        openWelcomeHome={() => setShowWelcomeModal(true)}
+        openWelcomeHome={() => {
+          console.log('🎯 HUDPanel openWelcomeHome called, setting showWelcomeHomeModal to true');
+          setShowWelcomeHomeModal(true);
+        }}
       />
     </motion.section>
   );

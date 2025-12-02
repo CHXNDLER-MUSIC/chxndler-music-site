@@ -2775,7 +2775,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           backdrop-filter: blur(12px);
           box-shadow: 0 0 12px rgba(25,227,255,0.25);
           margin: 0 2px;
-          transform: translateY(2px); /* nudge buttons slightly lower */
+          transform: translateY(4px); /* nudge buttons slightly lower */
         }
         
         .play-pause-btn {

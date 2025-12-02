@@ -643,9 +643,13 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
                   <span
                     onClick={(e) => {
                       e.stopPropagation();
+                      console.log('🔥 ALIEN profile button clicked!');
                       onClose();
                       if (openWelcomeHome) {
+                        console.log('🚀 Calling openWelcomeHome()');
                         openWelcomeHome();
+                      } else {
+                        console.log('❌ openWelcomeHome not available');
                       }
                     }}
                     className="underline cursor-pointer hover:opacity-80"

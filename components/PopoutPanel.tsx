@@ -17,6 +17,7 @@ interface PopoutPanelProps {
   borderColor?: string;
   className?: string;
   style?: React.CSSProperties;
+  onOpenHeartCoin?: () => void;
 }
 
 export default function PopoutPanel({
@@ -27,7 +28,8 @@ export default function PopoutPanel({
   glowColor = '#FF69B4',
   borderColor = 'rgba(255,105,180,0.55)',
   className = '',
-  style = {}
+  style = {},
+  onOpenHeartCoin
 }: PopoutPanelProps) {
   const [showTextChat, setShowTextChat] = useState(false);
   const [showProfilePopup, setShowProfilePopup] = useState(false);
@@ -392,6 +394,7 @@ export default function PopoutPanel({
           open={showCardsModal}
           onClose={() => setShowCardsModal(false)}
           pulsingCards={true}
+          onOpenHeartCoin={onOpenHeartCoin}
         />
       )}
 

@@ -54,6 +54,7 @@ interface ProfileBarProps {
   savedAlienName?: string; // Name from HUD signup flow
   savedAlienElement?: string; // Element from HUD signup flow
   profileRefreshTrigger?: number; // Increment this to trigger profile refresh
+  onOpenHeartCoin?: () => void;
 }
 
 export default function ProfileBar({
@@ -66,7 +67,8 @@ export default function ProfileBar({
   onBeamColorChange,
   savedAlienName,
   savedAlienElement,
-  profileRefreshTrigger = 0
+  profileRefreshTrigger = 0,
+  onOpenHeartCoin
 }: ProfileBarProps) {
   // ALL HOOKS MUST BE DECLARED BEFORE ANY EARLY RETURNS
   // Use global UI state for profile bar visibility
@@ -567,6 +569,7 @@ export default function ProfileBar({
             try { onOpenBlueDisplay?.(); } catch {}
           }} 
           preselectedCard={preselectedCard}
+          onOpenHeartCoin={onOpenHeartCoin}
         />
       )}
 
