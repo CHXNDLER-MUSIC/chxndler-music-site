@@ -480,23 +480,36 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         return null;
       }
 
+      // Only include columns that exist in the current database schema
+      const entryData: any = {
+        user_id: user.id,
+        entry_date: entry.entry_date,
+        element: entry.element,
+        intention: entry.intention,
+        reflection: entry.reflection,
+        soul_star: entry.soul_star,
+      };
+
+      // Only add these columns if they have values (they may not exist in the schema yet)
+      if (entry.prompt_id !== null && entry.prompt_id !== undefined) {
+        entryData.prompt_id = entry.prompt_id;
+      }
+      if (entry.intention_response !== null && entry.intention_response !== undefined) {
+        entryData.intention_response = entry.intention_response;
+      }
+      if (entry.reflection_response !== null && entry.reflection_response !== undefined) {
+        entryData.reflection_response = entry.reflection_response;
+      }
+      if (entry.is_private !== null && entry.is_private !== undefined) {
+        entryData.is_private = entry.is_private;
+      }
+
       const { data, error } = await supabaseClient
         .from('soul_journal_entries')
         .upsert(
-          {
-            user_id: user.id,
-            entry_date: entry.entry_date,
-            element: entry.element,
-            prompt_id: entry.prompt_id,
-            intention: entry.intention,
-            reflection: entry.reflection,
-            intention_response: entry.intention_response,
-            reflection_response: entry.reflection_response,
-            soul_star: entry.soul_star,
-            is_private: entry.is_private,
-          },
+          entryData,
           { 
-            onConflict: 'user_id,entry_date,element',
+            onConflict: 'user_id,entry_date',
             ignoreDuplicates: false 
           }
         )

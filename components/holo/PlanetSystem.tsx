@@ -557,38 +557,49 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         <OverlapManager />
       </Canvas>
       
-      {/* Working Camera Controls */}
+      {/* BRIGHT OBVIOUS CONTROLS - Should be impossible to miss! */}
       <div 
         style={{
-          position: 'absolute',
-          top: '10px',
-          left: '10px',
-          zIndex: 999999999,
+          position: 'fixed',
+          top: '80px',
+          left: '80px',
+          zIndex: 2147483647,
           pointerEvents: 'auto',
           display: 'flex',
-          gap: '8px',
-          alignItems: 'center'
+          gap: '12px',
+          alignItems: 'center',
+          padding: '16px',
+          backgroundColor: 'rgba(255, 0, 0, 0.9)',
+          border: '4px solid yellow',
+          borderRadius: '12px',
+          boxShadow: '0 0 20px rgba(255, 255, 0, 0.8)'
         }}
       >
         {/* Zoom Out */}
         <button
           style={{
-            backgroundColor: 'rgba(0, 255, 255, 0.8)',
-            color: 'white',
-            border: '2px solid white',
-            borderRadius: '8px',
-            width: '40px',
-            height: '40px',
-            fontSize: '20px',
+            backgroundColor: '#00ff00',
+            color: 'black',
+            border: '3px solid white',
+            borderRadius: '50%',
+            width: '50px',
+            height: '50px',
+            fontSize: '24px',
             fontWeight: 'bold',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)'
           }}
-          onMouseDown={() => {
-            console.log('🔍 Zoom Out!');
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            console.log('🔍 ZOOM OUT CLICKED!');
             const canvas = document.querySelector('canvas');
             if (canvas) {
-              const event = new WheelEvent('wheel', { deltaY: 300, bubbles: true });
-              canvas.dispatchEvent(event);
+              for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                  const event = new WheelEvent('wheel', { deltaY: 200, bubbles: true });
+                  canvas.dispatchEvent(event);
+                }, i * 50);
+              }
             }
           }}
         >
@@ -598,40 +609,47 @@ export default function PlanetSystem({ showAll = false, hideUntilPlaying = false
         {/* Zoom In */}
         <button
           style={{
-            backgroundColor: 'rgba(0, 255, 255, 0.8)',
-            color: 'white',
-            border: '2px solid white',
-            borderRadius: '8px',
-            width: '40px',
-            height: '40px',
-            fontSize: '20px',
+            backgroundColor: '#00ff00',
+            color: 'black',
+            border: '3px solid white',
+            borderRadius: '50%',
+            width: '50px',
+            height: '50px',
+            fontSize: '24px',
             fontWeight: 'bold',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)'
           }}
-          onMouseDown={() => {
-            console.log('🔍 Zoom In!');
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            console.log('🔍 ZOOM IN CLICKED!');
             const canvas = document.querySelector('canvas');
             if (canvas) {
-              const event = new WheelEvent('wheel', { deltaY: -300, bubbles: true });
-              canvas.dispatchEvent(event);
+              for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                  const event = new WheelEvent('wheel', { deltaY: -200, bubbles: true });
+                  canvas.dispatchEvent(event);
+                }, i * 50);
+              }
             }
           }}
         >
           +
         </button>
         
-        {/* Camera Instructions */}
+        {/* Instructions */}
         <div 
           style={{
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            color: 'white',
-            padding: '8px 12px',
-            borderRadius: '6px',
-            fontSize: '12px',
-            border: '1px solid rgba(0, 255, 255, 0.5)'
+            backgroundColor: 'white',
+            color: 'black',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            border: '2px solid black'
           }}
         >
-          Click + Drag to Rotate
+          DRAG 3D AREA TO ROTATE CAMERA!
         </div>
       </div>
       

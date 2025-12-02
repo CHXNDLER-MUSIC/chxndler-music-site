@@ -671,12 +671,14 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
                   className="px-6 py-1 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{
                     background: (!journalState.isSubmitted && journalState.soulStar.trim() && !journalState.isLoading) ? `${elementTheme.color}30` : `${elementTheme.color}10`,
-                    border: `2px solid ${elementTheme.color}60`,
-                    color: elementTheme.color,
-                    boxShadow: (!journalState.isSubmitted && journalState.soulStar.trim() && !journalState.isLoading)
-                      ? `0 0 20px ${elementTheme.glow}, 0 0 40px ${elementTheme.color}40, inset 0 0 10px ${elementTheme.color}20`
-                      : 'none',
-                    textShadow: `0 0 4px ${elementTheme.glow}`
+                    border: journalState.isSubmitted ? `2px solid #00FF00` : `2px solid ${elementTheme.color}60`,
+                    color: journalState.isSubmitted ? '#00FF00' : elementTheme.color,
+                    boxShadow: journalState.isSubmitted
+                      ? `0 0 20px #00FF00, 0 0 40px #00FF0040, inset 0 0 10px #00FF0020`
+                      : (!journalState.isSubmitted && journalState.soulStar.trim() && !journalState.isLoading)
+                        ? `0 0 20px ${elementTheme.glow}, 0 0 40px ${elementTheme.color}40, inset 0 0 10px ${elementTheme.color}20`
+                        : 'none',
+                    textShadow: journalState.isSubmitted ? `0 0 8px #00FF00` : `0 0 4px ${elementTheme.glow}`
                   }}
                 >
                   {journalState.isSubmitted

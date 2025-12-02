@@ -31,9 +31,9 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
   const menuItems = [
     { label: "ABOUT", href: undefined },
     { label: journeyTitle, href: undefined },
-    { label: "JOURNAL", href: undefined },
     { label: "BINDER", href: undefined },
     { label: "BADGES", href: undefined },
+    { label: "JOURNAL", href: undefined },
     { label: "STORE", href: undefined },
   ];
 

@@ -1023,9 +1023,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                               </div>
                             </>
                           ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-pink-500/10 to-purple-500/10 rounded mb-1 border-2 border-dashed border-pink-400/30 flex items-center justify-center">
+                            <div className="w-full h-full bg-gradient-to-br from-pink-500/10 to-purple-500/10 rounded mb-1 border-2 border-dotted border-pink-400/30 flex items-center justify-center">
                               <div 
-                                className="text-xs font-bold text-center flex items-center justify-center w-full h-full"
+                                className="text-xs font-bold"
                                 style={{ 
                                   color: '#FFB6C1', 
                                   textShadow: '0 0 4px rgba(255,182,193,0.6)',
@@ -1076,7 +1076,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                 
                 {/* Right arrow to go to second page - positioned within popup on the right side */}
                 <div 
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 z-10"
                   style={{
                     pointerEvents: 'auto'
                   }}

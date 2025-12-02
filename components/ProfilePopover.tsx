@@ -562,7 +562,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
           style={{
             width: 'min(92vw, 500px)',
             minHeight: 'auto',
-            padding: '20px 24px 24px 24px',
+            padding: '20px 24px 16px 24px',
             borderRadius: 18,
             background: 'rgba(0,0,0,0.6)',
             border: '1px solid rgba(0,255,255,0.55)',
@@ -627,6 +627,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
           <button
             onClick={() => {
               setShowRelicsInline(!showRelicsInline);
+              setShowElementMenu(false); // Close element menu when opening relics display
               try { sfx.play('click', 0.6); } catch {}
             }}
             className="absolute top-16 right-4 w-10 h-10 rounded-full border-2 border-pink-400/60 bg-pink-400/10 hover:border-pink-400/80 hover:bg-pink-400/20 transition-all duration-200 hover:scale-110 flex items-center justify-center overflow-hidden"
@@ -652,7 +653,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
           </button>
           
           {/* PROFILE Header */}
-          <div className="text-center mb-6">
+          <div className="text-center mb-2">
             <h1 
               className="text-2xl font-bold"
               style={{ 
@@ -674,6 +675,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                 <button 
                   onClick={() => {
                     setShowElementMenu(!showElementMenu);
+                    setShowRelicsInline(false); // Close relics display when opening profile menu
                     try { sfx.play('click', 0.4); } catch {}
                   }}
                   className="w-20 h-20 rounded-full border-2 border-cyan-400/60 overflow-hidden transition-all duration-200 hover:scale-105 hover:shadow-[0_0_25px_rgba(0,255,255,0.6)]"
@@ -791,45 +793,41 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                   {profile?.element ? profile.element.toUpperCase() : 'NONE'}
                 </button>
               </div>
+              
+              {/* Daily Streak and Heart Coins */}
+              <div className="flex items-center gap-4 mt-2">
+                <div className="flex items-center">
+                  <span className="text-white/80 text-sm mr-1">DAILY STREAK:</span>
+                  <span 
+                    className="font-bold text-sm"
+                    style={{ 
+                      color: '#00FFFF', 
+                      textShadow: '0 0 8px rgba(0,255,255,0.6)' 
+                    }}
+                  >
+                    {profile?.daily_streak || 0} days
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <span className="text-white/80 text-sm mr-1">TOTAL HEART COINS:</span>
+                  <span 
+                    className="font-bold text-sm"
+                    style={{ 
+                      color: '#00FFFF', 
+                      textShadow: '0 0 8px rgba(0,255,255,0.6)' 
+                    }}
+                  >
+                    {profile?.heartcoin_total || 0}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
           
-          {/* Profile Stats - Daily streak under element, heart coins to the right */}
-          <div className="flex items-start justify-between mt-3 mb-3">
-            {/* Left side - Daily Streak under element */}
-            <div className="flex flex-col items-start ml-4">
-              <div className="flex items-center">
-                <span className="text-white/80 text-sm mr-2">DAILY STREAK:</span>
-                <span 
-                  className="font-bold"
-                  style={{ 
-                    color: '#00FFFF', 
-                    textShadow: '0 0 8px rgba(0,255,255,0.6)' 
-                  }}
-                >
-  {profile?.daily_streak || 0} days
-                </span>
-              </div>
-            </div>
-            
-            {/* Right side - Total Heart Coins */}
-            <div className="flex items-center">
-              <span className="text-white/80 text-sm mr-2">TOTAL HEART COINS:</span>
-              <span 
-                className="font-bold"
-                style={{ 
-                  color: '#00FFFF', 
-                  textShadow: '0 0 8px rgba(0,255,255,0.6)' 
-                }}
-              >
-                {profile?.heartcoin_total || 0}
-              </span>
-            </div>
-          </div>
           
           {/* Thin cyan neon line */}
           <div 
-            className="w-full h-px mb-3"
+            className="w-full h-px mb-1"
             style={{
               background: 'linear-gradient(90deg, transparent, rgba(0,255,255,0.8) 20%, rgba(0,255,255,1) 50%, rgba(0,255,255,0.8) 80%, transparent)',
               boxShadow: '0 0 4px rgba(0,255,255,0.6)'
@@ -838,7 +836,26 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
 
           {/* Profile Image Selection Menu - Inline */}
           {showElementMenu && (
-            <div className="mt-4 mb-4 p-4 rounded-lg border border-cyan-400/60 bg-black/40">
+            <div className="mt-4 mb-4 p-4 rounded-lg border border-cyan-400/60 bg-black/40 relative">
+              {/* Close button */}
+              <button
+                onClick={() => {
+                  setShowElementMenu(false);
+                  try { sfx.play('close', 0.6); } catch {}
+                }}
+                className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+                style={{
+                  background: 'rgba(0,255,255,0.2)',
+                  border: '1px solid rgba(0,255,255,0.6)',
+                  color: '#00FFFF',
+                  boxShadow: '0 0 10px rgba(0,255,255,0.3)',
+                  fontSize: '12px',
+                  fontWeight: 'bold'
+                }}
+              >
+                ×
+              </button>
+              
               {/* Header */}
               <div 
                 className="text-center mb-3 text-sm font-semibold"
@@ -979,7 +996,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
 
           {/* Relics Collection Inline Display */}
           {showRelicsInline && (
-            <div className="mt-6 p-4 rounded-lg border border-cyan-400/60 bg-black/40 relative">
+            <div className="mt-3 p-4 rounded-lg border border-cyan-400/60 bg-black/40 relative">
               {/* Close button */}
               <button
                 onClick={() => {
@@ -1001,7 +1018,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
 
               {/* Header */}
               <div 
-                className="text-center mb-4"
+                className="text-center mb-2"
                 style={{ 
                   color: '#00FFFF', 
                   textShadow: '0 0 8px rgba(0,255,255,0.6)', 
@@ -1010,6 +1027,13 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                 }}
               >
                 RELICS COLLECTION
+              </div>
+
+              {/* Info text - moved below header */}
+              <div className="text-center mb-4">
+                <p className="text-xs text-white" style={{ textShadow: '0 0 8px rgba(255,255,255,0.85)' }}>
+                  Tap the Element of the Day to unlock ancient relics
+                </p>
               </div>
 
               {/* Relics Grid / Expanded View - Inline */}
@@ -1053,7 +1077,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-4 gap-2 mb-4" style={{ maxWidth: '240px', marginLeft: 'auto', marginRight: 'auto' }}>
+                <div className="grid grid-cols-4 gap-2 mb-2" style={{ maxWidth: '240px', marginLeft: 'auto', marginRight: 'auto' }}>
                   {(allRelics.length > 0 ? allRelics.slice(0, 16) : Array.from({ length: 16 }, (_, i) => ({
                     id: `placeholder-${i}`,
                     relic_name: `Relic ${i + 1}`,
@@ -1107,12 +1131,6 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                 </div>
               )}
 
-              {/* Info text */}
-              <div className="text-center">
-                <p className="text-xs text-white" style={{ textShadow: '0 0 8px rgba(255,255,255,0.85)' }}>
-                  Tap the Element of the Day to unlock ancient relics
-                </p>
-              </div>
             </div>
           )}
 
@@ -1304,42 +1322,44 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
           )}
 
 
-          {/* Start Tour Button */}
-          <div className="mt-4 pt-3" style={{
-            borderTop: '1px solid rgba(0,255,255,0.2)'
-          }}>
-            <button
-              onClick={handleStartTour}
-              className="w-full px-4 py-3 rounded-lg font-semibold transition-all duration-200 hover:scale-105 active:scale-95 mb-3"
-              style={{
-                background: 'linear-gradient(135deg, rgba(0,255,255,0.25), rgba(0,255,255,0.15))',
-                border: '1px solid rgba(0,255,255,0.5)',
-                color: '#00FFFF',
-                textShadow: '0 0 8px rgba(0,255,255,0.7)',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(0,255,255,0.3)'
-              }}
-              title="Take a guided tour of the Heartverse"
-            >
-              ✨ Start Tour
-            </button>
+          {/* Start Tour Button - Only show when relics, element menu, and element info are not displayed */}
+          {!showRelicsInline && !showElementMenu && !showElementInfo && (
+            <div className="mt-4 pt-3" style={{
+              borderTop: '1px solid rgba(0,255,255,0.2)'
+            }}>
+              <button
+                onClick={handleStartTour}
+                className="w-full px-4 py-3 rounded-lg font-semibold transition-all duration-200 hover:scale-105 active:scale-95 mb-3"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(0,255,255,0.25), rgba(0,255,255,0.15))',
+                  border: '1px solid rgba(0,255,255,0.5)',
+                  color: '#00FFFF',
+                  textShadow: '0 0 8px rgba(0,255,255,0.7)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(0,255,255,0.3)'
+                }}
+                title="Take a guided tour of the Heartverse"
+              >
+                ✨ Start Tour
+              </button>
 
-            {/* Sign Out Button */}
-            <button
-              onClick={handleSignOut}
-              className="w-full px-4 py-2 rounded-lg font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
-              style={{
-                background: 'linear-gradient(135deg, rgba(255,80,80,0.25), rgba(255,80,80,0.15))',
-                border: '1px solid rgba(255,80,80,0.5)',
-                color: '#FF5050',
-                textShadow: '0 0 8px rgba(255,80,80,0.7)',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,80,80,0.2)',
-                fontSize: '14px'
-              }}
-              title="Sign out of your account"
-            >
-              🚪 Sign Out
-            </button>
-          </div>
+              {/* Sign Out Button */}
+              <button
+                onClick={handleSignOut}
+                className="w-full px-4 py-2 rounded-lg font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(255,80,80,0.25), rgba(255,80,80,0.15))',
+                  border: '1px solid rgba(255,80,80,0.5)',
+                  color: '#FF5050',
+                  textShadow: '0 0 8px rgba(255,80,80,0.7)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,80,80,0.2)',
+                  fontSize: '14px'
+                }}
+                title="Sign out of your account"
+              >
+                🚪 Sign Out
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

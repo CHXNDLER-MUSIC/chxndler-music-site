@@ -2276,6 +2276,75 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
 
     renderer.domElement.addEventListener('click', onMouseClick);
 
+    // Camera drag controls
+    let isDragging = false;
+    let previousMousePosition = { x: 0, y: 0 };
+    
+    const onMouseDown = (event: MouseEvent) => {
+      isDragging = true;
+      previousMousePosition = { x: event.clientX, y: event.clientY };
+      console.log('🎮 Started camera drag');
+    };
+    
+    const onMouseMove = (event: MouseEvent) => {
+      if (!isDragging) return;
+      
+      const deltaMove = {
+        x: event.clientX - previousMousePosition.x,
+        y: event.clientY - previousMousePosition.y
+      };
+      
+      // Horizontal movement rotates around Y-axis
+      const rotationSpeedY = 0.005;
+      const rotationSpeedX = 0.005;
+      
+      // Get current camera position
+      const spherical = new THREE.Spherical();
+      spherical.setFromVector3(camera.position);
+      
+      // Apply rotations
+      spherical.theta -= deltaMove.x * rotationSpeedY;
+      spherical.phi += deltaMove.y * rotationSpeedX;
+      
+      // Clamp phi to prevent camera from flipping
+      spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
+      
+      // Update camera position
+      camera.position.setFromSpherical(spherical);
+      camera.lookAt(0, 0, 0);
+      
+      previousMousePosition = { x: event.clientX, y: event.clientY };
+    };
+    
+    const onMouseUp = () => {
+      isDragging = false;
+      console.log('🎮 Ended camera drag');
+    };
+    
+    // Mouse wheel zoom
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      const zoomSpeed = 0.1;
+      const zoomDelta = event.deltaY > 0 ? 1 + zoomSpeed : 1 - zoomSpeed;
+      
+      camera.position.multiplyScalar(zoomDelta);
+      
+      // Prevent getting too close or too far
+      const distance = camera.position.length();
+      if (distance < 5) {
+        camera.position.normalize().multiplyScalar(5);
+      } else if (distance > 100) {
+        camera.position.normalize().multiplyScalar(100);
+      }
+      
+      console.log('🔍 Mouse wheel zoom, distance:', distance);
+    };
+    
+    renderer.domElement.addEventListener('mousedown', onMouseDown);
+    renderer.domElement.addEventListener('mousemove', onMouseMove);
+    renderer.domElement.addEventListener('mouseup', onMouseUp);
+    renderer.domElement.addEventListener('wheel', onWheel);
+
     // Resize
     const onResize = () => {
       if (!mount) return;
@@ -2292,6 +2361,10 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
       try { if (rafRef.current) cancelAnimationFrame(rafRef.current); } catch {}
       try { ro.disconnect(); } catch {}
       try { renderer.domElement.removeEventListener('click', onMouseClick); } catch {}
+      try { renderer.domElement.removeEventListener('mousedown', onMouseDown); } catch {}
+      try { renderer.domElement.removeEventListener('mousemove', onMouseMove); } catch {}
+      try { renderer.domElement.removeEventListener('mouseup', onMouseUp); } catch {}
+      try { renderer.domElement.removeEventListener('wheel', onWheel); } catch {}
       try { if (rendererRef.current) { rendererRef.current.dispose(); rendererRef.current.forceContextLoss?.(); } } catch {}
       try { if (mount && renderer.domElement.parentNode === mount) mount.removeChild(renderer.domElement); } catch {}
       // Cleanup central planet
@@ -2910,7 +2983,67 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
         opacity: isHomeOverview ? 1 : (planetsVisible && effectiveMode !== 'hidden' ? 1 : 0),
         transition: 'opacity 400ms ease-in-out'
       }}
+      onLoad={() => console.log('🚀 PLANETSYSTEMRAW COMPONENT IS DEFINITELY RENDERING!')}
+      ref={(el) => {
+        if (el) console.log('🎯 PLANETSYSTEMRAW DOM ELEMENT CREATED!', el);
+      }}
     >
+
+      {/* WORKING ZOOM CONTROLS - Top Left Corner */}
+      <div 
+        className="absolute top-4 left-4 flex items-center gap-2"
+        style={{ zIndex: 999999, pointerEvents: 'auto' }}
+      >
+        {/* Zoom Out Button */}
+        <button
+          onClick={() => {
+            console.log('🔍 ZOOM OUT!');
+            if (cameraRef.current && sceneRef.current) {
+              const camera = cameraRef.current;
+              const currentPos = camera.position.clone();
+              const targetPos = currentPos.multiplyScalar(1.3); // Move camera further away
+              camera.position.copy(targetPos);
+            }
+          }}
+          className="bg-cyan-500/80 hover:bg-cyan-500 border-2 border-white rounded text-white text-lg font-bold transition-colors duration-200 w-10 h-10 flex items-center justify-center shadow-lg"
+          title="Zoom Out"
+        >
+          −
+        </button>
+        
+        {/* Zoom In Button */}
+        <button
+          onClick={() => {
+            console.log('🔍 ZOOM IN!');
+            if (cameraRef.current && sceneRef.current) {
+              const camera = cameraRef.current;
+              const currentPos = camera.position.clone();
+              const targetPos = currentPos.multiplyScalar(0.8); // Move camera closer
+              camera.position.copy(targetPos);
+            }
+          }}
+          className="bg-cyan-500/80 hover:bg-cyan-500 border-2 border-white rounded text-white text-lg font-bold transition-colors duration-200 w-10 h-10 flex items-center justify-center shadow-lg"
+          title="Zoom In"
+        >
+          +
+        </button>
+        
+        {/* Camera Reset Button */}
+        <button
+          onClick={() => {
+            console.log('🎯 RESET CAMERA!');
+            if (cameraRef.current) {
+              cameraRef.current.position.set(0, 8, 25);
+              cameraRef.current.lookAt(0, 0, 0);
+            }
+          }}
+          className="bg-yellow-500/80 hover:bg-yellow-500 border-2 border-white rounded text-black text-xs font-bold transition-colors duration-200 px-2 py-1"
+          title="Reset Camera"
+        >
+          RESET
+        </button>
+      </div>
+
       {/* Minimap Toggle Button */}
       <button
         onClick={() => setIsMinimapVisible(!isMinimapVisible)}

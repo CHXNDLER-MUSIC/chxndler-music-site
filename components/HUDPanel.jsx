@@ -2302,10 +2302,10 @@ export default function HUDPanel({
               // Move the 3D planet system higher
               top: `calc(-110px)`, 
               bottom: planetBottom,
-              pointerEvents: 'none' // Allow clicks to pass through to elements below
+              pointerEvents: 'auto' // FIXED: Allow mouse interactions with 3D system
             }}
           >
-            <div className="w-full h-full" style={{ pointerEvents: 'none' }}>
+            <div className="w-full h-full" style={{ pointerEvents: 'auto' }}>
                 <ErrorBoundary 
                   key={preferRaw3D ? 'raw' : 'r3f'}
                   fallback={null} 
@@ -3471,6 +3471,44 @@ export default function HUDPanel({
                               >
                                 {dailyInviteDone ? '♡ +5' : 'SHARE'}
                               </button>
+                            </div>
+                          </div>
+                          
+                          {/* Open Journal Quest */}
+                          <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'space-between',
+                            padding: '8px 12px',
+                            background: 'rgba(33,150,243,0.1)',
+                            borderRadius: '8px',
+                            border: '1px solid rgba(33,150,243,0.2)',
+                            marginBottom: '8px'
+                          }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 2 }}>
+                                Open Journal
+                              </div>
+                              <div style={{ fontSize: 11, opacity: 0.8 }}>
+                                Cast your soul star into the universe
+                              </div>
+                            </div>
+                            <div
+                              style={{
+                                padding: '6px 12px',
+                                fontSize: 11,
+                                fontWeight: 600,
+                                background: journalCompletedToday ? 'rgba(76,175,80,0.6)' : 'rgba(128,128,128,0.3)',
+                                color: journalCompletedToday ? '#00FF00' : '#FFFFFF',
+                                border: 'none',
+                                borderRadius: '6px',
+                                transition: 'all 0.2s ease',
+                                textShadow: journalCompletedToday ? '0 0 8px #00FF00' : '0 0 8px rgba(0,0,0,0.5)',
+                                minWidth: '80px',
+                                textAlign: 'center'
+                              }}
+                            >
+                              {journalCompletedToday ? 'COMPLETED' : 'PENDING'}
                             </div>
                           </div>
                         </div>
