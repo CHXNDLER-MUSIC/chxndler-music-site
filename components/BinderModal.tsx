@@ -904,7 +904,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                             ? 'border-white/5 cursor-default'
                             : hasCard || isFirstSlotWithChxndler
                             ? 'border-white/10 cursor-pointer hover:scale-105' 
-                            : 'border-white/5 cursor-default'
+                            : 'border-white/10 cursor-pointer hover:scale-105'
                         }`}
                         onClick={() => {
                           if (isLockedSlot) {
@@ -929,6 +929,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                               element: 'ALL'
                             });
                             setCardOpen(true);
+                          } else if (!hasCard && !isFirstSlotWithChxndler) {
+                            // Empty container - open heart coin popout on cards tab
+                            openHeartCoinPopout();
                           }
                         }}
                         style={{

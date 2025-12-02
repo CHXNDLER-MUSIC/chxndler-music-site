@@ -172,7 +172,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   // Ambient audio will only start when user explicitly interacts
   // (removed auto-start for silent page opening)
 
-  const [channelIdx, setChannelIdx] = useState(0);
+  const [channelIdx, setChannelIdx] = useState(-1); // Set to invalid index to prevent any auto track loading
   // Wrapper for setChannelIdx with logging for song selection debugging
   const setChannelIdxWithLog = (newIdx) => {
     console.log('🎵 Playing track:', tracks[newIdx]?.title);

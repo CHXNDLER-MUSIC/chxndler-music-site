@@ -736,13 +736,15 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         </div>
       )}
 
-      {/* Badge Categories Grid - 6 categories layout */}
+      {/* Badge Categories Grid - 6 categories layout matching binder style */}
       {!loading && !error && (
-        <div className="grid grid-cols-3 gap-4 justify-items-center max-w-lg mx-auto">
-          {(() => {
-            const categoriesToUse = badgeCategories.length > 0 ? badgeCategories : fallbackCategories;
-            console.log("BadgesModal: Rendering categories:", categoriesToUse.length, categoriesToUse.map(c => c.name));
-            return categoriesToUse.map((category) => (
+        <div className="relative">
+          {/* First row of categories */}
+          <div className="grid gap-2 grid-cols-3 p-2">
+            {(() => {
+              const categoriesToUse = badgeCategories.length > 0 ? badgeCategories : fallbackCategories;
+              console.log("BadgesModal: Rendering categories:", categoriesToUse.length, categoriesToUse.map(c => c.name));
+              return categoriesToUse.slice(0, 3).map((category) => (
           <button
             key={category.id}
             onClick={() => setSelectedCategory(category.id)}
@@ -757,8 +759,32 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
               {category.name}
             </div>
           </button>
-        ));
-          })()}
+              ));
+            })()}
+          </div>
+          
+          {/* Second row of categories */}
+          <div className="grid gap-2 grid-cols-3 mt-3 p-2">
+            {(() => {
+              const categoriesToUse = badgeCategories.length > 0 ? badgeCategories : fallbackCategories;
+              return categoriesToUse.slice(3, 6).map((category) => (
+          <button
+            key={category.id}
+            onClick={() => setSelectedCategory(category.id)}
+            className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-yellow-400/60 hover:border-yellow-400 hover:scale-105 transition-all duration-200 text-center group flex flex-col items-center justify-center"
+            style={{
+              background: 'radial-gradient(circle, rgba(0,0,0,0.8) 0%, rgba(40,40,40,0.9) 100%)',
+              boxShadow: '0 4px 15px rgba(255, 215, 0, 0.3)'
+            }}
+          >
+            <div className="text-2xl sm:text-3xl mb-1">{category.emoji}</div>
+            <div className="text-yellow-300 font-bold text-[10px] sm:text-xs group-hover:text-yellow-100 transition-colors px-1 leading-tight text-center">
+              {category.name}
+            </div>
+          </button>
+              ));
+            })()}
+          </div>
         </div>
       )}
     </>
