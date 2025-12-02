@@ -224,7 +224,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls="song-dropdown-list"
-        data-tour-id="song-dropdown"
+        data-tour-id="music-dropdown"
         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {}; try { const a = hoverBtnRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
         onClick={() => { 
       try { sfx.play('join', 0.75); } catch {}; try { const a = clickRef.current; if (a) { a.currentTime = 0; a.volume = 0.75; a.play().catch(()=>{}); } } catch {}; setOpen((v) => { const nv = !v; try { setTimeout(() => playerStore.getState().setHover(nv ? (displayItems[highlight]?.id || null) : null), 0); } catch {}; return nv; }); 

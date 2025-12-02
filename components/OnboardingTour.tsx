@@ -8,68 +8,122 @@ export interface TourStep {
   selector: string;
   title: string;
   body: string;
+  requiresMenuOpen?: boolean;
+  requiresMenuClosed?: boolean;
 }
 
+// ENHANCED SAFE TARGET RESOLVER - Never throws, includes debug logging
+function getTarget(selector: string): HTMLElement | null {
+  try {
+    const el = selector ? document.querySelector(selector) as HTMLElement : null;
+    console.log("STEP TARGET:", selector, el ? "✅ FOUND" : "❌ NOT FOUND");
+    if (!el) {
+      console.warn("TOUR: target not found:", selector);
+    }
+    return el;
+  } catch (error) {
+    console.warn("TOUR: target selector error:", selector, error);
+    return null;
+  }
+}
+
+// UPDATED STEPS ARRAY WITH CORRECT ORDER AND NEW MUSIC DROPDOWN STEP
 export const TOUR_STEPS: TourStep[] = [
+  // Step 0: Intro (no target)
   {
     id: "intro",
-    selector: "", // No selector for intro step
+    selector: "",
     title: "Welcome aboard",
-    body: "This is your Heartverse spaceship. I'll show you the key controls so you can explore, reflect, and collect."
+    body: "This is your Heartverse spaceship. I will show you the key controls so you can explore, reflect, and collect."
   },
+  
+  // Step 1: Hamburger (opens menu for subsequent steps)
   {
     id: "hamburger",
-    selector: "[data-tour-id='hamburger']",
-    title: "Main controls",
-    body: "Tap this menu to open the main controls of your ship. From here you can jump between codes, journeys, your journal, and more."
+    selector: "[data-tour-id='nav-toggle']",
+    title: "Main control panel",
+    body: "Tap here to open your main control panel.",
+    requiresMenuOpen: true
   },
+  
+  // Step 2: ABOUT (menu must be open)
   {
     id: "menu-about",
     selector: "[data-tour-id='menu-about']",
     title: "ABOUT",
-    body: "ABOUT tells you who CHXNDLER is, the story of the Heartverse, and the vision behind this world."
+    body: "Learn the story of CHXNDLER and the Heartverse.",
+    requiresMenuOpen: true
   },
+  
+  // Step 3: My Journey (menu must be open)
   {
     id: "menu-journey",
     selector: "[data-tour-id='menu-journey']",
     title: "My Journey",
-    body: "Journey is your main path through the Heartverse. New songs, chapters, and experiences appear here as you travel."
+    body: "Your personal storyline through the Heartverse.",
+    requiresMenuOpen: true
   },
-  {
-    id: "menu-journal",
-    selector: "[data-tour-id='menu-journal']",
-    title: "Journal",
-    body: "Journal is your reflection space. Each day you can set an intention, answer a question, and record how you feel. This is how you earn Soul badges and grow over time."
-  },
+  
+  // Step 4: Binder (menu must be open)
   {
     id: "menu-binder",
     selector: "[data-tour-id='menu-binder']",
     title: "Binder",
-    body: "The Binder is where all your collected song cards live. Each card connects to a track or story in the Heartverse, and some unlock secret content."
+    body: "Your collected song cards and discoveries live here.",
+    requiresMenuOpen: true
   },
+  
+  // Step 5: Badges (menu must be open)
   {
     id: "menu-badges",
     selector: "[data-tour-id='menu-badges']",
     title: "Badges",
-    body: "Badges are your achievements. You can earn them by reflecting, attending livestreams, sending Heart Coins, and exploring different parts of the ship."
+    body: "Your achievements as you explore the Heartverse.",
+    requiresMenuOpen: true
   },
+  
+  // Step 6: Journal (menu must be open)
+  {
+    id: "menu-journal",
+    selector: "[data-tour-id='menu-journal']",
+    title: "Journal",
+    body: "Your daily reflections and intentions live here.",
+    requiresMenuOpen: true
+  },
+  
+  // Step 7: Heart Coins (close menu first)
   {
     id: "heartcoins",
-    selector: "[data-tour-id='heartcoins']",
+    selector: "[data-tour-id='heartcoin-button']",
     title: "Heart Coins",
-    body: "Heart Coins are the energy of this world. You can earn them by listening, reflecting, joining events, and connecting with others. Later you will be able to use them for special rewards."
+    body: "The energy of this world. Earn them by exploring, reflecting, and connecting.",
+    requiresMenuClosed: true
   },
+  
+  // Step 8: NEW - Music Dropdown (menu stays closed)
   {
-    id: "signal-streaming",
-    selector: "[data-tour-id='signal-streaming']",
-    title: "Signal for Streaming",
-    body: "Connect to live streams and join the Heartverse community. This is where you can chat with other aliens and join live events."
+    id: "music-dropdown",
+    selector: "[data-tour-id='music-dropdown']",
+    title: "Music",
+    body: "Choose the track you want to listen to here.",
+    requiresMenuClosed: true
   },
+  
+  // Step 9: Signal (menu stays closed, targets pink signal button)
+  {
+    id: "signal",
+    selector: "[data-tour-id='signal-button']",
+    title: "Signal",
+    body: "Your transmissions. Updates, reflections, and events come through here.",
+    requiresMenuClosed: true
+  },
+  
+  // Step 10: Outro (no target)
   {
     id: "outro",
-    selector: "", // No selector for outro step
+    selector: "",
     title: "You are ready",
-    body: "That is the core of your ship. You can explore freely now, and you can always restart this tour from your profile if you ever want a refresher."
+    body: "Explore freely. You can restart this tour anytime in your profile."
   }
 ];
 
@@ -82,7 +136,14 @@ interface OnboardingTourProps {
   onMenuToggle?: (open: boolean) => void;
 }
 
-export default function OnboardingTour({ active, onFinish, onSkip, endModalVisible, onRestartFromEnd, onMenuToggle }: OnboardingTourProps) {
+export default function OnboardingTour({ 
+  active, 
+  onFinish, 
+  onSkip, 
+  endModalVisible, 
+  onRestartFromEnd, 
+  onMenuToggle 
+}: OnboardingTourProps) {
   const { updateProfile } = useProfile();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
@@ -90,324 +151,261 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
   const [targetElement, setTargetElement] = useState<HTMLElement | null>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const spotlightRef = useRef<{ cx: number; cy: number; r: number } | null>(null);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const menuOpenTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Current step with safety check
   const currentStep = TOUR_STEPS[currentStepIndex];
   const isLastStep = currentStepIndex === TOUR_STEPS.length - 1;
 
-  // Position bubble relative to target element
-  const positionBubble = (element: HTMLElement) => {
-    const rect = element.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    
-    const currentStepId = currentStep?.id || '';
-    const bubbleWidth = 320; // Estimated bubble width
-    const bubbleHeight = 120; // Estimated bubble height
-    
-    // Special positioning for menu items - place to the right of the menu
-    if (currentStepId.startsWith('menu-')) {
-      // Force menu to be open for menu steps
-      if (onMenuToggle) {
-        onMenuToggle(true);
-      }
+  // DEBUG: Log step changes with special signal step handling
+  useEffect(() => {
+    if (active) {
+      console.log("TOUR STEP:", currentStepIndex, currentStep?.id || 'unknown');
       
-      // Wait a bit for menu to open, then position
-      setTimeout(() => {
-        const hamburgerContainer = document.querySelector('[data-tour-id="hamburger"]')?.closest('.fixed');
-        const menuDropdown = hamburgerContainer?.querySelector('.absolute');
+      // Special handling for signal step (Step 9)
+      if (currentStep?.id === 'signal') {
+        console.log("🎯 SIGNAL STEP ACTIVATED - Looking for pink antennas button");
         
-        if (menuDropdown) {
-          // Menu is open, position to the right of the dropdown
-          const dropdownRect = menuDropdown.getBoundingClientRect();
-          const targetRect = element.getBoundingClientRect();
-          
-          // Position tooltip to the right of the dropdown, vertically aligned with the target menu item
-          const top = targetRect.top + (targetRect.height / 2) - (bubbleHeight / 2);
-          const left = dropdownRect.right + 16; // Small gap from dropdown edge
-          
-          setBubblePosition({ 
-            top: Math.max(20, Math.min(top, viewportHeight - bubbleHeight - 20)), 
-            left: Math.min(left, viewportWidth - bubbleWidth - 20)
-          });
-        } else {
-          // Fallback: menu not open, position based on hamburger button
-          const hamburgerRect = document.querySelector('[data-tour-id="hamburger"]')?.getBoundingClientRect();
-          if (hamburgerRect) {
-            const top = hamburgerRect.top + (hamburgerRect.height / 2) - (bubbleHeight / 2);
-            const left = hamburgerRect.right + 260; // Position to the right where menu would be
-            
-            setBubblePosition({ 
-              top: Math.max(20, Math.min(top, viewportHeight - bubbleHeight - 20)), 
-              left: Math.min(left, viewportWidth - bubbleWidth - 20)
-            });
+        // Double-check the signal button exists after a delay
+        setTimeout(() => {
+          const signalBtn = getTarget('[data-tour-id="signal-button"]');
+          if (signalBtn) {
+            console.log("✅ Signal button found:", signalBtn);
           } else {
-            // Final fallback: center the tooltip
-            setBubblePosition({ 
-              top: viewportHeight / 2 - bubbleHeight / 2, 
-              left: viewportWidth / 2 - bubbleWidth / 2
-            });
+            console.warn("❌ Signal button NOT FOUND - may be covered by menu or not rendered");
           }
-        }
-      }, 300); // Increased wait time for menu animation
-      return;
+        }, 500);
+      }
+    }
+  }, [currentStepIndex, active, currentStep]);
+
+  // Force menu open with retry logic
+  const forceMenuOpen = (callback: () => void) => {
+    console.log('🔥 FORCING MENU OPEN');
+    
+    if (onMenuToggle) {
+      onMenuToggle(true);
     }
     
-    // Calculate position - try to place above the element
-    let top = rect.top - 20; // 20px gap above element
-    let left = rect.left + rect.width / 2; // Center horizontally on element
-
-    // Keep horizontal position in viewport
-    if (left - bubbleWidth / 2 < 20) {
-      left = bubbleWidth / 2 + 20;
-    } else if (left + bubbleWidth / 2 > viewportWidth - 20) {
-      left = viewportWidth - bubbleWidth / 2 - 20;
+    // Try DOM manipulation as fallback
+    const hamburgerButton = getTarget('[data-tour-id="nav-toggle"]');
+    if (hamburgerButton) {
+      try {
+        (hamburgerButton as HTMLButtonElement).click();
+      } catch (e) {
+        console.warn('Could not click hamburger button:', e);
+      }
     }
-
-    // If not enough space above, place below
-    if (top - bubbleHeight < 20) {
-      top = rect.bottom + 20;
-    }
-
-    // Final viewport bounds check
-    top = Math.max(20, Math.min(top, viewportHeight - bubbleHeight - 20));
-
-    setBubblePosition({ top, left });
-
-    // Compute spotlight center and radius for the overlay
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const r = Math.max(120, Math.ceil(Math.hypot(rect.width, rect.height) * 0.8));
-    spotlightRef.current = { cx, cy, r };
-    // Apply dynamic radial-gradient to create a "hole" around the target
-    if (overlayRef.current) {
-      const g = `radial-gradient(${r}px ${r}px at ${cx}px ${cy}px, rgba(0,0,0,0) 0%, rgba(0,0,0,0.2) 65%, rgba(0,0,0,0.6) 100%)`;
-      overlayRef.current.style.background = g;
-    }
+    
+    // Wait for menu animation and retry if needed
+    let attempts = 0;
+    const checkMenuOpen = () => {
+      const menuPanel = getTarget('[data-tour-id="nav-panel"]');
+      if (menuPanel && menuPanel.offsetParent !== null) {
+        console.log('✅ Menu is now open');
+        callback();
+      } else if (attempts < 5) {
+        attempts++;
+        console.log(`🔄 Menu not open yet, retrying... attempt ${attempts}`);
+        setTimeout(checkMenuOpen, 150);
+      } else {
+        console.warn('⚠️ Could not open menu after 5 attempts, proceeding anyway');
+        callback();
+      }
+    };
+    
+    setTimeout(checkMenuOpen, 100);
   };
 
-  // Find target element and set up highlighting
-  const setupStep = (step: TourStep) => {
-    // Handle intro/outro steps that don't have selectors
-    if (!step.selector) {
-      setTargetElement(null);
-      setBubblePosition({ top: window.innerHeight / 2 - 100, left: window.innerWidth / 2 });
-      // Fallback overlay background for centered steps
+  // Force menu closed
+  const forceMenuClosed = (callback: () => void) => {
+    console.log('🔥 FORCING MENU CLOSED');
+    
+    if (onMenuToggle) {
+      onMenuToggle(false);
+    }
+    
+    // Wait for close animation
+    setTimeout(callback, 150);
+  };
+
+  // Safe element positioning that handles menu elements specially
+  const positionBubble = (element: HTMLElement | null, step: TourStep) => {
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const bubbleWidth = 320;
+    const bubbleHeight = 200;
+    
+    // If no element, center the tooltip (ERROR-PROOF TARGETING)
+    if (!element) {
+      console.warn(`⚠️ No target element found for step "${step.id}", showing centered tooltip`);
+      setBubblePosition({
+        top: viewportHeight / 2 - bubbleHeight / 2,
+        left: viewportWidth / 2 - bubbleWidth / 2
+      });
+      
+      // Set default overlay background for centered steps
       if (overlayRef.current) {
         overlayRef.current.style.background = 'radial-gradient(120% 120% at 50% 50%, rgba(0,0,0,0.25), rgba(0,0,0,0.45))';
       }
       return;
     }
 
-    // Handle menu opening for menu steps
-    if (step.id === 'hamburger') {
-      // For hamburger step, open menu using multiple methods
-      console.log('Tour: Opening menu for hamburger step');
+    const rect = element.getBoundingClientRect();
+    
+    // Special positioning for menu items - places tooltip to the RIGHT of menu
+    if (step.id.startsWith('menu-')) {
+      const menuContainer = getTarget('[data-tour-id="nav-toggle"]')?.closest('.fixed') as HTMLElement;
+      const menuDropdown = menuContainer?.querySelector('.absolute') as HTMLElement;
       
-      // Method 1: Use state management
-      if (onMenuToggle) {
-        onMenuToggle(true);
-      }
-      
-      // Method 2: Direct DOM manipulation as fallback
-      setTimeout(() => {
-        const hamburgerButton = document.querySelector('[data-tour-id="hamburger"]') as HTMLElement;
-        if (hamburgerButton && !document.querySelector('.absolute.top-20')) {
-          console.log('Tour: Menu not open, clicking hamburger button directly');
-          hamburgerButton.click();
-        }
-      }, 100);
-      
-    } else if (step.id.startsWith('menu-')) {
-      // For menu item steps, ensure menu is open using multiple methods
-      console.log(`Tour: Opening menu for step ${step.id}`);
-      
-      // Method 1: Use state management
-      if (onMenuToggle) {
-        onMenuToggle(true);
-      }
-      
-      // Method 2: Direct DOM manipulation as fallback
-      setTimeout(() => {
-        const hamburgerButton = document.querySelector('[data-tour-id="hamburger"]') as HTMLElement;
-        const menuDropdown = document.querySelector('.absolute.top-20');
+      if (menuDropdown) {
+        const dropdownRect = menuDropdown.getBoundingClientRect();
+        const top = Math.max(20, Math.min(
+          dropdownRect.top + (dropdownRect.height / 2) - (bubbleHeight / 2),
+          viewportHeight - bubbleHeight - 20
+        ));
+        const left = Math.min(
+          dropdownRect.right + 20,  // 20px gap from menu edge
+          viewportWidth - bubbleWidth - 20
+        );
+        setBubblePosition({ top, left });
         
-        if (hamburgerButton && !menuDropdown) {
-          console.log('Tour: Menu not open for menu step, clicking hamburger button directly');
-          hamburgerButton.click();
+        // Update spotlight for menu dropdown
+        const cx = dropdownRect.left + dropdownRect.width / 2;
+        const cy = dropdownRect.top + dropdownRect.height / 2;
+        const r = Math.max(80, Math.ceil(Math.hypot(dropdownRect.width, dropdownRect.height) * 0.6));
+        spotlightRef.current = { cx, cy, r };
+        
+        if (overlayRef.current) {
+          const gradient = `radial-gradient(${r}px ${r}px at ${cx}px ${cy}px, rgba(0,0,0,0) 0%, rgba(0,0,0,0.2) 65%, rgba(0,0,0,0.6) 100%)`;
+          overlayRef.current.style.background = gradient;
         }
-      }, 50);
-      
-      // Method 3: Keep trying every 100ms until menu is visible
-      const ensureMenuOpen = setInterval(() => {
-        const menuDropdown = document.querySelector('.absolute.top-20');
-        if (!menuDropdown) {
-          const hamburgerButton = document.querySelector('[data-tour-id="hamburger"]') as HTMLElement;
-          if (hamburgerButton) {
-            console.log('Tour: Menu still not open, retrying...');
-            hamburgerButton.click();
-          }
-        } else {
-          clearInterval(ensureMenuOpen);
-        }
-      }, 200);
-      
-      // Clean up after 3 seconds
-      setTimeout(() => clearInterval(ensureMenuOpen), 3000);
-      
-    } else if (step.id === 'heartcoins') {
-      // Close menu for Heart Coins step
-      if (onMenuToggle) {
-        console.log('Tour: Closing menu for heartcoins step');
-        onMenuToggle(false);
+        return;
       }
     }
+    
+    // Default positioning - try to place above or below the element
+    let top = rect.top - bubbleHeight - 20;
+    let left = rect.left + (rect.width / 2) - (bubbleWidth / 2);
 
-    // Remove previous highlights
-    document.querySelectorAll('.tour-highlight').forEach(el => {
-      el.classList.remove('tour-highlight');
-    });
+    // If not enough space above, place below
+    if (top < 20) {
+      top = rect.bottom + 20;
+    }
 
-    // Helper function to find and setup the element
-    const findAndSetupElement = (retryCount = 0) => {
-      // Find target element
-      console.log(`Tour: Looking for element with selector "${step.selector}", attempt ${retryCount + 1}`);
-      
-      // Debug: Check if menu is open
-      const menuContainer = document.querySelector('[data-tour-id="hamburger"]')?.closest('.fixed');
-      const menuDropdown = menuContainer?.querySelector('.absolute');
-      console.log('Tour: Menu container found:', !!menuContainer);
-      console.log('Tour: Menu dropdown found:', !!menuDropdown);
-      if (menuDropdown) {
-        console.log('Tour: Menu dropdown rect:', menuDropdown.getBoundingClientRect());
-        console.log('Tour: Menu dropdown children:', Array.from(menuDropdown.querySelectorAll('[data-tour-id]')).map(el => el.getAttribute('data-tour-id')));
-      }
-      
-      // Debug: List all elements with data-tour-id
-      const allTourElements = document.querySelectorAll('[data-tour-id]');
-      console.log('Tour: All elements with data-tour-id:', Array.from(allTourElements).map(el => el.getAttribute('data-tour-id')));
-      
-      const element = document.querySelector(step.selector) as HTMLElement;
-      console.log('Tour: Target element found:', !!element);
-      if (element) {
-        setTargetElement(element);
-        
-        // Add highlight class
-        element.classList.add('tour-highlight');
-        
-        // Position bubble
-        positionBubble(element);
+    // Keep within viewport bounds
+    left = Math.max(20, Math.min(left, viewportWidth - bubbleWidth - 20));
+    top = Math.max(20, Math.min(top, viewportHeight - bubbleHeight - 20));
 
-        // Don't trigger popout for menu items, just highlight them
-        if (!step.id.startsWith('menu-') && step.id !== 'hamburger') {
-          setTimeout(() => {
-            triggerButtonPopout(step.id);
-          }, 500);
-        }
+    setBubblePosition({ top, left });
 
-        // Add click listener to target element
-        const handleElementClick = () => {
-          if (currentStepIndex < TOUR_STEPS.length - 1) {
-            handleNext();
-          } else {
-            handleFinish(true);
-          }
-        };
-        element.addEventListener('click', handleElementClick);
-
-        // Store cleanup function on element
-        (element as any).__tourCleanup = () => {
-          element.removeEventListener('click', handleElementClick);
-          element.classList.remove('tour-highlight');
-        };
-      } else if (retryCount < 8) {
-        // Retry finding the element after a short delay (up to 8 times, with longer delays for menu items)
-        console.warn(`Tour target not found on attempt ${retryCount + 1}: ${step.selector}, retrying...`);
-        const delay = step.id.startsWith('menu-') ? 300 * (retryCount + 1) : 100 * (retryCount + 1);
-        setTimeout(() => findAndSetupElement(retryCount + 1), delay);
-      } else {
-        console.warn(`Tour target not found after ${retryCount + 1} attempts: ${step.selector}`);
-        setTargetElement(null);
-        setBubblePosition(null);
-        // Fallback overlay background - more translucent
-        if (overlayRef.current) {
-          overlayRef.current.style.background = 'radial-gradient(120% 120% at 50% 50%, rgba(0,0,0,0.25), rgba(0,0,0,0.45))';
-        }
-      }
-    };
-
-    // Start the element finding process
-    if (step.id.startsWith('menu-')) {
-      // Add a larger delay for menu items to allow menu to fully open and render
-      setTimeout(() => findAndSetupElement(), 400);
-    } else {
-      findAndSetupElement();
+    // Update spotlight for overlay
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const r = Math.max(60, Math.ceil(Math.hypot(rect.width, rect.height) * 0.8));
+    spotlightRef.current = { cx, cy, r };
+    
+    if (overlayRef.current) {
+      const gradient = `radial-gradient(${r}px ${r}px at ${cx}px ${cy}px, rgba(0,0,0,0) 0%, rgba(0,0,0,0.2) 65%, rgba(0,0,0,0.6) 100%)`;
+      overlayRef.current.style.background = gradient;
     }
   };
 
-  // Trigger the actual popout for each button
-  const triggerButtonPopout = (stepId: string) => {
-    const element = document.querySelector(`[data-tour-id="${stepId}"]`) as HTMLElement;
-    if (element) {
-      // Simulate a click on the button to trigger its popout
-      const clickEvent = new MouseEvent('click', {
-        view: window,
-        bubbles: true,
-        cancelable: true
+  // Setup step with menu state management and safe targeting
+  const setupStep = (step: TourStep, retryCount = 0) => {
+    console.log(`🎯 Setting up step "${step.id}", attempt ${retryCount + 1}`);
+
+    // Clear any existing timeouts
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
+    }
+    if (menuOpenTimeoutRef.current) {
+      clearTimeout(menuOpenTimeoutRef.current);
+      menuOpenTimeoutRef.current = null;
+    }
+
+    // Handle intro/outro steps (no target)
+    if (!step.selector) {
+      setTargetElement(null);
+      setBubblePosition({
+        top: window.innerHeight / 2 - 100,
+        left: window.innerWidth / 2 - 160
       });
-      element.dispatchEvent(clickEvent);
+      if (overlayRef.current) {
+        overlayRef.current.style.background = 'radial-gradient(120% 120% at 50% 50%, rgba(0,0,0,0.25), rgba(0,0,0,0.45))';
+      }
+      return;
+    }
+
+    // MENU OPEN/CLOSE LOGIC
+    const setupStepElement = () => {
+      // Try to find the target element
+      const element = getTarget(step.selector);
+      
+      if (element) {
+        console.log(`✅ Found element for step "${step.id}"`);
+        setTargetElement(element);
+        
+        // Remove previous highlights
+        document.querySelectorAll('.tour-highlight').forEach(el => {
+          el.classList.remove('tour-highlight');
+        });
+        
+        // Add GLOWING HIGHLIGHT to current element (reusing same styles)
+        element.classList.add('tour-highlight');
+        
+        // Position the bubble
+        positionBubble(element, step);
+
+        // Scroll element into view
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        console.warn(`⚠️ Element not found for step "${step.id}" with selector "${step.selector}"`);
+        
+        // Retry for menu items (they may not be rendered yet)
+        if (step.id.startsWith('menu-') && retryCount < 8) {
+          console.log(`🔄 Retrying step "${step.id}" in 200ms...`);
+          retryTimeoutRef.current = setTimeout(() => setupStep(step, retryCount + 1), 200);
+          return;
+        }
+        
+        // ERROR-PROOF TARGETING: Show centered tooltip and continue
+        console.log(`📍 Using fallback positioning for step "${step.id}"`);
+        setTargetElement(null);
+        positionBubble(null, step);
+      }
+    };
+
+    // Handle menu state requirements
+    if (step.requiresMenuOpen) {
+      forceMenuOpen(setupStepElement);
+    } else if (step.requiresMenuClosed) {
+      // CRITICAL: Close menu before Signal/HeartCoin/Music steps to make top-right buttons visible
+      console.log(`🔥 CLOSING MENU for step "${step.id}" to expose top-right buttons`);
+      forceMenuClosed(setupStepElement);
+    } else {
+      // No menu requirement, setup immediately
+      setTimeout(setupStepElement, 100);
     }
   };
 
   // Cleanup current step
   const cleanupCurrentStep = () => {
-    if (targetElement) {
-      const cleanup = (targetElement as any).__tourCleanup;
-      if (cleanup) cleanup();
-      delete (targetElement as any).__tourCleanup;
+    // Clear timeouts
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
     }
-    
-    // Remove all tour highlights
+    if (menuOpenTimeoutRef.current) {
+      clearTimeout(menuOpenTimeoutRef.current);
+      menuOpenTimeoutRef.current = null;
+    }
+
+    // Remove highlights
     document.querySelectorAll('.tour-highlight').forEach(el => {
       el.classList.remove('tour-highlight');
-    });
-
-    // Only close popouts if we're not transitioning to another menu step
-    const nextStepIndex = currentStepIndex + 1;
-    const nextStep = TOUR_STEPS[nextStepIndex];
-    const currentStepIsMenu = currentStep?.id === 'hamburger' || currentStep?.id?.startsWith('menu-');
-    const nextStepIsMenu = nextStep?.id === 'hamburger' || nextStep?.id?.startsWith('menu-');
-    
-    // Don't close popouts if transitioning from hamburger to menu or between menu items
-    if (!(currentStepIsMenu && nextStepIsMenu)) {
-      closeOpenPopouts();
-    }
-  };
-
-  // Close any open button popouts
-  const closeOpenPopouts = () => {
-    // Look for close buttons in open popouts and click them
-    const closeButtons = document.querySelectorAll('[class*="hologram-container"] button svg[viewBox="0 0 24 24"]');
-    closeButtons.forEach(svg => {
-      const closeButton = svg.closest('button') as HTMLButtonElement;
-      if (closeButton) {
-        closeButton.click();
-      }
-    });
-    
-    // Also try to close the SoulSky popover specifically
-    const soulSkyCloseButton = document.querySelector('.lyrics-popover-hud button[style*="close"]');
-    if (soulSkyCloseButton) {
-      (soulSkyCloseButton as HTMLButtonElement).click();
-    }
-
-    // Look for any visible popout panels and trigger their close
-    const popoutPanels = document.querySelectorAll('[style*="z-index: 2147483647"]');
-    popoutPanels.forEach(panel => {
-      const closeBtn = panel.querySelector('button');
-      if (closeBtn && closeBtn.textContent?.includes('×')) {
-        closeBtn.click();
-      }
     });
   };
 
@@ -430,54 +428,35 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
   // Handle tour completion/skip
   const handleFinish = async (completed: boolean) => {
     try {
-      // Always set has_seen_tour to true whether completed or skipped
       await updateProfile({ has_seen_tour: true });
     } catch (error) {
       console.error("Error updating profile after tour:", error);
     }
 
-    // Clean up
     cleanupCurrentStep();
-    
-    // Fade out
     setIsVisible(false);
-    
-    // Remove overlay class from body immediately
     document.body.classList.remove('tour-active');
-    
-    // Force remove any tour-related styles that might persist
     document.body.style.removeProperty('overflow');
     
-    // Notify parent immediately for end modal, with delay for regular completion
     if (completed) {
       onFinish(completed);
     } else {
-      setTimeout(() => {
-        onFinish(completed);
-      }, 300);
+      setTimeout(() => onFinish(completed), 300);
     }
   };
 
   // Setup tour when active
   useEffect(() => {
     if (active) {
-      // Always start from the first step when (re)activating
       setCurrentStepIndex(0);
-    }
-
-    if (active) {
-      // Add overlay class to body
       document.body.classList.add('tour-active');
       
-      // Setup first step
       if (currentStep) {
         setupStep(currentStep);
       }
       
-      // Fade in
       setIsVisible(true);
     } else {
-      // Cleanup when deactivated
       cleanupCurrentStep();
       document.body.classList.remove('tour-active');
       setIsVisible(false);
@@ -489,34 +468,18 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
     };
   }, [active]);
 
-  // Update step when index changes
+  // Update step when index changes (STEP CHANGE HANDLER)
   useEffect(() => {
     if (active && currentStep) {
       setupStep(currentStep);
-      
-      // Ensure menu stays open for menu steps with aggressive state management
-      if (currentStep.id === 'hamburger' || currentStep.id.startsWith('menu-')) {
-        if (onMenuToggle) {
-          // Set menu open immediately
-          onMenuToggle(true);
-          
-          // Keep forcing it open every 100ms while on menu steps
-          const keepMenuOpen = setInterval(() => {
-            onMenuToggle(true);
-          }, 100);
-          
-          // Clean up interval when step changes
-          return () => clearInterval(keepMenuOpen);
-        }
-      }
     }
   }, [currentStepIndex, active, onMenuToggle]);
 
   // Handle window resize
   useEffect(() => {
     const handleResize = () => {
-      if (targetElement && isVisible) {
-        positionBubble(targetElement);
+      if (targetElement && isVisible && currentStep) {
+        positionBubble(targetElement, currentStep);
       }
     };
 
@@ -524,7 +487,7 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
       window.addEventListener('resize', handleResize);
       return () => window.removeEventListener('resize', handleResize);
     }
-  }, [active, targetElement, isVisible]);
+  }, [active, targetElement, isVisible, currentStep]);
 
   if (!active && !endModalVisible) {
     return null;
@@ -556,12 +519,11 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
           className={`tour-bubble fixed z-[301] transition-all duration-500 ${
             isVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-2 scale-95'
           }`}
-            style={{
-              top: bubblePosition.top,
-              left: bubblePosition.left,
-              transform: 'translateX(-50%)',
-              pointerEvents: isVisible ? 'auto' : 'none',
-            }}
+          style={{
+            top: bubblePosition.top,
+            left: bubblePosition.left,
+            pointerEvents: isVisible ? 'auto' : 'none',
+          }}
         >
           <div
             className="relative max-w-sm rounded-2xl p-6"
@@ -584,6 +546,7 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
                 ` 
               }} />
             </div>
+            
             {/* Title */}
             <h3 
               className="text-xl font-bold text-white mb-3"
@@ -597,7 +560,7 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
             </h3>
 
             {/* Body */}
-            <p className="text-white/90 mb-6 leading-relaxed">
+            <p className="text-white/90 mb-6 leading-relaxed whitespace-pre-line">
               {currentStep?.body || 'Loading tour content...'}
             </p>
 
@@ -670,13 +633,14 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
         </div>
       )}
 
+      {/* HIGHLIGHT STYLING - Reused glowing effect for all highlighted elements */}
       <style jsx global>{`
         /* Body class when tour is active */
         .tour-active {
           overflow: hidden;
         }
 
-        /* Highlight effect for tour targets */
+        /* 🔥 GLOWING HIGHLIGHT EFFECT - Applied to all tour targets */
         .tour-highlight {
           position: relative !important;
           z-index: 310 !important;
@@ -689,7 +653,7 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
             0 0 96px rgba(252,84,175,0.5) !important;
         }
 
-        /* Ensure tour highlight is visible above profile bar */
+        /* Ensure tour highlight is visible above all other elements */
         .tour-highlight, 
         .tour-highlight * {
           pointer-events: auto !important;
@@ -713,7 +677,7 @@ export default function OnboardingTour({ active, onFinish, onSkip, endModalVisib
           animation: twinkle 2.2s ease-in-out infinite;
         }
 
-        /* Pulsing glow animation */
+        /* 🔥 PULSING GLOW ANIMATION */
         @keyframes tourGlow {
           0%, 100% {
             box-shadow:

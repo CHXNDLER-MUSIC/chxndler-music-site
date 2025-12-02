@@ -14,12 +14,17 @@ class ErrorBoundary extends React.Component<
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError() {
+  static getDerivedStateFromError(error: Error) {
+    console.error('ErrorBoundary caught error:', error);
     return { hasError: true };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('HeartverseSystemWrapper Error:', error, errorInfo);
+    // Log additional context
+    if (error.message?.includes('ReactCurrentOwner')) {
+      console.error('ReactCurrentOwner error detected - React internals not ready');
+    }
   }
 
   render() {
@@ -28,6 +33,24 @@ class ErrorBoundary extends React.Component<
     }
     return this.props.children;
   }
+}
+
+// Safe wrapper component that delays ErrorBoundary creation until React is ready
+function SafeWrapper({ children }: { children: React.ReactNode }) {
+  const [canRenderErrorBoundary, setCanRenderErrorBoundary] = useState(false);
+  
+  useEffect(() => {
+    // Double-check React is fully ready before rendering ErrorBoundary
+    if (typeof React !== 'undefined' && React.Component && React.createElement) {
+      setCanRenderErrorBoundary(true);
+    }
+  }, []);
+  
+  if (!canRenderErrorBoundary) {
+    return null;
+  }
+  
+  return <ErrorBoundary>{children}</ErrorBoundary>;
 }
 
 interface HeartverseSystemWrapperProps {
@@ -43,27 +66,66 @@ export default function HeartverseSystemWrapper({
 }: HeartverseSystemWrapperProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [r3fSafe, setR3fSafe] = useState(false);
+  const [componentsLoaded, setComponentsLoaded] = useState(false);
+  const [reactReady, setReactReady] = useState(false);
   
   // Lazy-load R3F Canvas to avoid evaluating internals before guards
   const R3FCanvas: any = React.useMemo(
     () =>
       dynamic(() => import("@react-three/fiber").then((m) => m.Canvas as any), {
         ssr: false,
+        loading: () => null,
+        onError: (error) => {
+          console.error('Failed to load R3F Canvas:', error);
+          return null;
+        }
       }),
     []
   );
   // Lazy-load the solar system too, only render it when safe
   const HeartverseSolarSystemLazy: any = React.useMemo(
     () =>
-      dynamic(() => import("./HeartverseSolarSystem"), {
+      dynamic(() => import("./HeartverseSolarSystem").then((m) => {
+        console.log("HeartverseSolarSystem import result:", m);
+        return { default: m.default };
+      }), {
         ssr: false,
+        loading: () => null,
+        onError: (error) => {
+          console.error('Failed to load HeartverseSolarSystem:', error);
+          return null;
+        }
       }),
     []
   );
   
-  // Ensure client-side mounting
+  // Ensure client-side mounting and React internals are ready
   useEffect(() => {
     setIsMounted(true);
+    
+    // Check if React internals are properly initialized
+    try {
+      if (typeof React !== 'undefined' && React.createElement) {
+        // Try to access React internals safely
+        const testElement = React.createElement('div');
+        if (testElement) {
+          setReactReady(true);
+        }
+      }
+    } catch (error) {
+      console.warn('React not fully ready:', error);
+      // Retry after a short delay
+      setTimeout(() => {
+        try {
+          const testElement = React.createElement('div');
+          if (testElement) {
+            setReactReady(true);
+          }
+        } catch (retryError) {
+          console.error('React failed to initialize:', retryError);
+        }
+      }, 100);
+    }
   }, []);
 
   // After mount, probe environment to avoid ReactCurrentOwner crashes
@@ -78,15 +140,32 @@ export default function HeartverseSystemWrapper({
     }
   }, []);
 
+  // Verify components are loaded properly
+  useEffect(() => {
+    console.log("Components validation:", {
+      R3FCanvas: !!R3FCanvas,
+      HeartverseSolarSystemLazy: !!HeartverseSolarSystemLazy,
+      isMounted,
+      r3fSafe,
+      reactReady
+    });
+    setComponentsLoaded(!!R3FCanvas && !!HeartverseSolarSystemLazy && reactReady);
+  }, [R3FCanvas, HeartverseSolarSystemLazy, isMounted, r3fSafe, reactReady]);
+
   // Responsive design values
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
 
-  if (!isMounted) {
-    return null; // Prevent SSR issues
+  if (!isMounted || !reactReady) {
+    return null; // Prevent SSR issues and wait for React to be ready
+  }
+
+  if (!r3fSafe || !componentsLoaded) {
+    console.log("Components not ready:", { r3fSafe, componentsLoaded, isMounted, reactReady });
+    return null; // Don't render until all components are safely loaded
   }
 
   return (
-    <ErrorBoundary>
+    <SafeWrapper>
       <div
         className="absolute inset-0"
         style={{
@@ -98,8 +177,7 @@ export default function HeartverseSystemWrapper({
           backfaceVisibility: 'hidden' as any,
         }}
       >
-        {/* If environment isn't safe for R3F (e.g., React internals missing), quietly no-op */}
-        {!r3fSafe ? null : (
+        {/* Safely render R3F Canvas only when all checks pass */}
         <R3FCanvas
         className="absolute inset-0"
         style={{ background: 'transparent' }}
@@ -163,8 +241,7 @@ export default function HeartverseSystemWrapper({
           onSongClick={() => {}}
         />
         </R3FCanvas>
-        )}
       </div>
-    </ErrorBoundary>
+    </SafeWrapper>
   );
 }

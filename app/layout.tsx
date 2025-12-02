@@ -125,7 +125,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           ` }} />
         ) : null}
       </head>
-      <body className="font-sans">
+      <body className="font-sans bg-[#020016]">
         <AuthProvider>
           <ProfileProvider>
             <AudioManagerProvider>

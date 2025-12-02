@@ -83,7 +83,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
         onClick={toggleMenu}
         className="relative transition-all duration-300 hover:scale-105"
         aria-label={isOpen ? "Close menu" : "Open menu"}
-        data-tour-id="hamburger"
+        data-tour-id="nav-toggle"
       >
         <div className="w-8 h-8 flex flex-col justify-center items-center">
           {/* Top Line */}
@@ -130,6 +130,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
       {/* Dropdown Panel */}
       {isOpen && (
         <div
+          data-tour-id="nav-panel"
           className="absolute top-20 left-0 w-48 rounded-lg border border-[#FC54AF]/40 backdrop-blur-md transition-all duration-300 overflow-hidden"
           style={{
             background: "rgba(0, 0, 0, 0.8)",

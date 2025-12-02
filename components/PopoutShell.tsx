@@ -1,0 +1,106 @@
+"use client";
+
+import { ReactNode } from "react";
+
+interface PopoutShellProps {
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+  pageIndicator?: string; // Optional, for binder's "1 / 6" display
+}
+
+export default function PopoutShell({ title, onClose, children, pageIndicator }: PopoutShellProps) {
+  return (
+    <>
+      {/* Main modal container - exact copy from Binder */}
+      <div 
+        className="fixed inset-0 z-[2147483647] flex items-start justify-center"
+        style={{
+          paddingTop: '10vh'
+        }}
+      >
+        <div
+          className="binder-hologram-container"
+          style={{
+            width: 'min(92vw, 700px)',
+            height: '45vh',
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '10px 14px 0px 14px',
+            borderRadius: 18,
+            background: 'rgba(0,0,0,0.6)',
+            border: '1px solid rgba(255,105,180,0.55)',
+            boxShadow: '0 -8px 25px rgba(255,105,180,0.4), 0 -4px 15px rgba(255,105,180,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(255,105,180,0.45)',
+            backdropFilter: 'blur(12px) saturate(140%)',
+            color: '#FF69B4',
+            position: 'relative',
+            overflow: 'visible'
+          }}
+        >
+          
+          {/* Close button - exact copy from Binder */}
+          <button
+            onClick={onClose}
+            className="absolute top-2 right-4 text-pink-400 hover:text-pink-200 cursor-pointer w-8 h-8 rounded-full border border-pink-400/80 flex items-center justify-center"
+            style={{ 
+              fontSize: '16px',
+              boxShadow: '0 0 15px rgba(255,105,180,0.8), 0 0 25px rgba(255,105,180,0.5), 0 0 35px rgba(255,105,180,0.3)',
+              textShadow: '0 0 8px rgba(255,105,180,0.8), 0 0 15px rgba(255,105,180,0.6)',
+              background: 'rgba(255,105,180,0.1)',
+              backdropFilter: 'blur(2px)'
+            }}
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+              <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+              <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
+          </button>
+          
+          {/* Header - exact copy from Binder */}
+          <div className="flex justify-center items-center mb-3 flex-shrink-0">
+            <div 
+              style={{ 
+                color: '#FF69B4', 
+                textShadow: '0 0 8px rgba(255,105,180,0.6)', 
+                fontSize: '12px',
+                fontWeight: 'bold'
+              }}
+            >
+              {title}
+            </div>
+          </div>
+          
+          {/* Thin pink neon line - exact copy from Binder */}
+          <div 
+            className="w-full h-px flex-shrink-0"
+            style={{
+              background: 'linear-gradient(90deg, transparent, rgba(255,105,180,0.8) 20%, rgba(255,105,180,1) 50%, rgba(255,105,180,0.8) 80%, transparent)',
+              boxShadow: '0 0 4px rgba(255,105,180,0.6)'
+            }}
+          />
+
+          {/* Content container - exact copy from Binder */}
+          <div className="flex-1" style={{ maxHeight: 'calc(100% - 80px)' }}>
+            {children}
+          </div>
+
+          {/* Page Number Display - exact copy from Binder, only show if provided */}
+          {pageIndicator && (
+            <div 
+              className="absolute bottom-0 left-1/2 transform -translate-x-1/2"
+              style={{
+                color: '#FF69B4',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                textShadow: '0 0 4px rgba(255,105,180,0.6)',
+                pointerEvents: 'none'
+              }}
+            >
+              {pageIndicator}
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}

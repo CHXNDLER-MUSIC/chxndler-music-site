@@ -235,8 +235,8 @@ a, button, input, select, textarea, [role="button"], [tabindex]:not([tabindex="-
 
 html, body { 
   height: 100%; 
-  /* Hologram blue background */
-  background: radial-gradient(120% 120% at 50% 0%, #19E3FF 0%, #0EA8D0 40%, #062837 100%);
+  /* Dark space background */
+  background: #020016;
   color:#fff; 
   overflow-x: hidden; /* Prevent horizontal scrolling */
   /* Prevent layout shift during load */
@@ -250,6 +250,11 @@ html, body {
 /* Smooth loading transitions to prevent layout shift */
 body {
   transition: background-color 0.3s ease;
+}
+
+#__next {
+  background: #020016;
+  min-height: 100%;
 }
 
 /* Ensure main container fills screen immediately */

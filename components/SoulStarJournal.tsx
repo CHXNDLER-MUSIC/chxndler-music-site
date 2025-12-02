@@ -448,15 +448,15 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
           disabled={!user?.id || !profile?.element || journalState.isSubmitted}
           className="absolute top-16 right-4 px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-200 disabled:cursor-not-allowed"
           style={{
-            background: (!user?.id || !profile?.element) ? 'rgba(128, 128, 128, 0.1)' : (journalState.isPrivate ? `${elementTheme.color}20` : 'rgba(34, 197, 94, 0.2)'),
-            border: (!user?.id || !profile?.element) ? '1px solid #50505060' : `1px solid ${journalState.isPrivate ? elementTheme.color : '#22C55E'}60`,
-            color: (!user?.id || !profile?.element) ? '#505050' : (journalState.isPrivate ? elementTheme.color : '#22C55E'),
-            textShadow: (!user?.id || !profile?.element) ? 'none' : (journalState.isPrivate ? `0 0 4px ${elementTheme.glow}` : '0 0 4px #22C55E'),
-            opacity: (!user?.id || !profile?.element || journalState.isSubmitted) ? 0.4 : 1,
+            background: (!user?.id || !profile?.element) ? 'rgba(128, 128, 128, 0.1)' : (journalState.isPrivate ? `${elementTheme.color}20` : 'rgba(128, 128, 128, 0.1)'),
+            border: (!user?.id || !profile?.element) ? '1px solid #50505060' : `1px solid ${journalState.isPrivate ? elementTheme.color : '#808080'}60`,
+            color: (!user?.id || !profile?.element) ? '#505050' : (journalState.isPrivate ? elementTheme.color : '#808080'),
+            textShadow: (!user?.id || !profile?.element) ? 'none' : (journalState.isPrivate ? `0 0 4px ${elementTheme.glow}` : 'none'),
+            opacity: (!user?.id || !profile?.element || journalState.isSubmitted) ? 0.4 : (journalState.isPrivate ? 1 : 0.5),
             cursor: (!user?.id || !profile?.element || journalState.isSubmitted) ? 'not-allowed' : 'pointer'
           }}
         >
-          {journalState.isPrivate ? "Keep this transmission private" : "Share with the Heartverse"}
+          PRIVATE
         </button>
         
         {/* Header */}
@@ -765,7 +765,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
           </div>
         ) : (
           /* Today's Journal Interface */
-          <div style={{ height: '350px', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ height: 'auto', maxHeight: '350px', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
             {/* Date and Element with pending notification */}
             <div className="text-center mb-2">
               <div 
@@ -900,7 +900,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             )}
 
             {/* Bottom Section */}
-            <div className="flex justify-center mt-0 mb-1">
+            <div className="flex justify-center mt-0 mb-0">
               {/* Cast into the Stars Button - centered */}
               {(!user?.id || !profile?.element) ? (
                 <button

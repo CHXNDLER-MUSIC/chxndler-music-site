@@ -723,7 +723,7 @@ export default function SteeringWheelOverlay({
           return (
             <div style={{ pointerEvents: showUI && !isDimmingOverlayActive && isUIUnlocked ? 'auto' : 'none' }}>
               {/* Signal button for Twitch stream */}
-              <HoloJoinButton size={joinSize} hubColor="#FC54AF" onClick={handleSignalToggle} label="Live Stream" iconSrc="/elements/antennas.webp" isActive={joinAlienOpen} />
+              <HoloJoinButton size={joinSize} hubColor="#FC54AF" onClick={handleSignalToggle} label="Live Stream" iconSrc="/elements/antennas.webp" isActive={joinAlienOpen} dataTourId="signal-button" />
             </div>
           );
         })()}

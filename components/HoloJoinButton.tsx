@@ -11,6 +11,7 @@ export default function HoloJoinButton({
   label = "Signal",
   iconSrc = "/elements/antennas.webp",
   isActive = false,
+  dataTourId,
 }: {
   onClick?: () => void;
   href?: string;
@@ -19,6 +20,7 @@ export default function HoloJoinButton({
   label?: string;
   iconSrc?: string;
   isActive?: boolean;
+  dataTourId?: string;
 }) {
   const sfxRef = useRef<HTMLAudioElement | null>(null);
 
@@ -41,6 +43,7 @@ export default function HoloJoinButton({
         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleActivate(); } }}
         style={{ width: size, height: size }}
+        data-tour-id={dataTourId}
       >
         <span className="hub-glyph" aria-hidden>
           <img
